@@ -26,7 +26,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf", "dorfmarkt"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -1606,6 +1606,105 @@ def werwolf_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.werwolf.state("werwolf", prof["id"])
 
 
+# ---------------------------------------------------------------- «Dorfmarkt» (familyquest/dorfmarkt.py)
+class DorfmarktStartIn(BaseModel):
+    solo: bool = False                   # alone against bots (private)
+    bots: int | None = None              # 0–5 bots at the table (alone: at least 1)
+    level: str | None = None             # easy | normal | hard
+    bot_ms: int | None = None            # reaction time of the bots in ms (0 = at once)
+    mode: str | None = None              # rounds | time | classic
+    rounds: int | None = None            # mode rounds: number of rounds (default 30)
+    minutes: int | None = None           # mode time: minutes
+    auction: bool | None = None          # a field nobody buys is auctioned (everybody bids once)
+    mortgage: bool | None = None         # fields may be mortgaged
+    money: int | None = None             # Taler at the start
+    bot_ids: list[int | str] = []
+
+
+class DorfmarktActIn(BaseModel):
+    action: str = Field(max_length=20)   # roll | buy | skip | bid | end_turn | build | sell | mortgage | unmortgage | bail | use_card | liquidate | give_up | offer | answer | cancel
+    field: int | None = Field(default=None, ge=0, le=35)
+    amount: int | None = Field(default=None, ge=0, le=1_000_000)
+    to: str | None = Field(default=None, max_length=20)
+    give: list[int] = Field(default=[], max_length=36)
+    give_money: int = Field(default=0, ge=0, le=1_000_000)
+    want: list[int] = Field(default=[], max_length=36)
+    want_money: int = Field(default=0, ge=0, le=1_000_000)
+    trade: str | None = Field(default=None, max_length=20)
+    accept: bool = False
+
+
+def _lead_dorfmarkt(fq, prof: dict) -> None:
+    if not fq.dorfmarkt.may_lead("dorfmarkt", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/dorfmarkt")
+def dorfmarkt_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).dorfmarkt.state("dorfmarkt", prof["id"])
+
+
+@router.get("/dorfmarkt/board")
+def dorfmarkt_board(request: Request, prof: dict = Playing) -> list:
+    from ..dorfmarkt import board
+    return board()
+
+
+@router.get("/dorfmarkt/rules")
+def dorfmarkt_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).dorfmarkt.rules_info()
+
+
+@router.post("/dorfmarkt/start")
+def dorfmarkt_start(body: DorfmarktStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
+    _run(fq.dorfmarkt.start, "dorfmarkt", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.dorfmarkt.state("dorfmarkt", prof["id"])
+
+
+@router.post("/dorfmarkt/join")
+def dorfmarkt_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.dorfmarkt.join, "dorfmarkt", prof["id"])
+    return fq.dorfmarkt.state("dorfmarkt", prof["id"])
+
+
+@router.post("/dorfmarkt/begin")
+def dorfmarkt_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_dorfmarkt(fq, prof)
+    _run(fq.dorfmarkt.begin, "dorfmarkt", prof["id"])
+    return fq.dorfmarkt.state("dorfmarkt", prof["id"])
+
+
+@router.post("/dorfmarkt/act")
+def dorfmarkt_act(body: DorfmarktActIn, request: Request, prof: dict = Playing) -> dict | None:
+    """One move of the own player (the server rolls the dice and checks every rule)."""
+    fq = app_of(request)
+    _run(fq.dorfmarkt.act, prof["id"], body.action, body.model_dump(exclude={"action"}))
+    return fq.dorfmarkt.state("dorfmarkt", prof["id"])
+
+
+@router.post("/dorfmarkt/pause")
+def dorfmarkt_pause(body: PauseIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_dorfmarkt(fq, prof)
+    _run(fq.dorfmarkt.pause, prof["id"], body.on)
+    return fq.dorfmarkt.state("dorfmarkt", prof["id"])
+
+
+@router.post("/dorfmarkt/end")
+def dorfmarkt_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_dorfmarkt(fq, prof)
+    fq.dorfmarkt.end("dorfmarkt", prof["id"])
+    return fq.dorfmarkt.state("dorfmarkt", prof["id"])
+
+
 # ---------------------------------------------------------------- guests
 class InviteIn(BaseModel):
     game: str                       # quiz | bingo
@@ -1623,10 +1722,10 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
     points to the guest page. Closing it stays with who leads the game."""
     from ..netinfo import home_access
     fq = app_of(request)
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf", "dorfmarkt"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
                  "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verboten": fq.verboten,
-                 "jass": fq.jass, "werwolf": fq.werwolf}.get(body.game, fq.cards)
+                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:
         game = {"quiz": fq.community, "bingo": fq.bingo, "poker": fq.poker, "song": fq.songs}.get(body.game)

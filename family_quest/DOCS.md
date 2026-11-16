@@ -764,6 +764,47 @@ family on the **winning side** – only at a table with **at least two people of
 to the end, paid once, never to guests. The winners get the «No. 1» hat; every person of the family gets a history
 entry (won or lost, the role).
 
+### Dorfmarkt
+
+Games → **🏘️ Dorfmarkt**: a property-trading board game in a Swiss village – generic mechanics of the genre with its
+own board, names, cards and look. Play **alone against 1–5 bots** (levels easy / normal / hard, reaction time as in the
+other games) or open a **family table** (2 to 6 players, optionally with bots; guests via QR code). Everybody plays on
+their own device; the server rolls the two dice and checks every rule. Money is counted in **Taler** – the game's own
+play money, not the coins of the app.
+
+**The board** is a square ring of 36 fields: the corners **Markttag** (start – passing or landing brings 200 Taler),
+**Gemeindehaus** (just visiting, or sitting in the «Gemeindeversammlung»), **Dorfplatz** (a free rest) and «Ab in die
+Gemeindeversammlung»; 20 village shops and places in **8 colour groups** of 2–3 (from the farm shop and the bee house
+up to the chocolate workshop and the watchmaker), **4 Postauto stops**, 2 works (Wasserwerk, Elektrizitätswerk),
+2 **Zufall** and 2 **Dorfkasse** card fields with own, kid-friendly cards, and 2 fees (Gemeindesteuer 100,
+Vereinsbeitrag 75). Tap a field for its card (price, rents, owner); 🔎 zooms into the board (scrolling only inside the
+board).
+
+- On your turn tap the dice. A **double** rolls again; the third double in a row goes straight to the meeting.
+- A free field: **buy** it at its price, or leave it (option **auction**: then everybody may bid once – sealed, 30
+  seconds, the highest bid wins).
+- A field of another player: pay the **rent** – double for an unbuilt field when the owner has the whole colour
+  group. **Postauto**: 25 / 50 / 100 / 200 for 1–4 stops of the owner; **works**: 4 × the dice (10 × with both).
+- With a whole colour group (no mortgage in it) build **Marktstände** (1–4, evenly across the group) and then a
+  **Markthalle**; buildings sell back for half. Option **mortgages** (on): a field without buildings in its group
+  gives half its price, no rent while mortgaged; paying back costs 10 % more.
+- **Gemeindeversammlung**: pay 50 Taler, use a free pass card, or try to roll a double (3 tries; after the third:
+  pay and go).
+- **Trading**: offer own fields (without buildings in their group) and Taler for fields and Taler of another
+  player; they accept or decline (bots decide by the value, harder bots are stricter).
+- **Debts**: who cannot pay raises the money (sell, mortgage, «sell automatically») – or is **bankrupt**: everything
+  goes to the creditor (to the bank: the fields are free again).
+
+**Game length** (start dialog, remembered): **30 rounds** by default (10 / 20 / 30 / 50), or a time limit (30 / 45 /
+60 / 90 minutes), or classic until one is left – with rounds or time the **richest** wins (Taler + fields at their
+price, mortgaged at half + buildings). The game is always over when only one player (or no person) is left. Taler at
+the start: 1000 / 1500 / 2000. Who leads may **pause** the game (nothing moves, the time stops) and **end** it early
+(ranked as it stands, without coins). The whole game is stored in the database and survives a restart of the add-on.
+
+**Coins for places 1–3:** set by the parents in Community › Dorfmarkt (default 10 / 5 / 2), paid once, only for a
+game played to the end at a family table with **at least two people of the family** – never alone against bots, to
+guests or to bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, worth).
+
 ### Game corner
 
 Family → **🕹️ Game corner**: small games that run on the device itself (only a duel on two devices goes over

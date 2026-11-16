@@ -55,6 +55,9 @@ function communityBanners(c) {
   if (c.werwolf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("werwolf") },
     h("span.big-ic", "🐺"), h("span.grow", h("strong", T("Werwölfe")), h("br"),
       h("span.small", c.werwolf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.dorfmarkt) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("dorfmarkt") },
+    h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Dorfmarkt")), h("br"),
+      h("span.small", c.dorfmarkt.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.song) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("song") },
     h("span.big-ic", "🎵"), h("span.grow", h("strong", T("Guess the song")), h("br"),
       h("span.small", c.song.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -584,6 +587,8 @@ function historyText(e) {
     + (d.partner ? " · " + I18N.tr(T("with {0}")).replace("{0}", d.partner) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "werwolf") return ["🐺", I18N.tr(d.won ? T("Werwölfe: won as {0}") : T("Werwölfe: lost as {0}")).replace("{0}", I18N.tr(werwolfRoleName(d.role)))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.won ? "🏆" : ""];
+  if (e.kind === "dorfmarkt") return ["🏘️", I18N.tr(T("Dorfmarkt: place {0} of {1} · {2} Taler")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", Number(d.worth || 0).toLocaleString("de-CH"))
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   return ["•", e.kind, ""];
 }
 
