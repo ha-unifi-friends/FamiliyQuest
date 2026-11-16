@@ -31,7 +31,7 @@ def game_of(path: str) -> str | None:
     if head == "cards" and len(part) > 1:
         return part[1]
     # duels: Tic-Tac-Toe or Ping-Pong – checked per game where a duel starts (duel_invite)
-    return {"memory": "paarjagd"}.get(head)          # the photo sets are for the Paarjagd
+    return {"memory": "paarjagd", "pong4": "pingpong"}.get(head)     # photo sets: Paarjagd; pong4: Ping-Pong doubles
 
 
 def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 – used like Learner
@@ -1823,7 +1823,8 @@ def duel_opponents(request: Request, kind: str = "ttt", me: dict = Gamer) -> lis
     fq = app_of(request)
     game = "pingpong" if kind == "pong" else "ttt"
     rows = fq.db.q("SELECT * FROM profile WHERE archived=0 AND id<>? ORDER BY role DESC, name", me["id"])
-    return [{"id": r["id"], "name": r["name"], "avatar": fq.profile_public(r)["avatar"], "busy": fq.duels.state(r["id"]) is not None}
+    return [{"id": r["id"], "name": r["name"], "avatar": fq.profile_public(r)["avatar"],
+             "busy": fq.duels.state(r["id"]) is not None or fq.pong4.busy(r["id"])}
             for r in rows if fq.games_allowed(r, game)]
 
 
@@ -1842,6 +1843,9 @@ def duel_invite(body: DuelIn, request: Request, me: dict = Gamer) -> dict:
     if not opp or not fq.games_allowed(opp, game):
         raise HTTPException(404, "Unknown profile")
     from ..duel import DuelError
+    if fq.pong4.busy(opp["id"]):
+        from ..pong4 import busy_text
+        raise HTTPException(400, busy_text(opp["name"]))
     try:
         return fq.duels.invite(me["id"], opp["id"], body.kind)
     except DuelError as e:
@@ -1884,6 +1888,105 @@ def duel_again(request: Request, me: dict = Gamer) -> dict:
 @router.post("/duel/leave")
 def duel_leave(request: Request, me: dict = Gamer) -> None:
     app_of(request).duels.leave(me["id"])
+
+
+# ---------------------------------------------------------------- Ping-Pong doubles on four devices (familyquest/pong4.py)
+def _p4(fn):
+    from ..pong4 import DoublesError
+    try:
+        return fn()
+    except DoublesError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.get("/pong4/players")
+def pong4_players(request: Request, me: dict = Gamer) -> list[dict]:
+    """Who can sit at the table: family members with Ping-Pong switched on (busy: in a duel or another match)."""
+    fq = app_of(request)
+    rows = fq.db.q("SELECT * FROM profile WHERE archived=0 AND id<>? ORDER BY role DESC, name", me["id"])
+    return [{"id": r["id"], "name": r["name"], "avatar": fq.profile_public(r)["avatar"],
+             "busy": fq.duels.state(r["id"]) is not None or fq.pong4.busy(r["id"])}
+            for r in rows if fq.games_allowed(r, "pingpong")]
+
+
+@router.get("/pong4")
+def pong4_state(request: Request, me: dict = Gamer) -> dict | None:
+    return app_of(request).pong4.state(me["id"])
+
+
+class Pong4In(BaseModel):
+    seats: dict
+    to: int = 7
+
+
+def _p4_check(fq, seats: dict) -> None:
+    from ..duel import DuelError
+    for spec in (seats or {}).values():
+        pid = (spec or {}).get("pid") if isinstance(spec, dict) else None
+        if pid is None:
+            continue
+        r = fq.db.q1("SELECT * FROM profile WHERE id=? AND archived=0", pid)
+        if not r or not fq.games_allowed(r, "pingpong"):
+            raise HTTPException(404, "Unknown profile")
+        if fq.duels.state(r["id"]) is not None:
+            raise HTTPException(400, str(DuelError("{0} is playing a duel right now")).replace("{0}", r["name"]))
+
+
+@router.post("/pong4")
+def pong4_create(body: Pong4In, request: Request, me: dict = Gamer) -> dict:
+    """Set up a table: I sit on A1 (back, team A); A2, B1, B2 each get {"pid": id} or {"bot": "easy|normal|hard"}."""
+    fq = app_of(request)
+    if not isinstance(body.seats, dict):
+        raise HTTPException(400, "Fill all three seats")
+    _p4_check(fq, body.seats)
+    return _p4(lambda: fq.pong4.create(me["id"], body.seats, body.to))
+
+
+@router.post("/pong4/seat")
+def pong4_seat(request: Request, body: dict = Body(...), me: dict = Gamer) -> dict:
+    fq = app_of(request)
+    spec = {k: body[k] for k in ("pid", "bot") if body.get(k) is not None}
+    _p4_check(fq, {"x": spec})
+    return _p4(lambda: fq.pong4.seat(me["id"], str(body.get("seat", "")), spec))
+
+
+@router.post("/pong4/accept")
+def pong4_accept(request: Request, me: dict = Gamer) -> dict | None:
+    return _p4(lambda: app_of(request).pong4.answer(me["id"], True))
+
+
+@router.post("/pong4/decline")
+def pong4_decline(request: Request, me: dict = Gamer) -> None:
+    _p4(lambda: app_of(request).pong4.answer(me["id"], False))
+
+
+@router.post("/pong4/start")
+def pong4_start(request: Request, me: dict = Gamer) -> dict:
+    return _p4(lambda: app_of(request).pong4.start(me["id"]))
+
+
+class Pong4Sync(BaseModel):
+    pad: float
+    bots: dict | None = None
+    ball: dict | None = None
+    points: dict | None = None
+    over: str | None = None
+
+
+@router.post("/pong4/sync")
+def pong4_sync(body: Pong4Sync, request: Request, me: dict = Gamer) -> dict:
+    """My paddle in, the whole table out (about 15 times a second); the host also sends bots, ball, points, end."""
+    return _p4(lambda: app_of(request).pong4.sync(me["id"], body.pad, body.bots, body.ball, body.points, body.over))
+
+
+@router.post("/pong4/again")
+def pong4_again(request: Request, me: dict = Gamer) -> dict:
+    return _p4(lambda: app_of(request).pong4.again(me["id"]))
+
+
+@router.post("/pong4/leave")
+def pong4_leave(request: Request, me: dict = Gamer) -> None:
+    app_of(request).pong4.leave(me["id"])
 
 
 # ---------------------------------------------------------------- the children's own bots (avatar area)

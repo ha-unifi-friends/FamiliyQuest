@@ -88,6 +88,8 @@ class FamilyQuest:
         self.wichteln = Wichteln(self.db, lambda: self.planer_host)
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
+        from .pong4 import Doubles
+        self.pong4 = Doubles(self.duels.names)
         self.weather = Weather(self.db, self.rewards)
         self.translations = Translations(self.db)
         self.kiosk = Dashboard(self)
@@ -190,6 +192,7 @@ class FamilyQuest:
         out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None
         out["werwolf"] = self.werwolf.summary("werwolf", pid) if "werwolf" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
+        out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
         return out
 
     def games_allowed(self, prof: dict, game: str | None = None) -> bool:
