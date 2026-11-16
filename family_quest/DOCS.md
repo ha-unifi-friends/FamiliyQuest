@@ -775,7 +775,14 @@ the server; best times stay in this browser), shown when family games are on for
   numbers turn red, best time per level.
 - **Patience** – the classic solitaire: sort all cards by suit onto four piles, draw 1 or 3, undo, «Finish» when
   only open cards are left. Tap a card and it moves where it fits.
-- **Ping-Pong** – against the app (easy, medium, hard) or face to face on one tablet; first to 7 points.
+- **Ping-Pong** – against the app (easy, medium, hard) or face to face on one tablet; first to 7 points. Also on
+  **two devices** (a duel) and as **doubles on up to four devices**: two teams of two, each with a paddle at the
+  baseline and a short paddle (55 %) near the net that only moves along its line. Whoever opens the table plays the
+  back paddle of team A and chooses who sits on the three other seats – a family member (the invitation pops up in
+  their app) or a bot (easy, normal, hard) – and the points to win (5, 7 or 11). A seat whose person says «no thanks»
+  can be given to somebody else or a bot; the match starts once everybody is ready. Every player moves only their own
+  paddle and always sees their own team at the bottom. If somebody leaves, a bot plays on for them; if the host
+  leaves, the match ends. Like the duels, doubles pay no coins and are kept in memory only.
 - **Pairs** – turn over two cards and find the pairs: animals, fruit, vehicles, sea animals or **your own photo
   sets**; alone (fewest moves), against the app (it remembers more or less well) or 2–4 players on one device.
   Card back: four patterns or the **family crest**.

@@ -1549,3 +1549,10 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .ink-target.on { border-color: var(--bad, #d33); background: color-mix(in srgb, var(--bad, #d33) 12%, var(--card)); }
 .ink-target.off { opacity: .45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .ink-over, .ink-msg { transition: none; } }
+/* Ping-Pong doubles (minigames.js pong4Online) */
+.p4-seats { display: grid; gap: 6px; margin: 8px 0; }
+.p4-seat { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+.p4-seat.p4-me { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--card)); }
+.p4-lbl { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.p4-sel { flex: 0 0 48%; max-width: 48%; font: inherit; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); color: inherit; }
+.p4-row { justify-content: center; align-items: center; gap: 10px; margin: 8px 0 12px; }
