@@ -17,7 +17,7 @@ from .rewards import avatar as av
 
 GUEST = 2
 GUEST_HOURS = 12
-GAMES = ("quiz", "bingo", "poker", "tschau", "karussell", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf")
+GAMES = ("quiz", "bingo", "poker", "tschau", "karussell", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf")
 KEY = "guest_invites"
 COLORS = ["#ff6b6b", "#4f8cff", "#51cf66", "#fcc419", "#845ef7", "#20c997", "#ff922b"]
 
@@ -59,7 +59,7 @@ class Guests:
         return {"game": game, **cur}
 
     def _game_id(self, game: str) -> int | None:
-        if game in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf"):
+        if game in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf"):
             g = getattr(self.fq, game)._game(game)
         elif game in ("tschau", "karussell"):
             g = self.fq.cards._game(game)
@@ -78,7 +78,7 @@ class Guests:
         if not f or not self.enabled():
             raise GuestError("This invitation is not valid (any more)")
         game, _ = f
-        title = {"bingo": "Bingo", "poker": "Texas Hold'em", "tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "song": "Errate den Song", "domino": "Domino", "paarjagd": "Paarjagd", "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten", "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe"}.get(game, "")
+        title = {"bingo": "Bingo", "poker": "Texas Hold'em", "tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "song": "Errate den Song", "domino": "Domino", "paarjagd": "Paarjagd", "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten", "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "klatsch": "Klatsch den Beat", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe"}.get(game, "")
         if game == "quiz":
             st = self.fq.community.state(0) or {}
             title = st.get("title") or "Quiz"
@@ -99,7 +99,7 @@ class Guests:
                   "outfitColor": random.choice(COLORS), "skin": random.choice(["#ffe0bd", "#f1c27d", "#e0ac69", "#c68642"])}
         pid = self.db.x("INSERT INTO profile(name, role, color, avatar, settings, archived) VALUES(?,?,?,?,?,?)",
                         name, "guest", random.choice(COLORS), json.dumps(avatar), json.dumps({"guest": True}), GUEST)
-        if info["game"] in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf"):
+        if info["game"] in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf"):
             getattr(self.fq, info["game"]).join(info["game"], pid)
         elif info["game"] in ("tschau", "karussell"):
             self.fq.cards.join(info["game"], pid)

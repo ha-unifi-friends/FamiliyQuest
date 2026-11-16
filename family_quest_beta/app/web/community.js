@@ -46,6 +46,9 @@ function communityBanners(c) {
   if (c.jump) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("jump") },
     h("span.big-ic", "🦘"), h("span.grow", h("strong", "Jump"), h("br"),
       h("span.small", c.jump.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.klatsch) out.push(h("button.card.banner.quiz-banner", { onclick: () => { try { KbAudio.ensure(); } catch {} go("klatsch"); } },
+    h("span.big-ic", "👏"), h("span.grow", h("strong", T("Klatsch den Beat")), h("br"),
+      h("span.small", c.klatsch.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.verboten) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("verboten") },
     h("span.big-ic", "🚫"), h("span.grow", h("strong", T("Verbotene Wörter")), h("br"),
       h("span.small", c.verboten.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -578,6 +581,10 @@ function historyText(e) {
     ? I18N.tr(T("Jump: place {0} of {1} · {2} m")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
     : I18N.tr(T("Jump alone: {0} m")).replace("{0}", d.score)) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
+  if (e.kind === "klatsch") return ["👏", (d.players > 1
+    ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
+    : I18N.tr(T("Klatsch den Beat alone: {0} points")).replace("{0}", d.score)) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)
+    + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
   if (e.kind === "verboten") return ["🚫", I18N.tr(T("Verbotene Wörter: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
     + (d.teams ? " · " + I18N.tr(T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "jass") return ["♣️", I18N.tr(d.place === 1 ? T("Jass won {0} : {1}") : T("Jass lost {0} : {1}")).replace("{0}", d.points).replace("{1}", d.other)

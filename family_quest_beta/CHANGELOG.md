@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-beta.3
+
+- New game «Klatsch den Beat»: everybody claps a rhythm back at the same time, judged to the millisecond, harder every round, calibration for the phone delay, bots, coins for places 1–3
+- Ping-Pong doubles: 2 against 2 on up to four phones, a short front paddle near the net for each team, bots fill empty seats
+
 ## 1.0.0-beta.2
 
 - Photo/PDF → draft pack now uses the AI set up in Home Assistant (AI Task: OpenAI, Google, Anthropic, a local Ollama …); the own Anthropic API key option is gone

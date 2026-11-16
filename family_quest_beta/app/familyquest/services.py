@@ -63,6 +63,8 @@ class FamilyQuest:
         self.heimwaerts = Heimwaerts(self.db, self.community.add_history, self.rewards)
         from .jump import Jump
         self.jump = Jump(self.db, self.community.add_history, self.rewards)
+        from .klatsch import Klatsch
+        self.klatsch = Klatsch(self.db, self.community.add_history, self.rewards)
         from .verboten import Verboten
         self.verboten = Verboten(self.db, self.community.add_history, self.rewards)
         from .jass import Jass
@@ -88,6 +90,8 @@ class FamilyQuest:
         self.wichteln = Wichteln(self.db, lambda: self.planer_host)
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
+        from .pong4 import Doubles
+        self.pong4 = Doubles(self.duels.names)
         self.weather = Weather(self.db, self.rewards)
         self.translations = Translations(self.db)
         self.kiosk = Dashboard(self)
@@ -132,7 +136,7 @@ class FamilyQuest:
             out.update(pin_kind="symbols", symbol_set=random.sample(st["symbol_set"], len(st["symbol_set"])))
         return out
 
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf", "ttt", "sudoku", "patience", "pingpong", "slots")
+    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "ttt", "sudoku", "patience", "pingpong", "slots")
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -186,10 +190,12 @@ class FamilyQuest:
         out["wuerfel"] = self.wuerfel.summary("wuerfel", pid) if "wuerfel" in ok else None
         out["heimwaerts"] = self.heimwaerts.summary("heimwaerts", pid) if "heimwaerts" in ok else None
         out["jump"] = self.jump.summary("jump", pid) if "jump" in ok else None
+        out["klatsch"] = self.klatsch.summary("klatsch", pid) if "klatsch" in ok else None
         out["verboten"] = self.verboten.summary("verboten", pid) if "verboten" in ok else None
         out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None
         out["werwolf"] = self.werwolf.summary("werwolf", pid) if "werwolf" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
+        out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
         return out
 
     def games_allowed(self, prof: dict, game: str | None = None) -> bool:

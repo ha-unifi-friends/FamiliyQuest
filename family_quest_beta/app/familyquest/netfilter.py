@@ -80,7 +80,7 @@ def is_parent_path(path: str) -> bool:
 GUEST_API = ("/api/community/guest/", "/api/community/quiz", "/api/community/bingo", "/api/community/poker",
              "/api/community/cards/", "/api/community/domino", "/api/community/paarjagd",
              "/api/community/werbinich", "/api/community/kartenlauf", "/api/community/stadtland",
-             "/api/community/zeichnen", "/api/community/wuerfel", "/api/community/heimwaerts", "/api/community/jump", "/api/community/verboten",
+             "/api/community/zeichnen", "/api/community/wuerfel", "/api/community/heimwaerts", "/api/community/jump", "/api/community/klatsch", "/api/community/verboten",
              "/api/community/jass", "/api/community/werwolf")
 GUEST_API_DENY = ("/api/community/quiz/start", "/api/community/quiz/next", "/api/community/quiz/end", "/api/community/quiz/abort",
                   "/api/community/bingo/start", "/api/community/bingo/begin", "/api/community/bingo/pause", "/api/community/bingo/end",
@@ -105,7 +105,7 @@ def is_guest_path(path: str) -> bool:
     if path.startswith("/api/"):
         if path.startswith(("/api/community/cards/", "/api/community/domino/", "/api/community/paarjagd/",
                              "/api/community/werbinich/", "/api/community/kartenlauf/", "/api/community/stadtland/",
-                             "/api/community/zeichnen/", "/api/community/wuerfel/", "/api/community/heimwaerts/", "/api/community/jump/", "/api/community/verboten/",
+                             "/api/community/zeichnen/", "/api/community/wuerfel/", "/api/community/heimwaerts/", "/api/community/jump/", "/api/community/klatsch/", "/api/community/verboten/",
                              "/api/community/jass/", "/api/community/werwolf/")) \
                 and path.endswith(GUEST_API_DENY_PARTS + ("/skip", "/next", "/override", "/mix")):
             return False
