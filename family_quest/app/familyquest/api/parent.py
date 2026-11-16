@@ -1243,12 +1243,12 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
     return {"access": acc}
 
 
-REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf")       # live games with coins for places 1–3 (game_rewards)
+REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf", "schach")       # live games with coins for places 1–3 (game_rewards)
 
 
 @router.get("/game-rewards")
 def game_rewards_get(request: Request, me: dict = Parent) -> dict:
-    """Coins for places 1, 2, 3 of the live games (Paarjagd, «Wer bin ich?», Kartenlauf, Stadt-Land-Fluss, «Zeichnen & Raten», «Fünf Würfel», «Heimwärts», «Verbotene Wörter», «Jass», «Werwölfe») – only family tables with at least two people."""
+    """Coins for places 1, 2, 3 of the live games (Paarjagd, «Wer bin ich?», Kartenlauf, Stadt-Land-Fluss, «Zeichnen & Raten», «Fünf Würfel», «Heimwärts», «Verbotene Wörter», «Jass», «Werwölfe», «Schach») – only family tables with at least two people."""
     from ..pairhunt import rewards_of
     db = app_of(request).db
     return {k: rewards_of(db, k) for k in REWARD_GAMES}

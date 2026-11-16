@@ -69,6 +69,8 @@ class FamilyQuest:
         self.jass = Jass(self.db, self.community.add_history, self.rewards)
         from .werwolf import Werwolf
         self.werwolf = Werwolf(self.db, self.community.add_history, self.rewards)
+        from .schach import Schach
+        self.schach = Schach(self.db, self.community.add_history, self.rewards)
         from .songquiz import SongQuiz
         self.lan_base = None      # http://<Home Assistant IP>:<port of the direct access> – for sounds on speakers
         self.songs = SongQuiz(self.db, self.community.add_history, lambda: self.ha,
@@ -132,7 +134,7 @@ class FamilyQuest:
             out.update(pin_kind="symbols", symbol_set=random.sample(st["symbol_set"], len(st["symbol_set"])))
         return out
 
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf", "ttt", "sudoku", "patience", "pingpong", "slots")
+    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf", "schach", "ttt", "sudoku", "patience", "pingpong", "slots")
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -189,6 +191,7 @@ class FamilyQuest:
         out["verboten"] = self.verboten.summary("verboten", pid) if "verboten" in ok else None
         out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None
         out["werwolf"] = self.werwolf.summary("werwolf", pid) if "werwolf" in ok else None
+        out["schach"] = self.schach.summary("schach", pid) if "schach" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
         return out
 

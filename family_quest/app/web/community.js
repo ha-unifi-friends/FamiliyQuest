@@ -55,6 +55,9 @@ function communityBanners(c) {
   if (c.werwolf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("werwolf") },
     h("span.big-ic", "🐺"), h("span.grow", h("strong", T("Werwölfe")), h("br"),
       h("span.small", c.werwolf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.schach) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("schach/" + c.schach.game) },
+    h("span.big-ic", "♟️"), h("span.grow", h("strong", T("Chess")), h("br"),
+      h("span.small", c.schach.my_turn ? T("Your move!") : I18N.tr(T("{0} invites you to a game")).replace("{0}", c.schach.from || "?"))), h("span.big-ic", "➜")));
   if (c.song) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("song") },
     h("span.big-ic", "🎵"), h("span.grow", h("strong", T("Guess the song")), h("br"),
       h("span.small", c.song.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -154,9 +157,9 @@ function geoMap(name, { pick, pins = [], target = null } = {}) {
 }
 
 // guests: who leads a game opens an invitation – a QR code for the phones of friends and grandparents
-async function guestInvite(game) {
+async function guestInvite(game, gid) {
   let r;
-  try { r = await api("community/guests", { method: "POST", body: { game, on: true } }); } catch (e) { return toast(e.message, "bad"); }
+  try { r = await api("community/guests", { method: "POST", body: { game, on: true, gid } }); } catch (e) { return toast(e.message, "bad"); }
   const a = r.access || {};
   const host = (a.ips && a.ips[0]) || location.hostname;
   const url = `http://${host}:${a.port || a.default_port || 8099}/gast?c=${encodeURIComponent(r.invite.code)}`;
@@ -167,7 +170,7 @@ async function guestInvite(game) {
     !a.enabled && a.port == null ? h("p.warn-text", T("Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.")) : null,
     h("div.qr-box.guest-qr", qrSvg(url)), field,
     h("div.row.center", h("button.btn", { onclick: () => m.close() }, T("Close")),
-      h("button.btn.ghost", { onclick: async () => { await api("community/guests", { method: "POST", body: { game, on: false } }); toast(T("Invitation closed"), "good"); m.close(); } }, "🚪 ", T("Close the invitation")))));
+      h("button.btn.ghost", { onclick: async () => { await api("community/guests", { method: "POST", body: { game, on: false, gid } }); toast(T("Invitation closed"), "good"); m.close(); } }, "🚪 ", T("Close the invitation")))));
 }
 
 // the live game in `box` for profile `me` (learning app and parent area); `back` leaves it
@@ -584,6 +587,10 @@ function historyText(e) {
     + (d.partner ? " · " + I18N.tr(T("with {0}")).replace("{0}", d.partner) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "werwolf") return ["🐺", I18N.tr(d.won ? T("Werwölfe: won as {0}") : T("Werwölfe: lost as {0}")).replace("{0}", I18N.tr(werwolfRoleName(d.role)))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.won ? "🏆" : ""];
+  if (e.kind === "schach") return ["♟️", (d.mode === "local"
+    ? I18N.tr(d.result === "draw" ? T("Chess on one device: draw") : d.result === "white" ? T("Chess on one device: White won") : T("Chess on one device: Black won"))
+    : I18N.tr(d.result === "win" ? T("Chess: won against {0}") : d.result === "loss" ? T("Chess: lost against {0}") : T("Chess: draw against {0}")).replace("{0}", d.opp || "?"))
+    + " · " + I18N.tr(chReason(d.reason)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.result === "win" ? "🏆" : ""];
   return ["•", e.kind, ""];
 }
 
