@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.5
+
+- New game «Dorfmarkt»: a property trading board game in a Swiss village (own board with 36 fields, shops, village bus stops, market stalls and market halls, trading, auctions as an option), 2–6 players with bots, by rounds, time or classic, can be paused
+
 ## 1.0.0-beta.4
 
 - New game «Schach» (chess): full rules, against bots (easy / normal / hard), on two phones or on one, optional clock – games can be paused and continued later, several at once
