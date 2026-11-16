@@ -2,14 +2,9 @@
 
 Family tables and tables alone against bots of all live games: the family quiz, bingo, guess the song, poker and the
 games of the `card_game` table (Tschau Sepp, Kartenkarussell, Domino, Paarjagd, Wer bin ich?, Kartenlauf,
-<<<<<<< HEAD
-Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Klatsch den Beat, Verbotene Wörter, Jass, Werwölfe). Ending works like the «End» button of whoever leads the game.
-||||||| d137a70
-Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Heimwärts, Verbotene Wörter, Jass, Werwölfe). Ending works like the «End» button of whoever leads the game.
-=======
-Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Heimwärts, Verbotene Wörter, Jass, Werwölfe, Schach). Ending works like the «End» button of whoever leads the game.
+Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Klatsch den Beat, Verbotene Wörter, Jass, Werwölfe,
+Schach). Ending works like the «End» button of whoever leads the game.
 Chess games can be paused (status "paused" – listed as paused); ending one ends it without a result and without coins.
->>>>>>> wt/schach
 """
 from __future__ import annotations
 
