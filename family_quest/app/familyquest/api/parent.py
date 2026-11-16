@@ -1243,7 +1243,7 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
     return {"access": acc}
 
 
-REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf")       # live games with coins for places 1–3 (game_rewards)
+REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf")       # live games with coins for places 1–3 (game_rewards)
 
 
 @router.get("/game-rewards")

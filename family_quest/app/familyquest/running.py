@@ -2,7 +2,7 @@
 
 Family tables and tables alone against bots of all live games: the family quiz, bingo, guess the song, poker and the
 games of the `card_game` table (Tschau Sepp, Kartenkarussell, Domino, Paarjagd, Wer bin ich?, Kartenlauf,
-Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Heimwärts, Verbotene Wörter, Jass, Werwölfe). Ending works like the «End» button of whoever leads the game.
+Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Klatsch den Beat, Verbotene Wörter, Jass, Werwölfe). Ending works like the «End» button of whoever leads the game.
 """
 from __future__ import annotations
 
@@ -10,16 +10,16 @@ import json
 
 TITLES = {"tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "domino": "Domino", "paarjagd": "Paarjagd",
           "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten",
-          "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe"}
+          "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "klatsch": "Klatsch den Beat", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe"}
 ICONS = {"quiz": "🎯", "bingo": "🎱", "song": "🎵", "poker": "🃏", "tschau": "🂡", "karussell": "🎠", "domino": "🁫",
-         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺"}
+         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺"}
 
 
 def _games(fq) -> dict:
     """The object that leads the tables of a card_game kind."""
     return {"tschau": fq.cards, "karussell": fq.cards, "domino": fq.domino, "paarjagd": fq.paarjagd,
             "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf, "stadtland": fq.stadtland, "zeichnen": fq.zeichnen,
-            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf}
+            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf}
 
 
 def _name(fq, pid) -> str:
