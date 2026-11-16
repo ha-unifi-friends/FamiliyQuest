@@ -1,0 +1,45 @@
+/* Family Quest Dashboard – big, calm and readable from across the room */
+body.kiosk { font-size: clamp(16px, 1.25vw, 22px); }
+.k-page { padding: clamp(12px, 2vw, 32px); display: grid; gap: clamp(12px, 1.5vw, 24px); min-height: 100vh; align-content: start; }
+.k-head { display: flex; align-items: center; gap: 14px; }
+.k-head h1 { margin: 0; font-size: 1.8em; }
+.k-crest { width: 46px; }
+.k-head.k-offline::after { content: "⚠️"; }
+.k-clock { text-align: right; line-height: 1.1; }
+.k-time { font-size: 2.6em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.k-date { color: var(--muted); }
+.k-kids { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: inherit; }
+.k-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(12px, 1.4vw, 22px); display: grid; gap: 12px; align-content: start; }
+.k-kid { border-top: 6px solid var(--kid); }
+.k-who { display: flex; align-items: center; gap: 14px; }
+.k-who h2 { margin: 0 0 4px; font-size: 1.6em; }
+.k-av { position: relative; flex: none; }
+.k-crown { position: absolute; top: -14px; right: -8px; font-size: 1.8em; filter: drop-shadow(0 2px 2px rgba(0,0,0,.25)); }
+.k-weather { font-size: 3.4em; line-height: 1; margin-left: auto; }
+.k-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.k-chip { background: var(--hover); border-radius: 99px; padding: 3px 12px; font-weight: 700; }
+.k-learn .row { display: flex; gap: 8px; margin-bottom: 4px; }
+.k-chores ul, .k-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; }
+.k-chores li { display: flex; gap: 8px; align-items: center; font-size: 1.1em; }
+.k-ic { width: 1.6em; text-align: center; }
+.k-alldone { font-weight: 800; color: var(--good); font-size: 1.2em; }
+.k-family { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: inherit; }
+.k-family h3 { margin: 0; }
+.k-list li { padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.k-when { display: inline-block; min-width: 4.5em; }
+.k-error { max-width: 640px; margin: 15vh auto; text-align: center; padding: 20px; }
+
+.k-alarm { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.k-alarm.on { border-left: 8px solid #f59f00; }
+.k-wnow { display: flex; align-items: center; gap: 10px; }
+.k-wicon { font-size: 3em; line-height: 1; }
+.k-wnow b { font-size: 2em; }
+.k-hints { display: grid; gap: 6px; flex: 1; }
+.k-hint { display: flex; gap: 10px; align-items: center; font-size: 1.3em; font-weight: 700; }
+.k-hint span { font-size: 1.4em; }
+
+.k-special { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.k-special .k-sp-ic { font-size: 2.2em; }
+.k-special.familytime { background: linear-gradient(120deg, #fff3bf, var(--card)); }
+.k-special.offlinetime { background: linear-gradient(120deg, #e9ecef, var(--card)); }
+.k-special.now { box-shadow: 0 0 0 3px var(--accent); }

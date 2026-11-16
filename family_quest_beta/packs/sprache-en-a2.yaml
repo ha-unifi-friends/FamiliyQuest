@@ -1,0 +1,156 @@
+# Englisch A2 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
+id: "sprache-en-a2"
+titel: "Englisch A2 – Grundlagen"
+fach: "englisch"
+stufe: "A2"
+sprache: "en"
+quellsprache: "de"
+version: 1
+quelle: "Family Quest (eigene Inhalte, CC0)"
+icon: "🇬🇧"
+beschreibung: "Englisch für den Alltag: einkaufen, reisen, über Wetter, Gesundheit und Hobbys reden und von gestern und morgen erzählen."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: shopping
+    titel: "Einkaufen"
+    icon: "🛒"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "der Laden", en: "the shop", auch: ["shop", "the store", "store"], emoji: "🏪"}
+      - {de: "der Supermarkt", en: "the supermarket", auch: ["supermarket"], emoji: "🛒"}
+      - {de: "der Preis", en: "the price", auch: ["price"], emoji: "🏷️"}
+      - {de: "billig", en: "cheap", auch: ["inexpensive"]}
+      - {de: "teuer", en: "expensive", emoji: "💎"}
+      - {de: "kaufen", en: "to buy", auch: ["buy"]}
+      - {de: "bezahlen", en: "to pay", auch: ["pay"], emoji: "💳"}
+      - {de: "das Geld", en: "the money", auch: ["money"], emoji: "💰"}
+      - {de: "die Kasse", en: "the till", auch: ["till", "the checkout", "checkout", "the cash register", "cash register"]}
+      - {de: "die Grösse", en: "the size", auch: ["size"]}
+      - {de: "die Quittung", en: "the receipt", auch: ["receipt"], emoji: "🧾"}
+  - id: travel
+    titel: "Reisen und Verkehr"
+    icon: "🚆"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "der Zug", en: "the train", auch: ["train"], emoji: "🚆"}
+      - {de: "der Bus", en: "the bus", auch: ["bus"], emoji: "🚌"}
+      - {de: "das Flugzeug", en: "the plane", auch: ["plane", "the aeroplane", "aeroplane", "the airplane", "airplane"], emoji: "✈️"}
+      - {de: "der Bahnhof", en: "the station", auch: ["station", "the train station", "train station"], emoji: "🚉"}
+      - {de: "der Flughafen", en: "the airport", auch: ["airport"], emoji: "🛫"}
+      - {de: "die Fahrkarte", en: "the ticket", auch: ["ticket"], emoji: "🎫"}
+      - {de: "der Koffer", en: "the suitcase", auch: ["suitcase"], emoji: "🧳"}
+      - {de: "die Strasse", en: "the street", auch: ["street", "the road", "road"], emoji: "🛣️"}
+      - {de: "links", en: "left", emoji: "⬅️"}
+      - {de: "rechts", en: "right", emoji: "➡️"}
+      - {de: "geradeaus", en: "straight on", auch: ["straight ahead"], emoji: "⬆️"}
+      - {de: "die Ferien", en: "the holidays", auch: ["holidays", "the holiday", "holiday", "the vacation", "vacation"], emoji: "🏖️"}
+  - id: weather
+    titel: "Wetter und Jahreszeiten"
+    icon: "🌦️"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "das Wetter", en: "the weather", auch: ["weather"], emoji: "🌦️"}
+      - {de: "die Sonne", en: "the sun", auch: ["sun"], emoji: "☀️"}
+      - {de: "der Regen", en: "the rain", auch: ["rain"], emoji: "🌧️"}
+      - {de: "der Schnee", en: "the snow", auch: ["snow"], emoji: "❄️"}
+      - {de: "der Wind", en: "the wind", auch: ["wind"], emoji: "💨"}
+      - {de: "die Wolke", en: "the cloud", auch: ["cloud"], emoji: "☁️"}
+      - {de: "warm", en: "warm", emoji: "🌡️"}
+      - {de: "kalt", en: "cold", emoji: "🥶"}
+      - {de: "der Frühling", en: "spring", auch: ["the spring"], emoji: "🌷"}
+      - {de: "der Sommer", en: "summer", auch: ["the summer"], emoji: "🌞"}
+      - {de: "der Herbst", en: "autumn", auch: ["the autumn", "fall", "the fall"], emoji: "🍂"}
+      - {de: "der Winter", en: "winter", auch: ["the winter"], emoji: "⛄"}
+  - id: body-health
+    titel: "Körper und Gesundheit"
+    icon: "🩺"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "der Kopf", en: "the head", auch: ["head"], emoji: "🙂"}
+      - {de: "die Hand", en: "the hand", auch: ["hand"], emoji: "✋"}
+      - {de: "der Fuss", en: "the foot", auch: ["foot"], emoji: "🦶"}
+      - {de: "das Bein", en: "the leg", auch: ["leg"], emoji: "🦵"}
+      - {de: "der Bauch", en: "the stomach", auch: ["stomach", "the tummy", "tummy", "the belly", "belly"]}
+      - {de: "der Zahn", en: "the tooth", auch: ["tooth"], emoji: "🦷"}
+      - {de: "das Ohr", en: "the ear", auch: ["ear"], emoji: "👂"}
+      - {de: "krank", en: "ill", auch: ["sick"], emoji: "🤒"}
+      - {de: "die Kopfschmerzen", en: "the headache", auch: ["headache", "a headache"]}
+      - {de: "der Arzt / die Ärztin", en: "the doctor", auch: ["doctor"], emoji: "🧑‍⚕️"}
+      - {de: "die Apotheke", en: "the chemist's", auch: ["chemist's", "the pharmacy", "pharmacy", "the drugstore", "drugstore"], emoji: "💊"}
+  - id: hobbies
+    titel: "Hobbys und Freizeit"
+    icon: "⚽"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "schwimmen", en: "to swim", auch: ["swim"], emoji: "🏊"}
+      - {de: "tanzen", en: "to dance", auch: ["dance"], emoji: "💃"}
+      - {de: "singen", en: "to sing", auch: ["sing"], emoji: "🎤"}
+      - {de: "lesen", en: "to read", auch: ["read"], emoji: "📚"}
+      - {de: "malen", en: "to paint", auch: ["paint"], emoji: "🖌️"}
+      - {de: "Fussball spielen", en: "to play football", auch: ["play football", "to play soccer", "play soccer"], emoji: "⚽"}
+      - {de: "Rad fahren", en: "to ride a bike", auch: ["ride a bike", "to cycle", "cycle"], emoji: "🚲"}
+      - {de: "kochen", en: "to cook", auch: ["cook"], emoji: "🍳"}
+      - {de: "wandern", en: "to go hiking", auch: ["go hiking", "to hike", "hike"], emoji: "🥾"}
+      - {de: "die Freizeit", en: "free time", auch: ["the free time", "spare time", "leisure time"], emoji: "🎈"}
+  - id: home
+    titel: "Zu Hause"
+    icon: "🏠"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "das Haus", en: "the house", auch: ["house"], emoji: "🏠"}
+      - {de: "die Wohnung", en: "the flat", auch: ["flat", "the apartment", "apartment"], emoji: "🏢"}
+      - {de: "die Küche", en: "the kitchen", auch: ["kitchen"], emoji: "🍳"}
+      - {de: "das Schlafzimmer", en: "the bedroom", auch: ["bedroom"], emoji: "🛏️"}
+      - {de: "das Badezimmer", en: "the bathroom", auch: ["bathroom"], emoji: "🛁"}
+      - {de: "das Wohnzimmer", en: "the living room", auch: ["living room", "the sitting room", "sitting room", "the lounge", "lounge"], emoji: "🛋️"}
+      - {de: "der Garten", en: "the garden", auch: ["garden", "the yard", "yard"], emoji: "🌳"}
+      - {de: "das Fenster", en: "the window", auch: ["window"], emoji: "🪟"}
+      - {de: "die Tür", en: "the door", auch: ["door"], emoji: "🚪"}
+      - {de: "das Sofa", en: "the sofa", auch: ["sofa", "the couch", "couch"], emoji: "🛋️"}
+      - {de: "der Kühlschrank", en: "the fridge", auch: ["fridge", "the refrigerator", "refrigerator"], emoji: "🧊"}
+  - id: simple-past
+    titel: "Simple Past – Vergangenheit"
+    icon: "⏪"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "go – gestern", antwort: "went", satz: "Yesterday I ___ to the park.", optionen: ["went", "goed", "go", "gone"]}
+      - {frage: "play – letzte Woche", antwort: "played", satz: "We ___ football last week.", optionen: ["played", "play", "plays", "playing"]}
+      - {frage: "see – gestern Abend", antwort: "saw", satz: "I ___ a great film last night.", optionen: ["saw", "seed", "see", "seen"]}
+      - {frage: "eat – zum Frühstück", antwort: "ate", satz: "She ___ an apple for breakfast.", optionen: ["ate", "eated", "eats", "eaten"]}
+      - {frage: "be – I (gestern)", antwort: "was", satz: "I ___ tired yesterday.", optionen: ["was", "were", "am", "be"]}
+      - {frage: "be – they (letzten Sommer)", antwort: "were", satz: "They ___ in London last summer.", optionen: ["was", "were", "are", "been"]}
+      - {frage: "buy – letzten Samstag", antwort: "bought", satz: "He ___ a new jacket last Saturday.", optionen: ["bought", "buyed", "buys", "brought"]}
+      - {frage: "have – letzte Nacht", antwort: "had", satz: "We ___ pizza last night.", optionen: ["had", "haved", "have", "has"]}
+      - {frage: "Frage – did", antwort: "Did", satz: "___ you watch the match yesterday?", optionen: ["Did", "Do", "Does", "Was"]}
+      - {frage: "Verneinung – didn't", antwort: "didn't", satz: "I ___ go to school on Sunday.", optionen: ["didn't", "don't", "wasn't", "doesn't"]}
+  - id: going-to
+    titel: "going to – Zukunftspläne"
+    icon: "🔮"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "I – Plan", antwort: "am", satz: "I ___ going to visit my grandma.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "she – Plan", antwort: "is", satz: "She ___ going to learn French.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "we – Plan", antwort: "are", satz: "We ___ going to travel by train.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "they – Plan", antwort: "are", satz: "They ___ going to buy a house.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "Verb nach going", antwort: "to", satz: "It's going ___ rain later.", optionen: ["to", "for", "at", "in"]}
+      - {frage: "Verb nach going to", antwort: "cook", satz: "I'm going to ___ dinner tonight.", optionen: ["cook", "cooking", "cooked", "cooks"]}
+      - {frage: "Verneinung", antwort: "not", satz: "He is ___ going to come to the party.", optionen: ["not", "no", "don't", "isn't"]}
+      - {frage: "Frage", antwort: "Are", satz: "___ you going to play tennis tomorrow?", optionen: ["Are", "Do", "Is", "Will"]}
+      - {frage: "Frage – he", antwort: "Is", satz: "___ he going to call you later?", optionen: ["Are", "Do", "Is", "Does"]}
+  - id: everyday-phrases
+    titel: "Alltagssätze"
+    icon: "💬"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Wie viel kostet das?", en: "How much is it?", auch: ["How much does it cost?", "How much is this?", "How much is that?"]}
+      - {de: "Ich hätte gern einen Tee.", en: "I'd like a tea, please.", auch: ["I would like a tea, please.", "I'd like a tea.", "I would like a tea.", "I'd like a cup of tea, please."]}
+      - {de: "Wo ist der Bahnhof?", en: "Where is the station?", auch: ["Where's the station?", "Where is the train station?", "Where's the train station?"]}
+      - {de: "Mir ist kalt.", en: "I'm cold.", auch: ["I am cold."]}
+      - {de: "Ich habe Kopfschmerzen.", en: "I've got a headache.", auch: ["I have a headache.", "I have got a headache."]}
+      - {de: "Was machst du gern?", en: "What do you like doing?", auch: ["What do you like to do?"]}
+      - {de: "Darf ich das Fenster öffnen?", en: "Can I open the window?", auch: ["May I open the window?", "Could I open the window?"]}
+      - {de: "Was hast du am Wochenende gemacht?", en: "What did you do at the weekend?", auch: ["What did you do on the weekend?", "What did you do last weekend?"]}
+      - {de: "Wie wird das Wetter morgen?", en: "What will the weather be like tomorrow?", auch: ["What's the weather going to be like tomorrow?", "What is the weather going to be like tomorrow?"]}
+      - {de: "Kein Problem.", en: "No problem.", auch: ["No worries."]}

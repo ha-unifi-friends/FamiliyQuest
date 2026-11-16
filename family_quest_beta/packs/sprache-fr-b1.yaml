@@ -1,0 +1,157 @@
+# Französisch B1 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
+id: sprache-fr-b1
+titel: "Französisch B1 – Fortgeschritten"
+fach: franzoesisch
+stufe: "B1"
+sprache: fr
+quellsprache: de
+version: 1
+quelle: Family Quest (eigene Inhalte, CC0)
+icon: "🇫🇷"
+beschreibung: "Französisch für Fortgeschrittene: Meinungen äussern, über Arbeit, Umwelt, Medien und Gefühle sprechen und typische Redewendungen verstehen."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: arbeit-schule
+    titel: Arbeit und Ausbildung
+    icon: "💼"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: die Stelle, fr: le poste}
+      - {de: das Vorstellungsgespräch, fr: l'entretien d'embauche, emoji: "🤝"}
+      - {de: der Lebenslauf, fr: le CV, auch: [le curriculum vitae], emoji: "📄"}
+      - {de: der Lohn, fr: le salaire, emoji: "💰"}
+      - {de: die Lehre, fr: l'apprentissage}
+      - {de: das Praktikum, fr: le stage}
+      - {de: der Arbeitskollege, fr: le collègue, auch: [le collegue]}
+      - {de: die Prüfung, fr: l'examen, emoji: "📝"}
+      - {de: die Note, fr: la note}
+      - {de: sich bewerben, fr: postuler}
+      - {de: kündigen, fr: démissionner, auch: [demissionner]}
+      - {de: die Sitzung, fr: la réunion, auch: [la reunion], emoji: "👥"}
+  - id: meinung
+    titel: Seine Meinung sagen
+    icon: "💭"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Meiner Meinung nach …", fr: "À mon avis …", auch: ["A mon avis …", "À mon avis ...", "A mon avis ..."]}
+      - {de: "Ich finde, dass …", fr: "Je trouve que …", auch: ["Je trouve que ..."]}
+      - {de: "Ich bin einverstanden.", fr: "Je suis d'accord."}
+      - {de: "Ich bin nicht einverstanden.", fr: "Je ne suis pas d'accord."}
+      - {de: "Da hast du recht.", fr: "Tu as raison."}
+      - {de: "Da irrst du dich.", fr: "Tu as tort."}
+      - {de: "Das kommt darauf an.", fr: "Ça dépend.", auch: ["Ca depend.", "Ça dépend"]}
+      - {de: "Einerseits … andererseits …", fr: "D'un côté … de l'autre …", auch: ["D'un côté ... de l'autre ...", "D'un cote … de l'autre …"]}
+      - {de: "Ich bin überzeugt, dass …", fr: "Je suis convaincu que …", auch: ["Je suis convaincue que …", "Je suis convaincu que ..."]}
+      - {de: "Was denkst du darüber?", fr: "Qu'est-ce que tu en penses ?", auch: ["Qu'est-ce que tu en penses?", "Tu en penses quoi ?"]}
+  - id: umwelt
+    titel: Umwelt
+    icon: "🌍"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: die Umwelt, fr: l'environnement, emoji: "🌍"}
+      - {de: der Klimawandel, fr: le changement climatique, emoji: "🌡️"}
+      - {de: die Verschmutzung, fr: la pollution, emoji: "🏭"}
+      - {de: der Abfall, fr: les déchets, auch: [les dechets], emoji: "🗑️"}
+      - {de: recyceln, fr: recycler, emoji: "♻️"}
+      - {de: Energie sparen, fr: économiser l'énergie, auch: [economiser l'energie], emoji: "💡"}
+      - {de: die Sonnenenergie, fr: l'énergie solaire, auch: [l'energie solaire], emoji: "☀️"}
+      - {de: die Natur, fr: la nature, emoji: "🌲"}
+      - {de: schützen, fr: protéger, auch: [proteger]}
+      - {de: verschwenden, fr: gaspiller}
+      - {de: umweltfreundlich, fr: écologique, auch: [ecologique]}
+      - {de: der öffentliche Verkehr, fr: les transports en commun, emoji: "🚋"}
+  - id: medien
+    titel: Medien
+    icon: "📱"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: die Zeitung, fr: le journal, emoji: "📰"}
+      - {de: die Nachrichten, fr: les informations, auch: [les infos], emoji: "📺"}
+      - {de: die Sendung, fr: l'émission, auch: [l'emission]}
+      - {de: das Handy, fr: le portable, emoji: "📱"}
+      - {de: die sozialen Netzwerke, fr: les réseaux sociaux, auch: [les reseaux sociaux]}
+      - {de: der Bildschirm, fr: l'écran, auch: [l'ecran], emoji: "🖥️"}
+      - {de: herunterladen, fr: télécharger, auch: [telecharger], emoji: "⬇️"}
+      - {de: teilen, fr: partager}
+      - {de: der Artikel, fr: l'article}
+      - {de: die Falschmeldung, fr: la fausse information, auch: [la fake news]}
+      - {de: das Passwort, fr: le mot de passe, emoji: "🔒"}
+      - {de: die Werbung, fr: la publicité, auch: [la publicite, la pub]}
+  - id: gefuehle
+    titel: Gefühle
+    icon: "😊"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: glücklich, fr: heureux, auch: [heureuse], emoji: "😊"}
+      - {de: traurig, fr: triste, emoji: "😢"}
+      - {de: wütend, fr: en colère, auch: [en colere, fâché], emoji: "😠"}
+      - {de: enttäuscht, fr: déçu, auch: [déçue, decu], emoji: "😞"}
+      - {de: stolz, fr: fier, auch: [fière, fiere]}
+      - {de: nervös, fr: nerveux, auch: [nerveuse], emoji: "😬"}
+      - {de: überrascht, fr: surpris, auch: [surprise], emoji: "😮"}
+      - {de: Angst haben, fr: avoir peur, emoji: "😨"}
+      - {de: sich langweilen, fr: s'ennuyer, emoji: "🥱"}
+      - {de: sich freuen, fr: se réjouir, auch: [se rejouir]}
+      - {de: "Das macht mich traurig.", fr: "Ça me rend triste.", auch: ["Ca me rend triste."]}
+      - {de: "Ich mache mir Sorgen.", fr: "Je m'inquiète.", auch: ["Je m'inquiete."]}
+  - id: redewendungen
+    titel: Redewendungen
+    icon: "🗣️"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Schwein haben (Glück haben)", fr: "avoir de la chance", emoji: "🍀"}
+      - {de: "Es regnet in Strömen.", fr: "Il pleut des cordes.", emoji: "🌧️"}
+      - {de: "einen Frosch im Hals haben", fr: "avoir un chat dans la gorge", emoji: "🐱"}
+      - {de: "keine Lust haben", fr: "ne pas avoir envie"}
+      - {de: "Das ist nicht mein Ding.", fr: "Ce n'est pas mon truc."}
+      - {de: "Es ist kinderleicht.", fr: "C'est simple comme bonjour."}
+      - {de: "sehr früh aufstehen", fr: "se lever aux aurores", emoji: "🌅"}
+      - {de: "Nicht der Rede wert.", fr: "Il n'y a pas de quoi."}
+      - {de: "jemanden auf den Arm nehmen", fr: "faire marcher quelqu'un"}
+      - {de: "Mir ist es egal.", fr: "Ça m'est égal.", auch: ["Ca m'est egal."]}
+      - {de: "Ich habe die Nase voll.", fr: "J'en ai marre."}
+      - {de: "Es kostet ein Vermögen.", fr: "Ça coûte les yeux de la tête.", auch: ["Ca coute les yeux de la tete."], emoji: "💸"}
+  - id: conditionnel
+    titel: "Conditionnel – würde, könnte"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "vouloir – je (conditionnel)", antwort: voudrais, satz: "Je ___ un café, s'il vous plaît.", optionen: [voudrais, veux, voudrai, voulais]}
+      - {frage: "pouvoir – tu (conditionnel)", antwort: pourrais, satz: "Tu ___ m'aider ?", optionen: [pourrais, peux, pourras, pouvais]}
+      - {frage: "aimer – j' (conditionnel)", antwort: aimerais, satz: "J'___ vivre à la mer.", optionen: [aimerais, aime, aimerai, aimais]}
+      - {frage: "devoir – vous (conditionnel)", antwort: devriez, satz: "Vous ___ dormir plus.", optionen: [devriez, devez, devrez, deviez]}
+      - {frage: "être – ce (conditionnel)", antwort: serait, satz: "Ce ___ génial !", optionen: [serait, est, sera, était]}
+      - {frage: "avoir – nous (conditionnel)", antwort: aurions, satz: "Si nous avions de l'argent, nous ___ une maison.", optionen: [aurions, avons, aurons, avions]}
+      - {frage: "faire – ils (conditionnel)", antwort: feraient, satz: "Avec plus de temps, ils ___ du sport.", optionen: [feraient, font, feront, faisaient]}
+      - {frage: "aller – elle (conditionnel)", antwort: irait, satz: "Si elle pouvait, elle ___ au Canada.", optionen: [irait, va, ira, allait]}
+      - {frage: "savoir – tu (conditionnel)", antwort: saurais, satz: "Tu ___ où est la poste ?", optionen: [saurais, sais, sauras, savais]}
+  - id: imparfait-pc
+    titel: "Imparfait oder passé composé?"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "faire – il (Beschreibung früher)", antwort: faisait, satz: "Quand j'étais petit, il ___ toujours beau.", optionen: [faisait, a fait]}
+      - {frage: "sonner – le téléphone (plötzlich)", antwort: a sonné, auch: [a sonne], satz: "Je dormais quand le téléphone ___.", optionen: [a sonné, sonnait]}
+      - {frage: "jouer – nous (Gewohnheit)", antwort: jouions, satz: "Chaque été, nous ___ dans le jardin.", optionen: [jouions, avons joué]}
+      - {frage: "rencontrer – j' (einmaliges Ereignis)", antwort: ai rencontré, auch: [ai rencontre], satz: "Hier, j'___ mon ancien prof.", optionen: [ai rencontré, rencontrais]}
+      - {frage: "avoir – elle (Zustand)", antwort: avait, satz: "Elle ___ peur du noir quand elle était petite.", optionen: [avait, a eu]}
+      - {frage: "commencer – il (plötzlich)", antwort: a commencé, auch: [a commence], satz: "Nous marchions quand il ___ à pleuvoir.", optionen: [a commencé, commençait]}
+      - {frage: "habiter – ils (früher, Dauer)", antwort: habitaient, satz: "Avant, ils ___ à Genève.", optionen: [habitaient, ont habité]}
+      - {frage: "tomber – tu (einmaliges Ereignis)", antwort: es tombé, auch: [es tombée, es tombe], satz: "Tu ___ de vélo samedi ?", optionen: [es tombé, tombais]}
+      - {frage: "regarder – je (Hintergrund)", antwort: regardais, satz: "Je ___ la télé quand tu es arrivé.", optionen: [regardais, ai regardé]}
+      - {frage: "finir – le film (Abschluss)", antwort: a fini, satz: "Le film ___ à minuit.", optionen: [a fini, finissait]}
+  - id: relativpronomen
+    titel: "qui, que, où, dont"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "Relativpronomen – Subjekt (Person)", antwort: qui, satz: "C'est la fille ___ chante dans la chorale.", optionen: [qui, que, où, dont]}
+      - {frage: "Relativpronomen – Objekt", antwort: que, satz: "Le livre ___ je lis est passionnant.", optionen: [qui, que, où, dont]}
+      - {frage: "Relativpronomen – Ort", antwort: où, auch: [ou], satz: "La ville ___ j'habite est petite.", optionen: [qui, que, où, dont]}
+      - {frage: "Relativpronomen – parler de", antwort: dont, satz: "C'est le film ___ je t'ai parlé.", optionen: [qui, que, où, dont]}
+      - {frage: "Relativpronomen – Subjekt (Sache)", antwort: qui, satz: "Le bus ___ part à huit heures est plein.", optionen: [qui, que, où, dont]}
+      - {frage: "Relativpronomen – Zeit", antwort: où, auch: [ou], satz: "Le jour ___ je suis né, il neigeait.", optionen: [qui, que, où, dont]}
+      - {frage: "Relativpronomen – Objekt (Person)", antwort: que, satz: "La prof ___ nous aimons part à la retraite.", optionen: [qui, que, où, dont]}
+      - {frage: "Relativpronomen – avoir besoin de", antwort: dont, satz: "Voici l'outil ___ tu as besoin.", optionen: [qui, que, où, dont]}

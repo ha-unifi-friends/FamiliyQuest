@@ -1,0 +1,162 @@
+# Deutsch A2 – language course (own content, Family Quest, CC0)
+id: sprache-de-a2
+titel: "German A2 – Elementary"
+fach: deutsch
+stufe: "A2"
+sprache: de
+quellsprache: en
+version: 1
+quelle: Family Quest (eigene Inhalte, CC0)
+icon: "🇩🇪"
+beschreibung: "Get around in everyday life: shopping, travelling, weather, health, hobbies and talking about the past."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: shopping
+    titel: Going shopping
+    icon: "🛒"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: the shop, de: das Geschäft, emoji: "🏪"}
+      - {en: the supermarket, de: der Supermarkt, emoji: "🛒"}
+      - {en: the money, de: das Geld, emoji: "💶"}
+      - {en: the price, de: der Preis, emoji: "🏷️"}
+      - {en: the bag, de: die Tasche, emoji: "👜"}
+      - {en: the receipt, de: die Quittung, emoji: "🧾"}
+      - {en: to buy, de: kaufen}
+      - {en: to pay, de: bezahlen, emoji: "💳"}
+      - {en: to cost, de: kosten}
+      - {en: cheap, de: billig}
+      - {en: expensive, de: teuer}
+      - {en: "How much does it cost?", de: "Wie viel kostet das?"}
+  - id: travel
+    titel: Travel and transport
+    icon: "🚆"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: the train, de: der Zug, emoji: "🚆"}
+      - {en: the bus, de: der Bus, emoji: "🚌"}
+      - {en: the bicycle, de: das Velo, auch: [das Fahrrad], emoji: "🚲"}
+      - {en: the plane, de: das Flugzeug, emoji: "✈️"}
+      - {en: the station, de: der Bahnhof, emoji: "🚉"}
+      - {en: the ticket, de: das Billett, auch: [die Fahrkarte, das Ticket], emoji: "🎫"}
+      - {en: the suitcase, de: der Koffer, emoji: "🧳"}
+      - {en: the holiday, de: die Ferien, auch: [der Urlaub], emoji: "🏖️"}
+      - {en: the street, de: die Strasse, auch: [die Straße], emoji: "🛣️"}
+      - {en: to travel, de: reisen}
+      - {en: to depart / to leave, de: abfahren}
+      - {en: to arrive, de: ankommen}
+  - id: weather
+    titel: Weather and seasons
+    icon: "🌦️"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: the weather, de: das Wetter}
+      - {en: the sun, de: die Sonne, emoji: "☀️"}
+      - {en: the rain, de: der Regen, emoji: "🌧️"}
+      - {en: the snow, de: der Schnee, emoji: "❄️"}
+      - {en: the wind, de: der Wind, emoji: "🌬️"}
+      - {en: the spring, de: der Frühling, emoji: "🌷"}
+      - {en: the summer, de: der Sommer, emoji: "🌞"}
+      - {en: the autumn, de: der Herbst, emoji: "🍂"}
+      - {en: the winter, de: der Winter, emoji: "⛄"}
+      - {en: warm, de: warm}
+      - {en: cold, de: kalt, emoji: "🥶"}
+      - {en: "It's raining.", de: Es regnet.}
+  - id: body-health
+    titel: Body and health
+    icon: "🩺"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: the head, de: der Kopf, emoji: "🙂"}
+      - {en: the arm, de: der Arm, emoji: "💪"}
+      - {en: the leg, de: das Bein, emoji: "🦵"}
+      - {en: the hand, de: die Hand, emoji: "✋"}
+      - {en: the foot, de: der Fuss, auch: [der Fuß], emoji: "🦶"}
+      - {en: the stomach / the belly, de: der Bauch}
+      - {en: the tooth, de: der Zahn, emoji: "🦷"}
+      - {en: the doctor, de: der Arzt, emoji: "🧑‍⚕️"}
+      - {en: the medicine, de: das Medikament, emoji: "💊"}
+      - {en: ill / sick, de: krank, emoji: "🤒"}
+      - {en: healthy, de: gesund}
+      - {en: I have a headache., de: Ich habe Kopfschmerzen.}
+  - id: hobbies
+    titel: Hobbies and free time
+    icon: "⚽"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: to play football, de: Fussball spielen, auch: [Fußball spielen], emoji: "⚽"}
+      - {en: to swim, de: schwimmen, emoji: "🏊"}
+      - {en: to dance, de: tanzen, emoji: "💃"}
+      - {en: to sing, de: singen, emoji: "🎤"}
+      - {en: to cook, de: kochen, emoji: "🍳"}
+      - {en: to draw, de: zeichnen, emoji: "✏️"}
+      - {en: to go hiking, de: wandern, emoji: "🥾"}
+      - {en: to take photos, de: fotografieren, emoji: "📷"}
+      - {en: the game, de: das Spiel, emoji: "🎲"}
+      - {en: the music, de: die Musik, emoji: "🎵"}
+      - {en: the free time, de: die Freizeit}
+      - {en: the guitar, de: die Gitarre, emoji: "🎸"}
+  - id: home
+    titel: At home
+    icon: "🏠"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: the flat / the apartment, de: die Wohnung}
+      - {en: the kitchen, de: die Küche, emoji: "🍳"}
+      - {en: the bedroom, de: das Schlafzimmer, emoji: "🛏️"}
+      - {en: the living room, de: das Wohnzimmer, emoji: "🛋️"}
+      - {en: the bathroom, de: das Badezimmer, emoji: "🛁"}
+      - {en: the window, de: das Fenster, emoji: "🪟"}
+      - {en: the door, de: die Tür, emoji: "🚪"}
+      - {en: the chair, de: der Stuhl, emoji: "🪑"}
+      - {en: the cupboard, de: der Schrank}
+      - {en: the fridge, de: der Kühlschrank}
+      - {en: to clean up / to tidy, de: aufräumen, emoji: "🧹"}
+      - {en: to live (in a place), de: wohnen}
+  - id: everyday
+    titel: Everyday phrases
+    icon: "💬"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {en: "Excuse me, where is the station?", de: "Entschuldigung, wo ist der Bahnhof?"}
+      - {en: "I would like a coffee, please.", de: "Ich hätte gern einen Kaffee, bitte."}
+      - {en: "Can I pay by card?", de: "Kann ich mit Karte bezahlen?"}
+      - {en: "What time is it?", de: "Wie spät ist es?"}
+      - {en: The train is late., de: Der Zug hat Verspätung.}
+      - {en: "I don't feel well.", de: Mir geht es nicht gut.}
+      - {en: "What are you doing at the weekend?", de: "Was machst du am Wochenende?"}
+      - {en: "Shall we meet tomorrow?", de: "Treffen wir uns morgen?"}
+      - {en: "That sounds good!", de: "Das klingt gut!"}
+      - {en: "Have a nice day!", de: "Einen schönen Tag noch!"}
+  - id: perfekt
+    titel: "Perfekt – talking about the past"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "Perfekt – ich (spielen)", antwort: habe, satz: "Ich ___ gestern Fussball gespielt.", optionen: [habe, bin, hat, ist]}
+      - {frage: "Perfekt – wir (fahren)", antwort: sind, satz: "Wir ___ mit dem Zug gefahren.", optionen: [haben, sind, hat, ist]}
+      - {frage: "Perfekt – sie (kommen)", antwort: ist, satz: "Sie ___ spät nach Hause gekommen.", optionen: [hat, ist, haben, sind]}
+      - {frage: "Perfekt – du (essen)", antwort: hast, satz: "___ du schon gegessen?", optionen: [hast, bist, hat, ist]}
+      - {frage: "Partizip – kaufen", antwort: gekauft, satz: "Ich habe ein Buch ___.", optionen: [gekauft, gekaufen, kaufte, kauft]}
+      - {frage: "Partizip – trinken", antwort: getrunken, satz: "Er hat viel Wasser ___.", optionen: [getrinkt, getrunken, trank, getrankt]}
+      - {frage: "Partizip – schreiben", antwort: geschrieben, satz: "Hast du die E-Mail ___?", optionen: [geschreibt, geschrieben, schrieb, geschrieb]}
+      - {frage: "Partizip – sehen", antwort: gesehen, satz: "Wir haben einen Film ___.", optionen: [gesieht, gesehen, sah, gesahen]}
+      - {frage: "Partizip – gehen", antwort: gegangen, satz: "Sie ist ins Kino ___.", optionen: [gegeht, gegangen, ging, gegingen]}
+      - {frage: "Partizip – machen", antwort: gemacht, satz: "Habt ihr die Hausaufgaben ___?", optionen: [gemacht, gemachen, machte, macht]}
+  - id: modal-verbs
+    titel: "Modal verbs – können, müssen, wollen"
+    icon: "📝"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "können – ich", antwort: kann, satz: "Ich ___ gut schwimmen.", optionen: [kann, kannst, können, könnt]}
+      - {frage: "können – du", antwort: kannst, satz: "___ du mir helfen?", optionen: [kann, kannst, können, könnt]}
+      - {frage: "müssen – er", antwort: muss, satz: "Er ___ heute arbeiten.", optionen: [muss, musst, müssen, müsst]}
+      - {frage: "müssen – wir", antwort: müssen, satz: "Wir ___ jetzt gehen.", optionen: [muss, musst, müssen, müsst]}
+      - {frage: "wollen – ich", antwort: will, satz: "Ich ___ ein Eis essen.", optionen: [will, willst, wollen, wollt]}
+      - {frage: "wollen – ihr", antwort: wollt, satz: "___ ihr mitkommen?", optionen: [will, willst, wollen, wollt]}
+      - {frage: "dürfen – du", antwort: darfst, satz: "Du ___ hier nicht rauchen.", optionen: [darf, darfst, dürfen, dürft]}
+      - {frage: "möchten – sie (she)", antwort: möchte, satz: "Sie ___ einen Tee trinken.", optionen: [möchte, möchtest, möchten, möchtet]}
+      - {frage: "sollen – ich", antwort: soll, satz: "___ ich das Fenster öffnen?", optionen: [soll, sollst, sollen, sollt]}
+      - {frage: "können – sie (they)", antwort: können, satz: "Die Kinder ___ schon lesen.", optionen: [kann, kannst, können, könnt]}

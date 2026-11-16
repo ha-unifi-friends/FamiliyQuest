@@ -1,0 +1,155 @@
+# Englisch B1 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
+id: "sprache-en-b1"
+titel: "Englisch B1 – Fortgeschritten"
+fach: "englisch"
+stufe: "B1"
+sprache: "en"
+quellsprache: "de"
+version: 1
+quelle: "Family Quest (eigene Inhalte, CC0)"
+icon: "🇬🇧"
+beschreibung: "Englisch für Schule, Beruf und Gespräche: Meinungen äussern, Gefühle beschreiben, Present Perfect, If-Sätze und Redewendungen."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: work-school
+    titel: "Arbeit und Ausbildung"
+    icon: "💼"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "die Bewerbung", en: "the application", auch: ["application", "the job application", "job application"], emoji: "📄"}
+      - {de: "das Vorstellungsgespräch", en: "the job interview", auch: ["job interview", "the interview", "interview"], emoji: "🤝"}
+      - {de: "der Lebenslauf", en: "the CV", auch: ["CV", "the résumé", "résumé", "the resume", "resume"], emoji: "📃"}
+      - {de: "die Erfahrung", en: "the experience", auch: ["experience"]}
+      - {de: "der Kollege / die Kollegin", en: "the colleague", auch: ["colleague"], emoji: "👥"}
+      - {de: "der Chef / die Chefin", en: "the boss", auch: ["boss", "the manager", "manager"], emoji: "👔"}
+      - {de: "das Gehalt", en: "the salary", auch: ["salary", "the pay", "pay"], emoji: "💶"}
+      - {de: "die Prüfung", en: "the exam", auch: ["exam", "the examination", "examination"], emoji: "📝"}
+      - {de: "die Note", en: "the mark", auch: ["mark", "the grade", "grade"]}
+      - {de: "die Frist", en: "the deadline", auch: ["deadline"], emoji: "⏳"}
+      - {de: "die Lehre", en: "the apprenticeship", auch: ["apprenticeship"], emoji: "🛠️"}
+  - id: opinions
+    titel: "Meinungen äussern"
+    icon: "🗣️"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Meiner Meinung nach …", en: "In my opinion …", auch: ["In my opinion", "In my view …", "In my view"]}
+      - {de: "Ich finde, dass …", en: "I think that …", auch: ["I think that", "I think …", "I think"]}
+      - {de: "Da bin ich ganz deiner Meinung.", en: "I totally agree with you.", auch: ["I completely agree with you.", "I fully agree with you.", "I totally agree."]}
+      - {de: "Da bin ich nicht sicher.", en: "I'm not so sure about that.", auch: ["I'm not sure about that.", "I am not so sure about that.", "I am not sure about that."]}
+      - {de: "Das sehe ich anders.", en: "I see it differently.", auch: ["I see things differently.", "I don't see it that way."]}
+      - {de: "Einerseits … andererseits …", en: "On the one hand … on the other hand …", auch: ["On the one hand, on the other hand", "on the one hand … on the other hand"]}
+      - {de: "Das ist ein guter Punkt.", en: "That's a good point.", auch: ["That is a good point."]}
+      - {de: "Was hältst du davon?", en: "What do you think about it?", auch: ["What do you think of it?", "What do you think?"]}
+      - {de: "Es kommt darauf an.", en: "It depends.", auch: ["That depends."]}
+      - {de: "Ehrlich gesagt …", en: "To be honest …", auch: ["To be honest", "Honestly …", "Honestly"]}
+  - id: environment
+    titel: "Umwelt und Natur"
+    icon: "🌍"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "die Umwelt", en: "the environment", auch: ["environment"], emoji: "🌍"}
+      - {de: "der Klimawandel", en: "climate change", auch: ["the climate change"], emoji: "🌡️"}
+      - {de: "die Umweltverschmutzung", en: "pollution", auch: ["the pollution"], emoji: "🏭"}
+      - {de: "recyceln", en: "to recycle", auch: ["recycle"], emoji: "♻️"}
+      - {de: "der Abfall", en: "the rubbish", auch: ["rubbish", "the waste", "waste", "the trash", "trash", "the garbage", "garbage"], emoji: "🗑️"}
+      - {de: "die Energie", en: "the energy", auch: ["energy"], emoji: "⚡"}
+      - {de: "erneuerbar", en: "renewable", emoji: "🌬️"}
+      - {de: "sparen", en: "to save", auch: ["save"], emoji: "💡"}
+      - {de: "der Wald", en: "the forest", auch: ["forest", "the woods", "woods"], emoji: "🌲"}
+      - {de: "die Tierart", en: "the species", auch: ["species"], emoji: "🐾"}
+      - {de: "schützen", en: "to protect", auch: ["protect"], emoji: "🛡️"}
+  - id: media
+    titel: "Medien und Technik"
+    icon: "📱"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "die Nachrichten", en: "the news", auch: ["news"], emoji: "📰"}
+      - {de: "die Zeitung", en: "the newspaper", auch: ["newspaper"], emoji: "🗞️"}
+      - {de: "die Werbung", en: "the advert", auch: ["advert", "the ad", "ad", "the advertisement", "advertisement", "the commercial", "commercial"], emoji: "📺"}
+      - {de: "die Sendung", en: "the programme", auch: ["programme", "the program", "program", "the show", "show"], emoji: "📺"}
+      - {de: "herunterladen", en: "to download", auch: ["download"], emoji: "⬇️"}
+      - {de: "hochladen", en: "to upload", auch: ["upload"], emoji: "⬆️"}
+      - {de: "das Passwort", en: "the password", auch: ["password"], emoji: "🔑"}
+      - {de: "die sozialen Medien", en: "social media", auch: ["the social media"], emoji: "📱"}
+      - {de: "der Bildschirm", en: "the screen", auch: ["screen"], emoji: "🖥️"}
+      - {de: "teilen", en: "to share", auch: ["share"], emoji: "🔗"}
+      - {de: "das Abonnement", en: "the subscription", auch: ["subscription"], emoji: "🔔"}
+  - id: feelings
+    titel: "Gefühle"
+    icon: "😊"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "stolz", en: "proud", emoji: "🦁"}
+      - {de: "enttäuscht", en: "disappointed", emoji: "😞"}
+      - {de: "aufgeregt (freudig)", en: "excited", emoji: "🤩"}
+      - {de: "nervös", en: "nervous", emoji: "😬"}
+      - {de: "erleichtert", en: "relieved", emoji: "😌"}
+      - {de: "wütend", en: "angry", emoji: "😠"}
+      - {de: "verlegen", en: "embarrassed", emoji: "😳"}
+      - {de: "einsam", en: "lonely", emoji: "🥀"}
+      - {de: "neidisch", en: "jealous", auch: ["envious"], emoji: "😒"}
+      - {de: "dankbar", en: "grateful", auch: ["thankful"], emoji: "🙏"}
+      - {de: "verwirrt", en: "confused", emoji: "😕"}
+      - {de: "gelangweilt", en: "bored", emoji: "🥱"}
+  - id: present-perfect
+    titel: "Present Perfect"
+    icon: "✅"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "I – schon gemacht", antwort: "have", satz: "I ___ already finished my homework.", optionen: ["have", "has", "had", "am"]}
+      - {frage: "she – noch nie", antwort: "has", satz: "She ___ never been to Australia.", optionen: ["have", "has", "had", "is"]}
+      - {frage: "Partizip – see", antwort: "seen", satz: "Have you ever ___ a whale?", optionen: ["seen", "saw", "see", "seeing"]}
+      - {frage: "Partizip – write", antwort: "written", satz: "He has ___ three emails today.", optionen: ["written", "wrote", "writed", "write"]}
+      - {frage: "Partizip – lose", antwort: "lost", satz: "Oh no! I've ___ my keys.", optionen: ["lost", "losed", "lose", "losing"]}
+      - {frage: "seit (Zeitpunkt)", antwort: "since", satz: "We have lived here ___ 2019.", optionen: ["since", "for", "ago", "from"]}
+      - {frage: "seit (Zeitdauer)", antwort: "for", satz: "They have known each other ___ ten years.", optionen: ["since", "for", "ago", "during"]}
+      - {frage: "noch nicht", antwort: "yet", satz: "Has the film started ___?", optionen: ["yet", "already", "still", "ever"]}
+      - {frage: "je / jemals", antwort: "ever", satz: "Have you ___ eaten sushi?", optionen: ["ever", "never", "yet", "already"]}
+      - {frage: "gerade eben", antwort: "just", satz: "I have ___ arrived at the station.", optionen: ["just", "yet", "ever", "since"]}
+  - id: conditionals
+    titel: "If-Sätze (Bedingungen)"
+    icon: "🔀"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "Typ 1 – Wenn es regnet …", antwort: "rains", satz: "If it ___ tomorrow, we will stay at home.", optionen: ["rains", "will rain", "rained", "would rain"]}
+      - {frage: "Typ 1 – Folge", antwort: "will", satz: "If you study hard, you ___ pass the exam.", optionen: ["will", "would", "are", "did"]}
+      - {frage: "Typ 1 – Folge (verneint)", antwort: "won't", satz: "If we don't hurry, we ___ catch the bus.", optionen: ["won't", "wouldn't", "don't", "didn't"]}
+      - {frage: "Typ 2 – Wenn ich … hätte", antwort: "had", satz: "If I ___ more money, I would travel the world.", optionen: ["had", "have", "will have", "would have"]}
+      - {frage: "Typ 2 – Folge", antwort: "would", satz: "If she lived closer, she ___ visit us more often.", optionen: ["would", "will", "does", "did"]}
+      - {frage: "Typ 2 – an deiner Stelle", antwort: "were", satz: "If I ___ you, I would ask the teacher.", optionen: ["were", "am", "will be", "be"]}
+      - {frage: "Typ 2 – könnte", antwort: "could", satz: "If I could fly, I ___ go anywhere.", optionen: ["could", "can", "will", "did"]}
+      - {frage: "Typ 0 – Tatsache", antwort: "boils", satz: "If you heat water to 100 degrees, it ___.", optionen: ["boils", "boiled", "would boil", "boiling"]}
+      - {frage: "unless – ausser wenn", antwort: "unless", satz: "You won't get better ___ you rest.", optionen: ["unless", "if", "when", "because"]}
+  - id: phrasal-verbs
+    titel: "Phrasal Verbs"
+    icon: "🧩"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "aufgeben", en: "to give up", auch: ["give up"]}
+      - {de: "herausfinden", en: "to find out", auch: ["find out"]}
+      - {de: "sich um jemanden kümmern", en: "to look after someone", auch: ["look after someone", "to look after", "look after", "to take care of someone", "take care of someone"]}
+      - {de: "sich auf etwas freuen", en: "to look forward to something", auch: ["look forward to something", "to look forward to", "look forward to"]}
+      - {de: "aufwachsen", en: "to grow up", auch: ["grow up"]}
+      - {de: "absagen", en: "to call off", auch: ["call off", "to cancel", "cancel"]}
+      - {de: "sich mit jemandem gut verstehen", en: "to get on with someone", auch: ["get on with someone", "to get along with someone", "get along with someone", "to get on with", "get on with"]}
+      - {de: "etwas nachschlagen", en: "to look something up", auch: ["look something up", "to look up", "look up"]}
+      - {de: "anziehen (Kleidung)", en: "to put on", auch: ["put on"]}
+      - {de: "aufräumen", en: "to tidy up", auch: ["tidy up", "to clean up", "clean up"]}
+      - {de: "ausgehen (zu Ende gehen)", en: "to run out", auch: ["run out", "to run out of", "run out of"]}
+  - id: idioms
+    titel: "Redewendungen"
+    icon: "💡"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Das ist ein Kinderspiel.", en: "It's a piece of cake.", auch: ["It is a piece of cake.", "It's a piece of cake"]}
+      - {de: "Toi, toi, toi! / Viel Glück!", en: "Break a leg!", auch: ["Break a leg", "Good luck!", "Good luck"]}
+      - {de: "Ich bin völlig fertig.", en: "I'm exhausted.", auch: ["I am exhausted.", "I'm worn out.", "I am worn out."]}
+      - {de: "Es regnet in Strömen.", en: "It's pouring with rain.", auch: ["It's pouring.", "It is pouring with rain.", "It's raining cats and dogs.", "It is raining cats and dogs."]}
+      - {de: "Das ist nicht mein Ding.", en: "It's not my cup of tea.", auch: ["It is not my cup of tea.", "It's not my thing.", "It is not my thing."]}
+      - {de: "Ich drücke dir die Daumen.", en: "I'll keep my fingers crossed for you.", auch: ["I'll keep my fingers crossed.", "Fingers crossed!", "Fingers crossed"]}
+      - {de: "Wir sitzen im selben Boot.", en: "We're in the same boat.", auch: ["We are in the same boat."]}
+      - {de: "Lass dir Zeit.", en: "Take your time.", auch: ["Take your time"]}
+      - {de: "Besser spät als nie.", en: "Better late than never.", auch: ["Better late than never"]}
+      - {de: "Das ergibt Sinn.", en: "That makes sense.", auch: ["That makes sense"]}

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" data-version="__VERSION__">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b5bd6">
+<title>Family Quest Dashboard</title>
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="shared/base.css?v=__VERSION__">
+<link rel="stylesheet" href="dashboard.css?v=__VERSION__">
+<script>
+  // kiosk: ?lang=fr-FR fixes the language of this screen (no language picker on a wall display)
+  (() => { const l = new URLSearchParams(location.search).get("lang"); if (l) try { localStorage.setItem("familyquest.lang", JSON.stringify(l)); } catch {} })();
+</script>
+<script src="shared/i18n.js?v=__VERSION__"></script>
+</head>
+<body class="kiosk">
+<div id="app"></div>
+<noscript>Family Quest needs JavaScript.</noscript>
+<script src="shared/ui.js?v=__VERSION__"></script>
+<script src="shared/avatar.js?v=__VERSION__"></script>
+<script src="dashboard.js?v=__VERSION__"></script>
+</body>
+</html>

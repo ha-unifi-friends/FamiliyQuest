@@ -1,0 +1,3729 @@
+{
+ "_about": "Verbotene Wörter (verboten.py): the built-in German word cards – a word to explain and 5 words that must not be said. Levels: easy (younger children), normal.",
+ "levels": {
+  "easy": [
+   {
+    "word": "Hund",
+    "taboo": [
+     "bellen",
+     "Katze",
+     "Haustier",
+     "Leine",
+     "Knochen"
+    ]
+   },
+   {
+    "word": "Katze",
+    "taboo": [
+     "miauen",
+     "Maus",
+     "Haustier",
+     "Hund",
+     "Schnurrhaare"
+    ]
+   },
+   {
+    "word": "Elefant",
+    "taboo": [
+     "Rüssel",
+     "groß",
+     "grau",
+     "Afrika",
+     "Zoo"
+    ]
+   },
+   {
+    "word": "Giraffe",
+    "taboo": [
+     "Hals",
+     "lang",
+     "Flecken",
+     "Afrika",
+     "Zoo"
+    ]
+   },
+   {
+    "word": "Löwe",
+    "taboo": [
+     "König",
+     "Mähne",
+     "Raubkatze",
+     "brüllen",
+     "Afrika"
+    ]
+   },
+   {
+    "word": "Pinguin",
+    "taboo": [
+     "Eis",
+     "Vogel",
+     "schwarz",
+     "weiß",
+     "watscheln"
+    ]
+   },
+   {
+    "word": "Frosch",
+    "taboo": [
+     "quaken",
+     "grün",
+     "Teich",
+     "springen",
+     "Prinz"
+    ]
+   },
+   {
+    "word": "Biene",
+    "taboo": [
+     "Honig",
+     "summen",
+     "stechen",
+     "gelb",
+     "Blume"
+    ]
+   },
+   {
+    "word": "Schmetterling",
+    "taboo": [
+     "Flügel",
+     "bunt",
+     "Raupe",
+     "fliegen",
+     "Blume"
+    ]
+   },
+   {
+    "word": "Schnecke",
+    "taboo": [
+     "langsam",
+     "Haus",
+     "schleimig",
+     "Salat",
+     "kriechen"
+    ]
+   },
+   {
+    "word": "Fisch",
+    "taboo": [
+     "Wasser",
+     "schwimmen",
+     "Flosse",
+     "Aquarium",
+     "Meer"
+    ]
+   },
+   {
+    "word": "Pferd",
+    "taboo": [
+     "reiten",
+     "Sattel",
+     "wiehern",
+     "Stall",
+     "Hufe"
+    ]
+   },
+   {
+    "word": "Kuh",
+    "taboo": [
+     "Milch",
+     "muh",
+     "Bauernhof",
+     "Weide",
+     "Kalb"
+    ]
+   },
+   {
+    "word": "Schwein",
+    "taboo": [
+     "rosa",
+     "grunzen",
+     "Ringelschwanz",
+     "Bauernhof",
+     "Schlamm"
+    ]
+   },
+   {
+    "word": "Hase",
+    "taboo": [
+     "Ohren",
+     "Ostern",
+     "Karotte",
+     "hoppeln",
+     "Kaninchen"
+    ]
+   },
+   {
+    "word": "Maus",
+    "taboo": [
+     "Käse",
+     "klein",
+     "Katze",
+     "piepsen",
+     "Computer"
+    ]
+   },
+   {
+    "word": "Eule",
+    "taboo": [
+     "Nacht",
+     "Vogel",
+     "Uhu",
+     "Augen",
+     "Federn"
+    ]
+   },
+   {
+    "word": "Affe",
+    "taboo": [
+     "Banane",
+     "klettern",
+     "Baum",
+     "Zoo",
+     "Dschungel"
+    ]
+   },
+   {
+    "word": "Krokodil",
+    "taboo": [
+     "Zähne",
+     "Fluss",
+     "grün",
+     "Reptil",
+     "gefährlich"
+    ]
+   },
+   {
+    "word": "Schlange",
+    "taboo": [
+     "zischen",
+     "lang",
+     "giftig",
+     "kriechen",
+     "Reptil"
+    ]
+   },
+   {
+    "word": "Hai",
+    "taboo": [
+     "Meer",
+     "Zähne",
+     "Flosse",
+     "gefährlich",
+     "Fisch"
+    ]
+   },
+   {
+    "word": "Igel",
+    "taboo": [
+     "Stacheln",
+     "Herbst",
+     "Laub",
+     "rollen",
+     "klein"
+    ]
+   },
+   {
+    "word": "Bär",
+    "taboo": [
+     "Honig",
+     "Teddy",
+     "braun",
+     "Wald",
+     "Höhle"
+    ]
+   },
+   {
+    "word": "Hahn",
+    "taboo": [
+     "Kikeriki",
+     "Huhn",
+     "Morgen",
+     "Bauernhof",
+     "Kamm"
+    ]
+   },
+   {
+    "word": "Ente",
+    "taboo": [
+     "quaken",
+     "Teich",
+     "Schnabel",
+     "Vogel",
+     "schwimmen"
+    ]
+   },
+   {
+    "word": "Marienkäfer",
+    "taboo": [
+     "Punkte",
+     "rot",
+     "Glück",
+     "Käfer",
+     "krabbeln"
+    ]
+   },
+   {
+    "word": "Spinne",
+    "taboo": [
+     "Netz",
+     "acht",
+     "Beine",
+     "krabbeln",
+     "Angst"
+    ]
+   },
+   {
+    "word": "Hamster",
+    "taboo": [
+     "Käfig",
+     "Laufrad",
+     "Nager",
+     "klein",
+     "Haustier"
+    ]
+   },
+   {
+    "word": "Papagei",
+    "taboo": [
+     "Vogel",
+     "bunt",
+     "sprechen",
+     "nachplappern",
+     "Federn"
+    ]
+   },
+   {
+    "word": "Kamel",
+    "taboo": [
+     "Wüste",
+     "Höcker",
+     "Durst",
+     "Dromedar",
+     "reiten"
+    ]
+   },
+   {
+    "word": "Zebra",
+    "taboo": [
+     "Streifen",
+     "schwarz",
+     "weiß",
+     "Pferd",
+     "Afrika"
+    ]
+   },
+   {
+    "word": "Ameise",
+    "taboo": [
+     "klein",
+     "Haufen",
+     "krabbeln",
+     "Insekt",
+     "fleißig"
+    ]
+   },
+   {
+    "word": "Apfel",
+    "taboo": [
+     "Baum",
+     "rot",
+     "Obst",
+     "Birne",
+     "Kerngehäuse"
+    ]
+   },
+   {
+    "word": "Banane",
+    "taboo": [
+     "gelb",
+     "krumm",
+     "Affe",
+     "Obst",
+     "schälen"
+    ]
+   },
+   {
+    "word": "Erdbeere",
+    "taboo": [
+     "rot",
+     "Sommer",
+     "Obst",
+     "Beere",
+     "Marmelade"
+    ]
+   },
+   {
+    "word": "Pizza",
+    "taboo": [
+     "Italien",
+     "Teig",
+     "Käse",
+     "Tomate",
+     "Ofen"
+    ]
+   },
+   {
+    "word": "Spaghetti",
+    "taboo": [
+     "Nudeln",
+     "Tomatensauce",
+     "Italien",
+     "lang",
+     "Gabel"
+    ]
+   },
+   {
+    "word": "Glace",
+    "taboo": [
+     "Eis",
+     "kalt",
+     "Waffel",
+     "Kugel",
+     "schlecken"
+    ]
+   },
+   {
+    "word": "Schokolade",
+    "taboo": [
+     "braun",
+     "süß",
+     "Kakao",
+     "Tafel",
+     "naschen"
+    ]
+   },
+   {
+    "word": "Kuchen",
+    "taboo": [
+     "Geburtstag",
+     "backen",
+     "Torte",
+     "süß",
+     "Stück"
+    ]
+   },
+   {
+    "word": "Brot",
+    "taboo": [
+     "Bäcker",
+     "backen",
+     "Scheibe",
+     "Butter",
+     "Mehl"
+    ]
+   },
+   {
+    "word": "Käse",
+    "taboo": [
+     "Löcher",
+     "Milch",
+     "gelb",
+     "Maus",
+     "Fondue"
+    ]
+   },
+   {
+    "word": "Ei",
+    "taboo": [
+     "Huhn",
+     "Ostern",
+     "Schale",
+     "Dotter",
+     "kochen"
+    ]
+   },
+   {
+    "word": "Karotte",
+    "taboo": [
+     "orange",
+     "Gemüse",
+     "Hase",
+     "Rübli",
+     "gesund"
+    ]
+   },
+   {
+    "word": "Milch",
+    "taboo": [
+     "Kuh",
+     "weiß",
+     "trinken",
+     "Glas",
+     "Kakao"
+    ]
+   },
+   {
+    "word": "Popcorn",
+    "taboo": [
+     "Kino",
+     "Mais",
+     "knallen",
+     "salzig",
+     "süß"
+    ]
+   },
+   {
+    "word": "Honig",
+    "taboo": [
+     "Biene",
+     "süß",
+     "gelb",
+     "klebrig",
+     "Brot"
+    ]
+   },
+   {
+    "word": "Tomate",
+    "taboo": [
+     "rot",
+     "Gemüse",
+     "Salat",
+     "Ketchup",
+     "Sauce"
+    ]
+   },
+   {
+    "word": "Zitrone",
+    "taboo": [
+     "sauer",
+     "gelb",
+     "Frucht",
+     "Saft",
+     "Limonade"
+    ]
+   },
+   {
+    "word": "Wassermelone",
+    "taboo": [
+     "grün",
+     "rot",
+     "Kerne",
+     "Sommer",
+     "groß"
+    ]
+   },
+   {
+    "word": "Ball",
+    "taboo": [
+     "rund",
+     "spielen",
+     "Fußball",
+     "werfen",
+     "kicken"
+    ]
+   },
+   {
+    "word": "Puppe",
+    "taboo": [
+     "spielen",
+     "Spielzeug",
+     "Haare",
+     "Kleider",
+     "Baby"
+    ]
+   },
+   {
+    "word": "Teddybär",
+    "taboo": [
+     "kuscheln",
+     "Stofftier",
+     "Bär",
+     "Bett",
+     "weich"
+    ]
+   },
+   {
+    "word": "Bett",
+    "taboo": [
+     "schlafen",
+     "Kissen",
+     "Decke",
+     "Nacht",
+     "liegen"
+    ]
+   },
+   {
+    "word": "Stuhl",
+    "taboo": [
+     "sitzen",
+     "Tisch",
+     "Beine",
+     "Lehne",
+     "Möbel"
+    ]
+   },
+   {
+    "word": "Tisch",
+    "taboo": [
+     "essen",
+     "Stuhl",
+     "Beine",
+     "Platte",
+     "Möbel"
+    ]
+   },
+   {
+    "word": "Lampe",
+    "taboo": [
+     "Licht",
+     "hell",
+     "Glühbirne",
+     "Strom",
+     "Schalter"
+    ]
+   },
+   {
+    "word": "Fernseher",
+    "taboo": [
+     "schauen",
+     "Film",
+     "Bildschirm",
+     "Programm",
+     "Fernbedienung"
+    ]
+   },
+   {
+    "word": "Telefon",
+    "taboo": [
+     "anrufen",
+     "Handy",
+     "sprechen",
+     "klingeln",
+     "Nummer"
+    ]
+   },
+   {
+    "word": "Uhr",
+    "taboo": [
+     "Zeit",
+     "Zeiger",
+     "ticken",
+     "Stunde",
+     "Armband"
+    ]
+   },
+   {
+    "word": "Schlüssel",
+    "taboo": [
+     "Schloss",
+     "Tür",
+     "aufschließen",
+     "Bund",
+     "verlieren"
+    ]
+   },
+   {
+    "word": "Tür",
+    "taboo": [
+     "öffnen",
+     "schließen",
+     "Haus",
+     "Klinke",
+     "Schlüssel"
+    ]
+   },
+   {
+    "word": "Fenster",
+    "taboo": [
+     "Glas",
+     "Aussicht",
+     "öffnen",
+     "Haus",
+     "Vorhang"
+    ]
+   },
+   {
+    "word": "Zahnbürste",
+    "taboo": [
+     "Zähne",
+     "putzen",
+     "Zahnpasta",
+     "Bad",
+     "morgens"
+    ]
+   },
+   {
+    "word": "Seife",
+    "taboo": [
+     "waschen",
+     "Hände",
+     "Schaum",
+     "sauber",
+     "Bad"
+    ]
+   },
+   {
+    "word": "Handtuch",
+    "taboo": [
+     "abtrocknen",
+     "Bad",
+     "nass",
+     "Dusche",
+     "Stoff"
+    ]
+   },
+   {
+    "word": "Regenschirm",
+    "taboo": [
+     "Regen",
+     "nass",
+     "aufspannen",
+     "Wetter",
+     "tragen"
+    ]
+   },
+   {
+    "word": "Schuh",
+    "taboo": [
+     "Fuß",
+     "laufen",
+     "Schnürsenkel",
+     "Paar",
+     "Socke"
+    ]
+   },
+   {
+    "word": "Mütze",
+    "taboo": [
+     "Kopf",
+     "Winter",
+     "warm",
+     "Wolle",
+     "Hut"
+    ]
+   },
+   {
+    "word": "Brille",
+    "taboo": [
+     "Augen",
+     "sehen",
+     "Gläser",
+     "Nase",
+     "Optiker"
+    ]
+   },
+   {
+    "word": "Rucksack",
+    "taboo": [
+     "Schule",
+     "tragen",
+     "Rücken",
+     "Tasche",
+     "packen"
+    ]
+   },
+   {
+    "word": "Schere",
+    "taboo": [
+     "schneiden",
+     "Papier",
+     "basteln",
+     "scharf",
+     "Klinge"
+    ]
+   },
+   {
+    "word": "Bleistift",
+    "taboo": [
+     "schreiben",
+     "malen",
+     "Spitzer",
+     "Radiergummi",
+     "Holz"
+    ]
+   },
+   {
+    "word": "Buch",
+    "taboo": [
+     "lesen",
+     "Seiten",
+     "Geschichte",
+     "Bibliothek",
+     "Autor"
+    ]
+   },
+   {
+    "word": "Auto",
+    "taboo": [
+     "fahren",
+     "Räder",
+     "Straße",
+     "Motor",
+     "Lenkrad"
+    ]
+   },
+   {
+    "word": "Fahrrad",
+    "taboo": [
+     "Velo",
+     "fahren",
+     "Pedale",
+     "Helm",
+     "Lenker"
+    ]
+   },
+   {
+    "word": "Zug",
+    "taboo": [
+     "Bahnhof",
+     "Gleise",
+     "Lokomotive",
+     "Wagen",
+     "fahren"
+    ]
+   },
+   {
+    "word": "Flugzeug",
+    "taboo": [
+     "fliegen",
+     "Pilot",
+     "Flughafen",
+     "Flügel",
+     "Himmel"
+    ]
+   },
+   {
+    "word": "Schiff",
+    "taboo": [
+     "Meer",
+     "Wasser",
+     "Kapitän",
+     "Hafen",
+     "Boot"
+    ]
+   },
+   {
+    "word": "Bus",
+    "taboo": [
+     "fahren",
+     "Haltestelle",
+     "Schule",
+     "Fahrer",
+     "Linie"
+    ]
+   },
+   {
+    "word": "Feuerwehr",
+    "taboo": [
+     "Feuer",
+     "löschen",
+     "Wasser",
+     "rot",
+     "Leiter"
+    ]
+   },
+   {
+    "word": "Polizei",
+    "taboo": [
+     "Verbrecher",
+     "Blaulicht",
+     "Uniform",
+     "Dieb",
+     "Sirene"
+    ]
+   },
+   {
+    "word": "Rakete",
+    "taboo": [
+     "Weltall",
+     "fliegen",
+     "Mond",
+     "Astronaut",
+     "Start"
+    ]
+   },
+   {
+    "word": "Sonne",
+    "taboo": [
+     "hell",
+     "gelb",
+     "warm",
+     "Himmel",
+     "scheinen"
+    ]
+   },
+   {
+    "word": "Mond",
+    "taboo": [
+     "Nacht",
+     "Himmel",
+     "Sterne",
+     "rund",
+     "Vollmond"
+    ]
+   },
+   {
+    "word": "Stern",
+    "taboo": [
+     "Himmel",
+     "Nacht",
+     "leuchten",
+     "Zacken",
+     "funkeln"
+    ]
+   },
+   {
+    "word": "Regenbogen",
+    "taboo": [
+     "Farben",
+     "Regen",
+     "Sonne",
+     "bunt",
+     "Himmel"
+    ]
+   },
+   {
+    "word": "Schnee",
+    "taboo": [
+     "Winter",
+     "weiß",
+     "kalt",
+     "Flocken",
+     "Schneemann"
+    ]
+   },
+   {
+    "word": "Regen",
+    "taboo": [
+     "nass",
+     "Wolken",
+     "Tropfen",
+     "Schirm",
+     "Wetter"
+    ]
+   },
+   {
+    "word": "Gewitter",
+    "taboo": [
+     "Blitz",
+     "Donner",
+     "Regen",
+     "laut",
+     "Wolken"
+    ]
+   },
+   {
+    "word": "Wolke",
+    "taboo": [
+     "Himmel",
+     "weiß",
+     "Regen",
+     "grau",
+     "schweben"
+    ]
+   },
+   {
+    "word": "Baum",
+    "taboo": [
+     "Blätter",
+     "Wald",
+     "Stamm",
+     "Äste",
+     "Holz"
+    ]
+   },
+   {
+    "word": "Blume",
+    "taboo": [
+     "Blüte",
+     "Garten",
+     "duften",
+     "Rose",
+     "gießen"
+    ]
+   },
+   {
+    "word": "Wald",
+    "taboo": [
+     "Bäume",
+     "Tiere",
+     "Förster",
+     "spazieren",
+     "grün"
+    ]
+   },
+   {
+    "word": "Meer",
+    "taboo": [
+     "Wasser",
+     "salzig",
+     "Strand",
+     "Wellen",
+     "Ozean"
+    ]
+   },
+   {
+    "word": "Strand",
+    "taboo": [
+     "Sand",
+     "Meer",
+     "Ferien",
+     "Muscheln",
+     "baden"
+    ]
+   },
+   {
+    "word": "Berg",
+    "taboo": [
+     "hoch",
+     "wandern",
+     "Gipfel",
+     "Alpen",
+     "klettern"
+    ]
+   },
+   {
+    "word": "Insel",
+    "taboo": [
+     "Wasser",
+     "Meer",
+     "Palme",
+     "umgeben",
+     "Schatz"
+    ]
+   },
+   {
+    "word": "Schule",
+    "taboo": [
+     "lernen",
+     "Lehrer",
+     "Klasse",
+     "Hausaufgaben",
+     "Pause"
+    ]
+   },
+   {
+    "word": "Geburtstag",
+    "taboo": [
+     "Kuchen",
+     "Geschenke",
+     "Party",
+     "Kerzen",
+     "älter"
+    ]
+   },
+   {
+    "word": "Weihnachten",
+    "taboo": [
+     "Christbaum",
+     "Geschenke",
+     "Dezember",
+     "Christkind",
+     "Advent"
+    ]
+   },
+   {
+    "word": "Ostern",
+    "taboo": [
+     "Hase",
+     "Eier",
+     "Frühling",
+     "suchen",
+     "Schokolade"
+    ]
+   },
+   {
+    "word": "Geschenk",
+    "taboo": [
+     "Geburtstag",
+     "auspacken",
+     "Papier",
+     "Schleife",
+     "Überraschung"
+    ]
+   },
+   {
+    "word": "Ferien",
+    "taboo": [
+     "Schule",
+     "frei",
+     "Urlaub",
+     "Reise",
+     "Sommer"
+    ]
+   },
+   {
+    "word": "Zoo",
+    "taboo": [
+     "Tiere",
+     "Gehege",
+     "Wärter",
+     "Affen",
+     "besuchen"
+    ]
+   },
+   {
+    "word": "Spielplatz",
+    "taboo": [
+     "Rutschbahn",
+     "Schaukel",
+     "Sandkasten",
+     "Kinder",
+     "spielen"
+    ]
+   },
+   {
+    "word": "Schaukel",
+    "taboo": [
+     "hin",
+     "her",
+     "Spielplatz",
+     "sitzen",
+     "schwingen"
+    ]
+   },
+   {
+    "word": "Rutschbahn",
+    "taboo": [
+     "rutschen",
+     "Spielplatz",
+     "runter",
+     "Treppe",
+     "Wasser"
+    ]
+   },
+   {
+    "word": "Zahnarzt",
+    "taboo": [
+     "Zähne",
+     "Bohrer",
+     "Loch",
+     "Praxis",
+     "Karies"
+    ]
+   },
+   {
+    "word": "Arzt",
+    "taboo": [
+     "krank",
+     "Praxis",
+     "Medizin",
+     "Doktor",
+     "Spritze"
+    ]
+   },
+   {
+    "word": "Lehrer",
+    "taboo": [
+     "Schule",
+     "unterrichten",
+     "Klasse",
+     "Tafel",
+     "Schüler"
+    ]
+   },
+   {
+    "word": "Koch",
+    "taboo": [
+     "Küche",
+     "kochen",
+     "Essen",
+     "Mütze",
+     "Restaurant"
+    ]
+   },
+   {
+    "word": "Bauer",
+    "taboo": [
+     "Bauernhof",
+     "Traktor",
+     "Feld",
+     "Kühe",
+     "Ernte"
+    ]
+   },
+   {
+    "word": "Pirat",
+    "taboo": [
+     "Schiff",
+     "Schatz",
+     "Augenklappe",
+     "Meer",
+     "Säbel"
+    ]
+   },
+   {
+    "word": "Prinzessin",
+    "taboo": [
+     "Krone",
+     "Schloss",
+     "König",
+     "Prinz",
+     "Kleid"
+    ]
+   },
+   {
+    "word": "Hexe",
+    "taboo": [
+     "Besen",
+     "zaubern",
+     "Hut",
+     "Märchen",
+     "böse"
+    ]
+   },
+   {
+    "word": "Zauberer",
+    "taboo": [
+     "Zauberstab",
+     "Hut",
+     "Trick",
+     "Kaninchen",
+     "Magie"
+    ]
+   },
+   {
+    "word": "Ritter",
+    "taboo": [
+     "Rüstung",
+     "Burg",
+     "Schwert",
+     "Pferd",
+     "Mittelalter"
+    ]
+   },
+   {
+    "word": "Drache",
+    "taboo": [
+     "Feuer",
+     "fliegen",
+     "Märchen",
+     "Schuppen",
+     "Ritter"
+    ]
+   },
+   {
+    "word": "Gespenst",
+    "taboo": [
+     "Geist",
+     "spuken",
+     "weiß",
+     "Bettlaken",
+     "Angst"
+    ]
+   },
+   {
+    "word": "Schneemann",
+    "taboo": [
+     "Schnee",
+     "Karotte",
+     "Winter",
+     "Kugeln",
+     "bauen"
+    ]
+   },
+   {
+    "word": "Sandburg",
+    "taboo": [
+     "Sand",
+     "Strand",
+     "bauen",
+     "Schaufel",
+     "Eimer"
+    ]
+   },
+   {
+    "word": "Küche",
+    "taboo": [
+     "kochen",
+     "Herd",
+     "Raum",
+     "Essen",
+     "Kühlschrank"
+    ]
+   },
+   {
+    "word": "Kühlschrank",
+    "taboo": [
+     "kalt",
+     "Küche",
+     "Essen",
+     "kühlen",
+     "Tür"
+    ]
+   },
+   {
+    "word": "Badewanne",
+    "taboo": [
+     "baden",
+     "Wasser",
+     "Schaum",
+     "Bad",
+     "Ente"
+    ]
+   },
+   {
+    "word": "Fußball",
+    "taboo": [
+     "Tor",
+     "Ball",
+     "kicken",
+     "Mannschaft",
+     "Schiedsrichter"
+    ]
+   },
+   {
+    "word": "Schwimmbad",
+    "taboo": [
+     "Wasser",
+     "schwimmen",
+     "Badehose",
+     "Sprungbrett",
+     "Becken"
+    ]
+   },
+   {
+    "word": "Kerze",
+    "taboo": [
+     "Licht",
+     "Wachs",
+     "Flamme",
+     "anzünden",
+     "Docht"
+    ]
+   },
+   {
+    "word": "Luftballon",
+    "taboo": [
+     "Luft",
+     "aufblasen",
+     "platzen",
+     "Party",
+     "Gas"
+    ]
+   },
+   {
+    "word": "Krone",
+    "taboo": [
+     "König",
+     "Kopf",
+     "Gold",
+     "Königin",
+     "Edelsteine"
+    ]
+   },
+   {
+    "word": "Zelt",
+    "taboo": [
+     "campen",
+     "schlafen",
+     "draußen",
+     "Heringe",
+     "Schlafsack"
+    ]
+   },
+   {
+    "word": "Feuer",
+    "taboo": [
+     "heiß",
+     "brennen",
+     "Flamme",
+     "Holz",
+     "Rauch"
+    ]
+   },
+   {
+    "word": "Kino",
+    "taboo": [
+     "Film",
+     "Popcorn",
+     "Leinwand",
+     "Sessel",
+     "Ticket"
+    ]
+   },
+   {
+    "word": "Computer",
+    "taboo": [
+     "Tastatur",
+     "Maus",
+     "Bildschirm",
+     "Internet",
+     "Laptop"
+    ]
+   },
+   {
+    "word": "Würfel",
+    "taboo": [
+     "Augen",
+     "sechs",
+     "werfen",
+     "Spiel",
+     "Zahl"
+    ]
+   },
+   {
+    "word": "Kissen",
+    "taboo": [
+     "Kopf",
+     "Bett",
+     "weich",
+     "schlafen",
+     "Federn"
+    ]
+   },
+   {
+    "word": "Zahn",
+    "taboo": [
+     "Mund",
+     "beißen",
+     "Zahnarzt",
+     "Milchzahn",
+     "putzen"
+    ]
+   },
+   {
+    "word": "Nase",
+    "taboo": [
+     "riechen",
+     "Gesicht",
+     "Schnupfen",
+     "schnäuzen",
+     "Loch"
+    ]
+   },
+   {
+    "word": "Ohr",
+    "taboo": [
+     "hören",
+     "Kopf",
+     "zwei",
+     "Ohrring",
+     "Musik"
+    ]
+   },
+   {
+    "word": "Hand",
+    "taboo": [
+     "Finger",
+     "fünf",
+     "greifen",
+     "Arm",
+     "winken"
+    ]
+   },
+   {
+    "word": "Burg",
+    "taboo": [
+     "Ritter",
+     "Mauern",
+     "Turm",
+     "Mittelalter",
+     "Schloss"
+    ]
+   },
+   {
+    "word": "Trampolin",
+    "taboo": [
+     "springen",
+     "hüpfen",
+     "hoch",
+     "Netz",
+     "Garten"
+    ]
+   },
+   {
+    "word": "Hut",
+    "taboo": [
+     "Kopf",
+     "tragen",
+     "Mütze",
+     "Sonne",
+     "Zauberer"
+    ]
+   },
+   {
+    "word": "Sonnenbrille",
+    "taboo": [
+     "Sonne",
+     "Augen",
+     "dunkel",
+     "Sommer",
+     "Brille"
+    ]
+   },
+   {
+    "word": "Hotdog",
+    "taboo": [
+     "Wurst",
+     "Brötchen",
+     "Senf",
+     "Ketchup",
+     "Amerika"
+    ]
+   },
+   {
+    "word": "Lutscher",
+    "taboo": [
+     "Lolli",
+     "Stiel",
+     "süß",
+     "schlecken",
+     "Zucker"
+    ]
+   },
+   {
+    "word": "Kakao",
+    "taboo": [
+     "Schokolade",
+     "warm",
+     "Milch",
+     "trinken",
+     "Tasse"
+    ]
+   },
+   {
+    "word": "Taschenlampe",
+    "taboo": [
+     "Licht",
+     "dunkel",
+     "Batterie",
+     "leuchten",
+     "Nacht"
+    ]
+   },
+   {
+    "word": "Pflaster",
+    "taboo": [
+     "Wunde",
+     "kleben",
+     "Verletzung",
+     "Knie",
+     "Blut"
+    ]
+   },
+   {
+    "word": "Lachen",
+    "taboo": [
+     "lustig",
+     "Witz",
+     "Freude",
+     "kichern",
+     "Spaß"
+    ]
+   },
+   {
+    "word": "Gähnen",
+    "taboo": [
+     "müde",
+     "Mund",
+     "schlafen",
+     "aufmachen",
+     "langweilig"
+    ]
+   },
+   {
+    "word": "Kitzeln",
+    "taboo": [
+     "lachen",
+     "Füße",
+     "Finger",
+     "kichern",
+     "Bauch"
+    ]
+   }
+  ],
+  "normal": [
+   {
+    "word": "Bibliothek",
+    "taboo": [
+     "Bücher",
+     "ausleihen",
+     "lesen",
+     "leise",
+     "Regal"
+    ]
+   },
+   {
+    "word": "Museum",
+    "taboo": [
+     "Ausstellung",
+     "Bilder",
+     "alt",
+     "besuchen",
+     "Kunst"
+    ]
+   },
+   {
+    "word": "Krankenhaus",
+    "taboo": [
+     "krank",
+     "Arzt",
+     "Pflege",
+     "Operation",
+     "Spital"
+    ]
+   },
+   {
+    "word": "Flughafen",
+    "taboo": [
+     "Flugzeug",
+     "Koffer",
+     "abheben",
+     "Reise",
+     "Pilot"
+    ]
+   },
+   {
+    "word": "Bahnhof",
+    "taboo": [
+     "Zug",
+     "Gleis",
+     "warten",
+     "Billett",
+     "Bahn"
+    ]
+   },
+   {
+    "word": "Leuchtturm",
+    "taboo": [
+     "Licht",
+     "Meer",
+     "Schiffe",
+     "Küste",
+     "Turm"
+    ]
+   },
+   {
+    "word": "Vulkan",
+    "taboo": [
+     "Lava",
+     "Ausbruch",
+     "Berg",
+     "heiß",
+     "Feuer"
+    ]
+   },
+   {
+    "word": "Wüste",
+    "taboo": [
+     "Sand",
+     "heiß",
+     "trocken",
+     "Kamel",
+     "Oase"
+    ]
+   },
+   {
+    "word": "Dschungel",
+    "taboo": [
+     "Urwald",
+     "Affen",
+     "Lianen",
+     "feucht",
+     "Regenwald"
+    ]
+   },
+   {
+    "word": "Gletscher",
+    "taboo": [
+     "Eis",
+     "Berg",
+     "schmelzen",
+     "Alpen",
+     "kalt"
+    ]
+   },
+   {
+    "word": "Wasserfall",
+    "taboo": [
+     "Wasser",
+     "fallen",
+     "Fluss",
+     "Felsen",
+     "hoch"
+    ]
+   },
+   {
+    "word": "Höhle",
+    "taboo": [
+     "dunkel",
+     "Berg",
+     "Fledermaus",
+     "Stein",
+     "Eingang"
+    ]
+   },
+   {
+    "word": "Erdbeben",
+    "taboo": [
+     "Erde",
+     "wackeln",
+     "Boden",
+     "Katastrophe",
+     "Häuser"
+    ]
+   },
+   {
+    "word": "Tornado",
+    "taboo": [
+     "Wirbel",
+     "Sturm",
+     "Wind",
+     "drehen",
+     "Wetter"
+    ]
+   },
+   {
+    "word": "Nebel",
+    "taboo": [
+     "grau",
+     "sehen",
+     "Wetter",
+     "dicht",
+     "Morgen"
+    ]
+   },
+   {
+    "word": "Hagel",
+    "taboo": [
+     "Eis",
+     "Körner",
+     "Wetter",
+     "Gewitter",
+     "Regen"
+    ]
+   },
+   {
+    "word": "Astronaut",
+    "taboo": [
+     "Weltall",
+     "Rakete",
+     "Mond",
+     "Anzug",
+     "schweben"
+    ]
+   },
+   {
+    "word": "Planet",
+    "taboo": [
+     "Sonne",
+     "Erde",
+     "Weltall",
+     "Mars",
+     "kreisen"
+    ]
+   },
+   {
+    "word": "Dinosaurier",
+    "taboo": [
+     "ausgestorben",
+     "groß",
+     "Urzeit",
+     "Knochen",
+     "Echse"
+    ]
+   },
+   {
+    "word": "Fossil",
+    "taboo": [
+     "Stein",
+     "versteinert",
+     "alt",
+     "Knochen",
+     "Abdruck"
+    ]
+   },
+   {
+    "word": "Roboter",
+    "taboo": [
+     "Maschine",
+     "Metall",
+     "programmieren",
+     "Mensch",
+     "Computer"
+    ]
+   },
+   {
+    "word": "Magnet",
+    "taboo": [
+     "anziehen",
+     "Metall",
+     "Pol",
+     "Kühlschrank",
+     "Eisen"
+    ]
+   },
+   {
+    "word": "Kompass",
+    "taboo": [
+     "Norden",
+     "Richtung",
+     "Nadel",
+     "Karte",
+     "Süden"
+    ]
+   },
+   {
+    "word": "Landkarte",
+    "taboo": [
+     "Weg",
+     "Länder",
+     "Straßen",
+     "finden",
+     "Atlas"
+    ]
+   },
+   {
+    "word": "Fernrohr",
+    "taboo": [
+     "Sterne",
+     "weit",
+     "sehen",
+     "Teleskop",
+     "Linse"
+    ]
+   },
+   {
+    "word": "Mikroskop",
+    "taboo": [
+     "klein",
+     "vergrößern",
+     "Labor",
+     "Zellen",
+     "Linse"
+    ]
+   },
+   {
+    "word": "Thermometer",
+    "taboo": [
+     "Temperatur",
+     "Grad",
+     "Fieber",
+     "messen",
+     "warm"
+    ]
+   },
+   {
+    "word": "Batterie",
+    "taboo": [
+     "Strom",
+     "Energie",
+     "laden",
+     "leer",
+     "Akku"
+    ]
+   },
+   {
+    "word": "Glühbirne",
+    "taboo": [
+     "Licht",
+     "Lampe",
+     "Strom",
+     "hell",
+     "Fassung"
+    ]
+   },
+   {
+    "word": "Treppe",
+    "taboo": [
+     "Stufen",
+     "hoch",
+     "runter",
+     "Stockwerk",
+     "Geländer"
+    ]
+   },
+   {
+    "word": "Aufzug",
+    "taboo": [
+     "Lift",
+     "hoch",
+     "Stockwerk",
+     "Knopf",
+     "fahren"
+    ]
+   },
+   {
+    "word": "Briefkasten",
+    "taboo": [
+     "Post",
+     "Briefe",
+     "Zeitung",
+     "Haus",
+     "einwerfen"
+    ]
+   },
+   {
+    "word": "Briefmarke",
+    "taboo": [
+     "Brief",
+     "Post",
+     "kleben",
+     "sammeln",
+     "Porto"
+    ]
+   },
+   {
+    "word": "Zeitung",
+    "taboo": [
+     "lesen",
+     "Nachrichten",
+     "Papier",
+     "täglich",
+     "Artikel"
+    ]
+   },
+   {
+    "word": "Kalender",
+    "taboo": [
+     "Tage",
+     "Monat",
+     "Jahr",
+     "Datum",
+     "Termin"
+    ]
+   },
+   {
+    "word": "Wecker",
+    "taboo": [
+     "aufwachen",
+     "Uhr",
+     "klingeln",
+     "Morgen",
+     "Zeit"
+    ]
+   },
+   {
+    "word": "Spiegel",
+    "taboo": [
+     "Bild",
+     "sehen",
+     "Glas",
+     "Bad",
+     "Gesicht"
+    ]
+   },
+   {
+    "word": "Staubsauger",
+    "taboo": [
+     "Staub",
+     "saugen",
+     "Boden",
+     "putzen",
+     "laut"
+    ]
+   },
+   {
+    "word": "Waschmaschine",
+    "taboo": [
+     "Wäsche",
+     "waschen",
+     "Kleider",
+     "Trommel",
+     "schleudern"
+    ]
+   },
+   {
+    "word": "Bügeleisen",
+    "taboo": [
+     "Wäsche",
+     "glatt",
+     "heiß",
+     "Falten",
+     "bügeln"
+    ]
+   },
+   {
+    "word": "Mikrowelle",
+    "taboo": [
+     "aufwärmen",
+     "Küche",
+     "Essen",
+     "warm",
+     "Gerät"
+    ]
+   },
+   {
+    "word": "Toaster",
+    "taboo": [
+     "Brot",
+     "rösten",
+     "Frühstück",
+     "knusprig",
+     "Scheibe"
+    ]
+   },
+   {
+    "word": "Pfanne",
+    "taboo": [
+     "braten",
+     "Küche",
+     "Herd",
+     "Öl",
+     "Spiegelei"
+    ]
+   },
+   {
+    "word": "Gabel",
+    "taboo": [
+     "essen",
+     "Messer",
+     "Löffel",
+     "Zinken",
+     "Besteck"
+    ]
+   },
+   {
+    "word": "Suppe",
+    "taboo": [
+     "Löffel",
+     "heiß",
+     "Teller",
+     "Gemüse",
+     "flüssig"
+    ]
+   },
+   {
+    "word": "Salat",
+    "taboo": [
+     "grün",
+     "Blätter",
+     "Sauce",
+     "gesund",
+     "Gurke"
+    ]
+   },
+   {
+    "word": "Pfannkuchen",
+    "taboo": [
+     "Pfanne",
+     "Teig",
+     "flach",
+     "Crêpe",
+     "Sirup"
+    ]
+   },
+   {
+    "word": "Brezel",
+    "taboo": [
+     "Bäckerei",
+     "Salz",
+     "verschlungen",
+     "Laugen",
+     "Teig"
+    ]
+   },
+   {
+    "word": "Müsli",
+    "taboo": [
+     "Frühstück",
+     "Haferflocken",
+     "Milch",
+     "Schüssel",
+     "Früchte"
+    ]
+   },
+   {
+    "word": "Pommes frites",
+    "taboo": [
+     "Kartoffeln",
+     "frittiert",
+     "Ketchup",
+     "Mayonnaise",
+     "Fritteuse"
+    ]
+   },
+   {
+    "word": "Sushi",
+    "taboo": [
+     "Japan",
+     "Reis",
+     "Fisch",
+     "roh",
+     "Stäbchen"
+    ]
+   },
+   {
+    "word": "Fondue",
+    "taboo": [
+     "Käse",
+     "Schweiz",
+     "Brot",
+     "Gabel",
+     "Caquelon"
+    ]
+   },
+   {
+    "word": "Raclette",
+    "taboo": [
+     "Käse",
+     "Schweiz",
+     "Kartoffeln",
+     "schmelzen",
+     "Pfännchen"
+    ]
+   },
+   {
+    "word": "Zahnfee",
+    "taboo": [
+     "Zahn",
+     "Kissen",
+     "Geld",
+     "Milchzahn",
+     "Nacht"
+    ]
+   },
+   {
+    "word": "Weihnachtsmann",
+    "taboo": [
+     "Bart",
+     "Geschenke",
+     "rot",
+     "Rentiere",
+     "Schlitten"
+    ]
+   },
+   {
+    "word": "Osterhase",
+    "taboo": [
+     "Eier",
+     "Ostern",
+     "verstecken",
+     "Hase",
+     "Schokolade"
+    ]
+   },
+   {
+    "word": "Fasnacht",
+    "taboo": [
+     "Karneval",
+     "verkleiden",
+     "Masken",
+     "Umzug",
+     "Konfetti"
+    ]
+   },
+   {
+    "word": "Halloween",
+    "taboo": [
+     "Kürbis",
+     "Kostüm",
+     "Süßes",
+     "Saures",
+     "gruselig"
+    ]
+   },
+   {
+    "word": "Hochzeit",
+    "taboo": [
+     "heiraten",
+     "Braut",
+     "Ring",
+     "Kirche",
+     "Fest"
+    ]
+   },
+   {
+    "word": "Zirkus",
+    "taboo": [
+     "Clown",
+     "Zelt",
+     "Akrobat",
+     "Manege",
+     "Tiere"
+    ]
+   },
+   {
+    "word": "Achterbahn",
+    "taboo": [
+     "Freizeitpark",
+     "schnell",
+     "Looping",
+     "fahren",
+     "kreischen"
+    ]
+   },
+   {
+    "word": "Karussell",
+    "taboo": [
+     "drehen",
+     "Jahrmarkt",
+     "Pferde",
+     "rund",
+     "fahren"
+    ]
+   },
+   {
+    "word": "Feuerwerk",
+    "taboo": [
+     "Silvester",
+     "Raketen",
+     "knallen",
+     "Himmel",
+     "bunt"
+    ]
+   },
+   {
+    "word": "Silvester",
+    "taboo": [
+     "Neujahr",
+     "Mitternacht",
+     "Feuerwerk",
+     "Dezember",
+     "feiern"
+    ]
+   },
+   {
+    "word": "Picknick",
+    "taboo": [
+     "Decke",
+     "Korb",
+     "draußen",
+     "essen",
+     "Wiese"
+    ]
+   },
+   {
+    "word": "Camping",
+    "taboo": [
+     "Zelt",
+     "Wohnwagen",
+     "draußen",
+     "Ferien",
+     "Schlafsack"
+    ]
+   },
+   {
+    "word": "Schatzsuche",
+    "taboo": [
+     "Karte",
+     "Schatz",
+     "finden",
+     "suchen",
+     "Pirat"
+    ]
+   },
+   {
+    "word": "Verstecken",
+    "taboo": [
+     "suchen",
+     "zählen",
+     "finden",
+     "Spiel",
+     "Versteck"
+    ]
+   },
+   {
+    "word": "Schach",
+    "taboo": [
+     "König",
+     "Dame",
+     "Brett",
+     "Figuren",
+     "matt"
+    ]
+   },
+   {
+    "word": "Puzzle",
+    "taboo": [
+     "Teile",
+     "legen",
+     "Bild",
+     "zusammensetzen",
+     "Rand"
+    ]
+   },
+   {
+    "word": "Fotoapparat",
+    "taboo": [
+     "Kamera",
+     "Foto",
+     "knipsen",
+     "Bild",
+     "Linse"
+    ]
+   },
+   {
+    "word": "Gitarre",
+    "taboo": [
+     "Saiten",
+     "Musik",
+     "spielen",
+     "Instrument",
+     "zupfen"
+    ]
+   },
+   {
+    "word": "Klavier",
+    "taboo": [
+     "Tasten",
+     "schwarz",
+     "weiß",
+     "Musik",
+     "Instrument"
+    ]
+   },
+   {
+    "word": "Schlagzeug",
+    "taboo": [
+     "Trommel",
+     "Musik",
+     "Becken",
+     "Stöcke",
+     "laut"
+    ]
+   },
+   {
+    "word": "Trompete",
+    "taboo": [
+     "blasen",
+     "Musik",
+     "Instrument",
+     "Blech",
+     "laut"
+    ]
+   },
+   {
+    "word": "Blockflöte",
+    "taboo": [
+     "blasen",
+     "Musik",
+     "Instrument",
+     "Holz",
+     "Löcher"
+    ]
+   },
+   {
+    "word": "Orchester",
+    "taboo": [
+     "Musik",
+     "Dirigent",
+     "Instrumente",
+     "Konzert",
+     "Geige"
+    ]
+   },
+   {
+    "word": "Theater",
+    "taboo": [
+     "Bühne",
+     "Schauspieler",
+     "Vorhang",
+     "Stück",
+     "Publikum"
+    ]
+   },
+   {
+    "word": "Zauberwürfel",
+    "taboo": [
+     "Farben",
+     "drehen",
+     "Würfel",
+     "lösen",
+     "Seiten"
+    ]
+   },
+   {
+    "word": "Skateboard",
+    "taboo": [
+     "Rollen",
+     "Brett",
+     "fahren",
+     "Tricks",
+     "Rampe"
+    ]
+   },
+   {
+    "word": "Skifahren",
+    "taboo": [
+     "Schnee",
+     "Piste",
+     "Berg",
+     "Stöcke",
+     "Winter"
+    ]
+   },
+   {
+    "word": "Schlittschuh",
+    "taboo": [
+     "Eis",
+     "Kufen",
+     "laufen",
+     "Winter",
+     "Halle"
+    ]
+   },
+   {
+    "word": "Tennis",
+    "taboo": [
+     "Schläger",
+     "Ball",
+     "Netz",
+     "Platz",
+     "Aufschlag"
+    ]
+   },
+   {
+    "word": "Basketball",
+    "taboo": [
+     "Korb",
+     "Ball",
+     "werfen",
+     "dribbeln",
+     "Mannschaft"
+    ]
+   },
+   {
+    "word": "Turnen",
+    "taboo": [
+     "Halle",
+     "Reck",
+     "Barren",
+     "Purzelbaum",
+     "Sport"
+    ]
+   },
+   {
+    "word": "Tauchen",
+    "taboo": [
+     "Wasser",
+     "Meer",
+     "Sauerstoff",
+     "Fische",
+     "Unterwasser"
+    ]
+   },
+   {
+    "word": "Angeln",
+    "taboo": [
+     "Fisch",
+     "Rute",
+     "Haken",
+     "Wurm",
+     "See"
+    ]
+   },
+   {
+    "word": "Medaille",
+    "taboo": [
+     "Gold",
+     "Silber",
+     "Bronze",
+     "gewinnen",
+     "Sieger"
+    ]
+   },
+   {
+    "word": "Schiedsrichter",
+    "taboo": [
+     "Pfeife",
+     "Fußball",
+     "Regeln",
+     "Karte",
+     "Spiel"
+    ]
+   },
+   {
+    "word": "Pokal",
+    "taboo": [
+     "gewinnen",
+     "Sieger",
+     "Gold",
+     "Turnier",
+     "Preis"
+    ]
+   },
+   {
+    "word": "Detektiv",
+    "taboo": [
+     "Fall",
+     "Lupe",
+     "lösen",
+     "Spuren",
+     "Täter"
+    ]
+   },
+   {
+    "word": "Lupe",
+    "taboo": [
+     "vergrößern",
+     "Glas",
+     "Detektiv",
+     "klein",
+     "sehen"
+    ]
+   },
+   {
+    "word": "Krankenwagen",
+    "taboo": [
+     "Notfall",
+     "Sirene",
+     "Spital",
+     "Blaulicht",
+     "Sanitäter"
+    ]
+   },
+   {
+    "word": "Bagger",
+    "taboo": [
+     "Baustelle",
+     "graben",
+     "Schaufel",
+     "Erde",
+     "Maschine"
+    ]
+   },
+   {
+    "word": "Traktor",
+    "taboo": [
+     "Bauer",
+     "Feld",
+     "Anhänger",
+     "Maschine",
+     "ziehen"
+    ]
+   },
+   {
+    "word": "Hubschrauber",
+    "taboo": [
+     "fliegen",
+     "Rotor",
+     "Helikopter",
+     "Rettung",
+     "landen"
+    ]
+   },
+   {
+    "word": "U-Boot",
+    "taboo": [
+     "Wasser",
+     "tauchen",
+     "Meer",
+     "unter",
+     "Schiff"
+    ]
+   },
+   {
+    "word": "Heißluftballon",
+    "taboo": [
+     "Korb",
+     "fliegen",
+     "Luft",
+     "Feuer",
+     "Himmel"
+    ]
+   },
+   {
+    "word": "Seilbahn",
+    "taboo": [
+     "Berg",
+     "Kabine",
+     "Seil",
+     "hoch",
+     "Gondel"
+    ]
+   },
+   {
+    "word": "Brücke",
+    "taboo": [
+     "Fluss",
+     "über",
+     "Seite",
+     "bauen",
+     "Wasser"
+    ]
+   },
+   {
+    "word": "Tunnel",
+    "taboo": [
+     "Berg",
+     "durch",
+     "dunkel",
+     "Zug",
+     "Röhre"
+    ]
+   },
+   {
+    "word": "Ampel",
+    "taboo": [
+     "rot",
+     "grün",
+     "gelb",
+     "Straße",
+     "warten"
+    ]
+   },
+   {
+    "word": "Tankstelle",
+    "taboo": [
+     "Benzin",
+     "Auto",
+     "tanken",
+     "Diesel",
+     "Zapfsäule"
+    ]
+   },
+   {
+    "word": "Baustelle",
+    "taboo": [
+     "bauen",
+     "Kran",
+     "Bagger",
+     "Helm",
+     "Arbeiter"
+    ]
+   },
+   {
+    "word": "Kran",
+    "taboo": [
+     "hoch",
+     "heben",
+     "Baustelle",
+     "Haken",
+     "Last"
+    ]
+   },
+   {
+    "word": "Stau",
+    "taboo": [
+     "Autos",
+     "warten",
+     "Straße",
+     "Autobahn",
+     "langsam"
+    ]
+   },
+   {
+    "word": "Rathaus",
+    "taboo": [
+     "Bürgermeister",
+     "Stadt",
+     "Gemeinde",
+     "Amt",
+     "Gebäude"
+    ]
+   },
+   {
+    "word": "Bauernhof",
+    "taboo": [
+     "Tiere",
+     "Bauer",
+     "Stall",
+     "Traktor",
+     "Land"
+    ]
+   },
+   {
+    "word": "Mühle",
+    "taboo": [
+     "mahlen",
+     "Mehl",
+     "Wind",
+     "Wasser",
+     "Rad"
+    ]
+   },
+   {
+    "word": "Schloss",
+    "taboo": [
+     "König",
+     "Prinzessin",
+     "Türme",
+     "Märchen",
+     "Schlüssel"
+    ]
+   },
+   {
+    "word": "Kirche",
+    "taboo": [
+     "Glocken",
+     "Turm",
+     "beten",
+     "Pfarrer",
+     "Sonntag"
+    ]
+   },
+   {
+    "word": "Gewächshaus",
+    "taboo": [
+     "Glas",
+     "Pflanzen",
+     "warm",
+     "Tomaten",
+     "Garten"
+    ]
+   },
+   {
+    "word": "Kaktus",
+    "taboo": [
+     "Stacheln",
+     "Wüste",
+     "Pflanze",
+     "grün",
+     "Wasser"
+    ]
+   },
+   {
+    "word": "Sonnenblume",
+    "taboo": [
+     "gelb",
+     "groß",
+     "Kerne",
+     "Sonne",
+     "Blume"
+    ]
+   },
+   {
+    "word": "Pilz",
+    "taboo": [
+     "Wald",
+     "giftig",
+     "Hut",
+     "sammeln",
+     "Fliegenpilz"
+    ]
+   },
+   {
+    "word": "Kürbis",
+    "taboo": [
+     "orange",
+     "Halloween",
+     "Herbst",
+     "groß",
+     "Suppe"
+    ]
+   },
+   {
+    "word": "Herbst",
+    "taboo": [
+     "Blätter",
+     "bunt",
+     "fallen",
+     "Jahreszeit",
+     "Oktober"
+    ]
+   },
+   {
+    "word": "Frühling",
+    "taboo": [
+     "Jahreszeit",
+     "Blumen",
+     "März",
+     "warm",
+     "blühen"
+    ]
+   },
+   {
+    "word": "Sommer",
+    "taboo": [
+     "heiß",
+     "Jahreszeit",
+     "Ferien",
+     "Sonne",
+     "baden"
+    ]
+   },
+   {
+    "word": "Winter",
+    "taboo": [
+     "Schnee",
+     "kalt",
+     "Jahreszeit",
+     "Dezember",
+     "Weihnachten"
+    ]
+   },
+   {
+    "word": "Traum",
+    "taboo": [
+     "schlafen",
+     "Nacht",
+     "Bett",
+     "Albtraum",
+     "träumen"
+    ]
+   },
+   {
+    "word": "Zeitmaschine",
+    "taboo": [
+     "Zeit",
+     "reisen",
+     "Vergangenheit",
+     "Zukunft",
+     "Maschine"
+    ]
+   },
+   {
+    "word": "Superheld",
+    "taboo": [
+     "Kräfte",
+     "retten",
+     "Umhang",
+     "fliegen",
+     "Bösewicht"
+    ]
+   },
+   {
+    "word": "Einhorn",
+    "taboo": [
+     "Horn",
+     "Pferd",
+     "Regenbogen",
+     "Fabelwesen",
+     "weiß"
+    ]
+   },
+   {
+    "word": "Meerjungfrau",
+    "taboo": [
+     "Meer",
+     "Fischschwanz",
+     "Nixe",
+     "Märchen",
+     "schwimmen"
+    ]
+   },
+   {
+    "word": "Zwerg",
+    "taboo": [
+     "klein",
+     "Mütze",
+     "Schneewittchen",
+     "Garten",
+     "Märchen"
+    ]
+   },
+   {
+    "word": "Vampir",
+    "taboo": [
+     "Blut",
+     "Zähne",
+     "Nacht",
+     "Fledermaus",
+     "Graf"
+    ]
+   },
+   {
+    "word": "Mumie",
+    "taboo": [
+     "Ägypten",
+     "Pyramide",
+     "Binden",
+     "eingewickelt",
+     "Grab"
+    ]
+   },
+   {
+    "word": "Pyramide",
+    "taboo": [
+     "Ägypten",
+     "Dreieck",
+     "Pharao",
+     "Stein",
+     "Wüste"
+    ]
+   },
+   {
+    "word": "Fledermaus",
+    "taboo": [
+     "Nacht",
+     "fliegen",
+     "Höhle",
+     "kopfüber",
+     "Vampir"
+    ]
+   },
+   {
+    "word": "Krake",
+    "taboo": [
+     "Arme",
+     "acht",
+     "Tintenfisch",
+     "Meer",
+     "Tinte"
+    ]
+   },
+   {
+    "word": "Qualle",
+    "taboo": [
+     "Meer",
+     "durchsichtig",
+     "brennen",
+     "glibberig",
+     "schwimmen"
+    ]
+   },
+   {
+    "word": "Seestern",
+    "taboo": [
+     "Meer",
+     "Arme",
+     "fünf",
+     "Strand",
+     "Stern"
+    ]
+   },
+   {
+    "word": "Muschel",
+    "taboo": [
+     "Meer",
+     "Strand",
+     "Schale",
+     "Perle",
+     "sammeln"
+    ]
+   },
+   {
+    "word": "Wal",
+    "taboo": [
+     "Meer",
+     "groß",
+     "Säugetier",
+     "Fontäne",
+     "Fisch"
+    ]
+   },
+   {
+    "word": "Eisbär",
+    "taboo": [
+     "weiß",
+     "Nordpol",
+     "Eis",
+     "kalt",
+     "Bär"
+    ]
+   },
+   {
+    "word": "Känguru",
+    "taboo": [
+     "Beutel",
+     "springen",
+     "Australien",
+     "Baby",
+     "hüpfen"
+    ]
+   },
+   {
+    "word": "Koala",
+    "taboo": [
+     "Australien",
+     "Baum",
+     "Eukalyptus",
+     "schlafen",
+     "Bär"
+    ]
+   },
+   {
+    "word": "Faultier",
+    "taboo": [
+     "langsam",
+     "hängen",
+     "Baum",
+     "schlafen",
+     "faul"
+    ]
+   },
+   {
+    "word": "Chamäleon",
+    "taboo": [
+     "Farbe",
+     "wechseln",
+     "Echse",
+     "Zunge",
+     "tarnen"
+    ]
+   },
+   {
+    "word": "Specht",
+    "taboo": [
+     "Vogel",
+     "klopfen",
+     "Baum",
+     "Schnabel",
+     "Loch"
+    ]
+   },
+   {
+    "word": "Storch",
+    "taboo": [
+     "Vogel",
+     "Babys",
+     "Beine",
+     "Nest",
+     "klappern"
+    ]
+   },
+   {
+    "word": "Flamingo",
+    "taboo": [
+     "rosa",
+     "Bein",
+     "Vogel",
+     "stehen",
+     "Wasser"
+    ]
+   },
+   {
+    "word": "Pfau",
+    "taboo": [
+     "Federn",
+     "Rad",
+     "bunt",
+     "Vogel",
+     "schlagen"
+    ]
+   },
+   {
+    "word": "Nashorn",
+    "taboo": [
+     "Horn",
+     "grau",
+     "Afrika",
+     "groß",
+     "Haut"
+    ]
+   },
+   {
+    "word": "Nilpferd",
+    "taboo": [
+     "Fluss",
+     "Afrika",
+     "groß",
+     "Wasser",
+     "Maul"
+    ]
+   },
+   {
+    "word": "Wolf",
+    "taboo": [
+     "heulen",
+     "Rudel",
+     "Mond",
+     "Hund",
+     "Rotkäppchen"
+    ]
+   },
+   {
+    "word": "Fuchs",
+    "taboo": [
+     "rot",
+     "schlau",
+     "Schwanz",
+     "Wald",
+     "Huhn"
+    ]
+   },
+   {
+    "word": "Eichhörnchen",
+    "taboo": [
+     "Nüsse",
+     "Baum",
+     "Schwanz",
+     "klettern",
+     "rot"
+    ]
+   },
+   {
+    "word": "Biber",
+    "taboo": [
+     "Damm",
+     "Zähne",
+     "Holz",
+     "Fluss",
+     "Nagetier"
+    ]
+   },
+   {
+    "word": "Maulwurf",
+    "taboo": [
+     "graben",
+     "Erde",
+     "blind",
+     "Hügel",
+     "Garten"
+    ]
+   },
+   {
+    "word": "Regenwurm",
+    "taboo": [
+     "Erde",
+     "Regen",
+     "lang",
+     "Boden",
+     "kriechen"
+    ]
+   },
+   {
+    "word": "Libelle",
+    "taboo": [
+     "Flügel",
+     "Teich",
+     "Insekt",
+     "fliegen",
+     "Wasser"
+    ]
+   },
+   {
+    "word": "Glühwürmchen",
+    "taboo": [
+     "leuchten",
+     "Nacht",
+     "Käfer",
+     "Licht",
+     "Sommer"
+    ]
+   },
+   {
+    "word": "Zahnspange",
+    "taboo": [
+     "Zähne",
+     "gerade",
+     "Draht",
+     "Zahnarzt",
+     "Mund"
+    ]
+   },
+   {
+    "word": "Fieber",
+    "taboo": [
+     "krank",
+     "Temperatur",
+     "heiß",
+     "Thermometer",
+     "Grad"
+    ]
+   },
+   {
+    "word": "Schluckauf",
+    "taboo": [
+     "hicksen",
+     "Atem",
+     "Zwerchfell",
+     "erschrecken",
+     "Wasser"
+    ]
+   },
+   {
+    "word": "Niesen",
+    "taboo": [
+     "Nase",
+     "Schnupfen",
+     "Hatschi",
+     "Gesundheit",
+     "kitzeln"
+    ]
+   },
+   {
+    "word": "Witz",
+    "taboo": [
+     "lustig",
+     "lachen",
+     "erzählen",
+     "Pointe",
+     "Humor"
+    ]
+   },
+   {
+    "word": "Geheimnis",
+    "taboo": [
+     "verraten",
+     "flüstern",
+     "niemand",
+     "wissen",
+     "erzählen"
+    ]
+   },
+   {
+    "word": "Heimweh",
+    "taboo": [
+     "Zuhause",
+     "vermissen",
+     "Ferien",
+     "traurig",
+     "Eltern"
+    ]
+   },
+   {
+    "word": "Langeweile",
+    "taboo": [
+     "nichts",
+     "tun",
+     "langweilig",
+     "öde",
+     "Zeit"
+    ]
+   },
+   {
+    "word": "Muskelkater",
+    "taboo": [
+     "Muskeln",
+     "Sport",
+     "Schmerzen",
+     "Tag",
+     "danach"
+    ]
+   },
+   {
+    "word": "Hausaufgaben",
+    "taboo": [
+     "Schule",
+     "Lehrer",
+     "lernen",
+     "Heft",
+     "Zuhause"
+    ]
+   },
+   {
+    "word": "Zeugnis",
+    "taboo": [
+     "Noten",
+     "Schule",
+     "Ende",
+     "Schuljahr",
+     "Halbjahr"
+    ]
+   },
+   {
+    "word": "Pause",
+    "taboo": [
+     "Schule",
+     "Glocke",
+     "Hof",
+     "spielen",
+     "Znüni"
+    ]
+   },
+   {
+    "word": "Wandtafel",
+    "taboo": [
+     "Kreide",
+     "Schule",
+     "schreiben",
+     "grün",
+     "Lehrer"
+    ]
+   },
+   {
+    "word": "Taschenrechner",
+    "taboo": [
+     "rechnen",
+     "Zahlen",
+     "Mathe",
+     "Tasten",
+     "plus"
+    ]
+   },
+   {
+    "word": "Lineal",
+    "taboo": [
+     "messen",
+     "Zentimeter",
+     "gerade",
+     "Strich",
+     "Schule"
+    ]
+   },
+   {
+    "word": "Radiergummi",
+    "taboo": [
+     "radieren",
+     "Bleistift",
+     "Fehler",
+     "weg",
+     "Gummi"
+    ]
+   },
+   {
+    "word": "Globus",
+    "taboo": [
+     "Erde",
+     "Kugel",
+     "Länder",
+     "drehen",
+     "Karte"
+    ]
+   },
+   {
+    "word": "Wörterbuch",
+    "taboo": [
+     "Wörter",
+     "nachschlagen",
+     "Sprache",
+     "Buch",
+     "Bedeutung"
+    ]
+   },
+   {
+    "word": "Postkarte",
+    "taboo": [
+     "Ferien",
+     "Grüße",
+     "schreiben",
+     "Bild",
+     "Briefmarke"
+    ]
+   },
+   {
+    "word": "Koffer",
+    "taboo": [
+     "Reise",
+     "packen",
+     "Ferien",
+     "Kleider",
+     "Flughafen"
+    ]
+   },
+   {
+    "word": "Reisepass",
+    "taboo": [
+     "Ausweis",
+     "Grenze",
+     "Reise",
+     "Foto",
+     "Land"
+    ]
+   },
+   {
+    "word": "Passwort",
+    "taboo": [
+     "geheim",
+     "Computer",
+     "eingeben",
+     "Buchstaben",
+     "Zugang"
+    ]
+   },
+   {
+    "word": "Internet",
+    "taboo": [
+     "online",
+     "Computer",
+     "surfen",
+     "WLAN",
+     "Webseite"
+    ]
+   },
+   {
+    "word": "Fernbedienung",
+    "taboo": [
+     "Fernseher",
+     "Knöpfe",
+     "Sofa",
+     "umschalten",
+     "Batterie"
+    ]
+   },
+   {
+    "word": "Sofa",
+    "taboo": [
+     "sitzen",
+     "Wohnzimmer",
+     "Couch",
+     "bequem",
+     "liegen"
+    ]
+   },
+   {
+    "word": "Keller",
+    "taboo": [
+     "unten",
+     "dunkel",
+     "Treppe",
+     "Haus",
+     "Vorräte"
+    ]
+   },
+   {
+    "word": "Dachboden",
+    "taboo": [
+     "oben",
+     "Estrich",
+     "Haus",
+     "Gerümpel",
+     "Dach"
+    ]
+   },
+   {
+    "word": "Garage",
+    "taboo": [
+     "Auto",
+     "parken",
+     "Tor",
+     "Haus",
+     "Werkzeug"
+    ]
+   },
+   {
+    "word": "Werkzeug",
+    "taboo": [
+     "Hammer",
+     "Schraubenzieher",
+     "reparieren",
+     "Kiste",
+     "Nagel"
+    ]
+   },
+   {
+    "word": "Hammer",
+    "taboo": [
+     "Nagel",
+     "schlagen",
+     "Werkzeug",
+     "Holz",
+     "Stiel"
+    ]
+   },
+   {
+    "word": "Schraube",
+    "taboo": [
+     "drehen",
+     "Schraubenzieher",
+     "Gewinde",
+     "Mutter",
+     "Metall"
+    ]
+   },
+   {
+    "word": "Leiter",
+    "taboo": [
+     "Sprossen",
+     "hoch",
+     "klettern",
+     "steigen",
+     "Feuerwehr"
+    ]
+   },
+   {
+    "word": "Schubkarre",
+    "taboo": [
+     "Rad",
+     "Garten",
+     "schieben",
+     "Erde",
+     "transportieren"
+    ]
+   },
+   {
+    "word": "Gießkanne",
+    "taboo": [
+     "Wasser",
+     "Blumen",
+     "gießen",
+     "Garten",
+     "Kanne"
+    ]
+   },
+   {
+    "word": "Rasenmäher",
+    "taboo": [
+     "Gras",
+     "mähen",
+     "Garten",
+     "laut",
+     "kurz"
+    ]
+   },
+   {
+    "word": "Besen",
+    "taboo": [
+     "fegen",
+     "wischen",
+     "Hexe",
+     "Staub",
+     "Boden"
+    ]
+   },
+   {
+    "word": "Mülleimer",
+    "taboo": [
+     "Abfall",
+     "Müll",
+     "wegwerfen",
+     "Deckel",
+     "Kübel"
+    ]
+   },
+   {
+    "word": "Recycling",
+    "taboo": [
+     "wiederverwerten",
+     "Plastik",
+     "Altglas",
+     "trennen",
+     "Umwelt"
+    ]
+   },
+   {
+    "word": "Sparschwein",
+    "taboo": [
+     "Geld",
+     "sparen",
+     "Münzen",
+     "Schwein",
+     "Bank"
+    ]
+   },
+   {
+    "word": "Geldbeutel",
+    "taboo": [
+     "Geld",
+     "Portemonnaie",
+     "Münzen",
+     "Tasche",
+     "bezahlen"
+    ]
+   },
+   {
+    "word": "Supermarkt",
+    "taboo": [
+     "einkaufen",
+     "Kasse",
+     "Regale",
+     "Einkaufswagen",
+     "Lebensmittel"
+    ]
+   },
+   {
+    "word": "Einkaufsliste",
+    "taboo": [
+     "einkaufen",
+     "Zettel",
+     "schreiben",
+     "Supermarkt",
+     "vergessen"
+    ]
+   },
+   {
+    "word": "Bäckerei",
+    "taboo": [
+     "Brot",
+     "Bäcker",
+     "Gipfeli",
+     "Brötchen",
+     "kaufen"
+    ]
+   },
+   {
+    "word": "Restaurant",
+    "taboo": [
+     "essen",
+     "Kellner",
+     "bestellen",
+     "Speisekarte",
+     "Koch"
+    ]
+   },
+   {
+    "word": "Kellner",
+    "taboo": [
+     "bedienen",
+     "Restaurant",
+     "bestellen",
+     "Teller",
+     "Trinkgeld"
+    ]
+   },
+   {
+    "word": "Trinkgeld",
+    "taboo": [
+     "Kellner",
+     "Geld",
+     "Restaurant",
+     "extra",
+     "danke"
+    ]
+   },
+   {
+    "word": "Friseur",
+    "taboo": [
+     "Haare",
+     "schneiden",
+     "Coiffeur",
+     "Schere",
+     "Salon"
+    ]
+   },
+   {
+    "word": "Briefträger",
+    "taboo": [
+     "Briefe",
+     "Post",
+     "bringen",
+     "Pöstler",
+     "Paket"
+    ]
+   },
+   {
+    "word": "Gärtner",
+    "taboo": [
+     "Garten",
+     "Pflanzen",
+     "Blumen",
+     "Rasen",
+     "gießen"
+    ]
+   },
+   {
+    "word": "Kapitän",
+    "taboo": [
+     "Schiff",
+     "Meer",
+     "Steuer",
+     "Mütze",
+     "Mannschaft"
+    ]
+   },
+   {
+    "word": "Pilot",
+    "taboo": [
+     "Flugzeug",
+     "fliegen",
+     "Cockpit",
+     "Flughafen",
+     "Uniform"
+    ]
+   },
+   {
+    "word": "Tierarzt",
+    "taboo": [
+     "Tiere",
+     "krank",
+     "Arzt",
+     "Hund",
+     "Praxis"
+    ]
+   },
+   {
+    "word": "Kaminfeger",
+    "taboo": [
+     "Kamin",
+     "schwarz",
+     "Ruß",
+     "Glück",
+     "Dach"
+    ]
+   },
+   {
+    "word": "Sänger",
+    "taboo": [
+     "singen",
+     "Lied",
+     "Bühne",
+     "Stimme",
+     "Mikrofon"
+    ]
+   },
+   {
+    "word": "Mikrofon",
+    "taboo": [
+     "laut",
+     "sprechen",
+     "singen",
+     "Bühne",
+     "Stimme"
+    ]
+   },
+   {
+    "word": "Kopfhörer",
+    "taboo": [
+     "Musik",
+     "hören",
+     "Ohren",
+     "leise",
+     "Kabel"
+    ]
+   },
+   {
+    "word": "Spielkonsole",
+    "taboo": [
+     "Videospiel",
+     "Controller",
+     "spielen",
+     "Fernseher",
+     "gamen"
+    ]
+   },
+   {
+    "word": "Selfie",
+    "taboo": [
+     "Foto",
+     "Handy",
+     "selbst",
+     "Kamera",
+     "lächeln"
+    ]
+   },
+   {
+    "word": "Schlafsack",
+    "taboo": [
+     "Camping",
+     "schlafen",
+     "Zelt",
+     "Reißverschluss",
+     "warm"
+    ]
+   },
+   {
+    "word": "Lagerfeuer",
+    "taboo": [
+     "Feuer",
+     "Holz",
+     "Wurst",
+     "Camping",
+     "Stockbrot"
+    ]
+   },
+   {
+    "word": "Kaugummi",
+    "taboo": [
+     "kauen",
+     "Blase",
+     "klebrig",
+     "Pfefferminz",
+     "Mund"
+    ]
+   },
+   {
+    "word": "Zuckerwatte",
+    "taboo": [
+     "Jahrmarkt",
+     "rosa",
+     "süß",
+     "Stiel",
+     "flauschig"
+    ]
+   },
+   {
+    "word": "Limonade",
+    "taboo": [
+     "trinken",
+     "süß",
+     "Zitrone",
+     "sprudeln",
+     "Getränk"
+    ]
+   },
+   {
+    "word": "Waffel",
+    "taboo": [
+     "Teig",
+     "Eisen",
+     "Puderzucker",
+     "Gitter",
+     "backen"
+    ]
+   },
+   {
+    "word": "Lebkuchen",
+    "taboo": [
+     "Weihnachten",
+     "Gewürze",
+     "Herz",
+     "Hexenhaus",
+     "braun"
+    ]
+   },
+   {
+    "word": "Spiegelei",
+    "taboo": [
+     "Ei",
+     "Pfanne",
+     "braten",
+     "Dotter",
+     "Frühstück"
+    ]
+   }
+  ]
+ }
+}

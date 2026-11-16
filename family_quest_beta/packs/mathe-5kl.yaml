@@ -1,0 +1,39 @@
+# Mathematik 5. Klasse – Generatoren statt Listen: unendlich viele Aufgaben,
+# der Lernstand gilt pro Teilfähigkeit (z. B. 7er-Reihe, Brüche mit ungleichem Nenner).
+id: mathe-5kl
+titel: Mathematik 5. Klasse
+fach: mathematik
+stufe: 5. Klasse
+version: 1
+quelle: Family Quest (eigene Generatoren)
+einheiten:
+  - id: einmaleins
+    titel: Einmaleins 6er bis 9er
+    icon: "✖️"
+    generator: einmaleins
+    parameter: {reihen: "6-9", modus: gemischt}
+  - id: division-rest
+    titel: Division mit Rest
+    icon: "➗"
+    generator: division_rest
+    parameter: {teiler: "3-9", max_quotient: 12}
+  - id: schriftlich
+    titel: Schriftlich rechnen
+    icon: "📝"
+    generator: schriftlich
+    parameter: {arten: [addieren, subtrahieren, multiplizieren, dividieren], max: 9999}
+  - id: brueche
+    titel: Brüche
+    icon: "🍰"
+    generator: brueche
+    parameter: {nenner_max: 12, arten: [kuerzen, erweitern, addieren_gleich, vergleichen, von_zahl]}
+  - id: brueche-ungleich
+    titel: Brüche mit ungleichem Nenner
+    icon: "🥧"
+    generator: brueche
+    parameter: {nenner_max: 12, arten: [addieren_ungleich, subtrahieren_ungleich]}
+  - id: dezimal
+    titel: Dezimalzahlen
+    icon: "🔢"
+    generator: dezimal
+    parameter: {stellen: 2}
