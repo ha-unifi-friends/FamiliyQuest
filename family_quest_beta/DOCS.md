@@ -627,6 +627,38 @@ may **end** the game early: ranked as it stands (the ones still running by their
 to the end at a family table with **at least two people of the family** – never alone, to guests or to bots. Every
 person of the family gets a history entry (place, distance, new personal best).
 
+### Klatsch den Beat
+
+Games → **👏 Klatsch den Beat**: a live rhythm game – **everybody plays at the same time**, each on their own device.
+Every round the app plays a short beat with its own drum sounds (kick, clap, hi-hat – made in the browser, no sound
+files), then everybody **claps it back** on the big clap button. Play **alone** (personal best; optionally with 1–7
+practice bots) or open a **family table** (1 to 8 players, optionally with bots; guests via QR code). Turn the sound on!
+
+- **A round** (call and response): a **count-in** of four clicks, then **listen** – the pattern sounds over the groove and
+  its dots light up on a bar of 16 steps; then the **clap bar** – the same dots stay, a playhead sweeps over them, clap
+  when it reaches a dot. A short pause shows your points and the live ranking, then the next round starts by itself.
+  We chose this variant over notes sliding to a hit line: you hear the beat first (the fun part of clapping along) and
+  the dots still help children who cannot remember the whole pattern.
+- **It gets harder:** the tempo rises from 80 to 140 BPM over the rounds (5–8, start dialog); first quarters and eighths
+  on the «one», then syncopes (off-beat eighths, a missing «one»), at the end sixteenth syncopes and pauses. Notes are
+  always at least an eighth apart. The server makes the patterns (random), everybody gets the same ones.
+- **Points:** every note takes the nearest clap – within **±60 ms perfect** (100 points), within **±130 ms good** (50),
+  else missed; a clap that hits no note costs 25 points (no drumming through), never below 0 per round. Most points
+  win; the same total shares the place. The result also shows the accuracy (perfect = 1, good = ½ of a note).
+- **Fair timing:** every app knows the server clock (it estimates the offset from the server's answers, the one with
+  the shortest round trip counts), plans the sounds on the audio clock and reports its claps as game times; the server
+  judges them a second after each clap bar for everybody at once. Phones and Bluetooth headphones play sounds late:
+  **calibrate** once (🎚️ – tap along to 8 clicks); the delay is kept on this device and subtracted from your claps.
+  A tap vibrates the phone where the browser supports it; the space bar claps too.
+- **Bots** (easy / normal / hard) clap every note with a timing error and now and then miss one or clap once too much.
+
+Who leads may **end** the game early: the rounds already played count, ranked as it stands, but without coins. The
+accuracy of a game played to the end is your **personal best** (alone or at a table).
+
+**Coins for places 1–3:** set by the parents in Community › Klatsch den Beat (default 10 / 5 / 2), paid once, only for a
+game played to the end at a family table with **at least two people of the family** – never alone, to guests or to
+bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, points, accuracy).
+
 ### Verbotene Wörter
 
 Games → **🚫 Verbotene Wörter**: the explaining game – one explains a word **without saying the forbidden words**, the
@@ -773,7 +805,14 @@ the server; best times stay in this browser), shown when family games are on for
   numbers turn red, best time per level.
 - **Patience** – the classic solitaire: sort all cards by suit onto four piles, draw 1 or 3, undo, «Finish» when
   only open cards are left. Tap a card and it moves where it fits.
-- **Ping-Pong** – against the app (easy, medium, hard) or face to face on one tablet; first to 7 points.
+- **Ping-Pong** – against the app (easy, medium, hard) or face to face on one tablet; first to 7 points. Also on
+  **two devices** (a duel) and as **doubles on up to four devices**: two teams of two, each with a paddle at the
+  baseline and a short paddle (55 %) near the net that only moves along its line. Whoever opens the table plays the
+  back paddle of team A and chooses who sits on the three other seats – a family member (the invitation pops up in
+  their app) or a bot (easy, normal, hard) – and the points to win (5, 7 or 11). A seat whose person says «no thanks»
+  can be given to somebody else or a bot; the match starts once everybody is ready. Every player moves only their own
+  paddle and always sees their own team at the bottom. If somebody leaves, a bot plays on for them; if the host
+  leaves, the match ends. Like the duels, doubles pay no coins and are kept in memory only.
 - **Pairs** – turn over two cards and find the pairs: animals, fruit, vehicles, sea animals or **your own photo
   sets**; alone (fewest moves), against the app (it remembers more or less well) or 2–4 players on one device.
   Card back: four patterns or the **family crest**.

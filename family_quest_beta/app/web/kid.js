@@ -69,6 +69,7 @@ async function route() {
   if (view === "wuerfel") return wuerfelView();
   if (view === "heimwaerts") return heimwaertsView();
   if (view === "jump") return jumpView();
+  if (view === "klatsch") return klatschView();
   if (view === "verboten") return verbotenView();
   if (view === "jass") return jassView();
   if (view === "werwolf") return werwolfView();
@@ -133,6 +134,20 @@ setInterval(async () => {
     h("p", I18N.tr(pong ? T("{0} invites you to Ping-Pong") : T("{0} invites you to Tic-Tac-Toe")).replace("{0}", other)),
     h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/duel/accept", { method: "POST" }); } catch {} go(pong ? "arcade/pingpong" : "arcade/ttt"); } }, "▶ ", T("Play")),
       h("button.btn.ghost", { onclick: async () => { m.close(); try { await api("community/duel/decline", { method: "POST" }); } catch {} } }, T("No thanks")))));
+}, 5000);
+// invitations to a Ping-Pong doubles table (familyquest/pong4.py) – same popup as for a duel
+let pong4Seen = 0;
+setInterval(async () => {
+  if (!Auth.kid || !S.me || !canPlay("pingpong") || S.lesson || document.hidden || S.p4Open) return;
+  let d; try { d = await api("community/pong4"); } catch { return; }
+  if (!d || d.status !== "lobby" || d.seats[d.me].state !== "invite" || d.seats[d.me].inv === pong4Seen) return;
+  pong4Seen = d.seats[d.me].inv;                       // a new invitation (also to the same table) pops up again
+  try { Sound.play("tap"); } catch {}
+  const m = modal(h("div.form.center", h("h2", "🏓 ", T("Doubles (2 against 2)")),
+    h("p", I18N.tr(T("{0} invites you to Ping-Pong doubles")).replace("{0}", d.seats.A1.name)),
+    h("p.small.muted", I18N.tr(d.team === "A" ? T("You play in the team of the host.") : T("You play against the host."))),
+    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/pong4/accept", { method: "POST" }); } catch {} S.pong4Online = true; go("arcade/pingpong"); } }, "▶ ", T("Play")),
+      h("button.btn.ghost", { onclick: async () => { m.close(); try { await api("community/pong4/decline", { method: "POST" }); } catch {} } }, T("No thanks")))));
 }, 5000);
 
 function idleReset() {
@@ -1535,7 +1550,7 @@ async function gamesView() {
     canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
     canPlay("domino") ? await dominoFamilyCard() : null, canPlay("paarjagd") ? await paarjagdFamilyCard() : null,
     canPlay("werbinich") ? await werbinichFamilyCard() : null, canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null,
-    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
+    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
   screen("games", h("h1", "🎲 ", T("Games")), ...cards);
 }
 

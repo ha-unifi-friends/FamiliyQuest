@@ -1135,6 +1135,68 @@ nav.bottom button.on { color: var(--accent); background: var(--hover); }
   .ju-live.quiz-full .host-bar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
 }
 
+/* «Klatsch den Beat» (klatsch.js) – one screen on a phone: round and points, the stage (phase, the bar of 16 steps with
+   the dots and the playhead, a pulse on every beat), the live ranking and the big clap button */
+.kb-live.quiz-full { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; padding-bottom: 0; }
+.kb-live.quiz-full > * { flex: none; }
+.kb-live.quiz-full > .kb-stage { flex: 1 1 auto; min-height: 190px; max-height: 330px; display: flex; flex-direction: column; justify-content: center; }
+.kb-live.quiz-full > .kb-rank { flex: 0 1 auto; min-height: 60px; overflow-y: auto; }
+.kb-live.quiz-full > .kb-bar { padding-right: 50px; }
+.kb-live.quiz-full > .host-bar { margin-top: 0; }
+.kb-live.quiz-full .dm-head { padding-right: 46px; }
+.kb-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 6px; min-height: 26px; }
+.kb-round { color: var(--muted); font-size: .9rem; white-space: nowrap; }
+.kb-pts { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.kb-stage { --kb-pulse: 0; position: relative; overflow: hidden; border-radius: 18px; padding: 10px 14px 16px; margin-bottom: 8px; text-align: center;
+  background: linear-gradient(160deg, #2b2d6e, #5b2a86); color: #fff; box-shadow: var(--shadow); }
+.kb-stage[data-ph="clap"] { background: linear-gradient(160deg, #a2302f, #e8590c); }
+.kb-stage[data-ph="results"] { background: linear-gradient(160deg, #1f5f4a, #2f9e44); }
+.kb-pulse { position: absolute; left: 50%; top: 38%; width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,.55), rgba(255,255,255,0) 65%); opacity: var(--kb-pulse); transform: scale(calc(.7 + var(--kb-pulse) * .4)); }
+.kb-stage.down .kb-pulse { background: radial-gradient(circle, rgba(255,214,102,.8), rgba(255,214,102,0) 65%); }
+.kb-label { position: relative; font: 900 clamp(2.4rem, 11vw, 3.4rem)/1.1 var(--font); min-height: 1.1em; font-variant-numeric: tabular-nums; }
+.kb-sub { position: relative; font-weight: 700; min-height: 1.4em; margin-bottom: 10px; opacity: .95; }
+.kb-track { position: relative; height: 44px; margin: 0 4px; border-radius: 12px; background: rgba(255,255,255,.14); }
+.kb-beat { position: absolute; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; background: rgba(255,255,255,.35); }
+.kb-beat:first-child { background: rgba(255,255,255,.6); }
+.kb-notes { position: absolute; inset: 0; }
+.kb-dot { position: absolute; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: rgba(255,255,255,.18);
+  border: 2px solid #fff; opacity: 0; transition: background .12s, transform .12s, opacity .1s; }
+.kb-dot.on { background: #ffd43b; opacity: 1; }
+.kb-dot.ping { transform: scale(1.45); }
+.kb-dot.perfect { background: #51cf66; transform: scale(1.15); }
+.kb-dot.good { background: #74c0fc; }
+.kb-dot.late, .kb-dot.miss { background: #495057; border-color: #ff8787; }
+.kb-head { position: absolute; top: -4px; bottom: -4px; width: 4px; margin-left: -2px; border-radius: 2px; background: #fff; box-shadow: 0 0 8px #fff; }
+.kb-judge { position: relative; min-height: 1.5em; margin-top: 8px; font-weight: 800; font-size: 1.1rem; }
+.kb-judge.perfect { color: #8ce99a; } .kb-judge.good { color: #a5d8ff; } .kb-judge.extra { color: #ffc9c9; }
+.kb-unlock { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 2; }
+.kb-rank { list-style: none; margin: 0 0 8px; padding: 6px 8px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow); font-size: .9rem; }
+.kb-rank li { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+.kb-rank li.kb-me { font-weight: 800; }
+.kb-rank .kb-place { width: 1.6em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.kb-rank .kb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-clap { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: clamp(120px, 24dvh, 200px); margin: 0 0 8px;
+  border: 0; border-radius: 26px; cursor: pointer; color: #fff; font: 800 1.5rem var(--font); background: linear-gradient(#ffa94d, #f76707);
+  box-shadow: 0 7px 0 #c2410c, var(--shadow); touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.kb-clap.go { background: linear-gradient(#ff8787, #e03131); box-shadow: 0 7px 0 #a61e1e, 0 0 0 4px rgba(255,135,135,.35); }
+.kb-clap:active { transform: translateY(5px); box-shadow: 0 2px 0 #c2410c; }
+.kb-hands { font-size: 3.2rem; line-height: 1; }
+.kb-clap.pop .kb-hands { animation: kb-pop .18s ease-out; }
+@keyframes kb-pop { 50% { transform: scale(1.3); } }
+.kb-result li.kb-me { font-weight: 800; }
+.kb-acc { font-weight: 700; }
+.kb-cal-stage { position: relative; height: 90px; display: flex; align-items: center; justify-content: center; }
+.kb-cal-dot { width: 70px; height: 70px; border-radius: 50%; background: var(--accent); opacity: .15; }
+.kb-cal-dot.lead { background: var(--muted); }
+.kb-cal-count { position: absolute; font: 900 1.6rem var(--font); color: var(--fg); }
+.kb-cal-pad { height: 120px; }
+@media (max-width: 600px), (max-height: 760px) {
+  .kb-live.quiz-full .dm-head h1 { font-size: 1.15rem; margin: 2px 0 4px; }
+  .kb-live.quiz-full .host-bar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) { .kb-pulse { transform: none; } .kb-clap.pop .kb-hands { animation: none; } }
+
 /* «Verbotene Wörter» (verboten.js) – phone first: the clock and the score on top, the card (word + 5 forbidden words)
    and big buttons for the explainer; the other team sees the card and a buzzer, the own team the clock */
 .vw-live.quiz-full { display: flex; flex-direction: column; height: 100dvh; overflow-y: auto; padding-bottom: 0; }
@@ -1549,3 +1611,10 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .ink-target.on { border-color: var(--bad, #d33); background: color-mix(in srgb, var(--bad, #d33) 12%, var(--card)); }
 .ink-target.off { opacity: .45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .ink-over, .ink-msg { transition: none; } }
+/* Ping-Pong doubles (minigames.js pong4Online) */
+.p4-seats { display: grid; gap: 6px; margin: 8px 0; }
+.p4-seat { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+.p4-seat.p4-me { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--card)); }
+.p4-lbl { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.p4-sel { flex: 0 0 48%; max-width: 48%; font: inherit; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); color: inherit; }
+.p4-row { justify-content: center; align-items: center; gap: 10px; margin: 8px 0 12px; }

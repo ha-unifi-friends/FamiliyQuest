@@ -71,7 +71,8 @@ function tttDuelCard() {
     h("p.small.muted", T("Two players, two devices: challenge somebody of the family – they get the invitation on their device.")),
     h("div.row.wrap",
       canPlay("ttt") ? h("button.btn", { onclick: () => { S.tttOnline = true; go("arcade/ttt"); } }, "⭕ ", T("Tic-Tac-Toe")) : null,
-      canPlay("pingpong") ? h("button.btn", { onclick: () => { S.pongOnline = true; go("arcade/pingpong"); } }, "🏓 ", T("Ping-Pong")) : null));
+      canPlay("pingpong") ? h("button.btn", { onclick: () => { S.pongOnline = true; go("arcade/pingpong"); } }, "🏓 ", T("Ping-Pong")) : null,
+      canPlay("pingpong") ? h("button.btn", { onclick: () => { S.pong4Online = true; go("arcade/pingpong"); } }, "🏓 ", T("Doubles (2 against 2)")) : null));
 }
 
 async function tttGame(box) {
@@ -400,6 +401,9 @@ async function pingpongGame(box) {
   let duel = null;
   try { duel = await api("community/duel"); } catch {}
   if ((duel && duel.kind === "pong") || S.pongOnline) { S.pongOnline = false; return pongOnline(box); }
+  let table = null;
+  try { table = await api("community/pong4"); } catch {}
+  if (table || S.pong4Online) { S.pong4Online = false; return pong4Online(box); }
   const saved = arcadeStore.get().pingpong || {};
   let mode = saved.mode || "medium", to = 7;
   const W = 400, H = 640, PW = 80, PH = 12, R = 9;
@@ -484,8 +488,8 @@ async function pingpongGame(box) {
   const drawHint = () => hint.replaceChildren(mode === "two" ? T("Each player moves the paddle on their side with a finger (or the keys A/D and ←/→). First to 7 points wins.")
     : T("Move your paddle (bottom) with your finger or the arrow keys. First to 7 points wins."));
   const modes = segmented([["easy", T("easy")], ["medium", T("medium")], ["hard", T("hard")], ["two", "👥 " + I18N.tr(T("Two players"))],
-    ["online", "📱 " + I18N.tr(T("Two devices"))]], mode,
-    v => { if (v === "online") return pongOnline(box); mode = v; arcadeStore.set("pingpong", { mode }); reset(); drawHint(); });
+    ["online", "📱 " + I18N.tr(T("Two devices"))], ["four", "📱📱 " + I18N.tr(T("Doubles"))]], mode,
+    v => { if (v === "online") return pongOnline(box); if (v === "four") return pong4Online(box); mode = v; arcadeStore.set("pingpong", { mode }); reset(); drawHint(); });
   drawHint();
   box.replaceChildren(h("section.card.pp-card", modes, h("div.pp-wrap", canvas), hint));
   reset(); requestAnimationFrame(loop);
@@ -672,5 +676,191 @@ function pongOnline(box) {
     try { st = await api("community/duel"); if (st && st.kind !== "pong") st = null; onState(); } catch {}
   }, 1200);
   sync = setInterval(send, 50);
+  requestAnimationFrame(loop);
+}
+
+// ---------------------------------------------------------------- Ping-Pong doubles on four devices (familyquest/pong4.py)
+// Two teams of two: a back paddle at the baseline and a short front paddle near the net. The host (seat A1) moves the
+// ball and the bots, like X in the duel; every device sends only its own paddle. Everybody sees the own team at the
+// bottom (team B sees the table turned round). Seats without a person are played by bots on the host's device.
+function pong4Online(box) {
+  const W = 400, H = 640, PW = 80, PH = 12, R = 9, SPEED = 300, MAXSP = 820;
+  const ROW = { A1: H - 30, A2: H / 2 + 90, B1: 30, B2: H / 2 - 90 };           // paddle rows as team A sees the table
+  const front = s => s[1] === "2", len = s => front(s) ? PW * 0.55 : PW, dirOf = s => s[0] === "A" ? -1 : 1;
+  const BOT = { easy: 150, normal: 230, hard: 340 }, AIM = { easy: 1.6, normal: 1.15, hard: 0.85 }, aim = {}, LVL = { easy: T("easy"), normal: T("normal"), hard: T("hard") };
+  let st = null, timer = null, sync = null, alive = true, cheered = -1, last = 0, recv = 0, prev = "";
+  let myPad = 0.5, ball = null, points = { A: 0, B: 0 }, wait = 0, over = null, sending = false, bots = {};
+  const token = {}; S.p4Open = token; box.p4 = token;   // no invitation popup while the table is open
+  const body = h("div");
+  const canvas = h("canvas.pp-canvas", { width: W, height: H }), ctx = canvas.getContext("2d");
+  const stop = () => { alive = false; if (S.p4Open === token) S.p4Open = null; clearInterval(timer); clearInterval(sync); };
+  const back = async () => { stop(); try { await api("community/pong4/leave", { method: "POST" }); } catch {} pingpongGame(box); };
+  const act = async (path, b) => { try { st = await api("community/pong4/" + path, { method: "POST", body: b }); onState(true); } catch (e) { toast(e.message, "bad"); } };
+  const host = () => st && st.host;
+  const flip = () => st && st.team === "B";
+  const seatName = s => { const x = st.seats[s]; return x.bot ? "🤖 " + I18N.tr(LVL[x.bot]) : x.name; };
+  const teamName = t => seatName(t + "1") + " + " + seatName(t + "2");
+  // ---- the match (only on the host): ball, bots, points
+  const serve = t => {                                   // the team that lost the point serves from its baseline
+    const a = Math.random() * 0.6 - 0.3, d = t === "A" ? -1 : 1;
+    ball = { x: 0.5, y: t === "A" ? (H - 70) / H : 70 / H, vx: Math.sin(a) * SPEED / W, vy: d * Math.cos(a) * SPEED / H }; wait = 0.9;
+  };
+  const padOf = s => s === st.me ? myPad : st.seats[s].state === "bot" ? (bots[s] ?? 0.5) : st.pong.pads[s];
+  const moveBots = dt => {
+    for (const s of ["A1", "A2", "B1", "B2"]) {
+      const x = st.seats[s];
+      if (x.state !== "bot") continue;
+      const coming = ball && Math.sign(ball.vy) === -dirOf(s);
+      // a bot aims with a part of its paddle (a new choice for every ball): returns get an angle, easy bots miss now and then
+      if (!coming) delete aim[s]; else if (aim[s] == null) aim[s] = (Math.random() * 2 - 1) * AIM[x.bot] * len(s) / 2 / W;
+      const target = coming ? ball.x - aim[s] : 0.5;
+      const p = bots[s] ?? 0.5, m = BOT[x.bot] * dt / W, half = len(s) / 2 / W;
+      bots[s] = Math.max(half, Math.min(1 - half, p + Math.max(-m, Math.min(m, target - p))));
+    }
+  };
+  const hit = s => {
+    const px = padOf(s) * W, py = ROW[s], dirOut = dirOf(s), half = len(s) / 2, bx = ball.x * W, by = ball.y * H;
+    if (Math.abs(bx - px) <= half + R && Math.abs(by - py) <= PH / 2 + R && Math.sign(ball.vy) === -dirOut) {
+      const off = Math.max(-1, Math.min(1, (bx - px) / half)), sp = Math.min(Math.hypot(ball.vx * W, ball.vy * H) * (front(s) ? 1.05 : 1.08), MAXSP);
+      ball.vx = Math.sin(off) * sp / W; ball.vy = dirOut * Math.cos(off) * sp / H; ball.y = (py + dirOut * (PH / 2 + R)) / H;
+      try { Sound.play("tap"); } catch {}
+    }
+  };
+  const step = dt => {
+    moveBots(dt);
+    if (!ball || st.status !== "play") return;
+    if (wait > 0) { wait -= dt; return; }
+    for (let i = 0; i < 2; i++) {                        // two small steps: the fast ball does not slip through a paddle
+      ball.x += ball.vx * dt / 2; ball.y += ball.vy * dt / 2;
+      if (ball.x < R / W) { ball.x = R / W; ball.vx = Math.abs(ball.vx); } else if (ball.x > 1 - R / W) { ball.x = 1 - R / W; ball.vx = -Math.abs(ball.vx); }
+      ["A1", "A2", "B1", "B2"].forEach(hit);
+    }
+    if (ball.y * H > H + R) { points.B++; point("A"); } else if (ball.y * H < -R) { points.A++; point("B"); }
+  };
+  const point = loser => { if (points.A >= st.to || points.B >= st.to) { over = points.A >= st.to ? "A" : "B"; ball = null; } else serve(loser); };
+  const send = async () => {
+    if (gone() || sending || !st || st.status !== "play") return;
+    sending = true;
+    const b = { pad: flip() ? 1 - myPad : myPad };       // always as team A sees the table
+    if (host()) Object.assign(b, { bots, ball, points, over });
+    try { st = await api("community/pong4/sync", { method: "POST", body: b }); recv = performance.now(); onState(); } catch {}
+    sending = false;
+  };
+  // ---- drawing: my team at the bottom
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim() || "#5b5bd6";
+  const render = () => {
+    const p = st.pong, pts = host() ? points : p.points, mine = st.team, other = mine === "A" ? "B" : "A";
+    const X = x => flip() ? (1 - x) * W : x * W, Y = y => flip() ? H - y : y;
+    ctx.fillStyle = "#14532d"; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 3; ctx.strokeRect(6, 6, W - 12, H - 12);
+    ctx.setLineDash([10, 10]); ctx.beginPath(); ctx.moveTo(6, H / 2); ctx.lineTo(W - 6, H / 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = "bold 44px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.3)";
+    ctx.fillText(String(pts[other]), W / 2, H / 4 - 20); ctx.fillText(String(pts[mine]), W / 2, H * 3 / 4 + 50);
+    for (const s of ["A1", "A2", "B1", "B2"]) {
+      const v = s === st.me ? (flip() ? 1 - myPad : myPad) : host() ? padOf(s) : p.pads[s];
+      const l = len(s), x = X(v), y = Y(ROW[s]);
+      ctx.fillStyle = css(s[0] === mine ? "--ans-2" : "--ans-4"); ctx.globalAlpha = front(s) ? 0.85 : 1;
+      ctx.fillRect(x - l / 2, y - PH / 2, l, PH); ctx.globalAlpha = 1;
+      if (s === st.me) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.strokeRect(x - l / 2 - 2, y - PH / 2 - 2, l + 4, PH + 4); }
+    }
+    let b = host() ? ball : p.ball;
+    if (b && !host() && st.status === "play") {           // between two updates: move it on
+      const dt = Math.min(0.12, (performance.now() - recv) / 1000);
+      b = { x: b.x + b.vx * dt, y: b.y + b.vy * dt };
+    }
+    if (b && st.status === "play") { ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(X(b.x), Y(b.y * H), R, 0, Math.PI * 2); ctx.fill(); }
+    ctx.font = "bold 15px system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.fillText(teamName(other), W / 2, H / 4 + 6); ctx.fillText(teamName(mine), W / 2, H * 3 / 4 + 76);
+    if (st.status === "done") {
+      ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillRect(0, H / 2 - 60, W, 120); ctx.fillStyle = "#fff"; ctx.font = "bold 22px system-ui, sans-serif";
+      ctx.fillText(I18N.tr(T("Winner: {0}")).replace("{0}", teamName(st.result)), W / 2, H / 2 + 8);
+    }
+  };
+  const gone = () => !alive || !box.isConnected || box.p4 !== token;     // a newer view in the same place takes over
+  const loop = t => {
+    if (gone()) return stop();
+    const dt = Math.min(0.033, (t - (last || t)) / 1000); last = t;
+    if (st && (st.status === "play" || st.status === "done") && st.pong) { if (host() && st.status === "play") step(dt); render(); }
+    requestAnimationFrame(loop);
+  };
+  const toPad = e => {
+    if (!st || !st.me) return;
+    const r = canvas.getBoundingClientRect(), half = len(st.me) / 2 / W;
+    myPad = Math.max(half, Math.min(1 - half, (e.clientX - r.left) / r.width));
+  };
+  canvas.addEventListener("pointerdown", toPad); canvas.addEventListener("pointermove", toPad);
+  // ---- setting up the table
+  const SEAT_LABEL = { A1: T("You – back"), A2: T("Partner – front"), B1: T("Opponent – back"), B2: T("Opponent – front") };
+  const choice = (list, cur, onchange) => h("select.p4-sel", { onchange: e => onchange(e.target.value) },
+    ...["easy", "normal", "hard"].map(l => h("option", { value: "bot:" + l, selected: cur === "bot:" + l }, "🤖 ", I18N.tr(T("Bot")), " · ", I18N.tr(LVL[l]))),
+    ...list.map(o => h("option", { value: "pid:" + o.id, disabled: o.busy, selected: cur === "pid:" + o.id }, o.name, o.busy ? " · " + I18N.tr(T("is playing")) : "")));
+  const spec = v => v.startsWith("bot:") ? { bot: v.slice(4) } : { pid: +v.slice(4) };
+  const setup = async () => {
+    let list = [];
+    try { list = await api("community/pong4/players"); } catch (e) { toast(e.message, "bad"); }
+    const free = list.filter(o => !o.busy);
+    const pick = { A2: free[0] ? "pid:" + free[0].id : "bot:normal", B1: free[1] ? "pid:" + free[1].id : "bot:normal", B2: free[2] ? "pid:" + free[2].id : "bot:normal" };
+    let to = 7;
+    body.replaceChildren(h("p.small.muted", T("Two against two: each team has a back paddle and a short front paddle near the net. Invite up to three family members – bots take the other seats.")),
+      h("div.p4-seats", ...["A2", "B1", "B2"].map(s => h("label.p4-seat", h("span.p4-lbl", s[0] === "A" ? "🟦 " : "🟥 ", SEAT_LABEL[s]), choice(list, pick[s], v => { pick[s] = v; })))),
+      h("div.row.p4-row", h("span.small", T("Points to win")), segmented([[5, "5"], [7, "7"], [11, "11"]], to, v => { to = v; })),
+      h("div.row.center", h("button.btn.big", { onclick: async () => {
+        try { st = await api("community/pong4", { method: "POST", body: { seats: { A2: spec(pick.A2), B1: spec(pick.B1), B2: spec(pick.B2) }, to } }); onState(true); }
+        catch (e) { toast(e.message, "bad"); }
+      } }, "🏓 ", T("Set up the table"))));
+  };
+  const lobby = async () => {
+    const ready = ["A1", "A2", "B1", "B2"].every(s => ["host", "in", "bot"].includes(st.seats[s].state));
+    const mine = st.seats[st.me];
+    let list = [];
+    if (host() && ["A2", "B1", "B2"].some(s => st.seats[s].state === "declined")) { try { list = await api("community/pong4/players"); } catch {} }
+    const ICON = { host: "⭐ ", in: "✅ ", bot: "", invite: "⏳ ", declined: "✖️ " };
+    const row = s => {
+      const x = st.seats[s];
+      const right = host() && x.state === "declined"
+        ? choice(list.filter(o => !Object.values(st.seats).some(y => y.pid === o.id && y.state !== "declined")), "", v => act("seat", { seat: s, ...spec(v) }))
+        : h("span.small.muted", x.state === "invite" ? T("waiting …") : x.state === "declined" ? T("No thanks") : "");
+      if (right.tagName === "SELECT") right.prepend(h("option", { value: "", selected: true, disabled: true }, I18N.tr(T("Choose …"))));
+      return h("div.p4-seat" + (s === st.me ? ".p4-me" : ""), h("span.p4-lbl", s[0] === "A" ? "🟦 " : "🟥 ", I18N.tr(front(s) ? T("front") : T("back")), ": ",
+        h("b", ICON[x.state], seatName(s) || x.name)), right);
+    };
+    body.replaceChildren(h("p.ttt-status.center", I18N.tr(T("First to {0} points")).replace("{0}", st.to)),
+      h("div.p4-seats", ...["A1", "A2", "B1", "B2"].map(row)),
+      mine.state === "invite"
+        ? h("div.row.center", h("button.btn.big", { onclick: () => act("accept") }, "▶ ", T("Play")), h("button.btn.ghost", { onclick: back }, T("No thanks")))
+        : h("div.row.center", host() ? h("button.btn.big", { disabled: !ready, onclick: () => act("start") }, "▶ ", T("Start")) : h("p.small.muted", T("The host starts the match.")),
+          h("button.btn.ghost", { onclick: back }, host() ? T("Cancel") : T("Leave"))));
+  };
+  let shown = "";
+  const onState = (force = false) => {
+    if (!st) { if (shown !== "pick") { shown = "pick"; setup(); } return; }
+    if (host() && st.status === "play" && (prev === "lobby" || prev === "done" || prev === "")) {   // a new round: the host serves
+      if (prev !== "" || (!ball && !over && points.A + points.B === 0)) { points = { A: 0, B: 0 }; over = null; bots = {}; serve("A"); }
+    }
+    prev = st.status;
+    if (st.status === "done") {
+      const round = st.score.A + st.score.B;
+      if (st.result === st.team && round !== cheered) { cheered = round; confetti(); try { Sound.play("done"); } catch {} }
+    }
+    const key = st.status === "lobby" ? "lobby:" + JSON.stringify(st.seats) : st.status;
+    if (!force && key === shown) return;
+    shown = key;
+    if (st.status === "lobby") return lobby();
+    if (st.status === "gone") return body.replaceChildren(h("div.center",
+      h("p.ttt-status", I18N.tr(T("{0} has left the game.")).replace("{0}", st.seats.A1.name)), h("button.btn", { onclick: back }, "← ", T("Back"))));
+    body.replaceChildren(h("div.pp-wrap", canvas),
+      h("p.small.muted.arcade-hint", I18N.tr(T("Move your paddle (white frame) with your finger. First to {0} points wins.")).replace("{0}", st.to)),
+      h("div.row.center", st.status === "done" ? h("button.btn", { onclick: () => act("again") }, "🔄 ", T("New round")) : null,
+        h("button.btn.ghost", { onclick: back }, T("Leave"))));
+  };
+  box.replaceChildren(h("section.card.pp-card", h("div.row", h("h2.grow", "🏓 ", T("Doubles")),
+    h("button.btn.ghost.small", { onclick: back }, "← ", T("Against the app"))), body));
+  (async () => { try { st = await api("community/pong4"); } catch {} onState(true); })();
+  timer = setInterval(async () => {                      // set-up and lobby: slow; during the match the paddle sync carries the state
+    if (gone()) return stop();
+    if (st && st.status === "play") return;
+    try { const n = await api("community/pong4"); if (n || shown !== "pick") { st = n; onState(); } } catch {}
+  }, 1200);
+  sync = setInterval(send, 66);
   requestAnimationFrame(loop);
 }
