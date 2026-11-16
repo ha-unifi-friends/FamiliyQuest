@@ -35,7 +35,7 @@ async function start() {
   name.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
   screen(h("section.card.center.guest-join",
     h("img", { src: "img/icon.svg", alt: "", width: 64, height: 64 }),
-    h("h1", { bingo: "🎱 Bingo", poker: "🃏 Texas Hold'em", tschau: "🂡 Tschau Sepp", karussell: "🎠 Kartenkarussell", song: "🎵 Errate den Song", domino: "🁫 Domino", paarjagd: "🧠 " + I18N.tr(T("Paarjagd")), werbinich: "🎭 " + I18N.tr(T("Wer bin ich?")), kartenlauf: "🏁 Kartenlauf", stadtland: "🏙️ " + I18N.tr(T("Stadt-Land-Fluss")), zeichnen: "🎨 " + I18N.tr(T("Zeichnen & Raten")), wuerfel: "🎲 " + I18N.tr(T("Fünf Würfel")), heimwaerts: "🏠 " + I18N.tr(T("Heimwärts")), jump: "🦘 Jump", klatsch: "👏 " + I18N.tr(T("Klatsch den Beat")), verboten: "🚫 " + I18N.tr(T("Verbotene Wörter")), jass: "♣️ " + I18N.tr(T("Jass")), werwolf: "🐺 " + I18N.tr(T("Werwölfe")) }[info.game] || "🎯 ", info.game === "quiz" ? C(info.title) : null),
+    h("h1", { bingo: "🎱 Bingo", poker: "🃏 Texas Hold'em", tschau: "🂡 Tschau Sepp", karussell: "🎠 Kartenkarussell", song: "🎵 Errate den Song", domino: "🁫 Domino", paarjagd: "🧠 " + I18N.tr(T("Paarjagd")), werbinich: "🎭 " + I18N.tr(T("Wer bin ich?")), kartenlauf: "🏁 Kartenlauf", stadtland: "🏙️ " + I18N.tr(T("Stadt-Land-Fluss")), zeichnen: "🎨 " + I18N.tr(T("Zeichnen & Raten")), wuerfel: "🎲 " + I18N.tr(T("Fünf Würfel")), heimwaerts: "🏠 " + I18N.tr(T("Heimwärts")), jump: "🦘 Jump", klatsch: "👏 " + I18N.tr(T("Klatsch den Beat")), verboten: "🚫 " + I18N.tr(T("Verbotene Wörter")), jass: "♣️ " + I18N.tr(T("Jass")), werwolf: "🐺 " + I18N.tr(T("Werwölfe")), schach: "♟️ " + I18N.tr(T("Chess")) }[info.game] || "🎯 ", info.game === "quiz" ? C(info.title) : null),
     h("p", T("You are invited to play along! What is your name?")),
     name, h("button.btn.big", { onclick: go }, "🙋 ", T("Join")),
     h("div.row.center", langPicker())));
@@ -43,7 +43,7 @@ async function start() {
 }
 
 function play(me, game) {
-  const box = h("div" + ({ bingo: ".bingo-live", poker: ".poker-live", tschau: ".cards-live", karussell: ".cards-live", domino: ".dm-live", paarjagd: ".pj-live", werbinich: ".wb-live", kartenlauf: ".kl-live", stadtland: ".sl-live", zeichnen: ".zr-live", wuerfel: ".fw-live", heimwaerts: ".hw-live", jump: ".ju-live", klatsch: ".kb-live", verboten: ".vw-live", jass: ".ja-live", werwolf: ".ww-live" }[game] || ".quiz-live"));
+  const box = h("div" + ({ bingo: ".bingo-live", poker: ".poker-live", tschau: ".cards-live", karussell: ".cards-live", domino: ".dm-live", paarjagd: ".pj-live", werbinich: ".wb-live", kartenlauf: ".kl-live", stadtland: ".sl-live", zeichnen: ".zr-live", wuerfel: ".fw-live", heimwaerts: ".hw-live", jump: ".ju-live", klatsch: ".kb-live", verboten: ".vw-live", jass: ".ja-live", werwolf: ".ww-live", schach: ".ch-live" }[game] || ".quiz-live"));
   screen(box);
   const back = () => screen(h("section.card.center", h("div.big-ic", "👋"), h("h2", T("Thanks for playing!")),
     h("button.btn", { onclick: () => location.reload() }, T("Back"))));
@@ -61,6 +61,7 @@ function play(me, game) {
   if (game === "verboten") return verbotenLive(box, me, back);
   if (game === "jass") return jassLive(box, me, back);
   if (game === "werwolf") return werwolfLive(box, me, back);
+  if (game === "schach") return schachLive(box, me, back);
   ({ bingo: bingoLive, poker: pokerLive, song: songLive }[game] || quizLive)(box, me, back);
 }
 

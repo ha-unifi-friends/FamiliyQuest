@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.4
+
+- New game «Schach» (chess): full rules, against bots (easy / normal / hard), on two phones or on one, optional clock – games can be paused and continued later, several at once
+
 ## 1.0.0-beta.3
 
 - New game «Klatsch den Beat»: everybody claps a rhythm back at the same time, judged to the millisecond, harder every round, calibration for the phone delay, bots, coins for places 1–3
