@@ -794,6 +794,44 @@ family on the **winning side** – only at a table with **at least two people of
 to the end, paid once, never to guests. The winners get the «No. 1» hat; every person of the family gets a history
 entry (won or lost, the role).
 
+### Schach (chess)
+
+Games → **♟️ Chess**: chess with the full standard rules. The card lists **your games** (running and paused – tap
+one to continue), the **invitations** to you and the open seats, and three ways to start:
+
+- **🤖 Against the bot** – easy (mostly random moves, captures preferred), normal (looks two half-moves ahead:
+  material and mobility) or hard (thinks 3–4 half-moves deep with piece-square tables; answers within about 2 s).
+  Choose your colour (white, black or random).
+- **👥 Against the family** – invite one person of the family (the invitation shows up on their start page and in
+  their chess card; they join or decline) or leave the seat **open for anybody** of the family – guests join via QR
+  code (👥 Invite guests). The game starts when the second player joins; each plays on their own device.
+- **📱 Two on one device** – pass and play: the board turns to whoever is to move.
+
+**Clock** (optional): 5, 10 or 15 minutes per side, no increment. Who runs out of time loses – a draw if the other
+side has nothing left to mate with.
+
+**Playing:** tap a piece, then one of the marked squares (dots; a ring for a capture). The last move is highlighted,
+a king in check glows red, captured pieces and the material lead show next to each player, the move list (in
+standard notation) folds out under the board. A pawn on the last rank asks which piece it becomes. The server
+checks every move: check, castling (not out of, through or into check), en passant, promotion.
+
+**The end:** checkmate, stalemate, the same position for the third time (automatic draw), 50 moves without a capture
+or a pawn move (automatic draw), not enough material to mate (K–K, K+B–K, K+N–K, bishops all on one colour),
+resignation (🏳), a draw by agreement (½: the other player accepts or declines; the bot accepts only when it stands
+clearly worse; on one device the draw is agreed at once), or time.
+
+**Pausing:** either player taps **⏸ Pause** – the clock stops, nobody can move, the game waits in the database
+(also over a restart) until a player taps **▶ Continue**. Several games per person at a time (up to 12 unfinished).
+A game alone (bot or one device) with a clock pauses by itself when you leave it. Who started a game or a parent
+can **delete** a paused game (🗑) or an open invitation. The parent area lists every chess game (Community › Chess)
+and **Running games** lists them too (paused ones marked ⏸) – «End» there ends a game without a result, no coins.
+
+**Coins:** set by the parents in Community › Chess (three numbers, default 10 / 5 / 2): the winner of a game
+between **two people of the family** / a win against the **hard bot** / against the **normal bot**. Only the winner,
+only after at least **10 own moves**, paid once – never against the easy bot, never on one device, never against
+guests. The winner of a game between two people of the family gets the «No. 1» hat; everybody of the family who
+played gets a history entry (won / lost / draw, against whom, how it ended).
+
 ### Game corner
 
 Family → **🕹️ Game corner**: small games that run on the device itself (only a duel on two devices goes over

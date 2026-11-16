@@ -26,7 +26,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -1676,10 +1676,115 @@ def werwolf_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.werwolf.state("werwolf", prof["id"])
 
 
+# ---------------------------------------------------------------- «Schach» (familyquest/schach.py) – several games at a time, by id
+class SchachStartIn(BaseModel):
+    mode: str = "bot"                    # bot | duel | local
+    level: str | None = None             # bot: easy | normal | hard
+    color: str | None = None             # white | black | random
+    clock: int | None = None             # minutes per side: 0 | 5 | 10 | 15
+    opponent: int | None = None          # duel: the invited person (None: open for anybody of the family, guests via QR)
+
+
+class SchachMoveIn(BaseModel):
+    frm: str = Field(max_length=2)
+    to: str = Field(max_length=2)
+    promo: str | None = Field(default=None, max_length=1)
+
+
+class SchachDrawIn(BaseModel):
+    action: str                          # offer | accept | decline
+
+
+def _schach_family(fq, prof: dict) -> list[dict]:
+    """Who of the family can be invited to a duel (chess switched on for them)."""
+    out = []
+    for p in fq.db.q("SELECT * FROM profile WHERE archived=0 AND role IN ('kid','parent') ORDER BY role DESC, name"):
+        if p["id"] != prof["id"] and fq.games_allowed(p, "schach"):
+            out.append({"id": p["id"], "name": p["name"], "avatar": fq.profile_public(p)["avatar"]})
+    return out
+
+
+@router.get("/schach")
+def schach_overview(request: Request, prof: dict = Playing) -> dict:
+    fq = app_of(request)
+    out = fq.schach.overview(prof["id"], prof["role"] == "parent")
+    out["family"] = _schach_family(fq, prof) if prof["role"] != "guest" else []
+    return out
+
+
+@router.post("/schach/start")
+def schach_start(body: SchachStartIn, request: Request, prof: dict = Gamer) -> dict:
+    fq = app_of(request)
+    if prof["role"] == "guest":
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+    gid = _run(fq.schach.start, prof["id"], body.model_dump(exclude={"opponent"}), body.opponent)
+    return _run(fq.schach.state, gid, prof["id"])
+
+
+@router.get("/schach/{gid}")
+def schach_state(gid: int, request: Request, prof: dict = Playing) -> dict:
+    return _run(app_of(request).schach.state, gid, prof["id"], prof["role"] == "parent")
+
+
+@router.post("/schach/{gid}/join")
+def schach_join(gid: int, request: Request, prof: dict = Gamer) -> dict:
+    fq = app_of(request)
+    if prof["role"] == "guest":
+        raise HTTPException(403, "Guests join with the invitation")
+    _run(fq.schach.join, "schach", prof["id"], gid)
+    return _run(fq.schach.state, gid, prof["id"])
+
+
+@router.post("/schach/{gid}/move")
+def schach_move(gid: int, body: SchachMoveIn, request: Request, prof: dict = Playing) -> dict:
+    fq = app_of(request)
+    _run(fq.schach.move, gid, prof["id"], body.frm, body.to, body.promo)
+    return _run(fq.schach.state, gid, prof["id"])
+
+
+@router.post("/schach/{gid}/pause")
+def schach_pause(gid: int, request: Request, prof: dict = Playing) -> dict:
+    fq = app_of(request)
+    _run(fq.schach.pause, gid, prof["id"])
+    return _run(fq.schach.state, gid, prof["id"])
+
+
+@router.post("/schach/{gid}/resume")
+def schach_resume(gid: int, request: Request, prof: dict = Playing) -> dict:
+    fq = app_of(request)
+    _run(fq.schach.resume, gid, prof["id"])
+    return _run(fq.schach.state, gid, prof["id"])
+
+
+@router.post("/schach/{gid}/resign")
+def schach_resign(gid: int, request: Request, prof: dict = Playing) -> dict:
+    fq = app_of(request)
+    _run(fq.schach.resign, gid, prof["id"])
+    return _run(fq.schach.state, gid, prof["id"])
+
+
+@router.post("/schach/{gid}/draw")
+def schach_draw(gid: int, body: SchachDrawIn, request: Request, prof: dict = Playing) -> dict:
+    fq = app_of(request)
+    _run(fq.schach.draw, gid, prof["id"], body.action)
+    return _run(fq.schach.state, gid, prof["id"])
+
+
+@router.post("/schach/{gid}/delete")
+def schach_delete(gid: int, request: Request, prof: dict = Gamer) -> dict:
+    """Who started the game or a parent deletes a paused game or an open invitation; the invited person declines."""
+    fq = app_of(request)
+    _run(fq.schach.delete, gid, prof)
+    out = fq.schach.overview(prof["id"], prof["role"] == "parent")
+    out["family"] = _schach_family(fq, prof)
+    return out
+
+
 # ---------------------------------------------------------------- guests
 class InviteIn(BaseModel):
     game: str                       # quiz | bingo
     on: bool = True
+    gid: int | None = None          # chess: which game (an open seat)
 
 
 class GuestJoinIn(BaseModel):
@@ -1693,6 +1798,15 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
     points to the guest page. Closing it stays with who leads the game."""
     from ..netinfo import home_access
     fq = app_of(request)
+    if body.game == "schach":                         # several games: the open seat of this person's game (or a given one)
+        g = fq.schach._game("schach", gid=body.gid) if body.gid else fq.schach._game("schach", host=prof["id"])
+        if not g or not fq.schach.may_lead("schach", prof, g["id"]):
+            raise HTTPException(400, "No game is running")
+        try:
+            inv = fq.guests.invite("schach", body.on, g["id"])
+        except GuestError as e:
+            raise HTTPException(400, str(e)) from None
+        return {"invite": inv, "access": await home_access(fq.settings)}
     if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
                  "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "klatsch": fq.klatsch, "verboten": fq.verboten,
