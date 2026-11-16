@@ -26,7 +26,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -1221,6 +1221,76 @@ def jump_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.jump.state("jump", prof["id"])
 
 
+# ---------------------------------------------------------------- «Klatsch den Beat» (familyquest/klatsch.py)
+class KlatschStartIn(BaseModel):
+    solo: bool = False                   # alone (private) – optionally with practice bots
+    bots: int | None = None              # 0–7 bots
+    level: str | None = None             # easy | normal | hard
+    rounds: int | None = None            # 5–8
+    bot_ids: list[int | str] = []
+
+
+class KlatschSyncIn(BaseModel):
+    round: int | None = None                                       # the round of these taps
+    taps: list[float] = Field(default_factory=list, max_length=64)  # the taps of this round (game times, delay subtracted)
+
+
+def _lead_klatsch(fq, prof: dict) -> None:
+    if not fq.klatsch.may_lead("klatsch", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/klatsch")
+def klatsch_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).klatsch.state("klatsch", prof["id"])
+
+
+@router.get("/klatsch/rules")
+def klatsch_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).klatsch.rules_info()
+
+
+@router.post("/klatsch/start")
+def klatsch_start(body: KlatschStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 7, body.level or "normal", BOTS)
+    _run(fq.klatsch.start, "klatsch", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.klatsch.state("klatsch", prof["id"])
+
+
+@router.post("/klatsch/join")
+def klatsch_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.klatsch.join, "klatsch", prof["id"])
+    return fq.klatsch.state("klatsch", prof["id"])
+
+
+@router.post("/klatsch/begin")
+def klatsch_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_klatsch(fq, prof)
+    _run(fq.klatsch.begin, "klatsch", prof["id"])
+    return fq.klatsch.state("klatsch", prof["id"])
+
+
+@router.post("/klatsch/sync")
+def klatsch_sync(body: KlatschSyncIn, request: Request, prof: dict = Playing) -> dict | None:
+    """The app reports the taps of its own player for a round and gets the state back (scores, ranking)."""
+    fq = app_of(request)
+    return _run(fq.klatsch.report, prof["id"], body.round, body.taps)
+
+
+@router.post("/klatsch/end")
+def klatsch_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_klatsch(fq, prof)
+    fq.klatsch.end("klatsch", prof["id"])
+    return fq.klatsch.state("klatsch", prof["id"])
+
+
 # ---------------------------------------------------------------- «Zeichnen & Raten» (familyquest/zeichnen.py)
 class ZeichnenStartIn(BaseModel):
     category: str | None = None          # zeichnen_data.CATEGORIES
@@ -1623,9 +1693,9 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
     points to the guest page. Closing it stays with who leads the game."""
     from ..netinfo import home_access
     fq = app_of(request)
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verboten", "jass", "werwolf"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
-                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verboten": fq.verboten,
+                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "klatsch": fq.klatsch, "verboten": fq.verboten,
                  "jass": fq.jass, "werwolf": fq.werwolf}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:

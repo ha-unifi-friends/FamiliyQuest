@@ -1310,7 +1310,7 @@ async function gamesSection(s) {
   const kids = (await call("parent/profiles")).filter(p => p.role === "kid");
   let acc = (await call("parent/games")).access;
   const GAMES = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", "Kartenkarussell"], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Paarjagd")], ["werbinich", "🎭", T("Wer bin ich?")],
-    ["kartenlauf", "🏁", "Kartenlauf"], ["stadtland", "🏙️", T("Stadt-Land-Fluss")], ["zeichnen", "🎨", T("Zeichnen & Raten")], ["wuerfel", "🎲", T("Fünf Würfel")], ["heimwaerts", "🏠", T("Heimwärts")], ["jump", "🦘", "Jump"], ["verboten", "🚫", T("Verbotene Wörter")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werwölfe")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
+    ["kartenlauf", "🏁", "Kartenlauf"], ["stadtland", "🏙️", T("Stadt-Land-Fluss")], ["zeichnen", "🎨", T("Zeichnen & Raten")], ["wuerfel", "🎲", T("Fünf Würfel")], ["heimwaerts", "🏠", T("Heimwärts")], ["jump", "🦘", "Jump"], ["klatsch", "👏", T("Klatsch den Beat")], ["verboten", "🚫", T("Verbotene Wörter")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werwölfe")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
     ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
   const box = h("div.games-tbl");
   const save = async () => { try { acc = (await call("parent/games", { method: "PUT", body: { access: acc } })).access; toast(T("Saved"), "good"); } catch {} draw(); };
@@ -1658,7 +1658,7 @@ function runningGamesBox() {
 // ---------------------------------------------------------------- community: family quiz, family council, history
 async function communityView(main) {
   const me = P.meta.me;
-  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div");
+  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div");
   let quizHead = null;
   const showLive = async () => {
     let st = null; try { st = await call("community/quiz"); } catch {}
@@ -1799,6 +1799,16 @@ async function communityView(main) {
            h("button.btn.ghost", { onclick: () => jumpStartDialog(true, open) }, JU_ICON, " ", T("Alone")))],
       await gameRewardsRow("jump")));
   };
+  const showKlatsch = async () => {
+    let g = null; try { g = await call("community/klatsch"); } catch {}
+    const open = () => { const b = h("div.kb-live"); klatsch.replaceChildren(b); klatschLive(b, me, () => render()); };
+    klatsch.replaceChildren(sectionAdd("👏 " + I18N.tr(T("Klatsch den Beat")), appBtn("klatsch"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("A rhythm game on every device: listen to a beat, then everybody claps it back at the same time – the server judges the timing. Alone for a personal best, with practice bots or at the family table.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => klatschStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => klatschStartDialog(true, open) }, KB_ICON, " ", T("Alone")))],
+      await gameRewardsRow("klatsch")));
+  };
   const showVerboten = async () => {
     let g = null; try { g = await call("community/verboten"); } catch {}
     const open = () => { const b = h("div.vw-live"); verboten.replaceChildren(b); verbotenLive(b, me, () => render()); };
@@ -1835,9 +1845,9 @@ async function communityView(main) {
   main.append(h("h1", T("Community")),
     h("p.muted", T("Family quiz and family council – children can make quizzes, open topics and vote too.")),
     await councilSection(me), await pollsSection(me), await wichtelnSection(me),
-    runningGamesBox(), live, (quizHead = sectionAdd("🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)), bingo, song, cardBoxes.tschau, cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel, heimwaerts, jump, verboten, jass, werwolf, poker,
+    runningGamesBox(), live, (quizHead = sectionAdd("🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)), bingo, song, cardBoxes.tschau, cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel, heimwaerts, jump, klatsch, verboten, jass, werwolf, poker,
     section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
-  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showVerboten(); showJass(); showWerwolf(); drawHist();
+  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); drawHist();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
 }
 
