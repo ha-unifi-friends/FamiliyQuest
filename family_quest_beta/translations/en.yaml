@@ -4,11 +4,5 @@ configuration:
   direct_access:
     name: Direct access in the home network
     description: Also serve the app on port 8099 (set the port under Network). Children then pick their profile, with an optional PIN, instead of a Home Assistant login.
-  anthropic_api_key:
-    name: Anthropic API key (optional)
-    description: Enables "photo or PDF to draft pack" in the parent area. The photo is sent to the Claude API; every draft is checked by a parent before children see it.
-  anthropic_model:
-    name: Claude model
-    description: Model for the photo/PDF import.
 network:
   8099/tcp: Direct access (only with the option direct access)

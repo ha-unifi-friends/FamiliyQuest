@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-beta.2
+
+- Photo/PDF → draft pack now uses the AI set up in Home Assistant (AI Task: OpenAI, Google, Anthropic, a local Ollama …); the own Anthropic API key option is gone
+- The media folder is now mapped writable: the photo is put there only for the moment of the AI call and deleted right after
+
 ## 1.0.0-beta.1
 
 - Version 1 – the same state as 0.4.0-beta.26, now in a fresh repository

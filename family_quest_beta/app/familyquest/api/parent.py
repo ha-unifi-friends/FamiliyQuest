@@ -281,7 +281,7 @@ def meta(request: Request, me: dict = Parent) -> dict:
             "subjects": [subject_meta(k) for k in SUBJECTS], "profile_defaults": DEFAULT_PROFILE_SETTINGS,
             "ha": bool(fq.ha and fq.ha.connected), "planer": bool(fq.ha and fq.ha.planer_available),
             "ha_status": _ha_status(fq),
-            "ai": bool(fq.settings.anthropic_api_key), "version": fq.settings.version, "me": fq.profile_public(me),
+            "ai": ai_draft.available(fq), "version": fq.settings.version, "me": fq.profile_public(me),
             "ha_user": ha_user(request), "my_ha_user": profile_settings(me).get("ha_user_name") if profile_settings(me).get("ha_user_id") else None,
             "parent_ha_only": bool(fq.db.get_setting("parent_ha_only"))}
 
@@ -700,8 +700,6 @@ async def import_file(request: Request, file: UploadFile = File(...), me: dict =
         if table.is_table(name):
             return {"table": table.stage(fq, name, raw)}
         if ai_draft.is_document(name):
-            if not fq.settings.anthropic_api_key:
-                raise HTTPException(400, "Photo/PDF import needs an Anthropic API key in the app configuration")
             return {"drafts": ai_draft.draft_from_document(fq, name, raw)}
         return {"drafts": yaml_zip.import_bytes(fq, name, raw)}
     try:

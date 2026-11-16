@@ -23,8 +23,6 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 | Option | Meaning |
 | --- | --- |
 | `direct_access` | Also serve the app in the home network on port 8099 (Family Quest Beta: 8098; can be changed under *Network*). Without it only Home Assistant ingress can reach the app. Parent area › Settings shows the link as a QR code. |
-| `anthropic_api_key` | Optional. Enables *photo or PDF → draft pack* in the import. The file is sent to the Claude API; the result is always a draft. |
-| `anthropic_model` | Model for that import (default `claude-opus-5-5`). |
 | `log_level` | Log detail. |
 
 ## Data

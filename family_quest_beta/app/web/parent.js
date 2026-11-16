@@ -818,8 +818,8 @@ async function importView(main) {
   main.append(pageHead(T("Import"), h("button.btn.ghost", { onclick: () => { P.tab = "packs"; location.hash = "packs"; render(); } }, "← ", T("Packs"))),
     section(T("From a file"), drop,
       h("p.small.muted", T("Everything imported becomes a draft first. You check it, then publish it for the children.")),
-      P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: Claude reads it and makes a draft. Packs from school material stay private.")) :
-        h("p.small.muted", "📸 ", T("Photo/PDF import: add an Anthropic API key in the app configuration."))),
+      P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: the AI of Home Assistant reads it and makes a draft. Packs from school material stay private.")) :
+        h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section(T("From a link"), h("div.row", url, h("button.btn", { onclick: fromUrl }, T("Load")))),
     section(T("Format"), h("pre.small.example", { translate: "no" }, `id: franz-5kl-einheit-3
 titel: "Französisch 5. Klasse – Einheit 3"
@@ -2458,7 +2458,7 @@ async function settingsView(main) {
     section(T("About"), h("p.small", "Family Quest v" + P.meta.version), h("ul.small",
       h("li", "Home Assistant: ", P.meta.ha ? "✓" : h("span", { translate: "no" }, "– ", P.meta.ha_status || "")), h("li", I18N.tr(T("Planner")) + ": ✓ ", h("span.small.muted", T("(built in)"))),
       P.meta.planer ? h("li", T("Family Planer integration in Home Assistant: found – take it over under «Family Planer» above.")) : null,
-      h("li", I18N.tr(T("Photo/PDF import")) + ": ", P.meta.ai ? "✓" : h("span.small.muted", "– ", T("needs an Anthropic API key in the app configuration"))))));
+      h("li", I18N.tr(T("Photo/PDF import")) + ": ", P.meta.ai ? "✓" : h("span.small.muted", "– ", T("needs an AI Task in Home Assistant"))))));
   async function save() {
     const body = { family_visibility: f.family_visibility.value, sound: f.sound.checked, reminder_time: f.reminder_time.value.trim(),
       chore_reminder_time: f.chore_reminder_time.value.trim(),

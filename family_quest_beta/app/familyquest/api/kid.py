@@ -63,7 +63,7 @@ def info(request: Request) -> dict:
     return {"version": fq.settings.version,
             "setup_needed": not fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0),
             "ha": bool(fq.ha and fq.ha.connected), "planer": bool(fq.ha and fq.ha.planer_available),
-            "ai": bool(fq.settings.anthropic_api_key), "sound": s.get("sound", True),
+            "ai": False, "sound": s.get("sound", True),
             "family_visibility": s.get("family_visibility"), "kid_max_age": KID_MAX_AGE,
             # parent area only in Home Assistant: on the app port (tablets) it is not offered at all
             "parent_ha_only": bool(s.get("parent_ha_only")),
