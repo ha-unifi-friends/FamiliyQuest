@@ -1,0 +1,14 @@
+configuration:
+  log_level:
+    name: Logniveau
+  direct_access:
+    name: Directe toegang in het thuisnetwerk
+    description: De app ook op poort 8099 aanbieden (poort instellen onder Netwerk). Kinderen kiezen dan hun profiel, met optionele pincode, in plaats van in te loggen bij Home Assistant.
+  anthropic_api_key:
+    name: Anthropic-API-sleutel (optioneel)
+    description: Zet "foto of pdf naar conceptpakket" aan in het oudergedeelte. De foto wordt naar de Claude-API gestuurd; elk concept wordt door een ouder gecontroleerd voordat kinderen het zien.
+  anthropic_model:
+    name: Claude-model
+    description: Model voor de foto/pdf-import.
+network:
+  8099/tcp: Directe toegang (alleen met de optie directe toegang)

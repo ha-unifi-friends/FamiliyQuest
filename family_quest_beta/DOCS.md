@@ -1,0 +1,859 @@
+# Family Quest
+
+Learning in any subject with points, rewards and avatars – for the whole family, inside Home Assistant.
+
+## First start
+
+1. Open **Family Quest** in the sidebar and choose **Parent area** (or open `…/eltern`).
+2. Create the parent profile. It is always protected by a PIN (4–8 digits).
+3. **Profiles › Add child** – name, colour, PIN, daily goal (XP), exercises per lesson,
+   new cards per lesson, learning hours (e.g. `07:00-20:00`), automatic logout. With the Family Planer installed,
+   **Take over from Family Planer** creates a profile for every person and links it.
+4. **Profiles › Add parent** – more parents (each with an own PIN for the parent area). Every parent can confirm
+   chores and rewards and can learn along; enter a notify service per parent so approvals reach every parent's phone.
+   The last parent profile cannot be removed.
+   **PIN for children:** a *picture PIN* comes first – the child picks 4 of 12 symbols in its own order (tap them or
+   draw a line; 🔀 brings other symbols). At login the same 12 symbols appear in a new order every time, so a
+   watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN or
+   no PIN can be chosen instead.
+5. **Packs** – every child starts with all built-in packs; switch packs or whole level packs on and off per child.
+
+## Options
+
+| Option | Meaning |
+| --- | --- |
+| `direct_access` | Also serve the app in the home network on port 8099 (Family Quest Beta: 8098; can be changed under *Network*). Without it only Home Assistant ingress can reach the app. Parent area › Settings shows the link as a QR code. |
+| `anthropic_api_key` | Optional. Enables *photo or PDF → draft pack* in the import. The file is sent to the Claude API; the result is always a draft. |
+| `anthropic_model` | Model for that import (default `claude-opus-5-5`). |
+| `log_level` | Log detail. |
+
+## Data
+
+Everything lives in `/data/family_quest.db` (SQLite) and `/data/media/` – both part of Home Assistant backups.
+Additional packs can be placed in `/share/family_quest/packs` (YAML files, folders with YAML + pictures, or ZIP files);
+they are read at start. Packs changed in the parent area are not overwritten by the folder copy.
+
+## The app: menu and season designs
+
+The app has no bar at the bottom any more. At the top left **☰** opens the menu: Home, Learning, My card box, Shop,
+**Me** (avatar, own bots, PIN), Family, Planner – and language, light/dark, sound, the season design and log out. The
+header shows the clock and the buttons of the page you are on (e.g. «+ New deck»).
+
+**Season designs:** like the Family Planer, the header shows an animated scene for the design of the day. Built in and
+scheduled every year: spring, summer, autumn, winter, **Halloween** (20.10.–1.11.) and **Christmas** (1.12.–26.12.);
+events win over the seasons. In the parent area under **Settings › 🎨 Season designs** you switch them on or off,
+move their dates and add **own designs** (name, icon, colour, scene, from – to; e.g. a birthday week) – own designs
+come first. Children can switch the scene off on their device in the ☰ menu.
+
+## Points and rewards
+
+- **Accounts:** XP (progress, never spent), Coins (spendable), Internet minutes (off by default) – add your own.
+- **Rules:** event → amount → account, optional daily limit. Events: correct answer, card that was wrong before,
+  fast answer in the quiz, lesson finished, daily goal reached, quiz without mistakes, new badge, chore done,
+  7/30 day streak.
+- **Shop:** vouchers (parents fulfil them), internet minutes (to the profile's *budget entity*, with a daily limit),
+  Family Planer points, Home Assistant script (`script.xyz`, gets `profile`, `reward` as variables), avatar item.
+  With *Parents must approve* the amount is reserved and booked back on decline.
+- **Push approvals:** in *Settings* choose a notify service of the Companion app; the message has the buttons *OK* and *No*.
+
+### Pets
+
+The pets of the avatar shop (dog, cat, parrot, degu – the owl comes with the badge *Busy bee*) want to be looked after. Under
+**Me › 🐾 My pets** every pet has a name (Bello, Minka, Coco, Krümel, Eulalia – tap it to rename), its age in days and three
+bars: 🍖 hunger, 😊 mood, 🫧 cleanliness (0–100). Hunger and mood drop from full to empty in about 2 days,
+cleanliness in about 3 days.
+
+- **Feed** costs coins (*Settings › Learning › Pets: food costs*, default 2) and gives +40 hunger; **Play** (+35 mood)
+  and **Wash** (+50 cleanliness) are free. Bars go up to 100.
+- **Warnings:** a bar below 25 shows a banner on the start page («Bello is hungry»); when all three bars are empty a
+  red banner shows how many days are left, and the parents get a message once (Home Assistant notification and the
+  notify services of *Push approvals*).
+- If all bars stay at 0 for **3 days**, the pet dies: it is taken off the avatar, the unlock is removed, a note goes
+  into the coins history and the child sees a gentle message at the next login. The pet can be bought again in the
+  shop as a new baby (an owl that died costs 120 coins).
+- **Growth:** every pet starts as a baby (🍼, days 0–6), is young from day 7 and adult from day 30 – the badge on the
+  avatar grows with it and shows the age in days.
+- **Holiday care:** in *Overview* each child's card shows the pets; **⏸ Holiday care** stops the bars and the death
+  timer until it is switched off. On days the built-in planner has the child away on holiday (holiday found in the
+  calendars and decided as «away»), pet care pauses by itself.
+- **Bots:** the living pets of a child play along as bots in the card games, Domino, Paarjagd and Texas Hold'em
+  (only for their owner).
+- **🛍️ Furnish & dress up:** every pet card on the Me page (above *My bots*) shows the pet at home – its house as a
+  backdrop, the furniture around it and the pet in its outfit. The button opens the pet shop with three tabs:
+  - **Clothes** (30–80): bow, collar, sweater, raincoat, little dress, sunglasses, party hat, crown. The pet wears one
+    outfit; the child switches between the bought ones. The first time an outfit is worn the pet gets **+20 mood**
+    (once per outfit). The outfit also shows on the pet badge of the avatar.
+  - **House** (120–300): dog house, cat basket with scratching tree, bird cage, degu enclosure, castle – any pet may
+    live in any house, «★ fits best» marks the one made for its kind. One house is in use at a time.
+  - **Furniture** (20–60): bed, food bowl, toy ball, play wheel, cushion, lamp, plant, rug – up to **6** placed at a time.
+  - A house makes the mood drop **25 % slower**, each placed piece of furniture another **5 %** (at most **50 %**). A
+    house with at least 3 pieces of furniture shows ✨ *Happy home*. Bought items are put on / moved in / placed right
+    away and can be changed at any time.
+  - Everything belongs to that one pet and is **lost when the pet dies**.
+  - **Paying:** *Settings › Learning › Pet shop: pay with* – coins (default), XP, or both (the child chooses coins or
+    XP for each purchase; the price is the same number). XP spent in the pet shop lower the XP balance but **not the
+    level** (nor the daily goal or the weekly XP): the level counts the XP earned.
+
+## Behaviour weather
+
+Parent area → **⛅ Weather**: one list with every child (avatar, name, today's weather). Tap a symbol in the list to
+set it – its bonus or malus is booked right away. A small graph shows each child's weather of the last 30 days
+(the worst weather of each day; grey dashes = nothing set).
+
+Below the list you configure the symbols (default ☀️ +5, ⛅ 0, 🌧️ −5, ⛈️ −10 coins – best weather on top), the
+account, the daily reset time (default 12:00) and the weather everybody is back at after the reset (the reset books
+nothing). Each child sees only its own weather on its start page, never the weather of the others.
+
+## Family calendar
+
+Parent area → **📅 Calendar**: month view (a list on phones) with your own events – all day or with a time, with a
+symbol. Below:
+- **Templates:** school holidays and public holidays of every Swiss canton and year, from the free OpenHolidays
+  service (openholidaysapi.org – Home Assistant needs internet for it). You see a preview first.
+- **Import:** iCal files (.ics) or CSV with the columns title; start; end (dates like 04.07.2026 or 2026-07-04).
+- **Duplicate check:** an event with the same title and dates (or the same iCal UID) is marked and not taken over.
+- **Imports** can be removed again as a whole (e.g. the school holidays of a canton).
+- **Calendars from Home Assistant** (Google, school, waste collection …) can be shown in the family calendar – read only.
+The kiosk dashboard shows today's and tomorrow's events of the family calendar too.
+
+**Weather alarm:** in Dashboard → *Weather alarm* choose a weather entity of any Home Assistant weather integration.
+Rain (from a chosen chance), thunderstorm, snow, strong wind, cold or heat in the next hours → the dashboard (and,
+if wanted, the children's start page) shows what to take along – «take your rain jacket or umbrella» …
+
+### The family calendars in the planner
+
+The row **«Events»** of the planner's week shows the events of the Family Quest calendar and of the Home Assistant
+calendars chosen in the parent area (Calendar › Calendars from Home Assistant), next to the persons' own calendars.
+Tap a calendar in the legend at the top left to switch it off or on – on this device.
+
+### FamilyTime and OfflineTime
+
+Calendar › **+ 👨‍👩‍👧 FamilyTime** / **+ 📵 OfflineTime** (or the kind in the event window):
+- **FamilyTime** is highlighted in the calendar, on the start page of the children and on the kiosk dashboard, with a
+  countdown («starts in 2 h», «still 45 min – until 20:00»).
+- **OfflineTime** can switch off, for all or chosen children: the **internet** (a running internet time stops, it
+  cannot be started) and the **games of the app** (learning stays open). Without a tick it is only a notice.
+
+## Kiosk dashboard
+
+Parent area → **🖥️ Dashboard**: a read-only page for a wall tablet, TV or old phone – any browser, no login.
+Choose the children and what it shows: clock, crown, each child's weather, learning progress, streak, coins, open
+chores, the family goal, open Planer to-dos and today's events of Home Assistant calendars. Moods and messages to
+the parents are never shown. The link contains a secret key (🔄 «New link» makes a new one and the old screens stop);
+`&lang=fr-FR` fixes the language. The page refreshes itself and keeps the screen awake where the browser allows it.
+
+## Chore plan (Ämtliplan)
+
+Parent area › **Chores**: add chores with icon, points and account, how often (every day, on certain weekdays, once a
+week, once on a date), who (several children) and the assignment – *fixed* (every chosen child does it) or *rotating*
+(one child after the other, changing every day or every week). *Duty* chores usually give few or no points, *bonus*
+chores the full points. With *Parents confirm* a ticked-off chore waits for *OK* (points are booked) or *Once more*
+(back to open). The week plan shows who does what on each day; the rule *All chores of the week done* gives a bonus
+(20 coins by default). In *Settings* a chore reminder time announces open chores (via the Family Planer announcement
+queue) and fires `family_quest_aemtli_erinnerung`. Chores from the Family Planer appear on the dashboard next to them.
+
+## Shopping list (Bring!)
+
+Parent area › Settings › **Shopping list (Bring!)**: the to-do lists of Home Assistant are listed – Bring! lists
+first (from the Bring! integration of Home Assistant). *Show in the planner* makes one of them a smart list of the
+built-in planner, sorted by shop sections. It stays one list: what you add or tick in the planner shows up in the
+Bring! app and the other way round (Home Assistant syncs it with Bring!).
+
+## Home Assistant
+
+Per child profile (name in lower case, e.g. `mia`):
+
+| Entity | |
+| --- | --- |
+| `sensor.family_quest_mia_xp_heute` | XP today, attribute `daily_goal` |
+| `sensor.family_quest_mia_<account>` | balance of each spendable account, e.g. `_coins` |
+| `sensor.family_quest_mia_streak` | days in a row with the daily goal |
+| `sensor.family_quest_mia_level` | level, attributes `xp`, `next_level_at` |
+| `binary_sensor.family_quest_mia_tagesziel` | on once the daily goal is reached |
+| `sensor.family_quest_mia_aemtli_offen` | number of open chores today, attribute `chores` (names) |
+
+When a child sets its avatar to the sad face, the parents get a quiet note (Home Assistant notification and a push
+without buttons, once per day) and the parent overview shows «feels sad (since …)». Event: `family_quest_stimmung`.
+
+Events: `family_quest_lektion_fertig`, `family_quest_aemtli_erledigt`, `family_quest_abzeichen`, `family_quest_erinnerung`,
+`family_quest_aemtli_erinnerung`
+(each with `profile` and `profile_id`). The sensors are written through the REST API, so they are recreated when the app
+starts and do not have a unique id.
+
+### Family Planer
+
+Family Quest reads the persons and their chore lists (`todo.*`) from the Family Planer's entity registry. Link a profile
+with a person (profile dialog) and the child sees today's chores on its dashboard and can tick them off; a chore ticked off
+in Family Quest, the Family Planer or the Home Assistant to-do list books the rule *Chore done* once per day. Chores that
+were already done when the app started are remembered without points.
+
+### Internet time
+
+**Managed by Family Quest (recommended):** in the child's profile choose the UniFi firewall/traffic rule (the switch the
+UniFi Network integration creates for it) and whether the rule blocks the internet while the switch is on. The budget is
+the account *Internet minutes* (filled by the shop, rules such as the 7 day streak, or parents with *Book points*). The
+child starts and stops the internet time on its dashboard; one minute is booked per started minute and the rule blocks
+again at zero. Parents see the remaining minutes in the overview and can stop it. At start of the app every idle rule is
+set to «blocked»; running sessions continue. Sensor: `sensor.family_quest_<name>_internetminuten` (attribute `running`).
+
+**Budget entity (optional):** minutes bought in the shop can also be written to an `input_number` in Home Assistant,
+e.g. for your own automations.
+
+### Internet budget and block times
+
+In the profile of a child (parent area › ✏️ › Internet minutes) **Internet budget and block times**:
+
+- **Default budget:** minutes per day or per week and when it starts again (time; for a week also the weekday).
+- **Other budget on these days:** e.g. 120 minutes on Saturday and Sunday (empty = default budget).
+- **Block times:** days and a time from – to (also over midnight, e.g. Mon–Fri 20:00–07:00). The internet stays off
+  and you choose what Family Quest still allows: *works normally*, *without games*, or *only a message: OfflineTime*
+  (the app shows a full-screen message with a countdown until the block time ends).
+- Minutes from the shop or rewards come on top: the budget of the period is used first and is not carried over.
+
+The child sees in the app how much of the budget is left and when it starts again; start / pause is in the card
+«Points and goodies».
+
+## Languages
+
+The flag button switches the language (English, Deutsch, Schwiizerdütsch, Français, Italiano, Español, Nederlands,
+Polski, Português, Svenska; *Auto* follows the browser). Learning content is never translated.
+
+### Own texts and languages
+
+Settings → **🌐 Own texts and languages**: overwrite single texts of any language (English included) or create your
+own language – e.g. your dialect – that starts from a base language and appears in the language picker with its own
+symbol. Export a language as CSV (`key;standard;translation`, opens in Excel), translate it and import it again; an
+empty translation goes back to the standard. Learning content is not translated here.
+
+## Addresses
+
+- **Home Assistant** («Open Web UI», the sidebar entry): opens the **parent area**.
+- **The app** for children: `…/app` – inside Home Assistant as well as on the direct port (`http://<IP>:<port>/app`;
+  on the direct port `/` still opens the app too). «Family Quest App» in the parent menu, «Open in the app» and the
+  planner link there.
+
+## Security in the parent area
+
+The add-on runs with its own **AppArmor profile** (`apparmor.txt`): it reads its program files but writes only to
+`/data`, `/share` and temporary folders, and may not mount or debug other processes. Together with Ingress this
+gives the security rating 8 in Home Assistant.
+
+**Log in with Home Assistant:** when a parent opens Family Quest from the Home Assistant sidebar, the app knows the
+Home Assistant user (the Supervisor tells it – only trusted for requests that really come through Home Assistant).
+After the first PIN login the app offers to link this user with the parent profile; from then on the parent area
+opens without PIN there. Settings → *Log in with Home Assistant* can also close the parent area for PIN logins
+completely (then it opens only through Home Assistant; the PIN still works in the app for learning along).
+
+**One port for the children, the parent area only in Home Assistant:** no second port is needed. Home Assistant
+reaches the app through its own way (ingress, from the Supervisor), the app port (e.g. `http://192.168.x.y:8099`)
+is for tablets and phones. With *Parent area only through Home Assistant* switched on, the app port offers no parent
+area at all: the link is gone, `/eltern` only shows a hint, and every request of the parent area that does not come
+through Home Assistant is refused – even with an old session.
+
+**Look:** the parent area uses the shapes of Home Assistant (Roboto, flat cards, the HA sidebar) with the colours of
+Family Quest (as in the chore planner); opened in Home Assistant it follows the light or dark mode of the HA theme.
+Buttons that add something («+ Add child», «+ New topic», «+ Add account» …) are always top right.
+
+**Parents and their Home Assistant user:** in the profile of a parent you choose the Home Assistant user (all persons of
+Home Assistant with a login). With it the parent area opens in the HA sidebar without PIN. The PIN is optional – it is
+only the login in the app, e.g. to join a game or learn along on another device; a parent without PIN does not
+appear in the app's profile list. Without Home Assistant parents need a PIN as before.
+
+- **Overview › Failed logins:** every wrong PIN of the last 30 days with time, profile, IP address, MAC address and
+  device name (from the UniFi device trackers in Home Assistant, when available) and who normally logs in
+  successfully from that address. Requests refused by the network filter are listed as well.
+- **Settings › Access from the network:** the networks (e.g. `192.168.35.0/24`) from which the app may be used, and –
+  stricter – from which the parent area may be opened (e.g. only the parents' network). Empty = every network.
+  A list that would lock out the device you are saving from is refused.
+
+## Community: family quiz and family council
+
+- **Family quiz** (learning app › Family › Quizzes, or parent area › Community): everybody – children too – makes
+  quizzes (2–4 answers, one right, time per question) or copies a template (Swiss waters, geography of Europe,
+  capitals of Europe and the world, flags, food of the world, Swiss specialities, cantons, animals, space,
+  inventions, Switzerland). Whoever starts a game leads it (a parent may always step in); everybody joins on their
+  own device. Quick right answers give more points (1000 down to 500). Places go into everybody's history; the
+  reward events *Played the family quiz* and *Won the family quiz* can give coins (Rewards › Rules).
+- **Bingo** (learning app › Family, or parent area › Community): whoever starts sets the rules (speed, one line /
+  two lines / full card – the rules used last are the default); everybody joins with a 5 × 5 card (B-I-N-G-O, 1–75,
+  free star). A ball carousel spins, stops and shows the new ball for about 5 seconds. Players mark the numbers
+  themselves and press «BINGO!» – the app checks it; a false «Bingo!» blocks the button for 10 seconds. Everybody can
+  show the rules any time (📜).
+- **Family council** (learning app › Family): anybody asks the family something, everybody adds ideas, then the vote
+  starts – secret, one vote each, changeable until the vote ends. The result goes into the history of everybody who
+  took part.
+
+### Polls
+
+Below the family council: **📊 Polls** – a question with 2 to 12 answers, one or several answers allowed,
+anonymous or with names, optionally with a closing time. Everybody sees the result after answering; who asked (or a
+parent) can close or remove the poll. A banner on the start page reminds who has not answered yet.
+
+### Wichteln (secret gift giving)
+Under the polls, everybody can start a **Wichteln**: enter the occasion (e.g. «Christmas 2026»), choose who takes part
+(whole family or single members) and the rules – *parents not among each other*, *children not among each other*, or
+nothing ticked for completely open. On **Draw** the app draws at random who gives a present to whom (never to
+oneself). Everybody sees only whom **they** give to – behind a «Show» button, so nobody looks over the shoulder. The
+whole list is shown to nobody, not even to who made it. Who made it or a parent can delete it.
+
+With a **date**, every participant gets a to-do in the Family Planer («🎁 Wichteln: occasion · 24.12.» – without the
+name of the receiver, the planner may hang on the wall). Tick it off in the planner or with **Present ready** in the
+Wichteln card – both count. Deleting the Wichteln removes the open to-dos.
+
+The parent menu has **📝 Release notes** below «Log out»; the version number there opens the add-on page in Home Assistant.
+
+### Texas Hold'em
+
+Community → **🃏 Texas Hold'em**: everybody plays on their own device (guests too), **only with play chips** – they
+have nothing to do with coins or points. Who opens the table sets the rules (remembered for the next game): start
+chips, small and big blind, ante, blinds doubling every N minutes, time per move (then the app checks or folds),
+players at most, and the mode: **everybody starts with the same chips** (who has none is out, the last one wins) or
+**game leader with a bank** (players ask for chips, the leader gives a buy-in; with a limit of re-buys).
+No-limit rules with side pots; heads-up the dealer posts the small blind.
+
+### Texas Hold'em alone against bots
+
+Family › Texas Hold'em › **🤖 Alone against bots**: 1–5 animal bots (easy, normal, hard), start chips and blinds –
+the cards are dealt right away, on your own table (the family table stays free). The bots decide by the strength of
+their cards and the pot odds; easy bots bluff and call more often. When you have no chips left the game is over.
+
+### Errate den Song
+
+Family › **🎵 Guess the song** (or parent area › Community): the game leader chooses a **speaker** of Home Assistant
+(a media player that already has a playlist) and the rules – what who buzzes says (artist and title, artist or
+title, only one of them), the others judge by majority or unanimous, points to win (e.g. 10) and songs at most (e.g.
+40). The app switches shuffle on and only steers the speaker: play, pause, next song.
+Everybody has a big **buzzer** on their device; the first one stops the song and says the answer out loud, then
+«Show the solution» shows cover, artist and title from the speaker and the others vote 👍 / 👎. Right +1, wrong −1.
+«Nobody knows it» shows the solution without points. Guests can join with the QR code.
+The game leader turns the speaker up or down (🔉 − / 🔊 +, 5 % each). After a buzz a **countdown** (setting, default
+5 s) runs before «Show the solution» can be tapped – first the answer, then the solution.
+
+**Open in the app:** in the parent area every game has «↗ Open in the app» (top right) – the app opens in a new tab,
+logged in as this parent, right in the game.
+
+**Ping and brrr:** after the verdict everybody's device plays a game-show sound for right or a buzzer for wrong (own sounds of the app, made by `tools/make_sounds.py`). With «also on the
+speaker» (start dialog, on by default) the speaker plays it too – as an *announcement*: speakers that support it
+(e.g. Sonos) lower or pause the playlist for a moment and go on where they were; the queue is not changed. The speaker
+fetches the sound from the app's direct access (Options › direct access with its port) – without it only the
+devices play the sound.
+
+### Own bots
+
+Avatar › **My bots** (top right **+ New bot**): children make their own bots – name, a look (emoji), a colour and how
+well it plays (easy, normal, hard). With *Share with the family* siblings can play with it too. In the start window of
+Tschau Sepp, Kartenkarussell, Domino and Texas Hold'em (alone against bots) you tap your bots to put them at the table; free
+seats are filled with the animal bots.
+
+### Light and dark
+
+The button ☀️ / 🌙 (top right in the app, next to the language in the parent area) switches between light and dark and
+is remembered on the device; without a choice the system (or the Home Assistant theme) decides.
+
+### Games per game and person
+
+Settings › **Games**: every game on its own – *for everybody*, *only chosen children* (tick the children) or *off*:
+family quiz, bingo, Tschau Sepp, Kartenkarussell, Domino, Texas Hold'em and each game of the game corner. Parents can always
+play; the family council and polls stay open for everybody. Switched-off games disappear from the children's app.
+
+### Family council: new topic
+
+**+ New topic** (top right) opens a window: the question, a few words more, the first ideas, the rule of the vote
+(simple / absolute majority / unanimous, and «at least one parent and one child») and how it goes on – collect ideas
+first or vote right away.
+
+### Card games: Tschau Sepp and Kartenkarussell
+
+Community → **🂡 Tschau Sepp** (Swiss or French cards) and **🎠 Kartenkarussell** (own cards in violet, raspberry,
+orange and petrol): shed your cards by suit/colour or value. Play **alone against bots** (animals with their own
+name – private) or open a **family table** (with bots if you like, guests via QR code). Who starts sets the rules
+(remembered): cards in the hand, rounds, bots and how well they play, the special cards (7 draw 2, 8 skip,
+Under/Jack wish, Ace again, 10 reverse; Kartenkarussell +2, skip, reverse, wish, +4), whether draw cards add up,
+penalty cards for a forgotten «Tschau»/«Sepp» («Letzte!»/«Fertig!») and the card back. After the last round the
+fewest points win.
+
+### Domino
+
+Community → **🁫 Domino**: lay a tile with a matching number on one of the two open ends of the line. Tap a tile in
+your hand – if it fits on both ends you choose **◀ left / right ▶**, otherwise it is laid by itself. Play **alone
+against bots** or open a **family table** (bots and guests via QR code like the card games). Who starts sets the rules
+(remembered):
+
+- **Set:** double-6 (28 tiles) or double-9 (55 tiles – every number 0–9 has its own colour, easy to tell apart).
+- **Cuban** (default): double-9, 10 tiles each, teams of two (partners sit opposite: seats 1 + 3 against 2 + 4), no
+  drawing – who cannot play must pass. The round winner scores the pips left in **all** other hands, the partner's
+  too (the common Cuban scoring).
+- **Simple:** double-6 with 7 tiles each (10 with double-9), everybody for themselves unless teams are chosen;
+  optionally draw from the boneyard when nothing fits (pass only when it is empty). The round winner scores the pips
+  left in the opponents' hands.
+- Teams need 4, 6 or 8 players; otherwise everybody plays for themselves.
+
+When nothing fits, the app says so («No tile fits – you must pass») and shows a big **Pass** button; the others see a
+«passes» bubble on that seat. The first round starts with the holder of the highest double; later rounds the winning
+side starts – with teams any player of that team may lay the first tile. **Blocked** (nobody can play any more): the
+side with the fewest pips wins the round (Cuban: scores all pips left, simple: the opponents' pips); a tie gives no
+points and the round is repeated with the same starters. The match goes to **100** points (150 or 200 selectable).
+Won while the other side still has 0 points: **🏆 Pollona!** – highlighted in the result and on the score sheet.
+**📊** next to the 📜 rules opens the score sheet (round, winner, points, domino or blocked, running totals).
+
+### Paarjagd
+
+Games → **🧠 Paarjagd**: the pairs game live – everybody turns the cards on their own device. Play **alone against
+bots** or open a **family table** (bots and guests via QR code like Domino). Who starts chooses (remembered): the
+cards (the emoji sets or the parents' photo sets from Settings › Pairs game), **6, 8, 12 or 18 pairs**, the bots and
+how well they remember cards (easy / normal / hard) and the **card back** (tap one; the family crest when there is
+one). On your turn you turn two cards: a **pair** is yours and you go again; **no pair**: everybody sees both cards
+for a moment, then they turn back and the next player goes. When all pairs are found the most pairs win – a tie
+shares the place. The board always fits the screen, also on a phone.
+
+**Coins for places 1–3:** the parents set them in Community › Paarjagd («🪙 Coins for place 1 / 2 / 3», default
+10 / 5 / 2). They are paid once at the end of a game, and only at a **family table with at least two people of the
+family**: no coins alone against bots, none for guests and none for bots. The result shows «+10 🪙» next to the place.
+The existing Pairs game in the game corner (one device, take turns) stays as it is.
+
+### Wer bin ich?
+
+Games → **🎭 Wer bin ich?**: the guessing game live – everybody on their own device. Who opens the **family table**
+chooses a category (animals, jobs, food & fruit, countries, Swiss places & mountains, fairy tales & legends, things at
+home, sports, famous people – the characters are German names, fixed in this version). Only people play: the family
+and guests via QR code – no bots, and at least two players. At the start everybody gets a different character at
+random. Each device shows the characters of **all the others**; your own stays «❓» until you found it or gave up
+(the server never sends it to you before).
+
+It goes round in seat order (finished players are skipped). On your turn you can:
+
+- **ask a yes/no question** – type it or just say it aloud, then «Ask question». The others answer ✅ yes / ❌ no /
+  🤷 don't know (finished players too – they know). When all have answered the question closes; the asker (or who
+  leads) can close it earlier once there is an answer. A **majority of yes**: you ask again; otherwise (no, don't know,
+  a tie) the next player goes.
+- **guess** «I am …» – checked against the name and a few other names (no matter capitals, umlauts / accents,
+  articles, punctuation; one typo is fine from 5 letters, two from 9). Right: you are finished and get the next place
+  (a short reveal for everybody). Wrong: the next player goes.
+- **give up** («🏳️», any time, with a confirmation) – your character is shown, you are finished without a place.
+
+Everybody sees the open question with the live counts and the last answered question; «My questions» lists your own
+questions with their answers. The game ends when everybody is finished; who leads can also pass the turn on (⏭, e.g.
+somebody left) or end the game at any time – then all characters are shown and only who found theirs has a place.
+The result shows every character, the places and the coins.
+
+**Coins for places 1–3:** set by the parents in Community › Wer bin ich? (default 10 / 5 / 2), paid once, only at a
+table with **at least two people of the family** – never to guests. Every person gets a history entry (place, players,
+their character).
+
+### Kartenlauf
+
+Games → **🏁 Kartenlauf**: a race board game with cards, played live – everybody on their own device. Play **alone
+against bots** or open a **family table** (guests via QR code; bots fill the free seats when the game starts). Who
+starts chooses (remembered): **2, 3 or 4 players**, **teams of two** (only with 4; partners sit opposite, on by
+default), how well the bots play (easy / normal / hard), their reaction time and two house rules: «a 7 may move the
+partner's marbles too» (off: only once your own are all home) and «the joker may be the card that wins» (on).
+
+The board is always the 4-seat board: a ring of 64 fields, every seat with a start field, a kennel with 4 marbles and
+4 home fields that branch off just before its start field. Two players sit opposite each other. Every round deals
+**6, 5, 4, 3, 2** cards, then again 6 (two French decks with 6 jokers, a fresh deck with every 6); the dealer moves
+on each round. With teams, every round starts with each player passing one card to the partner.
+
+- **A** 1 or 11 forward or bring a marble out · **K** 13 or bring out · **Q** 12 · **4** 4 forward or 4 backward ·
+  **2, 3, 5, 6, 8, 9, 10** that many forward · **Joker** any card.
+- **J** swaps one of your marbles on the ring with another player's marble on the ring (not a protected one).
+- **7** is split among your marbles (all 7 steps must be used); every marble passed over goes back to its kennel.
+- A marble that just came out is **protected** on its start field: nobody may pass it or land on it until it moves.
+- Landing exactly on a marble sends it back to its kennel (partner's and own marbles too).
+- Into the **home** only forward, once the marble has left its start field, with the exact number and without
+  jumping over marbles in the home (never backwards with the 4). Entering is optional – you may go round again.
+- Who cannot play any card throws the cards away for this round.
+- Alone: the first with all 4 marbles home wins (the others are ranked by marbles home and progress). Teams: with your
+  4 home you play your partner's marbles; the team with all 8 home wins.
+
+On the phone: tap a card, then the marble (the possible ones pulse; a choice like A 1/11/out or «into the home / on
+along the ring» opens a small menu); the jack asks for the second marble; the 7 is split by tapping your marbles
+(step counter, «−» per marble, then «Play»); the joker first asks which card it stands for. Moves are animated along
+the track; the last move, the played card and the dealer are shown.
+
+**Coins for places 1–3:** set by the parents in Community › Kartenlauf (default 10 / 5 / 2), paid once, only at a
+family table with **at least two people of the family** – never alone against bots, to guests or to bots. With teams
+both winners get place 1, the other team place 2. Every person gets a history entry.
+
+### Stadt-Land-Fluss
+
+Games → **🏙️ Stadt-Land-Fluss**: the classic word game live – everybody writes on their own device. Only people play
+(the family and guests via QR code, no bots), at least two. Who opens the **family table** chooses (remembered):
+
+- **3 to 8 categories**: Stadt, Land, Fluss, Tier, Name, Beruf (the default) and Pflanze, Essen, Gegenstand, Sportart,
+  Schweizer Ort, Farbe, Musikinstrument, Körperteil, Spielzeug, Getränk – plus up to **2 own categories** (typed text);
+- **3, 5, 8 or 10 rounds**; **time per round** 60 / 90 / 120 / 180 seconds or «until somebody calls Stopp!»;
+- **«Stopp!»** on / off: who has filled every field (each answer starting with the letter) may call it – the others
+  get **10 more seconds** (always on without a time limit);
+- **difficult letters** C, Q, X, Y (off by default). Umlauts are never drawn, no letter comes twice in a game.
+
+A round: the letter spins and lands, a countdown ring runs. One field per category (Enter jumps to the next field, a
+✓ shows an answer that starts with the letter); answers are **saved while typing**, the server takes them until two
+seconds after the end, so nothing is lost when the time runs out. «x of y finished» shows how many filled every field
+– the answers of the others are never sent before the round is closed. Who leads can close the writing early.
+
+**Checking:** an answer counts when it starts with the letter – capitals, accents and a leading article do not matter
+(«die Aare» → A, «Écosse» → E, «Ägypten» → A). Empty or wrong-letter answers score 0. Then every device shows all
+answers per category: tap **👎** on an answer of somebody else you find invalid – it is out when a **strict majority of
+the other players** rejected it (with two players one 👎 is enough). Who leads can decide an answer with **✓ / ✗**
+(this wins over the votes, also for a wrong letter). The review closes when everybody pressed «Done» or who leads goes
+on. **Points per category:** the only valid answer 20, a valid answer nobody else gave 10, the same valid answer as
+somebody else 5 (same text after the normalisation), invalid / empty 0. A scoreboard follows each round (with the
+answers of the round); after the last round the result shows the ranking (a tie shares the place) with confetti for
+the winner. Who leads can end the game any time: the rounds so far count (a round in its review is scored as it stands,
+a round still being written is dropped).
+
+**Coins for places 1–3:** set by the parents in Community › Stadt-Land-Fluss (default 10 / 5 / 2), paid once, only at
+a table with **at least two people of the family** and only when at least one round was played – never to guests.
+Every person of the family gets a history entry (place, points, rounds).
+
+### Zeichnen & Raten
+
+Games → **🎨 Zeichnen & Raten**: one draws, the others guess – live, everybody on their own device. Only people play
+(the family and guests via QR code, no bots), 2 to 8 players. Who opens the **family table** chooses (remembered):
+
+- **the words**: Animals, Jobs, Food & fruit, Things at home, Sports or **Mixed** (the default) – about 40 simple,
+  drawable German words each (`zeichnen_data.py`);
+- **how often everybody draws**: 1, 2 or 3 times (in seat order); **time to draw** 60 / 80 / 120 seconds;
+- **hints** on / off: some letters of the word appear at 50 % and 75 % of the time (at most a third of the letters).
+
+A turn: the drawer gets **3 words** to choose from (10 seconds, then one is taken at random) and draws on a square
+canvas (touch or mouse): 10 colours, 3 brush sizes, eraser, undo of the last stroke, clear. The strokes go to the
+server in small batches (normalised coordinates, every ~120 ms); the others see the drawing appear live – their app
+asks only for what is new (a cursor), at most 30 000 points per drawing. The guessers see the word only as a mask
+(«_ _ _ _», the number of letters, the hint letters) and type guesses. A guess is right when it matches the word or an
+alias – capitals, accents, umlauts (ä = ae = a), ß, der / die / das / ein …, spaces and hyphens do not matter; words of
+five letters or more allow **one typo**. One or two letters off: only the guesser sees «Close!». Wrong guesses appear in
+the chat for everybody – except guesses that contain the word (only the guesser sees them); a right guess is never
+shown, the chat says «Mia guessed it! ✅».
+
+**Points:** a right guess gets 50 + 50 × the part of the time left, less 10 % for each player who found it before (at
+least 10) – the first and fastest gets the most; the drawer gets **10 points per player who found the word**. The turn
+ends when everybody found it or the time is up; the word is shown to all for 3 seconds, then the next drawer. Who leads
+can **skip** a turn (the points so far stay) and **end** the game (a drawing in progress counts as it stands). After the
+last turn the result shows the ranking (a tie shares the place) with confetti for the winner and the list of words.
+
+**Coins for places 1–3:** set by the parents in Community › Zeichnen & Raten (default 10 / 5 / 2), paid once, only at a
+table with **at least two people of the family** and only when at least one turn was played and somebody scored – never to guests. Every
+person of the family gets a history entry (place, points, words drawn).
+
+### Fünf Würfel
+
+Games → **🎲 Fünf Würfel**: the dice game with five dice and a score sheet (after the public-domain «Generala / Yacht»
+family), played live – everybody rolls **at the same time** on their own device. Play **alone against 1–5 bots**
+(levels easy / normal / hard, reaction time as in the other games) or open a **family table** (up to 6 players,
+optionally with bots; guests via QR code). The dice are rolled on the server, the app only animates them.
+
+A game has **13 rounds**. In every round each player rolls up to **3 times**; between the rolls tap dice to **hold**
+them (they are not rolled again). Then the player fills **one free box** of their sheet – the app shows the points every
+free box would give – or crosses one out with 0. When everybody has filled a box, the next round starts (meanwhile the
+app shows who is still rolling). Everybody sees all sheets; nobody can touch somebody else's dice.
+
+| Box | Points |
+|---|---|
+| Ones … Sixes | the sum of the dice with that number – **35 bonus** with 63 or more in this upper section |
+| 3 of a kind / 4 of a kind | 3 / 4 alike: the sum of all dice |
+| Full house | 3 + 2 alike (two different numbers): 25 |
+| Small straight / Large straight | 4 / 5 in a row: 30 / 40 |
+| Fünfling | 5 alike: 50 |
+| Chance | the sum of all dice |
+
+House rule (start dialog, on by default): **+50 for every further Fünfling** when the Fünfling box already holds 50.
+The highest total wins (a tie shares the place); the result shows the ranking with confetti and every sheet. Who
+leads may **end** the game early: the sheets count as they stand, but without coins.
+
+**Coins for places 1–3:** set by the parents in Community › Fünf Würfel (default 10 / 5 / 2), paid once, only for a
+game played to the end at a family table with **at least two people of the family** – never alone against bots, to
+guests or to bots. Every person of the family gets a history entry (place, points).
+
+### Heimwärts
+
+Games → **🏠 Heimwärts**: the classic cross-and-circle race board game (public-domain mechanics of the Pachisi / Ludo
+family) with its own board. Play **alone against 1–3 bots** (levels easy / normal / hard, reaction time as in the other
+games) or open a **family table** (2 to 4 players, optionally with bots; guests via QR code). Everybody plays on their
+own device; the die is rolled on the server, the app only animates it.
+
+The board has a shared track of **40 fields** (10 per colour), clockwise, each colour with a yard of **4 pieces**, a
+start field (★) and **4 home fields**; each player sees their own colour at the bottom. On your turn tap the die, then
+tap one of the glowing pieces – only legal moves glow, the target fields are marked. With only one possible move the
+piece moves by itself after a moment; with none the turn passes by itself.
+
+- A **6** brings a piece out of the yard onto your start field (if no own piece stands there) – and **every 6 rolls again**.
+- No piece out on the board (all in the yard, or the rest settled in the home)? **Three tries** to roll a 6.
+- Landing on another player's piece sends it **back to its yard**; two own pieces never share a field.
+- The **start fields are safe**: a piece there cannot be hit, pieces of different colours may share it.
+- After a full round a piece goes into its **home** – never jumping over a piece in the home.
+
+Rule options (start dialog, remembered):
+
+| Option | Default | Effect |
+|---|---|---|
+| Benches (Eile mit Weile) | off | 4 more safe benches halfway along the arms. A piece on a start field or a bench cannot be hit, and **no other piece may pass or land there** – only the owner of a start field coming out of the yard sends a piece sitting on it back home |
+| Exact number into the home | on | off: a piece goes as deep into the home as the number and the free fields allow |
+| Play on for places 2 and 3 | on | off: the game ends when the winner is in, the others are ranked by how far they are |
+
+The first with all 4 pieces home wins; with «play on» the game ends when one player is left (or only bots are left).
+Bots: easy moves mostly at random, normal prefers hitting, coming out and the leading piece, hard also weighs safe
+fields and the danger from pieces up to 6 fields behind. Who leads may **end** the game early: ranked as it stands,
+but without coins.
+
+**Coins for places 1–3:** set by the parents in Community › Heimwärts (default 10 / 5 / 2), paid once, only for a
+game played to the end at a family table with **at least two people of the family** – never alone against bots, to
+guests or to bots. Every person of the family gets a history entry (place, pieces home).
+
+### Jump
+
+Games → **🦘 Jump**: a live jumping race. Every player has their **own lane** – all lanes are stacked on the screen, your
+own one big at the bottom with your avatar on the right, the others small above it (with their small avatars). The
+obstacles come from the left; tap the **big jump button** (or your own lane, or press the space bar) to jump over them.
+Play **alone** (high score: run as far as you can – your **personal best** is kept; optionally with 1–5 practice bots)
+or open a **family table** (1 to 6 players, optionally with bots; guests via QR code). Everybody plays on their own device.
+
+- **Same obstacles for everybody:** the server picks a seed, every app builds the same course from it, and all lanes
+  run on the same game clock (a 3-second countdown after the start).
+- **It gets faster:** the speed grows steadily (the maximum after about 2 ½ minutes); from medium speed there are also
+  double obstacles, at high speed long hedges.
+- **Lives:** everybody starts with 3 (start dialog: 1 / 3 / 5). Hitting an obstacle costs a life, then you blink for a
+  moment (invulnerable). Without lives you are out – the lane shows how far you came.
+- **The others:** their jumps and lives show in their lanes – drawn a moment late, from the jump times their apps report.
+- **The end:** at a family table the **last one still running wins** (the game ends when one is left or no person is
+  left); alone you run until you are out. Places: who stayed in longest; the distance (m) is the score.
+- **Bots** (easy / normal / hard) jump with a small timing error and now and then forget to jump – the faster the game,
+  the more they miss.
+
+The jump physics run in the app (no waiting for the network); the app reports its jumps and hits to the server, which
+keeps the lives and the state per player and checks only sane values (a time near the game clock, an obstacle that
+really passes then, one life per obstacle). An app that stays silent for 12 seconds is out (left the game). Who leads
+may **end** the game early: ranked as it stands (the ones still running by their lives), but without coins.
+
+**Coins for places 1–3:** set by the parents in Community › Jump (default 10 / 5 / 2), paid once, only for a game played
+to the end at a family table with **at least two people of the family** – never alone, to guests or to bots. Every
+person of the family gets a history entry (place, distance, new personal best).
+
+### Verbotene Wörter
+
+Games → **🚫 Verbotene Wörter**: the explaining game – one explains a word **without saying the forbidden words**, the
+others guess aloud. Everybody has the app on their own device; the talking happens at the table. Only people play (the
+family and guests via QR code, no bots), 2 to 8 players. Who opens the **family table** chooses (remembered):
+
+- **the cards**: Easy (younger children), Normal or Mixed – about 370 built-in German cards, each with a word and
+  5 forbidden words (`verboten_cards.json`);
+- **time per turn**: 30 / 45 / 60 / 90 / 120 seconds (default 60); **how often everybody explains**: 1–4 times;
+- **«Skip» costs** nothing or 1 point; **two teams with 4 or more players** on / off.
+
+**Teams** (4 or more players, on by default): every second seat is in team A, the others in team B (who leads can mix
+the seats in the lobby). The teams take turns, the members of a team explain in turn (a smaller team's members explain
+a little more often, so both teams get the same number of turns). With 2 or 3 players – or teams off – **everybody
+plays for themselves**.
+
+A turn: the explainer taps **Go!** and the clock runs (kept by the server). Only the explainer sees the card – with
+teams also the **other team** (the classic rule: they watch for forbidden words); the explainer's own team never gets
+the card on their device, they see the clock, the score and how many cards are done. The explainer taps:
+
+| Button | Points |
+|---|---|
+| ✅ Got it | +1 for the team – alone: +1 for who guessed it (the explainer taps the name) **and** +1 for the explainer |
+| 🚫 Forbidden word | −1 for the explainer's team (alone: the explainer) |
+| ⏭ Skip | 0 or −1 (start dialog) |
+| 🔔 Buzz (the other team) | −1, like «Forbidden word» |
+
+Then the next card comes. Every tap names its card, so a buzz and a tap at the same moment count only once. When the
+time is up, the card on the table does not count; everybody sees the cards of the turn and the next explainer gets
+ready. Who leads can **skip** a turn (e.g. the explainer left) and **end** the game (a turn in progress counts as it
+stands). The result shows the ranking (a team shares its place, a tie shares the place), confetti for the winners and
+every card of the game.
+
+**Coins for places 1–3:** set by the parents in Community › Verbotene Wörter (default 10 / 5 / 2), paid once, only at
+a table with **at least two people of the family** and only when at least one turn was played and somebody scored –
+never to guests. Every person of the family gets a history entry (place, points, team, cards explained); the winners
+get the «No. 1» hat.
+
+### Jass
+
+Games → **♣️ Jass**: the Swiss card game **Schieber** (traditional rules). **4 players in 2 teams** – partners sit
+opposite. Play **with 3 bots** (levels easy / normal / hard, reaction time as in the other games) or open a **family
+table**: any mix of the family, guests (QR code) and bots – free seats are taken by bots (alone with 3 bots, 2 children
+with 2 bots, …). With two people and two bots the people play together as partners (start dialog; off: against each
+other); who leads can **mix the seats** in the lobby. Everybody plays on their own device, the server deals (with
+`secrets`) and checks every card – the app only shows your own cards.
+
+The screen: your hand fanned at the bottom (only the cards you may play light up – tap one to play it), your partner on
+top, the opponents left and right with their number of cards, the trick in the middle, the trump and the score of both
+teams on top (with the points of the running round). 🕘 shows the last trick, 📋 the score sheet (every round).
+
+- **Cards**: Swiss (Schellen, Schilten, Rosen, Eicheln; 6–9, Banner, Under, Ober, König, Ass) or French (♠ ♥ ♦ ♣;
+  6–10, J, Q, K, A – the J counts as Under, the Q as Ober). 36 cards, 9 each.
+- **Choosing the game**: who is on turn chooses **Trumpf** (one of the 4 suits), **Obenabe** (no trump, the Ass is
+  highest) or **Undeufe** (no trump, the 6 is highest) – or **pushes** («schieben») to the partner, who must then
+  choose. In the first round the holder of the Schellen 7 (♦ 7) chooses, then the next player to the right. The player
+  who chose (or pushed) leads the first trick; the winner of a trick leads the next one.
+- **Following**: follow suit if you can; you may always **trump in** instead – but never **under-trump** (play a trump
+  lower than one already in the trick) unless you only hold trumps. Trump led: you must follow with trump – except when
+  the **Buur** is your only trump (he may always be held back).
+- **Ranking**: trump Buur (Under / J) > Nell (9) > Ass > König > Ober > 10 > 8 > 7 > 6; other suits and Obenabe
+  Ass > König > Ober > Under > 10 > 9 > 8 > 7 > 6; Undeufe the other way round.
+- **Points**: trump Buur 20, Nell 14, Ass 11, König 4, Ober 3, 10 10; other suits Ass 11, König 4, Ober 3, Under 2,
+  10 10; Obenabe and Undeufe: the 8 counts 8 (Undeufe: the 6 counts 11, the Ass 0). The last trick **+5** – always
+  157 per round; all 9 tricks to one team (**Match**) **+100**.
+
+Rule options (start dialog, remembered):
+
+| Option | Default | Effect |
+|---|---|---|
+| Cards | Swiss | Swiss or French cards (the card backs as in Tschau Sepp) |
+| Game to | 1000 points | 500 / 1000 / 1500 / 2500 points (checked at the end of a round – both teams over it: more points wins) or 1 / 2 / 4 / 8 / 12 rounds |
+| Weis | on | declared with the first card (automatically): 3 in a row 20, 4 in a row 50, 5 in a row 100, 6 / 7 / 8 / 9 in a row 150 / 200 / 250 / 300; 4 Under 200, 4 Nell 150, 4 Ass / König / Ober / 10 100. Only the team with the **best single Weis** (more points, then more cards, then the higher card – Undeufe the lower –, then trump, then who played first) writes **all** of its Weis; the cards are shown after the first trick |
+| Stöck | on | König and Ober of trump in one hand: 20 points, announced with the second of them, always counted |
+| Multipliers | off | Rosen / Schellen (♥ ♦) ×1, Schilten / Eicheln (♠ ♣) ×2, Obenabe / Undeufe ×3 – the whole round counts that many times |
+| Partners | on | two people with two bots play together |
+
+After a round the result stays on the table for a moment (cards, Match, Weis, Stöck) – **Next round** deals at once.
+Bots: easy plays mostly at random, normal follows simple rules (take a trick with points, give points to the partner),
+hard counts the cards, pulls trumps, gives points («schmieren») when the partner's card is safe, chooses the trump by
+the strength of its hand and pushes a weak hand. Who leads may **end** the game early: ranked as it stands, but without
+coins.
+
+**Coins:** the members of the **winning team** get the coins for place 1 (set by the parents in Community › Jass,
+default 10), paid once, only for a game played to the end at a family table with **at least two people of the family**
+– never alone against bots, to guests or to bots. Every person of the family gets a history entry (won / lost, the
+points, the partner); the winners get the «No. 1» hat (not on a tie).
+
+### Werwölfe
+
+Games → **🐺 Werwölfe**: the classic social deduction party game, played in **one room** – the app is the game
+master. Everybody has the app on their own phone (the family and guests via QR code, **no bots** – it is a talking
+game), **5 to 12 players**. Who opens the **family table** chooses (remembered; also changeable in the lobby once
+everybody is there):
+
+- **the roles**: *by the number of players* (recommended) – 5: 1 werewolf + seer · 6: + witch · 7: 2 werewolves ·
+  8: + hunter · 9–10: + Amor · 11–12: 3 werewolves – or by hand: 1–3 werewolves and seer / witch / hunter / Amor on or
+  off (fewer werewolves than half of the players); everybody else is a villager;
+- **time to talk by day**: 1, 2, 3 (default), 5 or 10 minutes.
+
+| Role | Power |
+|---|---|
+| 🐺 Werewolf | at night chooses a victim together with the other werewolves (they know each other) |
+| 🧑‍🌾 Villager | none – talk, listen, vote |
+| 🔮 Seer | every night sees the role of one living player (only she sees it) |
+| 🧪 Witch | sees the werewolves' victim; one healing potion and one poison potion for the whole game (both in one night is allowed, she may heal herself) |
+| 🏹 Hunter | when he dies (night or vote) he shoots one living player |
+| 💘 Amor | in the first night links two players (himself allowed) as lovers: when one dies, the other dies of grief |
+
+**The game:** everybody looks at their secret role (tap the card to reveal, tap again to hide – the 🎭 button shows
+it again later). Who leads lets the **night** fall: all phones show a dark «eyes closed» screen, only the active role
+gets its buttons, in this order: **Amor** (first night) → **werewolves** → **seer** → **witch** (a role that is dead
+is not called). The werewolves see each other's choice; when **all living werewolves agree**, the victim is chosen.
+If who leads moves on, the target with the most werewolf votes counts – a tie: nobody dies. **Day:** the village
+learns who died and their role (not how – poison and werewolves look the same), then the talk timer runs (who leads
+may skip it). **Vote** on every phone (or abstain; a vote can be changed until everybody voted): the player with the
+**most votes is out** and their role is shown – a **tie (or no vote): nobody is out**. A dying hunter shoots first.
+
+**Win:** the **village** when all werewolves are dead (everybody who is not a werewolf wins, dead or alive); the
+**werewolves** when at least as many werewolves as others are alive; the **lovers** – a werewolf and a non-werewolf –
+when they are the last two alive (only the two win). **Dead players** are spectators: they see every role and the
+werewolves' choice and cannot act. **Secrecy:** every phone gets from the server only what this player may know –
+the own role, fellow werewolves (for werewolves), the lover (for the lovers and Amor), the seer's results (seer),
+the victim and the potions (witch).
+
+**The narrator:** the phone of who leads (who opened the table, or a parent) shows the narration in big text and
+plays a sound at every step; it also reads it aloud with the voice of the device (🔊 / 🔇 in the leader bar). Who
+leads can **move on** when somebody is idle (every step has a default: no lovers, the most werewolf votes, no look,
+no potion, no shot, close the vote) and **end** the game (no winner, no coins).
+
+**Coins:** set by the parents in Community › Werwölfe (the amount of place 1, default 10): every person of the
+family on the **winning side** – only at a table with **at least two people of the family**, only for a game played
+to the end, paid once, never to guests. The winners get the «No. 1» hat; every person of the family gets a history
+entry (won or lost, the role).
+
+### Game corner
+
+Family → **🕹️ Game corner**: small games that run on the device itself (only a duel on two devices goes over
+the server; best times stay in this browser), shown when family games are on for the child:
+
+- **Tic-Tac-Toe** – against the app (easy, medium, unbeatable), two players on one device, or on **two devices**:
+  invite somebody of the family – the invitation pops up in their app; a tally of the rounds.
+- **Sudoku** – 4×4 for beginners, 6×6, 9×9 easy / medium / hard; every puzzle has exactly one solution, wrong
+  numbers turn red, best time per level.
+- **Patience** – the classic solitaire: sort all cards by suit onto four piles, draw 1 or 3, undo, «Finish» when
+  only open cards are left. Tap a card and it moves where it fits.
+- **Ping-Pong** – against the app (easy, medium, hard) or face to face on one tablet; first to 7 points.
+- **Pairs** – turn over two cards and find the pairs: animals, fruit, vehicles, sea animals or **your own photo
+  sets**; alone (fewest moves), against the app (it remembers more or less well) or 2–4 players on one device.
+  Card back: four patterns or the **family crest**.
+
+**Photo sets and family crest** (parent area › Settings › Pairs game): upload photos into named sets (every photo
+becomes a pair; a set needs at least 3 photos), and design the family crest – name, an emoji, two colours and a
+pattern (plain, split, quartered, diagonal band, chevron). Photos no set uses any more are deleted when you save.
+
+### Guests
+
+Whoever leads a family quiz or a bingo game can tap **👥 Invite guests**: a QR code appears. Friends or
+grandparents scan it with their phone in the home network (direct access must be on), type a name and play along
+– nothing else of the app is open to them. Guests are deleted with everything they did after 12 hours. Parents can
+switch guests off under Settings → Games.
+
+**Guest networks** (Settings → Access from the network): devices in these address ranges – e.g. your guest
+Wi-Fi – can only open the guest page and play with an invitation; no family login, no app, no parent area.
+
+### Pet sitting, pet hotel and the hamster
+
+Away for some days (camp, holidays at the grandparents)? On the pet card, **🧳 Pet sitting**: hand the pet to a family
+member until a day – they find it under «Pets in my care» and feed (paying the food), play and wash it; the bars keep
+dropping as usual. Or book the **Family Quest pet hotel** for 1–30 days (Settings → «Pet hotel: coins per day», default
+10, paid at once): no decay, no death, the pet comes back fed, happy and clean; fetched early, full unused days are paid
+back. The **hamster** 🐹 (shop, 300 coins) runs in its wheel while it is healthy (every bar at least 50) and mines coins
+for its owner – Settings → «Hamster: coins per day», default 15 (5 more than a day in the pet hotel).
+
+### Pairs game: photos from Home Assistant Media and the crest as a picture
+
+Settings → «Pairs game: photo sets and family crest»: every photo set takes its pictures either **from Home Assistant
+Media** (Media → My media, the `/media` folder – the app reads it, nothing is changed there) or as an upload from the
+device (iPhone photos in HEIC are turned into JPEG by the browser). Chosen pictures are copied into Family Quest and saved
+right away. The **family crest** can be an own picture too (upload or Home Assistant Media); it is shown in the shield,
+on the card backs and on the dashboard. After the update that adds the media folder, restart the app once.
+
+### Picture questions: cantons
+
+Quiz templates **«Kantone erkennen (Umrisse)»** (which canton has this shape?) and **«Kantone auf der Karte»**
+(which canton is marked?) – outlines from the FSO / swisstopo generalised boundaries – and **«Kantonswappen
+erkennen»** (simplified vector drawings of the coats of arms, drawn for Family Quest – `tools/build_arms.py`).
+Flags in the flag quizzes are shown as sharp SVG pictures (country-flag-icons, MIT) instead of emoji.
+
+### Estimation and map questions
+
+- **Estimate:** everybody sets a number with a slider or types it (between minimum and maximum, with a unit) –
+  e.g. «How high is the Matterhorn?». The closest answer gets 1000 points, the second 500, the third 250.
+- **Map:** everybody taps a pin on the map of Switzerland (cantons, lakes) or Europe (countries) – e.g. «Where is
+  Berlin?». The distance is measured in km; the closest pin wins the same way. The solution shows all pins.
+- Templates: **«Schätzfragen»**, **«Wo liegt das? (Schweiz)»** and **«Wo liegt das? (Europa)»**. In the quiz
+  editor every question has a type: multiple choice, estimate a number or place on a map (tap the right place).
+
+### Template collections by region
+
+The templates can be filtered with **Show:** – general, Switzerland, Germany, Austria, the Netherlands (the choice is
+remembered on the device). New: *Deutschland: Bundesländer*, *Deutschland allgemein*, *Österreich: Bundesländer*,
+*Niederlande: Provinzen*, *Niederlande allgemein*.
+
+## My card box (own flash cards)
+
+Everybody (children and parents) keeps **own decks** – e.g. «French words». On the start page **📇 My card box**
+shows how many cards are due.
+
+- **Own cards:** «+ New card» with front and back; «Save and next» for typing many words in a row.
+- **From the packs with one click:** in a lesson, after answering, **📇 To my card box** puts the word (or the
+  pairs of that task) into the deck of its subject – the deck is made automatically (e.g. «French», «Geography»,
+  «General knowledge»). In a pack, **📇** next to a unit adds all its cards. Cards already in the deck are skipped.
+- **Repeating:** the Leitner boxes as in the packs – known → one box up, not known → box 1, «almost» → tomorrow
+  again. «Repeat» takes the due cards and up to 15 new ones, «Practise all» every card in random order; ⇄ swaps the
+  sides (e.g. French → German).
+- **What sits and what not:** every card shows its status – ✅ known (box 3 and up), 📈 learning, 🔁 due (should be
+  known by now), 🌱 new; the bar and the filter chips show the counts.
+
+Repeating the own cards gives no points (own cards could be made very easy).
+
+## Language courses and general knowledge
+
+Learning app › **Language courses & more**: everybody (children and adults) chooses a language and a level and
+starts it – German (for English speakers), French, English and Spanish (for German speakers), each in three levels
+A1 Beginner, A2 Basics, B1 Advanced, plus **General knowledge** (inventions, buildings, history, science, space, art,
+sport …). The units of a course unlock one after the other; the exercises mix choice, typing, pairs, listening, gap
+sentences and flash cards. Courses are not switched on automatically (`standard: false`, `selbst: true` in the pack).

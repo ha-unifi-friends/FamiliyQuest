@@ -1,0 +1,61 @@
+# Französisch 5. Klasse – Grundwortschatz «La maison» (eigene Wortliste, nicht aus einem Lehrmittel).
+id: franz-5kl-la-maison
+titel: "Französisch 5. Klasse – La maison"
+fach: franzoesisch
+stufe: 5. Klasse
+sprache: fr
+quellsprache: de
+version: 1
+quelle: Family Quest (eigene Wortliste, CC0)
+einheiten:
+  - id: zimmer
+    titel: Zimmer im Haus
+    icon: "🏠"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: das Haus, fr: la maison, emoji: "🏠"}
+      - {de: die Küche, fr: la cuisine, emoji: "🍳"}
+      - {de: das Zimmer, fr: la chambre, emoji: "🛏️"}
+      - {de: das Badezimmer, fr: la salle de bains, emoji: "🛁"}
+      - {de: das Wohnzimmer, fr: le salon, emoji: "🛋️"}
+      - {de: der Garten, fr: le jardin, emoji: "🌳"}
+      - {de: die Treppe, fr: l'escalier, emoji: "🪜"}
+      - {de: das Dach, fr: le toit, emoji: "🏚️"}
+  - id: moebel
+    titel: Möbel und Dinge
+    icon: "🪑"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: die Tür, fr: la porte, emoji: "🚪"}
+      - {de: das Fenster, fr: la fenêtre, emoji: "🪟"}
+      - {de: der Tisch, fr: la table}
+      - {de: der Stuhl, fr: la chaise, emoji: "🪑"}
+      - {de: das Bett, fr: le lit, emoji: "🛏️"}
+      - {de: die Lampe, fr: la lampe, emoji: "💡"}
+      - {de: der Schrank, fr: l'armoire}
+      - {de: der Teppich, fr: le tapis}
+  - id: famille
+    titel: La famille
+    icon: "👪"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: die Mutter, fr: la mère, emoji: "👩"}
+      - {de: der Vater, fr: le père, emoji: "👨"}
+      - {de: die Schwester, fr: la sœur, auch: [la soeur], emoji: "👧"}
+      - {de: der Bruder, fr: le frère, emoji: "👦"}
+      - {de: die Eltern, fr: les parents}
+      - {de: die Grossmutter, fr: la grand-mère, emoji: "👵"}
+      - {de: der Grossvater, fr: le grand-père, emoji: "👴"}
+      - {de: die Katze, fr: le chat, emoji: "🐱"}
+      - {de: der Hund, fr: le chien, emoji: "🐶"}
+  - id: avoir
+    titel: "avoir – haben"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "avoir – je", antwort: ai, satz: "J'___ un chien.", optionen: [ai, as, a, avons, avez, ont]}
+      - {frage: "avoir – tu", antwort: as, satz: "Tu ___ une sœur ?", optionen: [ai, as, a, avons, avez, ont]}
+      - {frage: "avoir – il/elle", antwort: a, satz: "Elle ___ un vélo.", optionen: [ai, as, a, avons, avez, ont]}
+      - {frage: "avoir – nous", antwort: avons, satz: "Nous ___ un jardin.", optionen: [ai, as, a, avons, avez, ont]}
+      - {frage: "avoir – vous", antwort: avez, satz: "Vous ___ un chat ?", optionen: [ai, as, a, avons, avez, ont]}
+      - {frage: "avoir – ils/elles", antwort: ont, satz: "Ils ___ une grande maison.", optionen: [ai, as, a, avons, avez, ont]}

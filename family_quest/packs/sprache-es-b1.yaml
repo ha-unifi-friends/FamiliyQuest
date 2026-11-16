@@ -1,0 +1,163 @@
+# Spanisch B1 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
+id: sprache-es-b1
+titel: "Spanisch B1 – Fortgeschritten"
+fach: spanisch
+stufe: "B1"
+sprache: es
+quellsprache: de
+version: 1
+quelle: Family Quest (eigene Inhalte, CC0)
+icon: "🇪🇸"
+beschreibung: "Spanisch vertiefen: Arbeit, Meinungen, Umwelt, Medien, Gefühle, Vergangenheitszeiten, Konditional und Redewendungen."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: trabajo
+    titel: "Arbeit und Ausbildung"
+    icon: "💼"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "die Stelle", es: "el puesto de trabajo", auch: ["el puesto", "el empleo"]}
+      - {de: "das Vorstellungsgespräch", es: "la entrevista de trabajo", emoji: "🤝"}
+      - {de: "der Lebenslauf", es: "el currículum", auch: ["el curriculum"], emoji: "📄"}
+      - {de: "der Lohn", es: "el sueldo", emoji: "💰"}
+      - {de: "die Firma", es: "la empresa", emoji: "🏢"}
+      - {de: "der Chef", es: "el jefe"}
+      - {de: "die Arbeitskollegin", es: "la compañera de trabajo", auch: ["la companera de trabajo"]}
+      - {de: "die Berufsbildung", es: "la formación profesional", auch: ["la formacion profesional"]}
+      - {de: "die Universität", es: "la universidad", emoji: "🎓"}
+      - {de: "die Prüfung", es: "el examen", emoji: "📝"}
+      - {de: "sich bewerben", es: "solicitar un empleo"}
+      - {de: "arbeitslos sein", es: "estar en paro"}
+  - id: opiniones
+    titel: "Meinungen äussern"
+    icon: "💭"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Ich finde, das ist eine gute Idee.", es: "Creo que es una buena idea.", emoji: "💡"}
+      - {de: "Meiner Meinung nach hast du recht.", es: "En mi opinión, tienes razón.", auch: ["En mi opinion, tienes razon."]}
+      - {de: "Ich bin einverstanden.", es: "Estoy de acuerdo.", emoji: "👍"}
+      - {de: "Ich bin nicht einverstanden.", es: "No estoy de acuerdo.", emoji: "👎"}
+      - {de: "Das kommt darauf an.", es: "Depende."}
+      - {de: "Was meinst du dazu?", es: "¿Qué opinas?", auch: ["Que opinas?"]}
+      - {de: "Einerseits ja, andererseits nein.", es: "Por un lado sí, por otro no.", auch: ["Por un lado si, por otro no."]}
+      - {de: "Das stimmt nicht.", es: "Eso no es verdad."}
+      - {de: "Ich bin mir nicht sicher.", es: "No estoy seguro.", auch: ["No estoy segura."], emoji: "🤔"}
+      - {de: "Es ist wichtig, darüber zu sprechen.", es: "Es importante hablar de esto."}
+      - {de: "Du hast teilweise recht.", es: "Tienes razón en parte.", auch: ["Tienes razon en parte."]}
+      - {de: "Ich sehe das anders.", es: "Yo lo veo de otra manera."}
+  - id: medio-ambiente
+    titel: "Umwelt"
+    icon: "🌍"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "die Umwelt", es: "el medio ambiente", emoji: "🌍"}
+      - {de: "der Klimawandel", es: "el cambio climático", auch: ["el cambio climatico"], emoji: "🌡️"}
+      - {de: "die Verschmutzung", es: "la contaminación", auch: ["la contaminacion"], emoji: "🏭"}
+      - {de: "recyceln", es: "reciclar", emoji: "♻️"}
+      - {de: "der Abfall", es: "la basura", emoji: "🗑️"}
+      - {de: "die Sonnenenergie", es: "la energía solar", auch: ["la energia solar"], emoji: "🔆"}
+      - {de: "der Wald", es: "el bosque", emoji: "🌲"}
+      - {de: "Wasser sparen", es: "ahorrar agua", emoji: "🚰"}
+      - {de: "das Plastik", es: "el plástico", auch: ["el plastico"]}
+      - {de: "die Trockenheit", es: "la sequía", auch: ["la sequia"], emoji: "🏜️"}
+      - {de: "schützen", es: "proteger", emoji: "🛡️"}
+      - {de: "der öffentliche Verkehr", es: "el transporte público", auch: ["el transporte publico"], emoji: "🚋"}
+  - id: medios
+    titel: "Medien"
+    icon: "📱"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "die Nachrichten", es: "las noticias", emoji: "📰"}
+      - {de: "die Zeitung", es: "el periódico", auch: ["el periodico"], emoji: "🗞️"}
+      - {de: "die sozialen Medien", es: "las redes sociales", emoji: "💬"}
+      - {de: "das Handy", es: "el móvil", auch: ["el movil"], emoji: "📱"}
+      - {de: "der Bildschirm", es: "la pantalla", emoji: "🖥️"}
+      - {de: "das Passwort", es: "la contraseña", auch: ["la contrasena"], emoji: "🔑"}
+      - {de: "herunterladen", es: "descargar", emoji: "⬇️"}
+      - {de: "die Werbung", es: "la publicidad", emoji: "📢"}
+      - {de: "die Serie", es: "la serie", emoji: "📺"}
+      - {de: "die Schlagzeile", es: "el titular"}
+      - {de: "teilen", es: "compartir", emoji: "🔗"}
+      - {de: "die App", es: "la aplicación", auch: ["la aplicacion", "la app"], emoji: "📲"}
+  - id: sentimientos
+    titel: "Gefühle"
+    icon: "😊"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "froh", es: "contento", auch: ["contenta"], emoji: "😊"}
+      - {de: "traurig", es: "triste", emoji: "😢"}
+      - {de: "wütend", es: "enfadado", auch: ["enfadada"], emoji: "😠"}
+      - {de: "nervös", es: "nervioso", auch: ["nerviosa"], emoji: "😬"}
+      - {de: "besorgt", es: "preocupado", auch: ["preocupada"], emoji: "😟"}
+      - {de: "stolz", es: "orgulloso", auch: ["orgullosa"], emoji: "😌"}
+      - {de: "gelangweilt", es: "aburrido", auch: ["aburrida"], emoji: "🥱"}
+      - {de: "überrascht", es: "sorprendido", auch: ["sorprendida"], emoji: "😮"}
+      - {de: "ruhig", es: "tranquilo", auch: ["tranquila"], emoji: "😇"}
+      - {de: "die Freude", es: "la alegría", auch: ["la alegria"], emoji: "🥳"}
+      - {de: "die Angst", es: "el miedo", emoji: "😨"}
+      - {de: "Ich schäme mich.", es: "Me da vergüenza.", auch: ["Me da verguenza."], emoji: "😳"}
+  - id: indefinido-imperfecto
+    titel: "Indefinido oder Imperfecto"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "Gewohnheit früher (ir)", antwort: "iba", satz: "De pequeño, ___ al pueblo cada verano.", optionen: ["iba", "fui"]}
+      - {frage: "einmalig gestern (ir)", antwort: "fui", satz: "Ayer ___ al médico.", optionen: ["fui", "iba"]}
+      - {frage: "Hintergrund (llover)", antwort: "llovía", auch: ["llovia"], satz: "Cuando salí de casa, ___ mucho.", optionen: ["llovía", "llovió"]}
+      - {frage: "Unterbrechung (sonar)", antwort: "sonó", auch: ["sono"], satz: "Estaba leyendo cuando ___ el teléfono.", optionen: ["sonó", "sonaba"]}
+      - {frage: "Gewohnheit (contar)", antwort: "contaba", satz: "Mi abuelo siempre nos ___ cuentos.", optionen: ["contaba", "contó"]}
+      - {frage: "abgeschlossen (mudarse)", antwort: "nos mudamos", satz: "En 2019 ___ a Valencia.", optionen: ["nos mudamos", "nos mudábamos"]}
+      - {frage: "Alter (tener)", antwort: "tenía", auch: ["tenia"], satz: "Cuando ___ diez años, aprendí a nadar.", optionen: ["tenía", "tuve"]}
+      - {frage: "Uhrzeit (ser)", antwort: "eran", satz: "Ya ___ las ocho cuando llegamos.", optionen: ["eran", "fueron"]}
+      - {frage: "plötzlich (irse)", antwort: "se fue", satz: "De repente, ___ la luz.", optionen: ["se fue", "se iba"]}
+      - {frage: "einmalig (ver)", antwort: "vimos", satz: "La semana pasada ___ una película muy buena.", optionen: ["vimos", "veíamos"]}
+      - {frage: "Beschreibung (ser)", antwort: "era", satz: "La casa de mis abuelos ___ muy vieja.", optionen: ["era", "fue"]}
+  - id: indefinido-irregular
+    titel: "Indefinido: unregelmässig"
+    icon: "🧩"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "ir – yo", antwort: "fui", satz: "El sábado ___ a un concierto.", optionen: ["fui", "fue", "iba", "voy"]}
+      - {frage: "tener – yo", antwort: "tuve", satz: "Ayer ___ un examen difícil.", optionen: ["tuve", "tení", "tenía", "tuvo"]}
+      - {frage: "hacer – tu hermana", antwort: "hizo", satz: "¿Qué ___ tu hermana el fin de semana?", optionen: ["hizo", "hació", "hice", "hacía"]}
+      - {frage: "estar – nosotros", antwort: "estuvimos", satz: "El verano pasado ___ en Mallorca.", optionen: ["estuvimos", "estamos", "estábamos", "estuvieron"]}
+      - {frage: "poder – yo", antwort: "pude", satz: "No ___ dormir anoche.", optionen: ["pude", "podí", "puedo", "podía"]}
+      - {frage: "decir – mis padres", antwort: "dijeron", satz: "Mis padres me ___ la verdad.", optionen: ["dijeron", "decieron", "dicen", "dijimos"]}
+      - {frage: "venir – tú", antwort: "viniste", satz: "¿Por qué no ___ a la fiesta?", optionen: ["viniste", "veniste", "vienes", "vino"]}
+      - {frage: "poner – yo", antwort: "puse", satz: "Ayer ___ la mesa para todos.", optionen: ["puse", "poní", "pongo", "puso"]}
+      - {frage: "saber – yo (erfahren)", antwort: "supe", satz: "Ayer ___ la noticia.", optionen: ["supe", "sabí", "sé", "sabía"]}
+      - {frage: "dar – mi amiga", antwort: "dio", satz: "Mi amiga me ___ un regalo.", optionen: ["dio", "dió", "daba", "dé"]}
+  - id: condicional
+    titel: "Konditional"
+    icon: "🤔"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "gustar – mir", antwort: "gustaría", auch: ["gustaria"], satz: "Me ___ viajar a México.", optionen: ["gustaría", "gusta", "gustará", "gustó"]}
+      - {frage: "poder – du (höflich)", antwort: "podrías", auch: ["podrias"], satz: "¿Me ___ ayudar, por favor?", optionen: ["podrías", "puedes", "podrás", "podías"]}
+      - {frage: "hacer – ich", antwort: "haría", auch: ["haria"], satz: "Yo en tu lugar no lo ___.", optionen: ["haría", "hago", "haré", "hacía"]}
+      - {frage: "tener – wir", antwort: "tendríamos", auch: ["tendriamos"], satz: "Si ganáramos la lotería, ___ una casa en la playa.", optionen: ["tendríamos", "teníamos", "tenemos", "tendremos"]}
+      - {frage: "deber – du (Rat)", antwort: "deberías", auch: ["deberias"], satz: "Tú ___ dormir más.", optionen: ["deberías", "debes", "debías", "deberás"]}
+      - {frage: "ser – es", antwort: "sería", auch: ["seria"], satz: "Creo que ___ genial ir juntos.", optionen: ["sería", "es", "será", "era"]}
+      - {frage: "vivir – ich", antwort: "viviría", auch: ["viviria"], satz: "Si pudiera, ___ en el campo.", optionen: ["viviría", "vivo", "viviré", "vivía"]}
+      - {frage: "decir – sie (Mehrzahl)", antwort: "dirían", auch: ["dirian"], satz: "Ellos nunca ___ eso.", optionen: ["dirían", "decirían", "dicen", "dijeron"]}
+      - {frage: "salir – wir", antwort: "saldríamos", auch: ["saldriamos"], satz: "Con buen tiempo, ___ a pasear.", optionen: ["saldríamos", "saliríamos", "salimos", "saldremos"]}
+      - {frage: "querer – ich (höflich)", antwort: "querría", auch: ["querria"], satz: "Yo ___ un café, por favor.", optionen: ["querría", "quiero", "quise", "querré"]}
+  - id: modismos
+    titel: "Redewendungen"
+    icon: "🦜"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Das ist ein Kinderspiel.", es: "Es pan comido.", emoji: "🍞"}
+      - {de: "Ich habe keine Ahnung.", es: "No tengo ni idea.", emoji: "🤷"}
+      - {de: "Ich bin todmüde.", es: "Estoy hecho polvo.", auch: ["Estoy hecha polvo."], emoji: "😴"}
+      - {de: "Es regnet in Strömen.", es: "Llueve a cántaros.", auch: ["Llueve a cantaros."], emoji: "🌧️"}
+      - {de: "Das ist mir egal.", es: "Me da igual."}
+      - {de: "Das kostet ein Vermögen.", es: "Cuesta un ojo de la cara.", emoji: "💸"}
+      - {de: "Ich bin ins Fettnäpfchen getreten.", es: "He metido la pata.", emoji: "🙈"}
+      - {de: "Du nimmst mich auf den Arm!", es: "¡Me estás tomando el pelo!", auch: ["Me estas tomando el pelo!"]}
+      - {de: "Ich bin ganz Ohr.", es: "Soy todo oídos.", auch: ["Soy todo oidos."], emoji: "👂"}
+      - {de: "Das ist nicht mein Ding.", es: "No es lo mío.", auch: ["No es lo mio."]}
+      - {de: "Ich habe einen Blackout.", es: "Me he quedado en blanco.", emoji: "😶"}
+      - {de: "Besser spät als nie.", es: "Más vale tarde que nunca.", auch: ["Mas vale tarde que nunca."], emoji: "⏰"}
