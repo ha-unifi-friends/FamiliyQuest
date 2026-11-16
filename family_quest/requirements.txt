@@ -7,5 +7,4 @@ httpx>=0.27,<1
 websockets>=12,<16
 itsdangerous>=2.2,<3
 python-multipart>=0.0.9
-anthropic>=0.60
 voluptuous>=0.13

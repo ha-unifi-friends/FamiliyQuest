@@ -50,8 +50,6 @@ class Settings:
     ha_url: str
     ha_token: str | None
     direct_access: bool = False
-    anthropic_api_key: str = ""
-    anthropic_model: str = "claude-opus-5-5"
     log_level: str = "info"
     version: str = "dev"
     secret: bytes = b""
@@ -108,8 +106,6 @@ def load_settings() -> Settings:
         ha_url=os.environ.get("FQ_HA_URL", "http://supervisor/core"),
         ha_token=token,
         direct_access=bool(options.get("direct_access", False)) or os.environ.get("FQ_DIRECT_ACCESS") == "1",
-        anthropic_api_key=str(options.get("anthropic_api_key") or os.environ.get("FQ_ANTHROPIC_API_KEY", "")),
-        anthropic_model=str(options.get("anthropic_model") or "claude-opus-5-5"),
         log_level=str(options.get("log_level", "info")),
         version=_version(),
         secret=secret_file.read_bytes(),

@@ -662,6 +662,31 @@ class HAService:
         self._reg_cache = (time.time(), reg)
         return reg
 
+    # ---------------------------------------------------------------- AI Task (photo / PDF → draft pack)
+    def ai_task_entities(self) -> list[str]:
+        """The AI Task entities set up in Home Assistant (Settings › Devices & services, e.g. OpenAI, Google, Anthropic, Ollama)."""
+        try:
+            states = self._sync(self.client.states())
+        except Exception:  # noqa: BLE001
+            return []
+        return sorted(s["entity_id"] for s in states if s["entity_id"].startswith("ai_task.") and s.get("state") != "unavailable")
+
+    def ai_task(self, instructions: str, media_id: str, mime: str) -> str:
+        """ai_task.generate_data with one attachment from the media folder; the answer as text. Uses the AI Task entity
+        preferred in Home Assistant, else the first one there is."""
+        data = {"task_name": "Family Quest import", "instructions": instructions,
+                "attachments": [{"media_content_id": media_id, "media_content_type": mime}]}
+        try:
+            res = self._sync(self.client.call_response("ai_task", "generate_data", data, timeout=180), timeout=190)
+        except Exception as e:  # noqa: BLE001 – no preferred entity set: take the first AI Task entity
+            ents = self.ai_task_entities()
+            if not ents:
+                raise
+            log.info("AI task without preferred entity (%s) – using %s", e, ents[0])
+            res = self._sync(self.client.call_response("ai_task", "generate_data", {**data, "entity_id": ents[0]}, timeout=180), timeout=190)
+        out = (res or {}).get("data") if isinstance(res, dict) else res
+        return out if isinstance(out, str) else __import__("json").dumps(out)
+
     # ---------------------------------------------------------------- speakers for «Errate den Song»
     def media_players(self) -> list[dict]:
         try:

@@ -22,14 +22,10 @@ ports_description:
 map:
   - share:rw
   - homeassistant_config:ro
-  - media:ro
+  - media:rw
 options:
   log_level: info
   direct_access: false
-  anthropic_api_key: ""
-  anthropic_model: claude-opus-5-5
 schema:
   log_level: list(debug|info|warning|error)
   direct_access: bool
-  anthropic_api_key: password?
-  anthropic_model: str?
