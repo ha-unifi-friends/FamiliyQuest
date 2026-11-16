@@ -4,11 +4,5 @@ configuration:
   direct_access:
     name: Direkt åtkomst i hemnätverket
     description: Erbjud appen även på port 8099 (ange porten under Nätverk). Barnen väljer då sin profil, med valfri PIN-kod, i stället för att logga in i Home Assistant.
-  anthropic_api_key:
-    name: Anthropic API-nyckel (valfritt)
-    description: Aktiverar "foto eller PDF till paketutkast" i föräldradelen. Fotot skickas till Claude API; varje utkast granskas av en förälder innan barnen ser det.
-  anthropic_model:
-    name: Claude-modell
-    description: Modell för foto/PDF-importen.
 network:
   8099/tcp: Direkt åtkomst (endast med alternativet direkt åtkomst)

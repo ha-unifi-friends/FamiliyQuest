@@ -11,7 +11,7 @@ const PARENT_INFO = {
   [T("Goals")]: T("Weekly goals for a child (e.g. 3 learning days) and the family goal everybody works on together. Reached goals give a bonus."),
   [T("Dashboard")]: T("The kiosk dashboard for a tablet on the wall: what it shows (chores, calendar, weather, points) and the link to open it."),
   [T("Settings")]: T("General settings: what children see in the family comparison, sound, reminders, levels, games, season designs, weather, logins, network access, translations, backup and the Family Planer."),
-  [T("Import")]: T("Add learning packs: a YAML, JSON, ZIP, CSV or Excel file, a link, or (with an API key) a photo or PDF of a word list. Everything becomes a draft you check before children see it."),
+  [T("Import")]: T("Add learning packs: a YAML, JSON, ZIP, CSV or Excel file, a link, or (with an AI in Home Assistant) a photo or PDF of a word list. Everything becomes a draft you check before children see it."),
   [T("Waiting for your approval")]: T("Children bought something in the shop that needs your OK. Approve it (the points are booked) or decline it (the points go back)."),
   [T("Chores to confirm")]: T("Chores children ticked off that need your confirmation before the points are booked. Send one back if it was not done properly."),
   [T("Weather of the day")]: T("The behaviour weather: give each child its weather for today. Sunny gives a bonus, a thunderstorm a malus – only the child sees its own weather. Everybody is back at the default at the reset time."),
@@ -87,7 +87,7 @@ const PARENT_INFO = {
   [T("Current goals")]: T("All goals that are running now. 🎯 A learning goal is for one child: a whole pack up to a percentage, or one unit with a number of stars. 🤝 A family goal is collected by everybody together on one account, e.g. 2000 coins for a pizza evening. Below each goal: for whom and the target. ✕ deletes a goal; new ones with the buttons at the top right."),
   [T("Home Assistant")]: T("Reminders and push messages through Home Assistant: when children without the daily goal or with open chores are reminded, the notify service for approvals and whether learning coins also count as Family Planer points."),
   [T("About")]: T("The version of Family Quest and what is connected: Home Assistant, the built-in planner and the photo / PDF import."),
-  [T("From a file")]: T("Choose or drop a file: YAML, JSON or ZIP packs, CSV or Excel tables (you assign the columns) or – with an API key – a photo or PDF of a word list."),
+  [T("From a file")]: T("Choose or drop a file: YAML, JSON or ZIP packs, CSV or Excel tables (you assign the columns) or – with an AI in Home Assistant – a photo or PDF of a word list."),
   [T("From a link")]: T("Load a pack from an address in the internet (YAML, JSON or ZIP). It becomes a draft too."),
   [T("Format")]: T("An example of how a pack is written in YAML: subject, level, language and units with cards and exercises.")
 };

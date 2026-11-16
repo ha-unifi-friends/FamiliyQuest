@@ -1,14 +1,16 @@
-"""Photo or PDF of a word list → draft pack, using the Claude API (optional).
+"""Photo or PDF of a word list → draft pack, using the AI of Home Assistant (optional).
 
-Only active when an Anthropic API key is configured. The result is always a draft:
-a parent checks it in the editor before children see it. Packs made from school
+Uses Home Assistant's «AI Task» (ai_task.generate_data) – whatever AI the family set up there (OpenAI, Google,
+Anthropic, a local Ollama …). Only active when Home Assistant has an AI Task entity. The file is put into the media
+folder for the moment of the call (Home Assistant hands it to the AI as an attachment) and deleted right after.
+The result is always a draft: a parent checks it in the editor before children see it. Packs made from school
 material stay private (privat: true) and are never published.
 """
 from __future__ import annotations
 
-import base64
 import json
 import logging
+import secrets
 
 from ..packs.loader import PackError
 from .common import draft_from_dict, suggest_meta
@@ -77,47 +79,54 @@ def is_document(name: str) -> bool:
     return name.lower().endswith(DOC_EXT)
 
 
-def draft_from_document(fq, name: str, raw: bytes) -> list[dict]:
+IMPORT_DIR = "family_quest_import"          # inside Home Assistant's media folder, only for the moment of the call
+
+
+def available(fq) -> bool:
+    ha = fq.ha
+    return bool(ha and getattr(ha, "connected", False) and hasattr(ha, "ai_task") and ha.ai_task_entities())
+
+
+def _json(text: str) -> dict:
+    """The JSON object in the answer (some AIs wrap it in ``` fences or add a sentence)."""
+    text = (text or "").strip()
+    a, b = text.find("{"), text.rfind("}")
+    if a < 0 or b < a:
+        raise PackError("unexpected answer from the AI")
     try:
-        import anthropic
-    except ImportError:
-        raise PackError("the anthropic package is not installed") from None
+        return json.loads(text[a:b + 1])
+    except ValueError:
+        raise PackError("unexpected answer from the AI") from None
+
+
+def draft_from_document(fq, name: str, raw: bytes) -> list[dict]:
     if len(raw) > MAX_BYTES:
         raise PackError("file too large (max. 20 MB)")
+    if not available(fq):
+        raise PackError("Photo/PDF import needs an AI in Home Assistant (Settings › Devices & services › AI Task)")
     ext = "." + name.lower().rsplit(".", 1)[-1]
-    data = base64.standard_b64encode(raw).decode("ascii")
-    if ext == ".pdf":
-        block = {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": data}}
-    else:
-        block = {"type": "image", "source": {"type": "base64", "media_type": IMAGE_TYPES[ext], "data": data}}
-    client = anthropic.Anthropic(api_key=fq.settings.anthropic_api_key)
+    mime = "application/pdf" if ext == ".pdf" else IMAGE_TYPES[ext]
+    folder = fq.settings.ha_media_dir / IMPORT_DIR
+    tmp = folder / f"{secrets.token_hex(8)}{ext}"
     try:
-        # server-side fallback: if the model declines, the API retries on a suitable model in the same call
-        resp = client.beta.messages.create(
-            model=fq.settings.anthropic_model,
-            max_tokens=16000,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
-            output_config={"effort": "medium", "format": {"type": "json_schema", "schema": SCHEMA}},
-            messages=[{"role": "user", "content": [block, {"type": "text", "text": PROMPT.format(name=name)}]}],
-        )
-    except anthropic.AuthenticationError:
-        raise PackError("the Anthropic API key is not valid") from None
-    except anthropic.RateLimitError:
-        raise PackError("too many requests to the Claude API – try again in a minute") from None
-    except anthropic.APIStatusError as e:
-        raise PackError(f"Claude API error {e.status_code}: {e.message}") from None
-    except anthropic.APIConnectionError:
-        raise PackError("cannot reach the Claude API") from None
-    if resp.stop_reason == "refusal":
-        raise PackError("the page could not be processed")
-    if resp.stop_reason == "max_tokens":
-        raise PackError("the page is too long – split it into several photos")
-    text = next((b.text for b in resp.content if b.type == "text"), "")
+        folder.mkdir(parents=True, exist_ok=True)
+        tmp.write_bytes(raw)
+    except OSError as e:
+        raise PackError(f"cannot write to the media folder of Home Assistant ({e.strerror})") from None
+    instructions = PROMPT.format(name=name) + "\n\nAnswer ONLY with one JSON object (no text around it) of this JSON schema:\n" + json.dumps(SCHEMA, ensure_ascii=False)
     try:
-        out = json.loads(text)
-    except ValueError:
-        raise PackError("unexpected answer from the Claude API") from None
+        text = fq.ha.ai_task(instructions, f"media-source://media_source/local/{IMPORT_DIR}/{tmp.name}", mime)
+    except PackError:
+        raise
+    except Exception as e:  # noqa: BLE001
+        log.warning("AI task failed: %s", e)
+        raise PackError(f"the AI in Home Assistant did not answer ({str(e)[:160]})") from None
+    finally:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+    out = _json(text)
     meta = suggest_meta(name)
     pack = {
         "id": meta["id"],
