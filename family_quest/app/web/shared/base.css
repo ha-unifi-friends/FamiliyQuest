@@ -1866,3 +1866,12 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
   .mk-token { height: 7%; }
   .hw-board, .kl-board, .ch-board, .zr-board { height: min(94vw, 560px); }
 }
+
+/* Dorfmarkt: the open auction (+10 / +25 / +50, 5 seconds after the last bid) */
+.mk-auction { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.mk-aprice { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.mk-aprice b { font-size: 1.5rem; }
+.mk-atime { height: 8px; border-radius: 4px; background: var(--hover); overflow: hidden; }
+.mk-atime i { display: block; height: 100%; background: var(--pc, var(--accent)); animation-name: mk-countdown; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes mk-countdown { to { width: 0; } }
+.mk-bids .mk-bidbtn { flex: 1 1 0; font-size: 1.15rem; font-weight: 800; min-height: 48px; }

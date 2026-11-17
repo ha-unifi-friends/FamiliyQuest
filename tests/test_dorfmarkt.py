@@ -671,3 +671,22 @@ def test_bots_bid_in_the_open_auction():
     clock.t += dm.AUCTION_SECONDS + 1
     t.tick()
     assert t.owner(5) and t.owner(5).startswith("bot")
+
+
+def test_bid_through_the_api_with_a_step(client):
+    from test_api import setup_family
+    ph, mia, leo = setup_family(client)
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    client.post("/api/community/dorfmarkt/start", json={"solo": True, "bots": 1, "bot_ms": 5000, "auction": True}, headers=hm)
+    fq = client.app.state.fq
+    import json as _j
+    row = fq.db.q1("SELECT * FROM card_game WHERE kind='dorfmarkt' AND status!='done'")
+    st = _j.loads(row["state"])
+    me = str(mia)
+    st.update(turn=me, stage="auction")
+    st["auction"] = {"field": 5, "player": me, "after": "done", "price": 0, "leader": None, "history": [], "until": 9e12, "last_at": 9e12}
+    fq.db.x("UPDATE card_game SET state=? WHERE id=?", _j.dumps(st), row["id"])
+    r = client.post("/api/community/dorfmarkt/act", json={"action": "bid", "step": 25}, headers=hm)
+    assert r.status_code == 200, r.text
+    a = r.json()["auction"]
+    assert a["price"] == 25 and a["leader"] == me and a["steps"] == [10, 25, 50]

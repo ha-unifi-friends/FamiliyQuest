@@ -1099,7 +1099,7 @@ class Dorfmarkt(CardGames):
 
         def run(t: Table):
             if action == "bid":
-                return t.bid(me, d.get("step", d.get("amount")))
+                return t.bid(me, d.get("step") if d.get("step") is not None else d.get("amount"))
             if action in ("build", "sell", "mortgage", "unmortgage"):
                 return getattr(t, action)(me, d.get("field"))
             if action == "offer":

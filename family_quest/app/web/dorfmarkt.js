@@ -137,7 +137,7 @@ function dorfmarktRulesView(r, rewards) {
     I18N.tr(T("Everybody starts with {0} and walks around the village with two dice.")).replace("{0}", mkMoney(r.money || 1500)),
     T("Passing or landing on Market day brings 200 Taler."),
     T("A double rolls again – the third double in a row sends you to the town meeting."),
-    r.auction ? T("Land on a free shop or place: buy it – or everybody may bid once for it (auction).") : T("Land on a free shop or place: buy it or leave it."),
+    r.auction ? T("Land on a free shop or place: buy it – or it is auctioned: everybody raises the price by 10, 25 or 50; 5 seconds after the last bid the highest bid wins.") : T("Land on a free shop or place: buy it or leave it."),
     T("Land on a field of another player: pay the rent. With the whole colour group the rent doubles."),
     T("With a whole colour group you may build market stands (up to 4, evenly) and then a market hall – the rent grows a lot."),
     T("Village bus: 25 / 50 / 100 / 200 Taler for 1 to 4 stops. Works: 4 × the dice, with both works 10 × the dice."),
@@ -601,15 +601,22 @@ function dorfmarktLive(box, me, back) {
     const a = st.auction;
     if (st.paused) msg = h("strong", "⏸ ", T("The game is paused"));
     else if (me2.out) msg = h("span.muted", "💸 ", T("You are bankrupt – watch the others play."));
-    else if (a && a.my_bid == null) {
-      const f = a.field, inp = h("input.mk-bid", { type: "number", min: 0, max: me2.money, step: 10, value: Math.min(me2.money, Math.floor(mkField(f).price / 2)), inputmode: "numeric" });
-      return h("section.card.mk-ctl.turn", { style: { "--pc": colorOf(st.turn) } },
+    else if (a) {
+      // open auction: +10 / +25 / +50 over the current price; 5 seconds after the last bid the highest bid wins
+      const f = a.field, lead = a.leader;
+      const left = Math.max(0, a.ms), full = (a.seconds || 5) * 1000;
+      const barFill = h("i", { style: { width: Math.min(100, left / full * 100) + "%", animationDuration: left + "ms" } });
+      const stepBtn = n => h("button.btn.mk-bidbtn", { disabled: a.price + n > me2.money, onclick: () => act("bid", { step: n }) }, "+" + n);
+      return h("section.card.mk-ctl.turn", { style: { "--pc": lead ? colorOf(lead) : "var(--accent)" } },
         h("div.mk-msg", h("strong", "🔨 ", say(tr(T("Auction: {0}"), mkFieldIcon(f) + " " + mkFieldName(f)))), " ",
-          h("span.small.muted", say(tr(T("price {0} · {1} s left"), mkMoney(mkField(f).price), Math.ceil(a.ms / 1000))))),
-        h("div.row.mk-btns", inp, h("button.btn.small", { onclick: () => act("bid", { amount: Math.max(0, Math.min(me2.money, +inp.value || 0)) }) }, "🔨 ", T("Bid")),
-          h("button.btn.small.ghost", { onclick: () => act("bid", { amount: 0 }) }, T("Pass")),
-          h("button.btn.small.ghost", { onclick: () => fieldCard(f) }, "ℹ️")));
-    } else if (a) msg = h("span", "🔨 ", say(tr(T("Auction: {0}"), mkFieldName(a.field))), " · ", T("waiting for the other bids …"));
+          h("button.btn.small.ghost", { onclick: () => fieldCard(f) }, "ℹ️")),
+        h("div.mk-auction",
+          h("div.mk-aprice", h("b", mkMoney(a.price)),
+            h("span.small", lead ? (lead === myId ? T("You bid the most") : tr(T("{0} bids the most"), who(lead))) : T("No bid yet"))),
+          h("div.mk-atime", barFill)),
+        me2.out ? null : h("div.row.mk-btns.mk-bids", ...(a.steps || [10, 25, 50]).map(stepBtn)),
+        h("div.small.muted", T("5 seconds after the last bid the highest bid gets the field.")));
+    }
     else if (my && stage === "roll" && st.in_meeting) {
       msg = h("strong.mk-turnmsg", "🏛️ ", say(tr(T("You are in the town meeting (try {0} of 3)"), (me2.meeting || 0) + 1)));
       B(["🎲 ", T("Roll a double")], roll);

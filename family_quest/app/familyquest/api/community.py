@@ -1844,6 +1844,7 @@ class DorfmarktActIn(BaseModel):
     action: str = Field(max_length=20)   # roll | buy | skip | bid | end_turn | build | sell | mortgage | unmortgage | bail | use_card | liquidate | give_up | offer | answer | cancel
     field: int | None = Field(default=None, ge=0, le=35)
     amount: int | None = Field(default=None, ge=0, le=1_000_000)
+    step: int | None = Field(default=None, ge=0, le=1000)     # bid: +10 / +25 / +50 over the current price
     to: str | None = Field(default=None, max_length=20)
     give: list[int] = Field(default=[], max_length=36)
     give_money: int = Field(default=0, ge=0, le=1_000_000)
