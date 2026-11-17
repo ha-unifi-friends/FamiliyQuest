@@ -1,0 +1,4588 @@
+{
+ "schweizer-gewaesser": {
+  "title": "Zwitserse wateren",
+  "items": [
+   {
+    "q": "Wat is het grootste meer dat helemaal in Zwitserland ligt?",
+    "a": [
+     "Meer van Neuchâtel",
+     "Vierwoudstrekenmeer",
+     "Meer van Zürich",
+     "Meer van Thun"
+    ]
+   },
+   {
+    "q": "Welke rivier stroomt door Bazel?",
+    "a": [
+     "Rijn",
+     "Aare",
+     "Reuss",
+     "Limmat"
+    ]
+   },
+   {
+    "q": "Door welk meer stroomt de Rhône voordat hij Zwitserland verlaat?",
+    "a": [
+     "Meer van Genève",
+     "Bodenmeer",
+     "Meer van Neuchâtel",
+     "Lago Maggiore"
+    ]
+   },
+   {
+    "q": "Wat is de langste rivier die helemaal in Zwitserland stroomt?",
+    "a": [
+     "Aare",
+     "Reuss",
+     "Limmat",
+     "Thur"
+    ]
+   },
+   {
+    "q": "Door welke stad stroomt de Limmat?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Luzern",
+     "Bazel"
+    ]
+   },
+   {
+    "q": "Om welke stad maakt de Aare een grote bocht?",
+    "a": [
+     "Bern",
+     "Zürich",
+     "Genève",
+     "Sankt Gallen"
+    ]
+   },
+   {
+    "q": "Aan welk meer ligt Luzern?",
+    "a": [
+     "Vierwoudstrekenmeer",
+     "Meer van Zug",
+     "Meer van Zürich",
+     "Meer van Sempach"
+    ]
+   },
+   {
+    "q": "Welk meer grenst aan Duitsland, Oostenrijk en Zwitserland?",
+    "a": [
+     "Bodenmeer",
+     "Meer van Genève",
+     "Lago Maggiore",
+     "Walenmeer"
+    ]
+   },
+   {
+    "q": "In welk kanton ontspringt de Rijn?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Uri",
+     "Ticino"
+    ]
+   },
+   {
+    "q": "In welk kanton ontspringt de Rhône?",
+    "a": [
+     "Wallis",
+     "Graubünden",
+     "Bern",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welke rivier stroomt door Luzern?",
+    "a": [
+     "Reuss",
+     "Aare",
+     "Emme",
+     "Limmat"
+    ]
+   },
+   {
+    "q": "In welk kanton liggen het Meer van Lugano en een deel van het Lago Maggiore?",
+    "a": [
+     "Ticino",
+     "Graubünden",
+     "Wallis",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Hoe heet de grote waterval bij Schaffhausen?",
+    "a": [
+     "Rijnwaterval",
+     "Staubbachwaterval",
+     "Giessbachwatervallen",
+     "Reichenbachwaterval"
+    ]
+   },
+   {
+    "q": "In welke zee stroomt het water van de Rijn?",
+    "a": [
+     "Noordzee",
+     "Middellandse Zee",
+     "Zwarte Zee",
+     "Oostzee"
+    ]
+   },
+   {
+    "q": "In welke zee stroomt het water van de Inn (via de Donau)?",
+    "a": [
+     "Zwarte Zee",
+     "Noordzee",
+     "Middellandse Zee",
+     "Oostzee"
+    ]
+   },
+   {
+    "q": "Welke stad ligt tussen het Meer van Thun en het Meer van Brienz?",
+    "a": [
+     "Interlaken",
+     "Spiez",
+     "Brienz",
+     "Thun"
+    ]
+   },
+   {
+    "q": "Naar welke rivier is het kanton Thurgau genoemd?",
+    "a": [
+     "Thur",
+     "Murg",
+     "Sitter",
+     "Töss"
+    ]
+   },
+   {
+    "q": "Welke rivier verlaat in Genève het Meer van Genève?",
+    "a": [
+     "Rhône",
+     "Aare",
+     "Reuss",
+     "Saane"
+    ]
+   }
+  ]
+ },
+ "europa-geografie": {
+  "title": "Aardrijkskunde Europa",
+  "items": [
+   {
+    "q": "Hoe heet de hoogste berg van de Alpen?",
+    "a": [
+     "Mont Blanc",
+     "Matterhorn",
+     "Dufourspitze",
+     "Eiger"
+    ]
+   },
+   {
+    "q": "Wat is de langste rivier van Europa?",
+    "a": [
+     "Wolga",
+     "Donau",
+     "Rijn",
+     "Dnjepr"
+    ]
+   },
+   {
+    "q": "Wat is het grootste land dat helemaal in Europa ligt?",
+    "a": [
+     "Oekraïne",
+     "Frankrijk",
+     "Spanje",
+     "Duitsland"
+    ]
+   },
+   {
+    "q": "Wat is het kleinste land van de wereld?",
+    "a": [
+     "Vaticaanstad",
+     "Monaco",
+     "San Marino",
+     "Liechtenstein"
+    ]
+   },
+   {
+    "q": "Welk gebergte ligt tussen Spanje en Frankrijk?",
+    "a": [
+     "Pyreneeën",
+     "Alpen",
+     "Apennijnen",
+     "Karpaten"
+    ]
+   },
+   {
+    "q": "Welke zee ligt tussen Italië en Kroatië?",
+    "a": [
+     "Adriatische Zee",
+     "Egeïsche Zee",
+     "Oostzee",
+     "Noordzee"
+    ]
+   },
+   {
+    "q": "Door hoeveel hoofdsteden stroomt de Donau?",
+    "a": [
+     "4",
+     "2",
+     "3",
+     "6"
+    ]
+   },
+   {
+    "q": "Wat is het grootste eiland in de Middellandse Zee?",
+    "a": [
+     "Sicilië",
+     "Sardinië",
+     "Corsica",
+     "Cyprus"
+    ]
+   },
+   {
+    "q": "Welk land heeft de vorm van een laars?",
+    "a": [
+     "Italië",
+     "Griekenland",
+     "Portugal",
+     "Kroatië"
+    ]
+   },
+   {
+    "q": "Welke zeestraat scheidt Europa van Afrika?",
+    "a": [
+     "Straat van Gibraltar",
+     "Bosporus",
+     "Het Kanaal",
+     "Dardanellen"
+    ]
+   },
+   {
+    "q": "Welke vulkaan op Sicilië is de hoogste actieve vulkaan van Europa?",
+    "a": [
+     "Etna",
+     "Vesuvius",
+     "Stromboli",
+     "Hekla"
+    ]
+   },
+   {
+    "q": "Aan welke rivier ligt Parijs?",
+    "a": [
+     "Seine",
+     "Loire",
+     "Rhône",
+     "Garonne"
+    ]
+   },
+   {
+    "q": "Welk EU-land heeft de meeste inwoners?",
+    "a": [
+     "Duitsland",
+     "Frankrijk",
+     "Italië",
+     "Spanje"
+    ]
+   },
+   {
+    "q": "Welk land noemt men het 'land van de duizend meren'?",
+    "a": [
+     "Finland",
+     "Zweden",
+     "Noorwegen",
+     "Estland"
+    ]
+   },
+   {
+    "q": "Om welk land zijn de fjorden beroemd?",
+    "a": [
+     "Noorwegen",
+     "Denemarken",
+     "Ierland",
+     "Polen"
+    ]
+   },
+   {
+    "q": "Welk kanaal scheidt Engeland en Frankrijk?",
+    "a": [
+     "Het Kanaal",
+     "Suezkanaal",
+     "Panamakanaal",
+     "Kielerkanaal"
+    ]
+   },
+   {
+    "q": "Op welk eiland ligt de geiser 'Strokkur'?",
+    "a": [
+     "IJsland",
+     "Ierland",
+     "Sicilië",
+     "Kreta"
+    ]
+   }
+  ]
+ },
+ "hauptstaedte-europa": {
+  "title": "Hoofdsteden van Europa",
+  "items": [
+   {
+    "q": "Wat is de hoofdstad van Zwitserland?",
+    "a": [
+     "Bern",
+     "Zürich",
+     "Genève",
+     "Bazel"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Duitsland?",
+    "a": [
+     "Berlijn",
+     "München",
+     "Hamburg",
+     "Frankfurt"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Oostenrijk?",
+    "a": [
+     "Wenen",
+     "Salzburg",
+     "Graz",
+     "Innsbruck"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Frankrijk?",
+    "a": [
+     "Parijs",
+     "Lyon",
+     "Marseille",
+     "Nice"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Italië?",
+    "a": [
+     "Rome",
+     "Milaan",
+     "Napels",
+     "Venetië"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Spanje?",
+    "a": [
+     "Madrid",
+     "Barcelona",
+     "Sevilla",
+     "Valencia"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Portugal?",
+    "a": [
+     "Lissabon",
+     "Porto",
+     "Faro",
+     "Braga"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Nederland?",
+    "a": [
+     "Amsterdam",
+     "Rotterdam",
+     "Utrecht",
+     "Eindhoven"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van België?",
+    "a": [
+     "Brussel",
+     "Antwerpen",
+     "Gent",
+     "Brugge"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Groot-Brittannië?",
+    "a": [
+     "Londen",
+     "Manchester",
+     "Edinburgh",
+     "Liverpool"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Ierland?",
+    "a": [
+     "Dublin",
+     "Cork",
+     "Belfast",
+     "Galway"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Noorwegen?",
+    "a": [
+     "Oslo",
+     "Bergen",
+     "Stavanger",
+     "Trondheim"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Zweden?",
+    "a": [
+     "Stockholm",
+     "Göteborg",
+     "Malmö",
+     "Uppsala"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Finland?",
+    "a": [
+     "Helsinki",
+     "Turku",
+     "Tampere",
+     "Oulu"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Denemarken?",
+    "a": [
+     "Kopenhagen",
+     "Aarhus",
+     "Odense",
+     "Aalborg"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Polen?",
+    "a": [
+     "Warschau",
+     "Krakau",
+     "Gdańsk",
+     "Wrocław"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Tsjechië?",
+    "a": [
+     "Praag",
+     "Brno",
+     "Pilsen",
+     "Ostrava"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Hongarije?",
+    "a": [
+     "Boedapest",
+     "Debrecen",
+     "Szeged",
+     "Pécs"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Griekenland?",
+    "a": [
+     "Athene",
+     "Thessaloniki",
+     "Patras",
+     "Heraklion"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Kroatië?",
+    "a": [
+     "Zagreb",
+     "Split",
+     "Dubrovnik",
+     "Rijeka"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Roemenië?",
+    "a": [
+     "Boekarest",
+     "Cluj-Napoca",
+     "Timișoara",
+     "Iași"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Bulgarije?",
+    "a": [
+     "Sofia",
+     "Plovdiv",
+     "Varna",
+     "Boergas"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Slowakije?",
+    "a": [
+     "Bratislava",
+     "Košice",
+     "Žilina",
+     "Nitra"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Slovenië?",
+    "a": [
+     "Ljubljana",
+     "Maribor",
+     "Koper",
+     "Celje"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van IJsland?",
+    "a": [
+     "Reykjavík",
+     "Akureyri",
+     "Keflavík",
+     "Selfoss"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Oekraïne?",
+    "a": [
+     "Kyiv",
+     "Lviv",
+     "Odesa",
+     "Charkiv"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Liechtenstein?",
+    "a": [
+     "Vaduz",
+     "Schaan",
+     "Balzers",
+     "Triesen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Luxemburg?",
+    "a": [
+     "Luxemburg",
+     "Esch-sur-Alzette",
+     "Differdange",
+     "Dudelange"
+    ]
+   }
+  ]
+ },
+ "hauptstaedte-welt": {
+  "title": "Hoofdsteden van de wereld",
+  "items": [
+   {
+    "q": "Wat is de hoofdstad van de Verenigde Staten?",
+    "a": [
+     "Washington D.C.",
+     "New York",
+     "Los Angeles",
+     "Chicago"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Canada?",
+    "a": [
+     "Ottawa",
+     "Toronto",
+     "Montreal",
+     "Vancouver"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Australië?",
+    "a": [
+     "Canberra",
+     "Sydney",
+     "Melbourne",
+     "Brisbane"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Brazilië?",
+    "a": [
+     "Brasília",
+     "Rio de Janeiro",
+     "São Paulo",
+     "Salvador"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Argentinië?",
+    "a": [
+     "Buenos Aires",
+     "Córdoba",
+     "Rosario",
+     "Mendoza"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Mexico?",
+    "a": [
+     "Mexico-Stad",
+     "Guadalajara",
+     "Cancún",
+     "Monterrey"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Japan?",
+    "a": [
+     "Tokio",
+     "Osaka",
+     "Kyoto",
+     "Yokohama"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van China?",
+    "a": [
+     "Peking",
+     "Shanghai",
+     "Hongkong",
+     "Guangzhou"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van India?",
+    "a": [
+     "New Delhi",
+     "Mumbai",
+     "Calcutta",
+     "Bangalore"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Egypte?",
+    "a": [
+     "Caïro",
+     "Alexandrië",
+     "Luxor",
+     "Gizeh"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Kenia?",
+    "a": [
+     "Nairobi",
+     "Mombasa",
+     "Kisumu",
+     "Nakuru"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Nigeria?",
+    "a": [
+     "Abuja",
+     "Lagos",
+     "Kano",
+     "Ibadan"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Marokko?",
+    "a": [
+     "Rabat",
+     "Casablanca",
+     "Marrakesh",
+     "Fez"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Rusland?",
+    "a": [
+     "Moskou",
+     "Sint-Petersburg",
+     "Novosibirsk",
+     "Kazan"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Turkije?",
+    "a": [
+     "Ankara",
+     "Istanbul",
+     "Izmir",
+     "Antalya"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Thailand?",
+    "a": [
+     "Bangkok",
+     "Chiang Mai",
+     "Phuket",
+     "Pattaya"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Zuid-Korea?",
+    "a": [
+     "Seoul",
+     "Busan",
+     "Incheon",
+     "Daegu"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Nieuw-Zeeland?",
+    "a": [
+     "Wellington",
+     "Auckland",
+     "Christchurch",
+     "Queenstown"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Peru?",
+    "a": [
+     "Lima",
+     "Cusco",
+     "Arequipa",
+     "Trujillo"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Chili?",
+    "a": [
+     "Santiago",
+     "Valparaíso",
+     "Concepción",
+     "Antofagasta"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Colombia?",
+    "a": [
+     "Bogotá",
+     "Medellín",
+     "Cali",
+     "Cartagena"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Vietnam?",
+    "a": [
+     "Hanoi",
+     "Ho Chi Minhstad",
+     "Da Nang",
+     "Hue"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Saoedi-Arabië?",
+    "a": [
+     "Riyad",
+     "Djedda",
+     "Mekka",
+     "Medina"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Pakistan?",
+    "a": [
+     "Islamabad",
+     "Karachi",
+     "Lahore",
+     "Peshawar"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Cuba?",
+    "a": [
+     "Havana",
+     "Santiago de Cuba",
+     "Varadero",
+     "Trinidad"
+    ]
+   }
+  ]
+ },
+ "laenderflaggen": {
+  "title": "Vlaggen van de wereld",
+  "items": [
+   {
+    "q": "Welk land heeft deze vlag? 🇨🇭",
+    "a": [
+     "Zwitserland",
+     "Denemarken",
+     "Oostenrijk",
+     "Japan"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇮🇹",
+    "a": [
+     "Italië",
+     "Ierland",
+     "Mexico",
+     "Hongarije"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇫🇷",
+    "a": [
+     "Frankrijk",
+     "Nederland",
+     "Rusland",
+     "Italië"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇩🇪",
+    "a": [
+     "Duitsland",
+     "België",
+     "Spanje",
+     "Oostenrijk"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇯🇵",
+    "a": [
+     "Japan",
+     "China",
+     "Zuid-Korea",
+     "Bangladesh"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇧🇷",
+    "a": [
+     "Brazilië",
+     "Portugal",
+     "Argentinië",
+     "Colombia"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇨🇦",
+    "a": [
+     "Canada",
+     "Verenigde Staten",
+     "Zwitserland",
+     "Peru"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇸🇪",
+    "a": [
+     "Zweden",
+     "Finland",
+     "Noorwegen",
+     "Denemarken"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇳🇴",
+    "a": [
+     "Noorwegen",
+     "IJsland",
+     "Denemarken",
+     "Zweden"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇬🇷",
+    "a": [
+     "Griekenland",
+     "Israël",
+     "Finland",
+     "Argentinië"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇪🇸",
+    "a": [
+     "Spanje",
+     "Portugal",
+     "Colombia",
+     "België"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇳🇱",
+    "a": [
+     "Nederland",
+     "Luxemburg",
+     "Frankrijk",
+     "Rusland"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇦🇹",
+    "a": [
+     "Oostenrijk",
+     "Letland",
+     "Polen",
+     "Canada"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇮🇳",
+    "a": [
+     "India",
+     "Ierland",
+     "Niger",
+     "Ivoorkust"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇲🇽",
+    "a": [
+     "Mexico",
+     "Italië",
+     "Ierland",
+     "Hongarije"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇰🇷",
+    "a": [
+     "Zuid-Korea",
+     "Japan",
+     "China",
+     "Noord-Korea"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇦🇺",
+    "a": [
+     "Australië",
+     "Nieuw-Zeeland",
+     "Groot-Brittannië",
+     "Fiji"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇹🇷",
+    "a": [
+     "Turkije",
+     "Tunesië",
+     "Marokko",
+     "China"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇿🇦",
+    "a": [
+     "Zuid-Afrika",
+     "Jamaica",
+     "Kenia",
+     "Nigeria"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇦🇷",
+    "a": [
+     "Argentinië",
+     "Uruguay",
+     "Griekenland",
+     "Guatemala"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇬🇧",
+    "a": [
+     "Groot-Brittannië",
+     "Australië",
+     "Verenigde Staten",
+     "IJsland"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇺🇸",
+    "a": [
+     "Verenigde Staten",
+     "Liberia",
+     "Maleisië",
+     "Groot-Brittannië"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇱🇮",
+    "a": [
+     "Liechtenstein",
+     "Haïti",
+     "Andorra",
+     "Monaco"
+    ]
+   },
+   {
+    "q": "Welk land heeft deze vlag? 🇵🇹",
+    "a": [
+     "Portugal",
+     "Spanje",
+     "Brazilië",
+     "Marokko"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Zwitserland?",
+    "a": [
+     "🇨🇭",
+     "🇩🇰",
+     "🇦🇹",
+     "🇯🇵"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Italië?",
+    "a": [
+     "🇮🇹",
+     "🇮🇪",
+     "🇲🇽",
+     "🇭🇺"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Frankrijk?",
+    "a": [
+     "🇫🇷",
+     "🇳🇱",
+     "🇷🇺",
+     "🇮🇹"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Duitsland?",
+    "a": [
+     "🇩🇪",
+     "🇧🇪",
+     "🇪🇸",
+     "🇦🇹"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Japan?",
+    "a": [
+     "🇯🇵",
+     "🇨🇳",
+     "🇰🇷",
+     "🇧🇩"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Brazilië?",
+    "a": [
+     "🇧🇷",
+     "🇵🇹",
+     "🇦🇷",
+     "🇨🇴"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Canada?",
+    "a": [
+     "🇨🇦",
+     "🇺🇸",
+     "🇨🇭",
+     "🇵🇪"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Zweden?",
+    "a": [
+     "🇸🇪",
+     "🇫🇮",
+     "🇳🇴",
+     "🇩🇰"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Noorwegen?",
+    "a": [
+     "🇳🇴",
+     "🇮🇸",
+     "🇩🇰",
+     "🇸🇪"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Griekenland?",
+    "a": [
+     "🇬🇷",
+     "🇮🇱",
+     "🇫🇮",
+     "🇦🇷"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Spanje?",
+    "a": [
+     "🇪🇸",
+     "🇵🇹",
+     "🇨🇴",
+     "🇧🇪"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Nederland?",
+    "a": [
+     "🇳🇱",
+     "🇱🇺",
+     "🇫🇷",
+     "🇷🇺"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Oostenrijk?",
+    "a": [
+     "🇦🇹",
+     "🇱🇻",
+     "🇵🇱",
+     "🇨🇦"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft India?",
+    "a": [
+     "🇮🇳",
+     "🇮🇪",
+     "🇳🇪",
+     "🇨🇮"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Mexico?",
+    "a": [
+     "🇲🇽",
+     "🇮🇹",
+     "🇮🇪",
+     "🇭🇺"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Zuid-Korea?",
+    "a": [
+     "🇰🇷",
+     "🇯🇵",
+     "🇨🇳",
+     "🇰🇵"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Australië?",
+    "a": [
+     "🇦🇺",
+     "🇳🇿",
+     "🇬🇧",
+     "🇫🇯"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Turkije?",
+    "a": [
+     "🇹🇷",
+     "🇹🇳",
+     "🇲🇦",
+     "🇨🇳"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Zuid-Afrika?",
+    "a": [
+     "🇿🇦",
+     "🇯🇲",
+     "🇰🇪",
+     "🇳🇬"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Argentinië?",
+    "a": [
+     "🇦🇷",
+     "🇺🇾",
+     "🇬🇷",
+     "🇬🇹"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Groot-Brittannië?",
+    "a": [
+     "🇬🇧",
+     "🇦🇺",
+     "🇺🇸",
+     "🇮🇸"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft de Verenigde Staten?",
+    "a": [
+     "🇺🇸",
+     "🇱🇷",
+     "🇲🇾",
+     "🇬🇧"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Liechtenstein?",
+    "a": [
+     "🇱🇮",
+     "🇭🇹",
+     "🇦🇩",
+     "🇲🇨"
+    ]
+   },
+   {
+    "q": "Welke vlag heeft Portugal?",
+    "a": [
+     "🇵🇹",
+     "🇪🇸",
+     "🇧🇷",
+     "🇲🇦"
+    ]
+   }
+  ]
+ },
+ "kulinarik-welt": {
+  "title": "Lekker eten uit de hele wereld",
+  "items": [
+   {
+    "q": "Uit welk land komt rösti?",
+    "a": [
+     "Zwitserland",
+     "Oostenrijk",
+     "Duitsland",
+     "Frankrijk"
+    ]
+   },
+   {
+    "q": "Uit welk land komt pizza?",
+    "a": [
+     "Italië",
+     "Griekenland",
+     "Spanje",
+     "Verenigde Staten"
+    ]
+   },
+   {
+    "q": "Uit welk land komt paella?",
+    "a": [
+     "Spanje",
+     "Portugal",
+     "Italië",
+     "Mexico"
+    ]
+   },
+   {
+    "q": "Uit welk land komt sushi?",
+    "a": [
+     "Japan",
+     "China",
+     "Thailand",
+     "Zuid-Korea"
+    ]
+   },
+   {
+    "q": "Uit welk land komt de wienerschnitzel?",
+    "a": [
+     "Oostenrijk",
+     "Duitsland",
+     "Zwitserland",
+     "Hongarije"
+    ]
+   },
+   {
+    "q": "Uit welk land komt taco's?",
+    "a": [
+     "Mexico",
+     "Spanje",
+     "Brazilië",
+     "Verenigde Staten"
+    ]
+   },
+   {
+    "q": "Uit welk land komt moussaka?",
+    "a": [
+     "Griekenland",
+     "Turkije",
+     "Italië",
+     "Frankrijk"
+    ]
+   },
+   {
+    "q": "Uit welk land komt pad thai?",
+    "a": [
+     "Thailand",
+     "Vietnam",
+     "Japan",
+     "India"
+    ]
+   },
+   {
+    "q": "Uit welk land komt 'fish and chips'?",
+    "a": [
+     "Groot-Brittannië",
+     "Ierland",
+     "Verenigde Staten",
+     "Australië"
+    ]
+   },
+   {
+    "q": "Uit welk land komt goulash?",
+    "a": [
+     "Hongarije",
+     "Oostenrijk",
+     "Polen",
+     "Tsjechië"
+    ]
+   },
+   {
+    "q": "Uit welk land komt pierogi?",
+    "a": [
+     "Polen",
+     "Rusland",
+     "Italië",
+     "Griekenland"
+    ]
+   },
+   {
+    "q": "Uit welk land komt kimchi?",
+    "a": [
+     "Zuid-Korea",
+     "Japan",
+     "China",
+     "Thailand"
+    ]
+   },
+   {
+    "q": "Uit welk land komt 'pastéis de nata'?",
+    "a": [
+     "Portugal",
+     "Spanje",
+     "Brazilië",
+     "Frankrijk"
+    ]
+   },
+   {
+    "q": "Uit welk land komt poutine (friet met kaas en saus)?",
+    "a": [
+     "Canada",
+     "Verenigde Staten",
+     "België",
+     "Frankrijk"
+    ]
+   },
+   {
+    "q": "Uit welk land komt feijoada (bonenstoof)?",
+    "a": [
+     "Brazilië",
+     "Mexico",
+     "Spanje",
+     "Italië"
+    ]
+   },
+   {
+    "q": "Uit welk land komt smørrebrød?",
+    "a": [
+     "Denemarken",
+     "Zweden",
+     "Noorwegen",
+     "Nederland"
+    ]
+   },
+   {
+    "q": "Uit welk land komt tiramisu?",
+    "a": [
+     "Italië",
+     "Frankrijk",
+     "Oostenrijk",
+     "Spanje"
+    ]
+   },
+   {
+    "q": "Uit welk land komt het stokbrood (baguette)?",
+    "a": [
+     "Frankrijk",
+     "Italië",
+     "België",
+     "Duitsland"
+    ]
+   },
+   {
+    "q": "Uit welk land komt de currywurst?",
+    "a": [
+     "Duitsland",
+     "India",
+     "Oostenrijk",
+     "Groot-Brittannië"
+    ]
+   },
+   {
+    "q": "Uit welk land komt haggis?",
+    "a": [
+     "Schotland",
+     "Ierland",
+     "Wales",
+     "IJsland"
+    ]
+   }
+  ]
+ },
+ "schweizer-spezialitaeten": {
+  "title": "Zwitserse specialiteiten",
+  "items": [
+   {
+    "q": "Uit welk kanton komt de Engadiner notentaart?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Bern",
+     "Ticino"
+    ]
+   },
+   {
+    "q": "Uit welke stad komen de Läckerli-koekjes?",
+    "a": [
+     "Bazel",
+     "Bern",
+     "Zürich",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Uit welk kanton komt de kersentaart die naar het kanton is genoemd?",
+    "a": [
+     "Zug",
+     "Schwyz",
+     "Luzern",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Uit welk kanton komt de worteltaart (Rüeblitorte)?",
+    "a": [
+     "Aargau",
+     "Thurgau",
+     "Solothurn",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Uit welk kanton komt het Bündnerfleisch (gedroogd rundvlees)?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Uit welk kanton komt de Chügelipastete (pastei met vleesballetjes)?",
+    "a": [
+     "Luzern",
+     "Bern",
+     "Zug",
+     "Bazel-Stad"
+    ]
+   },
+   {
+    "q": "Welk kanton heet 'Mostindien' omdat er zoveel appelbomen staan?",
+    "a": [
+     "Thurgau",
+     "Aargau",
+     "Sankt Gallen",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Uit welke stad komt de beroemde kalfsbraadworst met de naam van die stad?",
+    "a": [
+     "Sankt Gallen",
+     "Bern",
+     "Luzern",
+     "Chur"
+    ]
+   },
+   {
+    "q": "Uit welk kanton komt de raclettekaas met beschermde herkomst (AOP)?",
+    "a": [
+     "Wallis",
+     "Fribourg",
+     "Vaud",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Naar welke plaats in het kanton Fribourg is een beroemde harde kaas genoemd?",
+    "a": [
+     "Gruyères",
+     "Emmental",
+     "Tilsit",
+     "Sbrinz"
+    ]
+   },
+   {
+    "q": "Uit welke stad komt het reepjesvlees in roomsaus dat naar die stad is genoemd?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Bazel",
+     "Genève"
+    ]
+   },
+   {
+    "q": "Wat is een 'Berner Platte'?",
+    "a": [
+     "Vlees en worst met zuurkool en bonen",
+     "Een kaastaart",
+     "Een visschotel",
+     "Een toetje met meringue"
+    ]
+   },
+   {
+    "q": "Uit welk kanton komt de Glarner pastei?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "Appenzell Innerrhoden"
+    ]
+   },
+   {
+    "q": "Wat is birchermuesli oorspronkelijk?",
+    "a": [
+     "Een gerecht van een Zwitserse arts",
+     "Een bergkaas uit Graubünden",
+     "Een wijn uit Ticino",
+     "Een koekje uit Bazel"
+    ]
+   }
+  ]
+ },
+ "kantone-hauptorte": {
+  "title": "Kantons van Zwitserland",
+  "items": [
+   {
+    "q": "Welk kanton grenst NIET aan Thurgau?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "Sankt Gallen",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Welk kanton is de enige Zwitserse buur van Genève?",
+    "a": [
+     "Vaud",
+     "Wallis",
+     "Neuchâtel",
+     "Fribourg"
+    ]
+   },
+   {
+    "q": "Welk kanton is de enige Zwitserse buur van Bazel-Stad?",
+    "a": [
+     "Bazel-Land",
+     "Aargau",
+     "Solothurn",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welk kanton grenst aan Appenzell Innerrhoden?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Thurgau",
+     "Glarus",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Welk kanton grenst aan Uri?",
+    "a": [
+     "Schwyz",
+     "Zürich",
+     "Luzern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton grenst aan Zug?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Uri",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welk kanton grenst aan Schaffhausen?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "Sankt Gallen",
+     "Bazel-Land"
+    ]
+   },
+   {
+    "q": "Welk kanton grenst aan Jura?",
+    "a": [
+     "Bern",
+     "Fribourg",
+     "Vaud",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Welk kanton grenst aan Glarus?",
+    "a": [
+     "Sankt Gallen",
+     "Zürich",
+     "Luzern",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welke rivier vormt een deel van de grens tussen Thurgau en Duitsland?",
+    "a": [
+     "Rijn",
+     "Thur",
+     "Aare",
+     "Inn"
+    ]
+   },
+   {
+    "q": "Welk meer grenst aan de kantons Zürich, Schwyz en Sankt Gallen?",
+    "a": [
+     "Meer van Zürich",
+     "Walenmeer",
+     "Bodenmeer",
+     "Greifensee"
+    ]
+   },
+   {
+    "q": "In welk kanton ligt het Meer van Sils?",
+    "a": [
+     "Graubünden",
+     "Ticino",
+     "Wallis",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Aan welk meer ligt het dorp Brienz in het kanton Bern?",
+    "a": [
+     "Meer van Brienz",
+     "Meer van Thun",
+     "Meer van Biel",
+     "Meer van Sarnen"
+    ]
+   },
+   {
+    "q": "In welk kanton ligt het Meer van Sarnen?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Luzern",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Aan welk meer ligt de stad Lugano?",
+    "a": [
+     "Meer van Lugano",
+     "Lago Maggiore",
+     "Comomeer",
+     "Gardameer"
+    ]
+   },
+   {
+    "q": "Aan welk meer ligt de stad Zug?",
+    "a": [
+     "Meer van Zug",
+     "Ägerimeer",
+     "Vierwoudstrekenmeer",
+     "Meer van Zürich"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Thurgau?",
+    "a": [
+     "Frauenfeld",
+     "Weinfelden",
+     "Kreuzlingen",
+     "Arbon"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Graubünden?",
+    "a": [
+     "Chur",
+     "Davos",
+     "Sankt Moritz",
+     "Ilanz"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Wallis?",
+    "a": [
+     "Sion",
+     "Brig",
+     "Martigny",
+     "Visp"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Ticino?",
+    "a": [
+     "Bellinzona",
+     "Lugano",
+     "Locarno",
+     "Mendrisio"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Vaud?",
+    "a": [
+     "Lausanne",
+     "Montreux",
+     "Yverdon-les-Bains",
+     "Vevey"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Aargau?",
+    "a": [
+     "Aarau",
+     "Baden",
+     "Wettingen",
+     "Brugg"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Bazel-Land?",
+    "a": [
+     "Liestal",
+     "Allschwil",
+     "Reinach",
+     "Pratteln"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Appenzell Ausserrhoden?",
+    "a": [
+     "Herisau",
+     "Appenzell",
+     "Teufen",
+     "Heiden"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Nidwalden?",
+    "a": [
+     "Stans",
+     "Hergiswil",
+     "Buochs",
+     "Beckenried"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Obwalden?",
+    "a": [
+     "Sarnen",
+     "Engelberg",
+     "Alpnach",
+     "Kerns"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Uri?",
+    "a": [
+     "Altdorf",
+     "Andermatt",
+     "Erstfeld",
+     "Flüelen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Schwyz?",
+    "a": [
+     "Schwyz",
+     "Einsiedeln",
+     "Küssnacht",
+     "Lachen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Jura?",
+    "a": [
+     "Delémont",
+     "Porrentruy",
+     "Saignelégier",
+     "Moutier"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Neuchâtel?",
+    "a": [
+     "Neuchâtel",
+     "La Chaux-de-Fonds",
+     "Le Locle",
+     "Boudry"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Solothurn?",
+    "a": [
+     "Solothurn",
+     "Olten",
+     "Grenchen",
+     "Biberist"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Glarus?",
+    "a": [
+     "Glarus",
+     "Näfels",
+     "Netstal",
+     "Linthal"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Schaffhausen?",
+    "a": [
+     "Schaffhausen",
+     "Neuhausen am Rheinfall",
+     "Stein am Rhein",
+     "Thayngen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Sankt Gallen?",
+    "a": [
+     "Sankt Gallen",
+     "Rapperswil-Jona",
+     "Wil",
+     "Gossau"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Zug?",
+    "a": [
+     "Zug",
+     "Baar",
+     "Cham",
+     "Steinhausen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdplaats van het kanton Bern?",
+    "a": [
+     "Bern",
+     "Biel",
+     "Thun",
+     "Köniz"
+    ]
+   }
+  ]
+ },
+ "tiere": {
+  "title": "Dierenwereld",
+  "items": [
+   {
+    "q": "Wat is het snelste landdier?",
+    "a": [
+     "Jachtluipaard",
+     "Leeuw",
+     "Paard",
+     "Antilope"
+    ]
+   },
+   {
+    "q": "Wat is het grootste dier van de wereld?",
+    "a": [
+     "Blauwe vinvis",
+     "Olifant",
+     "Giraf",
+     "Walvishaai"
+    ]
+   },
+   {
+    "q": "Hoeveel poten heeft een spin?",
+    "a": [
+     "8",
+     "6",
+     "10",
+     "12"
+    ]
+   },
+   {
+    "q": "Welke vogel kan ook achteruit vliegen?",
+    "a": [
+     "Kolibrie",
+     "Arend",
+     "Mus",
+     "Meeuw"
+    ]
+   },
+   {
+    "q": "Welk zoogdier kan echt vliegen?",
+    "a": [
+     "Vleermuis",
+     "Pinguïn",
+     "Struisvogel",
+     "Mol"
+    ]
+   },
+   {
+    "q": "Hoe heet een babykangoeroe?",
+    "a": [
+     "Joey",
+     "Reekalf",
+     "Veulen",
+     "Welp"
+    ]
+   },
+   {
+    "q": "Hoeveel harten heeft een octopus?",
+    "a": [
+     "3",
+     "1",
+     "2",
+     "8"
+    ]
+   },
+   {
+    "q": "Welk dier leeft in het noordpoolgebied?",
+    "a": [
+     "IJsbeer",
+     "Pinguïn",
+     "Kameel",
+     "Kangoeroe"
+    ]
+   },
+   {
+    "q": "Welk van deze dieren is een zoogdier?",
+    "a": [
+     "Dolfijn",
+     "Haai",
+     "Tonijn",
+     "Zalm"
+    ]
+   },
+   {
+    "q": "Wat eet een reuzenpanda bijna alleen maar?",
+    "a": [
+     "Bamboe",
+     "Vis",
+     "Honing",
+     "Gras"
+    ]
+   },
+   {
+    "q": "Welk dier kan van huidskleur veranderen?",
+    "a": [
+     "Kameleon",
+     "Kikker",
+     "Schildpad",
+     "Egel"
+    ]
+   },
+   {
+    "q": "Hoeveel poten heeft een insect?",
+    "a": [
+     "6",
+     "4",
+     "8",
+     "10"
+    ]
+   },
+   {
+    "q": "Wat is de grootste vogel van de wereld?",
+    "a": [
+     "Struisvogel",
+     "Arend",
+     "Albatros",
+     "Emoe"
+    ]
+   },
+   {
+    "q": "Welk dier heeft de langste nek?",
+    "a": [
+     "Giraf",
+     "Kameel",
+     "Struisvogel",
+     "Lama"
+    ]
+   },
+   {
+    "q": "Hoe lang is een olifantenmoeder ongeveer zwanger?",
+    "a": [
+     "22 maanden",
+     "9 maanden",
+     "12 maanden",
+     "36 maanden"
+    ]
+   },
+   {
+    "q": "Welk dier bouwt dammen van hout?",
+    "a": [
+     "Bever",
+     "Otter",
+     "Das",
+     "Marmot"
+    ]
+   }
+  ]
+ },
+ "weltall": {
+  "title": "Het heelal",
+  "items": [
+   {
+    "q": "Welke planeet staat het dichtst bij de zon?",
+    "a": [
+     "Mercurius",
+     "Venus",
+     "Mars",
+     "Aarde"
+    ]
+   },
+   {
+    "q": "Wat is de grootste planeet van ons zonnestelsel?",
+    "a": [
+     "Jupiter",
+     "Saturnus",
+     "Neptunus",
+     "Aarde"
+    ]
+   },
+   {
+    "q": "Welke planeet noemt men 'de rode planeet'?",
+    "a": [
+     "Mars",
+     "Venus",
+     "Jupiter",
+     "Mercurius"
+    ]
+   },
+   {
+    "q": "Hoeveel planeten heeft ons zonnestelsel?",
+    "a": [
+     "8",
+     "7",
+     "9",
+     "10"
+    ]
+   },
+   {
+    "q": "Wie zette als eerste mens voet op de maan?",
+    "a": [
+     "Neil Armstrong",
+     "Joeri Gagarin",
+     "Buzz Aldrin",
+     "Michael Collins"
+    ]
+   },
+   {
+    "q": "In welk jaar landden mensen voor het eerst op de maan?",
+    "a": [
+     "1969",
+     "1959",
+     "1979",
+     "1989"
+    ]
+   },
+   {
+    "q": "Wie was de eerste mens in de ruimte?",
+    "a": [
+     "Joeri Gagarin",
+     "Neil Armstrong",
+     "Alan Shepard",
+     "John Glenn"
+    ]
+   },
+   {
+    "q": "Hoe heet ons sterrenstelsel?",
+    "a": [
+     "Melkweg",
+     "Andromeda",
+     "Sombrero",
+     "Draaikolk"
+    ]
+   },
+   {
+    "q": "Hoe lang doet het licht van de zon ongeveer over de weg naar de aarde?",
+    "a": [
+     "8 minuten",
+     "8 seconden",
+     "8 uur",
+     "8 dagen"
+    ]
+   },
+   {
+    "q": "Wat is de zon?",
+    "a": [
+     "Een ster",
+     "Een planeet",
+     "Een maan",
+     "Een komeet"
+    ]
+   },
+   {
+    "q": "Welke planeet is het heetst?",
+    "a": [
+     "Venus",
+     "Mercurius",
+     "Mars",
+     "Jupiter"
+    ]
+   },
+   {
+    "q": "Welke planeet is bekend om zijn grote, heldere ringen?",
+    "a": [
+     "Saturnus",
+     "Mars",
+     "Venus",
+     "Mercurius"
+    ]
+   },
+   {
+    "q": "Wie was de eerste Zwitser in de ruimte?",
+    "a": [
+     "Claude Nicollier",
+     "Bertrand Piccard",
+     "Auguste Piccard",
+     "Marco Sieber"
+    ]
+   },
+   {
+    "q": "Hoe heet de natuurlijke begeleider van de aarde?",
+    "a": [
+     "Maan",
+     "Phobos",
+     "Titan",
+     "Europa"
+    ]
+   }
+  ]
+ },
+ "erfindungen": {
+  "title": "Uitvindingen en ontdekkingen",
+  "items": [
+   {
+    "q": "Wie vond in Europa de boekdrukkunst met losse letters uit?",
+    "a": [
+     "Johannes Gutenberg",
+     "Leonardo da Vinci",
+     "Maarten Luther",
+     "Isaac Newton"
+    ]
+   },
+   {
+    "q": "Welke Zwitser vond het klittenband uit?",
+    "a": [
+     "George de Mestral",
+     "Karl Elsener",
+     "Henri Nestlé",
+     "Daniel Peter"
+    ]
+   },
+   {
+    "q": "Wie richtte het bedrijf op dat het Zwitserse zakmes beroemd maakte?",
+    "a": [
+     "Karl Elsener",
+     "George de Mestral",
+     "Henry Dunant",
+     "Rudolf Lindt"
+    ]
+   },
+   {
+    "q": "Wie ontdekte penicilline?",
+    "a": [
+     "Alexander Fleming",
+     "Louis Pasteur",
+     "Marie Curie",
+     "Robert Koch"
+    ]
+   },
+   {
+    "q": "Wie vlogen in 1903 als eersten met een motorvliegtuig?",
+    "a": [
+     "De gebroeders Wright",
+     "Otto Lilienthal",
+     "Graaf Zeppelin",
+     "Louis Blériot"
+    ]
+   },
+   {
+    "q": "Waar vond Tim Berners-Lee het World Wide Web uit?",
+    "a": [
+     "Bij CERN in Genève",
+     "In Silicon Valley",
+     "Aan de ETH Zürich",
+     "In Londen"
+    ]
+   },
+   {
+    "q": "Wie bouwde in 1885 een van de eerste auto's met benzinemotor?",
+    "a": [
+     "Carl Benz",
+     "Henry Ford",
+     "Ferdinand Porsche",
+     "Enzo Ferrari"
+    ]
+   },
+   {
+    "q": "Welke Zwitser vond in 1875 de melkchocolade uit?",
+    "a": [
+     "Daniel Peter",
+     "Rodolphe Lindt",
+     "Philippe Suchard",
+     "Theodor Tobler"
+    ]
+   },
+   {
+    "q": "Wie bedacht de relativiteitstheorie?",
+    "a": [
+     "Albert Einstein",
+     "Isaac Newton",
+     "Galileo Galilei",
+     "Niels Bohr"
+    ]
+   },
+   {
+    "q": "Wie richtte het Rode Kruis op?",
+    "a": [
+     "Henry Dunant",
+     "Florence Nightingale",
+     "Albert Schweitzer",
+     "Guillaume Henri Dufour"
+    ]
+   },
+   {
+    "q": "Wie verbeterde de stoommachine zo dat ze overal gebruikt werd?",
+    "a": [
+     "James Watt",
+     "Thomas Edison",
+     "Nikola Tesla",
+     "George Stephenson"
+    ]
+   },
+   {
+    "q": "Wie kreeg in 1876 een patent op de telefoon?",
+    "a": [
+     "Alexander Graham Bell",
+     "Thomas Edison",
+     "Guglielmo Marconi",
+     "Werner von Siemens"
+    ]
+   }
+  ]
+ },
+ "schweiz": {
+  "title": "Zwitserland algemeen",
+  "items": [
+   {
+    "q": "Hoeveel kantons heeft Zwitserland?",
+    "a": [
+     "26",
+     "23",
+     "24",
+     "28"
+    ]
+   },
+   {
+    "q": "Hoeveel landstalen heeft Zwitserland?",
+    "a": [
+     "4",
+     "3",
+     "2",
+     "5"
+    ]
+   },
+   {
+    "q": "Hoe heet de hoogste berg van Zwitserland?",
+    "a": [
+     "Dufourspitze",
+     "Matterhorn",
+     "Jungfrau",
+     "Eiger"
+    ]
+   },
+   {
+    "q": "Hoeveel leden heeft de Bondsraad (de Zwitserse regering)?",
+    "a": [
+     "7",
+     "5",
+     "9",
+     "12"
+    ]
+   },
+   {
+    "q": "Wanneer is de nationale feestdag van Zwitserland?",
+    "a": [
+     "1 augustus",
+     "1 mei",
+     "12 september",
+     "6 januari"
+    ]
+   },
+   {
+    "q": "Welk jaar geldt als het jaar waarin het Zwitserse Eedgenootschap werd opgericht?",
+    "a": [
+     "1291",
+     "1315",
+     "1499",
+     "1848"
+    ]
+   },
+   {
+    "q": "Waar zou Wilhelm Tell de appel van het hoofd van zijn zoon hebben geschoten?",
+    "a": [
+     "Altdorf",
+     "Luzern",
+     "Schwyz",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Hoe heet de langste spoortunnel van de wereld?",
+    "a": [
+     "Gotthard-basistunnel",
+     "Lötschberg-basistunnel",
+     "Simplontunnel",
+     "Kanaaltunnel"
+    ]
+   },
+   {
+    "q": "In welke stad heeft de VN haar Europese hoofdzetel?",
+    "a": [
+     "Genève",
+     "Bern",
+     "Zürich",
+     "Bazel"
+    ]
+   },
+   {
+    "q": "Bij welk dorp staat de Matterhorn?",
+    "a": [
+     "Zermatt",
+     "Grindelwald",
+     "Saas-Fee",
+     "Sankt Moritz"
+    ]
+   },
+   {
+    "q": "Hoe heet de munt van Zwitserland?",
+    "a": [
+     "Frank",
+     "Euro",
+     "Daalder",
+     "Kroon"
+    ]
+   },
+   {
+    "q": "Wat is het grootste meer dat gedeeltelijk in Zwitserland ligt?",
+    "a": [
+     "Meer van Genève",
+     "Bodenmeer",
+     "Meer van Neuchâtel",
+     "Lago Maggiore"
+    ]
+   }
+  ]
+ },
+ "kantone-umrisse": {
+  "title": "Kantons herkennen (vorm)",
+  "items": [
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "Thurgau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Bern",
+     "Fribourg",
+     "Vaud",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Luzern",
+     "Aargau",
+     "Bern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Uri",
+     "Glarus",
+     "Schwyz",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Schwyz",
+     "Zug",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Uri",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Zug",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "Sankt Gallen"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Zug",
+     "Nidwalden",
+     "Obwalden",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Fribourg",
+     "Vaud",
+     "Bern",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Solothurn",
+     "Bazel-Land",
+     "Aargau",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Bazel-Stad",
+     "Genève",
+     "Bazel-Land",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Bazel-Land",
+     "Solothurn",
+     "Bazel-Stad",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Schaffhausen",
+     "Thurgau",
+     "Zürich",
+     "Bazel-Stad"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "Sankt Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Glarus",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Sankt Gallen",
+     "Thurgau",
+     "Graubünden",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Ticino",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "Solothurn",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Thurgau",
+     "Schaffhausen",
+     "Sankt Gallen",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Ticino",
+     "Graubünden",
+     "Wallis",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Vaud",
+     "Fribourg",
+     "Neuchâtel",
+     "Genève"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Wallis",
+     "Graubünden",
+     "Ticino",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Neuchâtel",
+     "Jura",
+     "Vaud",
+     "Fribourg"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Genève",
+     "Bazel-Stad",
+     "Vaud",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Welk kanton heeft deze vorm?",
+    "a": [
+     "Jura",
+     "Neuchâtel",
+     "Solothurn",
+     "Bazel-Land"
+    ]
+   }
+  ]
+ },
+ "kantone-karte": {
+  "title": "Kantons op de kaart",
+  "items": [
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "Thurgau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Bern",
+     "Fribourg",
+     "Vaud",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Luzern",
+     "Aargau",
+     "Bern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Uri",
+     "Glarus",
+     "Schwyz",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Schwyz",
+     "Zug",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Uri",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Zug",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "Sankt Gallen"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Zug",
+     "Nidwalden",
+     "Obwalden",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Fribourg",
+     "Vaud",
+     "Bern",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Solothurn",
+     "Bazel-Land",
+     "Aargau",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Bazel-Stad",
+     "Genève",
+     "Bazel-Land",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Bazel-Land",
+     "Solothurn",
+     "Bazel-Stad",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Schaffhausen",
+     "Thurgau",
+     "Zürich",
+     "Bazel-Stad"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "Sankt Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Glarus",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Sankt Gallen",
+     "Thurgau",
+     "Graubünden",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Ticino",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "Solothurn",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Thurgau",
+     "Schaffhausen",
+     "Sankt Gallen",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Ticino",
+     "Graubünden",
+     "Wallis",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Vaud",
+     "Fribourg",
+     "Neuchâtel",
+     "Genève"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Wallis",
+     "Graubünden",
+     "Ticino",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Neuchâtel",
+     "Jura",
+     "Vaud",
+     "Fribourg"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Genève",
+     "Bazel-Stad",
+     "Vaud",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Welk kanton is op de kaart gemarkeerd?",
+    "a": [
+     "Jura",
+     "Neuchâtel",
+     "Solothurn",
+     "Bazel-Land"
+    ]
+   }
+  ]
+ },
+ "kantone-wappen": {
+  "title": "Kantonswapens herkennen",
+  "items": [
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Zürich",
+     "Luzern",
+     "Zug",
+     "Ticino"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Bern",
+     "Schaffhausen",
+     "Uri",
+     "Appenzell Innerrhoden"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Luzern",
+     "Zürich",
+     "Zug",
+     "Ticino"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Uri",
+     "Bern",
+     "Schaffhausen",
+     "Bazel-Stad"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Schwyz",
+     "Solothurn",
+     "Fribourg",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Schwyz",
+     "Bazel-Land"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Bazel-Land",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Glarus",
+     "Graubünden",
+     "Genève",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Zug",
+     "Luzern",
+     "Zürich",
+     "Fribourg"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Fribourg",
+     "Solothurn",
+     "Zug",
+     "Wallis"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Solothurn",
+     "Fribourg",
+     "Schwyz",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Bazel-Stad",
+     "Bazel-Land",
+     "Appenzell Innerrhoden",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Bazel-Land",
+     "Bazel-Stad",
+     "Jura",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Schaffhausen",
+     "Bern",
+     "Uri",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "Bern",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Bern",
+     "Bazel-Stad"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Sankt Gallen",
+     "Thurgau",
+     "Vaud",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Graubünden",
+     "Glarus",
+     "Wallis",
+     "Genève"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Aargau",
+     "Thurgau",
+     "Sankt Gallen",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Thurgau",
+     "Sankt Gallen",
+     "Aargau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Ticino",
+     "Luzern",
+     "Zürich",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Vaud",
+     "Neuchâtel",
+     "Sankt Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Wallis",
+     "Graubünden",
+     "Solothurn",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Neuchâtel",
+     "Vaud",
+     "Ticino",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Genève",
+     "Graubünden",
+     "Glarus",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Van welk kanton is dit wapen?",
+    "a": [
+     "Jura",
+     "Bazel-Land",
+     "Bazel-Stad",
+     "Wallis"
+    ]
+   }
+  ]
+ },
+ "schaetzfragen": {
+  "title": "Schattingsvragen",
+  "items": [
+   {
+    "q": "Hoe hoog is de Matterhorn?",
+    "unit": "m"
+   },
+   {
+    "q": "Hoe hoog is de Dufourspitze, de hoogste berg van Zwitserland?",
+    "unit": "m"
+   },
+   {
+    "q": "Hoe hoog is de Mount Everest?",
+    "unit": "m"
+   },
+   {
+    "q": "Hoeveel kantons heeft Zwitserland?",
+    "unit": ""
+   },
+   {
+    "q": "In welk jaar werd de Bondsbrief geschreven (oprichting van het Zwitserse Eedgenootschap)?",
+    "unit": ""
+   },
+   {
+    "q": "In welk jaar werd de Zwitserse bondsstaat opgericht?",
+    "unit": ""
+   },
+   {
+    "q": "Hoe lang is de Gotthard-basistunnel?",
+    "unit": "km"
+   },
+   {
+    "q": "Hoe groot is Zwitserland?",
+    "unit": "km²"
+   },
+   {
+    "q": "Hoe lang is de Rijn?",
+    "unit": "km"
+   },
+   {
+    "q": "Hoeveel botten heeft een volwassen mens?",
+    "unit": ""
+   },
+   {
+    "q": "Hoeveel tanden heeft een volwassene met verstandskiezen?",
+    "unit": ""
+   },
+   {
+    "q": "In welk jaar landden mensen voor het eerst op de maan?",
+    "unit": ""
+   },
+   {
+    "q": "Hoe ver staat de maan gemiddeld van de aarde (in duizend km)?",
+    "unit": "duizend km"
+   },
+   {
+    "q": "Hoe snel gaat geluid door de lucht (bij 20 °C)?",
+    "unit": "m/s"
+   },
+   {
+    "q": "Hoeveel dagen heeft een schrikkeljaar?",
+    "unit": ""
+   },
+   {
+    "q": "In welk jaar werden in Sankt Moritz voor het eerst Olympische Winterspelen gehouden?",
+    "unit": ""
+   },
+   {
+    "q": "Bij hoeveel graden Celsius kookt water op zeeniveau?",
+    "unit": "°C"
+   },
+   {
+    "q": "Hoeveel poten heeft een spin?",
+    "unit": ""
+   }
+  ]
+ },
+ "wo-liegt-schweiz": {
+  "title": "Waar ligt dat? (Zwitserland)",
+  "items": [
+   {
+    "q": "Waar ligt Bern?",
+    "label": "Bern"
+   },
+   {
+    "q": "Waar ligt Zürich?",
+    "label": "Zürich"
+   },
+   {
+    "q": "Waar ligt Genève?",
+    "label": "Genève"
+   },
+   {
+    "q": "Waar ligt Bazel?",
+    "label": "Bazel"
+   },
+   {
+    "q": "Waar ligt Lugano?",
+    "label": "Lugano"
+   },
+   {
+    "q": "Waar ligt Luzern?",
+    "label": "Luzern"
+   },
+   {
+    "q": "Waar ligt Sankt Gallen?",
+    "label": "Sankt Gallen"
+   },
+   {
+    "q": "Waar ligt Chur?",
+    "label": "Chur"
+   },
+   {
+    "q": "Waar ligt Sion?",
+    "label": "Sion"
+   },
+   {
+    "q": "Waar ligt Lausanne?",
+    "label": "Lausanne"
+   },
+   {
+    "q": "Waar ligt Schaffhausen?",
+    "label": "Schaffhausen"
+   },
+   {
+    "q": "Waar ligt Frauenfeld?",
+    "label": "Frauenfeld"
+   },
+   {
+    "q": "Waar ligt Altdorf?",
+    "label": "Altdorf"
+   },
+   {
+    "q": "Waar ligt Bellinzona?",
+    "label": "Bellinzona"
+   },
+   {
+    "q": "Waar ligt Delémont?",
+    "label": "Delémont"
+   },
+   {
+    "q": "Waar ligt Appenzell?",
+    "label": "Appenzell"
+   },
+   {
+    "q": "Waar ligt de Matterhorn?",
+    "label": "de Matterhorn"
+   },
+   {
+    "q": "Waar ligt de Rijnwaterval?",
+    "label": "de Rijnwaterval"
+   },
+   {
+    "q": "Waar ligt de Säntis?",
+    "label": "de Säntis"
+   },
+   {
+    "q": "Waar ligt Sankt Moritz?",
+    "label": "Sankt Moritz"
+   },
+   {
+    "q": "Waar ligt Interlaken?",
+    "label": "Interlaken"
+   },
+   {
+    "q": "Waar ligt Einsiedeln?",
+    "label": "Einsiedeln"
+   },
+   {
+    "q": "Waar ligt Biel/Bienne?",
+    "label": "Biel/Bienne"
+   },
+   {
+    "q": "Waar ligt Thun?",
+    "label": "Thun"
+   }
+  ]
+ },
+ "wo-liegt-europa": {
+  "title": "Waar ligt dat? (Europa)",
+  "items": [
+   {
+    "q": "Waar ligt Berlijn?",
+    "label": "Berlijn"
+   },
+   {
+    "q": "Waar ligt Parijs?",
+    "label": "Parijs"
+   },
+   {
+    "q": "Waar ligt Rome?",
+    "label": "Rome"
+   },
+   {
+    "q": "Waar ligt Madrid?",
+    "label": "Madrid"
+   },
+   {
+    "q": "Waar ligt Londen?",
+    "label": "Londen"
+   },
+   {
+    "q": "Waar ligt Wenen?",
+    "label": "Wenen"
+   },
+   {
+    "q": "Waar ligt Amsterdam?",
+    "label": "Amsterdam"
+   },
+   {
+    "q": "Waar ligt Brussel?",
+    "label": "Brussel"
+   },
+   {
+    "q": "Waar ligt Lissabon?",
+    "label": "Lissabon"
+   },
+   {
+    "q": "Waar ligt Stockholm?",
+    "label": "Stockholm"
+   },
+   {
+    "q": "Waar ligt Oslo?",
+    "label": "Oslo"
+   },
+   {
+    "q": "Waar ligt Kopenhagen?",
+    "label": "Kopenhagen"
+   },
+   {
+    "q": "Waar ligt Helsinki?",
+    "label": "Helsinki"
+   },
+   {
+    "q": "Waar ligt Warschau?",
+    "label": "Warschau"
+   },
+   {
+    "q": "Waar ligt Praag?",
+    "label": "Praag"
+   },
+   {
+    "q": "Waar ligt Boedapest?",
+    "label": "Boedapest"
+   },
+   {
+    "q": "Waar ligt Athene?",
+    "label": "Athene"
+   },
+   {
+    "q": "Waar ligt Dublin?",
+    "label": "Dublin"
+   },
+   {
+    "q": "Waar ligt Reykjavík?",
+    "label": "Reykjavík"
+   },
+   {
+    "q": "Waar ligt Boekarest?",
+    "label": "Boekarest"
+   },
+   {
+    "q": "Waar ligt Venetië?",
+    "label": "Venetië"
+   },
+   {
+    "q": "Waar ligt Barcelona?",
+    "label": "Barcelona"
+   },
+   {
+    "q": "Waar ligt Istanbul?",
+    "label": "Istanbul"
+   },
+   {
+    "q": "Waar ligt Bern?",
+    "label": "Bern"
+   }
+  ]
+ },
+ "deutschland-bundeslaender": {
+  "title": "Duitsland: deelstaten",
+  "items": [
+   {
+    "q": "Hoeveel deelstaten heeft Duitsland?",
+    "a": [
+     "16",
+     "12",
+     "15",
+     "20"
+    ]
+   },
+   {
+    "q": "Welke drie deelstaten zijn stadstaten?",
+    "a": [
+     "Berlijn, Hamburg, Bremen",
+     "Berlijn, Hamburg, München",
+     "Berlijn, Bremen, Keulen",
+     "Hamburg, Bremen, Frankfurt"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Baden-Württemberg?",
+    "a": [
+     "Stuttgart",
+     "Karlsruhe",
+     "Mannheim",
+     "Freiburg"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Beieren?",
+    "a": [
+     "München",
+     "Neurenberg",
+     "Augsburg",
+     "Regensburg"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Brandenburg?",
+    "a": [
+     "Potsdam",
+     "Cottbus",
+     "Frankfurt (Oder)",
+     "Brandenburg an der Havel"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Hessen?",
+    "a": [
+     "Wiesbaden",
+     "Frankfurt am Main",
+     "Kassel",
+     "Darmstadt"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Mecklenburg-Voor-Pommeren?",
+    "a": [
+     "Schwerin",
+     "Rostock",
+     "Greifswald",
+     "Stralsund"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Nedersaksen?",
+    "a": [
+     "Hannover",
+     "Brunswijk",
+     "Osnabrück",
+     "Oldenburg"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Noordrijn-Westfalen?",
+    "a": [
+     "Düsseldorf",
+     "Keulen",
+     "Dortmund",
+     "Essen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Rijnland-Palts?",
+    "a": [
+     "Mainz",
+     "Koblenz",
+     "Trier",
+     "Ludwigshafen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Saarland?",
+    "a": [
+     "Saarbrücken",
+     "Neunkirchen",
+     "Homburg",
+     "Saarlouis"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Saksen?",
+    "a": [
+     "Dresden",
+     "Leipzig",
+     "Chemnitz",
+     "Zwickau"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Saksen-Anhalt?",
+    "a": [
+     "Maagdenburg",
+     "Halle (Saale)",
+     "Dessau-Roßlau",
+     "Wittenberg"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Sleeswijk-Holstein?",
+    "a": [
+     "Kiel",
+     "Lübeck",
+     "Flensburg",
+     "Neumünster"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Thüringen?",
+    "a": [
+     "Erfurt",
+     "Jena",
+     "Weimar",
+     "Gera"
+    ]
+   }
+  ]
+ },
+ "deutschland": {
+  "title": "Duitsland algemeen",
+  "items": [
+   {
+    "q": "Hoe heet de hoogste berg van Duitsland?",
+    "a": [
+     "Zugspitze",
+     "Watzmann",
+     "Feldberg",
+     "Brocken"
+    ]
+   },
+   {
+    "q": "Wanneer is de Dag van de Duitse Eenheid?",
+    "a": [
+     "3 oktober",
+     "9 november",
+     "1 mei",
+     "17 juni"
+    ]
+   },
+   {
+    "q": "In welk jaar viel de Berlijnse Muur?",
+    "a": [
+     "1989",
+     "1990",
+     "1961",
+     "1975"
+    ]
+   },
+   {
+    "q": "Welke poort is een bekend symbool van Berlijn?",
+    "a": [
+     "Brandenburger Tor",
+     "Holstentor",
+     "Siegestor",
+     "Porta Nigra"
+    ]
+   },
+   {
+    "q": "In welke stad wordt het Oktoberfest gevierd?",
+    "a": [
+     "München",
+     "Keulen",
+     "Stuttgart",
+     "Berlijn"
+    ]
+   },
+   {
+    "q": "Welke rivier stroomt door Keulen?",
+    "a": [
+     "Rijn",
+     "Main",
+     "Elbe",
+     "Donau"
+    ]
+   },
+   {
+    "q": "Welke rivier stroomt door Hamburg en Dresden?",
+    "a": [
+     "Elbe",
+     "Weser",
+     "Oder",
+     "Spree"
+    ]
+   },
+   {
+    "q": "Hoe heet het grootste Duitse eiland?",
+    "a": [
+     "Rügen",
+     "Usedom",
+     "Sylt",
+     "Fehmarn"
+    ]
+   },
+   {
+    "q": "Welk meer is het grootste meer dat helemaal in Duitsland ligt?",
+    "a": [
+     "Müritz",
+     "Chiemsee",
+     "Starnberger See",
+     "Bodenmeer"
+    ]
+   },
+   {
+    "q": "Welke munt had Duitsland vóór de euro?",
+    "a": [
+     "D-mark",
+     "Schilling",
+     "Gulden",
+     "Frank"
+    ]
+   },
+   {
+    "q": "Hoeveel buurlanden heeft Duitsland?",
+    "a": [
+     "9",
+     "7",
+     "8",
+     "10"
+    ]
+   },
+   {
+    "q": "Aan welke twee zeeën grenst Duitsland?",
+    "a": [
+     "Noordzee en Oostzee",
+     "Noordzee en Middellandse Zee",
+     "Oostzee en Atlantische Oceaan",
+     "Noordzee en Zwarte Zee"
+    ]
+   },
+   {
+    "q": "Wie was de eerste bondskanselier?",
+    "a": [
+     "Konrad Adenauer",
+     "Willy Brandt",
+     "Helmut Kohl",
+     "Ludwig Erhard"
+    ]
+   }
+  ]
+ },
+ "oesterreich-bundeslaender": {
+  "title": "Oostenrijk: deelstaten",
+  "items": [
+   {
+    "q": "Hoeveel deelstaten heeft Oostenrijk?",
+    "a": [
+     "9",
+     "8",
+     "10",
+     "12"
+    ]
+   },
+   {
+    "q": "Hoe heet de hoogste berg van Oostenrijk?",
+    "a": [
+     "Großglockner",
+     "Wildspitze",
+     "Dachstein",
+     "Zugspitze"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Neder-Oostenrijk?",
+    "a": [
+     "Sankt Pölten",
+     "Wiener Neustadt",
+     "Krems",
+     "Baden"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Opper-Oostenrijk?",
+    "a": [
+     "Linz",
+     "Wels",
+     "Steyr",
+     "Braunau"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Salzburg?",
+    "a": [
+     "Salzburg",
+     "Hallein",
+     "Zell am See",
+     "Bischofshofen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Tirol?",
+    "a": [
+     "Innsbruck",
+     "Kufstein",
+     "Lienz",
+     "Kitzbühel"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Vorarlberg?",
+    "a": [
+     "Bregenz",
+     "Dornbirn",
+     "Feldkirch",
+     "Bludenz"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Karinthië?",
+    "a": [
+     "Klagenfurt",
+     "Villach",
+     "Wolfsberg",
+     "Spittal an der Drau"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Stiermarken?",
+    "a": [
+     "Graz",
+     "Leoben",
+     "Bruck an der Mur",
+     "Kapfenberg"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van Burgenland?",
+    "a": [
+     "Eisenstadt",
+     "Neusiedl am See",
+     "Oberwart",
+     "Mattersburg"
+    ]
+   }
+  ]
+ },
+ "niederlande-provinzen": {
+  "title": "Nederland: provincies",
+  "items": [
+   {
+    "q": "Hoeveel provincies heeft Nederland?",
+    "a": [
+     "12",
+     "10",
+     "11",
+     "16"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Groningen?",
+    "a": [
+     "Groningen",
+     "Assen",
+     "Leeuwarden",
+     "Emmen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Friesland?",
+    "a": [
+     "Leeuwarden",
+     "Sneek",
+     "Heerenveen",
+     "Groningen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Drenthe?",
+    "a": [
+     "Assen",
+     "Emmen",
+     "Hoogeveen",
+     "Meppel"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Overijssel?",
+    "a": [
+     "Zwolle",
+     "Enschede",
+     "Deventer",
+     "Almelo"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Flevoland?",
+    "a": [
+     "Lelystad",
+     "Almere",
+     "Emmeloord",
+     "Dronten"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Gelderland?",
+    "a": [
+     "Arnhem",
+     "Nijmegen",
+     "Apeldoorn",
+     "Ede"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Utrecht?",
+    "a": [
+     "Utrecht",
+     "Amersfoort",
+     "Zeist",
+     "Hilversum"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Noord-Holland?",
+    "a": [
+     "Haarlem",
+     "Amsterdam",
+     "Alkmaar",
+     "Zaandam"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Zuid-Holland?",
+    "a": [
+     "Den Haag",
+     "Rotterdam",
+     "Leiden",
+     "Delft"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Zeeland?",
+    "a": [
+     "Middelburg",
+     "Vlissingen",
+     "Goes",
+     "Terneuzen"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Noord-Brabant?",
+    "a": [
+     "’s-Hertogenbosch",
+     "Eindhoven",
+     "Tilburg",
+     "Breda"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de provincie Limburg?",
+    "a": [
+     "Maastricht",
+     "Venlo",
+     "Heerlen",
+     "Roermond"
+    ]
+   }
+  ]
+ },
+ "niederlande": {
+  "title": "Nederland algemeen",
+  "items": [
+   {
+    "q": "Wat is de hoofdstad van Nederland?",
+    "a": [
+     "Amsterdam",
+     "Den Haag",
+     "Rotterdam",
+     "Utrecht"
+    ]
+   },
+   {
+    "q": "In welke stad zit de Nederlandse regering?",
+    "a": [
+     "Den Haag",
+     "Amsterdam",
+     "Rotterdam",
+     "Utrecht"
+    ]
+   },
+   {
+    "q": "Hoe heet de koning van Nederland (sinds 2013)?",
+    "a": [
+     "Willem-Alexander",
+     "Willem III",
+     "Maximiliaan",
+     "Friso"
+    ]
+   },
+   {
+    "q": "Wanneer is het Koningsdag?",
+    "a": [
+     "27 april",
+     "30 april",
+     "5 mei",
+     "1 mei"
+    ]
+   },
+   {
+    "q": "Welke stad heeft de grootste haven van Europa?",
+    "a": [
+     "Rotterdam",
+     "Antwerpen",
+     "Hamburg",
+     "Amsterdam"
+    ]
+   },
+   {
+    "q": "Hoe heet de grote dijk tussen het IJsselmeer en de Waddenzee?",
+    "a": [
+     "Afsluitdijk",
+     "Deltawerken",
+     "Oosterscheldekering",
+     "Maeslantkering"
+    ]
+   },
+   {
+    "q": "Hoe heet het hoogste punt van het Europese deel van Nederland?",
+    "a": [
+     "Vaalserberg",
+     "Brocken",
+     "Tafelberg",
+     "Feldberg"
+    ]
+   },
+   {
+    "q": "Welke kleur dragen de Nederlandse sportploegen?",
+    "a": [
+     "Oranje",
+     "Blauw",
+     "Rood",
+     "Groen"
+    ]
+   },
+   {
+    "q": "Wie schilderde 'De Nachtwacht'?",
+    "a": [
+     "Rembrandt",
+     "Vermeer",
+     "Van Gogh",
+     "Mondriaan"
+    ]
+   },
+   {
+    "q": "Welk van deze eilanden hoort bij Nederland?",
+    "a": [
+     "Texel",
+     "Sylt",
+     "Föhr",
+     "Rømø"
+    ]
+   },
+   {
+    "q": "Welke munt had Nederland vóór de euro?",
+    "a": [
+     "Gulden",
+     "Mark",
+     "Frank",
+     "Kroon"
+    ]
+   }
+  ]
+ },
+ "frankreich": {
+  "title": "Frankrijk algemeen",
+  "items": [
+   {
+    "q": "Wat is de hoofdstad van Frankrijk?",
+    "a": [
+     "Parijs",
+     "Lyon",
+     "Marseille",
+     "Bordeaux"
+    ]
+   },
+   {
+    "q": "Hoe heet de hoogste berg van Frankrijk (en van de Alpen)?",
+    "a": [
+     "Mont Blanc",
+     "Matterhorn",
+     "Mont Ventoux",
+     "Puy de Dôme"
+    ]
+   },
+   {
+    "q": "Wat is de langste rivier die alleen door Frankrijk stroomt?",
+    "a": [
+     "Loire",
+     "Seine",
+     "Rhône",
+     "Garonne"
+    ]
+   },
+   {
+    "q": "Welke rivier stroomt door Parijs?",
+    "a": [
+     "Seine",
+     "Loire",
+     "Rhône",
+     "Marne"
+    ]
+   },
+   {
+    "q": "Wanneer is de nationale feestdag van Frankrijk?",
+    "a": [
+     "14 juli",
+     "1 augustus",
+     "3 oktober",
+     "11 november"
+    ]
+   },
+   {
+    "q": "Welke kleuren heeft de Franse vlag (van links)?",
+    "a": [
+     "Blauw, wit, rood",
+     "Rood, wit, blauw",
+     "Blauw, wit, groen",
+     "Wit, blauw, rood"
+    ]
+   },
+   {
+    "q": "Hoe heet het Franse volkslied?",
+    "a": [
+     "La Marseillaise",
+     "La Parisienne",
+     "Le Chant du Départ",
+     "La Bretonne"
+    ]
+   },
+   {
+    "q": "Welk eiland in de Middellandse Zee hoort bij Frankrijk?",
+    "a": [
+     "Corsica",
+     "Sardinië",
+     "Mallorca",
+     "Elba"
+    ]
+   },
+   {
+    "q": "Hoe heet de beroemde wielerwedstrijd door Frankrijk?",
+    "a": [
+     "Tour de France",
+     "Giro d’Italia",
+     "Vuelta",
+     "Parijs-Roubaix"
+    ]
+   },
+   {
+    "q": "Welke munt had Frankrijk vóór de euro?",
+    "a": [
+     "Franse frank",
+     "Livre",
+     "Écu",
+     "Gulden"
+    ]
+   },
+   {
+    "q": "In welke stad staat het Europees Parlement?",
+    "a": [
+     "Straatsburg",
+     "Parijs",
+     "Lyon",
+     "Lille"
+    ]
+   },
+   {
+    "q": "Welk dier is het symbool van Frankrijk?",
+    "a": [
+     "Haan",
+     "Arend",
+     "Leeuw",
+     "Beer"
+    ]
+   },
+   {
+    "q": "Welke tunnel verbindt Frankrijk met Engeland?",
+    "a": [
+     "Kanaaltunnel (Eurotunnel)",
+     "Gotthardtunnel",
+     "Mont Blanctunnel",
+     "Fréjustunnel"
+    ]
+   },
+   {
+    "q": "Welk museum in Parijs toont de 'Mona Lisa'?",
+    "a": [
+     "Louvre",
+     "Musée d’Orsay",
+     "Centre Pompidou",
+     "Musée Rodin"
+    ]
+   },
+   {
+    "q": "Hoe heet de prachtige laan in Parijs die naar de Arc de Triomphe leidt?",
+    "a": [
+     "Champs-Élysées",
+     "Boulevard Saint-Germain",
+     "Rue de Rivoli",
+     "Avenue Foch"
+    ]
+   },
+   {
+    "q": "Aan hoeveel landen grenst het Franse vasteland (met Andorra en Monaco)?",
+    "a": [
+     "8",
+     "6",
+     "7",
+     "9"
+    ]
+   }
+  ]
+ },
+ "frankreich-regionen": {
+  "title": "Frankrijk: regio's",
+  "items": [
+   {
+    "q": "Hoeveel regio's heeft het Franse vasteland (sinds 2016), met Corsica erbij?",
+    "a": [
+     "13",
+     "22",
+     "18",
+     "10"
+    ]
+   },
+   {
+    "q": "Welke regio ligt helemaal in het noordwesten aan de Atlantische Oceaan?",
+    "a": [
+     "Bretagne",
+     "Normandië",
+     "Elzas",
+     "Provence"
+    ]
+   },
+   {
+    "q": "Bij welke regio hoort de Elzas tegenwoordig?",
+    "a": [
+     "Grand Est",
+     "Hauts-de-France",
+     "Bourgogne-Franche-Comté",
+     "Normandië"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Île-de-France?",
+    "a": [
+     "Parijs",
+     "Versailles",
+     "Orléans",
+     "Reims"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Auvergne-Rhône-Alpes?",
+    "a": [
+     "Lyon",
+     "Grenoble",
+     "Clermont-Ferrand",
+     "Saint-Étienne"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Bourgogne-Franche-Comté?",
+    "a": [
+     "Dijon",
+     "Besançon",
+     "Auxerre",
+     "Mâcon"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Bretagne?",
+    "a": [
+     "Rennes",
+     "Brest",
+     "Quimper",
+     "Saint-Malo"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Centre-Val de Loire?",
+    "a": [
+     "Orléans",
+     "Tours",
+     "Bourges",
+     "Chartres"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Corsica?",
+    "a": [
+     "Ajaccio",
+     "Bastia",
+     "Calvi",
+     "Porto-Vecchio"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Grand Est?",
+    "a": [
+     "Straatsburg",
+     "Metz",
+     "Nancy",
+     "Reims"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Hauts-de-France?",
+    "a": [
+     "Lille",
+     "Amiens",
+     "Calais",
+     "Duinkerke"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Normandië?",
+    "a": [
+     "Rouen",
+     "Caen",
+     "Le Havre",
+     "Cherbourg"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Nouvelle-Aquitaine?",
+    "a": [
+     "Bordeaux",
+     "Limoges",
+     "Poitiers",
+     "La Rochelle"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Occitanie?",
+    "a": [
+     "Toulouse",
+     "Montpellier",
+     "Nîmes",
+     "Perpignan"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Pays de la Loire?",
+    "a": [
+     "Nantes",
+     "Angers",
+     "Le Mans",
+     "Saint-Nazaire"
+    ]
+   },
+   {
+    "q": "Wat is de hoofdstad van de regio Provence-Alpes-Côte d’Azur?",
+    "a": [
+     "Marseille",
+     "Nice",
+     "Toulon",
+     "Avignon"
+    ]
+   }
+  ]
+ },
+ "frankreich-geschichte": {
+  "title": "Frankrijk: geschiedenis",
+  "items": [
+   {
+    "q": "In welk jaar begon de Franse Revolutie?",
+    "a": [
+     "1789",
+     "1799",
+     "1776",
+     "1815"
+    ]
+   },
+   {
+    "q": "Welke gevangenis werd op 14 juli 1789 bestormd?",
+    "a": [
+     "Bastille",
+     "Conciergerie",
+     "Louvre",
+     "Tower van Londen"
+    ]
+   },
+   {
+    "q": "Wat is het motto van de Franse Republiek?",
+    "a": [
+     "Vrijheid, gelijkheid, broederschap",
+     "Eenheid, recht en vrijheid",
+     "Eén voor allen, allen voor één",
+     "God, koning, vaderland"
+    ]
+   },
+   {
+    "q": "Welke keizer verloor in 1815 de Slag bij Waterloo?",
+    "a": [
+     "Napoleon Bonaparte",
+     "Karel de Grote",
+     "Lodewijk XIV",
+     "Napoleon III"
+    ]
+   },
+   {
+    "q": "Op welk eiland werd Napoleon geboren?",
+    "a": [
+     "Corsica",
+     "Elba",
+     "Sardinië",
+     "Sint-Helena"
+    ]
+   },
+   {
+    "q": "Welke koning werd de 'Zonnekoning' genoemd?",
+    "a": [
+     "Lodewijk XIV",
+     "Lodewijk XVI",
+     "Frans I",
+     "Hendrik IV"
+    ]
+   },
+   {
+    "q": "Welk kasteel liet de Zonnekoning prachtig uitbouwen?",
+    "a": [
+     "Versailles",
+     "Chambord",
+     "Fontainebleau",
+     "Chenonceau"
+    ]
+   },
+   {
+    "q": "Welke jonge vrouw leidde de Fransen in de Honderdjarige Oorlog?",
+    "a": [
+     "Jeanne d’Arc",
+     "Marie Antoinette",
+     "Catharina de' Medici",
+     "Marie Curie"
+    ]
+   },
+   {
+    "q": "Voor welke wereldtentoonstelling werd de Eiffeltoren gebouwd?",
+    "a": [
+     "1889",
+     "1900",
+     "1867",
+     "1937"
+    ]
+   },
+   {
+    "q": "Welke koning werd tijdens de Revolutie onthoofd?",
+    "a": [
+     "Lodewijk XVI",
+     "Lodewijk XIV",
+     "Karel X",
+     "Lodewijk XVIII"
+    ]
+   },
+   {
+    "q": "Hoe heette de vorst die rond het jaar 800 keizer werd van een groot rijk?",
+    "a": [
+     "Karel de Grote",
+     "Clovis",
+     "Pepijn",
+     "Lodewijk de Vrome"
+    ]
+   },
+   {
+    "q": "Op welke kust landden de geallieerden op 6 juni 1944 (D-Day)?",
+    "a": [
+     "Normandië",
+     "Bretagne",
+     "Côte d’Azur",
+     "Aquitanië"
+    ]
+   }
+  ]
+ },
+ "frankreich-kueche": {
+  "title": "Frankrijk: keuken en cultuur",
+  "items": [
+   {
+    "q": "Hoe heet het lange Franse witbrood?",
+    "a": [
+     "Baguette",
+     "Brioche",
+     "Ciabatta",
+     "Fougasse"
+    ]
+   },
+   {
+    "q": "Wat is een 'croissant'?",
+    "a": [
+     "Een bladerdeegbroodje",
+     "Een kaas",
+     "Een soep",
+     "Een toetje van eieren"
+    ]
+   },
+   {
+    "q": "Uit welke stad komt de vissoep 'bouillabaisse'?",
+    "a": [
+     "Marseille",
+     "Parijs",
+     "Lyon",
+     "Brest"
+    ]
+   },
+   {
+    "q": "Welke van deze kazen komt uit Frankrijk?",
+    "a": [
+     "Camembert",
+     "Gouda",
+     "Emmentaler",
+     "Parmezaan"
+    ]
+   },
+   {
+    "q": "Wat zijn 'crêpes'?",
+    "a": [
+     "Dunne pannenkoeken",
+     "Slakken",
+     "Aardappelgratin",
+     "Groentestoof"
+    ]
+   },
+   {
+    "q": "Uit welke regio komen crêpes oorspronkelijk?",
+    "a": [
+     "Bretagne",
+     "Provence",
+     "Elzas",
+     "Bourgondië"
+    ]
+   },
+   {
+    "q": "Welke groentestoof komt uit de Provence?",
+    "a": [
+     "Ratatouille",
+     "Cassoulet",
+     "Pot-au-feu",
+     "Choucroute"
+    ]
+   },
+   {
+    "q": "Welke regio is beroemd om haar mousserende wijn?",
+    "a": [
+     "Champagne",
+     "Normandië",
+     "Bretagne",
+     "Corsica"
+    ]
+   },
+   {
+    "q": "Wat zijn 'macarons'?",
+    "a": [
+     "Kleine amandelkoekjes met vulling",
+     "Pasta",
+     "Zoute koekjes",
+     "Gevulde deegflapjes"
+    ]
+   },
+   {
+    "q": "Welk gerecht uit de Elzas is een dunne platte koek met spek en ui?",
+    "a": [
+     "Flammkuchen (tarte flambée)",
+     "Quiche",
+     "Tarte Tatin",
+     "Galette"
+    ]
+   },
+   {
+    "q": "Welke schilder van waterlelies woonde in Giverny?",
+    "a": [
+     "Claude Monet",
+     "Vincent van Gogh",
+     "Pablo Picasso",
+     "Paul Klee"
+    ]
+   },
+   {
+    "q": "Hoe heet de beroemde kathedraal in Parijs die in 2019 in brand stond?",
+    "a": [
+     "Notre-Dame",
+     "Sacré-Cœur",
+     "Saint-Sulpice",
+     "Sainte-Chapelle"
+    ]
+   },
+   {
+    "q": "Welke stad is beroemd om haar filmfestival?",
+    "a": [
+     "Cannes",
+     "Nice",
+     "Lyon",
+     "Bordeaux"
+    ]
+   },
+   {
+    "q": "Hoe zeg je 'goedendag' in het Frans?",
+    "a": [
+     "Bonjour",
+     "Bonsoir",
+     "Merci",
+     "Salut"
+    ]
+   }
+  ]
+ },
+ "wo-liegt-frankreich": {
+  "title": "Waar ligt dat? (Frankrijk)",
+  "items": [
+   {
+    "q": "Waar ligt Parijs?",
+    "label": "Parijs"
+   },
+   {
+    "q": "Waar ligt Marseille?",
+    "label": "Marseille"
+   },
+   {
+    "q": "Waar ligt Lyon?",
+    "label": "Lyon"
+   },
+   {
+    "q": "Waar ligt Bordeaux?",
+    "label": "Bordeaux"
+   },
+   {
+    "q": "Waar ligt Straatsburg?",
+    "label": "Straatsburg"
+   },
+   {
+    "q": "Waar ligt Nice?",
+    "label": "Nice"
+   },
+   {
+    "q": "Waar ligt Lille?",
+    "label": "Lille"
+   },
+   {
+    "q": "Waar ligt Brest?",
+    "label": "Brest"
+   },
+   {
+    "q": "Waar ligt Toulouse?",
+    "label": "Toulouse"
+   },
+   {
+    "q": "Waar ligt Nantes?",
+    "label": "Nantes"
+   },
+   {
+    "q": "Waar ligt de Mont-Saint-Michel?",
+    "label": "de Mont-Saint-Michel"
+   },
+   {
+    "q": "Waar ligt de Mont Blanc?",
+    "label": "de Mont Blanc"
+   },
+   {
+    "q": "Waar ligt Ajaccio (Corsica)?",
+    "label": "Ajaccio (Corsica)"
+   },
+   {
+    "q": "Waar ligt Calais?",
+    "label": "Calais"
+   },
+   {
+    "q": "Waar ligt Biarritz?",
+    "label": "Biarritz"
+   }
+  ]
+ }
+}

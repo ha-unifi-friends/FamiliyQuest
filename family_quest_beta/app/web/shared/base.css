@@ -1891,3 +1891,6 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .qe-tr-head { font-weight: 600; opacity: .8; }
 .qe-tr-answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
 .qe-tr-answers input { border-left: 4px solid var(--c); }
+/* the quiz running just now, on top of the quiz list (community.js quizzesPanel) */
+.quiz-running { display: grid; gap: 8px; margin-bottom: 12px; border: 2px solid var(--accent); }
+.quiz-running .btn.danger { background: var(--bad, #e03131); color: #fff; }

@@ -156,7 +156,9 @@ class Community:
         t = TEMPLATES.get(template_id)
         if not t:
             raise CommunityError("Unknown template")
-        return self.save_quiz({"title": t["title"], "questions": template_questions(t)}, prof)
+        trs = template_translations(template_id)
+        langs = {"base": "de", "more": list(trs), "title": {k: v["title"] for k, v in trs.items()}} if trs else None
+        return self.save_quiz({"title": t["title"], "questions": template_questions(t, trs), "langs": langs}, prof)
 
     # ================================================================ quiz game
     def _load(self, g: dict) -> dict:
@@ -813,7 +815,7 @@ def clean_langs(v) -> dict | None:
     if not more:
         return None
     titles = v.get("title") if isinstance(v.get("title"), dict) else {}
-    return {"base": base, "more": more[:5],
+    return {"base": base, "more": more[:9],
             "title": {k: str(titles[k]).strip()[:80] for k in more if str(titles.get(k) or "").strip()}}
 
 
@@ -843,14 +845,46 @@ def clean_tr(tr, more: list[str] | None, kind: str, keep: list[int] | None = Non
     return out
 
 
-def template_questions(t: dict) -> list[dict]:
-    """Template questions are (question, right answer, wrong answers …) – into the quiz format, answers shuffled."""
+_TEMPLATE_TR: dict[str, dict] | None = None
+
+
+def template_translations(template_id: str) -> dict:
+    """{lang: {"title", "items"}} of a quiz template – from familyquest/quiz_templates_tr/<lang>.json
+    (made with tools/quiz_templates_tr.py); a language whose items do not fit the template is left out."""
+    global _TEMPLATE_TR
+    if _TEMPLATE_TR is None:
+        from pathlib import Path
+        _TEMPLATE_TR = {}
+        for f in sorted((Path(__file__).parent / "quiz_templates_tr").glob("*.json")):
+            if f.stem in QUIZ_LANGS and f.stem != "de":
+                try:
+                    _TEMPLATE_TR[f.stem] = json.loads(f.read_text(encoding="utf-8"))
+                except ValueError:
+                    pass
+    from .quiz_templates import TEMPLATES
+    n = len(TEMPLATES.get(template_id, {}).get("questions") or [])
+    return {lang: d[template_id] for lang, d in _TEMPLATE_TR.items()
+            if isinstance(d.get(template_id), dict) and len(d[template_id].get("items") or []) == n}
+
+
+def template_questions(t: dict, trs: dict | None = None) -> list[dict]:
+    """Template questions are (question, right answer, wrong answers …) – into the quiz format, answers shuffled;
+    `trs` (template_translations) gives every question its texts in the other languages."""
     out = []
-    for item in t["questions"]:
+    for i, item in enumerate(t["questions"]):
+        tr = {}
+        for lang, d in (trs or {}).items():
+            x = d["items"][i]
+            tr[lang] = {k: v for k, v in x.items() if k in ("q", "a", "unit", "label") and v}
         if isinstance(item, dict):                       # estimation and map questions
-            out.append({**item, "t": item.get("t", t.get("t", 30))})
+            out.append({**item, "t": item.get("t", t.get("t", 30)), **({"tr": tr} if tr else {})})
             continue
         img = item[-1] if isinstance(item[-1], dict) else None
         q, right, *wrong = item[:-1] if img else item
-        out.append(shuffle_answers({"q": q, "a": [right, *wrong][:4], "c": 0, "t": t.get("t", 20), **({"img": img} if img else {})}))
+        a = [right, *wrong][:4]
+        for v in tr.values():
+            if len(v.get("a") or []) != len(a):
+                v.pop("a", None)
+        out.append(shuffle_answers({"q": q, "a": a, "c": 0, "t": t.get("t", 20), **({"img": img} if img else {}),
+                                    **({"tr": tr} if tr else {})}))
     return out
