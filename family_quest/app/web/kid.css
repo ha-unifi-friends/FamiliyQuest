@@ -458,7 +458,11 @@
   .fq-head .streak { padding: 4px 8px; font-size: 1.05rem; }
   .fq-head .me, .fq-head .clk { padding: 4px 7px; }
   .fq-head .clk .tl { gap: 5px; }
-  .fq-head .has-back .slab { display: none; }     /* with ← the season label would push the clock into a second row */
+  .fq-head .slab { display: none; }     /* the season label would push the clock into a second row */
+}
+@media (max-width: 380px) {
+  .fq-head .has-back { gap: 3px; padding-inline: 6px; }
+  .fq-head .has-back .me, .fq-head .has-back .clk, .fq-head .has-back .streak { padding-inline: 5px; }
 }
 /* «Me»: the summary at the top (meSummary) */
 .me-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
@@ -485,3 +489,4 @@
 .screen .course-level .btn.small, .screen .btn.subject-go, .screen .offer .btn, .screen .inst-filter button, .screen .av-tabs button, .screen .quiz-running .btn, .screen .learn-start .btn { min-height: 44px; }
 .fq-head .icon-btn { min-width: 44px; min-height: 44px; }
 .inst-item > summary { min-height: 44px; }
+.screen .inst-filter button { padding: 6px 10px; }

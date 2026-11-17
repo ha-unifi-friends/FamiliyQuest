@@ -140,7 +140,10 @@ function showTableNote(t) {
   // one compact line below the header – ☰, the clock and the title stay visible
   const box = h("div.table-note", { role: "status", "data-route": t.route },
     h("span.table-note-ic", t.icon),
-    h("span.table-note-txt", "🔔 ", h("strong", I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)))),
+    // short enough for one line on a phone: «Werewolves · Mia» – the whole sentence as tooltip / for screen readers
+    h("span.table-note-txt", { title: I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)),
+      "aria-label": I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)) },
+      h("strong", I18N.tr(t.title)), " · ", C(t.host || "?")),
     // «Join» seats the child at once – the game opens already joined, without asking again
     h("button.btn.small", { onclick: async () => {
       close();
