@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0-beta.6
+
+- Parent area: after a long pause every button works again – Home Assistant renews the session by itself (otherwise the PIN login appears with «Session expired») instead of the message «HTTP 401»
+
 ## 1.1.0-beta.5
 
 - Werwölfe: playable from 2 people – bots fill the table up to 5 (or up to the number chosen, max. 12) and play every role (Amor, wolves, seer, witch, hunter) and vote; no coins for bots
