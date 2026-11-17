@@ -95,11 +95,12 @@ const Sound = {
     if (!this.on) return;
     try {
       this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
-      const notes = { right: [660, 880], wrong: [300, 220], done: [523, 659, 784, 1046], tap: [500], turn: [784, 1046, 1318] }[kind] || [440];
+      const notes = { right: [660, 880], wrong: [300, 220], done: [523, 659, 784, 1046], tap: [500], turn: [784, 1046, 1318],
+        ding: [1318, 1760], sizzle: [170, 150, 130], trash: [240, 160] }[kind] || [440];
       notes.forEach((f, i) => {
         const o = this.ctx.createOscillator(), g = this.ctx.createGain(), t = this.ctx.currentTime + i * 0.11;
-        o.type = kind === "wrong" ? "triangle" : "sine"; o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        o.type = { wrong: "triangle", sizzle: "sawtooth", trash: "square" }[kind] || "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(kind === "sizzle" || kind === "trash" ? 0.06 : 0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
         o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + 0.2);
       });
     } catch {}

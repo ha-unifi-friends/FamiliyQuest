@@ -132,6 +132,33 @@ Calendar › **+ 👨‍👩‍👧 FamilyTime** / **+ 📵 OfflineTime** (or th
 - **OfflineTime** can switch off, for all or chosen children: the **internet** (a running internet time stops, it
   cannot be started) and the **games of the app** (learning stays open). Without a tick it is only a notice.
 
+### FamilyTime games: wishes, vote, fix a game for coins
+
+Which game do we play at the next FamilyTime? In the app on the **Family** page (and in the parent area › Family) the
+section **🎲 FamilyTime games** lists the FamilyTime events of the next 60 days:
+- **Wishes**: every family member (children and parents – never guests) wishes **one** game per FamilyTime: one of the
+  app's family games (the ones this person may play, parent area › Games) or a **board game** typed in (free text, max.
+  60 letters, e.g. «Monopoly»). The wish can be changed or taken back until the wishes close. The start page shows
+  «Wish a game for FamilyTime on Saturday!» until you wished.
+- **The wishes close** when a parent taps **Start the vote**, or by themselves *N* hours before the start (setting,
+  default 24 h). Only one game wished (also when several people wished the same): it is **set directly**.
+- **The vote**: one vote per family member, it can be changed. It ends when everybody voted, when a parent taps **End
+  the vote**, or when the FamilyTime starts. The start page shows **Vote now!** until you voted. A **tie**: the parents
+  choose one of the leaders or tap **🎲 Random**; a tie still open when the FamilyTime starts is drawn at random.
+- **Parents** can also **set a game** directly (one of the wishes or any game), **skip the vote** (no game from the
+  wishes this time – they can still set one, a child can still buy one), **clear the wishes** (start over) and
+  **remove the game**.
+- **Fix a game for 150 coins**: a child pays the price (setting, default 150, 0 = off) and sets the game of a
+  FamilyTime that has **no game yet** firmly – the wishes and the vote of that FamilyTime end. Refused when a game is
+  set already. If a parent removes a bought game (or deletes the FamilyTime, or makes it an ordinary event), the child
+  gets the coins back (ledger events `familytime_game` / `familytime_refund`).
+- The game shows on the FamilyTime: «🎲 Game: Tschau Sepp – chosen by vote / bought by Mia / set by Papa» in the
+  calendar of the parent area, in the planner's calendar row, on the FamilyTime banner of the start page (from 24 h
+  before) and in the section. Everybody of the family gets a history entry when the game is set.
+- **Settings** (parent area › Family › FamilyTime games › ⚙️, and the same under Settings › FamilyTime games):
+  switch the whole feature on/off (off: children see nothing of it), the coin price, the hours before the start when
+  the wishes close.
+
 ## Kiosk dashboard
 
 Parent area → **🖥️ Dashboard**: a read-only page for a wall tablet, TV or old phone – any browser, no login.
@@ -383,11 +410,11 @@ Every game has a **status**: *active*, *active without bots* or *inactive* (= of
 Switched-off games disappear from the children's app.
 
 **Active without bots** is offered for the games that can be played with bots: Texas Hold'em, Tschau Sepp,
-Kartenkarussell, Domino, Paarjagd, Kartenlauf, Fünf Würfel, Heimwärts, Jump, Klatsch den Beat, Jass, Werwölfe, Chess,
+Kartenkarussell, Domino, Paarjagd, Kartenlauf, Fünf Würfel, Heimwärts, Jump, Snack Rush, Klatsch den Beat, Jass, Werwölfe, Chess,
 Dorfmarkt, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
 the games against the app, and the server refuses every start with bots («Playing with bots is switched off for this
 game»): family tables get no bots (Kartenlauf plays with the people there, Jass needs 4 people, Werwölfe needs 5), chess
-only against the family or two on one device, Ping-Pong doubles only with people. Jump and Klatsch den Beat can still be
+only against the family or two on one device, Ping-Pong doubles only with people. Jump, Snack Rush and Klatsch den Beat can still be
 played alone, without practice bots. A table where a parent plays along may still be filled with bots.
 Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `PUT /api/parent/games`).
 
@@ -716,6 +743,56 @@ is out. Who leads may **end** the game early: ranked as it stands, without coins
 played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots.
 The winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, metres, sparks, new
 personal best). In the parent area › Games the runner can be active, active without bots or inactive.
+
+### Snack Rush
+
+Games → **🍔 Snack Rush** (German «Imbiss-Express»): a live snack-stand race. Every player runs their **own snack stand**
+on their own device, all at the same time, and **all stands get the same customers**. Play **alone** (high score: your
+**personal best** till is kept; optionally with 1–5 practice bots) or open a **family table** (1 to 6 players,
+optionally with bots; guests via QR code).
+
+The screen (one phone screen, no scrolling): on top the **till 💰**, your stars ⭐, angry customers 😡 and the time left;
+below it a chip for every other player with **their till and their angry customers** (updated about every second);
+then the **counter** with up to 4 customers (their order, their mood 😊 → 😐 → 😠 → 😡 and a patience bar; more customers
+wait in the line «+2 🚶»), the **shelf** with the ready food and the **bin**, and the **kitchen** with its stations.
+
+- **Foods and steps** (each step takes its time – a ring runs round; the stations have 2 places, the prep counter 3):
+  burger = grill 4 s → assemble 2 s · hot dog = pot 3 s → into the bun 1.5 s · fries = fryer 5 s → salt 1 s ·
+  drink = fill 3 s · pizza = oven 6 s · ice cream = machine 2 s. Who opens the table chooses the foods on the menu.
+- **Playing:** tap an empty place of a station to start its food; tap the done food to move it on (to the prep
+  counter, or onto the shelf). **Take it off in time:** grill and fryer burn it 4 s after it is done, the oven after
+  5 s, the ice cream melts after 6 s – tap it into the bin. Tap a **customer** to hand over what they ordered from the
+  shelf (or tap a food on the shelf: it goes to the customer who has waited longest for it). When the whole order is
+  there, the customer pays.
+- **Money (the game's own pretend money 💰, not the coins of the app):** every step costs its ingredients when it starts
+  (burger 2 + 1, hot dog 2 + 1, fries 1, drink 1, pizza 3, ice cream 1 – half on «easy»). A served customer pays the
+  prices (burger 8, hot dog 6, fries 4, drink 3, pizza 7, ice cream 4) plus a **tip** for fast service: 3 stars (more
+  than 60 % patience left) +3, 2 stars +1, 1 star nothing. The till = earnings − ingredients.
+- **Angry customers** walk away without paying. What was already handed to them goes back onto the shelf for the next
+  customer who wants it. Food on the shelf gets **cold after 25 seconds** and goes into the bin (the money is lost –
+  the app shows «🗑️ −💰…»).
+- **It gets harder:** customers come more often, order more (1 → 3 foods) and are less patient – the full rush after
+  about 4 minutes. Level easy / normal / hard: how often customers come and how patient they are.
+- **Duration:** 3, 5 (default) or 8 minutes – the **most money in the till wins** (then more served customers, more
+  stars, fewer angry ones; the same shares the place). Optional «Out after angry customers» (off by default, or 3 / 5 /
+  8): with that many angry customers you are out (your till stays); the game ends early when no person is left in.
+- **Bots** (easy / normal / hard, the level of the table) work through the customers in order: a reaction time, some
+  seconds of work per food, sometimes they forget a part (costs time and ingredients) and they let hopeless customers
+  go – so they fall behind when it gets busy.
+
+The kitchen runs in the app (no waiting for the network). The server makes the customer stream from a secret seed (the
+apps only get the customers of the next seconds), and the app reports its serves, the customers it saw leave angry and
+the money spent. The server checks every serve: each customer only once, not before they came, not after their patience
+ran out, not in the future – and the stand must have been able to make the food: every serve books its foods step by
+step on the earliest free place of each station (food made ahead at most 90 seconds before), the last step must be done
+by the serve. A customer without a valid serve is angry – the server decides that itself 4 seconds after the patience
+ran out. The money spent counts at least the ingredients of every served food. When «Out» is on, an app that stays silent
+for 20 seconds is out. Who leads may **end** the game early: ranked as it stands, but without coins.
+
+**Coins for places 1–3:** set by the parents in Games › Snack Rush (default 10 / 5 / 2), paid once, only for a game
+played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots. The
+winners get the «No. 1» hat. Every person of the family gets a history entry (place, till, served customers, new
+personal best). In Games the parents can switch the game on, off or to «active without bots».
 
 ### Klatsch den Beat
 

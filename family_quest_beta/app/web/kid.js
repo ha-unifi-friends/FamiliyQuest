@@ -72,6 +72,7 @@ async function route() {
   if (view === "heimwaerts") return heimwaertsView();
   if (view === "jump") return jumpView();
   if (view === "sternlauf") return sternlaufView();
+  if (view === "snack") return snackView();
   if (view === "klatsch") return klatschView();
   if (view === "verboten") return verbotenView();
   if (view === "jass") return jassView();
@@ -119,7 +120,8 @@ function specialBanners(list) {
     const what = off ? [x.options.internet ? T("no internet") : null, x.options.games ? T("no games in the app") : null].filter(Boolean).map(t => I18N.tr(t)).join(" · ") : "";
     return h("section.card.banner.special-banner." + x.kind + (x.active ? ".now" : ""),
       h("span.big-ic", x.icon || (off ? "📵" : "👨‍👩‍👧")),
-      h("span.grow", h("strong", C(x.title)), h("br"), txt, what ? [h("br"), h("span.small.muted", what)] : null));
+      h("span.grow", h("strong", C(x.title)), h("br"), txt, what ? [h("br"), h("span.small.muted", what)] : null,
+        x.game ? [h("br"), h("span.small.ftg-line", x.game.icon + " ", C(ftGameLine(x.game)))] : null));     // FamilyTime: its game (community.js)
   });
 }
 
@@ -1659,7 +1661,7 @@ async function familyView() {
         m.chores && m.chores.reliability != null ? [h("dt", "🧹 " + I18N.tr(T("Chores"))), h("dd", fmt(m.chores.reliability) + " %")] : null,
         showAll && m.level ? [h("dt", "Level"), h("dd", String(m.level))] : null)))) : null,
     h("p.small.muted.center", T("Compared is the effort towards each one's own goal – not the raw points.")),
-    await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
+    await familyTimeSection(), await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
 }
 
 // ---------------------------------------------------------------- the games (own menu item)
@@ -1668,7 +1670,7 @@ async function gamesView() {
     canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
     canPlay("domino") ? await dominoFamilyCard() : null, canPlay("paarjagd") ? await paarjagdFamilyCard() : null,
     canPlay("werbinich") ? await werbinichFamilyCard() : null, canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null,
-    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("sternlauf") ? await sternlaufFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
+    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("sternlauf") ? await sternlaufFamilyCard() : null, canPlay("snack") ? await snackFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
   // the games running just now on top – the same pulsing banners as on the start page
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
   screen("games", h("h1", "🎲 ", T("Games")), ...(live.length ? [h("div.live-banners", ...live)] : []), ...cards);

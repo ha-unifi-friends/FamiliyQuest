@@ -225,7 +225,13 @@ def fq_events(start: str, end: str, request: Request, prof: dict = Learner) -> l
     from datetime import date, timedelta
     s, e = start[:10], end[:10]
     out = []
-    for ev in app_of(request).calendar.own(s, e):
+    fq = app_of(request)
+    own = fq.calendar.own(s, e)
+    games = fq.familytime.games_for_events([x["id"] for x in own if x["kind"] == "familytime"]) \
+        if fq.familytime.settings()["enabled"] or prof["role"] == "parent" else {}
+    for ev in own:
+        if ev["id"] in games:                   # FamilyTime with its game: «👨‍👩‍👧 FamilyTime · 🎲 Tschau Sepp»
+            ev = {**ev, "title": f"{ev['title']} · {games[ev['id']]['icon']} {games[ev['id']]['title']}"}
         if ev["all_day"]:
             last = date.fromisoformat((ev["end"] or ev["start"])[:10]) + timedelta(days=1)
             out.append({"summary": (ev.get("icon") + " " if ev.get("icon") else "") + ev["title"], "start": {"date": ev["start"][:10]}, "end": {"date": last.isoformat()}})

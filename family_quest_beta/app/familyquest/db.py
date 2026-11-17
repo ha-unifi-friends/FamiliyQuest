@@ -570,6 +570,37 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(board_id, profile_id)
     );
     """,
+    # 33 – games for FamilyTime (familytime.py): wishes per person, a vote, the game set on the agenda (or bought with coins)
+    """
+    CREATE TABLE ft_game(
+        event_id INTEGER PRIMARY KEY REFERENCES family_event(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'wish',     -- wish | vote | tie | skipped | set
+        choice TEXT,                             -- the game set: g:<app game> | t:<board game, lower case>
+        title TEXT,                              -- … as it is shown
+        how TEXT,                                -- single | vote | random | parent | bought
+        by_id INTEGER,                           -- who set it (parent), bought it (child) or wished it (single)
+        price INTEGER NOT NULL DEFAULT 0,        -- coins paid (bought) – given back when a parent removes it
+        tie TEXT,                                -- JSON list of the choices with the same number of votes
+        auto_done INTEGER NOT NULL DEFAULT 0,    -- the wish window has closed
+        vote_at TEXT,
+        set_at TEXT
+    );
+    CREATE TABLE ft_wish(
+        id INTEGER PRIMARY KEY,
+        event_id INTEGER NOT NULL REFERENCES family_event(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        choice TEXT NOT NULL,
+        title TEXT NOT NULL,
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        UNIQUE(event_id, profile_id)
+    );
+    CREATE TABLE ft_vote(
+        event_id INTEGER NOT NULL REFERENCES family_event(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        choice TEXT NOT NULL,
+        PRIMARY KEY(event_id, profile_id)
+    );
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -629,8 +660,11 @@ DEFAULT_SETTINGS = {
     "hamster_coins_per_day": 15,         # the hamster mines (default: 5 more than a day in the pet hotel) this many coins per day while it is healthy (pets.py)
     "pet_shop_currency": "coins",        # pet shop (outfits, houses, furniture): coins | xp | mixed (the child chooses)
     "lesson_perfect_coins": 5,           # coins for a lesson without a single mistake (on top of «lesson finished»)
-    "game_rewards": {"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "sternlauf": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2]},   # live games: coins for places 1, 2, 3 (pairhunt.py, whoami.py, kartenlauf.py, stadtland.py, zeichnen.py, wuerfel.py, heimwaerts.py, jump.py, klatsch.py, verboten.py; jass.py: place 1 only; werwolf.py: place 1 for the winning side; schach.py: [win against family, against the hard bot, against the normal bot]; dorfmarkt.py) – family tables with ≥ 2 people
+    "game_rewards": {"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "sternlauf": [10, 5, 2], "snack": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2]},   # live games: coins for places 1, 2, 3 (pairhunt.py, whoami.py, kartenlauf.py, stadtland.py, zeichnen.py, wuerfel.py, heimwaerts.py, jump.py, snack.py, klatsch.py, verboten.py; jass.py: place 1 only; werwolf.py: place 1 for the winning side; schach.py: [win against family, against the hard bot, against the normal bot]; dorfmarkt.py) – family tables with ≥ 2 people
     "memory": None,                      # pairs game: own photo sets and the family crest (memorygame.py)
+    "familytime_wishes": True,           # FamilyTime: game wishes, the vote and buying a game (familytime.py) – off: children see nothing
+    "familytime_game_price": 150,        # coins a child pays to set the game of a FamilyTime firmly (0 = buying off)
+    "familytime_vote_hours": 24,         # the wishes close (and the vote starts) this many hours before the FamilyTime
     "planer_points_account": "coins",    # built-in planner: its points and this account are one balance ("" = separate)
 }
 
