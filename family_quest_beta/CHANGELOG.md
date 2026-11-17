@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0-beta.4
+
+- All 28 quiz templates (539 questions) are translated into English, French, Italian, Spanish, Dutch, Polish, Portuguese and Swedish – a quiz made from a template is multilingual, everybody picks the language in the game; the template list shows titles in the app language
+- Multilingual quizzes can have up to 9 further languages
+- App › Quizzes: a running quiz is shown on top – open it, or cancel it (parents and whoever leads it)
+
 ## 1.1.0-beta.3
 
 - Multilingual quizzes: switch it on in the quiz editor, choose a main language and up to 5 further ones – then every question gets fields for them; during the game everybody picks the language of the questions at the top

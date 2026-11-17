@@ -1,0 +1,4588 @@
+{
+ "schweizer-gewaesser": {
+  "title": "Schweizer Gewässer",
+  "items": [
+   {
+    "q": "Welcher ist der grösste See, der ganz in der Schweiz liegt?",
+    "a": [
+     "Neuenburgersee",
+     "Vierwaldstättersee",
+     "Zürichsee",
+     "Thunersee"
+    ]
+   },
+   {
+    "q": "Welcher Fluss fliesst durch Basel?",
+    "a": [
+     "Rhein",
+     "Aare",
+     "Reuss",
+     "Limmat"
+    ]
+   },
+   {
+    "q": "Durch welchen See fliesst die Rhone, bevor sie die Schweiz verlässt?",
+    "a": [
+     "Genfersee",
+     "Bodensee",
+     "Neuenburgersee",
+     "Lago Maggiore"
+    ]
+   },
+   {
+    "q": "Welcher Fluss ist der längste, der ganz in der Schweiz fliesst?",
+    "a": [
+     "Aare",
+     "Reuss",
+     "Limmat",
+     "Thur"
+    ]
+   },
+   {
+    "q": "Durch welche Stadt fliesst die Limmat?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Luzern",
+     "Basel"
+    ]
+   },
+   {
+    "q": "Welche Stadt umfliesst die Aare in einer grossen Schlaufe?",
+    "a": [
+     "Bern",
+     "Zürich",
+     "Genf",
+     "St. Gallen"
+    ]
+   },
+   {
+    "q": "An welchem See liegt Luzern?",
+    "a": [
+     "Vierwaldstättersee",
+     "Zugersee",
+     "Zürichsee",
+     "Sempachersee"
+    ]
+   },
+   {
+    "q": "Welcher See grenzt an Deutschland, Österreich und die Schweiz?",
+    "a": [
+     "Bodensee",
+     "Genfersee",
+     "Lago Maggiore",
+     "Walensee"
+    ]
+   },
+   {
+    "q": "In welchem Kanton entspringt der Rhein?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Uri",
+     "Tessin"
+    ]
+   },
+   {
+    "q": "In welchem Kanton entspringt die Rhone?",
+    "a": [
+     "Wallis",
+     "Graubünden",
+     "Bern",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welcher Fluss fliesst durch Luzern?",
+    "a": [
+     "Reuss",
+     "Aare",
+     "Emme",
+     "Limmat"
+    ]
+   },
+   {
+    "q": "In welchem Kanton liegen der Lago di Lugano und ein Teil des Lago Maggiore?",
+    "a": [
+     "Tessin",
+     "Graubünden",
+     "Wallis",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Wie heisst der grosse Wasserfall bei Schaffhausen?",
+    "a": [
+     "Rheinfall",
+     "Staubbachfall",
+     "Giessbachfälle",
+     "Reichenbachfall"
+    ]
+   },
+   {
+    "q": "In welches Meer fliesst das Wasser des Rheins?",
+    "a": [
+     "Nordsee",
+     "Mittelmeer",
+     "Schwarzes Meer",
+     "Ostsee"
+    ]
+   },
+   {
+    "q": "In welches Meer fliesst das Wasser des Inn (über die Donau)?",
+    "a": [
+     "Schwarzes Meer",
+     "Nordsee",
+     "Mittelmeer",
+     "Ostsee"
+    ]
+   },
+   {
+    "q": "Welche Stadt liegt zwischen Thunersee und Brienzersee?",
+    "a": [
+     "Interlaken",
+     "Spiez",
+     "Brienz",
+     "Thun"
+    ]
+   },
+   {
+    "q": "Welcher Fluss gibt dem Kanton Thurgau seinen Namen?",
+    "a": [
+     "Thur",
+     "Murg",
+     "Sitter",
+     "Töss"
+    ]
+   },
+   {
+    "q": "Welcher Fluss verlässt in Genf den Genfersee?",
+    "a": [
+     "Rhone",
+     "Aare",
+     "Reuss",
+     "Saane"
+    ]
+   }
+  ]
+ },
+ "europa-geografie": {
+  "title": "Geografie Europa",
+  "items": [
+   {
+    "q": "Wie heisst der höchste Berg der Alpen?",
+    "a": [
+     "Mont Blanc",
+     "Matterhorn",
+     "Dufourspitze",
+     "Eiger"
+    ]
+   },
+   {
+    "q": "Welcher ist der längste Fluss Europas?",
+    "a": [
+     "Wolga",
+     "Donau",
+     "Rhein",
+     "Dnepr"
+    ]
+   },
+   {
+    "q": "Welches ist das grösste Land, das ganz in Europa liegt?",
+    "a": [
+     "Ukraine",
+     "Frankreich",
+     "Spanien",
+     "Deutschland"
+    ]
+   },
+   {
+    "q": "Welches ist das kleinste Land der Welt?",
+    "a": [
+     "Vatikanstadt",
+     "Monaco",
+     "San Marino",
+     "Liechtenstein"
+    ]
+   },
+   {
+    "q": "Welches Gebirge liegt zwischen Spanien und Frankreich?",
+    "a": [
+     "Pyrenäen",
+     "Alpen",
+     "Apenninen",
+     "Karpaten"
+    ]
+   },
+   {
+    "q": "Welches Meer liegt zwischen Italien und Kroatien?",
+    "a": [
+     "Adria",
+     "Ägäis",
+     "Ostsee",
+     "Nordsee"
+    ]
+   },
+   {
+    "q": "Durch wie viele Hauptstädte fliesst die Donau?",
+    "a": [
+     "4",
+     "2",
+     "3",
+     "6"
+    ]
+   },
+   {
+    "q": "Welches ist die grösste Insel im Mittelmeer?",
+    "a": [
+     "Sizilien",
+     "Sardinien",
+     "Korsika",
+     "Zypern"
+    ]
+   },
+   {
+    "q": "Welches Land hat die Form eines Stiefels?",
+    "a": [
+     "Italien",
+     "Griechenland",
+     "Portugal",
+     "Kroatien"
+    ]
+   },
+   {
+    "q": "Welche Meerenge trennt Europa und Afrika?",
+    "a": [
+     "Strasse von Gibraltar",
+     "Bosporus",
+     "Ärmelkanal",
+     "Dardanellen"
+    ]
+   },
+   {
+    "q": "Welcher Vulkan auf Sizilien ist der höchste aktive Vulkan Europas?",
+    "a": [
+     "Ätna",
+     "Vesuv",
+     "Stromboli",
+     "Hekla"
+    ]
+   },
+   {
+    "q": "An welchem Fluss liegt Paris?",
+    "a": [
+     "Seine",
+     "Loire",
+     "Rhone",
+     "Garonne"
+    ]
+   },
+   {
+    "q": "Welches Land der EU hat am meisten Einwohner?",
+    "a": [
+     "Deutschland",
+     "Frankreich",
+     "Italien",
+     "Spanien"
+    ]
+   },
+   {
+    "q": "Welches Land nennt man das «Land der tausend Seen»?",
+    "a": [
+     "Finnland",
+     "Schweden",
+     "Norwegen",
+     "Estland"
+    ]
+   },
+   {
+    "q": "Für welches Land sind die Fjorde berühmt?",
+    "a": [
+     "Norwegen",
+     "Dänemark",
+     "Irland",
+     "Polen"
+    ]
+   },
+   {
+    "q": "Welcher Kanal trennt England und Frankreich?",
+    "a": [
+     "Ärmelkanal",
+     "Suezkanal",
+     "Panamakanal",
+     "Nord-Ostsee-Kanal"
+    ]
+   },
+   {
+    "q": "Auf welcher Insel liegt der Geysir «Strokkur»?",
+    "a": [
+     "Island",
+     "Irland",
+     "Sizilien",
+     "Kreta"
+    ]
+   }
+  ]
+ },
+ "hauptstaedte-europa": {
+  "title": "Hauptstädte Europa",
+  "items": [
+   {
+    "q": "Was ist die Hauptstadt von der Schweiz?",
+    "a": [
+     "Bern",
+     "Zürich",
+     "Genf",
+     "Basel"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Deutschland?",
+    "a": [
+     "Berlin",
+     "München",
+     "Hamburg",
+     "Frankfurt"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Österreich?",
+    "a": [
+     "Wien",
+     "Salzburg",
+     "Graz",
+     "Innsbruck"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Frankreich?",
+    "a": [
+     "Paris",
+     "Lyon",
+     "Marseille",
+     "Nizza"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Italien?",
+    "a": [
+     "Rom",
+     "Mailand",
+     "Neapel",
+     "Venedig"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Spanien?",
+    "a": [
+     "Madrid",
+     "Barcelona",
+     "Sevilla",
+     "Valencia"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Portugal?",
+    "a": [
+     "Lissabon",
+     "Porto",
+     "Faro",
+     "Braga"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von den Niederlanden?",
+    "a": [
+     "Amsterdam",
+     "Rotterdam",
+     "Utrecht",
+     "Eindhoven"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Belgien?",
+    "a": [
+     "Brüssel",
+     "Antwerpen",
+     "Gent",
+     "Brügge"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Grossbritannien?",
+    "a": [
+     "London",
+     "Manchester",
+     "Edinburgh",
+     "Liverpool"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Irland?",
+    "a": [
+     "Dublin",
+     "Cork",
+     "Belfast",
+     "Galway"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Norwegen?",
+    "a": [
+     "Oslo",
+     "Bergen",
+     "Stavanger",
+     "Trondheim"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Schweden?",
+    "a": [
+     "Stockholm",
+     "Göteborg",
+     "Malmö",
+     "Uppsala"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Finnland?",
+    "a": [
+     "Helsinki",
+     "Turku",
+     "Tampere",
+     "Oulu"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Dänemark?",
+    "a": [
+     "Kopenhagen",
+     "Aarhus",
+     "Odense",
+     "Aalborg"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Polen?",
+    "a": [
+     "Warschau",
+     "Krakau",
+     "Danzig",
+     "Breslau"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Tschechien?",
+    "a": [
+     "Prag",
+     "Brünn",
+     "Pilsen",
+     "Ostrau"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Ungarn?",
+    "a": [
+     "Budapest",
+     "Debrecen",
+     "Szeged",
+     "Pécs"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Griechenland?",
+    "a": [
+     "Athen",
+     "Thessaloniki",
+     "Patras",
+     "Heraklion"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Kroatien?",
+    "a": [
+     "Zagreb",
+     "Split",
+     "Dubrovnik",
+     "Rijeka"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Rumänien?",
+    "a": [
+     "Bukarest",
+     "Cluj-Napoca",
+     "Timișoara",
+     "Iași"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Bulgarien?",
+    "a": [
+     "Sofia",
+     "Plowdiw",
+     "Warna",
+     "Burgas"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von der Slowakei?",
+    "a": [
+     "Bratislava",
+     "Košice",
+     "Žilina",
+     "Nitra"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Slowenien?",
+    "a": [
+     "Ljubljana",
+     "Maribor",
+     "Koper",
+     "Celje"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Island?",
+    "a": [
+     "Reykjavík",
+     "Akureyri",
+     "Keflavík",
+     "Selfoss"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von der Ukraine?",
+    "a": [
+     "Kyjiw",
+     "Lwiw",
+     "Odessa",
+     "Charkiw"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Liechtenstein?",
+    "a": [
+     "Vaduz",
+     "Schaan",
+     "Balzers",
+     "Triesen"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Luxemburg?",
+    "a": [
+     "Luxemburg",
+     "Esch an der Alzette",
+     "Differdingen",
+     "Düdelingen"
+    ]
+   }
+  ]
+ },
+ "hauptstaedte-welt": {
+  "title": "Hauptstädte der Welt",
+  "items": [
+   {
+    "q": "Was ist die Hauptstadt von den USA?",
+    "a": [
+     "Washington, D.C.",
+     "New York",
+     "Los Angeles",
+     "Chicago"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Kanada?",
+    "a": [
+     "Ottawa",
+     "Toronto",
+     "Montreal",
+     "Vancouver"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Australien?",
+    "a": [
+     "Canberra",
+     "Sydney",
+     "Melbourne",
+     "Brisbane"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Brasilien?",
+    "a": [
+     "Brasília",
+     "Rio de Janeiro",
+     "São Paulo",
+     "Salvador"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Argentinien?",
+    "a": [
+     "Buenos Aires",
+     "Córdoba",
+     "Rosario",
+     "Mendoza"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Mexiko?",
+    "a": [
+     "Mexiko-Stadt",
+     "Guadalajara",
+     "Cancún",
+     "Monterrey"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Japan?",
+    "a": [
+     "Tokio",
+     "Osaka",
+     "Kyoto",
+     "Yokohama"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von China?",
+    "a": [
+     "Peking",
+     "Shanghai",
+     "Hongkong",
+     "Guangzhou"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Indien?",
+    "a": [
+     "Neu-Delhi",
+     "Mumbai",
+     "Kalkutta",
+     "Bangalore"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Ägypten?",
+    "a": [
+     "Kairo",
+     "Alexandria",
+     "Luxor",
+     "Gizeh"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Kenia?",
+    "a": [
+     "Nairobi",
+     "Mombasa",
+     "Kisumu",
+     "Nakuru"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Nigeria?",
+    "a": [
+     "Abuja",
+     "Lagos",
+     "Kano",
+     "Ibadan"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Marokko?",
+    "a": [
+     "Rabat",
+     "Casablanca",
+     "Marrakesch",
+     "Fès"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Russland?",
+    "a": [
+     "Moskau",
+     "Sankt Petersburg",
+     "Nowosibirsk",
+     "Kasan"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von der Türkei?",
+    "a": [
+     "Ankara",
+     "Istanbul",
+     "Izmir",
+     "Antalya"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Thailand?",
+    "a": [
+     "Bangkok",
+     "Chiang Mai",
+     "Phuket",
+     "Pattaya"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Südkorea?",
+    "a": [
+     "Seoul",
+     "Busan",
+     "Incheon",
+     "Daegu"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Neuseeland?",
+    "a": [
+     "Wellington",
+     "Auckland",
+     "Christchurch",
+     "Queenstown"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Peru?",
+    "a": [
+     "Lima",
+     "Cusco",
+     "Arequipa",
+     "Trujillo"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Chile?",
+    "a": [
+     "Santiago de Chile",
+     "Valparaíso",
+     "Concepción",
+     "Antofagasta"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Kolumbien?",
+    "a": [
+     "Bogotá",
+     "Medellín",
+     "Cali",
+     "Cartagena"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Vietnam?",
+    "a": [
+     "Hanoi",
+     "Ho-Chi-Minh-Stadt",
+     "Da Nang",
+     "Hue"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Saudi-Arabien?",
+    "a": [
+     "Riad",
+     "Dschidda",
+     "Mekka",
+     "Medina"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Pakistan?",
+    "a": [
+     "Islamabad",
+     "Karachi",
+     "Lahore",
+     "Peschawar"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt von Kuba?",
+    "a": [
+     "Havanna",
+     "Santiago de Cuba",
+     "Varadero",
+     "Trinidad"
+    ]
+   }
+  ]
+ },
+ "laenderflaggen": {
+  "title": "Länderflaggen",
+  "items": [
+   {
+    "q": "Welches Land hat diese Flagge? 🇨🇭",
+    "a": [
+     "Schweiz",
+     "Dänemark",
+     "Österreich",
+     "Japan"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇮🇹",
+    "a": [
+     "Italien",
+     "Irland",
+     "Mexiko",
+     "Ungarn"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇫🇷",
+    "a": [
+     "Frankreich",
+     "Niederlande",
+     "Russland",
+     "Italien"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇩🇪",
+    "a": [
+     "Deutschland",
+     "Belgien",
+     "Spanien",
+     "Österreich"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇯🇵",
+    "a": [
+     "Japan",
+     "China",
+     "Südkorea",
+     "Bangladesch"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇧🇷",
+    "a": [
+     "Brasilien",
+     "Portugal",
+     "Argentinien",
+     "Kolumbien"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇨🇦",
+    "a": [
+     "Kanada",
+     "USA",
+     "Schweiz",
+     "Peru"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇸🇪",
+    "a": [
+     "Schweden",
+     "Finnland",
+     "Norwegen",
+     "Dänemark"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇳🇴",
+    "a": [
+     "Norwegen",
+     "Island",
+     "Dänemark",
+     "Schweden"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇬🇷",
+    "a": [
+     "Griechenland",
+     "Israel",
+     "Finnland",
+     "Argentinien"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇪🇸",
+    "a": [
+     "Spanien",
+     "Portugal",
+     "Kolumbien",
+     "Belgien"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇳🇱",
+    "a": [
+     "Niederlande",
+     "Luxemburg",
+     "Frankreich",
+     "Russland"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇦🇹",
+    "a": [
+     "Österreich",
+     "Lettland",
+     "Polen",
+     "Kanada"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇮🇳",
+    "a": [
+     "Indien",
+     "Irland",
+     "Niger",
+     "Elfenbeinküste"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇲🇽",
+    "a": [
+     "Mexiko",
+     "Italien",
+     "Irland",
+     "Ungarn"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇰🇷",
+    "a": [
+     "Südkorea",
+     "Japan",
+     "China",
+     "Nordkorea"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇦🇺",
+    "a": [
+     "Australien",
+     "Neuseeland",
+     "Grossbritannien",
+     "Fidschi"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇹🇷",
+    "a": [
+     "Türkei",
+     "Tunesien",
+     "Marokko",
+     "China"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇿🇦",
+    "a": [
+     "Südafrika",
+     "Jamaika",
+     "Kenia",
+     "Nigeria"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇦🇷",
+    "a": [
+     "Argentinien",
+     "Uruguay",
+     "Griechenland",
+     "Guatemala"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇬🇧",
+    "a": [
+     "Grossbritannien",
+     "Australien",
+     "USA",
+     "Island"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇺🇸",
+    "a": [
+     "USA",
+     "Liberia",
+     "Malaysia",
+     "Grossbritannien"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇱🇮",
+    "a": [
+     "Liechtenstein",
+     "Haiti",
+     "Andorra",
+     "Monaco"
+    ]
+   },
+   {
+    "q": "Welches Land hat diese Flagge? 🇵🇹",
+    "a": [
+     "Portugal",
+     "Spanien",
+     "Brasilien",
+     "Marokko"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat die Schweiz?",
+    "a": [
+     "🇨🇭",
+     "🇩🇰",
+     "🇦🇹",
+     "🇯🇵"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Italien?",
+    "a": [
+     "🇮🇹",
+     "🇮🇪",
+     "🇲🇽",
+     "🇭🇺"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Frankreich?",
+    "a": [
+     "🇫🇷",
+     "🇳🇱",
+     "🇷🇺",
+     "🇮🇹"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Deutschland?",
+    "a": [
+     "🇩🇪",
+     "🇧🇪",
+     "🇪🇸",
+     "🇦🇹"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Japan?",
+    "a": [
+     "🇯🇵",
+     "🇨🇳",
+     "🇰🇷",
+     "🇧🇩"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Brasilien?",
+    "a": [
+     "🇧🇷",
+     "🇵🇹",
+     "🇦🇷",
+     "🇨🇴"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Kanada?",
+    "a": [
+     "🇨🇦",
+     "🇺🇸",
+     "🇨🇭",
+     "🇵🇪"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Schweden?",
+    "a": [
+     "🇸🇪",
+     "🇫🇮",
+     "🇳🇴",
+     "🇩🇰"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Norwegen?",
+    "a": [
+     "🇳🇴",
+     "🇮🇸",
+     "🇩🇰",
+     "🇸🇪"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Griechenland?",
+    "a": [
+     "🇬🇷",
+     "🇮🇱",
+     "🇫🇮",
+     "🇦🇷"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Spanien?",
+    "a": [
+     "🇪🇸",
+     "🇵🇹",
+     "🇨🇴",
+     "🇧🇪"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat die Niederlande?",
+    "a": [
+     "🇳🇱",
+     "🇱🇺",
+     "🇫🇷",
+     "🇷🇺"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Österreich?",
+    "a": [
+     "🇦🇹",
+     "🇱🇻",
+     "🇵🇱",
+     "🇨🇦"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Indien?",
+    "a": [
+     "🇮🇳",
+     "🇮🇪",
+     "🇳🇪",
+     "🇨🇮"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Mexiko?",
+    "a": [
+     "🇲🇽",
+     "🇮🇹",
+     "🇮🇪",
+     "🇭🇺"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Südkorea?",
+    "a": [
+     "🇰🇷",
+     "🇯🇵",
+     "🇨🇳",
+     "🇰🇵"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Australien?",
+    "a": [
+     "🇦🇺",
+     "🇳🇿",
+     "🇬🇧",
+     "🇫🇯"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat die Türkei?",
+    "a": [
+     "🇹🇷",
+     "🇹🇳",
+     "🇲🇦",
+     "🇨🇳"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Südafrika?",
+    "a": [
+     "🇿🇦",
+     "🇯🇲",
+     "🇰🇪",
+     "🇳🇬"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Argentinien?",
+    "a": [
+     "🇦🇷",
+     "🇺🇾",
+     "🇬🇷",
+     "🇬🇹"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Grossbritannien?",
+    "a": [
+     "🇬🇧",
+     "🇦🇺",
+     "🇺🇸",
+     "🇮🇸"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat die USA?",
+    "a": [
+     "🇺🇸",
+     "🇱🇷",
+     "🇲🇾",
+     "🇬🇧"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Liechtenstein?",
+    "a": [
+     "🇱🇮",
+     "🇭🇹",
+     "🇦🇩",
+     "🇲🇨"
+    ]
+   },
+   {
+    "q": "Welche Flagge hat Portugal?",
+    "a": [
+     "🇵🇹",
+     "🇪🇸",
+     "🇧🇷",
+     "🇲🇦"
+    ]
+   }
+  ]
+ },
+ "kulinarik-welt": {
+  "title": "Kulinarische Spezialitäten der Welt",
+  "items": [
+   {
+    "q": "Aus welchem Land kommt die Rösti?",
+    "a": [
+     "Schweiz",
+     "Österreich",
+     "Deutschland",
+     "Frankreich"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt die Pizza?",
+    "a": [
+     "Italien",
+     "Griechenland",
+     "Spanien",
+     "USA"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt die Paella?",
+    "a": [
+     "Spanien",
+     "Portugal",
+     "Italien",
+     "Mexiko"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt Sushi?",
+    "a": [
+     "Japan",
+     "China",
+     "Thailand",
+     "Südkorea"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt das Wiener Schnitzel?",
+    "a": [
+     "Österreich",
+     "Deutschland",
+     "Schweiz",
+     "Ungarn"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommen Tacos?",
+    "a": [
+     "Mexiko",
+     "Spanien",
+     "Brasilien",
+     "USA"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt Moussaka?",
+    "a": [
+     "Griechenland",
+     "Türkei",
+     "Italien",
+     "Frankreich"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt Pad Thai?",
+    "a": [
+     "Thailand",
+     "Vietnam",
+     "Japan",
+     "Indien"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt «Fish and Chips»?",
+    "a": [
+     "Grossbritannien",
+     "Irland",
+     "USA",
+     "Australien"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt das Gulasch?",
+    "a": [
+     "Ungarn",
+     "Österreich",
+     "Polen",
+     "Tschechien"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommen Pierogi?",
+    "a": [
+     "Polen",
+     "Russland",
+     "Italien",
+     "Griechenland"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt Kimchi?",
+    "a": [
+     "Südkorea",
+     "Japan",
+     "China",
+     "Thailand"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommen die «Pastéis de Nata»?",
+    "a": [
+     "Portugal",
+     "Spanien",
+     "Brasilien",
+     "Frankreich"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt Poutine (Pommes mit Käse und Sauce)?",
+    "a": [
+     "Kanada",
+     "USA",
+     "Belgien",
+     "Frankreich"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt die Feijoada (Bohneneintopf)?",
+    "a": [
+     "Brasilien",
+     "Mexiko",
+     "Spanien",
+     "Italien"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt Smørrebrød?",
+    "a": [
+     "Dänemark",
+     "Schweden",
+     "Norwegen",
+     "Niederlande"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt das Tiramisu?",
+    "a": [
+     "Italien",
+     "Frankreich",
+     "Österreich",
+     "Spanien"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt das Baguette?",
+    "a": [
+     "Frankreich",
+     "Italien",
+     "Belgien",
+     "Deutschland"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt die Currywurst?",
+    "a": [
+     "Deutschland",
+     "Indien",
+     "Österreich",
+     "Grossbritannien"
+    ]
+   },
+   {
+    "q": "Aus welchem Land kommt Haggis?",
+    "a": [
+     "Schottland",
+     "Irland",
+     "Wales",
+     "Island"
+    ]
+   }
+  ]
+ },
+ "schweizer-spezialitaeten": {
+  "title": "Schweizer Spezialitäten",
+  "items": [
+   {
+    "q": "Aus welchem Kanton kommt die Engadiner Nusstorte?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Bern",
+     "Tessin"
+    ]
+   },
+   {
+    "q": "Aus welcher Stadt kommen die Läckerli?",
+    "a": [
+     "Basel",
+     "Bern",
+     "Zürich",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Aus welchem Kanton kommt die Kirschtorte mit dem Kantonsnamen?",
+    "a": [
+     "Zug",
+     "Schwyz",
+     "Luzern",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Aus welchem Kanton kommt die Rüeblitorte?",
+    "a": [
+     "Aargau",
+     "Thurgau",
+     "Solothurn",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Aus welchem Kanton kommt das Bündnerfleisch?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Aus welchem Kanton kommt die Chügelipastete?",
+    "a": [
+     "Luzern",
+     "Bern",
+     "Zug",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Welcher Kanton wird wegen seiner vielen Apfelbäume «Mostindien» genannt?",
+    "a": [
+     "Thurgau",
+     "Aargau",
+     "St. Gallen",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Aus welcher Stadt kommt die berühmte Kalbsbratwurst mit dem Stadtnamen?",
+    "a": [
+     "St. Gallen",
+     "Bern",
+     "Luzern",
+     "Chur"
+    ]
+   },
+   {
+    "q": "Aus welchem Kanton kommt der Raclette-Käse mit geschützter Herkunft (AOP)?",
+    "a": [
+     "Wallis",
+     "Freiburg",
+     "Waadt",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Nach welchem Ort im Kanton Freiburg ist ein berühmter Hartkäse benannt?",
+    "a": [
+     "Gruyères",
+     "Emmental",
+     "Tilsit",
+     "Sbrinz"
+    ]
+   },
+   {
+    "q": "Aus welcher Stadt kommt das Geschnetzelte mit Rahmsauce, das ihren Namen trägt?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Basel",
+     "Genf"
+    ]
+   },
+   {
+    "q": "Was ist eine «Berner Platte»?",
+    "a": [
+     "Fleisch und Würste mit Sauerkraut und Bohnen",
+     "Ein Käsekuchen",
+     "Eine Fischplatte",
+     "Ein Dessert mit Meringue"
+    ]
+   },
+   {
+    "q": "Aus welchem Kanton kommt die Glarner Pastete?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "Appenzell Innerrhoden"
+    ]
+   },
+   {
+    "q": "Was ist Birchermüesli ursprünglich?",
+    "a": [
+     "Eine Speise eines Schweizer Arztes",
+     "Ein Bündner Bergkäse",
+     "Ein Tessiner Wein",
+     "Ein Basler Gebäck"
+    ]
+   }
+  ]
+ },
+ "kantone-hauptorte": {
+  "title": "Kantone der Schweiz",
+  "items": [
+   {
+    "q": "Welcher Kanton grenzt NICHT an den Thurgau?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "St. Gallen",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist der einzige Schweizer Nachbar von Genf?",
+    "a": [
+     "Waadt",
+     "Wallis",
+     "Neuenburg",
+     "Freiburg"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist der einzige Schweizer Nachbar von Basel-Stadt?",
+    "a": [
+     "Basel-Landschaft",
+     "Aargau",
+     "Solothurn",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welcher Kanton grenzt an Appenzell Innerrhoden?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Thurgau",
+     "Glarus",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Welcher Kanton grenzt an Uri?",
+    "a": [
+     "Schwyz",
+     "Zürich",
+     "Luzern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton grenzt an Zug?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Uri",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welcher Kanton grenzt an Schaffhausen?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "St. Gallen",
+     "Basel-Landschaft"
+    ]
+   },
+   {
+    "q": "Welcher Kanton grenzt an den Jura?",
+    "a": [
+     "Bern",
+     "Freiburg",
+     "Waadt",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Welcher Kanton grenzt an Glarus?",
+    "a": [
+     "St. Gallen",
+     "Zürich",
+     "Luzern",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welcher Fluss bildet einen Teil der Grenze zwischen dem Thurgau und Deutschland?",
+    "a": [
+     "Rhein",
+     "Thur",
+     "Aare",
+     "Inn"
+    ]
+   },
+   {
+    "q": "Welcher See liegt an den Kantonen Zürich, Schwyz und St. Gallen?",
+    "a": [
+     "Zürichsee",
+     "Walensee",
+     "Bodensee",
+     "Greifensee"
+    ]
+   },
+   {
+    "q": "In welchem Kanton liegt der Silsersee?",
+    "a": [
+     "Graubünden",
+     "Tessin",
+     "Wallis",
+     "Uri"
+    ]
+   },
+   {
+    "q": "An welchem See liegt das Dorf Brienz im Kanton Bern?",
+    "a": [
+     "Brienzersee",
+     "Thunersee",
+     "Bielersee",
+     "Sarnersee"
+    ]
+   },
+   {
+    "q": "In welchem Kanton liegt der Sarnersee?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Luzern",
+     "Uri"
+    ]
+   },
+   {
+    "q": "An welchem See liegt die Stadt Lugano?",
+    "a": [
+     "Luganersee",
+     "Lago Maggiore",
+     "Comer See",
+     "Gardasee"
+    ]
+   },
+   {
+    "q": "An welchem See liegt die Stadt Zug?",
+    "a": [
+     "Zugersee",
+     "Ägerisee",
+     "Vierwaldstättersee",
+     "Zürichsee"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Thurgau?",
+    "a": [
+     "Frauenfeld",
+     "Weinfelden",
+     "Kreuzlingen",
+     "Arbon"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Graubünden?",
+    "a": [
+     "Chur",
+     "Davos",
+     "St. Moritz",
+     "Ilanz"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Wallis?",
+    "a": [
+     "Sitten",
+     "Brig",
+     "Martigny",
+     "Visp"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Tessin?",
+    "a": [
+     "Bellinzona",
+     "Lugano",
+     "Locarno",
+     "Mendrisio"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Waadt?",
+    "a": [
+     "Lausanne",
+     "Montreux",
+     "Yverdon-les-Bains",
+     "Vevey"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Aargau?",
+    "a": [
+     "Aarau",
+     "Baden",
+     "Wettingen",
+     "Brugg"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Basel-Landschaft?",
+    "a": [
+     "Liestal",
+     "Allschwil",
+     "Reinach",
+     "Pratteln"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Appenzell Ausserrhoden?",
+    "a": [
+     "Herisau",
+     "Appenzell",
+     "Teufen",
+     "Heiden"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Nidwalden?",
+    "a": [
+     "Stans",
+     "Hergiswil",
+     "Buochs",
+     "Beckenried"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Obwalden?",
+    "a": [
+     "Sarnen",
+     "Engelberg",
+     "Alpnach",
+     "Kerns"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Uri?",
+    "a": [
+     "Altdorf",
+     "Andermatt",
+     "Erstfeld",
+     "Flüelen"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Schwyz?",
+    "a": [
+     "Schwyz",
+     "Einsiedeln",
+     "Küssnacht",
+     "Lachen"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Jura?",
+    "a": [
+     "Delsberg",
+     "Pruntrut",
+     "Saignelégier",
+     "Moutier"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Neuenburg?",
+    "a": [
+     "Neuenburg",
+     "La Chaux-de-Fonds",
+     "Le Locle",
+     "Boudry"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Solothurn?",
+    "a": [
+     "Solothurn",
+     "Olten",
+     "Grenchen",
+     "Biberist"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Glarus?",
+    "a": [
+     "Glarus",
+     "Näfels",
+     "Netstal",
+     "Linthal"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Schaffhausen?",
+    "a": [
+     "Schaffhausen",
+     "Neuhausen am Rheinfall",
+     "Stein am Rhein",
+     "Thayngen"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons St. Gallen?",
+    "a": [
+     "St. Gallen",
+     "Rapperswil-Jona",
+     "Wil",
+     "Gossau"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Zug?",
+    "a": [
+     "Zug",
+     "Baar",
+     "Cham",
+     "Steinhausen"
+    ]
+   },
+   {
+    "q": "Was ist der Hauptort des Kantons Bern?",
+    "a": [
+     "Bern",
+     "Biel",
+     "Thun",
+     "Köniz"
+    ]
+   }
+  ]
+ },
+ "tiere": {
+  "title": "Tierwelt",
+  "items": [
+   {
+    "q": "Welches ist das schnellste Landtier?",
+    "a": [
+     "Gepard",
+     "Löwe",
+     "Pferd",
+     "Antilope"
+    ]
+   },
+   {
+    "q": "Welches ist das grösste Tier der Welt?",
+    "a": [
+     "Blauwal",
+     "Elefant",
+     "Giraffe",
+     "Walhai"
+    ]
+   },
+   {
+    "q": "Wie viele Beine hat eine Spinne?",
+    "a": [
+     "8",
+     "6",
+     "10",
+     "12"
+    ]
+   },
+   {
+    "q": "Welcher Vogel kann auch rückwärts fliegen?",
+    "a": [
+     "Kolibri",
+     "Adler",
+     "Spatz",
+     "Möwe"
+    ]
+   },
+   {
+    "q": "Welches Säugetier kann richtig fliegen?",
+    "a": [
+     "Fledermaus",
+     "Pinguin",
+     "Strauss",
+     "Maulwurf"
+    ]
+   },
+   {
+    "q": "Wie heisst ein Känguru-Baby?",
+    "a": [
+     "Joey",
+     "Kitz",
+     "Fohlen",
+     "Welpe"
+    ]
+   },
+   {
+    "q": "Wie viele Herzen hat ein Oktopus?",
+    "a": [
+     "3",
+     "1",
+     "2",
+     "8"
+    ]
+   },
+   {
+    "q": "Welches Tier lebt in der Arktis am Nordpol?",
+    "a": [
+     "Eisbär",
+     "Pinguin",
+     "Kamel",
+     "Känguru"
+    ]
+   },
+   {
+    "q": "Welches dieser Tiere ist ein Säugetier?",
+    "a": [
+     "Delfin",
+     "Hai",
+     "Thunfisch",
+     "Lachs"
+    ]
+   },
+   {
+    "q": "Was frisst ein Grosser Panda fast nur?",
+    "a": [
+     "Bambus",
+     "Fisch",
+     "Honig",
+     "Gras"
+    ]
+   },
+   {
+    "q": "Welches Tier kann seine Hautfarbe wechseln?",
+    "a": [
+     "Chamäleon",
+     "Frosch",
+     "Schildkröte",
+     "Igel"
+    ]
+   },
+   {
+    "q": "Wie viele Beine hat ein Insekt?",
+    "a": [
+     "6",
+     "4",
+     "8",
+     "10"
+    ]
+   },
+   {
+    "q": "Welches ist der grösste Vogel der Welt?",
+    "a": [
+     "Strauss",
+     "Adler",
+     "Albatros",
+     "Emu"
+    ]
+   },
+   {
+    "q": "Welches Tier hat den längsten Hals?",
+    "a": [
+     "Giraffe",
+     "Kamel",
+     "Strauss",
+     "Lama"
+    ]
+   },
+   {
+    "q": "Wie lange ist eine Elefantenkuh ungefähr trächtig?",
+    "a": [
+     "22 Monate",
+     "9 Monate",
+     "12 Monate",
+     "36 Monate"
+    ]
+   },
+   {
+    "q": "Welches Tier baut Dämme aus Holz?",
+    "a": [
+     "Biber",
+     "Otter",
+     "Dachs",
+     "Murmeltier"
+    ]
+   }
+  ]
+ },
+ "weltall": {
+  "title": "Weltall",
+  "items": [
+   {
+    "q": "Welcher Planet ist der Sonne am nächsten?",
+    "a": [
+     "Merkur",
+     "Venus",
+     "Mars",
+     "Erde"
+    ]
+   },
+   {
+    "q": "Welcher ist der grösste Planet unseres Sonnensystems?",
+    "a": [
+     "Jupiter",
+     "Saturn",
+     "Neptun",
+     "Erde"
+    ]
+   },
+   {
+    "q": "Welcher Planet wird «der rote Planet» genannt?",
+    "a": [
+     "Mars",
+     "Venus",
+     "Jupiter",
+     "Merkur"
+    ]
+   },
+   {
+    "q": "Wie viele Planeten hat unser Sonnensystem?",
+    "a": [
+     "8",
+     "7",
+     "9",
+     "10"
+    ]
+   },
+   {
+    "q": "Wer betrat als erster Mensch den Mond?",
+    "a": [
+     "Neil Armstrong",
+     "Juri Gagarin",
+     "Buzz Aldrin",
+     "Michael Collins"
+    ]
+   },
+   {
+    "q": "In welchem Jahr landeten Menschen zum ersten Mal auf dem Mond?",
+    "a": [
+     "1969",
+     "1959",
+     "1979",
+     "1989"
+    ]
+   },
+   {
+    "q": "Wer war der erste Mensch im Weltall?",
+    "a": [
+     "Juri Gagarin",
+     "Neil Armstrong",
+     "Alan Shepard",
+     "John Glenn"
+    ]
+   },
+   {
+    "q": "Wie heisst unsere Galaxie?",
+    "a": [
+     "Milchstrasse",
+     "Andromeda",
+     "Sombrero",
+     "Whirlpool"
+    ]
+   },
+   {
+    "q": "Wie lange braucht das Licht von der Sonne zur Erde ungefähr?",
+    "a": [
+     "8 Minuten",
+     "8 Sekunden",
+     "8 Stunden",
+     "8 Tage"
+    ]
+   },
+   {
+    "q": "Was ist die Sonne?",
+    "a": [
+     "Ein Stern",
+     "Ein Planet",
+     "Ein Mond",
+     "Ein Komet"
+    ]
+   },
+   {
+    "q": "Welcher Planet ist am heissesten?",
+    "a": [
+     "Venus",
+     "Merkur",
+     "Mars",
+     "Jupiter"
+    ]
+   },
+   {
+    "q": "Welcher Planet ist bekannt für seine grossen, hellen Ringe?",
+    "a": [
+     "Saturn",
+     "Mars",
+     "Venus",
+     "Merkur"
+    ]
+   },
+   {
+    "q": "Wer flog als erster Schweizer ins Weltall?",
+    "a": [
+     "Claude Nicollier",
+     "Bertrand Piccard",
+     "Auguste Piccard",
+     "Marco Sieber"
+    ]
+   },
+   {
+    "q": "Wie heisst der natürliche Begleiter der Erde?",
+    "a": [
+     "Mond",
+     "Phobos",
+     "Titan",
+     "Europa"
+    ]
+   }
+  ]
+ },
+ "erfindungen": {
+  "title": "Erfindungen und Entdeckungen",
+  "items": [
+   {
+    "q": "Wer erfand den Buchdruck mit beweglichen Lettern in Europa?",
+    "a": [
+     "Johannes Gutenberg",
+     "Leonardo da Vinci",
+     "Martin Luther",
+     "Isaac Newton"
+    ]
+   },
+   {
+    "q": "Welcher Schweizer erfand den Klettverschluss?",
+    "a": [
+     "George de Mestral",
+     "Karl Elsener",
+     "Henri Nestlé",
+     "Daniel Peter"
+    ]
+   },
+   {
+    "q": "Wer gründete die Firma, die das Schweizer Offiziersmesser bekannt machte?",
+    "a": [
+     "Karl Elsener",
+     "George de Mestral",
+     "Henry Dunant",
+     "Rudolf Lindt"
+    ]
+   },
+   {
+    "q": "Wer entdeckte das Penicillin?",
+    "a": [
+     "Alexander Fleming",
+     "Louis Pasteur",
+     "Marie Curie",
+     "Robert Koch"
+    ]
+   },
+   {
+    "q": "Wer flog 1903 als Erste mit einem Motorflugzeug?",
+    "a": [
+     "Die Gebrüder Wright",
+     "Otto Lilienthal",
+     "Graf Zeppelin",
+     "Louis Blériot"
+    ]
+   },
+   {
+    "q": "Wo erfand Tim Berners-Lee das World Wide Web?",
+    "a": [
+     "Am CERN in Genf",
+     "In Silicon Valley",
+     "An der ETH Zürich",
+     "In London"
+    ]
+   },
+   {
+    "q": "Wer baute 1885 eines der ersten Autos mit Benzinmotor?",
+    "a": [
+     "Carl Benz",
+     "Henry Ford",
+     "Ferdinand Porsche",
+     "Enzo Ferrari"
+    ]
+   },
+   {
+    "q": "Welcher Schweizer erfand 1875 die Milchschokolade?",
+    "a": [
+     "Daniel Peter",
+     "Rodolphe Lindt",
+     "Philippe Suchard",
+     "Theodor Tobler"
+    ]
+   },
+   {
+    "q": "Wer entwickelte die Relativitätstheorie?",
+    "a": [
+     "Albert Einstein",
+     "Isaac Newton",
+     "Galileo Galilei",
+     "Niels Bohr"
+    ]
+   },
+   {
+    "q": "Wer gründete das Rote Kreuz?",
+    "a": [
+     "Henry Dunant",
+     "Florence Nightingale",
+     "Albert Schweitzer",
+     "Guillaume Henri Dufour"
+    ]
+   },
+   {
+    "q": "Wer verbesserte die Dampfmaschine so, dass sie überall genutzt wurde?",
+    "a": [
+     "James Watt",
+     "Thomas Edison",
+     "Nikola Tesla",
+     "George Stephenson"
+    ]
+   },
+   {
+    "q": "Wem gelang 1876 ein Patent auf das Telefon?",
+    "a": [
+     "Alexander Graham Bell",
+     "Thomas Edison",
+     "Guglielmo Marconi",
+     "Werner von Siemens"
+    ]
+   }
+  ]
+ },
+ "schweiz": {
+  "title": "Schweiz allgemein",
+  "items": [
+   {
+    "q": "Wie viele Kantone hat die Schweiz?",
+    "a": [
+     "26",
+     "23",
+     "24",
+     "28"
+    ]
+   },
+   {
+    "q": "Wie viele Landessprachen hat die Schweiz?",
+    "a": [
+     "4",
+     "3",
+     "2",
+     "5"
+    ]
+   },
+   {
+    "q": "Wie heisst der höchste Berg der Schweiz?",
+    "a": [
+     "Dufourspitze",
+     "Matterhorn",
+     "Jungfrau",
+     "Eiger"
+    ]
+   },
+   {
+    "q": "Wie viele Mitglieder hat der Bundesrat?",
+    "a": [
+     "7",
+     "5",
+     "9",
+     "12"
+    ]
+   },
+   {
+    "q": "Wann ist der Schweizer Nationalfeiertag?",
+    "a": [
+     "1. August",
+     "1. Mai",
+     "12. September",
+     "6. Januar"
+    ]
+   },
+   {
+    "q": "Welches Jahr gilt als Gründungsjahr der Eidgenossenschaft?",
+    "a": [
+     "1291",
+     "1315",
+     "1499",
+     "1848"
+    ]
+   },
+   {
+    "q": "Wo soll Wilhelm Tell den Apfel vom Kopf seines Sohnes geschossen haben?",
+    "a": [
+     "Altdorf",
+     "Luzern",
+     "Schwyz",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Wie heisst der längste Eisenbahntunnel der Welt?",
+    "a": [
+     "Gotthard-Basistunnel",
+     "Lötschberg-Basistunnel",
+     "Simplontunnel",
+     "Eurotunnel"
+    ]
+   },
+   {
+    "q": "In welcher Stadt hat die UNO ihren europäischen Sitz?",
+    "a": [
+     "Genf",
+     "Bern",
+     "Zürich",
+     "Basel"
+    ]
+   },
+   {
+    "q": "Bei welchem Dorf steht das Matterhorn?",
+    "a": [
+     "Zermatt",
+     "Grindelwald",
+     "Saas-Fee",
+     "St. Moritz"
+    ]
+   },
+   {
+    "q": "Wie heisst die Währung der Schweiz?",
+    "a": [
+     "Franken",
+     "Euro",
+     "Taler",
+     "Krone"
+    ]
+   },
+   {
+    "q": "Welcher See ist der grösste, der zum Teil in der Schweiz liegt?",
+    "a": [
+     "Genfersee",
+     "Bodensee",
+     "Neuenburgersee",
+     "Lago Maggiore"
+    ]
+   }
+  ]
+ },
+ "kantone-umrisse": {
+  "title": "Kantone erkennen (Umrisse)",
+  "items": [
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "Thurgau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Bern",
+     "Freiburg",
+     "Waadt",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Luzern",
+     "Aargau",
+     "Bern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Uri",
+     "Glarus",
+     "Schwyz",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Schwyz",
+     "Zug",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Uri",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Zug",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "St. Gallen"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Zug",
+     "Nidwalden",
+     "Obwalden",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Freiburg",
+     "Waadt",
+     "Bern",
+     "Neuenburg"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Solothurn",
+     "Basel-Landschaft",
+     "Aargau",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Basel-Stadt",
+     "Genf",
+     "Basel-Landschaft",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Basel-Landschaft",
+     "Solothurn",
+     "Basel-Stadt",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Schaffhausen",
+     "Thurgau",
+     "Zürich",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "St. Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Glarus",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "St. Gallen",
+     "Thurgau",
+     "Graubünden",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Tessin",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "Solothurn",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Thurgau",
+     "Schaffhausen",
+     "St. Gallen",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Tessin",
+     "Graubünden",
+     "Wallis",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Waadt",
+     "Freiburg",
+     "Neuenburg",
+     "Genf"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Wallis",
+     "Graubünden",
+     "Tessin",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Neuenburg",
+     "Jura",
+     "Waadt",
+     "Freiburg"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Genf",
+     "Basel-Stadt",
+     "Waadt",
+     "Neuenburg"
+    ]
+   },
+   {
+    "q": "Welcher Kanton hat diese Form?",
+    "a": [
+     "Jura",
+     "Neuenburg",
+     "Solothurn",
+     "Basel-Landschaft"
+    ]
+   }
+  ]
+ },
+ "kantone-karte": {
+  "title": "Kantone auf der Karte",
+  "items": [
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "Thurgau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Bern",
+     "Freiburg",
+     "Waadt",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Luzern",
+     "Aargau",
+     "Bern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Uri",
+     "Glarus",
+     "Schwyz",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Schwyz",
+     "Zug",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Uri",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Zug",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "St. Gallen"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Zug",
+     "Nidwalden",
+     "Obwalden",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Freiburg",
+     "Waadt",
+     "Bern",
+     "Neuenburg"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Solothurn",
+     "Basel-Landschaft",
+     "Aargau",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Basel-Stadt",
+     "Genf",
+     "Basel-Landschaft",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Basel-Landschaft",
+     "Solothurn",
+     "Basel-Stadt",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Schaffhausen",
+     "Thurgau",
+     "Zürich",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "St. Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Glarus",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "St. Gallen",
+     "Thurgau",
+     "Graubünden",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Graubünden",
+     "Wallis",
+     "Tessin",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "Solothurn",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Thurgau",
+     "Schaffhausen",
+     "St. Gallen",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Tessin",
+     "Graubünden",
+     "Wallis",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Waadt",
+     "Freiburg",
+     "Neuenburg",
+     "Genf"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Wallis",
+     "Graubünden",
+     "Tessin",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Neuenburg",
+     "Jura",
+     "Waadt",
+     "Freiburg"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Genf",
+     "Basel-Stadt",
+     "Waadt",
+     "Neuenburg"
+    ]
+   },
+   {
+    "q": "Welcher Kanton ist auf der Karte markiert?",
+    "a": [
+     "Jura",
+     "Neuenburg",
+     "Solothurn",
+     "Basel-Landschaft"
+    ]
+   }
+  ]
+ },
+ "kantone-wappen": {
+  "title": "Kantonswappen erkennen",
+  "items": [
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Zürich",
+     "Luzern",
+     "Zug",
+     "Tessin"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Bern",
+     "Schaffhausen",
+     "Uri",
+     "Appenzell Innerrhoden"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Luzern",
+     "Zürich",
+     "Zug",
+     "Tessin"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Uri",
+     "Bern",
+     "Schaffhausen",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Schwyz",
+     "Solothurn",
+     "Freiburg",
+     "Neuenburg"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Schwyz",
+     "Basel-Landschaft"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Basel-Landschaft",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Glarus",
+     "Graubünden",
+     "Genf",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Zug",
+     "Luzern",
+     "Zürich",
+     "Freiburg"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Freiburg",
+     "Solothurn",
+     "Zug",
+     "Wallis"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Solothurn",
+     "Freiburg",
+     "Schwyz",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Basel-Stadt",
+     "Basel-Landschaft",
+     "Appenzell Innerrhoden",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Basel-Landschaft",
+     "Basel-Stadt",
+     "Jura",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Schaffhausen",
+     "Bern",
+     "Uri",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "Bern",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Bern",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "St. Gallen",
+     "Thurgau",
+     "Waadt",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Graubünden",
+     "Glarus",
+     "Wallis",
+     "Genf"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Aargau",
+     "Thurgau",
+     "St. Gallen",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Thurgau",
+     "St. Gallen",
+     "Aargau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Tessin",
+     "Luzern",
+     "Zürich",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Waadt",
+     "Neuenburg",
+     "St. Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Wallis",
+     "Graubünden",
+     "Solothurn",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Neuenburg",
+     "Waadt",
+     "Tessin",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Genf",
+     "Graubünden",
+     "Glarus",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Welchem Kanton gehört dieses Wappen?",
+    "a": [
+     "Jura",
+     "Basel-Landschaft",
+     "Basel-Stadt",
+     "Wallis"
+    ]
+   }
+  ]
+ },
+ "schaetzfragen": {
+  "title": "Schätzfragen",
+  "items": [
+   {
+    "q": "Wie hoch ist das Matterhorn?",
+    "unit": "m"
+   },
+   {
+    "q": "Wie hoch ist die Dufourspitze, der höchste Berg der Schweiz?",
+    "unit": "m"
+   },
+   {
+    "q": "Wie hoch ist der Mount Everest?",
+    "unit": "m"
+   },
+   {
+    "q": "Wie viele Kantone hat die Schweiz?",
+    "unit": ""
+   },
+   {
+    "q": "In welchem Jahr wurde der Bundesbrief geschrieben (Gründung der Eidgenossenschaft)?",
+    "unit": ""
+   },
+   {
+    "q": "In welchem Jahr wurde der Schweizer Bundesstaat gegründet?",
+    "unit": ""
+   },
+   {
+    "q": "Wie lang ist der Gotthard-Basistunnel?",
+    "unit": "km"
+   },
+   {
+    "q": "Wie gross ist die Schweiz?",
+    "unit": "km²"
+   },
+   {
+    "q": "Wie lang ist der Rhein?",
+    "unit": "km"
+   },
+   {
+    "q": "Wie viele Knochen hat ein erwachsener Mensch?",
+    "unit": ""
+   },
+   {
+    "q": "Wie viele Zähne hat ein Erwachsener mit Weisheitszähnen?",
+    "unit": ""
+   },
+   {
+    "q": "In welchem Jahr landeten zum ersten Mal Menschen auf dem Mond?",
+    "unit": ""
+   },
+   {
+    "q": "Wie weit ist der Mond durchschnittlich von der Erde entfernt (in Tausend km)?",
+    "unit": "Tausend km"
+   },
+   {
+    "q": "Wie schnell ist der Schall in der Luft (bei 20 °C)?",
+    "unit": "m/s"
+   },
+   {
+    "q": "Wie viele Tage hat ein Schaltjahr?",
+    "unit": ""
+   },
+   {
+    "q": "In welchem Jahr fanden in St. Moritz zum ersten Mal Olympische Winterspiele statt?",
+    "unit": ""
+   },
+   {
+    "q": "Bei wie viel Grad Celsius siedet Wasser auf Meereshöhe?",
+    "unit": "°C"
+   },
+   {
+    "q": "Wie viele Beine hat eine Spinne?",
+    "unit": ""
+   }
+  ]
+ },
+ "wo-liegt-schweiz": {
+  "title": "Wo liegt das? (Schweiz)",
+  "items": [
+   {
+    "q": "Wo liegt Bern?",
+    "label": "Bern"
+   },
+   {
+    "q": "Wo liegt Zürich?",
+    "label": "Zürich"
+   },
+   {
+    "q": "Wo liegt Genf?",
+    "label": "Genf"
+   },
+   {
+    "q": "Wo liegt Basel?",
+    "label": "Basel"
+   },
+   {
+    "q": "Wo liegt Lugano?",
+    "label": "Lugano"
+   },
+   {
+    "q": "Wo liegt Luzern?",
+    "label": "Luzern"
+   },
+   {
+    "q": "Wo liegt St. Gallen?",
+    "label": "St. Gallen"
+   },
+   {
+    "q": "Wo liegt Chur?",
+    "label": "Chur"
+   },
+   {
+    "q": "Wo liegt Sitten (Sion)?",
+    "label": "Sitten (Sion)"
+   },
+   {
+    "q": "Wo liegt Lausanne?",
+    "label": "Lausanne"
+   },
+   {
+    "q": "Wo liegt Schaffhausen?",
+    "label": "Schaffhausen"
+   },
+   {
+    "q": "Wo liegt Frauenfeld?",
+    "label": "Frauenfeld"
+   },
+   {
+    "q": "Wo liegt Altdorf?",
+    "label": "Altdorf"
+   },
+   {
+    "q": "Wo liegt Bellinzona?",
+    "label": "Bellinzona"
+   },
+   {
+    "q": "Wo liegt Delémont?",
+    "label": "Delémont"
+   },
+   {
+    "q": "Wo liegt Appenzell?",
+    "label": "Appenzell"
+   },
+   {
+    "q": "Wo liegt das Matterhorn?",
+    "label": "das Matterhorn"
+   },
+   {
+    "q": "Wo liegt der Rheinfall?",
+    "label": "der Rheinfall"
+   },
+   {
+    "q": "Wo liegt der Säntis?",
+    "label": "der Säntis"
+   },
+   {
+    "q": "Wo liegt St. Moritz?",
+    "label": "St. Moritz"
+   },
+   {
+    "q": "Wo liegt Interlaken?",
+    "label": "Interlaken"
+   },
+   {
+    "q": "Wo liegt Einsiedeln?",
+    "label": "Einsiedeln"
+   },
+   {
+    "q": "Wo liegt Biel/Bienne?",
+    "label": "Biel/Bienne"
+   },
+   {
+    "q": "Wo liegt Thun?",
+    "label": "Thun"
+   }
+  ]
+ },
+ "wo-liegt-europa": {
+  "title": "Wo liegt das? (Europa)",
+  "items": [
+   {
+    "q": "Wo liegt Berlin?",
+    "label": "Berlin"
+   },
+   {
+    "q": "Wo liegt Paris?",
+    "label": "Paris"
+   },
+   {
+    "q": "Wo liegt Rom?",
+    "label": "Rom"
+   },
+   {
+    "q": "Wo liegt Madrid?",
+    "label": "Madrid"
+   },
+   {
+    "q": "Wo liegt London?",
+    "label": "London"
+   },
+   {
+    "q": "Wo liegt Wien?",
+    "label": "Wien"
+   },
+   {
+    "q": "Wo liegt Amsterdam?",
+    "label": "Amsterdam"
+   },
+   {
+    "q": "Wo liegt Brüssel?",
+    "label": "Brüssel"
+   },
+   {
+    "q": "Wo liegt Lissabon?",
+    "label": "Lissabon"
+   },
+   {
+    "q": "Wo liegt Stockholm?",
+    "label": "Stockholm"
+   },
+   {
+    "q": "Wo liegt Oslo?",
+    "label": "Oslo"
+   },
+   {
+    "q": "Wo liegt Kopenhagen?",
+    "label": "Kopenhagen"
+   },
+   {
+    "q": "Wo liegt Helsinki?",
+    "label": "Helsinki"
+   },
+   {
+    "q": "Wo liegt Warschau?",
+    "label": "Warschau"
+   },
+   {
+    "q": "Wo liegt Prag?",
+    "label": "Prag"
+   },
+   {
+    "q": "Wo liegt Budapest?",
+    "label": "Budapest"
+   },
+   {
+    "q": "Wo liegt Athen?",
+    "label": "Athen"
+   },
+   {
+    "q": "Wo liegt Dublin?",
+    "label": "Dublin"
+   },
+   {
+    "q": "Wo liegt Reykjavík?",
+    "label": "Reykjavík"
+   },
+   {
+    "q": "Wo liegt Bukarest?",
+    "label": "Bukarest"
+   },
+   {
+    "q": "Wo liegt Venedig?",
+    "label": "Venedig"
+   },
+   {
+    "q": "Wo liegt Barcelona?",
+    "label": "Barcelona"
+   },
+   {
+    "q": "Wo liegt Istanbul?",
+    "label": "Istanbul"
+   },
+   {
+    "q": "Wo liegt Bern?",
+    "label": "Bern"
+   }
+  ]
+ },
+ "deutschland-bundeslaender": {
+  "title": "Deutschland: Bundesländer",
+  "items": [
+   {
+    "q": "Wie viele Bundesländer hat Deutschland?",
+    "a": [
+     "16",
+     "12",
+     "15",
+     "20"
+    ]
+   },
+   {
+    "q": "Welche drei Bundesländer sind Stadtstaaten?",
+    "a": [
+     "Berlin, Hamburg, Bremen",
+     "Berlin, Hamburg, München",
+     "Berlin, Bremen, Köln",
+     "Hamburg, Bremen, Frankfurt"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Baden-Württemberg?",
+    "a": [
+     "Stuttgart",
+     "Karlsruhe",
+     "Mannheim",
+     "Freiburg"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Bayern?",
+    "a": [
+     "München",
+     "Nürnberg",
+     "Augsburg",
+     "Regensburg"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Brandenburg?",
+    "a": [
+     "Potsdam",
+     "Cottbus",
+     "Frankfurt (Oder)",
+     "Brandenburg an der Havel"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Hessen?",
+    "a": [
+     "Wiesbaden",
+     "Frankfurt am Main",
+     "Kassel",
+     "Darmstadt"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Mecklenburg-Vorpommern?",
+    "a": [
+     "Schwerin",
+     "Rostock",
+     "Greifswald",
+     "Stralsund"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Niedersachsen?",
+    "a": [
+     "Hannover",
+     "Braunschweig",
+     "Osnabrück",
+     "Oldenburg"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Nordrhein-Westfalen?",
+    "a": [
+     "Düsseldorf",
+     "Köln",
+     "Dortmund",
+     "Essen"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Rheinland-Pfalz?",
+    "a": [
+     "Mainz",
+     "Koblenz",
+     "Trier",
+     "Ludwigshafen"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Saarland?",
+    "a": [
+     "Saarbrücken",
+     "Neunkirchen",
+     "Homburg",
+     "Saarlouis"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Sachsen?",
+    "a": [
+     "Dresden",
+     "Leipzig",
+     "Chemnitz",
+     "Zwickau"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Sachsen-Anhalt?",
+    "a": [
+     "Magdeburg",
+     "Halle (Saale)",
+     "Dessau-Roßlau",
+     "Wittenberg"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Schleswig-Holstein?",
+    "a": [
+     "Kiel",
+     "Lübeck",
+     "Flensburg",
+     "Neumünster"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Thüringen?",
+    "a": [
+     "Erfurt",
+     "Jena",
+     "Weimar",
+     "Gera"
+    ]
+   }
+  ]
+ },
+ "deutschland": {
+  "title": "Deutschland allgemein",
+  "items": [
+   {
+    "q": "Wie heisst der höchste Berg Deutschlands?",
+    "a": [
+     "Zugspitze",
+     "Watzmann",
+     "Feldberg",
+     "Brocken"
+    ]
+   },
+   {
+    "q": "Wann ist der Tag der Deutschen Einheit?",
+    "a": [
+     "3. Oktober",
+     "9. November",
+     "1. Mai",
+     "17. Juni"
+    ]
+   },
+   {
+    "q": "In welchem Jahr fiel die Berliner Mauer?",
+    "a": [
+     "1989",
+     "1990",
+     "1961",
+     "1975"
+    ]
+   },
+   {
+    "q": "Welches Tor ist ein Wahrzeichen von Berlin?",
+    "a": [
+     "Brandenburger Tor",
+     "Holstentor",
+     "Siegestor",
+     "Porta Nigra"
+    ]
+   },
+   {
+    "q": "In welcher Stadt findet das Oktoberfest statt?",
+    "a": [
+     "München",
+     "Köln",
+     "Stuttgart",
+     "Berlin"
+    ]
+   },
+   {
+    "q": "Welcher Fluss fliesst durch Köln?",
+    "a": [
+     "Rhein",
+     "Main",
+     "Elbe",
+     "Donau"
+    ]
+   },
+   {
+    "q": "Welcher Fluss fliesst durch Hamburg und Dresden?",
+    "a": [
+     "Elbe",
+     "Weser",
+     "Oder",
+     "Spree"
+    ]
+   },
+   {
+    "q": "Wie heisst die grösste deutsche Insel?",
+    "a": [
+     "Rügen",
+     "Usedom",
+     "Sylt",
+     "Fehmarn"
+    ]
+   },
+   {
+    "q": "Welcher See liegt ganz in Deutschland und ist der grösste dieser Seen?",
+    "a": [
+     "Müritz",
+     "Chiemsee",
+     "Starnberger See",
+     "Bodensee"
+    ]
+   },
+   {
+    "q": "Welche Währung hatte Deutschland vor dem Euro?",
+    "a": [
+     "D-Mark",
+     "Schilling",
+     "Gulden",
+     "Franken"
+    ]
+   },
+   {
+    "q": "Wie viele Nachbarländer hat Deutschland?",
+    "a": [
+     "9",
+     "7",
+     "8",
+     "10"
+    ]
+   },
+   {
+    "q": "An welche zwei Meere grenzt Deutschland?",
+    "a": [
+     "Nordsee und Ostsee",
+     "Nordsee und Mittelmeer",
+     "Ostsee und Atlantik",
+     "Nordsee und Schwarzes Meer"
+    ]
+   },
+   {
+    "q": "Wer war der erste Bundeskanzler?",
+    "a": [
+     "Konrad Adenauer",
+     "Willy Brandt",
+     "Helmut Kohl",
+     "Ludwig Erhard"
+    ]
+   }
+  ]
+ },
+ "oesterreich-bundeslaender": {
+  "title": "Österreich: Bundesländer",
+  "items": [
+   {
+    "q": "Wie viele Bundesländer hat Österreich?",
+    "a": [
+     "9",
+     "8",
+     "10",
+     "12"
+    ]
+   },
+   {
+    "q": "Wie heisst der höchste Berg Österreichs?",
+    "a": [
+     "Grossglockner",
+     "Wildspitze",
+     "Dachstein",
+     "Zugspitze"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Niederösterreich?",
+    "a": [
+     "St. Pölten",
+     "Wiener Neustadt",
+     "Krems",
+     "Baden"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Oberösterreich?",
+    "a": [
+     "Linz",
+     "Wels",
+     "Steyr",
+     "Braunau"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Salzburg?",
+    "a": [
+     "Salzburg",
+     "Hallein",
+     "Zell am See",
+     "Bischofshofen"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Tirol?",
+    "a": [
+     "Innsbruck",
+     "Kufstein",
+     "Lienz",
+     "Kitzbühel"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Vorarlberg?",
+    "a": [
+     "Bregenz",
+     "Dornbirn",
+     "Feldkirch",
+     "Bludenz"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Kärnten?",
+    "a": [
+     "Klagenfurt",
+     "Villach",
+     "Wolfsberg",
+     "Spittal an der Drau"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Steiermark?",
+    "a": [
+     "Graz",
+     "Leoben",
+     "Bruck an der Mur",
+     "Kapfenberg"
+    ]
+   },
+   {
+    "q": "Was ist die Landeshauptstadt von Burgenland?",
+    "a": [
+     "Eisenstadt",
+     "Neusiedl am See",
+     "Oberwart",
+     "Mattersburg"
+    ]
+   }
+  ]
+ },
+ "niederlande-provinzen": {
+  "title": "Niederlande: Provinzen",
+  "items": [
+   {
+    "q": "Wie viele Provinzen haben die Niederlande?",
+    "a": [
+     "12",
+     "10",
+     "11",
+     "16"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Groningen?",
+    "a": [
+     "Groningen",
+     "Assen",
+     "Leeuwarden",
+     "Emmen"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Friesland?",
+    "a": [
+     "Leeuwarden",
+     "Sneek",
+     "Heerenveen",
+     "Groningen"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Drenthe?",
+    "a": [
+     "Assen",
+     "Emmen",
+     "Hoogeveen",
+     "Meppel"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Overijssel?",
+    "a": [
+     "Zwolle",
+     "Enschede",
+     "Deventer",
+     "Almelo"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Flevoland?",
+    "a": [
+     "Lelystad",
+     "Almere",
+     "Emmeloord",
+     "Dronten"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Gelderland?",
+    "a": [
+     "Arnheim",
+     "Nimwegen",
+     "Apeldoorn",
+     "Ede"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Utrecht?",
+    "a": [
+     "Utrecht",
+     "Amersfoort",
+     "Zeist",
+     "Hilversum"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Nordholland?",
+    "a": [
+     "Haarlem",
+     "Amsterdam",
+     "Alkmaar",
+     "Zaandam"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Südholland?",
+    "a": [
+     "Den Haag",
+     "Rotterdam",
+     "Leiden",
+     "Delft"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Zeeland?",
+    "a": [
+     "Middelburg",
+     "Vlissingen",
+     "Goes",
+     "Terneuzen"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Nordbrabant?",
+    "a": [
+     "’s-Hertogenbosch",
+     "Eindhoven",
+     "Tilburg",
+     "Breda"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Provinz Limburg?",
+    "a": [
+     "Maastricht",
+     "Venlo",
+     "Heerlen",
+     "Roermond"
+    ]
+   }
+  ]
+ },
+ "niederlande": {
+  "title": "Niederlande allgemein",
+  "items": [
+   {
+    "q": "Was ist die Hauptstadt der Niederlande?",
+    "a": [
+     "Amsterdam",
+     "Den Haag",
+     "Rotterdam",
+     "Utrecht"
+    ]
+   },
+   {
+    "q": "In welcher Stadt sitzt die niederländische Regierung?",
+    "a": [
+     "Den Haag",
+     "Amsterdam",
+     "Rotterdam",
+     "Utrecht"
+    ]
+   },
+   {
+    "q": "Wie heisst der König der Niederlande (seit 2013)?",
+    "a": [
+     "Willem-Alexander",
+     "Wilhelm III.",
+     "Maximilian",
+     "Friso"
+    ]
+   },
+   {
+    "q": "Wann ist der Königstag?",
+    "a": [
+     "27. April",
+     "30. April",
+     "5. Mai",
+     "1. Mai"
+    ]
+   },
+   {
+    "q": "Welche Stadt hat den grössten Hafen Europas?",
+    "a": [
+     "Rotterdam",
+     "Antwerpen",
+     "Hamburg",
+     "Amsterdam"
+    ]
+   },
+   {
+    "q": "Wie heisst der grosse Damm zwischen IJsselmeer und Wattenmeer?",
+    "a": [
+     "Afsluitdijk",
+     "Deltawerke",
+     "Oosterscheldekering",
+     "Maeslantkering"
+    ]
+   },
+   {
+    "q": "Wie heisst der höchste Punkt im europäischen Teil der Niederlande?",
+    "a": [
+     "Vaalserberg",
+     "Brocken",
+     "Tafelberg",
+     "Feldberg"
+    ]
+   },
+   {
+    "q": "Welche Farbe tragen die niederländischen Sportteams?",
+    "a": [
+     "Orange",
+     "Blau",
+     "Rot",
+     "Grün"
+    ]
+   },
+   {
+    "q": "Wer malte «Die Nachtwache»?",
+    "a": [
+     "Rembrandt",
+     "Vermeer",
+     "Van Gogh",
+     "Mondrian"
+    ]
+   },
+   {
+    "q": "Welche dieser Inseln gehört zu den Niederlanden?",
+    "a": [
+     "Texel",
+     "Sylt",
+     "Föhr",
+     "Rømø"
+    ]
+   },
+   {
+    "q": "Welche Währung hatten die Niederlande vor dem Euro?",
+    "a": [
+     "Gulden",
+     "Mark",
+     "Franken",
+     "Krone"
+    ]
+   }
+  ]
+ },
+ "frankreich": {
+  "title": "Frankreich allgemein",
+  "items": [
+   {
+    "q": "Was ist die Hauptstadt Frankreichs?",
+    "a": [
+     "Paris",
+     "Lyon",
+     "Marseille",
+     "Bordeaux"
+    ]
+   },
+   {
+    "q": "Wie heisst der höchste Berg Frankreichs (und der Alpen)?",
+    "a": [
+     "Mont Blanc",
+     "Matterhorn",
+     "Mont Ventoux",
+     "Puy de Dôme"
+    ]
+   },
+   {
+    "q": "Welcher ist der längste Fluss, der nur durch Frankreich fliesst?",
+    "a": [
+     "Loire",
+     "Seine",
+     "Rhône",
+     "Garonne"
+    ]
+   },
+   {
+    "q": "Welcher Fluss fliesst durch Paris?",
+    "a": [
+     "Seine",
+     "Loire",
+     "Rhône",
+     "Marne"
+    ]
+   },
+   {
+    "q": "Wann ist der französische Nationalfeiertag?",
+    "a": [
+     "14. Juli",
+     "1. August",
+     "3. Oktober",
+     "11. November"
+    ]
+   },
+   {
+    "q": "Welche Farben hat die französische Flagge (von links)?",
+    "a": [
+     "Blau, Weiss, Rot",
+     "Rot, Weiss, Blau",
+     "Blau, Weiss, Grün",
+     "Weiss, Blau, Rot"
+    ]
+   },
+   {
+    "q": "Wie heisst die französische Nationalhymne?",
+    "a": [
+     "La Marseillaise",
+     "La Parisienne",
+     "Le Chant du Départ",
+     "La Bretonne"
+    ]
+   },
+   {
+    "q": "Welche Insel im Mittelmeer gehört zu Frankreich?",
+    "a": [
+     "Korsika",
+     "Sardinien",
+     "Mallorca",
+     "Elba"
+    ]
+   },
+   {
+    "q": "Wie heisst das berühmte Radrennen durch Frankreich?",
+    "a": [
+     "Tour de France",
+     "Giro d’Italia",
+     "Vuelta",
+     "Paris–Roubaix"
+    ]
+   },
+   {
+    "q": "Welche Währung hatte Frankreich vor dem Euro?",
+    "a": [
+     "Französischer Franc",
+     "Livre",
+     "Écu",
+     "Gulden"
+    ]
+   },
+   {
+    "q": "In welcher Stadt steht das Europäische Parlament?",
+    "a": [
+     "Strassburg",
+     "Paris",
+     "Lyon",
+     "Lille"
+    ]
+   },
+   {
+    "q": "Welches Tier gilt als Symbol Frankreichs?",
+    "a": [
+     "Hahn",
+     "Adler",
+     "Löwe",
+     "Bär"
+    ]
+   },
+   {
+    "q": "Welcher Tunnel verbindet Frankreich mit England?",
+    "a": [
+     "Eurotunnel (Ärmelkanaltunnel)",
+     "Gotthardtunnel",
+     "Mont-Blanc-Tunnel",
+     "Fréjus-Tunnel"
+    ]
+   },
+   {
+    "q": "Welches Museum in Paris zeigt die «Mona Lisa»?",
+    "a": [
+     "Louvre",
+     "Musée d’Orsay",
+     "Centre Pompidou",
+     "Musée Rodin"
+    ]
+   },
+   {
+    "q": "Wie heisst die Prachtstrasse in Paris, die zum Arc de Triomphe führt?",
+    "a": [
+     "Champs-Élysées",
+     "Boulevard Saint-Germain",
+     "Rue de Rivoli",
+     "Avenue Foch"
+    ]
+   },
+   {
+    "q": "An wie viele Länder grenzt das französische Festland (inkl. Andorra und Monaco)?",
+    "a": [
+     "8",
+     "6",
+     "7",
+     "9"
+    ]
+   }
+  ]
+ },
+ "frankreich-regionen": {
+  "title": "Frankreich: Regionen",
+  "items": [
+   {
+    "q": "Wie viele Regionen hat das französische Festland (seit 2016) – mit Korsika?",
+    "a": [
+     "13",
+     "22",
+     "18",
+     "10"
+    ]
+   },
+   {
+    "q": "Welche Region liegt ganz im Nordwesten am Atlantik?",
+    "a": [
+     "Bretagne",
+     "Normandie",
+     "Elsass",
+     "Provence"
+    ]
+   },
+   {
+    "q": "Zu welcher Region gehört das Elsass heute?",
+    "a": [
+     "Grand Est",
+     "Hauts-de-France",
+     "Bourgogne-Franche-Comté",
+     "Normandie"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Île-de-France?",
+    "a": [
+     "Paris",
+     "Versailles",
+     "Orléans",
+     "Reims"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Auvergne-Rhône-Alpes?",
+    "a": [
+     "Lyon",
+     "Grenoble",
+     "Clermont-Ferrand",
+     "Saint-Étienne"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Bourgogne-Franche-Comté?",
+    "a": [
+     "Dijon",
+     "Besançon",
+     "Auxerre",
+     "Mâcon"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Bretagne?",
+    "a": [
+     "Rennes",
+     "Brest",
+     "Quimper",
+     "Saint-Malo"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Centre-Val de Loire?",
+    "a": [
+     "Orléans",
+     "Tours",
+     "Bourges",
+     "Chartres"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Korsika?",
+    "a": [
+     "Ajaccio",
+     "Bastia",
+     "Calvi",
+     "Porto-Vecchio"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Grand Est?",
+    "a": [
+     "Strassburg",
+     "Metz",
+     "Nancy",
+     "Reims"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Hauts-de-France?",
+    "a": [
+     "Lille",
+     "Amiens",
+     "Calais",
+     "Dunkerque"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Normandie?",
+    "a": [
+     "Rouen",
+     "Caen",
+     "Le Havre",
+     "Cherbourg"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Nouvelle-Aquitaine?",
+    "a": [
+     "Bordeaux",
+     "Limoges",
+     "Poitiers",
+     "La Rochelle"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Okzitanien?",
+    "a": [
+     "Toulouse",
+     "Montpellier",
+     "Nîmes",
+     "Perpignan"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Pays de la Loire?",
+    "a": [
+     "Nantes",
+     "Angers",
+     "Le Mans",
+     "Saint-Nazaire"
+    ]
+   },
+   {
+    "q": "Was ist die Hauptstadt der Region Provence-Alpes-Côte d’Azur?",
+    "a": [
+     "Marseille",
+     "Nizza",
+     "Toulon",
+     "Avignon"
+    ]
+   }
+  ]
+ },
+ "frankreich-geschichte": {
+  "title": "Frankreich: Geschichte",
+  "items": [
+   {
+    "q": "In welchem Jahr begann die Französische Revolution?",
+    "a": [
+     "1789",
+     "1799",
+     "1776",
+     "1815"
+    ]
+   },
+   {
+    "q": "Welches Gefängnis wurde am 14. Juli 1789 gestürmt?",
+    "a": [
+     "Bastille",
+     "Conciergerie",
+     "Louvre",
+     "Tour de Londres"
+    ]
+   },
+   {
+    "q": "Wie lautet das Motto der Französischen Republik?",
+    "a": [
+     "Freiheit, Gleichheit, Brüderlichkeit",
+     "Einigkeit und Recht und Freiheit",
+     "Einer für alle, alle für einen",
+     "Gott, König, Vaterland"
+    ]
+   },
+   {
+    "q": "Welcher Kaiser verlor 1815 die Schlacht bei Waterloo?",
+    "a": [
+     "Napoleon Bonaparte",
+     "Karl der Grosse",
+     "Ludwig XIV.",
+     "Napoleon III."
+    ]
+   },
+   {
+    "q": "Auf welcher Insel wurde Napoleon geboren?",
+    "a": [
+     "Korsika",
+     "Elba",
+     "Sardinien",
+     "St. Helena"
+    ]
+   },
+   {
+    "q": "Welcher König wurde «Sonnenkönig» genannt?",
+    "a": [
+     "Ludwig XIV.",
+     "Ludwig XVI.",
+     "Franz I.",
+     "Heinrich IV."
+    ]
+   },
+   {
+    "q": "Welches Schloss liess der Sonnenkönig prächtig ausbauen?",
+    "a": [
+     "Versailles",
+     "Chambord",
+     "Fontainebleau",
+     "Chenonceau"
+    ]
+   },
+   {
+    "q": "Welche junge Frau führte im Hundertjährigen Krieg die Franzosen an?",
+    "a": [
+     "Jeanne d’Arc",
+     "Marie Antoinette",
+     "Katharina von Medici",
+     "Marie Curie"
+    ]
+   },
+   {
+    "q": "Für welche Weltausstellung wurde der Eiffelturm gebaut?",
+    "a": [
+     "1889",
+     "1900",
+     "1867",
+     "1937"
+    ]
+   },
+   {
+    "q": "Welcher König wurde in der Revolution hingerichtet?",
+    "a": [
+     "Ludwig XVI.",
+     "Ludwig XIV.",
+     "Karl X.",
+     "Ludwig XVIII."
+    ]
+   },
+   {
+    "q": "Wie hiess der Fürst, der um 800 Kaiser eines Grossreichs wurde?",
+    "a": [
+     "Karl der Grosse",
+     "Chlodwig",
+     "Pippin",
+     "Ludwig der Fromme"
+    ]
+   },
+   {
+    "q": "An welcher Küste landeten die Alliierten am 6. Juni 1944 (D-Day)?",
+    "a": [
+     "Normandie",
+     "Bretagne",
+     "Côte d’Azur",
+     "Aquitanien"
+    ]
+   }
+  ]
+ },
+ "frankreich-kueche": {
+  "title": "Frankreich: Küche und Kultur",
+  "items": [
+   {
+    "q": "Wie heisst das lange französische Weissbrot?",
+    "a": [
+     "Baguette",
+     "Brioche",
+     "Ciabatta",
+     "Fougasse"
+    ]
+   },
+   {
+    "q": "Was ist ein «Croissant»?",
+    "a": [
+     "Ein Blätterteig-Gipfeli",
+     "Ein Käse",
+     "Eine Suppe",
+     "Ein Dessert aus Eiern"
+    ]
+   },
+   {
+    "q": "Aus welcher Stadt kommt die Fischsuppe «Bouillabaisse»?",
+    "a": [
+     "Marseille",
+     "Paris",
+     "Lyon",
+     "Brest"
+    ]
+   },
+   {
+    "q": "Welcher dieser Käse kommt aus Frankreich?",
+    "a": [
+     "Camembert",
+     "Gouda",
+     "Emmentaler",
+     "Parmesan"
+    ]
+   },
+   {
+    "q": "Was sind «Crêpes»?",
+    "a": [
+     "Dünne Pfannkuchen",
+     "Schnecken",
+     "Kartoffelgratin",
+     "Gemüseeintopf"
+    ]
+   },
+   {
+    "q": "Aus welcher Region kommen die Crêpes ursprünglich?",
+    "a": [
+     "Bretagne",
+     "Provence",
+     "Elsass",
+     "Burgund"
+    ]
+   },
+   {
+    "q": "Welcher Gemüse-Eintopf kommt aus der Provence?",
+    "a": [
+     "Ratatouille",
+     "Cassoulet",
+     "Pot-au-feu",
+     "Choucroute"
+    ]
+   },
+   {
+    "q": "Welche Region ist berühmt für ihren Schaumwein?",
+    "a": [
+     "Champagne",
+     "Normandie",
+     "Bretagne",
+     "Korsika"
+    ]
+   },
+   {
+    "q": "Was sind «Macarons»?",
+    "a": [
+     "Kleines Mandelgebäck mit Füllung",
+     "Nudeln",
+     "Salzige Kekse",
+     "Gefüllte Teigtaschen"
+    ]
+   },
+   {
+    "q": "Welches Elsässer Gericht ist ein dünner Fladen mit Speck und Zwiebeln?",
+    "a": [
+     "Flammkuchen",
+     "Quiche",
+     "Tarte Tatin",
+     "Galette"
+    ]
+   },
+   {
+    "q": "Welcher Maler mit Seerosen-Bildern lebte in Giverny?",
+    "a": [
+     "Claude Monet",
+     "Vincent van Gogh",
+     "Pablo Picasso",
+     "Paul Klee"
+    ]
+   },
+   {
+    "q": "Wie heisst die berühmte Kathedrale in Paris, die 2019 brannte?",
+    "a": [
+     "Notre-Dame",
+     "Sacré-Cœur",
+     "Saint-Sulpice",
+     "Sainte-Chapelle"
+    ]
+   },
+   {
+    "q": "Welche Stadt ist berühmt für ihr Filmfestival?",
+    "a": [
+     "Cannes",
+     "Nizza",
+     "Lyon",
+     "Bordeaux"
+    ]
+   },
+   {
+    "q": "Wie sagt man auf Französisch «Guten Tag»?",
+    "a": [
+     "Bonjour",
+     "Bonsoir",
+     "Merci",
+     "Salut"
+    ]
+   }
+  ]
+ },
+ "wo-liegt-frankreich": {
+  "title": "Wo liegt das? (Frankreich)",
+  "items": [
+   {
+    "q": "Wo liegt Paris?",
+    "label": "Paris"
+   },
+   {
+    "q": "Wo liegt Marseille?",
+    "label": "Marseille"
+   },
+   {
+    "q": "Wo liegt Lyon?",
+    "label": "Lyon"
+   },
+   {
+    "q": "Wo liegt Bordeaux?",
+    "label": "Bordeaux"
+   },
+   {
+    "q": "Wo liegt Strassburg?",
+    "label": "Strassburg"
+   },
+   {
+    "q": "Wo liegt Nizza?",
+    "label": "Nizza"
+   },
+   {
+    "q": "Wo liegt Lille?",
+    "label": "Lille"
+   },
+   {
+    "q": "Wo liegt Brest?",
+    "label": "Brest"
+   },
+   {
+    "q": "Wo liegt Toulouse?",
+    "label": "Toulouse"
+   },
+   {
+    "q": "Wo liegt Nantes?",
+    "label": "Nantes"
+   },
+   {
+    "q": "Wo liegt der Mont-Saint-Michel?",
+    "label": "der Mont-Saint-Michel"
+   },
+   {
+    "q": "Wo liegt der Mont Blanc?",
+    "label": "der Mont Blanc"
+   },
+   {
+    "q": "Wo liegt Ajaccio (Korsika)?",
+    "label": "Ajaccio (Korsika)"
+   },
+   {
+    "q": "Wo liegt Calais?",
+    "label": "Calais"
+   },
+   {
+    "q": "Wo liegt Biarritz?",
+    "label": "Biarritz"
+   }
+  ]
+ }
+}
