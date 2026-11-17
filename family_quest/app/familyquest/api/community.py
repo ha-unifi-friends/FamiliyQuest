@@ -142,6 +142,19 @@ def quiz_create(body: QuizIn, request: Request, prof: dict = Gamer) -> dict:
     return {"id": _run(app_of(request).community.save_quiz, body.model_dump(), prof)}
 
 
+class QuizImportIn(BaseModel):
+    text: str                        # the file: a quiz (or a list) in the Family Quest quiz format
+
+
+@router.post("/quizzes/import")
+def quiz_import(body: QuizImportIn, request: Request, prof: dict = Gamer) -> dict:
+    if prof["role"] == "guest":
+        raise HTTPException(403, "Guests cannot add quizzes")
+    if len(body.text) > 1_000_000:
+        raise HTTPException(400, "The file is too large")
+    return {"ids": _run(app_of(request).community.import_quizzes, prof, body.text)}
+
+
 @router.post("/quizzes/from-template")
 def quiz_from_template(body: TemplateIn, request: Request, prof: dict = Gamer) -> dict:
     return {"id": _run(app_of(request).community.from_template, prof, body.template)}
