@@ -330,7 +330,7 @@ def bot_delay(rules: dict, default: float) -> float:
 
 
 # ================================================================ the games in the database
-# ---------------------------------------------------------------- who begins (parent area › Settings › Games)
+# ---------------------------------------------------------------- who begins (parent area › Games)
 STARTER_MODES = ("dice", "leader", "choose")
 
 

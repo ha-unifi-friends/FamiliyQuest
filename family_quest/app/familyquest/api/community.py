@@ -35,7 +35,7 @@ def game_of(path: str) -> str | None:
 
 
 def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 – used like Learner
-    """A learner who may play this game (parent area › Settings › Games, per game and person)."""
+    """A learner who may play this game (parent area › Games, per game and person)."""
     fq = app_of(request)
     game = game_of(request.url.path)
     if not fq.games_allowed(prof, game):

@@ -327,7 +327,7 @@ class Pairhunt(CardGames):
                 raise CommunityError("The game has already started")
             if len(st["players"]) < 2:
                 raise CommunityError("Add a bot or wait for a second player")
-            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (Settings › Games)
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (parent area › Games)
             self._deal(st)
             self._save(row, st)
 

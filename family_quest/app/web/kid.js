@@ -120,7 +120,7 @@ function specialBanners(list) {
   });
 }
 
-// which games this child may play (parent area › Settings › Games – per game and person)
+// which games this child may play (parent area › Games – per game and person)
 const canPlay = game => !!(S.me && (S.me.games_list || []).includes(game));
 
 // somebody opened a family table: a note slides into the header (not while a game or a lesson fills the screen)

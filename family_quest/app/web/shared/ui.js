@@ -427,7 +427,7 @@ function openGameMenu({ rules, invite, actions, onLeave }) {
   requestAnimationFrame(() => back.classList.add("open"));
 }
 
-// who begins (parent area › Settings › Games): «choose» → the leader picks a player when starting the game.
+// who begins (parent area › Games): «choose» → the leader picks a player when starting the game.
 // beginGame(path, players) posts to path (e.g. "community/cards/tschau/begin") – with {starter} when chosen.
 let _starterMode = null;
 async function beginGame(path, players, body = {}) {
