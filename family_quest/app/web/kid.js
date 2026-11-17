@@ -328,7 +328,8 @@ function dashboardView() {
   const met = xp >= goal;
   const today = h("section.card.today",
     ring(xp, goal, { size: 132, stroke: 14, color: met ? "var(--good)" : "var(--accent)",
-      label: h("span", h("b.big", fmt(xp)), h("br"), h("span.small.muted", "/ " + fmt(goal) + " XP")) }),
+      label: h("span", h("b.big", fmt(xp)), h("br"), h("span.small.muted", "/ " + fmt(goal) + " XP"),
+        h("br"), h("span.small.xp-total", { title: T("All XP so far") }, "Σ " + fmt(me.level.xp) + " XP")) }),
     h("div.today-text",
       h("h2", met ? T("Daily goal reached! 🎉") : T("Today's goal")),
       h("p.muted", met ? T("Everything extra counts for your level.") : T("A short lesson mixes repetitions and new words.")),

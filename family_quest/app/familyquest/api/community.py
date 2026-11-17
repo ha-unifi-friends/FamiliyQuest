@@ -112,6 +112,7 @@ def quiz_answer(body: AnswerIn, request: Request, prof: dict = Playing) -> dict 
 class QuizIn(BaseModel):
     title: str
     questions: list[dict[str, Any]] = []
+    langs: dict[str, Any] | None = None     # multilingual: {"base", "more", "title"} (community.clean_langs)
 
 
 class StartIn(BaseModel):
