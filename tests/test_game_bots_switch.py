@@ -134,3 +134,23 @@ def test_inactive_blocks_the_game(client):
     # back on (with bots): alone against bots works again
     client.put("/api/parent/games", json={"access": {"domino": {"mode": "all", "bots": True}}}, headers=ph)
     assert client.post("/api/community/domino/start", json={"solo": True}, headers=hm).status_code == 200
+
+
+def test_forced_no_bots_start_does_not_become_the_remembered_default(client):
+    """«active without bots» starts the table with 0 bots – the remembered rules (game_rules.<kind>) keep the old number
+    of bots, so it is back once bots are switched on again."""
+    ph, mia, _ = setup_family(client)
+    fq = client.app.state.fq
+    hm = login(client, mia, "1111")
+    fq.db.set_setting("game_rules.tschau", {"bots": 3})
+    no_bots(client, ph, "tschau", "heimwaerts")
+    st = client.post("/api/community/cards/tschau/start", json={"bots": 0}, headers=hm).json()
+    assert not any(p["bot"] for p in st["players"])
+    assert fq.db.get_setting("game_rules.tschau")["bots"] == 3
+    assert client.post("/api/community/heimwaerts/start", json={"bots": 0, "bot_ms": 0}, headers=hm).status_code == 200
+    assert "bots" not in fq.db.get_setting("game_rules.heimwaerts")           # nothing remembered before: the default stays
+    from familyquest.heimwaerts import DEFAULTS
+    assert fq.heimwaerts.default_rules("heimwaerts")["bots"] == DEFAULTS["bots"] > 0
+    # bots on again: the remembered 3 are the default
+    client.put("/api/parent/games", json={"access": {"tschau": {"mode": "all", "bots": True}}}, headers=ph)
+    assert client.get("/api/community/cards/tschau/rules", headers=hm).json()["bots"] == 3
