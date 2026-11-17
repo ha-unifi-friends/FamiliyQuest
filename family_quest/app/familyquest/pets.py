@@ -520,7 +520,7 @@ class Pets:
 
     # ---------------------------------------------------------------- more pets of one kind, babies
     def price(self, kind: str) -> int:
-        rule = av.ITEMS.get(kind, ("", "", {}))[2]
+        rule = av.rule_of(kind) if kind in av.ITEMS else {}
         return int(rule.get("cost", REBUY_COST))
 
     def _count(self, pid: int, kind: str) -> int:

@@ -974,7 +974,7 @@ async function shopView() {
 async function avatarSpecials() {
   let d;
   try { d = await api("me/avatar"); } catch { return null; }
-  const items = d.items.filter(i => i.rule && i.rule.cost);
+  const items = d.items.filter(i => i.rule && i.rule.cost != null && !i.rule.off);
   if (!items.length) return null;
   const a = d.avatar;
   const wear = async i => {
@@ -1001,7 +1001,7 @@ async function avatarSpecials() {
 async function xpBackgrounds() {
   let d;
   try { d = await api("me/avatar"); } catch { return null; }
-  const items = d.items.filter(i => i.rule && i.rule.xp);
+  const items = d.items.filter(i => i.rule && i.rule.xp && !i.rule.off);
   if (!items.length) return null;
   const a = d.avatar, have = d.new_xp || 0;
   const wear = async i => {
@@ -1014,11 +1014,11 @@ async function xpBackgrounds() {
     try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
     catch (e) { toast(e.message, "bad"); }
   };
-  return h("section.card", h("h2", "✨ ", T("Backgrounds for XP")),
-    h("p.small.muted", I18N.tr(T("Every {0} XP you earn from now on unlock a background – your XP and your level stay as they are.")).replace("{0}", 500)),
+  return h("section.card", h("h2", "✨ ", T("For new XP")),
+    h("p.small.muted", T("Paid with the XP you earn from now on – your XP and your level stay as they are.")),
     h("p", h("strong", "✨ " + fmt(have) + " "), T("new XP to use")),
     h("div.shop-grid", ...items.map(i => {
-      const worn = (a.items || {}).background === i.id;
+      const worn = (a.items || {})[i.slot] === i.id;
       return h("div.offer.card" + (i.unlocked || have >= i.rule.xp ? "" : ".cant"),
         avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
         i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
@@ -1153,7 +1153,7 @@ async function avatarView() {
   let tab = "skin";
   const tabs = h("div.av-tabs");
   const panel = h("div.av-panel");
-  const ruleText = r => r.level ? T("From level {0}").replace("{0}", r.level)
+  const ruleText = r => r.off ? T("Not in the shop") : r.level ? T("From level {0}").replace("{0}", r.level)
     : r.badge ? T("With a badge") : r.cost ? T("Buy for {0} coins").replace("{0}", r.cost)
     : r.xp ? I18N.tr(T("For {0} new XP")).replace("{0}", r.xp)
     : r.season ? T("Only in season") : "";

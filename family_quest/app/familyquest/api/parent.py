@@ -824,6 +824,44 @@ def delete_rule(rid: int, request: Request, me: dict = Parent) -> dict:
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- shop: the avatar items (lock, price, coins or new XP)
+class ShopItemIn(BaseModel):
+    off: bool = False
+    price: int | None = None             # None: the price of the app
+    currency: str | None = None          # coins | xp (new XP) – None: as in the app
+
+
+@router.get("/shop/items")
+def shop_items(request: Request, me: dict = Parent) -> dict:
+    """All avatar items of the shop with the app's rule and the family's changes."""
+    from ..rewards import avatar as av
+    out = []
+    for iid, (name, slot, base) in av.ITEMS.items():
+        out.append({"id": iid, "name": name, "slot": slot, "base": base, "rule": av.rule_of(iid),
+                    "override": av.OVERRIDES.get(iid) or {}})
+    return {"items": out, "slots": av.SLOTS}
+
+
+@router.put("/shop/items/{item_id}")
+def shop_item_save(item_id: str, body: ShopItemIn, request: Request, me: dict = Parent) -> dict:
+    from ..rewards import avatar as av
+    fq = app_of(request)
+    if item_id not in av.ITEMS:
+        raise HTTPException(404, "Unknown item")
+    if body.currency is not None and body.currency not in av.CURRENCIES:
+        raise HTTPException(400, "Unknown currency")
+    o = {k: v for k, v in (("off", bool(body.off) or None), ("price", None if body.price is None else max(0, min(100000, body.price))),
+                           ("currency", body.currency)) if v is not None}
+    all_ = dict(fq.db.get_setting("shop_items", {}) or {})
+    if o:
+        all_[item_id] = o
+    else:
+        all_.pop(item_id, None)
+    fq.db.set_setting("shop_items", all_)
+    av.set_overrides(all_)
+    return {"id": item_id, "rule": av.rule_of(item_id), "override": o}
+
+
 @router.get("/rewards")
 def rewards(request: Request, me: dict = Parent) -> list[dict]:
     return app_of(request).rewards.rewards(active_only=False)

@@ -3,8 +3,8 @@
 
 const P = { info: null, meta: null, tab: "overview", profiles: [], accounts: [] };
 const app = $("#app");
-const TABS = [["overview", "📊", T("Overview")], ["calendar", "📅", T("Calendar")], ["packs", "📦", T("Packs")],
-  ["chores", "🧹", T("Chores")], ["community", "🎲", T("Community")], ["rewards", "🎁", T("Rewards")], ["goals", "🎯", T("Goals")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
+const TABS = [["overview", "📊", T("Overview")], ["calendar", "📅", T("Calendar")], ["packs", "📦", T("Learning packs")],
+  ["chores", "🧹", T("Chores")], ["community", "🎲", T("Community")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["goals", "🎯", T("Goals")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
 const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes: T("Internet minutes"), planer_points: T("Family Planer points"),
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
@@ -197,7 +197,7 @@ function render() {
     h("button.icon-btn.mob-menu", { "aria-label": T("Menu"), title: T("Menu"), onclick: () => { nav.classList.add("open"); back.classList.add("open"); } }, "☰"),
     h("span.mob-ic", cur[1]), h("strong.mob-title", cur[2]), h("span.grow"), refreshBtn());
   app.replaceChildren(h("div.layout", nav, back, h("div.main-wrap", mob, main)));
-  const views = { dashboard: dashboardView, community: communityView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, goals: goalsView, settings: settingsView };
+  const views = { dashboard: dashboardView, community: communityView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, goals: goalsView, settings: settingsView };
   // a page that cannot load shows why and offers to try again – instead of an empty or broken page
   views[P.tab](main).catch(e => {
     if (!main.isConnected) return;                 // another page was opened meanwhile
@@ -619,7 +619,7 @@ async function packsView(main) {
   const actRow = p => h("div.act", ...kids.map(k => h("label.check", h("input", { type: "checkbox", checked: p.profiles.includes(k.id),
     onchange: async e => { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: p.id, on: e.target.checked } }); if (p.kind === "bundle") render(); } }),
     C(k.name))));
-  const card = p => h("div.card.pack" + (p.status === "draft" ? ".draft" : ""),
+  const card = p => h("div.card.pack" + (p.status === "draft" ? ".draft" : ""), { "data-find": [p.id, p.title, p.level, p.subject && I18N.tr(p.subject.name), ...(p.units || []).map(u => u.title)].filter(Boolean).join(" ") },
     h("div.row", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
       h("div.small.muted", p.kind === "bundle" ? T("Level pack") : subjectName(p.subject.key), p.level ? h("span", { translate: "no" }, " · " + p.level) : null, " · ",
         STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : "")),
@@ -636,7 +636,7 @@ async function packsView(main) {
       h("button.btn.small.ghost", { title: T("Delete"), onclick: () => del(p) }, "🗑️")),
     p.kind === "pack" ? h("div.small.units", ...p.units.map(u => chip([u.icon ? u.icon + " " : "", C(u.title), " · " + u.count]))) :
       h("div.small", ...(p.semesters || []).map(s => h("div", C(s.titel || s.id, "strong"), ": ", C(s.pakete.join(", ") || "–")))),
-    p.status !== "draft" && kids.length ? actRow(p) : null);
+    kids.length ? (p.status === "draft" ? h("div", h("div.small.muted", "👧 ", T("Assign now – the child sees it as soon as you publish it:")), actRow(p)) : actRow(p)) : null);
   // switch: sorted by packs (which children have a pack) or grouped by children (which packs a child has)
   let mode = "packs"; try { mode = localStorage.getItem("fq.packs.view") || "packs"; } catch {}
   if (!kids.length) mode = "packs";
@@ -662,15 +662,28 @@ async function packsView(main) {
         h("button.btn.small.ghost", { title: T("Remove"), onclick: () => toggle(k, p, false) }, "✕")))) : h("p.muted", T("No packs yet.")),
       others.length ? add : null);
   });
-  main.append(pageHead(T("Packs"), seg,
+  // search: filters the pack cards (title, subject, level, units, id) – remembered while the page is open
+  const search = h("input.pack-search", { type: "search", placeholder: "🔍 " + I18N.tr(T("Search packs …")), value: P.packSearch || "",
+    "aria-label": T("Search packs …"), oninput: () => { P.packSearch = search.value; filterPacks(); } });
+  const filterPacks = () => {
+    const q = (search.value || "").trim().toLowerCase();
+    main.querySelectorAll(".card.pack, .pack-mini").forEach(c => { c.hidden = !!q && !((c.dataset.find || c.textContent).toLowerCase().includes(q)); });
+    main.querySelectorAll("section.sec, section.card.sec").forEach(sec => {
+      const cards = sec.querySelectorAll(".card.pack, .pack-mini");
+      if (cards.length) sec.hidden = !!q && [...cards].every(c => c.hidden) && !sec.classList.contains("kid-packs");
+    });
+  };
+  setTimeout(filterPacks);
+  main.append(pageHead(T("Learning packs"), seg,
     h("button.btn.ghost", { title: T("All packs in one JSON file"), onclick: () => download(null, "json") }, "⬇️ ", T("Export all")),
     h("button.btn", { onclick: () => { P.tab = "import"; render(); } }, "📥 ", T("Import"))));
+  main.append(search);
   if (mode === "kids") return main.append(...byKid(),
     drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null);
   const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
+    drafts.length ? section("📝 " + I18N.tr(T("Imported as draft – to check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
     importedPacks.length ? section("📥 " + I18N.tr(T("Imported packs")), ...importedPacks.map(card)) : null,
-    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
     levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
     ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
   function packRewards(p) {
@@ -839,7 +852,8 @@ async function importView(main) {
   ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove("over")));
   drop.addEventListener("drop", e => { e.preventDefault(); if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]); });
   file.addEventListener("change", () => file.files[0] && upload(file.files[0]));
-  main.append(pageHead(T("Import"), h("button.btn.ghost", { onclick: () => { P.tab = "packs"; location.hash = "packs"; render(); } }, "← ", T("Packs"))),
+  main.append(pageHead(T("Import"), h("button.btn.ghost", { onclick: () => { P.tab = "packs"; location.hash = "packs"; render(); } }, "← ", T("Learning packs"))),
+    out,                                        // the imported drafts: on top, right where you look after the upload
     section(T("From a file"), drop,
       h("p.small.muted", T("Everything imported becomes a draft first. You check it, then publish it for the children.")),
       P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: the AI of Home Assistant reads it and makes a draft. Packs from school material stay private.")) :
@@ -859,8 +873,7 @@ einheiten:
     karten:
       - {de: das Haus, fr: la maison, emoji: "🏠"}
       - {de: die Küche, fr: la cuisine}
-    uebungen: [auswahl, eintippen, paare, hoeren]`)),
-    out);
+    uebungen: [auswahl, eintippen, paare, hoeren]`)));
   async function upload(f) {
     const fd = new FormData(); fd.append("file", f);
     out.replaceChildren(h("p", "⏳ ", T("Reading…")));
@@ -876,14 +889,21 @@ einheiten:
   }
 }
 
-function showDrafts(drafts, out) {
-  out.replaceChildren(section("✓ " + I18N.tr(T("Imported as draft")), ...drafts.map(d => h("div.row.draft-row",
+async function showDrafts(drafts, out) {
+  setTimeout(() => out.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  let kids = [];
+  try { kids = (await call("parent/profiles")).filter(p => p.role === "kid"); } catch {}
+  const assign = d => kids.length ? h("div.act.draft-assign", h("span.small.muted", "👧 ", T("For:")), ...kids.map(k => h("label.check",
+    h("input", { type: "checkbox", onchange: async e => { try { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: d.id, on: e.target.checked } }); toast(T("Saved"), "good"); } catch (err) { toast(err.message, "bad"); } } }),
+    C(k.name)))) : null;
+  out.replaceChildren(section("✓ " + I18N.tr(T("Imported as draft")), ...drafts.map(d => h("div.draft-box", h("div.row.draft-row",
     h("span.big-ic", d.kind === "bundle" ? "🎒" : (d.icon || "📚")), h("div.grow", C(d.title, "strong"),
       h("div.small.muted", d.units ? d.units.map(u => u.title + " (" + u.count + ")").join(", ") : ""),
       d.replaces ? h("div.small.warn-text", T("Replaces the existing pack with the same id.")) : null,
       d.uncertain && d.uncertain.length ? h("div.small.warn-text", T("Not readable for sure:"), " ", C(d.uncertain.join(", "))) : null),
     d.kind !== "bundle" ? h("button.btn.small", { onclick: () => packEditor(d.id, { afterSave: () => { P.tab = "packs"; render(); } }) }, "✏️ ", T("Check")) : null,
-    h("button.btn.small.good", { onclick: async () => { await call(`parent/packs/${encodeURIComponent(d.id)}/status`, { method: "POST", body: { status: "active" } }); toast(T("Published"), "good"); P.tab = "packs"; render(); } }, "✓ ", T("Publish"))))));
+    h("button.btn.small.good", { onclick: async () => { await call(`parent/packs/${encodeURIComponent(d.id)}/status`, { method: "POST", body: { status: "active" } }); toast(T("Published"), "good"); P.tab = "packs"; render(); } }, "✓ ", T("Publish"))),
+    assign(d)))));
 }
 
 function tableMapping(t, out) {
@@ -1182,7 +1202,7 @@ function choreDialog(c, kids) {
 }
 
 // ---------------------------------------------------------------- rewards: accounts, rules, shop
-async function rewardsView(main) {
+async function rewardsView(main, opts = {}) {
   const [accounts, rules, rewards] = await Promise.all([call("parent/accounts"), call("parent/rules"), call("parent/rewards")]);
   P.accounts = accounts;
   const accOpts = sel => accounts.map(a => h("option", { value: a.key, selected: a.key === sel }, (a.icon || "") + " " + I18N.tr(a.name)));
@@ -1252,8 +1272,52 @@ async function rewardsView(main) {
     sectionAdd(T("Rules: which action gives how much on which account"),
       h("button.btn.small", { onclick: () => rulesBody.append(ruleRow({ event: "lesson_done", account: "coins", amount: 5, daily_limit: null, label: "", active: 1, condition: {} })) }, "+ ", T("Add rule")),
       h("div.scroll", h("table.tbl", h("thead", h("tr", h("th", T("Event")), h("th", T("Amount")), h("th", T("Account")), h("th", T("Daily limit")), h("th", T("Label")), h("th", T("Active")), h("th"))), rulesBody))),
-    sectionAdd(T("Shop"), h("button.btn.small", { onclick: () => rewardBox.prepend(rewardCard({ name: "", kind: "voucher", account: "coins", cost: 50, approval: 1, weekly_limit: null, icon: "🎁", config: {}, active: 1 })) }, "+ ", T("Add reward")),
-      rewardBox));
+    section("🛍️ " + I18N.tr(T("Shop")), h("p.small.muted", T("Own rewards, avatar items and their prices are set in the menu Shop.")),
+      h("button.btn.small", { onclick: () => { P.tab = "shop"; location.hash = "shop"; render(); } }, "🛍️ ", T("Open the shop settings"))));
+  if (opts.onlyShop) { main.replaceChildren(); return { rewardBox, rewardCard }; }
+}
+
+// ---------------------------------------------------------------- shop: own rewards on top, then every avatar item
+async function shopSettingsView(main) {
+  const scratch = h("div");
+  const { rewardBox, rewardCard } = await rewardsView(scratch, { onlyShop: true });
+  const d = await call("parent/shop/items");
+  const SLOT_NAMES = { background: T("Background"), hat: T("Hat"), hairclip: T("Hair clip"), eyewear: T("Glasses"), face: T("Face"), teeth: T("Teeth"),
+    ear: T("Ears"), neck: T("Neck"), suit: T("Clothes"), figure: T("Figure"), back: T("Back"), hand: T("Hand"), pet: T("Pet") };
+  const howText = b => b.free ? T("free") : b.level ? I18N.tr(T("From level {0}")).replace("{0}", b.level) : b.badge ? T("With a badge")
+    : b.season ? T("Only in season") : b.xp ? b.xp + " " + I18N.tr(T("new XP")) : b.cost != null ? b.cost + " 🪙" : "";
+  const row = it => {
+    const o = it.override || {};
+    const base = it.base, baseCur = base.xp ? "xp" : "coins", basePrice = base.xp ?? base.cost ?? null;
+    const f = { on: h("input", { type: "checkbox", checked: !o.off }),
+      price: h("input", { type: "number", min: 0, max: 100000, value: o.price ?? "", placeholder: basePrice != null ? String(basePrice) : "–" }),
+      cur: h("select", h("option", { value: "" }, I18N.tr(T("as in the app")) + " (" + (baseCur === "xp" ? "✨ XP" : "🪙") + ")"),
+        h("option", { value: "coins", selected: o.currency === "coins" }, "🪙 " + I18N.tr(T("Coins"))),
+        h("option", { value: "xp", selected: o.currency === "xp" }, "✨ " + I18N.tr(T("new XP")))) };
+    const tr = h("tr" + (o.off ? ".off" : ""));
+    const save = async () => {
+      try {
+        const r = await call(`parent/shop/items/${encodeURIComponent(it.id)}`, { method: "PUT",
+          body: { off: !f.on.checked, price: f.price.value === "" ? null : +f.price.value, currency: f.cur.value || null } });
+        tr.classList.toggle("off", !f.on.checked); toast(T("Saved"), "good"); it.override = r.override;
+      } catch (e) { toast(e.message, "bad"); }
+    };
+    Object.values(f).forEach(x => x.addEventListener("change", save));
+    tr.append(h("td", avatarSvg({ ...DEFAULT_AV, items: { [it.slot]: it.id } }, 44)), h("td", C(I18N.tr(it.name), "strong"), h("div.small.muted", SLOT_NAMES[it.slot] || it.slot)),
+      h("td.small.muted", howText(base)), h("td.c", f.on), h("td.num", f.price), h("td", f.cur));
+    return tr;
+  };
+  const DEFAULT_AV = { skin: "#f1c27d", hair: "short", hairColor: "#6b3e1f", eyes: "round", mouth: "smile", outfit: "tshirt", outfitColor: "#4f8cff", items: {} };
+  const bySlot = d.slots.map(sl => [sl, d.items.filter(i => i.slot === sl)]).filter(([, l]) => l.length);
+  main.append(pageHead(T("Shop")),
+    sectionAdd("🎁 " + I18N.tr(T("Own rewards")), h("button.btn.small", { onclick: () => rewardBox.prepend(rewardCard({ name: "", kind: "voucher", account: "coins", cost: 50, approval: 1, weekly_limit: null, icon: "🎁", config: {}, active: 1 })) }, "+ ", T("Add reward")),
+      h("p.small.muted", T("Your own rewards come first in the children's shop.")), rewardBox),
+    section("🧑‍🎨 " + I18N.tr(T("Avatar items")),
+      h("p.small.muted", T("Switch items off (they leave the shop – who has one keeps it), set your own price, or let them be paid with new XP: XP earned from now on – the XP account and the level stay as they are.")),
+      ...bySlot.map(([sl, list]) => h("details.shop-slot", { open: sl === "background" },
+        h("summary", h("strong", SLOT_NAMES[sl] || sl), h("span.small.muted", " · " + list.length)),
+        h("div.scroll", h("table.tbl.shop-tbl", h("thead", h("tr", h("th"), h("th", T("Item")), h("th", T("In the app")), h("th", T("In the shop")), h("th", T("Price")), h("th", T("Paid with")))),
+          h("tbody", ...list.map(row))))))));
 }
 
 // ---------------------------------------------------------------- goals
