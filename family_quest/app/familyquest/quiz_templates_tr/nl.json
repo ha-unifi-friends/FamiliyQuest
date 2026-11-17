@@ -4223,7 +4223,7 @@
    {
     "q": "Wat is de hoofdstad van de regio Hauts-de-France?",
     "a": [
-     "Rijsel (Lille)",
+     "Lille",
      "Amiens",
      "Calais",
      "Duinkerke"
@@ -4548,8 +4548,8 @@
     "label": "Nice"
    },
    {
-    "q": "Waar ligt Rijsel (Lille)?",
-    "label": "Rijsel (Lille)"
+    "q": "Waar ligt Lille?",
+    "label": "Lille"
    },
    {
     "q": "Waar ligt Brest?",
