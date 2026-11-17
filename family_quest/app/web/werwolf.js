@@ -70,8 +70,9 @@ function wwRolesForm(r) {
   drawCustom();
   const form = [h("div.cards-rules", h("label.check", auto, T("Roles by the number of players (recommended)"))), custom,
     h("div.field", h("b", "☀️ ", T("Time to talk by day")), seg(r.talks || WW_TALKS, s.talk, n => n / 60 + " min", n => { s.talk = n; })),
-    h("div.field", h("b", "🤖 ", T("Fill with bots up to")), seg(WW_FILLS, s.fill, n => String(n), n => { s.fill = n; }),
-      h("small.muted", T("Fewer than 5? Bots fill the table.")))];
+    botsOn("werwolf") ? h("div.field", h("b", "🤖 ", T("Fill with bots up to")), seg(WW_FILLS, s.fill, n => String(n), n => { s.fill = n; }),
+      h("small.muted", T("Fewer than 5? Bots fill the table.")))
+      : h("p.small.muted", "🤖 ", T("Playing with bots is switched off – at least 5 people are needed."))];
   return { form, value: () => ({ ...s }) };
 }
 
@@ -239,7 +240,7 @@ function werwolfLive(box, me, back) {
     const n = st.players.length, bots = st.bots || 0;
     return h("section.card.center.ww-lobby", h("h2", st.joined ? T("Waiting for the start …") : T("Play along on this device?")),
       st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")),
-      h("p.small.muted", fill(T("{0} players – {1} to {2} can play."), n, st.min_humans || 2, st.max), " ", I18N.tr(T("Fewer than 5? Bots fill the table."))),
+      h("p.small.muted", fill(T("{0} players – {1} to {2} can play."), n, st.min_humans || 2, st.max), " ", I18N.tr(st.no_bots ? T("Playing with bots is switched off – at least 5 people are needed.") : T("Fewer than 5? Bots fill the table."))),
       grid(st.players, { cls: ".ww-seats" }),
       bots ? h("p.small.ww-bots", "🤖 ", fill(T("{0} bots join when the game starts."), bots)) : null,
       st.deck ? h("div.sl-chips.ww-deck", ...wwDeckChips(st.deck, n + bots), h("span.chip", "☀️ ", st.rules.talk / 60 + " min")) : null,

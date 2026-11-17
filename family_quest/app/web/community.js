@@ -4,6 +4,21 @@
 
 const QUIZ_COLORS = ["var(--ans-1)", "var(--ans-2)", "var(--ans-3)", "var(--ans-4)"];     // same as the learning tiles
 const QUIZ_SHAPES = ["♠\uFE0E", "♥\uFE0E", "♦\uFE0E", "♣\uFE0E"];   // \uFE0E: as text, not as emoji
+// parent area › Games: «active without bots» – the app hides every bot option for these games (S.me.games_nobots; parents
+// are not bound, the server checks too). withoutBots() in a start dialog: the bot fields go away, the table gets 0 bots.
+const botsOn = game => typeof S === "undefined" || !S.me || !(S.me.games_nobots || []).includes(game);
+function withoutBots(game, bots, ...more) {
+  if (botsOn(game)) return false;
+  if (bots) {
+    if (![...bots.options].some(o => o.value === "0")) bots.append(h("option", { value: 0 }, "0"));
+    bots.value = "0";
+  }
+  for (const el of [bots, ...more]) {
+    const box = el && (el.closest("label.field") || el);
+    if (box) box.style.display = "none";
+  }
+  return true;
+}
 const onlyEmoji = s => /^[\p{Extended_Pictographic}\p{Regional_Indicator}\u200d\ufe0f\s]+$/u.test(s || ""); // flags as answers: show them big
 
 // ---------------------------------------------------------------- start page: banners
@@ -11,7 +26,7 @@ function communityBanners(c) {
   if (!c) return [];
   const out = [];
   if (c.quiz && c.quiz.status !== "done") out.push(h("button.card.banner.quiz-banner", { onclick: () => go("quiz") },
-    h("span.big-ic", "🎯"), h("span.grow", h("strong", T("Family quiz")), " ", C("«" + c.quiz.title + "»"), h("br"),
+    h("span.big-ic", "🎯"), h("span.grow", h("strong", T("Family quiz")), " ", C("«" + quizTitle(c.quiz.title, c.quiz.langs) + "»"), h("br"),
       h("span.small", c.quiz.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.bingo) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("bingo") },
     h("span.big-ic", "🎱"), h("span.grow", h("strong", "Bingo"), h("br"),
@@ -189,6 +204,9 @@ async function guestInvite(game, gid) {
 const QUIZ_LANG_NAMES = { de: "Deutsch", fr: "Français", it: "Italiano", en: "English", es: "Español", nl: "Nederlands",
   pl: "Polski", pt: "Português", sv: "Svenska", rm: "Rumantsch" };
 const uiLang2 = () => String(I18N.base || I18N.lang || "de").slice(0, 2).toLowerCase();
+// the title of a quiz in the language of the app (or the one chosen in the game), else the main title
+const quizTitle = (title, langs, lang) => (langs && (langs.title || {})[lang || (() => { try { return localStorage.getItem("fq.quiz.lang"); } catch { return null; } })() || uiLang2()])
+  || (langs && (langs.title || {})[uiLang2()]) || title || "";
 // the state of the game in the chosen language: question, answers, unit, place – what is not translated stays as it is
 function quizInLang(st, lang) {
   if (!st || !st.langs || !lang || lang === st.langs.base) return st;
@@ -656,7 +674,7 @@ async function quizCard() {
   const c = S.me && S.me.community;
   const q = c && c.quiz;
   return h("section.card.quiz-card", h("h2", "🎯 ", T("Family quiz")),
-    q && q.status !== "done" ? [h("p", C("«" + q.title + "»"), " ", T("is running – join in!")), h("button.btn.big", { onclick: () => go("quiz") }, "🙋 ", q.joined ? T("Back to the quiz") : T("Join"))]
+    q && q.status !== "done" ? [h("p", C("«" + quizTitle(q.title, q.langs) + "»"), " ", T("is running – join in!")), h("button.btn.big", { onclick: () => go("quiz") }, "🙋 ", q.joined ? T("Back to the quiz") : T("Join"))]
       : [h("p.muted", T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
          h("button.btn", { onclick: () => go("quizzes") }, "🎯 ", T("Quizzes"))]);
 }
@@ -677,7 +695,7 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
   const mine = q => me.role === "parent" || q.created_by === me.id;
   const start = async q => {
     const count = h("select", ...[5, 10, 15, 0].filter(n => !n || n < q.questions.length).map(n => h("option", { value: n }, n ? String(n) : I18N.tr(T("all")) + " (" + q.questions.length + ")")));
-    const m = modal(h("div.form", h("h2", "▶ ", C(q.title)), h("label.field", T("How many questions?"), count),
+    const m = modal(h("div.form", h("h2", "▶ ", C(quizTitle(q.title, q.langs))), h("label.field", T("How many questions?"), count),
       h("p.small.muted", T("Questions and answers come in a mixed order. You lead the game: you show the next question.")),
       h("div.row", h("button.btn.big", { onclick: async () => {
         try { await api("community/quiz/start", { method: "POST", body: { quiz_id: q.id, count: +count.value || null } }); m.close(); onStarted(); }
@@ -737,7 +755,7 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     reload();
   };
   const runningCard = running ? h("div.card.quiz-running",
-    h("div.row.wrap", h("span.big-ic", "🎯"), h("div.grow", h("div.small.muted", T("Running quiz")), C("«" + (running.title || "") + "»", "strong")),
+    h("div.row.wrap", h("span.big-ic", "🎯"), h("div.grow", h("div.small.muted", T("Running quiz")), C("«" + quizTitle(running.title, running.langs) + "»", "strong")),
       h("span.small.muted", I18N.tr(T("{0} playing")).replace("{0}", (running.players || []).length))),
     h("div.row.wrap", h("button.btn.small", { onclick: onStarted }, "▶ ", T("Open")),
       me.role === "parent" || running.host === me.id ? h("button.btn.small.danger", { onclick: cancel }, "⏹ ", T("Cancel quiz")) : null)) : null;
@@ -747,7 +765,8 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     h("p.small.muted", T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
     instList("quizzes", quizzes, { closed: q => q.games > 0,
       labels: [T("Not played yet"), T("Played")], empty: [T("All quizzes have been played – make a new one!"), T("No quiz played yet.")],
-      summary: q => [C(q.title, "strong.grow"), h("span.chip", q.questions.length + " " + I18N.tr(T("questions")))],
+      summary: q => [C(quizTitle(q.title, q.langs), "strong.grow"), q.langs ? h("span.chip", { title: [q.langs.base, ...q.langs.more].join(" ").toUpperCase() }, "🌐 " + (1 + q.langs.more.length)) : null,
+        h("span.chip", q.questions.length + " " + I18N.tr(T("questions")))],
       body: q => h("div.topic",
         h("p.small.muted", I18N.tr(T("by {0}")).replace("{0}", q.author || "?"),
           q.games ? " · " + I18N.tr(T("played {0}×")).replace("{0}", q.games) : "",

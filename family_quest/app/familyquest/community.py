@@ -656,7 +656,8 @@ class Community:
         open_votes = int(self.db.val("""SELECT COUNT(*) FROM council_topic t WHERE t.status='vote'
                                          AND NOT EXISTS(SELECT 1 FROM council_vote v WHERE v.topic_id=t.id AND v.profile_id=?)""", pid, default=0))
         collecting = int(self.db.val("SELECT COUNT(*) FROM council_topic WHERE status='collect'", default=0))
-        return {"quiz": ({"status": g["status"], "title": g["quiz"]["title"] if g["quiz"] else "", "joined": pid in g["players"]}
+        return {"quiz": ({"status": g["status"], "title": g["quiz"]["title"] if g["quiz"] else "", "joined": pid in g["players"],
+                          "langs": json.loads(g["quiz"]["langs"]) if g["quiz"] and g["quiz"].get("langs") else None}
                          if g else None),
                 "votes_open": open_votes, "topics_collecting": collecting,
                 "polls_open": int(self.db.val("""SELECT COUNT(*) FROM poll p WHERE p.status='open'

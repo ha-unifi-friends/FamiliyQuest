@@ -91,6 +91,7 @@ async function jumpStartDialog(solo, onStarted) {
       const body = { solo, bots: +bots.value, level: level.value, lives: +lives.value, bot_ids: picker.ids() };
       try { await api("community/jump/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("jump", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function jumpLive(box, me, back) {

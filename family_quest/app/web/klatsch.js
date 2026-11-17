@@ -189,6 +189,7 @@ async function klatschStartDialog(solo, onStarted) {
       const body = { solo, bots: +bots.value, level: level.value, rounds: +rounds.value, bot_ids: picker.ids() };
       try { await api("community/klatsch/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("klatsch", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function klatschLive(box, me, back) {

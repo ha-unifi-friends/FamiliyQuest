@@ -1285,17 +1285,19 @@ def calendar_delete_source(source: str, request: Request, me: dict = Parent) -> 
 class GamesIn(BaseModel):
     mode: str | None = None         # older form: one switch for all games – all | some | off
     profiles: list[int] = []
-    access: dict | None = None      # per game: {"bingo": {"mode": "some", "profiles": [2, 3]}, …}
+    access: dict | None = None      # per game: {"bingo": {"mode": "some", "profiles": [2, 3], "bots": False}, …}
 
 
 @router.get("/games")
 def games_get(request: Request, me: dict = Parent) -> dict:
-    return {"access": app_of(request).games_access()}
+    fq = app_of(request)
+    return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES)}
 
 
 @router.put("/games")
 def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
-    """Which games are open – for everybody, for chosen children or for nobody; parents can always play."""
+    """Which games are open – for everybody, for chosen children or for nobody – and per game with or without bots
+    («bots»: false – only games that can be played with bots); parents can always play."""
     fq = app_of(request)
     if body.access is None:
         if body.mode not in ("all", "some", "off"):
@@ -1305,9 +1307,16 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
     for g, a in body.access.items():
         if g not in fq.GAMES or not isinstance(a, dict) or a.get("mode") not in ("all", "some", "off"):
             raise HTTPException(400, "Unknown setting")
-        acc[g] = {"mode": a["mode"], "profiles": sorted({int(x) for x in a.get("profiles") or []})}
+        bots = a.get("bots", acc[g].get("bots", True))
+        if not isinstance(bots, bool) or (bots is False and g not in fq.BOT_GAMES):
+            raise HTTPException(400, "This game has no bots")
+        try:
+            profiles = sorted({int(x) for x in a.get("profiles") or []})
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Unknown setting") from None
+        acc[g] = {"mode": a["mode"], "profiles": profiles, "bots": bots}
     fq.db.set_setting("games_access", acc)
-    return {"access": acc}
+    return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES)}
 
 
 REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt")       # live games with coins for places 1–3 (game_rewards)

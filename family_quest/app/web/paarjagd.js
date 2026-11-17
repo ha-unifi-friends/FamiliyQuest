@@ -57,6 +57,7 @@ async function paarjagdStartDialog(solo, onStarted) {
       const body = { solo, set: set.value, pairs: +pairs.value, bots: Math.max(+bots.value, picker.ids().length), level: level.value, back, bot_ids: picker.ids(), bot_ms: picker.ms() };
       try { await api("community/paarjagd/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("paarjagd", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function paarjagdLive(box, me, back) {
@@ -215,6 +216,6 @@ async function paarjagdFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("paarjagd") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Find the pairs – everybody on their own device. Places 1 to 3 win coins at the family table!")),
-         h("div.row.wrap", h("button.btn", { onclick: () => paarjagdStartDialog(true, () => go("paarjagd")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("paarjagd") ? h("button.btn", { onclick: () => paarjagdStartDialog(true, () => go("paarjagd")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => paarjagdStartDialog(false, () => go("paarjagd")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

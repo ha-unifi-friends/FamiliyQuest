@@ -83,6 +83,7 @@ async function jassStartDialog(solo, onStarted) {
       if (g[0] === "r") body.rounds = +g.slice(1); else body.target = +g.slice(1);
       try { await api("community/jass/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("jass", null, level, picker.el);          // parent area › Games: without bots
 }
 
 function jassLive(box, me, back) {
@@ -324,6 +325,6 @@ async function jassFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("jass") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("The Swiss card game Schieber: 2 against 2 with Trumpf, Obenabe and Undeufe, Weis and Stöck – with bots, the family and guests.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => jassStartDialog(true, () => go("jass")) }, "🤖 ", T("With 3 bots")),
+         h("div.row.wrap", botsOn("jass") ? h("button.btn", { onclick: () => jassStartDialog(true, () => go("jass")) }, "🤖 ", T("With 3 bots")) : null,
            h("button.btn.ghost", { onclick: () => jassStartDialog(false, () => go("jass")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

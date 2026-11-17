@@ -192,6 +192,7 @@ async function dorfmarktStartDialog(solo, onStarted) {
       else Object.assign(body, { mode: "rounds", rounds: +len.slice(1) });
       try { await api("community/dorfmarkt/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("dorfmarkt", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function dorfmarktLive(box, me, back) {
@@ -686,6 +687,6 @@ async function dorfmarktFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("dorfmarkt") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Buy the shops of the village, build market stands and collect rent – who is the richest at the end? Places 1 to 3 win coins at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => dorfmarktStartDialog(true, () => go("dorfmarkt")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("dorfmarkt") ? h("button.btn", { onclick: () => dorfmarktStartDialog(true, () => go("dorfmarkt")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => dorfmarktStartDialog(false, () => go("dorfmarkt")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

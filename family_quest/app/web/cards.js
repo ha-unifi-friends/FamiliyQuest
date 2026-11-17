@@ -114,6 +114,7 @@ async function cardsStartDialog(kind, solo, onStarted) {
       for (const [k, i] of special) body[k] = i.checked;
       try { await api(`community/cards/${kind}/start`, { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots(kind, f.bots, f.level, picker.el);          // parent area › Games: without bots
 }
 
 function cardsRulesView(kind, r) {
@@ -250,6 +251,6 @@ async function cardsFamilyCard(kind) {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go(kind) }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", kind === "tschau" ? T("The Swiss card game: shed your cards, say «Tschau» and «Sepp»!") : T("Shed your cards – colours, numbers and special cards. Say «Letzte!» in time!")),
-         h("div.row.wrap", h("button.btn", { onclick: () => cardsStartDialog(kind, true, () => go(kind)) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn(kind) ? h("button.btn", { onclick: () => cardsStartDialog(kind, true, () => go(kind)) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => cardsStartDialog(kind, false, () => go(kind)) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

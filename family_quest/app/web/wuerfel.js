@@ -67,6 +67,7 @@ async function wuerfelStartDialog(solo, onStarted) {
       const body = { solo, bots: +bots.value, level: level.value, extra: extra.checked, bot_ids: picker.ids(), bot_ms: picker.ms() };
       try { await api("community/wuerfel/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("wuerfel", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function wuerfelLive(box, me, back) {
@@ -275,6 +276,6 @@ async function wuerfelFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("wuerfel") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Roll five dice, hold the good ones and fill your score sheet – everybody at the same time. Places 1 to 3 win coins at the family table!")),
-         h("div.row.wrap", h("button.btn", { onclick: () => wuerfelStartDialog(true, () => go("wuerfel")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("wuerfel") ? h("button.btn", { onclick: () => wuerfelStartDialog(true, () => go("wuerfel")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => wuerfelStartDialog(false, () => go("wuerfel")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

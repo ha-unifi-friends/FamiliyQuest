@@ -411,6 +411,9 @@ class Jump(CardGames):
         return out
 
     def _bots(self, st: dict, need: int) -> list[dict]:
+        if need > 0 and self.bots_off(KIND, st["players"]):          # parent area › Games: without bots
+            st.pop("bot_pool", None)
+            return []
         pool = st.pop("bot_pool", None) or []
         taken = {b["name"] for b in pool}
         for n, e in random.sample(BOTS, len(BOTS)):

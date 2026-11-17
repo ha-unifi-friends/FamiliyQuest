@@ -67,6 +67,14 @@ def PlayerOrGuest(request: Request, x_fq_token: str | None = Header(default=None
 Playing = Depends(PlayerOrGuest)
 
 
+def _no_bots(fq, prof: dict, game: str, wanted) -> bool:
+    """Parent area › Games: «active without bots» – a start that asks for bots is refused; True: play without bots."""
+    off = not fq.bots_allowed(prof, game)
+    if off and wanted:
+        raise HTTPException(403, "Playing with bots is switched off for this game")
+    return off
+
+
 def _run(fn, *args):
     try:
         return fn(*args)
@@ -378,6 +386,7 @@ def poker_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/poker/start")
 def poker_start(body: PokerStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    _no_bots(fq, prof, "poker", body.solo)
     rules = body.model_dump(exclude={"solo", "bots", "level", "bot_ids"})
     bots = None
     if body.solo:
@@ -488,6 +497,8 @@ def cards_rules(kind: str, request: Request, prof: dict = Gamer) -> dict:
 @router.post("/cards/{kind}/start")
 def cards_start(kind: str, body: CardStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    if _no_bots(fq, prof, _kind(kind), body.solo or body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -580,6 +591,8 @@ def domino_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/domino/start")
 def domino_start(body: DominoStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    if _no_bots(fq, prof, "domino", body.solo or body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -667,6 +680,8 @@ def pairhunt_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/paarjagd/start")
 def pairhunt_start(body: PairhuntStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    if _no_bots(fq, prof, "paarjagd", body.solo or body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -861,6 +876,7 @@ def kartenlauf_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/kartenlauf/start")
 def kartenlauf_start(body: KartenlaufStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    _no_bots(fq, prof, "kartenlauf", body.solo or body.bot_ids)
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -1071,6 +1087,8 @@ def wuerfel_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/wuerfel/start")
 def wuerfel_start(body: WuerfelStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    if _no_bots(fq, prof, "wuerfel", body.solo or body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -1159,6 +1177,8 @@ def heimwaerts_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/heimwaerts/start")
 def heimwaerts_start(body: HeimwaertsStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    if _no_bots(fq, prof, "heimwaerts", body.solo or body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -1239,6 +1259,8 @@ def jump_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/jump/start")
 def jump_start(body: JumpStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    if _no_bots(fq, prof, "jump", body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -1309,6 +1331,8 @@ def klatsch_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/klatsch/start")
 def klatsch_start(body: KlatschStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    if _no_bots(fq, prof, "klatsch", body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -1580,6 +1604,7 @@ def jass_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/jass/start")
 def jass_start(body: JassStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    _no_bots(fq, prof, "jass", body.solo or body.bot_ids)
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -1774,6 +1799,7 @@ def schach_start(body: SchachStartIn, request: Request, prof: dict = Gamer) -> d
     fq = app_of(request)
     if prof["role"] == "guest":
         raise HTTPException(403, "Only who started the game (or a parent) leads it")
+    _no_bots(fq, prof, "schach", body.mode == "bot")
     gid = _run(fq.schach.start, prof["id"], body.model_dump(exclude={"opponent"}), body.opponent)
     return _run(fq.schach.state, gid, prof["id"])
 
@@ -1890,6 +1916,8 @@ def dorfmarkt_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/dorfmarkt/start")
 def dorfmarkt_start(body: DorfmarktStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    if _no_bots(fq, prof, "dorfmarkt", body.solo or body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -2280,6 +2308,7 @@ def pong4_create(body: Pong4In, request: Request, me: dict = Gamer) -> dict:
     if not isinstance(body.seats, dict):
         raise HTTPException(400, "Fill all three seats")
     _p4_check(fq, body.seats)
+    _no_bots(fq, me, "pingpong", any(isinstance(x, dict) and x.get("bot") is not None for x in body.seats.values()))
     return _p4(lambda: fq.pong4.create(me["id"], body.seats, body.to))
 
 
@@ -2288,6 +2317,7 @@ def pong4_seat(request: Request, body: dict = Body(...), me: dict = Gamer) -> di
     fq = app_of(request)
     spec = {k: body[k] for k in ("pid", "bot") if body.get(k) is not None}
     _p4_check(fq, {"x": spec})
+    _no_bots(fq, me, "pingpong", spec.get("bot") is not None)
     return _p4(lambda: fq.pong4.seat(me["id"], str(body.get("seat", "")), spec))
 
 
