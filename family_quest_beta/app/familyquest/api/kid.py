@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from .. import loginlog, symbols, themes
@@ -642,3 +642,15 @@ def pranks_pending(request: Request, prof: dict = Learner) -> dict:
 @router.post("/me/pranks/{prank_id}/clean")
 def pranks_clean(prank_id: int, request: Request, prof: dict = Learner) -> dict:
     return app_of(request).pranks.cleaned(prof["id"], prank_id)
+
+
+# ---------------------------------------------------------------- templates for an AI (learning packs, quizzes)
+@router.get("/ai-template/{kind}")
+def ai_template(kind: str) -> Response:
+    """The English instructions plus the format an AI needs to make a learning pack or a quiz (familyquest/ai_templates)."""
+    from pathlib import Path
+    if kind not in ("pack", "quiz"):
+        raise HTTPException(404)
+    text = (Path(__file__).resolve().parent.parent / "ai_templates" / f"{kind}.md").read_text(encoding="utf-8")
+    return Response(text, media_type="text/markdown; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="family-quest-{kind}-template-for-ai.md"'})

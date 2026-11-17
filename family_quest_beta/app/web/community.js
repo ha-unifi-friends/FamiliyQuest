@@ -664,8 +664,21 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     const regionSel = h("select", { style: { width: "auto", minWidth: "160px" }, onchange: e => { region = e.target.value; try { localStorage.setItem("fq.tplRegion", region); } catch {} drawTemplates(); } },
       ...Object.entries(TPL_REGIONS).filter(([k]) => k === "all" || templates.some(t => t.region === k))
         .map(([k, n]) => h("option", { value: k, selected: k === region }, I18N.tr(n))));
+    // … or made by an AI: the template for the AI, then upload its answer (a JSON file)
+    const file = h("input", { type: "file", accept: ".json,.txt,.md,application/json,text/plain", hidden: true, onchange: async () => {
+      const f = file.files[0]; if (!f) return;
+      try {
+        const r = await api("community/quizzes/import", { method: "POST", body: { text: await f.text() } });
+        toast(I18N.tr(T("{0} quizzes imported")).replace("{0}", r.ids.length), "good"); m.close(); reload();
+      } catch (e) { toast(e.message, "bad"); }
+      file.value = "";
+    } });
+    const aiBox = h("div.card.ai-box", h("h3", "🤖 ", T("Made with your AI")),
+      h("p.small.muted", T("Give the template to your favourite AI (ChatGPT, Claude, Gemini …) and say what the quiz should be about. Save its answer as a .json file and upload it here.")),
+      aiTemplateButtons("quiz"), h("div.row", h("button.btn.small", { onclick: () => file.click() }, "⬆️ ", T("Upload a quiz file")), file));
     m = modal(h("div.form", h("h2", "🎯 ", T("New quiz")),
       h("button.btn.big", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz")),
+      aiBox,
       h("div.row.wrap", h("h3.grow", T("… or take a template")), h("label.row.small", { style: { flexWrap: "nowrap" } }, T("Show:"), regionSel)),
       tplGrid, h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
     drawTemplates();

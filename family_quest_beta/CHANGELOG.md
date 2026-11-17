@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.6
+
+- Templates for your AI: English instructions plus the Family Quest format for learning packs (Parent area › Packs › Import) and for quizzes (New quiz) – download or copy, give it to ChatGPT, Claude, Gemini …, upload the answer
+- New: import quizzes from a file (multiple choice, estimation and map questions)
+- Uploads accept JSON the way AIs write it (code fence, comments, trailing commas)
+
 ## 1.0.0-beta.5
 
 - New game «Dorfmarkt»: a property trading board game in a Swiss village (own board with 36 fields, shops, village bus stops, market stalls and market halls, trading, auctions as an option), 2–6 players with bots, by rounds, time or classic, can be paused

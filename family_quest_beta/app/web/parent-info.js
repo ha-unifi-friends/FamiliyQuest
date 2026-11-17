@@ -91,6 +91,7 @@ const PARENT_INFO = {
   [T("Home Assistant")]: T("Reminders and push messages through Home Assistant: when children without the daily goal or with open chores are reminded, the notify service for approvals and whether learning coins also count as Family Planer points."),
   [T("About")]: T("The version of Family Quest and what is connected: Home Assistant, the built-in planner and the photo / PDF import."),
   [T("From a file")]: T("Choose or drop a file: YAML, JSON or ZIP packs, CSV or Excel tables (you assign the columns) or – with an AI in Home Assistant – a photo or PDF of a word list."),
+  [T("Made with your AI")]: T("The template is an English description of the Family Quest format, written for an AI: what goes where, rules for good content and an example. The AI answers with a JSON file – upload it, it becomes a draft you check."),
   [T("From a link")]: T("Load a pack from an address in the internet (YAML, JSON or ZIP). It becomes a draft too."),
   [T("Format")]: T("An example of how a pack is written in YAML: subject, level, language and units with cards and exercises.")
 };

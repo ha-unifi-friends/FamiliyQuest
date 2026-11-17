@@ -366,6 +366,17 @@ function crestSvg(c, { ribbon = true } = {}) {
 const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learning")], ["deck", "📇", T("My card box")], ["shop", "🛍️", T("Shop")],
   ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]];
 
+// «Made with your AI»: the English instructions + format for an AI (familyquest/ai_templates) – download or copy
+function aiTemplateButtons(kind) {
+  const url = `api/ai-template/${kind}`;
+  return h("div.row.wrap",
+    h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: url, download: `family-quest-${kind}-template-for-ai.md` }, "⬇️ ", T("Template for the AI")),
+    h("button.btn.small.ghost", { onclick: async () => {
+      try { await navigator.clipboard.writeText(await (await fetch(url)).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
+      catch { toast(T("Copying did not work – use the download"), "bad"); }
+    } }, "📋 ", T("Copy for the AI")));
+}
+
 // link to the parent area: when it is only offered in Home Assistant, straight to the Family Quest panel there
 let _parentHref = null;
 async function parentAreaHref() {

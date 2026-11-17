@@ -101,6 +101,27 @@ class Community:
             return quiz_id
         return self.db.x("INSERT INTO quiz(title, questions, created_by) VALUES(?,?,?)", title, qs, prof["id"])
 
+    def import_quizzes(self, prof: dict, text: str) -> list[int]:
+        """Quizzes from a file in the Family Quest quiz format (ai_templates/quiz.md) – also JSON as AIs write it."""
+        from .jsonish import loads
+        try:
+            data = loads(text)
+        except ValueError:
+            raise CommunityError("The file is not a quiz in the Family Quest format (JSON)") from None
+        items = data if isinstance(data, list) else data.get("quizzes") if isinstance(data, dict) and isinstance(data.get("quizzes"), list) else [data]
+        if not items or not all(isinstance(x, dict) for x in items):
+            raise CommunityError("The file is not a quiz in the Family Quest format (JSON)")
+        ids = []
+        for i, quiz in enumerate(items[:20]):
+            questions = [quiz_question(q) for q in quiz.get("questions") or [] if isinstance(q, dict)]
+            if not questions:
+                raise CommunityError("The quiz has no questions")
+            try:
+                ids.append(self.save_quiz({"title": quiz.get("title") or f"Quiz {i + 1}", "questions": questions}, prof))
+            except CommunityError as e:
+                raise CommunityError(f"{quiz.get('title') or 'Quiz'}: {e}") from None
+        return ids
+
     def delete_quiz(self, prof: dict, quiz_id: int) -> None:
         self._own(prof, quiz_id)
         self.db.x("UPDATE quiz SET archived=1 WHERE id=?", quiz_id)
@@ -628,6 +649,30 @@ def miss(q: dict, a) -> float | None:
     if q.get("kind") == "pin":
         return None if a["lat"] is None else round(haversine_km(a["lat"], a["lon"], q["lat"], q["lon"]), 1)
     return None
+
+
+def quiz_question(q: dict) -> dict:
+    """A question of the import format (type / question / answers / correct / seconds …) – into the inner format
+    (kind / q / a / c / t). Questions already in the inner format pass unchanged."""
+    if "q" in q and "question" not in q:
+        return q
+    kind = {"choice": "choice", "multiple": "choice", "estimate": "estimate", "number": "estimate",
+            "map": "pin", "pin": "pin"}.get(str(q.get("type") or q.get("kind") or "choice").lower(), "choice")
+    out = {"kind": kind, "q": q.get("question") or q.get("q") or ""}
+    if "seconds" in q or "t" in q:
+        out["t"] = q.get("seconds", q.get("t"))
+    if kind == "choice":
+        out["a"] = q.get("answers") or q.get("a") or []
+        c = q.get("correct", q.get("c", 0))
+        if isinstance(c, str) and c in out["a"]:
+            c = out["a"].index(c)                      # the right answer given as text
+        out["c"] = c
+        out.pop("kind")
+    elif kind == "estimate":
+        out.update({k: q.get(k) for k in ("answer", "min", "max", "unit", "step") if q.get(k) is not None})
+    else:
+        out.update({k: q.get(k) for k in ("lat", "lon", "map", "label") if q.get(k) is not None})
+    return out
 
 
 def clean_special(q: dict) -> dict:
