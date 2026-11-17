@@ -272,3 +272,5 @@ details.fold[open] > summary { margin-bottom: 10px; }
 .draft-box { border-bottom: 1px solid var(--line, rgba(127,127,127,.2)); padding: 6px 0; }
 .draft-assign { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 0 52px; }
 .pack-search { width: 100%; max-width: 420px; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; font-size: 1rem; }
+.pj-photos > summary { cursor: pointer; padding: 6px 0; }
+.pj-photos[open] { margin-bottom: 10px; }
