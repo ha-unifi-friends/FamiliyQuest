@@ -94,8 +94,8 @@ async function cardsStartDialog(kind, solo, onStarted) {
   let back = CARD_BACKS[r.back] ? r.back : "classic";
   const backPrev = h("div.row.back-pick");
   const drawBacks = () => backPrev.replaceChildren(...Object.keys(CARD_BACKS).map(b => h("button.back-opt" + (b === back ? ".on" : ""),
-    { type: "button", title: I18N.tr(CARD_BACKS[b]), "aria-pressed": String(b === back), onclick: () => { back = b; drawBacks(); } },
-    shedCard(kind, null, { back: b, small: true }))));
+    { type: "button", title: I18N.tr(CARD_BACKS[b]), "aria-label": I18N.tr(CARD_BACKS[b]), "aria-pressed": String(b === back), onclick: () => { back = b; drawBacks(); } },
+    shedCard(kind, null, { back: b, small: true }), h("span.back-name", CARD_BACKS[b]))));
   drawBacks();
   const picker = botPicker(r.bot_ms);
   const m = modal(h("div.form", h("h2", CARD_GAMES[kind].icon, " ", CARD_GAMES[kind].title, solo ? " – " + I18N.tr(T("alone against bots")) : ""),
@@ -156,7 +156,7 @@ function cardsLive(box, me, back, kind) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", CARD_GAMES[kind].icon), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", CARD_GAMES[kind].icon), h("h2", T("No game right now")), noTableActions(kind, back)));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     // ☰: rules, guests (everybody of the family at a family table), the actions of whoever leads, language
     const menu = gameMenu({ rules: () => cardsRulesView(kind, st.rules),

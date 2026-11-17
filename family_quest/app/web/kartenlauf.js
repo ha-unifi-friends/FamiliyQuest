@@ -307,7 +307,7 @@ function kartenlaufLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", KL_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", KL_ICON), h("h2", T("No game right now")), noTableActions("kartenlauf", back)));
     if (sel && st.phase !== "exchange" && !st.my_turn) sel = null;
     if (sel && !(st.hand || []).includes(sel.card)) sel = null;
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;

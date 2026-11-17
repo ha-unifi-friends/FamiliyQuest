@@ -520,3 +520,18 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   document.addEventListener("keydown", esc);
   requestAnimationFrame(() => back.classList.add("open"));
 }
+
+// a game page opened directly (link, bookmark) while no table is open: in the app the child can open one right here –
+// the start dialog of the game, then the page shows the new table. Elsewhere (parent area, guests) only «Back».
+function noTableActions(game, back) {
+  const backBtn = h("button.btn.ghost", { onclick: back }, T("Back"));
+  if (window.FQ_PARENT_AREA || typeof canPlay !== "function" || !canPlay(game) || typeof route !== "function") return h("div.row.center", h("button.btn", { onclick: back }, T("Back")));
+  const again = () => route();
+  const fn = { tschau: () => cardsStartDialog("tschau", false, again), karussell: () => cardsStartDialog("karussell", false, again),
+    domino: () => dominoStartDialog(false, again), dorfmarkt: () => dorfmarktStartDialog(false, again), heimwaerts: () => heimwaertsStartDialog(false, again),
+    jass: () => jassStartDialog(false, again), kartenlauf: () => kartenlaufStartDialog(false, again), klatsch: () => klatschStartDialog(false, again),
+    paarjagd: () => paarjagdStartDialog(false, again), song: () => songStartDialog(again), stadtland: () => stadtlandStartDialog(again),
+    verboten: () => verbotenStartDialog(again), werwolf: () => werwolfStartDialog(again), werbinich: () => werbinichStartDialog(again),
+    wuerfel: () => wuerfelStartDialog(false, again), zeichnen: () => zeichnenStartDialog(again) }[game];
+  return h("div.row.center.wrap", fn ? h("button.btn", { onclick: () => fn() }, "👨‍👩‍👧 ", T("Open a family table")) : null, backBtn);
+}

@@ -200,7 +200,7 @@ function zeichnenLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", ZR_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", ZR_ICON), h("h2", T("No game right now")), noTableActions("zeichnen", back)));
     sounds();
     if (st.phase !== "lobby") starterBanner(st.starter, "zeichnen");
     if (st.phase === "draw" || st.phase === "reveal") return turnView();

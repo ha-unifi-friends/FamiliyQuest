@@ -153,7 +153,7 @@ function wuerfelLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", FW_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", FW_ICON), h("h2", T("No game right now")), noTableActions("wuerfel", back)));
     if (st.phase === "play") syncHeld();
     if (st.phase === "play" && st.round !== seenRound) {
       if (seenRound && st.round > seenRound) toast(I18N.tr(T("Round {0} of {1}")).replace("{0}", st.round).replace("{1}", st.rounds));

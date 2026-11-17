@@ -1524,7 +1524,10 @@ button.ww-p:active { transform: scale(.96); }
 .dm-snake .dm-tile.v { width: calc(var(--tw, 48px) / 2); height: var(--tw, 48px); }
 /* card back: tap to choose, the chosen one is marked */
 .back-pick { gap: 8px; flex-wrap: wrap; }
-.back-opt { border: 3px solid transparent; border-radius: 12px; padding: 3px; background: none; cursor: pointer; line-height: 0; }
+.back-opt { border: 3px solid transparent; border-radius: 12px; padding: 3px; background: none; cursor: pointer; line-height: 0;
+  display: inline-grid; justify-items: center; gap: 4px; color: var(--fg); }
+.back-name { font-size: .72rem; line-height: 1.1; font-weight: 600; color: var(--muted); }
+.back-opt.on .back-name { color: var(--accent); }
 .back-opt.on { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
 
 /* the ☰ menu */

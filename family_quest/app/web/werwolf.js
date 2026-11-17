@@ -137,7 +137,7 @@ function werwolfLive(box, me, back) {
     box.classList.toggle("ww-night", !!st && (st.phase === "night" || st.phase === "roles" || (st.phase === "hunter" && st.votes == null)));
     box.classList.toggle("ww-day", !!st && ["day", "vote", "verdict"].includes(st.phase));
     clearInterval(tick);
-    if (!st) return show(h("section.card.center", h("div.big-ic", WW_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", WW_ICON), h("h2", T("No game right now")), noTableActions("werwolf", back)));
     const key = st.phase + ":" + (st.step || "") + ":" + st.night;
     if (key !== selKey) { selKey = key; sel = []; heal = false; }
     narrate(key);

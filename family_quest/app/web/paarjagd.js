@@ -150,7 +150,7 @@ function paarjagdLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", PJ_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", PJ_ICON), h("h2", T("No game right now")), noTableActions("paarjagd", back)));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     // ☰: rules, guests (everybody of the family at a family table), end for whoever leads, language
     const menu = gameMenu({ rules: () => paarjagdRulesView(st.rules, st.coins_on ? st.rewards : null),

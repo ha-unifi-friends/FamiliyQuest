@@ -102,7 +102,7 @@ function verbotenLive(box, me, back) {
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
     clearInterval(tick);
-    if (!st) return show(h("section.card.center", h("div.big-ic", VW_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", VW_ICON), h("h2", T("No game right now")), noTableActions("verboten", back)));
     sounds();
     if (st.phase !== "lobby") starterBanner(st.starter, "verboten");
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
