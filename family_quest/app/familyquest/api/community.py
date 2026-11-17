@@ -6,6 +6,7 @@ A game is led by whoever started it; a parent may always lead.
 from __future__ import annotations
 
 import random
+from contextlib import contextmanager
 
 from typing import Any
 
@@ -73,6 +74,24 @@ def _no_bots(fq, prof: dict, game: str, wanted) -> bool:
     if off and wanted:
         raise HTTPException(403, "Playing with bots is switched off for this game")
     return off
+
+
+@contextmanager
+def _bots_not_remembered(fq, kind: str, forced: bool):
+    """A start without bots forced by «active without bots» (Parent area › Games) must not become the remembered
+    number of bots (setting game_rules.<kind>) – once bots are switched on again, the old default is back."""
+    key = f"game_rules.{kind}"
+    before = fq.db.get_setting(key)
+    try:
+        yield
+    finally:
+        after = fq.db.get_setting(key)
+        if forced and isinstance(after, dict):
+            if isinstance(before, dict) and "bots" in before:
+                after["bots"] = before["bots"]
+            else:
+                after.pop("bots", None)
+            fq.db.set_setting(key, after)
 
 
 def _run(fn, *args):
@@ -497,14 +516,16 @@ def cards_rules(kind: str, request: Request, prof: dict = Gamer) -> dict:
 @router.post("/cards/{kind}/start")
 def cards_start(kind: str, body: CardStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
-    if _no_bots(fq, prof, _kind(kind), body.solo or body.bot_ids or (body.bots or 0) > 0):
+    forced = _no_bots(fq, prof, _kind(kind), body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
         body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         n = body.bots if body.bots is not None else fq.cards.default_rules(_kind(kind)).get("bots", 2)
         bots = fq.bots.pick(prof["id"], body.bot_ids, max(1 if body.solo else 0, min(5, n)), body.level or "normal", BOTS)
-    _run(fq.cards.start, _kind(kind), prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, _kind(kind), forced):
+        _run(fq.cards.start, _kind(kind), prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.cards.state(kind, prof["id"])
 
 
@@ -591,14 +612,16 @@ def domino_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/domino/start")
 def domino_start(body: DominoStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
-    if _no_bots(fq, prof, "domino", body.solo or body.bot_ids or (body.bots or 0) > 0):
+    forced = _no_bots(fq, prof, "domino", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
         body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         n = body.bots if body.bots is not None else fq.domino.default_rules().get("bots", 3)
         bots = fq.bots.pick(prof["id"], body.bot_ids, max(1 if body.solo else 0, min(5, n)), body.level or "normal", BOTS)
-    _run(fq.domino.start, "domino", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "domino", forced):
+        _run(fq.domino.start, "domino", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.domino.state("domino", prof["id"])
 
 
@@ -680,14 +703,16 @@ def pairhunt_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/paarjagd/start")
 def pairhunt_start(body: PairhuntStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
-    if _no_bots(fq, prof, "paarjagd", body.solo or body.bot_ids or (body.bots or 0) > 0):
+    forced = _no_bots(fq, prof, "paarjagd", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
         body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         n = body.bots if body.bots is not None else fq.paarjagd.default_rules().get("bots", 2)
         bots = fq.bots.pick(prof["id"], body.bot_ids, max(1 if body.solo else 0, min(5, n)), body.level or "normal", BOTS)
-    _run(fq.paarjagd.start, "paarjagd", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "paarjagd", forced):
+        _run(fq.paarjagd.start, "paarjagd", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.paarjagd.state("paarjagd", prof["id"])
 
 
@@ -1087,13 +1112,15 @@ def wuerfel_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/wuerfel/start")
 def wuerfel_start(body: WuerfelStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
-    if _no_bots(fq, prof, "wuerfel", body.solo or body.bot_ids or (body.bots or 0) > 0):
+    forced = _no_bots(fq, prof, "wuerfel", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
         body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
-    _run(fq.wuerfel.start, "wuerfel", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "wuerfel", forced):
+        _run(fq.wuerfel.start, "wuerfel", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.wuerfel.state("wuerfel", prof["id"])
 
 
@@ -1177,13 +1204,15 @@ def heimwaerts_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/heimwaerts/start")
 def heimwaerts_start(body: HeimwaertsStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
-    if _no_bots(fq, prof, "heimwaerts", body.solo or body.bot_ids or (body.bots or 0) > 0):
+    forced = _no_bots(fq, prof, "heimwaerts", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
         body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 3, body.level or "normal", BOTS)
-    _run(fq.heimwaerts.start, "heimwaerts", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "heimwaerts", forced):
+        _run(fq.heimwaerts.start, "heimwaerts", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.heimwaerts.state("heimwaerts", prof["id"])
 
 
@@ -1259,13 +1288,15 @@ def jump_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/jump/start")
 def jump_start(body: JumpStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
-    if _no_bots(fq, prof, "jump", body.bot_ids or (body.bots or 0) > 0):
+    forced = _no_bots(fq, prof, "jump", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
         body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
-    _run(fq.jump.start, "jump", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "jump", forced):
+        _run(fq.jump.start, "jump", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.jump.state("jump", prof["id"])
 
 
@@ -1331,13 +1362,15 @@ def klatsch_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/klatsch/start")
 def klatsch_start(body: KlatschStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
-    if _no_bots(fq, prof, "klatsch", body.bot_ids or (body.bots or 0) > 0):
+    forced = _no_bots(fq, prof, "klatsch", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
         body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 7, body.level or "normal", BOTS)
-    _run(fq.klatsch.start, "klatsch", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "klatsch", forced):
+        _run(fq.klatsch.start, "klatsch", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.klatsch.state("klatsch", prof["id"])
 
 
@@ -1916,13 +1949,15 @@ def dorfmarkt_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/dorfmarkt/start")
 def dorfmarkt_start(body: DorfmarktStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
-    if _no_bots(fq, prof, "dorfmarkt", body.solo or body.bot_ids or (body.bots or 0) > 0):
+    forced = _no_bots(fq, prof, "dorfmarkt", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
         body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
-    _run(fq.dorfmarkt.start, "dorfmarkt", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "dorfmarkt", forced):
+        _run(fq.dorfmarkt.start, "dorfmarkt", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.dorfmarkt.state("dorfmarkt", prof["id"])
 
 

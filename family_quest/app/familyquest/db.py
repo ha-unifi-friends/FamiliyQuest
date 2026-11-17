@@ -530,6 +530,10 @@ MIGRATIONS: list[str] = [
     """
     ALTER TABLE quiz ADD COLUMN langs TEXT;
     """,
+    # 31 – new XP spent on XP items whose unlock went again (a pet that died): they stay spent (api/kid.new_xp_left)
+    """
+    CREATE TABLE xp_spent(profile_id INTEGER PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE, n INTEGER NOT NULL DEFAULT 0);
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [

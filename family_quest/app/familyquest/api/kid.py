@@ -278,7 +278,8 @@ def redeem(body: RedeemIn, request: Request, prof: dict = Learner) -> dict:
 # ---------------------------------------------------------------- avatar
 def new_xp_left(fq, pid: int) -> int:
     """New XP not yet used for XP items (backgrounds …) – the XP account itself is never touched by them."""
-    used = int(fq.db.val("SELECT SUM(new_xp) FROM unlock WHERE profile_id=?", pid, default=0) or 0)
+    used = int(fq.db.val("SELECT SUM(new_xp) FROM unlock WHERE profile_id=?", pid, default=0) or 0) \
+        + int(fq.db.val("SELECT n FROM xp_spent WHERE profile_id=?", pid, default=0) or 0)     # also for unlocks gone again
     return max(0, int(fq.rewards.new_xp(pid)) - used)
 
 
