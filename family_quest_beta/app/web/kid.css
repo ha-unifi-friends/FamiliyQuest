@@ -453,3 +453,7 @@
 .me-tile b { font-size: 1.25rem; }
 .me-sum .net { margin-top: 12px; }
 .today .ring .xp-total { display: inline-block; margin-top: 3px; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-size: .72rem; }
+/* ⟳ in the app: light purple (lila) of the colour scheme */
+.refresh-btn { background: color-mix(in srgb, var(--accent) 22%, var(--card)); color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.refresh-btn:hover { background: color-mix(in srgb, var(--accent) 32%, var(--card)); }

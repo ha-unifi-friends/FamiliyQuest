@@ -1930,7 +1930,7 @@ async function communityView(main) {
     const open = () => { const b = h("div.ww-live"); werwolf.replaceChildren(b); werwolfLive(b, me, () => render()); };
     werwolf.replaceChildren(sectionAdd("🐺 " + I18N.tr(T("Werwölfe")), appBtn("werwolf"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The classic party game for 5 to 12 players in one room: the app is the game master, everybody gets a secret role on their phone – find the werewolves!")),
+      : [h("p.muted", T("The classic party game for 2 to 12 players in one room (bots fill the table up to 5): the app is the game master, everybody gets a secret role on their phone – find the werewolves!")),
          h("button.btn", { onclick: () => werwolfStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("werwolf")));
   };

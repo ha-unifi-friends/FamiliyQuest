@@ -750,14 +750,26 @@ points, the partner); the winners get the «No. 1» hat (not on a tie).
 ### Werwölfe
 
 Games → **🐺 Werwölfe**: the classic social deduction party game, played in **one room** – the app is the game
-master. Everybody has the app on their own phone (the family and guests via QR code, **no bots** – it is a talking
-game), **5 to 12 players**. Who opens the **family table** chooses (remembered; also changeable in the lobby once
-everybody is there):
+master. Everybody has the app on their own phone (the family and guests via QR code), **2 to 12 people** – a game
+has 5 to 12 players: with **fewer than 5 at the table, bots fill it up to 5** when who leads begins (the animal bots
+of the card games, with their emoji). Who opens the **family table** chooses (remembered; also changeable in the lobby
+once everybody is there):
 
 - **the roles**: *by the number of players* (recommended) – 5: 1 werewolf + seer · 6: + witch · 7: 2 werewolves ·
   8: + hunter · 9–10: + Amor · 11–12: 3 werewolves – or by hand: 1–3 werewolves and seer / witch / hunter / Amor on or
   off (fewer werewolves than half of the players); everybody else is a villager;
-- **time to talk by day**: 1, 2, 3 (default), 5 or 10 minutes.
+- **time to talk by day**: 1, 2, 3 (default), 5 or 10 minutes;
+- **fill with bots up to**: 5 (default) to 12 players – more bots for a bigger game (no bots when enough people are
+  there).
+
+**Bots** play every role and act by themselves after a short «thinking» time (at night 4–10 seconds, so the length of
+a step does not give away who holds the role; in the vote one after the other): Amor links two random players, a bot
+werewolf bites the choice of a human werewolf (else a random non-werewolf – the bot werewolves always agree), the
+seer looks at a random player, the witch heals the victim about every second time and rarely poisons somebody, the
+hunter shoots a random player; in the vote a bot werewolf votes for a non-werewolf, the other bots for a random
+player – a bot seer votes for a werewolf she saw, and while she lives the other village bots lean the same way. A
+bot's role stays as secret as a person's. The talk timer runs as before; who leads still lets the night fall and
+opens the vote.
 
 | Role | Power |
 |---|---|
@@ -791,8 +803,8 @@ no potion, no shot, close the vote) and **end** the game (no winner, no coins).
 
 **Coins:** set by the parents in Community › Werwölfe (the amount of place 1, default 10): every person of the
 family on the **winning side** – only at a table with **at least two people of the family**, only for a game played
-to the end, paid once, never to guests. The winners get the «No. 1» hat; every person of the family gets a history
-entry (won or lost, the role).
+to the end, paid once, never to guests or bots. The winners get the «No. 1» hat; every person of the family gets a
+history entry (won or lost, the role) – bots none.
 
 ### Schach (chess)
 

@@ -1645,6 +1645,7 @@ class WerwolfRulesIn(BaseModel):
     hunter: bool | None = None
     amor: bool | None = None
     talk: int | None = None              # seconds to talk during the day: 60 | 120 | 180 | 300 | 600
+    fill: int | None = None              # bots fill the table up to this number of players: 5 – 12
 
 
 class WerwolfActIn(BaseModel):
