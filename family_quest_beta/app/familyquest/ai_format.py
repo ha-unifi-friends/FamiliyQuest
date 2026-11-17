@@ -27,13 +27,26 @@ QUIZ_INSTRUCTIONS = _COMMON + [
     "Short questions, short answers (max. ~40 characters). Multiple choice: 2–4 answers, exactly one is right, "
     "the wrong ones are plausible. 10–20 questions are a good length for a family evening.",
     "Write in the language the user writes in (or the one they ask for).",
+    "Multilingual quizzes only when the user asks for them (e.g. «German and French»): then set 'language' (the "
+    "main language) and 'languages' (the further ones) and give EVERY question 'translations' in every further "
+    "language – the same facts, the answers in the same order. The players switch the language during the game. "
+    "Otherwise leave 'language', 'languages' and 'translations' out.",
 ]
 
 QUIZ_GUIDE = {
     "quizzes[]": {
         "title": "Name of the quiz, max. 80 characters.",
         "questions": "List of questions; every question has 'type', 'question' and optionally 'seconds'.",
+        "language": "Optional, only for a multilingual quiz: the main language of 'title' and the questions – two letters: "
+                    "de fr it en es nl pl pt sv rm.",
+        "languages": "Optional, only for a multilingual quiz: the further languages, e.g. [\"fr\", \"en\"] (max. 5).",
+        "translations": "Optional, only for a multilingual quiz: the title in the further languages, "
+                        "e.g. {\"fr\": {\"title\": \"…\"}}.",
     },
+    "question.translations": "Only in a multilingual quiz: the question in every further language, e.g. "
+                             "{\"fr\": {\"question\": \"…\", \"answers\": [\"…\", \"…\"]}} – 'answers' in the same order as "
+                             "'answers' (choice); 'unit' for 'estimate', 'label' for 'map'. Flags, numbers and pictures stay "
+                             "the same in every language.",
     "question.type": {
         "choice": "Multiple choice. Fields: 'answers' (2–4 strings), 'correct' (index of the right answer, 0 = first; "
                   "the game shuffles the order). Optional 'image'.",
@@ -155,9 +168,38 @@ PACK_EXAMPLE = {
 }
 
 
+# a second, short example: how a multilingual quiz looks (only when the user asks for more languages)
+QUIZ_EXAMPLE_MULTI = {
+    "title": "Animals of the Alps",
+    "language": "en",
+    "languages": ["de", "fr"],
+    "translations": {"de": {"title": "Tiere der Alpen"}, "fr": {"title": "Animaux des Alpes"}},
+    "questions": [
+        {"type": "choice", "question": "Which animal whistles when danger comes?", "answers": ["Marmot", "Ibex", "Chamois"], "correct": 0,
+         "translations": {"de": {"question": "Welches Tier pfeift bei Gefahr?", "answers": ["Murmeltier", "Steinbock", "Gämse"]},
+                          "fr": {"question": "Quel animal siffle en cas de danger ?", "answers": ["Marmotte", "Bouquetin", "Chamois"]}}},
+        {"type": "estimate", "question": "How heavy is an adult ibex?", "answer": 90, "min": 20, "max": 200, "unit": "kg",
+         "translations": {"de": {"question": "Wie schwer ist ein ausgewachsener Steinbock?"},
+                          "fr": {"question": "Combien pèse un bouquetin adulte ?"}}},
+    ],
+}
+
+
 def quiz_document(quizzes: list[dict], template: bool = False) -> dict:
     return {"_format": QUIZ_FORMAT, "_ai_instructions": QUIZ_INSTRUCTIONS, "_field_guide": QUIZ_GUIDE,
-            "quizzes": [QUIZ_EXAMPLE] if template else quizzes}
+            "quizzes": [QUIZ_EXAMPLE, QUIZ_EXAMPLE_MULTI] if template else quizzes}
+
+
+def export_quiz(title: str, questions: list[dict], langs: dict | None) -> dict:
+    """A stored quiz in the format of this file – with its languages if it is multilingual."""
+    out = {"title": title}
+    if langs:
+        out["language"] = langs["base"]
+        out["languages"] = list(langs["more"])
+        if langs.get("title"):
+            out["translations"] = {k: {"title": v} for k, v in langs["title"].items()}
+    out["questions"] = [export_question(q) for q in questions]
+    return out
 
 
 def pack_document(packs: list[dict], template: bool = False) -> dict:
@@ -195,4 +237,7 @@ def export_question(q: dict) -> dict:
                 out["image"] = {k: img[k] for k in ("flag", "emoji", "svg") if img.get(k)}
     if q.get("t") is not None:
         out["seconds"] = q["t"]
+    if q.get("tr"):
+        out["translations"] = {lang: {k2: v[k1] for k1, k2 in (("q", "question"), ("a", "answers"), ("unit", "unit"), ("label", "label")) if k1 in v}
+                               for lang, v in q["tr"].items()}
     return out

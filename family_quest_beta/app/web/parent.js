@@ -1995,11 +1995,10 @@ async function gameRewardsRow(game) {
   if (game !== "paarjagd") return h("div.pj-rewards", ...row,
     h("p.small.muted", T("Coins only at a table with at least two people of the family – not for guests.")));
   // own pictures: the photo sets (shared with the pairs game) – every photo becomes a pair, choose the set when starting
-  const photos = h("div.pj-photos", h("b", "📷 ", T("Own pictures")),
+  // the photo sets live here (moved from the settings) – shared with the pairs game of the game corner
+  const photos = h("details.pj-photos", h("summary", h("b", "📷 ", T("Own pictures: photo sets"))),
     h("p.small.muted", T("Upload photo sets (e.g. the family, the holidays) – every photo becomes a pair. Choose the set when starting a Paarjagd.")),
-    h("button.btn.small.ghost", { onclick: async () => {
-      const m = modal(h("div", await memorySection(), h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Close")))), { wide: true });
-    } }, "📷 ", T("Manage photo sets")));
+    await memorySection());
   return h("div.pj-rewards", photos, ...row,
     h("p.small.muted", T("Coins only at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
 }
@@ -2577,7 +2576,6 @@ async function settingsView(main) {
     h("button.btn.big", { onclick: save }, "💾 ", T("Save")),
     await gamesSection(s),
     await crestSection(),
-    await memorySection(),
     linkSection(),
     themesSection(),
     weatherBox("config"),

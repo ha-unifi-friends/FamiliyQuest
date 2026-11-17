@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0-beta.3
+
+- Multilingual quizzes: switch it on in the quiz editor, choose a main language and up to 5 further ones – then every question gets fields for them; during the game everybody picks the language of the questions at the top
+- The quiz JSON template, import and export know the languages too (an example multilingual quiz is in the template)
+- Home: the XP ring also shows all XP so far (Σ)
+- Parent area: the photo sets of the pairs games moved from Settings to Community › Paarjagd
+
 ## 1.1.0-beta.2
 
 - Parents see every learning pack in the app – also drafts and switched-off packs – to try them out; nothing is locked for them (the daily lesson uses only active packs)

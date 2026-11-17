@@ -896,8 +896,9 @@ the server; best times stay in this browser), shown when family games are on for
   sets**; alone (fewest moves), against the app (it remembers more or less well) or 2–4 players on one device.
   Card back: four patterns or the **family crest**.
 
-**Photo sets and family crest** (parent area › Settings › Pairs game): upload photos into named sets (every photo
-becomes a pair; a set needs at least 3 photos), and design the family crest – name, an emoji, two colours and a
+**Photo sets** (parent area › Community › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
+photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**
+(parent area › Settings): design the family crest – name, an emoji, two colours and a
 pattern (plain, split, quartered, diagonal band, chevron). Photos no set uses any more are deleted when you save.
 
 ### Guests
