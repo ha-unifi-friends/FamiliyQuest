@@ -10,8 +10,8 @@ Board: a square ring of 36 fields (4 corners + 8 per side), clockwise from the �
   20 village shops / places in 8 colour groups (2–3 each), 4 «Village bus» stops, 2 works (water, electricity),
   2 «Zufall» and 2 «Dorfkasse» card fields, 2 fees («Gemeindesteuer», «Vereinsbeitrag»).
 A turn: roll 2 dice (on the server). Doubles roll again; the third double in a row goes straight into the
-Gemeindeversammlung. Landing on a free field: buy it at its price or leave it (rule `auction`: then everybody may bid
-once – sealed, the highest bid wins, 30 seconds). Landing on a field of another player: pay the rent – double for an
+Gemeindeversammlung. Landing on a free field: buy it at its price or leave it (rule `auction`: then an open auction –
+everybody raises the current price by 10, 25 or 50; 5 seconds after the last bid the highest bidder gets the field). Landing on a field of another player: pay the rent – double for an
 unbuilt field when the owner has the whole colour group; with «Marktstände» (1–4, built evenly, only with the whole
 group) and a «Markthalle» (the 5th step) much more. Village bus: 25 / 50 / 100 / 200 for 1–4 stops of the owner. Works:
 4× the dice (10× with both). Rule `mortgage`: a field without buildings can be mortgaged for half its price (no rent
@@ -53,7 +53,8 @@ BAIL = 50
 MARKTTAG_MONEY = 200
 MAX_DOUBLES = 3
 MEETING_TRIES = 3
-AUCTION_SECONDS = 30
+AUCTION_SECONDS = 5                    # the auction ends 5 seconds after the last bid
+BID_STEPS = (10, 25, 50)               # a bid raises the current price by one of these
 MAX_TURNS = 3000              # safety: a game that never ends is decided by the riches
 RENT_STEPS = (1, 5, 15, 40, 50, 60)          # rent × base for 0, 1–4 stands, the Markthalle
 GROUP_HOUSE = (50, 50, 100, 100, 150, 150, 200, 200)
@@ -491,44 +492,45 @@ class Table:
         f = self.st["pos"][pid]
         after = self.st.pop("after_buy", "done")
         if self.r.get("auction"):
-            self.st["auction"] = {"field": f, "player": pid, "after": after, "bids": {}, "until": self.now() + AUCTION_SECONDS}
+            self.st["auction"] = {"field": f, "player": pid, "after": after, "price": 0, "leader": None, "history": [],
+                                  "until": self.now() + AUCTION_SECONDS, "last_at": self.now()}
             self.st.update(stage="auction", turn_at=self.now())
             self._log({"kind": "auction_start", "player": pid, "field": f})
             return
         self._log({"kind": "skip", "player": pid, "field": f})
         self._settle(after)
 
-    def bid(self, pid: str, amount) -> None:
+    def bid(self, pid: str, step) -> None:
+        """An open bid: the current price + 10, 25 or 50 (also to raise the own bid). Every bid starts the 5 seconds again."""
         self._check(pid, ("auction",), own_turn=False)
         a = self.st["auction"]
-        if pid in a["bids"]:
-            raise CommunityError("You have bid already")
+        if self.now() >= a["until"]:
+            raise CommunityError("The auction is over")
         try:
-            amount = int(amount)
+            step = int(step)
         except (TypeError, ValueError):
             raise CommunityError("Not a number") from None
-        if amount < 0 or amount > self.st["money"][pid]:
+        if step not in BID_STEPS:
+            raise CommunityError("Bid 10, 25 or 50 more")
+        amount = a["price"] + step
+        if amount > self.st["money"][pid]:
             raise CommunityError("Not enough Taler")
-        a["bids"][pid] = amount
-        self._auction_check()
+        a.update(price=amount, leader=pid, until=self.now() + AUCTION_SECONDS, last_at=self.now())
+        a["history"] = (a.get("history") or [])[-19:] + [[pid, amount]]
 
     def _auction_check(self, force: bool = False) -> None:
+        """5 seconds after the last bid (or the start): the highest bidder pays and gets the field."""
         a = self.st.get("auction")
-        if not a:
+        if not a or (not force and self.now() < a["until"]):
             return
-        act = self.active()
-        if not force and not all(p in a["bids"] for p in act):
-            return
-        order = act[act.index(a["player"]):] + act[:act.index(a["player"])] if a["player"] in act else act
-        best = max(order, key=lambda p: (a["bids"].get(p, 0), -order.index(p)))
-        amount = a["bids"].get(best, 0)
+        best, amount = a.get("leader"), a.get("price", 0)
         self.st["auction"] = None
-        if amount > 0 and self.st["money"][best] >= amount:
+        if best and amount > 0 and self.st["money"][best] >= amount:
             self.st["money"][best] -= amount
             self.st["owner"][str(a["field"])] = best
-            self._log({"kind": "auction", "player": best, "field": a["field"], "amount": amount, "bids": dict(a["bids"])})
+            self._log({"kind": "auction", "player": best, "field": a["field"], "amount": amount})
         else:
-            self._log({"kind": "auction", "player": None, "field": a["field"], "amount": 0, "bids": dict(a["bids"])})
+            self._log({"kind": "auction", "player": None, "field": a["field"], "amount": 0})
         self._settle(a["after"])
 
     # ---------- the turn ends
@@ -879,17 +881,28 @@ class Table:
                 break
             a = self.st.get("auction")
             if a:
-                bots = [p for p in self.active() if self.is_bot(p) and p not in a["bids"]]
-                if bots and self.now() - self.st.get("turn_at", 0) >= delay * 0.5:
-                    for b in bots:
-                        a["bids"][b] = self.bot_bid(b, a["field"], (self.seat_of(b) or {}).get("level", "normal"))
+                if self.now() >= a["until"]:
                     self._auction_check()
                     changed = True
                     continue
-                if self.now() >= a["until"]:
-                    self._auction_check(force=True)
+                # a bot that is not leading and still wants the field raises – after a short reaction time (< 5 s)
+                limits = a.setdefault("limits", {})
+                wait = min(AUCTION_SECONDS * 0.6, max(0.0, delay * 0.8))
+                bidders = []
+                for b in self.active():
+                    if not self.is_bot(b) or b == a.get("leader"):
+                        continue
+                    if b not in limits:
+                        limits[b] = self.bot_bid(b, a["field"], (self.seat_of(b) or {}).get("level", "normal"))
+                    step = next((x for x in BID_STEPS if a["price"] + x <= min(limits[b], self.st["money"][b])), None)
+                    if step:
+                        bidders.append((b, step))
+                if bidders and self.now() - a.get("last_at", 0) >= wait:
+                    b, step = self.rng.choice(bidders)
+                    self.bid(b, step)
                     changed = True
-                    continue
+                    if delay == 0:
+                        continue
                 break
             p = self.st.get("turn")
             if not self.is_bot(p):
@@ -1086,7 +1099,7 @@ class Dorfmarkt(CardGames):
 
         def run(t: Table):
             if action == "bid":
-                return t.bid(me, d.get("amount"))
+                return t.bid(me, d.get("step", d.get("amount")))
             if action in ("build", "sell", "mortgage", "unmortgage"):
                 return getattr(t, action)(me, d.get("field"))
             if action == "offer":
@@ -1185,7 +1198,8 @@ class Dorfmarkt(CardGames):
         a = st.get("auction")
         auction = None
         if a and live:
-            auction = {"field": a["field"], "player": a["player"], "bidders": sorted(a["bids"]), "my_bid": a["bids"].get(me),
+            auction = {"field": a["field"], "player": a["player"], "price": a.get("price", 0), "leader": a.get("leader"),
+                       "history": (a.get("history") or [])[-5:], "steps": list(BID_STEPS), "seconds": AUCTION_SECONDS,
                        "ms": max(0, int((a["until"] - self.now()) * 1000))}
         trades = [x for x in st.get("trades") or [] if me in (x["from"], x["to"])] if joined else []
         in_meeting = joined and me in st["meeting"]

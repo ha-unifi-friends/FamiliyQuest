@@ -335,29 +335,35 @@ def test_others_pay_by_themselves():
 
 
 # ---------------------------------------------------------------- auction
-def test_auction_highest_bid_wins():
+def test_open_auction_with_steps_and_five_seconds():
     t, clock = table(3, rolls=[2, 3], auction=True)
     t.roll("1")
     t.skip("1")
-    assert t.st["stage"] == "auction"
-    t.bid("2", 150)
+    assert t.st["stage"] == "auction" and t.st["auction"]["price"] == 0
+    t.bid("2", 50)                                                             # 0 + 50
     with pytest.raises(CommunityError):
-        t.bid("2", 160)                                                        # once
-    with pytest.raises(CommunityError):
-        t.bid("3", 99999)
-    t.bid("3", 120)
-    t.bid("1", 0)
-    assert t.owner(5) == "2" and t.st["money"]["2"] == 1350 and t.st["stage"] == "done"
+        t.bid("3", 30)                                                         # only 10, 25 or 50 more
+    clock.t += 4
+    t.bid("3", 25)                                                             # 75 – the 5 seconds start again
+    clock.t += 4
+    assert not t.tick() or t.st["auction"]                                     # still running (4 s after the last bid)
+    t.bid("3", 10)                                                             # raise the own bid: 85
+    assert t.st["auction"]["leader"] == "3" and t.st["auction"]["price"] == 85
+    clock.t += dm.AUCTION_SECONDS + 0.1
+    assert t.tick()
+    assert t.owner(5) == "3" and t.st["money"]["3"] == 1500 - 85 and t.st["stage"] == "done"
 
 
-def test_auction_closes_after_the_time():
+def test_auction_without_bids_and_too_little_money():
     t, clock = table(3, rolls=[2, 3], auction=True)
     t.roll("1")
     t.skip("1")
-    t.bid("3", 40)
+    t.st["money"]["2"] = 20
+    with pytest.raises(CommunityError):
+        t.bid("2", 25)                                                         # not enough Taler
     clock.t += dm.AUCTION_SECONDS + 1
     assert t.tick()
-    assert t.owner(5) == "3" and t.st["stage"] == "done"
+    assert t.owner(5) is None and t.st["stage"] == "done" and t.st["auction"] is None
 
 
 # ---------------------------------------------------------------- trading
@@ -445,9 +451,7 @@ def test_bots_finish_games(level, auction, mode):
                 break
             clock.t += 1
             a = st.get("auction")
-            if a and "1" in t.active() and "1" not in a["bids"]:
-                t.bid("1", 0)
-            elif not a and st["turn"] == "1":
+            if not a and st["turn"] == "1":
                 st["players"][0]["bot"] = True                                  # the person plays like a bot
                 t.bot_step("1")
                 st["players"][0]["bot"] = False
@@ -649,3 +653,21 @@ def test_running_list_and_end(client):
     assert not any(x["game"] == "dorfmarkt" for x in r["running"])
     v = client.get("/api/community/dorfmarkt", headers=hm).json()
     assert v["phase"] == "done" and not v["complete"]
+
+
+def test_bots_bid_in_the_open_auction():
+    import random as _r
+    players = [{"id": "1", "name": "P1"}] + [{"id": f"bot{i}", "name": f"B{i}", "bot": True, "level": "hard"} for i in (1, 2)]
+    st = {"kind": "dorfmarkt", "rules": {**dm.DEFAULTS, "bot_ms": 0, "auction": True}, "players": players, "phase": "lobby"}
+    clock = Clock()
+    t = dm.Table(st, _r.Random(3), now=clock)
+    t.setup()
+    st.update(turn="1", stage="auction", after_buy=None)
+    st["auction"] = {"field": 5, "player": "1", "after": "done", "price": 0, "leader": None, "history": [],
+                     "until": clock.t + dm.AUCTION_SECONDS, "last_at": clock.t}
+    t.tick()                                                                   # the bots raise each other up to their value
+    a = st["auction"]
+    assert a and a["price"] > 0 and a["leader"].startswith("bot") and len(a["history"]) >= 2
+    clock.t += dm.AUCTION_SECONDS + 1
+    t.tick()
+    assert t.owner(5) and t.owner(5).startswith("bot")
