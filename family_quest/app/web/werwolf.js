@@ -17,7 +17,12 @@ const WW_ROLES = {
   amor: ["💘", T("Amor"), T("In the first night you choose two lovers. If one of them dies, the other dies of grief.")],
 };
 const WW_TALKS = [60, 120, 180, 300, 600];
+const WW_FILLS = [5, 6, 7, 8, 9, 10, 11, 12];
 const werwolfRoleName = k => (WW_ROLES[k] || ["", "?"])[1];
+// a player's face: the avatar – or the emoji of a bot
+const wwAv = (p, size) => p && p.bot
+  ? h("span.bot-av", { style: { width: size + "px", height: size + "px", fontSize: (size * 0.6) + "px", background: p.color || null } }, p.emoji || "🤖")
+  : avatarSvg((p && p.avatar) || {}, size);
 const wwIc = k => (WW_ROLES[k] || ["❔"])[0];
 
 function wwDeckChips(d, n) {
@@ -29,7 +34,8 @@ function wwDeckChips(d, n) {
 }
 
 function werwolfRulesView(rewards) {
-  const items = [T("Everybody gets a secret role on their phone. Tap the card to see it – and hide it again."),
+  const items = [T("2 to 12 people play. Fewer than 5? Bots fill the table up to 5 – they play their role by themselves."),
+    T("Everybody gets a secret role on their phone. Tap the card to see it – and hide it again."),
     T("Night: everybody closes their eyes. Only the active role opens them and acts on the phone: Amor (first night), the werewolves, the seer, the witch."),
     T("The werewolves choose a victim together – they see each other's choice. When all agree, it is decided; if the leader moves on, the most votes count and a tie saves everybody."),
     T("Day: the village learns who died and sees their role. Then the village talks until the time is up."),
@@ -43,7 +49,7 @@ function werwolfRulesView(rewards) {
 
 // the roles: by the number of players (recommended) or chosen by hand – start dialog and lobby
 function wwRolesForm(r) {
-  const s = { auto: r.auto !== false, wolves: r.wolves || 2, seer: r.seer !== false, witch: r.witch !== false, hunter: r.hunter !== false, amor: r.amor !== false, talk: r.talk || 180 };
+  const s = { auto: r.auto !== false, wolves: r.wolves || 2, seer: r.seer !== false, witch: r.witch !== false, hunter: r.hunter !== false, amor: r.amor !== false, talk: r.talk || 180, fill: r.fill || 5 };
   const auto = h("input", { type: "checkbox", checked: s.auto });
   const custom = h("div.ww-custom");
   const seg = (list, cur, label, set) => {
@@ -63,7 +69,9 @@ function wwRolesForm(r) {
   auto.onchange = () => { s.auto = auto.checked; drawCustom(); };
   drawCustom();
   const form = [h("div.cards-rules", h("label.check", auto, T("Roles by the number of players (recommended)"))), custom,
-    h("div.field", h("b", "☀️ ", T("Time to talk by day")), seg(r.talks || WW_TALKS, s.talk, n => n / 60 + " min", n => { s.talk = n; }))];
+    h("div.field", h("b", "☀️ ", T("Time to talk by day")), seg(r.talks || WW_TALKS, s.talk, n => n / 60 + " min", n => { s.talk = n; })),
+    h("div.field", h("b", "🤖 ", T("Fill with bots up to")), seg(WW_FILLS, s.fill, n => String(n), n => { s.fill = n; }),
+      h("small.muted", T("Fewer than 5? Bots fill the table.")))];
   return { form, value: () => ({ ...s }) };
 }
 
@@ -73,7 +81,7 @@ async function werwolfStartDialog(onStarted) {
   const f = wwRolesForm(r);
   const rw = r.rewards || [0, 0, 0];
   const m = modal(h("div.form", h("h2", WW_ICON, " ", wwName()),
-    h("p.small.muted", T("The classic party game in one room: everybody gets a secret role on their phone, the app is the game master. 5 to 12 players, guests via QR code.")),
+    h("p.small.muted", T("The classic party game in one room: everybody gets a secret role on their phone, the app is the game master. 2 to 12 players, guests via QR code – bots fill the table up to 5.")),
     ...f.form,
     rw[0] > 0 ? h("p.small.pj-coins", "🪙 ", I18N.tr(T("Coins for everybody of the family on the winning side: {0}")).replace("{0}", rw[0] + " 🪙"), h("br"),
       h("span.muted", T("Coins only at a table with at least two people of the family – not for guests."))) : null,
@@ -221,19 +229,20 @@ function werwolfLive(box, me, back) {
       const b = badge ? badge(p) : null;
       const attrs = pick ? { type: "button", onclick: () => pick(p) } : {};
       return h((pick ? "button" : "div") + ".ww-p" + (chosen.includes(p.id) ? ".on" : "") + (p.alive ? "" : ".dead") + (p.id === myId ? ".ww-mine" : ""), attrs,
-        h("span.ww-av", avatarSvg(p.avatar || {}, 30), p.alive ? null : h("i.ww-skull", "💀")), C(p.name, "span.ww-pn"), b ? h("span.ww-badge", b) : null);
+        h("span.ww-av", wwAv(p, 30), p.alive ? null : h("i.ww-skull", "💀")), C(p.name, "span.ww-pn"), b ? h("span.ww-badge", b) : null);
     }));
   }
   const roleBadge = p => [p.role ? wwIc(p.role) : "", p.lover ? "💘" : ""].join("") || null;
 
   // ---------- the lobby
   function lobby() {
-    const n = st.players.length;
+    const n = st.players.length, bots = st.bots || 0;
     return h("section.card.center.ww-lobby", h("h2", st.joined ? T("Waiting for the start …") : T("Play along on this device?")),
       st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")),
-      h("p.small.muted", fill(T("{0} players – {1} to {2} can play."), n, st.min, st.max)),
+      h("p.small.muted", fill(T("{0} players – {1} to {2} can play."), n, st.min_humans || 2, st.max), " ", I18N.tr(T("Fewer than 5? Bots fill the table."))),
       grid(st.players, { cls: ".ww-seats" }),
-      st.deck ? h("div.sl-chips.ww-deck", ...wwDeckChips(st.deck, Math.max(n, st.min)), h("span.chip", "☀️ ", st.rules.talk / 60 + " min")) : null,
+      bots ? h("p.small.ww-bots", "🤖 ", fill(T("{0} bots join when the game starts."), bots)) : null,
+      st.deck ? h("div.sl-chips.ww-deck", ...wwDeckChips(st.deck, n + bots), h("span.chip", "☀️ ", st.rules.talk / 60 + " min")) : null,
       st.deck_error ? h("p.small.ww-warn", "⚠️ ", T(st.deck_error)) : null,
       st.coins_on && st.rewards[0] > 0 ? h("p.small", "🪙 ", fill(T("Coins for everybody of the family on the winning side: {0}"), st.rewards[0] + " 🪙")) : null);
   }
@@ -252,7 +261,7 @@ function werwolfLive(box, me, back) {
     if (!(isLead() && st.status !== "done")) return null;
     const nextLabel = { roles: ["🌙 ", T("Night falls")], day: ["🗳️ ", T("Vote now")], vote: ["✅ ", T("Close the vote")], verdict: ["🌙 ", T("Night falls")] }[st.phase];
     if (st.phase === "lobby") return h("div.row.center.host-bar.ww-bar",
-      h("button.btn", { disabled: st.players.length < st.min || !!st.deck_error, onclick: () => act("begin") }, "▶ ", T("Start")));
+      h("button.btn", { disabled: st.players.length < (st.min_humans || 2) || !!st.deck_error, onclick: () => act("begin") }, "▶ ", T("Start")));
     if (!nextLabel) return null;
     return h("div.row.center.host-bar.ww-bar",
       h("button.btn", { title: T("Moves on – e.g. when somebody is idle"),
@@ -314,7 +323,7 @@ function werwolfLive(box, me, back) {
     const wolves = living().filter(p => p.role === "wolf");
     const badge = p => {
       const by = Object.entries(votes).filter(([, t]) => t === p.id).map(([w]) => w);
-      return by.length ? h("span.ww-bites", ...by.map(w => h("span.ww-bite", { title: who(w) }, avatarSvg(player(w).avatar || {}, 16)))) : null;
+      return by.length ? h("span.ww-bites", ...by.map(w => h("span.ww-bite", { title: who(w) }, wwAv(player(w), 16)))) : null;
     };
     const agree = wolves.length > 1 ? h("p.small", T("All werewolves must choose the same victim.")) : null;
     return h("div.ww-main.ww-act", h("h2.ww-title", "🐺 ", T("Choose your victim")), agree,
@@ -327,7 +336,7 @@ function werwolfLive(box, me, back) {
     if (st.looked && seen) {
       const r = WW_ROLES[seen.role] || ["❔", "?"];
       return h("div.ww-main.ww-act.center", h("h2.ww-title", "🔮 ", T("Your vision")),
-        h("div.ww-vision", avatarSvg(player(seen.id).avatar || {}, 56), C(who(seen.id), "b"), h("span.ww-role-ic", r[0]), h("b.ww-role-name", r[1])),
+        h("div.ww-vision", wwAv(player(seen.id), 56), C(who(seen.id), "b"), h("span.ww-role-ic", r[0]), h("b.ww-role-name", r[1])),
         h("button.btn.big.ww-go", { onclick: () => doAct({ action: "sleep" }) }, "😴 ", T("Close your eyes")));
     }
     return h("div.ww-main.ww-act", h("h2.ww-title", "🔮 ", T("Whose role do you want to see?")),
@@ -364,7 +373,7 @@ function werwolfLive(box, me, back) {
     const ds = st.deaths || [];
     if (!ds.length) return h("div.ww-deaths.none", "🌅 ", st.phase === "day" ? T("Nobody died tonight!") : T("Nobody is out."));
     const why = c => ({ love: "💔 " + I18N.tr(T("of grief")), shot: "🏹 " + I18N.tr(T("shot by the hunter")), vote: "🗳️ " + I18N.tr(T("voted out")) }[c] || "");
-    return h("div.ww-deaths", ...ds.map(d => h("div.ww-death", avatarSvg(player(d.id).avatar || {}, 34), h("span.grow", C(who(d.id), "b"), why(d.cause) ? h("small.muted", " ", why(d.cause)) : null),
+    return h("div.ww-deaths", ...ds.map(d => h("div.ww-death", wwAv(player(d.id), 34), h("span.grow", C(who(d.id), "b"), why(d.cause) ? h("small.muted", " ", why(d.cause)) : null),
       h("span.ww-dr", wwIc(d.role), " ", h("small", werwolfRoleName(d.role))))));
   }
 
@@ -409,7 +418,7 @@ function werwolfLive(box, me, back) {
     Object.values(votes).forEach(t => { if (t) tally[t] = (tally[t] || 0) + 1; });
     const rows = Object.entries(tally).sort((a, b) => b[1] - a[1]).map(([t, k]) => h("span.chip", C(who(t)), " ", h("b", "×" + k)));
     const out = st.lynch;
-    return h("div.ww-main.center", out ? h("div.ww-out", avatarSvg(player(out).avatar || {}, 64), h("h2", fill(T("{0} is out of the game!"), who(out))),
+    return h("div.ww-main.center", out ? h("div.ww-out", wwAv(player(out), 64), h("h2", fill(T("{0} is out of the game!"), who(out))),
       h("p.ww-reveal", wwIc(player(out).role), " ", werwolfRoleName(player(out).role)))
       : h("div.ww-out", h("div.ww-big", "🤝"), h("h2", T("Nobody is out today.")), h("p.small", T("A tie – or nobody voted."))),
       (st.deaths || []).length > 1 ? deathsBox() : null,
@@ -428,7 +437,7 @@ function werwolfLive(box, me, back) {
     return h("section.card.center.pj-result.ww-result.ww-end-" + (side || "none"),
       h("h2", title[0], " ", title[1]),
       h("ul.ww-final", ...order.map(p => h("li" + (p.id === myId ? ".ww-me" : "") + (p.won ? ".won" : ""),
-        h("span.ww-av", avatarSvg(p.avatar || {}, 28), p.alive ? null : h("i.ww-skull", "💀")),
+        h("span.ww-av", wwAv(p, 28), p.alive ? null : h("i.ww-skull", "💀")),
         h("span.grow", C(p.name, "strong"), p.lover ? " 💘" : ""), h("span.ww-dr", wwIc(p.role), " ", h("small", werwolfRoleName(p.role))),
         p.won ? h("b", "🏆") : null, p.coins ? h("b.pj-plus", "+" + p.coins + " 🪙") : null))),
       st.coins_on ? null : h("p.small.muted", T("Coins only at a table with at least two people of the family – not for guests.")),
@@ -448,6 +457,6 @@ async function werwolfFamilyCard() {
   return h("section.card.quiz-card", h("h2", WW_ICON, " ", wwName()),
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("werwolf") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
-      : [h("p.muted", T("Who is the werewolf? The party game for 5 to 12 players in one room – the app is the game master.")),
+      : [h("p.muted", T("Who is the werewolf? The party game for 2 to 12 players in one room – the app is the game master, bots fill the table.")),
          h("button.btn", { onclick: () => werwolfStartDialog(() => go("werwolf")) }, "👨‍👩‍👧 ", T("Open a family table"))]);
 }
