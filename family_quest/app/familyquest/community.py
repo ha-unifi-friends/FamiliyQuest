@@ -103,12 +103,14 @@ class Community:
         return self.db.x("INSERT INTO quiz(title, questions, created_by) VALUES(?,?,?)", title, qs, prof["id"])
 
     def import_quizzes(self, prof: dict, text: str) -> list[int]:
-        """Quizzes from a file in the Family Quest quiz format (ai_templates/quiz.md) – also JSON as AIs write it."""
+        """Quizzes from a file in the Family Quest quiz format (ai_format.py, self-describing JSON) – also JSON as AIs write it."""
         from .jsonish import loads
         try:
             data = loads(text)
         except ValueError:
             raise CommunityError("The file is not a quiz in the Family Quest format (JSON)") from None
+        from .ai_format import strip_meta
+        data = strip_meta(data)
         items = data if isinstance(data, list) else data.get("quizzes") if isinstance(data, dict) and isinstance(data.get("quizzes"), list) else [data]
         if not items or not all(isinstance(x, dict) for x in items):
             raise CommunityError("The file is not a quiz in the Family Quest format (JSON)")
@@ -122,6 +124,14 @@ class Community:
             except CommunityError as e:
                 raise CommunityError(f"{quiz.get('title') or 'Quiz'}: {e}") from None
         return ids
+
+    def export_quizzes(self, quiz_id: int | None = None) -> dict:
+        """One quiz or all of them as self-describing JSON (ai_format) – an AI can change it, the app imports it again."""
+        from .ai_format import export_question, quiz_document
+        rows = self.db.q("SELECT * FROM quiz WHERE archived=0" + (" AND id=?" if quiz_id else "") + " ORDER BY id", *([quiz_id] if quiz_id else []))
+        if quiz_id and not rows:
+            raise CommunityError("Unknown quiz")
+        return quiz_document([{"title": r["title"], "questions": [export_question(q) for q in json.loads(r["questions"])]} for r in rows])
 
     def delete_quiz(self, prof: dict, quiz_id: int) -> None:
         self._own(prof, quiz_id)

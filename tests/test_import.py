@@ -92,12 +92,12 @@ def test_json_import_and_export(client):
     # export single pack as JSON and YAML, re-import the JSON
     j = client.get("/api/parent/packs/json-pack/export?format=json", headers=h)
     assert j.status_code == 200 and j.headers["content-type"].startswith("application/json")
-    assert j.json()["einheiten"][0]["karten"][1]["en"] == "cat"
+    assert j.json()["pakete"][0]["einheiten"][0]["karten"][1]["en"] == "cat" and j.json()["_ai_instructions"]   # explains itself to an AI
     assert client.get("/api/parent/packs/json-pack/export?format=yaml", headers=h).text.startswith("id: json-pack")
     assert client.get("/api/parent/packs/json-pack/export?format=xml", headers=h).status_code == 400
     # export everything and import it again
     allp = client.get("/api/parent/packs/export", headers=h).json()
-    assert allp["format"] == "family-quest-packs" and any(p.get("stufenpaket") == "tg-5-klasse" for p in allp["pakete"])
+    assert allp["_format"] == "family-quest-pack/1" and any(p.get("stufenpaket") == "tg-5-klasse" for p in allp["pakete"])
     r = client.post("/api/parent/import/json", json=allp, headers=h)
     assert r.status_code == 200 and len(r.json()["drafts"]) == len(allp["pakete"])
     # zip with a JSON pack inside

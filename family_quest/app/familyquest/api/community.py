@@ -155,6 +155,27 @@ def quiz_import(body: QuizImportIn, request: Request, prof: dict = Gamer) -> dic
     return {"ids": _run(app_of(request).community.import_quizzes, prof, body.text)}
 
 
+def _quiz_file(doc: dict, name: str) -> Response:
+    import json as _json
+    return Response(_json.dumps(doc, ensure_ascii=False, indent=2), media_type="application/json; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@router.get("/quizzes/export")
+def quiz_export_all(request: Request, prof: dict = Gamer) -> Response:
+    if prof["role"] == "guest":
+        raise HTTPException(403, "Guests cannot export quizzes")
+    return _quiz_file(app_of(request).community.export_quizzes(), "family-quest-quizzes.json")
+
+
+@router.get("/quizzes/{quiz_id}/export")
+def quiz_export(quiz_id: int, request: Request, prof: dict = Gamer) -> Response:
+    if prof["role"] == "guest":
+        raise HTTPException(403, "Guests cannot export quizzes")
+    doc = _run(app_of(request).community.export_quizzes, quiz_id)
+    return _quiz_file(doc, f"family-quest-quiz-{quiz_id}.json")
+
+
 @router.post("/quizzes/from-template")
 def quiz_from_template(body: TemplateIn, request: Request, prof: dict = Gamer) -> dict:
     return {"id": _run(app_of(request).community.from_template, prof, body.template)}

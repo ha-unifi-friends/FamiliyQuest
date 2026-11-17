@@ -66,6 +66,8 @@ def parse_json(text: str) -> list[Pack | Bundle]:
         data = loads(text)
     except ValueError as e:
         raise PackError(f"JSON: {e}") from None
+    from ..ai_format import strip_meta
+    data = strip_meta(data)                 # the explanations of a template / export ("_…" keys)
     if isinstance(data, dict) and isinstance(data.get("pakete"), list) and "stufenpaket" not in data and "id" not in data:
         data = data["pakete"]
     docs = data if isinstance(data, list) else [data]
