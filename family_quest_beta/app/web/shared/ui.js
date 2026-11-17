@@ -366,11 +366,25 @@ function crestSvg(c, { ribbon = true } = {}) {
 const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learning")], ["deck", "📇", T("My card box")], ["shop", "🛍️", T("Shop")],
   ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]];
 
-// «Made with your AI»: the English instructions + format for an AI (familyquest/ai_templates) – download or copy
+// «Made with your AI»: the English instructions + format for an AI (familyquest/ai_format.py: self-describing JSON) – download or copy
+// a file from the API (with the login of this device) as a download
+async function downloadApi(path, name) {
+  const headers = {};
+  if (Auth.kid && !window.FQ_PARENT_AREA) headers["X-FQ-Token"] = Auth.kid;
+  if (Auth.parent) headers["X-FQ-Parent"] = Auth.parent;
+  try {
+    const r = await fetch("api/" + path, { headers });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || "HTTP " + r.status);
+    const url = URL.createObjectURL(await r.blob());
+    const a = h("a", { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (e) { toast(e.message, "bad"); }
+}
+
 function aiTemplateButtons(kind) {
   const url = `api/ai-template/${kind}`;
   return h("div.row.wrap",
-    h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: url, download: `family-quest-${kind}-template-for-ai.md` }, "⬇️ ", T("Template for the AI")),
+    h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: url, download: `family-quest-${kind}-template.json` }, "⬇️ ", T("Template for the AI")),
     h("button.btn.small.ghost", { onclick: async () => {
       try { await navigator.clipboard.writeText(await (await fetch(url)).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
       catch { toast(T("Copying did not work – use the download"), "bad"); }

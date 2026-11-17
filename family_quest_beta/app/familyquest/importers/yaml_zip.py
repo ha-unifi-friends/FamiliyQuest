@@ -27,6 +27,8 @@ def import_bytes(fq, name: str, raw: bytes) -> list[dict]:
 
 def import_data(fq, data) -> list[dict]:
     """Packs given as JSON data (API body): one pack, a level pack or a list."""
+    from ..ai_format import strip_meta
+    data = strip_meta(data)
     if isinstance(data, dict) and isinstance(data.get("pakete"), list) and "id" not in data and "stufenpaket" not in data:
         data = data["pakete"]
     docs = data if isinstance(data, list) else [data]

@@ -656,7 +656,8 @@ def packs_export_all(request: Request, status: str | None = None, me: dict = Par
     """All packs and level packs as one JSON file ({"pakete": [...]}) – importable again as a whole."""
     fq = app_of(request)
     data = [fq.packs.raw(p.id) for p in fq.packs.all(status=status)]
-    body = json.dumps({"format": "family-quest-packs", "version": 1, "pakete": data}, ensure_ascii=False, indent=1)
+    from ..ai_format import pack_document           # self-describing: instructions for an AI + the packs
+    body = json.dumps(pack_document(data), ensure_ascii=False, indent=1)
     return Response(body, media_type="application/json; charset=utf-8",
                     headers={"Content-Disposition": 'attachment; filename="family-quest-packs.json"'})
 
@@ -669,7 +670,8 @@ def pack_export(pack_id: str, request: Request, format: str = "zip", me: dict = 
     if data is None:
         raise HTTPException(404, "Unknown pack")
     if format == "json":
-        return Response(json.dumps(data, ensure_ascii=False, indent=1), media_type="application/json; charset=utf-8",
+        from ..ai_format import pack_document
+        return Response(json.dumps(pack_document([data]), ensure_ascii=False, indent=1), media_type="application/json; charset=utf-8",
                         headers={"Content-Disposition": f'attachment; filename="{pack_id}.json"'})
     if format == "yaml":
         return Response(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), media_type="application/yaml; charset=utf-8",

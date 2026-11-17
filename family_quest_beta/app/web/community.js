@@ -682,9 +682,10 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     const aiBox = h("div.ai-box",
       h("div.row.wrap",
         h("button.btn.small", { onclick: () => file.click() }, "⬆️ ", T("Import")),
-        h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: "api/ai-template/quiz", download: "family-quest-quiz-template-for-ai.md" }, "⬇️ ", T("Download template")),
+        h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: "api/ai-template/quiz", download: "family-quest-quiz-template.json" }, "⬇️ ", T("Download template")),
+        quizzes.length ? h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all")) : null,
         file),
-      h("p.small.muted", T("Made with your AI: give the template to ChatGPT, Claude, Gemini … and say what the quiz should be about – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer (.json).")));
+      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")));
     m = modal(h("div.form", h("h2", "🎯 ", T("New quiz")),
       h("button.btn.big", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz")),
       aiBox,
@@ -711,7 +712,8 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
           q.last_winner ? [" · 🏆 ", C(q.last_winner.name), " (" + fmt(q.last_winner.points) + ")"] : null),
         h("div.row.wrap", h("button.btn", { onclick: () => start(q) }, "▶ ", T("Play")),
           mine(q) ? h("button.btn.ghost", { onclick: () => quizEditor(q, reload) }, "✏️ ", T("Edit")) : null,
-          mine(q) ? h("button.btn.ghost", { onclick: () => del(q) }, "🗑️ ", T("Delete")) : null)) })].filter(Boolean));
+          mine(q) ? h("button.btn.ghost", { onclick: () => del(q) }, "🗑️ ", T("Delete")) : null,
+          h("button.btn.ghost", { onclick: () => downloadApi(`community/quizzes/${q.id}/export`, `family-quest-quiz-${q.id}.json`) }, "⬇️ ", T("Export")))) })].filter(Boolean));
 }
 
 // the template collections by region – the choice is remembered on this device

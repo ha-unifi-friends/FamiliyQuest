@@ -647,10 +647,11 @@ def pranks_clean(prank_id: int, request: Request, prof: dict = Learner) -> dict:
 # ---------------------------------------------------------------- templates for an AI (learning packs, quizzes)
 @router.get("/ai-template/{kind}")
 def ai_template(kind: str) -> Response:
-    """The English instructions plus the format an AI needs to make a learning pack or a quiz (familyquest/ai_templates)."""
-    from pathlib import Path
+    """The template for an AI: self-describing JSON (instructions, field guide, example) – ai_format.py."""
+    import json as _json
+    from .. import ai_format
     if kind not in ("pack", "quiz"):
         raise HTTPException(404)
-    text = (Path(__file__).resolve().parent.parent / "ai_templates" / f"{kind}.md").read_text(encoding="utf-8")
-    return Response(text, media_type="text/markdown; charset=utf-8",
-                    headers={"Content-Disposition": f'attachment; filename="family-quest-{kind}-template-for-ai.md"'})
+    doc = ai_format.quiz_document([], template=True) if kind == "quiz" else ai_format.pack_document([], template=True)
+    return Response(_json.dumps(doc, ensure_ascii=False, indent=2), media_type="application/json; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="family-quest-{kind}-template.json"'})
