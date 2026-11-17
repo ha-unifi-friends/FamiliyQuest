@@ -53,6 +53,7 @@ async function route() {
   if (view === "shop") return shopView();
   if (view === "avatar") return avatarView();
   if (view === "family") return familyView();
+  if (view === "board" && arg) return boardView(+arg);
   if (view === "games") return gamesView();
   if (view === "quiz") return quizView();
   if (view === "quizzes") return quizzesView();
@@ -1658,7 +1659,7 @@ async function familyView() {
         m.chores && m.chores.reliability != null ? [h("dt", "🧹 " + I18N.tr(T("Chores"))), h("dd", fmt(m.chores.reliability) + " %")] : null,
         showAll && m.level ? [h("dt", "Level"), h("dd", String(m.level))] : null)))) : null,
     h("p.small.muted.center", T("Compared is the effort towards each one's own goal – not the raw points.")),
-    await councilSection(), await pollsSection(), await wichtelnSection(), await historySection());
+    await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
 }
 
 // ---------------------------------------------------------------- the games (own menu item)

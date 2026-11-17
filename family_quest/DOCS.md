@@ -287,6 +287,29 @@ Below the family council: **📊 Polls** – a question with 2 to 12 answers, on
 anonymous or with names, optionally with a closing time. Everybody sees the result after answering; who asked (or a
 parent) can close or remove the poll. A banner on the start page reminds who has not answered yet.
 
+### Bulletin boards (Schwarzes Brett)
+Under the polls: **📌 Bulletin boards** – endless pin boards, one per topic («Summer holidays», «Birthday party», …).
+Everybody of the family makes boards (title + emoji) and works on every board; guests (QR invitation) never see them.
+Who made a board, or a parent, renames, **archives** (still readable, no more changes) or removes it with **⋯**.
+
+A board opens full screen (✕ closes it):
+- **Pan** with one finger or the mouse on an empty spot, **zoom** with two fingers, the mouse wheel or **+ / −**
+  from 5 % to 400 %; **⤢** shows everything. The last view of each board is remembered on the device.
+- **🗒️ Sticky note** in 8 colours: choose a colour, tap the board, write. **🔤 Text** in 8 ink colours (A− / A+ for
+  the size). **✏️ Pen** with 8 colours and 3 widths, **🔷 shapes** (rectangle, ellipse, arrow, line), **🧽 eraser**
+  (wipe over lines and shapes).
+- **👆** moves items, a tap selects one (write, colour, bring to front, remove, the round handle resizes notes and
+  texts), a double tap writes. Every note shows who made it. **↶** undoes the own last steps (also Ctrl+Z; Delete
+  removes the selected item).
+- **Live:** changes of the others appear within about a second; the avatars at the top show who is on the board (tap
+  one to jump to what they see), their pointer appears with their name, and an item somebody is moving or writing has
+  an outline in their colour. Last change wins per item.
+- A badge «New: n» on the board list and a banner on the start page show what the others changed since you last
+  looked.
+
+Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
+to 600 points. Everything is in the database, so the backup contains the boards.
+
 ### Wichteln (secret gift giving)
 Under the polls, everybody can start a **Wichteln**: enter the occasion (e.g. «Christmas 2026»), choose who takes part
 (whole family or single members) and the rules – *parents not among each other*, *children not among each other*, or
@@ -350,7 +373,7 @@ is remembered on the device; without a choice the system (or the Home Assistant 
 
 ### Games per game and person (parent area › 🎲 Games)
 
-The parent area has two pages: **Family** (family council, polls, Wichteln, history) and **🎲 Games** (every game:
+The parent area has two pages: **Family** (family council, polls, bulletin boards, Wichteln, history) and **🎲 Games** (every game:
 the family quiz, bingo, guess the song, all live games with their start buttons, coins and photo sets, the running
 games, and the game corner). A **search field** at the top filters the games by name; «⚙️ For all games» holds
 *All on / All off*, who begins a game and whether guests may join.

@@ -2602,3 +2602,54 @@ def wichteln_create(body: WichtelIn, request: Request, prof: dict = Learner) -> 
 def wichteln_delete(wid: int, request: Request, prof: dict = Learner) -> dict:
     _run(app_of(request).wichteln.delete, prof, wid)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- bulletin boards (boards.py) – the whole family, never guests
+class BoardIn(BaseModel):
+    title: str = Field(max_length=200)
+    emoji: str = Field(default="📌", max_length=32)
+
+
+class BoardEditIn(BaseModel):
+    title: str | None = Field(default=None, max_length=200)
+    emoji: str | None = Field(default=None, max_length=32)
+    archived: bool | None = None
+
+
+class BoardSyncIn(BaseModel):
+    since: int = 0
+    ops: list[dict[str, Any]] = Field(default=[], max_length=200)
+    presence: dict[str, Any] | None = None
+
+
+@router.get("/boards")
+def boards_list(request: Request, prof: dict = Learner) -> list[dict]:
+    return app_of(request).boards.list(prof)
+
+
+@router.post("/boards")
+def boards_create(body: BoardIn, request: Request, prof: dict = Learner) -> dict:
+    return {"id": _run(app_of(request).boards.create, prof, body.title, body.emoji)}
+
+
+@router.put("/boards/{bid}")
+def boards_edit(bid: int, body: BoardEditIn, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).boards.update, prof, bid, body.title, body.emoji, body.archived)
+    return {"ok": True}
+
+
+@router.delete("/boards/{bid}")
+def boards_delete(bid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).boards.delete, prof, bid)
+    return {"ok": True}
+
+
+@router.post("/boards/{bid}/sync")
+def boards_sync(bid: int, body: BoardSyncIn, request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).boards.sync, prof, bid, body.since, body.ops, body.presence)
+
+
+@router.post("/boards/{bid}/leave")
+def boards_leave(bid: int, request: Request, prof: dict = Learner) -> dict:
+    app_of(request).boards.leave(prof, bid)
+    return {"ok": True}

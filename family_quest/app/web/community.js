@@ -93,6 +93,9 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.polls_open) out.push(h("button.card.banner", { onclick: () => go("family") },
     h("span.big-ic", "📊"), h("span.grow", h("strong", T("Polls")), h("br"),
       h("span.small", I18N.tr(T("Your answer is missing: {0}")).replace("{0}", c.polls_open))), h("span.big-ic", "➜")));
+  if (c.boards_new) out.push(h("button.card.banner", { onclick: () => go("family") },
+    h("span.big-ic", "📌"), h("span.grow", h("strong", T("Bulletin boards")), h("br"),
+      h("span.small", c.boards_new === 1 ? T("Something new on a board") : I18N.tr(T("Something new on {0} boards")).replace("{0}", c.boards_new))), h("span.big-ic", "➜")));
   if (c.votes_open) out.push(h("button.card.banner", { onclick: () => go("family") },
     h("span.big-ic", "🗳️"), h("span.grow", h("strong", T("Family council")), h("br"),
       h("span.small", I18N.tr(T("Your vote is missing: {0}")).replace("{0}", c.votes_open))), h("span.big-ic", "➜")));

@@ -1804,7 +1804,9 @@ async function communityView(main) {
   who.onchange = drawHist;
   main.append(h("h1", T("Family")),
     h("p.muted", T("Family council, polls and Wichteln – children can open topics and vote too. The games are on their own page «Games».")),
-    await councilSection(me), await pollsSection(me), await wichtelnSection(me),
+    await councilSection(me), await pollsSection(me),
+    await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }),
+    await wichtelnSection(me),
     section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
   drawHist();
 }

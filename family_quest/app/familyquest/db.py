@@ -534,6 +534,42 @@ MIGRATIONS: list[str] = [
     """
     CREATE TABLE xp_spent(profile_id INTEGER PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE, n INTEGER NOT NULL DEFAULT 0);
     """,
+    # 32 – bulletin boards (boards.py): an endless pin board per topic – sticky notes, texts, drawings, shapes.
+    # Every change raises the version of its board; the clients fetch only what changed since their version.
+    """
+    CREATE TABLE board(
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        emoji TEXT NOT NULL DEFAULT '📌',
+        created_by INTEGER,
+        archived INTEGER NOT NULL DEFAULT 0,
+        version INTEGER NOT NULL DEFAULT 0,        -- last change of the board (items and title)
+        floor INTEGER NOT NULL DEFAULT 0,          -- removed items up to this version are gone for good: older clients load anew
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE TABLE board_item(
+        id INTEGER PRIMARY KEY,
+        board_id INTEGER NOT NULL REFERENCES board(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL,                        -- note | text | stroke | shape
+        data TEXT NOT NULL,                        -- JSON: position, size, colour, text or the points of a line
+        z INTEGER NOT NULL DEFAULT 0,
+        size INTEGER NOT NULL DEFAULT 0,           -- bytes of data (the size limit of a board)
+        created_by INTEGER,
+        updated_by INTEGER,
+        version INTEGER NOT NULL,                  -- board version of its last change
+        deleted INTEGER NOT NULL DEFAULT 0,        -- removed (kept a while so the others see it go and «undo» works)
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE INDEX board_item_v ON board_item(board_id, version);
+    CREATE TABLE board_seen(
+        board_id INTEGER NOT NULL REFERENCES board(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        version INTEGER NOT NULL DEFAULT 0,        -- what this person has seen (the «new» badge)
+        PRIMARY KEY(board_id, profile_id)
+    );
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [

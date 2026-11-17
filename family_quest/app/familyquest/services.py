@@ -101,6 +101,8 @@ class FamilyQuest:
         self.bots.pets = self.pets
         from .wichteln import Wichteln
         self.wichteln = Wichteln(self.db, lambda: self.planer_host)
+        from .boards import Boards
+        self.boards = Boards(self.db)
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
         from .pong4 import Doubles
@@ -235,6 +237,7 @@ class FamilyQuest:
         out["dorfmarkt"] = self.dorfmarkt.summary("dorfmarkt", pid) if "dorfmarkt" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
         out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
+        out["boards_new"] = self.boards.new_count(pid)       # bulletin boards: not a game, for everybody of the family
         return out
 
     def games_allowed(self, prof: dict, game: str | None = None) -> bool:
