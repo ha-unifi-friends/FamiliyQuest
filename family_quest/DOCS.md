@@ -623,18 +623,33 @@ or open a **family table** (1 to 6 players, optionally with bots; guests via QR 
 - **Same obstacles for everybody:** the server picks a seed, every app builds the same course from it, and all lanes
   run on the same game clock (a 3-second countdown after the start).
 - **It gets faster:** the speed grows steadily (the maximum after about 2 ½ minutes); from medium speed there are also
-  double obstacles, at high speed long hedges.
-- **Lives:** everybody starts with 3 (start dialog: 1 / 3 / 5). Hitting an obstacle costs a life, then you blink for a
-  moment (invulnerable). Without lives you are out – the lane shows how far you came.
+  double crates, at high speed long hedges.
+- **Crates are safe to land on:** come down on top of a crate and you stand on it and run along (you can jump on from
+  there, or just walk off its end). Only running into its **side** costs a life (a little landing grace: feet a bit
+  below the top still land on it).
+- **Cacti** (green, with spikes and a flower) and hedges sting: touching one – also landing on it – costs a life.
+- **Cloud parcours:** after about **45 seconds** (and then again about a minute after the end of the last one) a
+  signpost and a blinking banner «Cloud course ahead!» announce it (about 3 seconds of free ground before it). Then
+  come 4–6 crates floating on clouds (heights a little above a normal jump over a crate, never more than a small step
+  up or down from one to the next), a short jump apart, over a **dense cactus field**: jump from crate to crate.
+  Falling down onto the cacti costs a life (one per piece of the field, then you hop up and blink – you can jump back up
+  onto the next cloud crate from the ground). After the last crate there is free ground to land on, then the normal
+  course goes on. The jumps are fair for children: about half a second of good jump times for each crate.
+- **Jumping:** only from the ground or a crate (no double jumps in the air); a jump just after walking off an edge
+  still counts.
+- **Lives:** everybody starts with 3 (start dialog: 1 / 3 / 5). Every hit costs a life, then you hop up a little and
+  blink for a moment (invulnerable). Without lives you are out – the lane shows how far you came.
 - **The others:** their jumps and lives show in their lanes – drawn a moment late, from the jump times their apps report.
 - **The end:** at a family table the **last one still running wins** (the game ends when one is left or no person is
   left); alone you run until you are out. Places: who stayed in longest; the distance (m) is the score.
-- **Bots** (easy / normal / hard) jump with a small timing error and now and then forget to jump – the faster the game,
-  the more they miss.
+- **Bots** (easy / normal / hard) run the same physics: they look ahead for the jump times that get them past the next
+  danger (over a cactus, onto a crate, onto the next cloud crate) and aim for the middle with a small timing error, and
+  now and then forget to jump – the faster the game, the more they miss.
 
-The jump physics run in the app (no waiting for the network); the app reports its jumps and hits to the server, which
-keeps the lives and the state per player and checks only sane values (a time near the game clock, an obstacle that
-really passes then, one life per obstacle). An app that stays silent for 12 seconds is out (left the game). Who leads
+The jump physics run in the app (no waiting for the network), step by step 120 times a second – the same code in the
+app and on the server (for the bots), so every app draws the others' lanes exactly from their jump times. The app
+reports its jumps and hits to the server, which keeps the lives and the state per player and checks only sane values (a
+time near the game clock, an obstacle that really passes then – never a cloud crate –, one life per obstacle). An app that stays silent for 12 seconds is out (left the game). Who leads
 may **end** the game early: ranked as it stands (the ones still running by their lives), but without coins.
 
 **Coins for places 1–3:** set by the parents in Games › Jump (default 10 / 5 / 2), paid once, only for a game played
