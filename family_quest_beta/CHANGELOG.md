@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0-beta.10
+
+- New game «Snack Rush» (Imbiss-Express): run your own snack stand – cook step by step on several stations at once, serve before customers get angry; ingredients cost money, angry customers leave without paying, leftovers go to the shelf or the bin; the till decides; live view of everybody's till and angry customers; bots, guests, coins
+- FamilyTime games: everybody wishes a game for the next FamilyTime, then the family votes (parents can skip or set a game); children can fix a game for 150 coins; the game shows in the calendar and on the start page; switch and price in parent area › Family / Settings
+
 ## 1.1.0-beta.9
 
 - New game «Star Runner» (Sternschnuppen-Lauf): a 3-lane forest run at night – swipe to change lane, up to jump, down to duck; you run as your own avatar, the others as ghosts; bots, guests, coins for places 1–3

@@ -27,7 +27,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -1403,6 +1403,84 @@ def sternlauf_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.sternlauf.state("sternlauf", prof["id"])
 
 
+# ---------------------------------------------------------------- «Snack Rush» (familyquest/snack.py)
+class SnackStartIn(BaseModel):
+    solo: bool = False                   # alone (private) – optionally with practice bots
+    bots: int | None = None              # 0–5 bots
+    level: str | None = None             # easy | normal | hard
+    mode: str | None = None              # t3 | t5 | t8 (minutes)
+    limit: int | None = None             # 0 (off) | 3 | 5 | 8 angry customers: out
+    foods: str | None = Field(default=None, max_length=200)    # "burger,fries,…"
+    bot_ids: list[int | str] = []
+
+
+class SnackSyncIn(BaseModel):
+    t: float | None = None                                               # the game time of the app (seconds)
+    serves: list[list[float]] = Field(default_factory=list, max_length=30)   # [customer index, game time]
+    angry: list[int] = Field(default_factory=list, max_length=30)            # customers that left angry
+    spent: float | None = None                                           # money spent on ingredients so far
+
+
+def _lead_snack(fq, prof: dict) -> None:
+    if not fq.snack.may_lead("snack", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/snack")
+def snack_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).snack.state("snack", prof["id"])
+
+
+@router.get("/snack/rules")
+def snack_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).snack.rules_info()
+
+
+@router.post("/snack/start")
+def snack_start(body: SnackStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    forced = _no_bots(fq, prof, "snack", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
+    with _bots_not_remembered(fq, "snack", forced):
+        _run(fq.snack.start, "snack", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.snack.state("snack", prof["id"])
+
+
+@router.post("/snack/join")
+def snack_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.snack.join, "snack", prof["id"])
+    return fq.snack.state("snack", prof["id"])
+
+
+@router.post("/snack/begin")
+def snack_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_snack(fq, prof)
+    _run(fq.snack.begin, "snack", prof["id"])
+    return fq.snack.state("snack", prof["id"])
+
+
+@router.post("/snack/sync")
+def snack_sync(body: SnackSyncIn, request: Request, prof: dict = Playing) -> dict | None:
+    """The app reports its own serves, angry customers and spent money (only its own stand) and gets the others back."""
+    fq = app_of(request)
+    return _run(fq.snack.report, prof["id"], body.t, body.serves, body.angry, body.spent)
+
+
+@router.post("/snack/end")
+def snack_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_snack(fq, prof)
+    fq.snack.end("snack", prof["id"])
+    return fq.snack.state("snack", prof["id"])
+
+
 # ---------------------------------------------------------------- «Klatsch den Beat» (familyquest/klatsch.py)
 class KlatschStartIn(BaseModel):
     solo: bool = False                   # alone (private) – optionally with practice bots
@@ -2100,9 +2178,9 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
-                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "klatsch": fq.klatsch, "verboten": fq.verboten,
+                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
                  "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:
@@ -2259,6 +2337,84 @@ def poll_close(poll_id: int, request: Request, prof: dict = Learner) -> dict:
 @router.delete("/polls/{poll_id}")
 def poll_delete(poll_id: int, request: Request, prof: dict = Learner) -> dict:
     _run(app_of(request).community.delete_poll, prof, poll_id)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- FamilyTime: game wishes, the vote, a game bought with coins
+class FtWishIn(BaseModel):
+    game: str | None = None              # a family game of the app (key) …
+    title: str | None = Field(default=None, max_length=200)    # … or a board game typed in (max. 60 letters kept)
+
+
+class FtVoteIn(BaseModel):
+    choice: str = Field(max_length=200)
+
+
+class FtSetIn(BaseModel):
+    game: str | None = None
+    title: str | None = Field(default=None, max_length=200)
+    choice: str | None = Field(default=None, max_length=200)   # one of the wishes
+    random: bool = False                 # 🎲 among the leaders of a tie (or all wishes)
+
+
+@router.get("/familytime")
+def familytime(request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.state, prof)
+
+
+@router.post("/familytime/{eid}/wish")
+def familytime_wish(eid: int, body: FtWishIn, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.wish, prof, eid, body.game, body.title)
+    return {"ok": True}
+
+
+@router.delete("/familytime/{eid}/wish")
+def familytime_unwish(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.unwish, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/vote")
+def familytime_vote(eid: int, body: FtVoteIn, request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.vote, prof, eid, body.choice)
+
+
+@router.post("/familytime/{eid}/buy")
+def familytime_buy(eid: int, body: FtWishIn, request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.buy, prof, eid, body.game, body.title)
+
+
+@router.post("/familytime/{eid}/start")
+def familytime_start(eid: int, request: Request, prof: dict = Learner) -> dict:
+    return {"status": _run(app_of(request).familytime.start_vote, prof, eid)}
+
+
+@router.post("/familytime/{eid}/end")
+def familytime_end(eid: int, request: Request, prof: dict = Learner) -> dict:
+    return {"status": _run(app_of(request).familytime.end_vote, prof, eid)}
+
+
+@router.post("/familytime/{eid}/set")
+def familytime_set(eid: int, body: FtSetIn, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.set_game, prof, eid, body.game, body.title, body.choice, body.random)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/skip")
+def familytime_skip(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.skip, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/remove")
+def familytime_remove(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.remove_game, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/clear")
+def familytime_clear(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.clear, prof, eid)
     return {"ok": True}
 
 

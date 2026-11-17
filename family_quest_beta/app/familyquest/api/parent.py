@@ -1221,8 +1221,14 @@ def _cal(fn):
 @router.get("/calendar")
 def calendar_events(start: str, end: str, request: Request, me: dict = Parent) -> dict:
     """Own events and the chosen Home Assistant calendars (read-only) between start and end (ISO dates)."""
-    cal = app_of(request).calendar
-    return {"events": _cal(lambda: cal.range(start, end)), "settings": cal.settings(), "sources": cal.sources()}
+    fq = app_of(request)
+    cal = fq.calendar
+    events = _cal(lambda: cal.range(start, end))
+    games = fq.familytime.games_for_events([e["id"] for e in events if not e.get("readonly") and e.get("kind") == "familytime"])
+    for e in events:                            # FamilyTime: the game on its agenda (familytime.py)
+        if not e.get("readonly") and e.get("id") in games:
+            e["game"] = games[e["id"]]
+    return {"events": events, "settings": cal.settings(), "sources": cal.sources()}
 
 
 @router.post("/calendar")
@@ -1319,7 +1325,7 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
     return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES)}
 
 
-REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt")       # live games with coins for places 1–3 (game_rewards)
+REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt")       # live games with coins for places 1–3 (game_rewards)
 
 
 @router.get("/game-rewards")

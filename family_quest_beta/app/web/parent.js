@@ -1437,7 +1437,7 @@ async function printPoster(link) {
 
 // ---------------------------------------------------------------- the games of the app (parent area › Games)
 const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", T("Card Carousel")], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Pair Hunt")], ["werbinich", "🎭", T("Who am I?")],
-    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")], ["cube", "🧊", T("Cube solver")],
+    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["snack", "🍔", T("Snack Rush")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")], ["cube", "🧊", T("Cube solver")],
     ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
 // the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
 const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
@@ -1804,11 +1804,36 @@ async function communityView(main) {
   who.onchange = drawHist;
   main.append(h("h1", T("Family")),
     h("p.muted", T("Family council, polls and Wichteln – children can open topics and vote too. The games are on their own page «Games».")),
+    await familyTimeSection(me, { settings: redraw => familyTimeSettings(redraw, true) }),
     await councilSection(me), await pollsSection(me),
     await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }),
     await wichtelnSection(me),
     section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
   drawHist();
+}
+
+// FamilyTime games (community.js familyTimeSection): on/off, the coin price of «fix a game», when the wishes close –
+// in the «Family» tab (`inBox`: a small ⚙️ box at the end of the section) and in «Settings» (own section)
+function familyTimeSettings(after = null, inBox = false) {
+  const box = h("div" + (inBox ? ".game-settings.ftg-settings" : ""), h("p.small.muted", "…"));
+  call("parent/settings").then(s => {
+    const on = h("input", { type: "checkbox", checked: s.familytime_wishes !== false });
+    const price = h("input", { type: "number", min: 0, max: 10000, value: s.familytime_game_price ?? 150 });
+    const hours = h("input", { type: "number", min: 0, max: 336, value: s.familytime_vote_hours ?? 24 });
+    const save = async () => {
+      await call("parent/settings", { method: "PUT", body: { familytime_wishes: on.checked,
+        familytime_game_price: Math.max(0, Math.min(10000, Math.round(+price.value || 0))),
+        familytime_vote_hours: Math.max(0, Math.min(336, Math.round(+hours.value || 0))) } });
+      toast(T("Saved"), "good"); if (after) after();
+    };
+    box.replaceChildren(inBox ? h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")) : null,
+      h("label.check", on, T("Game wishes for FamilyTime (wishes, vote, buying a game)")),
+      h("div.grid2",
+        h("label.field", h("span", "🪙 ", T("Fix a game: price in coins")), price, h("span.hint", T("A child pays this to set the game of a FamilyTime that has none yet. 0 = buying is off."))),
+        h("label.field", h("span", "⏰ ", T("Wishes close (hours before)")), hours, h("span.hint", T("Then the vote starts by itself – one wish is set directly.")))),
+      h("button.btn.small", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
+  }).catch(() => box.replaceChildren());
+  return box;
 }
 
 // ---------------------------------------------------------------- games: per game active / without bots / inactive, start, coins, running tables
@@ -1829,7 +1854,7 @@ async function gamesView(main) {
       play.length ? h("div.game-play", ...play) : null,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
   };
-  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div");
+  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div");
   let quizHead = null;
   const showLive = async () => {
     let st = null; try { st = await call("community/quiz"); } catch {}
@@ -1980,6 +2005,16 @@ async function gamesView(main) {
            h("button.btn.ghost", { onclick: () => sternlaufStartDialog(true, open) }, SR_ICON, " ", T("Alone")))],
       await gameRewardsRow("sternlauf")));
   };
+  const showSnack = async () => {
+    let g = null; try { g = await call("community/snack"); } catch {}
+    const open = () => { const b = h("div.sn-live"); snack.replaceChildren(b); snackLive(b, me, () => render()); };
+    snack.replaceChildren(gsec("snack", "🍔 " + I18N.tr(T("Snack Rush")), appBtn("snack"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("A snack stand on every device: everybody serves the same customers – cook, fry and fill at the same time, serve before they get angry. Most money in the till wins. Alone for a high score, with practice bots or at the family table.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => snackStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => snackStartDialog(true, open) }, SN_ICON, " ", T("Alone")))],
+      await gameRewardsRow("snack")));
+  };
   const showKlatsch = async () => {
     let g = null; try { g = await call("community/klatsch"); } catch {}
     const open = () => { const b = h("div.kb-live"); klatsch.replaceChildren(b); klatschLive(b, me, () => render()); };
@@ -2041,7 +2076,7 @@ async function gamesView(main) {
   });
   const quiz = h("div", live, (quizHead = gsec("quiz", "🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)));
   const blocks = { quiz, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
-    heimwaerts, jump, sternlauf, klatsch, verboten, jass, werwolf, schach, dorfmarkt, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
+    heimwaerts, jump, sternlauf, snack, klatsch, verboten, jass, werwolf, schach, dorfmarkt, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
   for (const [k, el] of Object.entries(blocks)) {
     const g = GAME_LIST.find(x => x[0] === k);
     el.classList.add("game-block");
@@ -2075,7 +2110,7 @@ async function gamesView(main) {
     h("p.muted", T("Every game on its own: active, active without bots (only people play) or inactive – for everybody or only for chosen children. Parents can always play.")),
     search, general, runningGamesBox(), none, ...Object.values(blocks));
   filter();
-  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt();
+  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
 }
 
@@ -2364,8 +2399,8 @@ async function calendarView(main) {
   const time = e => e.all_day ? "" : fmtTime(e.start) + " ";
   const open = e => e.readonly ? toast("🔒 " + I18N.tr(T("From Home Assistant – read only"))) : eventDialog(e);
   const chip = e => h("button.cal-ev" + (e.readonly ? ".ro" : "") + (e.kind ? "." + e.kind : ""), {
-    title: (e.readonly ? "🔒 " + e.calendar + " · " : "") + e.title, onclick: ev => { ev.stopPropagation(); open(e); } },
-    e.icon ? e.icon + " " : "", time(e), C(e.title));
+    title: (e.readonly ? "🔒 " + e.calendar + " · " : "") + e.title + (e.game ? " · " + ftGameLine(e.game) : ""), onclick: ev => { ev.stopPropagation(); open(e); } },
+    e.icon ? e.icon + " " : "", time(e), C(e.title), e.game ? h("span.cal-game", " · " + e.game.icon + " ", C(ftTitle(e.game))) : null);
   const today = isoDay(new Date());
   const go = (v, date) => { P.calView = v; P.calDate = date ? isoDay(date) : P.calDate; render(); };
   const step = n => {
@@ -2427,7 +2462,8 @@ async function calendarView(main) {
   } else {
     const list = sorted(evs).sort((a, b) => a.start.localeCompare(b.start));
     body = h("ul.cal-list", ...list.map(e => h("li.row", { onclick: () => open(e) },
-      h("span.cal-when", fmtRange(e)), h("span.grow", e.icon ? e.icon + " " : "", C(e.title)), e.readonly ? h("span.small.muted", "🔒 ", C(e.calendar)) : null)),
+      h("span.cal-when", fmtRange(e)), h("span.grow", e.icon ? e.icon + " " : "", C(e.title),
+        e.game ? [h("br"), h("span.small.ftg-line", e.game.icon + " ", C(ftGameLine(e.game)))] : null), e.readonly ? h("span.small.muted", "🔒 ", C(e.calendar)) : null)),
       !list.length ? h("li.muted", T("No events this month.")) : null);
   }
   main.append(
@@ -2487,6 +2523,7 @@ function eventDialog(e) {
     h("div.grid2", h("label.field", T("From"), from), h("label.field", T("To"), to)),
     h("label.field", T("Symbol"), h("div.row.wrap", icon, ...EVENT_ICONS.map(ic => h("button.icon-btn", { type: "button", onclick: () => { icon.value = ic; } }, ic)))),
     offBox, note,
+    e.game ? h("p.small.ftg-line", e.game.icon + " ", C(ftGameLine(e.game)), " · ", h("button.link.small", { type: "button", onclick: () => { m.close(); P.tab = "community"; location.hash = "community"; render(); } }, T("FamilyTime games ›"))) : null,
     h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")), h("span.grow"),
       !isNew ? h("button.btn.small.bad", { onclick: async () => { if (!confirm(I18N.tr(T("Delete this event?")))) return; await call(`parent/calendar/${e.id}`, { method: "DELETE" }); m.close(); render(); } }, "🗑 ", T("Delete")) : null)));
   title.focus();
@@ -2689,6 +2726,8 @@ async function settingsView(main) {
         h("span.hint", T("Outfits, houses and furniture for the pets. XP spent there do not lower the level.")))),
     section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels)),
     h("button.btn.big", { onclick: save }, "💾 ", T("Save")),
+    section("👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), familyTimeSettings(),
+      h("button.link.small", { onclick: () => { P.tab = "community"; location.hash = "community"; render(); } }, T("Wishes and votes: tab «Family» ›"))),
     await crestSection(),
     linkSection(),
     themesSection(),
