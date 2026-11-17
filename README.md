@@ -7,7 +7,7 @@
 <p align="center">
   <b>The family app for Home Assistant: learning with points and avatars, chores, the Family Planer and a family
   dashboard – and games that bring the whole family to one table. Everything local, no cloud.</b><br>
-  learning packs · daily lesson · chore plan · 25+ family games · pets · shop &amp; pranks · behaviour weather · kiosk dashboard · internet time with UniFi
+  learning packs · daily lesson · chore plan · 25+ family games · guests via QR code · pets · shop &amp; pranks · calendar · Bring! shopping list · kiosk dashboard · internet time with UniFi
 </p>
 
 <p align="center">
@@ -34,12 +34,14 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
 
 | | | |
 |---|---|---|
-| ![Picture PIN](docs/screenshots/login.png) | ![The child's start page](docs/screenshots/child-home.png) | ![Games](docs/screenshots/games.png) |
-| **Picture PIN** – children log in by tapping or drawing 4 of 12 symbols (a digit PIN is possible too) | **Start page** – weather of the day, daily goal, chores, subjects | **Games** – 25+ games for the whole family, each switchable per child |
+| ![Picture PIN](docs/screenshots/login.png) | ![The child's start page](docs/screenshots/child-home.png) | ![Guess the song](docs/screenshots/song.png) |
+| **Picture PIN** – children log in by tapping or drawing 4 of 12 symbols (a digit PIN is possible too) | **Start page** – weather of the day, daily goal, chores, subjects | **Guess the song** – a Home Assistant speaker plays, everybody buzzes on their phone |
 | ![Jass](docs/screenshots/game-jass.png) | ![Chess](docs/screenshots/game-chess.png) | ![Dorfmarkt](docs/screenshots/game-dorfmarkt.png) |
 | **Jass** – the Swiss card game with bots as partners or opponents | **Chess** – against bots or each other, games can be paused | **Dorfmarkt** – trading board game in a Swiss village |
-| ![Heimwärts](docs/screenshots/game-heimwaerts.png) | ![Shop and pranks](docs/screenshots/shop.png) | ![Pets](docs/screenshots/pets.png) |
-| **Heimwärts** – race board game for 2–4 | **Shop** – avatar items and pranks like the ink bomb | **Pets** – feed, play, wash; pet sitting and babies |
+| ![Heimwärts](docs/screenshots/game-heimwaerts.png) | ![Guests via QR code](docs/screenshots/guests.png) | ![Shop and pranks](docs/screenshots/shop.png) |
+| **Heimwärts** – race board game for 2–4 | **Guests welcome** – grandparents, aunts and godparents join with a QR code, also from the guest Wi-Fi | **Shop** – avatar items and pranks like the ink bomb |
+| ![Pets](docs/screenshots/pets.png) | ![Internet time with UniFi](docs/screenshots/internet.png) | ![My devices](docs/screenshots/devices.png) |
+| **Pets** – feed, play, wash; pet sitting and babies | **Internet time** – directly integrated with UniFi: the child starts and pauses its own online time | **My devices** – the child switches and dims the lights of its own room |
 
 | | |
 |---|---|
@@ -75,6 +77,12 @@ Family Quest is made to bring the family together: parents and children sit at t
 phone, play, laugh, argue a little over the rules and celebrate the winner – instead of everybody on their own screen.
 Most games are built for 2–12 people from 6 to 99 years; bots only fill empty seats.
 
+**When grandma and grandpa, the aunt or the godfather come to visit, nobody watches from the sofa – they play along.**
+Guests need no account and no app: they scan the QR code of the game with their own phone, type their name and are
+at the table. They can even stay in your **guest Wi-Fi**: allow the guest network's IP range in the parent area and
+put a firewall rule in your router that lets exactly this range reach Home Assistant – guests from there only see the
+guest page of the game, nothing else of Family Quest or your home.
+
 - **Alone against bots** (easy / normal / hard) **or at a family table** on everybody's own phone; guests (friends,
   grandparents) join with a QR code. Places 1–3 earn coins, the winner wears the «No. 1» hat until the next game.
 - **Board and card games:** Jass (Schieber), chess (games can be paused), Dorfmarkt (property trading in a Swiss
@@ -95,9 +103,9 @@ Most games are built for 2–12 people from 6 to 99 years; bots only fill empty 
 - **Chore plan (Ämtliplan)** with fixed or rotating chores, duty or bonus, confirmed by the parents.
 - **Family Planer inside:** week plan, special chores, to-dos, shopping lists, awards and seasons – its persons are
   the Family Quest profiles and both share one points balance.
+- **Guess the song:** a Home Assistant speaker plays the family playlist, whoever buzzes first answers.
 - **Community:** live family quiz (kids create quizzes too, templates for cantons, capitals, flags …), family
   council with proposals and votes, polls and Wichteln (secret gift giving).
-- **Family calendar** with FamilyTime / OfflineTime, school holidays and Home Assistant calendars.
 - **Kiosk dashboard:** a read-only family screen for any browser – clock, crown, weather, learning progress, coins,
   open chores, family goal, Planer to-dos and calendar events.
 
@@ -105,7 +113,11 @@ Most games are built for 2–12 people from 6 to 99 years; bots only fill empty 
 - Sensors per child (XP today, coins, streak, level, open chores, daily goal), events for lessons, chores and badges,
   learning reminders as announcements.
 - **Devices per child:** lights (switch and dim), switches, fans, covers, scenes and scripts a child may control.
-- **Internet time with UniFi:** the child starts and stops its internet time; the budget comes from the shop.
+- **Internet time, directly integrated with UniFi:** pick the child's UniFi firewall / traffic rule – the child
+  starts and pauses its online time in the app, the minutes come from its budget (per day / week, block times) and
+  the shop. No automation or blueprint needed.
+- **Family calendar** with your Home Assistant calendars, school holidays, FamilyTime and OfflineTime.
+- **Shopping list synced with Bring!** (through the Home Assistant to-do integration) – right in the planner.
 
 **Parents and security**
 - Several parents with their own PIN; children with a 4-digit or picture PIN (4 of 12 symbols, tap or draw a line)
