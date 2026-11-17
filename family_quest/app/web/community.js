@@ -272,10 +272,13 @@ function quizLive(box, me, back) {
       actions: [{ ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
       onLeave: () => { full(false); stop(); back(); } });
     // a multilingual quiz: everybody picks the language of the questions on their own device
-    const langSel = langs.length > 1 ? h("select.quiz-lang", { "aria-label": T("Language of the questions"), title: T("Language of the questions"),
-      onchange: e => { qlang = e.target.value; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} last = ""; draw(raw); } },
-      ...langs.map(l => h("option", { value: l, selected: l === lang, title: QUIZ_LANG_NAMES[l] || l }, "🌐 " + l.toUpperCase()))) : null;
-    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎯 ", C(st.title))),
+    // the language of the questions (not the app language in ☰): a small caption says what the select is for
+    const langSel = langs.length > 1 ? h("label.quiz-lang-box", { title: T("Language of the questions") },
+      h("span.quiz-lang-cap", T("Questions")),
+      h("select.quiz-lang", { "aria-label": T("Language of the questions"),
+        onchange: e => { qlang = e.target.value; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} last = ""; draw(raw); } },
+        ...langs.map(l => h("option", { value: l, selected: l === lang, title: QUIZ_LANG_NAMES[l] || l }, "🌐 " + l.toUpperCase() + " ▾")))) : null;
+    const head = h("div.quiz-head.ql-head", h("div.row.head-title", menu, h("h1", "🎯 ", C(st.title))),
       h("div.row", langSel, st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null));
     // only the main action stays as a big button – everything else is in ☰
     const hostBar = isHost(st) && st.status !== "done" ? h("div.row.center.host-bar",
@@ -348,7 +351,7 @@ function quizLive(box, me, back) {
     if (st.players.some(p => p.id === me.id && p.place === 1 && p.points > 0)) { confetti(); try { Sound.play("done"); } catch {} }
     show(head, h("section.card.center", h("h2", "🏁 ", T("Result")),
       h("div.podium", ...[1, 0, 2].map(i => top[i] ? h("div.pod.p" + top[i].place, avatarSvg(top[i].avatar, top[i].place === 1 ? 84 : 64),
-        C(top[i].name, "strong"), h("span.small", top[i].points + " " + I18N.tr(T("points"))), h("div.step", top[i].place === 1 ? "🏆" : String(top[i].place))) : h("div")))),
+        C(top[i].name, "strong"), h("span.small", pts(top[i].points)), h("div.step", top[i].place === 1 ? "🏆" : String(top[i].place))) : h("div")))),
       scoreList(st, 99), h("div.row.center.host-bar", h("button.btn", { onclick: back }, T("Back"))));
   }
   function playersRow(st) {
@@ -615,12 +618,15 @@ async function councilSection(me = S.profile) {
 }
 
 // ---------------------------------------------------------------- personal history
+// «1 point» / «5 points» – the number with its word, for the lines of the history
+const pts = n => I18N.tr(+n === 1 ? T("1 point") : T("{0} points")).replace("{0}", n);
+
 function historyText(e) {
   const d = e.data;
-  if (e.kind === "quiz") return ["🎯", I18N.tr(T("Family quiz «{0}»: place {1} of {2} · {3} points")).replace("{0}", d.quiz).replace("{1}", d.place).replace("{2}", d.of).replace("{3}", d.points), d.won ? "🏆" : ""];
+  if (e.kind === "quiz") return ["🎯", I18N.tr(T("Family quiz «{0}»: place {1} of {2} · {3}")).replace("{0}", d.quiz).replace("{1}", d.place).replace("{2}", d.of).replace("{3}", pts(d.points)), d.won ? "🏆" : ""];
   if (e.kind === "council") return ["🗳️", I18N.tr(T("Family council «{0}»: {1}")).replace("{0}", d.topic).replace("{1}", d.decided === false ? I18N.tr(T("No decision")) : (d.winners || []).join(" / ") || "–"), d.mine_won ? I18N.tr(T("your idea!")) : ""];
   if (e.kind === "bingo") return ["🎱", I18N.tr(T("Bingo with {0} players: {1} won after {2} balls")).replace("{0}", d.players).replace("{1}", d.winner).replace("{2}", d.balls), d.won ? "🏆" : ""];
-  if (e.kind === "song") return ["🎵", I18N.tr(T("Guess the song: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "song") return ["🎵", I18N.tr(T("Guess the song: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points)), d.place === 1 ? "🏆" : ""];
   if (e.kind === "domino") return ["🁫", I18N.tr(T("Domino: {0} to {1} points")).replace("{0}", d.points).replace("{1}", d.best) + (d.pollona ? " · Pollona" : ""), d.won ? "🏆" : ""];
   if (e.kind === "paarjagd") return ["🧠", I18N.tr(T("Paarjagd: place {0} of {1} · {2} pairs")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.pairs)
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
@@ -629,11 +635,11 @@ function historyText(e) {
     : I18N.tr(T("Wer bin ich? – I was {0} – not found")).replace("{0}", d.char)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "kartenlauf") return ["🏁", I18N.tr(T("Kartenlauf: place {0} of {1} · {2} marbles home")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.home)
     + (d.teams ? " · " + I18N.tr(T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
-  if (e.kind === "stadtland") return ["🏙️", I18N.tr(T("Stadt-Land-Fluss: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+  if (e.kind === "stadtland") return ["🏙️", I18N.tr(T("Stadt-Land-Fluss: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
-  if (e.kind === "zeichnen") return ["🎨", I18N.tr(T("Zeichnen & Raten: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+  if (e.kind === "zeichnen") return ["🎨", I18N.tr(T("Zeichnen & Raten: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
-  if (e.kind === "wuerfel") return ["🎲", I18N.tr(T("Fünf Würfel: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+  if (e.kind === "wuerfel") return ["🎲", I18N.tr(T("Fünf Würfel: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "heimwaerts") return ["🏠", I18N.tr(T("Heimwärts: place {0} of {1} · {2} pieces home")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.home)
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
@@ -642,10 +648,10 @@ function historyText(e) {
     : I18N.tr(T("Jump alone: {0} m")).replace("{0}", d.score)) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
   if (e.kind === "klatsch") return ["👏", (d.players > 1
-    ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
-    : I18N.tr(T("Klatsch den Beat alone: {0} points")).replace("{0}", d.score)) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)
+    ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.score))
+    : I18N.tr(T("Klatsch den Beat alone: {0}")).replace("{0}", pts(d.score))) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)
     + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
-  if (e.kind === "verboten") return ["🚫", I18N.tr(T("Verbotene Wörter: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+  if (e.kind === "verboten") return ["🚫", I18N.tr(T("Verbotene Wörter: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points))
     + (d.teams ? " · " + I18N.tr(T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "jass") return ["♣️", I18N.tr(d.place === 1 ? T("Jass won {0} : {1}") : T("Jass lost {0} : {1}")).replace("{0}", d.points).replace("{1}", d.other)
     + (d.partner ? " · " + I18N.tr(T("with {0}")).replace("{0}", d.partner) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
@@ -660,14 +666,21 @@ function historyText(e) {
   return ["•", e.kind, ""];
 }
 
+// the history of a profile – 30 lines, then «Show more»; `title` null: only the list (the parent area has its own heading)
 async function historySection(profileId, title = T("My history")) {
-  const sec = h("section.card", h("h2", "📜 ", title));
+  const sec = title == null ? h("div.history-box") : h("section.card", h("h2", "📜 ", title));
   try {
     const items = await api("community/history" + (profileId ? "?profile_id=" + profileId : ""));
-    sec.append(items.length ? h("ul.list.history", ...items.map(e => { const [ic, txt, extra] = historyText(e);
+    if (!items.length) { sec.append(h("p.muted", T("Family quiz wins and council decisions will show up here."))); return sec; }
+    const line = e => { const [ic, txt, extra] = historyText(e);
       return h("li.row", h("span.big-ic", ic), h("span.grow", h("span", { translate: "no" }, txt), extra ? h("b", " ", extra) : null),
-        h("span.small.muted", new Date(e.at.replace(" ", "T")).toLocaleDateString(I18N.locale, { day: "numeric", month: "short" }))); }))
-      : h("p.muted", T("Family quiz wins and council decisions will show up here.")));
+        h("span.small.muted", new Date(e.at.replace(" ", "T")).toLocaleDateString(I18N.locale, { day: "numeric", month: "short" }))); };
+    const list = h("ul.list.history"), PAGE = 30;
+    let n = 0;
+    const more = h("button.btn.small.ghost.history-more", { onclick: () => page() }, T("Show more"));
+    const page = () => { list.append(...items.slice(n, n + PAGE).map(line)); n += PAGE; more.hidden = n >= items.length; };
+    page();
+    sec.append(list, more);
   } catch (e) { sec.append(h("p.bad", e.message)); }
   return sec;
 }
@@ -736,11 +749,13 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
         quizzes.length ? h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all")) : null,
         file),
       h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")));
-    m = modal(h("div.form", h("h2", "🎯 ", T("New quiz")),
-      h("button.btn.big", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz")),
-      aiBox,
-      h("div.row.wrap", h("h3.grow", T("… or take a template")), h("label.row.small", { style: { flexWrap: "nowrap" } }, T("Show:"), regionSel)),
-      tplGrid, h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
+    // templates first (one tap), the own quiz next to it; AI and import folded away – rarely needed
+    m = modal(h("div.form", h("div.row.wrap", h("h2.grow", "🎯 ", T("New quiz")),
+        h("button.btn", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz"))),
+      h("div.row.wrap", h("h3.grow", T("Take a template")), h("label.row.small", { style: { flexWrap: "nowrap" } }, T("Show:"), regionSel)),
+      tplGrid,
+      h("details.ai-fold", h("summary", "🤖 ", T("With an AI or from a file")), aiBox),
+      h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
     drawTemplates();
   };
   const newBtn = h("button.btn", { onclick: newQuiz }, "+ ", T("New quiz"));

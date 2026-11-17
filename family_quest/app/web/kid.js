@@ -371,10 +371,10 @@ function dashboardView() {
   const today = h("section.card.today",
     ring(xp, goal, { size: 132, stroke: 14, color: met ? "var(--good)" : "var(--accent)",
       label: h("span", h("b.big", fmt(xp)), h("br"), h("span.small.muted", "/ " + fmt(goal) + " XP"),
-        h("br"), h("span.small.xp-total", { title: T("All XP so far") }, "Σ " + fmt(me.level.xp) + " XP")) }),
+        h("br"), h("span.small.xp-total", { title: T("All XP so far") }, I18N.tr(T("Total {0} XP")).replace("{0}", fmt(me.level.xp)))) }),
     h("div.today-text",
       h("h2", met ? T("Daily goal reached! 🎉") : T("Today's goal")),
-      h("p.muted", met ? T("Everything extra counts for your level.") : T("A short lesson mixes repetitions and new words.")),
+      h("p.muted", met ? T("Everything extra counts for your level.") : I18N.tr(T("Collect {0} XP today – every lesson and every right answer counts.")).replace("{0}", fmt(goal))),
       h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Daily lesson"))));
 
   const subjects = h("section",
@@ -982,6 +982,10 @@ function mathStep(step, submit) {
 }
 
 // ---------------------------------------------------------------- shop
+// a progress bar with the numbers under it («120 / 500 XP») – how far it still is
+const barCount = (have, total, unit = "") => h("div.bar-count", bar(Math.min(have, total), total),
+  h("span.small.muted", fmt(Math.min(have, total)) + " / " + fmt(total) + (unit ? " " + unit : "")));
+
 async function shopView() {
   let d;
   try { d = await api("me/shop"); } catch (e) { return toast(e.message, "bad"); }
@@ -996,7 +1000,7 @@ async function shopView() {
       h("div.price", accIcon(o.account) + " " + fmt(o.cost)),
       o.approval ? h("span.small.muted", "👪 ", T("Parents confirm")) : null,
       o.can ? h("button.btn", { onclick: () => redeem(o) }, T("Redeem")) : h("div.small.muted.reason", o.reason),
-      !o.can && o.missing > 0 ? bar(o.cost - o.missing, o.cost) : null))) : h("p.muted", T("The shop is still empty.")),
+      !o.can && o.missing > 0 ? barCount(o.cost - o.missing, o.cost, accIcon(o.account)) : null))) : h("p.muted", T("The shop is still empty.")),
     await avatarSpecials(),
     await xpBackgrounds(),
     await pranksCard(),
@@ -1036,7 +1040,7 @@ async function avatarSpecials() {
       return h("div.offer.card" + (i.unlocked || d.coins >= i.rule.cost ? "" : ".cant"),
         avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
         i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
-          : [h("div.price", i.rule.cost > 0 ? "🪙 " + i.rule.cost : T("Free")), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, i.rule.cost > 0 ? T("Buy") : T("Unlock")) : bar(d.coins, i.rule.cost)]);
+          : [h("div.price", i.rule.cost > 0 ? "🪙 " + i.rule.cost : T("Free")), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, i.rule.cost > 0 ? T("Buy") : T("Unlock")) : barCount(d.coins, i.rule.cost, "🪙")]);
     })));
 }
 
@@ -1065,7 +1069,7 @@ async function xpBackgrounds() {
       return h("div.offer.card" + (i.unlocked || have >= i.rule.xp ? "" : ".cant"),
         avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
         i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
-          : [h("div.price", i.rule.xp > 0 ? "✨ " + i.rule.xp + " XP" : T("Free")), have >= i.rule.xp ? h("button.btn.small", { onclick: () => get(i) }, T("Unlock")) : bar(have, i.rule.xp)]);
+          : [h("div.price", i.rule.xp > 0 ? "✨ " + i.rule.xp + " XP" : T("Free")), have >= i.rule.xp ? h("button.btn.small", { onclick: () => get(i) }, T("Unlock")) : barCount(have, i.rule.xp, "XP")]);
     })));
 }
 

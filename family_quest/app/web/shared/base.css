@@ -1825,6 +1825,9 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 /* «Made with your AI» in «New quiz» (community.js) */
 .ai-box { margin: 4px 0 8px; }
 .ai-box p { margin: 6px 0 0; }
+.ai-fold { border-top: 1px solid var(--line); padding-top: 8px; }
+.ai-fold > summary { cursor: pointer; font-weight: 700; padding: 6px 0; min-height: 32px; }
+.ai-fold[open] > .ai-box { margin-top: 6px; }
 /* quiz pictures: a big flag, a big emoji, an own SVG drawing (community.js questionImage) */
 .q-img.q-flag img { height: min(26vh, 170px); width: auto; max-width: 100%; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 .q-img.q-emoji { font-size: min(18vh, 120px); line-height: 1.1; text-align: center; }
@@ -1854,6 +1857,11 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 @media (prefers-reduced-motion: reduce) { .starter-banner.dice .starter-die { animation: none; } }
 .quiz-head .head-title { flex-wrap: nowrap; min-width: 0; gap: 0; }
 .quiz-head .head-title h1 { min-width: 0; }
+/* family quiz: the title may take two lines; the question language with a caption («Questions 🌐 DE ▾») */
+.quiz-full .quiz-head.ql-head h1, .quiz-head.ql-head h1 { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; line-height: 1.2; font-size: 1.15rem; overflow-wrap: anywhere; }
+.quiz-lang-box { display: grid; justify-items: center; gap: 0; line-height: 1; }
+.quiz-lang-cap { font-size: .62rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
 
 /* older Safari (before iOS 16: no container queries; before iOS 15: no aspect-ratio) – sizes from the screen */
 /* newer browsers (Safari 16+, Chrome 105+): sizes from the space the game really has (container queries) */
@@ -1892,6 +1900,9 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .qe-langs { margin: 6px 0 10px; }
 .qe-langs-body { display: grid; gap: 8px; margin-top: 8px; padding: 10px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .qe-lang-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qe-lang-chips .chip { display: inline-flex; align-items: center; gap: 2px; font-size: .88rem; font-weight: 700; padding: 2px 2px 2px 10px;
+  box-shadow: none; background: var(--card); border: 1px solid var(--line); border-radius: 99px; }
+.qe-lang-chips .chip .icon-btn { width: 26px; height: 26px; min-width: 0; min-height: 0; padding: 0; font-size: .75rem; border: 0; background: transparent; box-shadow: none; }
 .qe-tr-block { display: grid; gap: 6px; margin-top: 8px; padding: 8px 10px; border-left: 3px solid var(--accent); border-radius: 8px; background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .qe-tr-head { font-weight: 600; opacity: .8; }
 .qe-tr-answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
@@ -1901,3 +1912,8 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .quiz-running .btn.danger { background: var(--bad, #e03131); color: #fff; }
 /* the language list in a drawer (☰ of a game, menu of the app): opens to the right of the flag, inside the screen */
 .drawer .foot-lang .lang-menu { left: 0; right: auto; max-height: min(60vh, 460px); overflow-y: auto; z-index: 70; }
+/* native file inputs («Choose File»): the button part looks like the app's buttons */
+input[type=file] { font: inherit; font-size: .9rem; color: var(--muted); max-width: 100%; }
+input[type=file]::file-selector-button { font: inherit; font-weight: 700; margin-right: 10px; padding: 8px 14px; border-radius: 10px; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); color: var(--accent); }
+input[type=file]::file-selector-button:hover { background: color-mix(in srgb, var(--accent) 20%, var(--card)); }

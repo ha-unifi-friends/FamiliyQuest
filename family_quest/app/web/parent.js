@@ -612,6 +612,12 @@ async function profileDialog(p, persons, role = "kid") {
 }
 
 // ---------------------------------------------------------------- packs
+// a search that finds nothing: say so, with a link that clears the search
+function noMatch(text, reset) {
+  return h("p.muted.no-match", { hidden: true }, "🔍 ", text, " · ",
+    h("a", { href: "#", onclick: e => { e.preventDefault(); reset(); } }, T("Reset search")));
+}
+
 // an open «⋯» menu closes with a tap anywhere else
 document.addEventListener("click", e => document.querySelectorAll("details.more-menu[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
 
@@ -685,9 +691,12 @@ async function packsView(main) {
   // search: filters the pack cards (title, subject, level, units, id) – remembered while the page is open
   const search = h("input.pack-search", { type: "search", placeholder: "🔍 " + I18N.tr(T("Search packs …")), value: P.packSearch || "",
     "aria-label": T("Search packs …"), oninput: () => { P.packSearch = search.value; filterPacks(); } });
+  const noPacks = noMatch(T("No packs found"), () => { search.value = ""; P.packSearch = ""; filterPacks(); });
   const filterPacks = () => {
     const q = (search.value || "").trim().toLowerCase();
-    main.querySelectorAll(".card.pack, .pack-mini").forEach(c => { c.hidden = !!q && !((c.dataset.find || c.textContent).toLowerCase().includes(q)); });
+    const all = [...main.querySelectorAll(".card.pack, .pack-mini")];
+    all.forEach(c => { c.hidden = !!q && !((c.dataset.find || c.textContent).toLowerCase().includes(q)); });
+    noPacks.hidden = !q || all.some(c => !c.hidden);
     main.querySelectorAll("section.sec, section.card.sec").forEach(sec => {
       const cards = sec.querySelectorAll(".card.pack, .pack-mini");
       if (cards.length) sec.hidden = !!q && [...cards].every(c => c.hidden) && !sec.classList.contains("kid-packs");
@@ -697,7 +706,7 @@ async function packsView(main) {
   main.append(pageHead(T("Learning packs"), seg,
     h("button.btn.ghost", { title: T("All packs in one JSON file"), onclick: () => download(null, "json") }, "⬇️ ", T("Export all")),
     h("button.btn", { onclick: () => { P.tab = "import"; render(); } }, "📥 ", T("Import"))));
-  main.append(search);
+  main.append(search, noPacks);
   if (mode === "kids") return main.append(...byKid(),
     drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null);
   const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
@@ -708,8 +717,8 @@ async function packsView(main) {
     ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
   function packRewards(p) {
     const r = p.rewards || {};
-    const xp = h("input", { type: "number", min: 0, max: 10000, value: r.xp ?? "", placeholder: T("Family rule") });
-    const coins = h("input", { type: "number", min: 0, max: 10000, value: r.coins ?? "", placeholder: T("Family rule") });
+    const xp = h("input", { type: "number", min: 0, max: 10000, value: r.xp ?? "", placeholder: "–", inputmode: "numeric" });
+    const coins = h("input", { type: "number", min: 0, max: 10000, value: r.coins ?? "", placeholder: "–", inputmode: "numeric" });
     const num = el => el.value === "" ? null : Math.max(0, parseInt(el.value, 10) || 0);
     const save = async () => {
       try { await call(`parent/packs/${encodeURIComponent(p.id)}/rewards`, { method: "POST", body: { xp: num(xp), coins: num(coins) } }); m.close(); toast(T("Saved"), "good"); render(); }
@@ -717,9 +726,10 @@ async function packsView(main) {
     };
     const m = modal(h("div.form", h("h2", "🏅 ", C(p.title)),
       h("p.small.muted", T("What a finished lesson of this pack gives. Empty: the family rule (Rewards › Rules «Lesson finished»). The daily limit of the rule still applies.")),
-      h("label.field", "⭐ ", T("XP per finished lesson"), xp), h("label.field", "🪙 ", T("Coins per finished lesson"), coins),
-      h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => { xp.value = ""; coins.value = ""; save(); } }, T("Family rule")),
-        h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+      // both numbers side by side, the icon inline in the label; empty = the family rule, «Reset» empties both
+      h("div.reward-nums", h("label.field", h("span", "⭐ ", T("XP per finished lesson")), xp), h("label.field", h("span", "🪙 ", T("Coins per finished lesson")), coins)),
+      h("p.small.muted", T("Empty = family rule"), " · ", h("a", { href: "#", onclick: e => { e.preventDefault(); xp.value = ""; coins.value = ""; } }, T("Reset"))),
+      h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   }
   async function setStatus(id, status) { await call(`parent/packs/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } }); render(); }
   async function del(p) { if (!confirm(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
@@ -929,7 +939,8 @@ function tableMapping(t, out) {
     h("h3", T("Pack")),
     h("div.grid3", h("label.field", T("Title"), meta.titel), h("label.field", T("Subject"), meta.fach), h("label.field", T("Level"), meta.stufe),
       h("label.field", T("Language learnt"), meta.sprache), h("label.check", meta.privat, T("Private (from school material, never share)"))),
-    h("button.btn", { onclick: build }, T("Create draft"))));
+    h("div.row", h("button.btn", { onclick: build }, T("Create draft")),
+      h("button.btn.ghost", { onclick: () => out.replaceChildren() }, T("Cancel")))));
   async function build() {
     const c = {}; for (const [k, s] of Object.entries(cols)) if (s.value !== "") c[k] = +s.value;
     const m = { titel: meta.titel.value, fach: meta.fach.value, stufe: meta.stufe.value, sprache: meta.sprache.value, privat: meta.privat.checked };
@@ -1322,6 +1333,7 @@ async function shopSettingsView(main) {
   // search: own rewards (name) and avatar items (name, kind) – matching groups open, the others hide
   const search = h("input.pack-search", { type: "search", placeholder: "🔍 " + I18N.tr(T("Search the shop …")), value: P.shopSearch || "",
     "aria-label": T("Search the shop …"), oninput: () => { P.shopSearch = search.value; filterShop(); } });
+  const noShop = noMatch(T("Nothing found in the shop"), () => { search.value = ""; P.shopSearch = ""; filterShop(); });
   const filterShop = () => {
     const q = (search.value || "").trim().toLowerCase();
     main.querySelectorAll(".reward-ed").forEach(c => { c.hidden = !!q && ![...c.querySelectorAll("input")].some(i => (i.value || "").toLowerCase().includes(q)); });
@@ -1332,9 +1344,10 @@ async function shopSettingsView(main) {
       dt.hidden = !!q && !any;
       if (q && any) dt.open = true;
     });
+    noShop.hidden = !q || [...main.querySelectorAll(".reward-ed, details.shop-slot")].some(x => !x.hidden);
   };
   setTimeout(filterShop);
-  main.append(pageHead(T("Shop")), search,
+  main.append(pageHead(T("Shop")), search, noShop,
     sectionAdd("🎁 " + I18N.tr(T("Own rewards")), h("button.btn.small", { onclick: () => rewardBox.prepend(rewardCard({ name: "", kind: "voucher", account: "coins", cost: 50, approval: 1, weekly_limit: null, icon: "🎁", config: {}, active: 1 })) }, "+ ", T("Add reward")),
       h("p.small.muted", T("Your own rewards come first in the children's shop.")), rewardBox),
     section("🧑‍🎨 " + I18N.tr(T("Avatar items")),
@@ -1786,7 +1799,7 @@ async function communityView(main) {
   const profiles = await call("parent/profiles");
   const who = h("select", ...profiles.map(p => h("option", { value: p.id }, p.name)));
   const hist = h("div");
-  const drawHist = async () => hist.replaceChildren(await historySection(+who.value, I18N.tr(T("History"))));
+  const drawHist = async () => hist.replaceChildren(await historySection(+who.value, null));   // the list only – the section has the heading
   who.onchange = drawHist;
   main.append(h("h1", T("Family")),
     h("p.muted", T("Family council, polls and Wichteln – children can open topics and vote too. The games are on their own page «Games».")),
@@ -1800,7 +1813,19 @@ async function gamesView(main) {
   const me = P.meta.me;
   const [s, profiles, data] = await Promise.all([call("parent/settings"), call("parent/profiles"), call("parent/games")]);
   const access = gameAccess(profiles.filter(p => p.role === "kid"), data);
-  const gsec = (k, title, actions, ...content) => sectionAdd(title, actions, access.bar(k), ...content);
+  // every game folded (the page is long on phones) – open: games running now and the ones opened before;
+  // inside: first what to play, then – set apart – its settings (status, coins)
+  const runningNow = new Set((await call("parent/games/running").catch(() => [])).map(g => g.game));
+  P.openGames = P.openGames || new Set();
+  const gsec = (k, title, actions, ...content) => {
+    const flat = content.flat(Infinity).filter(x => x != null && x !== false);
+    const settings = flat.filter(x => x.classList && x.classList.contains("pj-rewards")), play = flat.filter(x => !settings.includes(x));
+    return h("details.card.sec.game-sec", { open: runningNow.has(k) || P.openGames.has(k), "data-game": k,
+        ontoggle: e => e.currentTarget.open ? P.openGames.add(k) : P.openGames.delete(k) },
+      h("summary.sec-head", h("h2", title, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null), h("div.head-actions", ...[].concat(actions))),
+      play.length ? h("div.game-play", ...play) : null,
+      h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
+  };
   const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div");
   let quizHead = null;
   const showLive = async () => {
@@ -2012,12 +2037,15 @@ async function gamesView(main) {
   // search: filters the games by name – remembered while the page is open
   const search = h("input.pack-search", { type: "search", placeholder: "🔍 " + I18N.tr(T("Search games …")), value: P.gameSearch || "",
     "aria-label": T("Search games …"), oninput: () => { P.gameSearch = search.value; filter(); } });
-  const none = h("p.muted.games-none", { hidden: true }, T("No game found."));
+  const none = noMatch(T("No game found."), () => { search.value = ""; P.gameSearch = ""; filter(); });
   const filter = () => {
     const q = (search.value || "").trim().toLowerCase();
     let shown = 0;
-    for (const el of Object.values(blocks)) { el.hidden = !!q && !el.dataset.find.includes(q); if (!el.hidden) shown++; }
-    none.hidden = shown > 0;
+    for (const el of Object.values(blocks)) {
+      el.hidden = !!q && !el.dataset.find.includes(q); if (!el.hidden) shown++;
+      if (q && !el.hidden) el.querySelectorAll("details.game-sec").forEach(d => { d.open = true; });   // a game searched for opens
+    }
+    none.hidden = !q || shown > 0;
   };
   // for every game: who begins, guests, all on / off
   const starter = h("select", { onchange: async () => { await call("parent/settings", { method: "PUT", body: { game_starter: starter.value } }); toast(T("Saved"), "good"); } },

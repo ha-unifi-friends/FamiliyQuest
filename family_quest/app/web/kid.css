@@ -229,6 +229,17 @@
 .offer-ic { font-size: 3rem; }
 .price { font-size: 1.3rem; font-weight: 900; }
 .offer .bar { width: 100%; }
+.bar-count { display: grid; gap: 2px; width: 100%; justify-items: center; }
+.offer .btn { min-height: 44px; }
+/* phones: two columns of smaller cards (one column of big cards made the shop very long) */
+@media (max-width: 480px) {
+  .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .shop-grid .offer { padding: 10px 8px; gap: 4px; }
+  .shop-grid .offer svg { width: 64px; height: 64px; }
+  .shop-grid .offer strong { font-size: .9rem; overflow-wrap: anywhere; }
+  .shop-grid .price { font-size: 1.05rem; }
+  .shop-grid .offer-ic { font-size: 2.2rem; }
+}
 .history { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .history li { display: flex; gap: 8px; align-items: center; }
 .status.approved { color: var(--good); } .status.rejected, .status.failed { color: var(--bad); } .status.pending { color: var(--warn); }
@@ -470,3 +481,7 @@
 .table-note-txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .table-note .btn.small { flex: none; }
 .table-note .icon-btn { flex: none; }
+/* children: tap targets of at least 44 px (Continue, + Start, Buy, quiz tabs, ⟳, avatar tabs) */
+.course-level .btn.small, .subject-go, .offer .btn, .inst-filter button, .av-tabs button, .quiz-running .btn, .learn-start .btn { min-height: 44px; }
+.fq-head .icon-btn { min-width: 44px; min-height: 44px; }
+.inst-item > summary { min-height: 44px; }
