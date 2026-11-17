@@ -112,8 +112,10 @@ class Rewards:
         self._add_daily(pid, seconds=max(0, min(int(seconds), 3600)), lessons=lessons)
 
     # ---------------------------------------------------------------- rules
-    def emit(self, pid: int, event: str, ref: str = "", ctx: dict | None = None, _depth: int = 0) -> list[dict]:
-        """Apply all rules for an event. Returns the bookings (incl. follow-up events)."""
+    def emit(self, pid: int, event: str, ref: str = "", ctx: dict | None = None, _depth: int = 0,
+             amounts: dict | None = None) -> list[dict]:
+        """Apply all rules for an event. Returns the bookings (incl. follow-up events).
+        `amounts` {account: amount} replaces the amount of the rules of that account (e.g. a pack's own XP / coins)."""
         ctx = ctx or {}
         out: list[dict] = []
         active = {a["key"] for a in self.accounts()}
@@ -125,6 +127,8 @@ class Rewards:
                 if any(str(ctx.get(k)) != str(v) for k, v in cond.items() if v not in (None, "")):
                     continue
                 amount = float(r["amount"])
+                if amounts and amounts.get(r["account"]) is not None:
+                    amount = float(amounts[r["account"]])
                 if r["daily_limit"] is not None:
                     used = float(self.db.val(
                         """SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account=? AND event=?

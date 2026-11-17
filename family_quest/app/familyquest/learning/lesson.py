@@ -290,6 +290,11 @@ class Learning:
                 "steps": [{"kind": s["kind"], **s["public"]} for s in data["steps"]],
                 "answered": data["answered"]}
 
+    def pack_rewards(self, pack_id: str | None) -> dict:
+        """A pack's own XP / coins per finished lesson (parent area › Packs) – None: the family rule."""
+        own = (self.db.get_setting("pack_rewards", {}) or {}).get(pack_id or "") or {}
+        return {k: own.get(k) for k in ("xp", "coins") if own.get(k) is not None}
+
     def _perfect_coins(self, pid: int) -> int:
         """Coins for a perfect lesson – within the parents' daily coin limit of the lesson rule (if it has one)."""
         v = self.db.get_setting("lesson_perfect_coins")
@@ -368,7 +373,8 @@ class Learning:
             completed = done >= max(1, total // 2)
             self.rewards.add_time(pid, seconds, lessons=1 if completed else 0)
             if completed and row["mode"] in ("path", "daily", "cards"):
-                bookings += self.rewards.emit(pid, "lesson_done", ref=sid, ctx={"mode": row["mode"]})
+                own = self.pack_rewards(data.get("pack")) if row["mode"] != "daily" else {}
+                bookings += self.rewards.emit(pid, "lesson_done", ref=sid, ctx={"mode": row["mode"]}, amounts=own)
                 if total and done == total and right == total:          # a perfect lesson: every answer right
                     coins = self._perfect_coins(pid)
                     if coins > 0 and "coins" in {a["key"] for a in self.rewards.accounts()}:

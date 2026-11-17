@@ -546,11 +546,34 @@ def packs(request: Request, me: dict = Parent) -> dict:
     for r in fq.db.q("SELECT pack_id, profile_id FROM pack_profile"):
         act.setdefault(r["pack_id"], []).append(r["profile_id"])
     out = []
+    own = fq.db.get_setting("pack_rewards", {}) or {}
     for p in fq.packs.all():
         s = p.summary()
         s["profiles"] = act.get(p.id, [])
+        s["rewards"] = own.get(p.id) or {}
         out.append(s)
     return {"packs": out}
+
+
+class PackRewardsIn(BaseModel):
+    xp: int | None = None                # None: the family rule (Rewards › Rules «Lesson finished»)
+    coins: int | None = None
+
+
+@router.post("/packs/{pack_id}/rewards")
+def pack_rewards(pack_id: str, body: PackRewardsIn, request: Request, me: dict = Parent) -> dict:
+    """XP and coins per finished lesson of this pack – overrides the family rule for this pack."""
+    fq = app_of(request)
+    if not fq.packs.get(pack_id):
+        raise HTTPException(404, "Unknown pack")
+    own = dict(fq.db.get_setting("pack_rewards", {}) or {})
+    val = {k: max(0, min(10000, v)) for k, v in (("xp", body.xp), ("coins", body.coins)) if v is not None}
+    if val:
+        own[pack_id] = val
+    else:
+        own.pop(pack_id, None)
+    fq.db.set_setting("pack_rewards", own)
+    return {"rewards": val}
 
 
 @router.post("/packs/activate")

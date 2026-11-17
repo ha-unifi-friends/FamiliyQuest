@@ -624,6 +624,10 @@ async function packsView(main) {
       h("div.small.muted", p.kind === "bundle" ? T("Level pack") : subjectName(p.subject.key), p.level ? h("span", { translate: "no" }, " · " + p.level) : null, " · ",
         STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : "")),
       p.kind === "pack" ? h("button.btn.small.ghost", { onclick: () => packEditor(p.id) }, "✏️ ", T("Edit")) : null,
+      p.kind === "pack" ? h("button.btn.small.ghost", { title: T("XP and coins per finished lesson of this pack"), onclick: () => packRewards(p) },
+        "🏅 ", p.rewards && (p.rewards.xp != null || p.rewards.coins != null)
+          ? [p.rewards.xp != null ? p.rewards.xp + " XP" : "", p.rewards.xp != null && p.rewards.coins != null ? " · " : "", p.rewards.coins != null ? p.rewards.coins + " 🪙" : ""]
+          : T("Rewards")) : null,
       h("button.btn.small.ghost", { title: T("Export as ZIP (with pictures)"), onclick: () => download(p.id, "zip") }, "⬇️ ZIP"),
       h("button.btn.small.ghost", { title: T("Export as JSON"), onclick: () => download(p.id, "json") }, "⬇️ JSON"),
       p.kind === "pack" ? h("button.btn.small.ghost", { title: T("Opens the pack in the app in a new tab – parents can try every pack"), onclick: () => openInApp("pack/" + encodeURIComponent(p.id)) }, "▶ ", T("Try in the app")) : null,
@@ -669,6 +673,21 @@ async function packsView(main) {
     drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
     levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
     ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
+  function packRewards(p) {
+    const r = p.rewards || {};
+    const xp = h("input", { type: "number", min: 0, max: 10000, value: r.xp ?? "", placeholder: T("Family rule") });
+    const coins = h("input", { type: "number", min: 0, max: 10000, value: r.coins ?? "", placeholder: T("Family rule") });
+    const num = el => el.value === "" ? null : Math.max(0, parseInt(el.value, 10) || 0);
+    const save = async () => {
+      try { await call(`parent/packs/${encodeURIComponent(p.id)}/rewards`, { method: "POST", body: { xp: num(xp), coins: num(coins) } }); m.close(); toast(T("Saved"), "good"); render(); }
+      catch (e) { toast(e.message, "bad"); }
+    };
+    const m = modal(h("div.form", h("h2", "🏅 ", C(p.title)),
+      h("p.small.muted", T("What a finished lesson of this pack gives. Empty: the family rule (Rewards › Rules «Lesson finished»). The daily limit of the rule still applies.")),
+      h("label.field", "⭐ ", T("XP per finished lesson"), xp), h("label.field", "🪙 ", T("Coins per finished lesson"), coins),
+      h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => { xp.value = ""; coins.value = ""; save(); } }, T("Family rule")),
+        h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  }
   async function setStatus(id, status) { await call(`parent/packs/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } }); render(); }
   async function del(p) { if (!confirm(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
 }
