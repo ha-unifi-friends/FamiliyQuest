@@ -42,6 +42,12 @@
 .subject-ic { font-size: 2.2rem; width: 54px; height: 54px; display: grid; place-items: center; border-radius: 16px;
   background: color-mix(in srgb, var(--c) 16%, transparent); flex: none; }
 .subject-body { display: grid; gap: 4px; min-width: 0; }
+.subject.trial { outline: 2px dashed color-mix(in srgb, var(--c) 60%, transparent); outline-offset: -2px; }
+.status-badge { justify-self: start; padding: 1px 8px; border-radius: 99px; background: var(--chip, rgba(127,127,127,.15)); font-weight: 600; }
+.subject-wrap { display: grid; gap: 6px; }
+.subject-wrap .subject { width: 100%; }
+.subject-go { justify-self: end; }
+.learn-start { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .subject .next { color: var(--muted); }
 .due { display: inline-block; width: fit-content; font-size: .78rem; font-weight: 800; color: #fff; background: var(--warn);
   border-radius: 99px; padding: 1px 9px; }

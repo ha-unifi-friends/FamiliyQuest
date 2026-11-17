@@ -35,6 +35,9 @@ class FamilyQuest:
         self.db = db or Database(settings.db_path)
         self.packs = PackStore(self.db, settings.media_dir)
         self.rewards = Rewards(self.db)
+        av.set_overrides(self.db.get_setting("shop_items", {}))          # the parents' changes to the shop
+        if self.db.q1("SELECT 1 FROM setting WHERE key='xp_items_from'") is None:   # «new» XP count from today on
+            self.db.set_setting("xp_items_from", int(self.db.val("SELECT MAX(id) FROM ledger", default=0) or 0))
         self.learning = Learning(self.db, self.packs, self.rewards)
         from .decks import Decks
         self.decks = Decks(self.db, self.packs)
@@ -221,7 +224,7 @@ class FamilyQuest:
             nxt = next((u for u in prog["units"] if u["id"] == prog["next"]), None)
             tiles.append({"pack": pack.id, "title": pack.title, "subject": s["subject"], "color": s.get("color"),
                           "icon": s.get("icon"), "stars": prog["stars"], "max_stars": prog["max_stars"],
-                          "percent": prog["percent"], "due": prog["due"], "next": nxt})
+                          "percent": prog["percent"], "due": prog["due"], "next": nxt, "status": s.get("status", "active")})
         return tiles
 
     def avatar_state(self, pid: int) -> tuple[int, set[str], set[str]]:

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0-beta.2
+
+- Parents see every learning pack in the app – also drafts and switched-off packs – to try them out; nothing is locked for them (the daily lesson uses only active packs)
+- The «Learning» page in the app: start the daily lesson and every assigned subject on its own, then the language courses
+- Learning packs: own XP and coins per finished lesson (overrides the family rule)
+- 15 new avatar backgrounds, each unlocked with 500 new XP – the XP account and the level stay as they are
+- Parent area › Shop (new): own rewards on top, every avatar item can be switched off, get a new price or be paid with new XP
+- Parent area: «Packs» is now «Learning packs», with a search; imported drafts appear on top and can be assigned to children right away; «Try in the app» on every pack
+
 ## 1.1.0-beta.1
 
 - ☰ game menu in every running game: rules, invite guests, leader actions, language, light/dark, sound and «Leave the game» (replaces the ✕)

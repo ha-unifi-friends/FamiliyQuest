@@ -112,8 +112,10 @@ class Rewards:
         self._add_daily(pid, seconds=max(0, min(int(seconds), 3600)), lessons=lessons)
 
     # ---------------------------------------------------------------- rules
-    def emit(self, pid: int, event: str, ref: str = "", ctx: dict | None = None, _depth: int = 0) -> list[dict]:
-        """Apply all rules for an event. Returns the bookings (incl. follow-up events)."""
+    def emit(self, pid: int, event: str, ref: str = "", ctx: dict | None = None, _depth: int = 0,
+             amounts: dict | None = None) -> list[dict]:
+        """Apply all rules for an event. Returns the bookings (incl. follow-up events).
+        `amounts` {account: amount} replaces the amount of the rules of that account (e.g. a pack's own XP / coins)."""
         ctx = ctx or {}
         out: list[dict] = []
         active = {a["key"] for a in self.accounts()}
@@ -125,6 +127,8 @@ class Rewards:
                 if any(str(ctx.get(k)) != str(v) for k, v in cond.items() if v not in (None, "")):
                     continue
                 amount = float(r["amount"])
+                if amounts and amounts.get(r["account"]) is not None:
+                    amount = float(amounts[r["account"]])
                 if r["daily_limit"] is not None:
                     used = float(self.db.val(
                         """SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account=? AND event=?
@@ -177,6 +181,12 @@ class Rewards:
             n += 1
             d -= timedelta(days=1)
         return n
+
+    def new_xp(self, pid: int) -> float:
+        """XP earned since the XP backgrounds exist (setting xp_items_from) – what they are «bought» with."""
+        start = int(self.db.get_setting("xp_items_from", 0) or 0)
+        return float(self.db.val(f"""SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account='xp' AND amount>0
+                                     AND id>? AND {_NOT_SPENT}""", pid, start, *SPEND_EVENTS, default=0))
 
     def total_xp(self, pid: int) -> float:
         """XP earned (the level counts these) – XP spent in the pet shop does not lower it; `balance(pid, "xp")` does."""

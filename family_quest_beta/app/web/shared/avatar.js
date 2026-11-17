@@ -100,6 +100,65 @@ function petIcon(kind, size = 32, emoji = "") {
   return document.createTextNode(PET_EMOJI[kind] || emoji || "🐾");
 }
 
+// backgrounds for new XP (rewards/avatar.py: rule {"xp": 500}) – 200×200, clipped to the circle by avatarSvg
+const XP_BG = {
+  bg_sunset: () => `<rect width="200" height="200" fill="#ffb37a"/><rect width="200" height="70" fill="#ff8a65"/><circle cx="100" cy="118" r="34" fill="#ffe066"/>` +
+    `<rect y="118" width="200" height="40" fill="#4dabf7"/><path d="M60 128h80M76 138h48M88 148h24" stroke="#ffe066" stroke-width="3" opacity=".7"/>` +
+    `<rect y="156" width="200" height="44" fill="#f3d9a4"/><path d="M28 160c2-26 6-44 2-60" stroke="#8d5524" stroke-width="5" fill="none"/>` +
+    `<path d="M30 100c-14-6-26-2-30 6M30 100c14-8 26-6 32 2M30 100c-6-12-18-16-26-14M30 100c8-12 20-14 28-10" stroke="#2f9e44" stroke-width="7" fill="none" stroke-linecap="round"/>`,
+  bg_forest: () => `<rect width="200" height="200" fill="#d3f9d8"/><rect y="160" width="200" height="40" fill="#8ce99a"/>` +
+    [[20, 150, 1], [60, 160, 1.3], [110, 150, 1.1], [160, 162, 1.35], [190, 148, 1]].map(([x, y, k]) =>
+      `<rect x="${x - 4}" y="${y - 6}" width="8" height="${26 * k}" fill="#8d5524"/><path d="M${x} ${y - 90 * k}l${30 * k} ${84 * k}h${-60 * k}z" fill="#2b8a3e"/><path d="M${x} ${y - 70 * k}l${22 * k} ${46 * k}h${-44 * k}z" fill="#37b24d"/>`).join(""),
+  bg_desert: () => `<rect width="200" height="200" fill="#fff3bf"/><circle cx="160" cy="44" r="20" fill="#ffd43b"/>` +
+    `<path d="M0 150q50-30 100-6t100-8v64H0z" fill="#f8c77e"/><path d="M0 170q60-20 120 0t80-6v36H0z" fill="#f4a95c"/>` +
+    `<g fill="#40c057"><rect x="40" y="96" width="12" height="62" rx="6"/><rect x="24" y="110" width="10" height="26" rx="5"/><rect x="58" y="104" width="10" height="24" rx="5"/>` +
+    `<path d="M29 132h12M57 124h-6" stroke="#40c057" stroke-width="10"/></g>`,
+  bg_ocean: () => `<rect width="200" height="200" fill="#1c7ed6"/><rect width="200" height="60" fill="#4dabf7"/><rect y="170" width="200" height="30" fill="#f3d9a4"/>` +
+    `<path d="M30 170c-6-20 8-30 0-50M44 170c6-18-6-26 2-44M170 170c-8-22 6-30-2-48" stroke="#37b24d" stroke-width="5" fill="none"/>` +
+    [[60, 40], [150, 90], [40, 110], [120, 30]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5" fill="none" stroke="#d0ebff" stroke-width="2"/>`).join("") +
+    `<path d="M140 140q14-10 28 0-14 10-28 0zM168 140l8-6v12z" fill="#ff922b"/><path d="M20 80q10-8 20 0-10 8-20 0zM40 80l6-5v10z" fill="#fcc419"/>`,
+  bg_space: () => `<rect width="200" height="200" fill="#0b1026"/>` +
+    [[20, 30], [60, 15], [170, 25], [185, 90], [15, 120], [40, 170], [160, 175], [120, 12], [90, 185]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="#fff"/>`).join("") +
+    `<circle cx="150" cy="58" r="22" fill="#ff922b"/><ellipse cx="150" cy="58" rx="38" ry="9" fill="none" stroke="#ffd8a8" stroke-width="4" transform="rotate(-18 150 58)"/>` +
+    `<circle cx="36" cy="64" r="12" fill="#74c0fc"/><circle cx="32" cy="60" r="3" fill="#4dabf7"/>`,
+  bg_snow: () => `<rect width="200" height="200" fill="#cfe8ff"/><path d="M0 140q60-40 120-10t80-20v90H0z" fill="#fff"/><path d="M0 170q70-30 200 0v30H0z" fill="#e7f5ff"/>` +
+    `<path d="M150 136l18 34h-36z" fill="#2b8a3e"/><path d="M150 120l14 26h-28z" fill="#2f9e44"/>` +
+    [[30, 30], [80, 50], [130, 25], [175, 60], [50, 90], [110, 85], [20, 120]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3" fill="#fff"/>`).join(""),
+  bg_city: () => `<rect width="200" height="200" fill="#1e1b4b"/><circle cx="160" cy="40" r="14" fill="#fff9db"/>` +
+    [[0, 110, 34], [36, 80, 30], [68, 120, 28], [98, 70, 36], [136, 100, 30], [168, 85, 32]].map(([x, y, w]) =>
+      `<rect x="${x}" y="${y}" width="${w}" height="${200 - y}" fill="#364fc7"/>` +
+      Array.from({ length: Math.floor((190 - y) / 16) }, (_, r) => [0, 1].map(c => `<rect x="${x + 6 + c * (w / 2)}" y="${y + 8 + r * 16}" width="7" height="8" fill="${(x + r + c) % 3 ? "#ffe066" : "#4c6ef5"}"/>`).join("")).join("")).join(""),
+  bg_volcano: () => `<rect width="200" height="200" fill="#ffc9a9"/><path d="M20 200 80 90h40l60 110z" fill="#5c3a21"/><path d="M80 90h40l-8 16-8-6-8 12-8-10-8 8z" fill="#ff6b00"/>` +
+    `<circle cx="96" cy="60" r="16" fill="#adb5bd"/><circle cx="114" cy="44" r="20" fill="#ced4da"/><circle cx="90" cy="30" r="12" fill="#dee2e6"/>` +
+    `<path d="M100 92q-6 30-20 50M104 96q6 26 16 40" stroke="#fa5252" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+  bg_aurora: () => `<rect width="200" height="200" fill="#0b2239"/>` +
+    `<path d="M-10 90q50-50 100-10t120-30" stroke="#63e6be" stroke-width="18" fill="none" opacity=".7"/><path d="M-10 110q60-40 110-10t110-20" stroke="#9775fa" stroke-width="12" fill="none" opacity=".55"/>` +
+    [[30, 30], [170, 20], [120, 40], [60, 55]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="#fff"/>`).join("") +
+    `<path d="M0 160l40-30 30 20 40-34 40 30 50-20v74H0z" fill="#e7f5ff"/>`,
+  bg_meadow: () => `<rect width="200" height="200" fill="#d0ebff"/><circle cx="40" cy="40" r="16" fill="#ffd43b"/><rect y="130" width="200" height="70" fill="#69db7c"/>` +
+    [[20, 150, "#ff6b6b"], [55, 170, "#f783ac"], [90, 145, "#ffd43b"], [130, 172, "#9775fa"], [165, 150, "#ff922b"], [185, 182, "#ff6b6b"], [40, 188, "#ffd43b"]].map(([x, y, c]) =>
+      `<path d="M${x} ${y}v14" stroke="#2b8a3e" stroke-width="2"/><circle cx="${x}" cy="${y}" r="6" fill="${c}"/><circle cx="${x}" cy="${y}" r="2.5" fill="#fff3bf"/>`).join(""),
+  bg_candy: () => `<rect width="200" height="200" fill="#ffdeeb"/><path d="M0 160q50-24 100 0t100 0v40H0z" fill="#f783ac"/>` +
+    `<g><rect x="40" y="60" width="6" height="100" fill="#fff"/><circle cx="43" cy="56" r="22" fill="#ff6b6b"/><path d="M43 56m-14 0a14 14 0 1 1 14 14" stroke="#fff" stroke-width="5" fill="none"/></g>` +
+    `<g><rect x="150" y="80" width="6" height="80" fill="#fff"/><circle cx="153" cy="76" r="18" fill="#74c0fc"/><path d="M141 70l24 12M141 82l24-12" stroke="#fff" stroke-width="4"/></g>` +
+    [[90, 40, "#ffd43b"], [110, 110, "#69db7c"], [80, 130, "#9775fa"]].map(([x, y, c]) => `<ellipse cx="${x}" cy="${y}" rx="9" ry="6" fill="${c}"/>`).join(""),
+  bg_castle: () => `<rect width="200" height="200" fill="#bac8ff"/><rect y="170" width="200" height="30" fill="#69db7c"/>` +
+    `<g fill="#adb5bd"><rect x="50" y="100" width="100" height="70"/><rect x="36" y="76" width="30" height="94"/><rect x="134" y="76" width="30" height="94"/>` +
+    `<path d="M36 76h6v-8h6v8h6v-8h6v8h6v-6H36z"/></g><path d="M36 76l15-30 15 30zM134 76l15-30 15 30z" fill="#5c7cfa"/>` +
+    `<path d="M88 170v-28a12 12 0 0 1 24 0v28z" fill="#5c3a21"/><path d="M51 46v-16l12 5-12 5" fill="#ff6b6b"/>`,
+  bg_balloons: () => `<rect width="200" height="200" fill="#a5d8ff"/><ellipse cx="40" cy="160" rx="40" ry="14" fill="#fff"/><ellipse cx="170" cy="40" rx="30" ry="10" fill="#fff"/>` +
+    [[60, 60, 26, "#ff6b6b"], [140, 100, 20, "#fcc419"], [160, 160, 14, "#9775fa"]].map(([x, y, r, c]) =>
+      `<path d="M${x - r} ${y}a${r} ${r * 1.15} 0 1 1 ${2 * r} 0q0 ${r * 0.8} ${-r * 0.5} ${r * 1.2}h${-r}q${-r * 0.5} ${-r * 0.4} ${-r * 0.5} ${-r * 1.2}z" fill="${c}"/>` +
+      `<path d="M${x - r * 0.3} ${y + r * 1.2}v${r * 0.4}M${x + r * 0.3} ${y + r * 1.2}v${r * 0.4}" stroke="#5c3a21" stroke-width="1.5"/><rect x="${x - r * 0.35}" y="${y + r * 1.6}" width="${r * 0.7}" height="${r * 0.45}" fill="#8d5524"/>`).join(""),
+  bg_autumn: () => `<rect width="200" height="200" fill="#fff4e6"/><rect y="160" width="200" height="40" fill="#e8590c" opacity=".35"/>` +
+    `<rect x="150" y="70" width="14" height="100" fill="#5c3a21"/><circle cx="157" cy="60" r="40" fill="#f76707"/><circle cx="130" cy="78" r="22" fill="#fd7e14"/><circle cx="182" cy="82" r="20" fill="#e8590c"/>` +
+    [[30, 40, "#f76707"], [70, 90, "#fcc419"], [40, 130, "#e8590c"], [100, 50, "#fd7e14"], [90, 150, "#fcc419"]].map(([x, y, c], i) =>
+      `<path d="M${x} ${y}q8-10 16 0q-8 10-16 0z" fill="${c}" transform="rotate(${i * 40} ${x + 8} ${y})"/>`).join(""),
+  bg_savanna: () => `<rect width="200" height="200" fill="#ffd8a8"/><circle cx="100" cy="120" r="44" fill="#ff922b"/><rect y="140" width="200" height="60" fill="#e9b949"/>` +
+    `<path d="M150 150c0-24-4-40 4-56" stroke="#5c3a21" stroke-width="5" fill="none"/><path d="M118 96q36-24 74 0z" fill="#5c940d"/>` +
+    `<path d="M20 160h40M30 168h50" stroke="#c49a2c" stroke-width="3"/>`,
+};
+
 function avatarSvg(av, size = 96, opts = {}) {
   const a = Object.assign({}, AVATAR_DEFAULT, av || {});
   const it = a.items || {};
@@ -113,6 +172,7 @@ function avatarSvg(av, size = 96, opts = {}) {
     ["#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#4dabf7", "#9775fa"].map((c, i) => `<path d="M${10 + i * 9} 150a${90 - i * 9} ${90 - i * 9} 0 0 1 ${180 - i * 18} 0" fill="none" stroke="${c}" stroke-width="9"/>`).join("") +
     `<ellipse cx="34" cy="150" rx="26" ry="12" fill="#fff"/><ellipse cx="166" cy="150" rx="26" ry="12" fill="#fff"/>`);
   else if (bg === "bg_lake") p.push(`<circle cx="100" cy="100" r="100" fill="#c5f6fa"/><rect y="130" width="200" height="70" fill="#4dabf7"/><path d="M150 128h26l-4 6h-18z" fill="#fff"/><path d="M162 104v24l12-8z" fill="#ff8787"/>`);
+  else if (XP_BG[bg]) p.push(XP_BG[bg]());
   else if (!opts.transparent) p.push(`<circle cx="100" cy="100" r="100" fill="${shade(oc, 0.78)}"/>`);
   // on the back (behind the body): jetpack, wings
   if (it.back === "jetpack") p.push(`<g stroke="#495057" stroke-width="3"><rect x="32" y="122" width="28" height="60" rx="13" fill="#ced4da"/><rect x="140" y="122" width="28" height="60" rx="13" fill="#ced4da"/></g>` +

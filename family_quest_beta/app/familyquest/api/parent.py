@@ -546,11 +546,34 @@ def packs(request: Request, me: dict = Parent) -> dict:
     for r in fq.db.q("SELECT pack_id, profile_id FROM pack_profile"):
         act.setdefault(r["pack_id"], []).append(r["profile_id"])
     out = []
+    own = fq.db.get_setting("pack_rewards", {}) or {}
     for p in fq.packs.all():
         s = p.summary()
         s["profiles"] = act.get(p.id, [])
+        s["rewards"] = own.get(p.id) or {}
         out.append(s)
     return {"packs": out}
+
+
+class PackRewardsIn(BaseModel):
+    xp: int | None = None                # None: the family rule (Rewards › Rules «Lesson finished»)
+    coins: int | None = None
+
+
+@router.post("/packs/{pack_id}/rewards")
+def pack_rewards(pack_id: str, body: PackRewardsIn, request: Request, me: dict = Parent) -> dict:
+    """XP and coins per finished lesson of this pack – overrides the family rule for this pack."""
+    fq = app_of(request)
+    if not fq.packs.get(pack_id):
+        raise HTTPException(404, "Unknown pack")
+    own = dict(fq.db.get_setting("pack_rewards", {}) or {})
+    val = {k: max(0, min(10000, v)) for k, v in (("xp", body.xp), ("coins", body.coins)) if v is not None}
+    if val:
+        own[pack_id] = val
+    else:
+        own.pop(pack_id, None)
+    fq.db.set_setting("pack_rewards", own)
+    return {"rewards": val}
 
 
 @router.post("/packs/activate")
@@ -799,6 +822,44 @@ def update_rule(rid: int, body: RuleIn, request: Request, me: dict = Parent) -> 
 def delete_rule(rid: int, request: Request, me: dict = Parent) -> dict:
     app_of(request).db.x("DELETE FROM rule WHERE id=?", rid)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- shop: the avatar items (lock, price, coins or new XP)
+class ShopItemIn(BaseModel):
+    off: bool = False
+    price: int | None = None             # None: the price of the app
+    currency: str | None = None          # coins | xp (new XP) – None: as in the app
+
+
+@router.get("/shop/items")
+def shop_items(request: Request, me: dict = Parent) -> dict:
+    """All avatar items of the shop with the app's rule and the family's changes."""
+    from ..rewards import avatar as av
+    out = []
+    for iid, (name, slot, base) in av.ITEMS.items():
+        out.append({"id": iid, "name": name, "slot": slot, "base": base, "rule": av.rule_of(iid),
+                    "override": av.OVERRIDES.get(iid) or {}})
+    return {"items": out, "slots": av.SLOTS}
+
+
+@router.put("/shop/items/{item_id}")
+def shop_item_save(item_id: str, body: ShopItemIn, request: Request, me: dict = Parent) -> dict:
+    from ..rewards import avatar as av
+    fq = app_of(request)
+    if item_id not in av.ITEMS:
+        raise HTTPException(404, "Unknown item")
+    if body.currency is not None and body.currency not in av.CURRENCIES:
+        raise HTTPException(400, "Unknown currency")
+    o = {k: v for k, v in (("off", bool(body.off) or None), ("price", None if body.price is None else max(0, min(100000, body.price))),
+                           ("currency", body.currency)) if v is not None}
+    all_ = dict(fq.db.get_setting("shop_items", {}) or {})
+    if o:
+        all_[item_id] = o
+    else:
+        all_.pop(item_id, None)
+    fq.db.set_setting("shop_items", all_)
+    av.set_overrides(all_)
+    return {"id": item_id, "rule": av.rule_of(item_id), "override": o}
 
 
 @router.get("/rewards")
