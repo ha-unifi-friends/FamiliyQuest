@@ -6,7 +6,7 @@ const PARENT_INFO = {
   [T("Calendar")]: T("The family calendar: events, FamilyTime and OfflineTime. Switch between list, day, week, month and year; tap a day to add an event. Below: holiday templates, calendar files and calendars from Home Assistant."),
   [T("Packs")]: T("Learning packs: switch them on per child, edit them, export them or check drafts. «Import» adds new packs from a file, a link or a photo."),
   [T("Chores")]: T("The chore plan: chores with points, how often they come and who does them (fixed or rotating). Duties are expected, bonus chores bring extra points. Children tick them off, you confirm."),
-  [T("Community")]: T("What the family decides and does together: family council, polls, Wichteln and the history. Children can take part and open topics too."),
+  [T("Family")]: T("What the family decides and does together: family council, polls, Wichteln and the history. Children can take part and open topics too."),
   [T("Games")]: T("Every game of the app: switch each one to active, active without bots (no «alone against bots», no bots at the table, no games against the app) or inactive – for everybody or only for chosen children; parents can always play. Start games here, set the coins and end running tables. The search finds a game by its name."),
   [T("Rewards")]: T("Accounts and the shop: what children can buy with their points (vouchers, internet minutes, avatar items, Home Assistant scripts) and the rules how many points an activity gives."),
   [T("Goals")]: T("Weekly goals for a child (e.g. 3 learning days) and the family goal everybody works on together. Reached goals give a bonus."),

@@ -264,7 +264,7 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
   stricter – from which the parent area may be opened (e.g. only the parents' network). Empty = every network.
   A list that would lock out the device you are saving from is refused.
 
-## Community: family quiz and family council
+## Family (parent area, formerly «Community»): family quiz and family council
 
 - **Family quiz** (learning app › Family › Quizzes, or parent area › Games): everybody – children too – makes
   quizzes (2–4 answers, one right, time per question) or copies a template (Swiss waters, geography of Europe,
@@ -350,7 +350,7 @@ is remembered on the device; without a choice the system (or the Home Assistant 
 
 ### Games per game and person (parent area › 🎲 Games)
 
-The parent area has two pages: **Community** (family council, polls, Wichteln, history) and **🎲 Games** (every game:
+The parent area has two pages: **Family** (family council, polls, Wichteln, history) and **🎲 Games** (every game:
 the family quiz, bingo, guess the song, all live games with their start buttons, coins and photo sets, the running
 games, and the game corner). A **search field** at the top filters the games by name; «⚙️ For all games» holds
 *All on / All off*, who begins a game and whether guests may join.

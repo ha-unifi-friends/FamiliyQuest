@@ -6,10 +6,16 @@ cardgames.CardGames, like «Heimwärts»).
 
 Fair for everybody: all lanes get the SAME obstacles – a course made from a seed of the server (`course()`, the same
 generator runs in web/jump.js) – and run on the same game clock (game time 0 = `t0`, a short countdown after the start).
-The speed grows with the distance (V0 → VMAX); from speed 7 also double obstacles, from speed 10 long ones.
+The speed grows with the distance (V0 → VMAX); from speed 7 also double crates, from speed 10 long hedges.
+Crates carry you: landing on top is safe (you run along and may jump on from there), only running into their side costs
+a life. Cacti (and hedges) cost a life when touched. At about CLOUD_T seconds (then again CLOUD_EVERY s after the end of
+the last one) comes a cloud parcours: after a free stretch with a signpost (the app shows a warning) 4–6 crates on
+clouds at heights 0.9–1.3, a short jump apart, over a dense cactus field – falling down costs a life (one per field piece).
+After any hit you hop up a little and are invulnerable for INVULN s.
 
-The jump physics run in the app (no waiting for the network): it reports its jumps (game times) and the obstacles it hit
-(index + game time). The server is tolerant – it keeps lives and the state per player, checks only sane values (a time
+The jump physics run in the app (no waiting for the network) step by step (`Runner`, the same in web/jump.js as
+JuRunner, so every app draws the others' lanes from their jump times exactly): it reports its jumps (game times) and the
+elements it hit (index + game time). The server is tolerant – it keeps lives and the state per player, checks only sane values (a time
 near the game clock, an obstacle that really passes then, one life per obstacle, a short invulnerability) and shows the
 others' lanes from the reported jump times (the app draws them a moment late, so they look smooth).
 Everybody has 3 lives (rule `lives`: 1 / 3 / 5); without lives you are out. A player whose app stays silent for
@@ -20,8 +26,9 @@ practice bots) you play until you are out – the distance (m) is your score, yo
 it stands (the ones still running by lives), no coins. Safety: after MAX_T seconds everybody still running is first.
 Coins (setting `game_rewards["jump"]`): places 1–3, only people of the family at a family table with at least two of
 them – never alone; paid once (flag `paid`, a unique ledger `ref` per player).
-Bots (easy / normal / hard): they jump for every obstacle with a timing error (and sometimes forget it) – the faster the
-game, the narrower the window; planned LOOKAHEAD seconds ahead so the others see their jumps in time.
+Bots (easy / normal / hard) run the same Runner: when a hit is coming they look for the jump times that get them past
+(over it, onto a crate, onto the next cloud box) and aim at the middle with a timing error (and sometimes forget it) –
+the faster the game, the narrower the window; planned LOOKAHEAD seconds ahead so the others see their jumps in time.
 """
 from __future__ import annotations
 

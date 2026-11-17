@@ -4,7 +4,7 @@
 const P = { info: null, meta: null, tab: "overview", profiles: [], accounts: [] };
 const app = $("#app");
 const TABS = [["overview", "📊", T("Overview")], ["calendar", "📅", T("Calendar")], ["packs", "📦", T("Learning packs")],
-  ["chores", "🧹", T("Chores")], ["community", "👨‍👩‍👧", T("Community")], ["games", "🎲", T("Games")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["goals", "🎯", T("Goals")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
+  ["chores", "🧹", T("Chores")], ["community", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["goals", "🎯", T("Goals")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
 const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes: T("Internet minutes"), planer_points: T("Family Planer points"),
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
@@ -1763,7 +1763,7 @@ async function communityView(main) {
   const hist = h("div");
   const drawHist = async () => hist.replaceChildren(await historySection(+who.value, I18N.tr(T("History"))));
   who.onchange = drawHist;
-  main.append(h("h1", T("Community")),
+  main.append(h("h1", T("Family")),
     h("p.muted", T("Family council, polls and Wichteln – children can open topics and vote too. The games are on their own page «Games».")),
     await councilSection(me), await pollsSection(me), await wichtelnSection(me),
     section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
