@@ -61,3 +61,19 @@ def test_a_parent_cancels_a_quiz_a_child_started(client):
     assert client.post("/api/community/quiz/abort", headers=ph).status_code == 200
     st = client.get("/api/community/quiz", headers=hl).json()
     assert st is None or st["status"] == "done"
+
+
+def test_a_quiz_from_a_template_gets_the_template_translations(client, monkeypatch):
+    from familyquest import community
+    from familyquest.quiz_templates import TEMPLATES
+    t = TEMPLATES["schaetzfragen"]
+    fake = {"title": "Estimates", "items": [{"q": f"Q{i}", **({"unit": "m"} if x.get("unit") else {})} for i, x in enumerate(t["questions"])]}
+    monkeypatch.setattr(community, "_TEMPLATE_TR", {"en": {"schaetzfragen": fake}, "fr": {"schaetzfragen": {"title": "x", "items": []}}})
+    ph, mia, _ = setup_family(client)
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    tpl = next(x for x in client.get("/api/community/templates", headers=hm).json() if x["id"] == "schaetzfragen")
+    assert tpl["titles"] == {"en": "Estimates"}                       # fr does not fit the template: left out
+    qid = client.post("/api/community/quizzes/from-template", json={"template": "schaetzfragen"}, headers=hm).json()["id"]
+    q = next(x for x in client.get("/api/community/quizzes", headers=hm).json() if x["id"] == qid)
+    assert q["langs"] == {"base": "de", "more": ["en"], "title": {"en": "Estimates"}}
+    assert q["questions"][0]["tr"]["en"]["q"] == "Q0"

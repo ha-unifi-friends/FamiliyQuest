@@ -39,7 +39,7 @@ QUIZ_GUIDE = {
         "questions": "List of questions; every question has 'type', 'question' and optionally 'seconds'.",
         "language": "Optional, only for a multilingual quiz: the main language of 'title' and the questions – two letters: "
                     "de fr it en es nl pl pt sv rm.",
-        "languages": "Optional, only for a multilingual quiz: the further languages, e.g. [\"fr\", \"en\"] (max. 5).",
+        "languages": "Optional, only for a multilingual quiz: the further languages, e.g. [\"fr\", \"en\"] (max. 9).",
         "translations": "Optional, only for a multilingual quiz: the title in the further languages, "
                         "e.g. {\"fr\": {\"title\": \"…\"}}.",
     },

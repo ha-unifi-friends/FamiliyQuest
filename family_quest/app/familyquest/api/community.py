@@ -133,7 +133,10 @@ def quizzes(request: Request, prof: dict = Gamer) -> list[dict]:
 @router.get("/templates")
 def templates(request: Request, prof: dict = Gamer) -> list[dict]:
     from ..quiz_templates import TEMPLATES
+    from ..community import template_translations
     return [{"id": k, "title": t["title"], "icon": t["icon"], "questions": len(t["questions"]), "region": t["region"],
+             "titles": {lang: v["title"] for lang, v in template_translations(k).items()},
+             "examples": {lang: v["items"][0]["q"] for lang, v in template_translations(k).items()},
              "example": t["questions"][0]["q"] if isinstance(t["questions"][0], dict) else t["questions"][0][0]}
             for k, t in TEMPLATES.items()]
 

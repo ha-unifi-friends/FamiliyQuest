@@ -694,7 +694,8 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     const drawTemplates = () => tplGrid.replaceChildren(...templates.filter(t => region === "all" || t.region === region).map(t => h("button.card.tpl", { onclick: async () => {
         try { await api("community/quizzes/from-template", { method: "POST", body: { template: t.id } }); toast(T("Added to our quizzes"), "good"); m.close(); reload(); }
         catch (e) { toast(e.message, "bad"); }
-      } }, h("span.big-ic", t.icon), C(t.title, "strong"), h("span.small.muted", t.questions + " " + I18N.tr(T("questions"))), C(t.example, "span.small.tpl-ex"))));
+      } }, h("span.big-ic", t.icon), C((t.titles || {})[uiLang2()] || t.title, "strong"), h("span.small.muted", t.questions + " " + I18N.tr(T("questions"))),
+        C((t.examples || {})[uiLang2()] || t.example, "span.small.tpl-ex"))));
     const regionSel = h("select", { style: { width: "auto", minWidth: "160px" }, onchange: e => { region = e.target.value; try { localStorage.setItem("fq.tplRegion", region); } catch {} drawTemplates(); } },
       ...Object.entries(TPL_REGIONS).filter(([k]) => k === "all" || templates.some(t => t.region === k))
         .map(([k, n]) => h("option", { value: k, selected: k === region }, I18N.tr(n))));
@@ -779,7 +780,7 @@ function quizEditor(q, done) {
       h("option", { value: "" }, "+ " + I18N.tr(T("Add a language"))), ...free.map(k => h("option", { value: k }, QUIZ_LANG_NAMES[k])));
     langBox.replaceChildren(h("label.check", on, "🌐 ", T("Multilingual quiz")),
       !mlOn ? null : h("div.qe-langs-body",
-        h("div.grid2", h("label.field", T("Main language"), base), ml.more.length < 5 && free.length ? h("label.field", T("Further languages"), add) : h("span")),
+        h("div.grid2", h("label.field", T("Main language"), base), ml.more.length < 9 && free.length ? h("label.field", T("Further languages"), add) : h("span")),
         ml.more.length ? h("div.qe-lang-chips", ...ml.more.map(l => h("span.chip", "🌐 " + QUIZ_LANG_NAMES[l] + " ",
           h("button.icon-btn", { title: T("Remove"), onclick: () => { ml.more = ml.more.filter(x => x !== l); delete ml.title[l]; drawLangs(); draw(); } }, "✕")))) :
           h("p.small.muted", T("Choose a further language – then every question gets fields for it. The players switch the language during the game.")),
