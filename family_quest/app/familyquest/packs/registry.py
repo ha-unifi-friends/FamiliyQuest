@@ -82,7 +82,7 @@ class PackInfo:
         if isinstance(m, Pack):
             d.update(lang=m.sprache, src_lang=m.quellsprache, private=m.privat, path=m.pfad, color=m.farbe or d["subject"]["color"],
                      standard=m.standard, self_service=m.selbst,
-                     icon=m.icon or d["subject"]["icon"], description=m.beschreibung,
+                     icon=m.icon or d["subject"]["icon"], description=m.beschreibung, descriptions=m.beschreibung_i18n or {},
                      units=[{"id": u.id, "title": u.title, "kind": u.kind, "count": len(u.items) or len(u.skills),
                              "exercises": u.exercises, "icon": u.icon} for u in self.units])
         else:

@@ -39,6 +39,7 @@ async function route() {
   const as = hash.match(/^as\/([A-Za-z0-9_.\-]+)\/?(.*)$/);
   if (as) { Auth.kid = as[1]; history.replaceState(null, "", "#/" + as[2]); return route(); }
   const [view, arg] = hash.split("/");
+  if (tableNote.box) closeTableNote();                  // «somebody opened a table»: gone on every navigation (also into that table)
   document.body.classList.remove("quiz-open");          // a full-screen game left by the back button of the browser
   if (!Auth.kid) return profilesView();
   try { await loadMe(); } catch (e) {
@@ -129,19 +130,25 @@ function tablesSeen() {
   if (!tableNote.seen) { try { tableNote.seen = JSON.parse(localStorage.getItem("fq.tables.seen." + S.me.profile.id)) || []; } catch { tableNote.seen = []; } }
   return tableNote.seen;
 }
+function closeTableNote() {
+  const box = tableNote.box; clearTimeout(tableNote.timer); tableNote.box = null;
+  if (box) { box.classList.remove("on"); setTimeout(() => box.remove(), 300); }
+}
 function showTableNote(t) {
   tableNote.box?.remove(); clearTimeout(tableNote.timer);
-  const close = () => { box.classList.remove("on"); setTimeout(() => box.remove(), 300); };
-  const box = h("div.table-note", { role: "status" },
+  const close = closeTableNote;
+  // one compact line below the header – ☰, the clock and the title stay visible
+  const box = h("div.table-note", { role: "status", "data-route": t.route },
     h("span.table-note-ic", t.icon),
-    h("div.grow", h("div.small.muted", "🔔 ", T("New game table")),
-      h("strong", I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)))),
+    h("span.table-note-txt", "🔔 ", h("strong", I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)))),
     h("button.btn.small", { onclick: () => { close(); go(t.route); } }, "▶ ", T("Join")),
     h("button.icon-btn", { title: T("Close"), "aria-label": T("Close"), onclick: close }, "✕"));
+  const top = document.querySelector(".top");
+  box.style.top = Math.max(8, Math.round(top ? top.getBoundingClientRect().bottom : 0) + 6) + "px";
   document.body.append(box); tableNote.box = box;
   requestAnimationFrame(() => box.classList.add("on"));
   try { Sound.play("turn"); if (Sound.on && navigator.vibrate) navigator.vibrate([80, 60, 80]); } catch {}
-  tableNote.timer = setTimeout(close, 20000);
+  tableNote.timer = setTimeout(close, 10000);
 }
 setInterval(async () => {
   if (!Auth.kid || !S.me || S.lesson || document.hidden || document.querySelector(".quiz-full, .arcade-full")) return;
@@ -231,7 +238,7 @@ function topBar(active, opts = {}) {
   const se = S.info && S.info.season;
   const head = h("header.top.fq-head" + (se && seasonOn() ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
     seasonScene(),
-    h("div.head-row",
+    h("div.head-row" + (opts.back ? ".has-back" : ""),
       h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰"),
       // load everything anew (e.g. a pet just bought, a game somebody opened)
       h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: () => location.reload() }, "⟳"),
@@ -1673,6 +1680,12 @@ function devicesCard() {
 }
 
 // ---------------------------------------------------------------- course catalogue (language courses, general knowledge)
+// the course description in the app language (packs may carry beschreibung_i18n), else in the language of the pack
+function courseText(c) {
+  const d = c.descriptions || {}, l = I18N.lang, b = String(I18N.base || l).split("-")[0];
+  return d[l] || d[b] || (b !== (c.src_lang || "de") && b !== "de" && d.en) || c.description;
+}
+
 async function coursesView() {
   let list = [];
   try { list = await api("me/courses"); } catch (e) { return toast(e.message, "bad"); }
@@ -1698,9 +1711,11 @@ async function coursesView() {
     h("p.muted", T("Choose a language and your level – the units unlock one after the other. Everybody can learn: children and adults.")),
     list.length ? [...groups.values()].map(cs => h("section.card.course", { style: { "--c": cs[0].subject.color } },
       h("h2", cs[0].subject.icon + " ", I18N.tr(cs[0].subject.name)),
-      h("div.course-levels", ...cs.sort((a, b) => String(a.level).localeCompare(String(b.level))).map(c => h("div.course-level" + (c.on ? ".on" : ""),
+      h("div.course-levels", ...cs.sort((a, b) => String(a.level).localeCompare(String(b.level)) || String(a.title).localeCompare(String(b.title))).map(c => h("div.course-level" + (c.on ? ".on" : ""),
         h("strong", { translate: "no" }, c.level), LEVELS[c.level] ? h("span.small", I18N.tr(LEVELS[c.level])) : null,
-        C(c.description || c.title, "span.small.muted"),
+        // two packs of one subject with the same level («für alle»): the pack title tells them apart
+        cs.filter(x => x.level === c.level).length > 1 ? h("b.course-title", { translate: "no" }, c.title) : null,
+        C(courseText(c) || c.title, "span.small.muted"),
         h("span.small.muted", c.units + " " + I18N.tr(T("units")) + " · " + c.cards + " " + I18N.tr(T("cards"))),
         c.on ? h("div.row", h("button.btn.small", { onclick: () => go("pack/" + encodeURIComponent(c.id)) }, "▶ ", T("Continue")),
                  h("button.btn.small.ghost", { onclick: () => toggle(c, false) }, T("Remove")))

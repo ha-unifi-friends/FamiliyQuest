@@ -204,7 +204,7 @@ def courses(request: Request, prof: dict = Learner) -> list[dict]:
     for p in fq.packs.all(status="active", kind="pack"):
         s = p.summary()
         if s.get("self_service"):
-            out.append({k: s.get(k) for k in ("id", "title", "subject", "level", "lang", "src_lang", "icon", "color", "description")}
+            out.append({k: s.get(k) for k in ("id", "title", "subject", "level", "lang", "src_lang", "icon", "color", "description", "descriptions")}
                        | {"units": len(s.get("units") or []), "cards": sum(u["count"] for u in s.get("units") or []), "on": p.id in mine})
     return out
 

@@ -9,6 +9,14 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇫🇷"
 beschreibung: "Erste Schritte auf Französisch: grüssen, zählen, Familie, Essen, Farben und einfache Sätze für den Alltag."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "First steps in French: greeting, counting, family, food, colours and simple everyday sentences."
+  it: "Primi passi in francese: salutare, contare, famiglia, cibo, colori e frasi semplici di tutti i giorni."
+  es: "Primeros pasos en francés: saludar, contar, familia, comida, colores y frases sencillas del día a día."
+  nl: "Eerste stappen in het Frans: begroeten, tellen, familie, eten, kleuren en eenvoudige zinnen voor elke dag."
+  pl: "Pierwsze kroki we francuskim: powitania, liczenie, rodzina, jedzenie, kolory i proste codzienne zdania."
+  pt: "Primeiros passos em francês: cumprimentar, contar, família, comida, cores e frases simples do dia a dia."
+  sv: "Första stegen på franska: hälsa, räkna, familj, mat, färger och enkla vardagsmeningar."
 pfad: true
 standard: false
 selbst: true

@@ -1193,7 +1193,7 @@ async function rewardsView(main, opts = {}) {
   const accOpts = sel => accounts.map(a => h("option", { value: a.key, selected: a.key === sel }, (a.icon || "") + " " + I18N.tr(a.name)));
 
   const accRows = accounts.map(a => {
-    const f = { name: h("input", { type: "text", value: a.name }), unit: h("input", { type: "text", value: a.unit }), icon: h("input", { type: "text", value: a.icon }),
+    const f = { name: h("input", { type: "text", value: I18N.tr(a.name) }), unit: h("input", { type: "text", value: a.unit }), icon: h("input", { type: "text", value: a.icon }),
       spendable: h("input", { type: "checkbox", checked: !!a.spendable, disabled: a.key === "xp" }), active: h("input", { type: "checkbox", checked: !!a.active, disabled: a.key === "xp" }) };
     const save = () => call("parent/accounts", { method: "PUT", body: { key: a.key, name: f.name.value, unit: f.unit.value, icon: f.icon.value,
       spendable: f.spendable.checked, active: f.active.checked, sort: a.sort } }).then(() => toast(T("Saved"), "good"));
@@ -1219,7 +1219,7 @@ async function rewardsView(main, opts = {}) {
 
   const rewardCards = rewards.map(r => rewardCard(r));
   function rewardCard(r) {
-    const f = { icon: h("input.icon-in", { type: "text", value: r.icon }), name: h("input", { type: "text", value: r.name }),
+    const f = { icon: h("input.icon-in", { type: "text", value: r.icon }), name: h("input", { type: "text", value: I18N.tr(r.name) }),   // built-in names are English keys – show (and save) the translation the children see
       kind: h("select", ...Object.entries(KIND_NAMES).map(([k, n]) => h("option", { value: k, selected: k === r.kind }, n))),
       account: h("select", ...accOpts(r.account)), cost: h("input", { type: "number", min: 0, value: r.cost }),
       approval: h("input", { type: "checkbox", checked: !!r.approval }), weekly_limit: h("input", { type: "number", min: 0, value: r.weekly_limit ?? "", placeholder: "–" }),
@@ -1268,7 +1268,7 @@ async function shopSettingsView(main) {
   const { rewardBox, rewardCard } = await rewardsView(scratch, { onlyShop: true });
   const d = await call("parent/shop/items");
   const SLOT_NAMES = { background: T("Background"), hat: T("Hat"), hairclip: T("Hair clip"), eyewear: T("Glasses"), face: T("Face"), teeth: T("Teeth"),
-    ear: T("Ears"), neck: T("Neck"), suit: T("Clothes"), figure: T("Figure"), back: T("Back"), hand: T("Hand"), pet: T("Pet") };
+    ear: T("Ears"), neck: T("Neck"), suit: T("Clothes"), figure: T("Figure"), back: T("On the back"), hand: T("In the hand"), pet: T("Pet") };
   const howText = b => b.free ? T("free") : b.level ? I18N.tr(T("From level {0}")).replace("{0}", b.level) : b.badge ? T("With a badge")
     : b.season ? T("Only in season") : b.xp ? b.xp + " " + I18N.tr(T("new XP")) : b.cost != null ? b.cost + " 🪙" : "";
   const row = it => {

@@ -9,6 +9,14 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇫🇷"
 beschreibung: "Französisch für Fortgeschrittene: Meinungen äussern, über Arbeit, Umwelt, Medien und Gefühle sprechen und typische Redewendungen verstehen."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "French for advanced learners: giving opinions, talking about work, environment, media and feelings, and understanding typical idioms."
+  it: "Francese avanzato: esprimere opinioni, parlare di lavoro, ambiente, media e sentimenti e capire i modi di dire tipici."
+  es: "Francés avanzado: dar opiniones, hablar del trabajo, el medio ambiente, los medios y los sentimientos y entender expresiones típicas."
+  nl: "Frans voor gevorderden: meningen geven, praten over werk, milieu, media en gevoelens en typische uitdrukkingen begrijpen."
+  pl: "Francuski dla zaawansowanych: wyrażanie opinii, rozmowy o pracy, środowisku, mediach i uczuciach oraz typowe idiomy."
+  pt: "Francês avançado: dar opiniões, falar sobre trabalho, meio ambiente, mídia e sentimentos e entender expressões típicas."
+  sv: "Franska för den som kan mer: säga sin åsikt, prata om arbete, miljö, medier och känslor och förstå typiska uttryck."
 pfad: true
 standard: false
 selbst: true
