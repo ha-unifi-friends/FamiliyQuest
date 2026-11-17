@@ -794,6 +794,54 @@ played to the end at a family table with **at least two people of the family** �
 winners get the «No. 1» hat. Every person of the family gets a history entry (place, till, served customers, new
 personal best). In Games the parents can switch the game on, off or to «active without bots».
 
+### Traffic Cadet (Verkehrskadett)
+
+Games › **🚦 Traffic Cadet**: a live traffic game. Every player regulates the traffic lights of **their own map** on
+their own device – all maps get the **same streets and the same cars** (from the server). Alone (optionally with
+practice bots), at the family table (1–6 players, bots fill up, guests via QR code).
+
+- **Switching:** tap a traffic light on the map (or its big button below the map) – it switches its whole group (e.g.
+  «1 ↓↑» = north and south together): green → **amber** (1.5 s) → red, red → green at once. At the start of every
+  world all lights are red.
+- **The cars:** cars, buses (slower, longer), bikes (slow) and now and then an ambulance 🚑. They stop at red (and at
+  amber when they still can), go at green, keep their gap and turn as their route says. Cars queue outside the map when
+  there is no room («+3» at the edge).
+- **Accidents 💥:** two cars of crossing or merging routes in the junction at the same time crash; both block the way
+  for 4 seconds (the others wait), then they are towed away. So: switch one direction red, wait until the crossing is
+  empty, then the other green.
+- **Moods:** waiting makes drivers annoyed (😐 → 😠) and then angry 😡 (difficulty normal: after 10 / 20 seconds of
+  waiting; easy 12 / 24, hard 7 / 14). The ambulance is in a hurry: angry after 6 seconds. Angry drivers honk.
+- **Out:** too many accidents or angry drivers, counted over all worlds – easy 5 / 15, normal 3 / 10, hard 3 / 8. Who
+  is out watches the others' live stats.
+- **Worlds** (start dialog: 1–5), each 5 s intro («World 2: T-junction») + 90 s of traffic, the traffic grows during a
+  world: 1 **simple crossing** (only straight on, 2 groups) → 2 **T-junction** with a left-turn lane (3 groups) →
+  3 **crossing with turning lanes** (straight/right and left separately, 4 groups) → 4 **two connected crossings** (the
+  road between them can fill up and block the crossing behind) → 5 **roundabout** (the drivers yield to the ring by
+  themselves; you have a stop/go light at every entry to give the others a gap). Everybody still in moves on together.
+- **Difficulty** (easy / normal / hard): how many cars come, how patient the drivers are, how many accidents / angry
+  drivers put you out.
+- **Live bar:** at the top every other player's accidents 💥, annoyed 😠 and angry 😡 drivers and cars through 🚗
+  (updated about every second), below my own stats, the world and the time left in it.
+- **Points:** every car through 1 (bus 2, ambulance 3), minus 5 per accident and 2 per angry driver. **Places:** who is
+  still in after the last world by points; who is out after them (who lasted longer first). At a family table the
+  game ends when only **one is left standing**. Alone your best points are kept.
+- **Bots** (easy / normal / hard) run the same simulation on the server: they give green to the set of groups with the
+  most waiting cars, switch with a clearance pause (amber, then until the crossing is empty) – easier bots forget the
+  pause more often (crash risk) and leave a direction green too long.
+
+The map is simulated in the app (10 steps per second, integer arithmetic only) from the server's world (layout + the
+stream of cars from the game's seed) and the player's switches; the app reports only its switches (with their tick).
+The server runs **the same simulation** about 1.5 s behind (identical in Python and JavaScript – tested) and its result
+counts: accidents, angry drivers, cars through, out. A switch for a moment the server simulated already is refused and
+the app rebuilds its map from the server's snapshot. An app silent for 15 seconds is out. Who leads may **end** the
+game early: ranked as it stands, no coins. Parents › Games: active, active without bots (no practice bots, no bots at
+the table) or inactive.
+
+**Coins for places 1–3:** set by the parents in Games › Traffic Cadet (default 10 / 5 / 2), paid once, only for a game
+played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots;
+the winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, cars, accidents, angry
+drivers).
+
 ### Klatsch den Beat
 
 Games → **👏 Klatsch den Beat**: a live rhythm game – **everybody plays at the same time**, each on their own device.

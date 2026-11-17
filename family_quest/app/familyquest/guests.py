@@ -17,7 +17,7 @@ from .rewards import avatar as av
 
 GUEST = 2
 GUEST_HOURS = 12
-GAMES = ("quiz", "bingo", "poker", "tschau", "karussell", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape")
+GAMES = ("quiz", "bingo", "poker", "tschau", "karussell", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape")
 KEY = "guest_invites"
 COLORS = ["#ff6b6b", "#4f8cff", "#51cf66", "#fcc419", "#845ef7", "#20c997", "#ff922b"]
 
@@ -61,7 +61,7 @@ class Guests:
     def _game_id(self, game: str, gid: int | None = None) -> int | None:
         if game == "schach":                      # several chess games at a time: an open seat of this game (or the newest)
             g = self.fq.schach._game(game, gid=gid)
-        elif game in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
+        elif game in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
             g = getattr(self.fq, game)._game(game)
         elif game in ("tschau", "karussell"):
             g = self.fq.cards._game(game)
@@ -80,7 +80,7 @@ class Guests:
         if not f or not self.enabled():
             raise GuestError("This invitation is not valid (any more)")
         game, _ = f
-        title = {"bingo": "Bingo", "poker": "Texas Hold'em", "tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "song": "Errate den Song", "domino": "Domino", "paarjagd": "Paarjagd", "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten", "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "klatsch": "Klatsch den Beat", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe", "schach": "Schach", "dorfmarkt": "Dorfmarkt", "escape": "Escape Room"}.get(game, "")
+        title = {"bingo": "Bingo", "poker": "Texas Hold'em", "tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "song": "Errate den Song", "domino": "Domino", "paarjagd": "Paarjagd", "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten", "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "verkehr": "Traffic Cadet", "klatsch": "Klatsch den Beat", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe", "schach": "Schach", "dorfmarkt": "Dorfmarkt", "escape": "Escape Room"}.get(game, "")
         if game == "quiz":
             st = self.fq.community.state(0) or {}
             title = st.get("title") or "Quiz"
@@ -103,7 +103,7 @@ class Guests:
                         name, "guest", random.choice(COLORS), json.dumps(avatar), json.dumps({"guest": True}), GUEST)
         if info["game"] == "schach":
             self.fq.schach.join("schach", pid, gid=self.find(code)[1].get("game_id"))
-        elif info["game"] in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
+        elif info["game"] in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
             getattr(self.fq, info["game"]).join(info["game"], pid)
         elif info["game"] in ("tschau", "karussell"):
             self.fq.cards.join(info["game"], pid)

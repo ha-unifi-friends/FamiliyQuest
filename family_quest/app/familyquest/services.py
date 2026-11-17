@@ -71,6 +71,8 @@ class FamilyQuest:
         self.sternlauf = Sternlauf(self.db, self.community.add_history, self.rewards)
         from .snack import Snack
         self.snack = Snack(self.db, self.community.add_history, self.rewards)
+        from .verkehr import Verkehr
+        self.verkehr = Verkehr(self.db, self.community.add_history, self.rewards)
         from .klatsch import Klatsch
         self.klatsch = Klatsch(self.db, self.community.add_history, self.rewards)
         from .verboten import Verboten
@@ -86,7 +88,7 @@ class FamilyQuest:
         from .escape import Escape
         self.escape = Escape(self.db, self.community.add_history, self.rewards)
         # games without bots (parent area › Games): the engines ask before bots take a seat (cardgames.CardGames.bots_off)
-        for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.snack, self.klatsch,
+        for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.snack, self.verkehr, self.klatsch,
                     self.jass, self.werwolf, self.dorfmarkt):
             eng.no_bots = self.table_without_bots
         from .songquiz import SongQuiz
@@ -159,8 +161,8 @@ class FamilyQuest:
 
     # the games that can be played with bots (alone against bots, bots at the table, chess / Tic-Tac-Toe / Ping-Pong
     # against the computer, Werwölfe filled up with bots) – the parents can switch the bots off per game
-    BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "pingpong")
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
+    BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "pingpong")
+    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -236,6 +238,7 @@ class FamilyQuest:
         out["jump"] = self.jump.summary("jump", pid) if "jump" in ok else None
         out["sternlauf"] = self.sternlauf.summary("sternlauf", pid) if "sternlauf" in ok else None
         out["snack"] = self.snack.summary("snack", pid) if "snack" in ok else None
+        out["verkehr"] = self.verkehr.summary("verkehr", pid) if "verkehr" in ok else None
         out["klatsch"] = self.klatsch.summary("klatsch", pid) if "klatsch" in ok else None
         out["verboten"] = self.verboten.summary("verboten", pid) if "verboten" in ok else None
         out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None

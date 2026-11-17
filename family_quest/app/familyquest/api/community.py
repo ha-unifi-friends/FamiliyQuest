@@ -27,7 +27,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -1481,6 +1481,92 @@ def snack_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.snack.state("snack", prof["id"])
 
 
+# ---------------------------------------------------------------- «Traffic Cadet» (familyquest/verkehr.py)
+class VerkehrStartIn(BaseModel):
+    solo: bool = False                   # alone (private) – optionally with practice bots
+    bots: int | None = None              # 0–5 bots
+    level: str | None = None             # the bots: easy | normal | hard
+    difficulty: str | None = None        # the traffic: easy | normal | hard
+    worlds: int | None = None            # 1–5
+    bot_ids: list[int | str] = []
+
+
+class VerkehrSyncIn(BaseModel):
+    t: float | None = None                                   # the game time of the app (seconds)
+    events: list[list[int]] = Field(default_factory=list, max_length=40)   # new switches: [global tick, group, 1 green / 0 red]
+
+
+def _lead_verkehr(fq, prof: dict) -> None:
+    if not fq.verkehr.may_lead("verkehr", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/verkehr")
+def verkehr_state(request: Request, mine: bool = False, prof: dict = Playing) -> dict | None:
+    """The table – with mine=1 also my map as the server has it (the app starts its own map from it)."""
+    return app_of(request).verkehr.state("verkehr", prof["id"], mine=mine)
+
+
+@router.get("/verkehr/worlds")
+def verkehr_worlds(request: Request, prof: dict = Playing) -> dict | None:
+    """The worlds of my game: street layouts and cars (the same for everybody)."""
+    return app_of(request).verkehr.worlds(prof["id"])
+
+
+@router.get("/verkehr/rules")
+def verkehr_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).verkehr.rules_info()
+
+
+@router.post("/verkehr/start")
+def verkehr_start(body: VerkehrStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    forced = _no_bots(fq, prof, "verkehr", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
+    with _bots_not_remembered(fq, "verkehr", forced):
+        _run(fq.verkehr.start, "verkehr", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.verkehr.state("verkehr", prof["id"], mine=True)
+
+
+@router.post("/verkehr/join")
+def verkehr_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.verkehr.join, "verkehr", prof["id"])
+    return fq.verkehr.state("verkehr", prof["id"])
+
+
+@router.post("/verkehr/begin")
+def verkehr_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_verkehr(fq, prof)
+    _run(fq.verkehr.begin, "verkehr", prof["id"])
+    return fq.verkehr.state("verkehr", prof["id"], mine=True)
+
+
+@router.post("/verkehr/sync")
+def verkehr_sync(body: VerkehrSyncIn, request: Request, mine: bool = False, prof: dict = Playing) -> dict | None:
+    """The app reports its own light switches (only its own map) and gets everybody's stats back – rejected switches
+    («rej») come with my map as the server has it."""
+    fq = app_of(request)
+    out = _run(fq.verkehr.report, prof["id"], body.t, body.events)
+    if mine and out and out.get("phase") == "play" and "my" not in out:
+        out = {**fq.verkehr.state("verkehr", prof["id"], mine=True), "rej": out.get("rej", [])}
+    return out
+
+
+@router.post("/verkehr/end")
+def verkehr_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_verkehr(fq, prof)
+    fq.verkehr.end("verkehr", prof["id"])
+    return fq.verkehr.state("verkehr", prof["id"])
+
+
 # ---------------------------------------------------------------- «Klatsch den Beat» (familyquest/klatsch.py)
 class KlatschStartIn(BaseModel):
     solo: bool = False                   # alone (private) – optionally with practice bots
@@ -2276,9 +2362,9 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
-                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
+                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
                  "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:

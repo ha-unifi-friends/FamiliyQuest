@@ -68,6 +68,9 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.snack) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("snack") },
     h("span.big-ic", "🍔"), h("span.grow", h("strong", T("Snack Rush")), h("br"),
       h("span.small", c.snack.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.verkehr) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("verkehr") },
+    h("span.big-ic", "🚦"), h("span.grow", h("strong", T("Traffic Cadet")), h("br"),
+      h("span.small", c.verkehr.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.klatsch) out.push(h("button.card.banner.quiz-banner", { onclick: () => { try { KbAudio.ensure(); } catch {} go("klatsch"); } },
     h("span.big-ic", "👏"), h("span.grow", h("strong", T("Clap the Beat")), h("br"),
       h("span.small", c.klatsch.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -789,6 +792,11 @@ function historyText(e) {
   if (e.kind === "snack") return ["🍔", (d.players > 1
     ? I18N.tr(T("Snack Rush: place {0} of {1} · 💰 {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
     : I18N.tr(T("Snack Rush alone: 💰 {0}")).replace("{0}", d.score)) + " · 🍽️ " + (d.served || 0) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
+  if (e.kind === "verkehr") return ["🚦", (d.players > 1
+    ? I18N.tr(T("Traffic Cadet: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
+    : I18N.tr(T("Traffic Cadet alone: {0} points")).replace("{0}", d.score))
+    + " · 🚗" + (d.passed || 0) + " 💥" + (d.accidents || 0) + " 😡" + (d.angry || 0) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
   if (e.kind === "klatsch") return ["👏", (d.players > 1
     ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.score))

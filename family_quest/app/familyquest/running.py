@@ -2,7 +2,7 @@
 
 Family tables and tables alone against bots of all live games: the family quiz, bingo, guess the song, poker and the
 games of the `card_game` table (Tschau Sepp, Kartenkarussell, Domino, Paarjagd, Wer bin ich?, Kartenlauf,
-Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Snack Rush, Klatsch den Beat, Verbotene Wörter, Jass, Werwölfe,
+Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Verkehrskadett, Snack Rush, Klatsch den Beat, Verbotene Wörter, Jass, Werwölfe,
 Schach, Dorfmarkt, Escape Room). Ending works like the «End» button of whoever leads the game.
 Chess games can be paused (status "paused" – listed as paused); ending one ends it without a result and without coins.
 """
@@ -12,16 +12,16 @@ import json
 
 TITLES = {"tschau": "Tschau Sepp", "karussell": "Card Carousel", "domino": "Domino", "paarjagd": "Pair Hunt",
           "werbinich": "Who am I?", "kartenlauf": "Card Race", "stadtland": "City, Country, River", "zeichnen": "Draw & Guess",
-          "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market", "escape": "Escape Room"}
+          "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "verkehr": "Traffic Cadet", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market", "escape": "Escape Room"}
 ICONS = {"quiz": "🎯", "bingo": "🎱", "song": "🎵", "poker": "🃏", "tschau": "🂡", "karussell": "🎠", "domino": "🁫",
-         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "sternlauf": "🌠", "snack": "🍔", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️", "escape": "🗝️"}
+         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "sternlauf": "🌠", "snack": "🍔", "verkehr": "🚦", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️", "escape": "🗝️"}
 
 
 def _games(fq) -> dict:
     """The object that leads the tables of a card_game kind."""
     return {"tschau": fq.cards, "karussell": fq.cards, "domino": fq.domino, "paarjagd": fq.paarjagd,
             "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf, "stadtland": fq.stadtland, "zeichnen": fq.zeichnen,
-            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf, "schach": fq.schach, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}
+            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "snack": fq.snack, "verkehr": fq.verkehr, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf, "schach": fq.schach, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}
 
 
 def _name(fq, pid) -> str:
