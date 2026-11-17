@@ -114,7 +114,6 @@ function stadtlandLive(box, me, back) {
   const who = id => player(id).name || "?";
   const medal = n => ["🥇", "🥈", "🥉"][n - 1] || n + ".";
   const fill = (key, ...xs) => { let s = I18N.tr(key); xs.forEach((x, i) => { s = s.replace("{" + i + "}", x); }); return s; };
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
 
   // ---------- autosave: changed fields go to the server shortly after typing (and right away at the end)
   function flush() {
@@ -180,24 +179,29 @@ function stadtlandLive(box, me, back) {
     show(close, head(), hostBar());
   }
 
+  // ☰: rules, guests, Close the round / End (whoever leads), language – in the header and in the writing view
+  function menu() {
+    const lead = isHost() && st.status !== "done";
+    return gameMenu({ rules: () => stadtlandRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !me.guest && st.status !== "done" ? "stadtland" : null,
+      actions: [
+        { ic: "⏭", label: T("Close the round"), hidden: !lead || st.phase !== "write", confirm: T("Close the writing for everybody now?"),
+          onclick: () => { if (st.phase === "write") { flush(); act("next"); } } },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game? The rounds so far count."), onclick: () => { flush(); act("end"); } }],
+      onLeave: st.status !== "done" ? () => { stop(); back(); } : null });
+  }
   function head() {
-    return h("div.quiz-head.dm-head.sl-head", h("h1", SL_ICON, " ", slName()), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => openModal(stadtlandRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜")));
+    return h("div.quiz-head.dm-head.sl-head", h("div.row.head-title", menu(), h("h1", SL_ICON, " ", slName())));
   }
 
+  // only the main action of the moment stays as a big button (Start, Go on, Next round) – the rest is in ☰
   function hostBar() {
-    const lead = isHost() && st.status !== "done";
-    const inv = !me.guest && st.status !== "done" ? h("button.btn.ghost.small", { onclick: () => guestInvite("stadtland") }, "👥 ", T("Invite guests")) : null;
-    if (!lead) return inv ? h("div.row.center.host-bar", inv) : null;
-    const nextLabel = { write: T("Close the round"), review: T("Go on"), scores: st.round >= st.rounds ? T("Results") : T("Next round") }[st.phase];
+    if (!isHost() || st.status === "done") return null;
+    const nextLabel = { review: T("Go on"), scores: st.round >= st.rounds ? T("Results") : T("Next round") }[st.phase];
+    if (st.phase !== "lobby" && !nextLabel) return null;
     return h("div.row.center.host-bar",
       st.phase === "lobby" ? h("button.btn", { disabled: st.players.length < 2, onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      nextLabel ? h("button.btn" + (st.phase === "write" ? ".ghost.small" : ""), { onclick: () => {
-        if (st.phase === "write" && !confirm(I18N.tr(T("Close the writing for everybody now?")))) return;
-        flush(); act("next");
-      } }, "⏭ ", nextLabel) : null,
-      inv,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game? The rounds so far count.")))) { flush(); act("end"); } } }, T("End")));
+      nextLabel ? h("button.btn", { onclick: () => { flush(); act("next"); } }, "⏭ ", nextLabel) : null);
   }
 
   function catChips() {
@@ -247,12 +251,12 @@ function stadtlandLive(box, me, back) {
     const stopBtn = st.rules.stopp ? h("button.btn.big.sl-stopp", { onclick: callStopp }, "✋ ", T("Stopp!")) : null;
     const msg = h("div.sl-msg");
     const fin = h("span.sl-fin");
-    const host = h("div.sl-hostslot");
+    const host = h("div.sl-hostslot"), menuSlot = h("span.sl-menuslot");
     const close = h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕");
     const root = h("div.sl-write",
-      h("div.sl-top", letter, h("div.sl-info", h("span.chip", fill(T("Round {0} of {1}"), st.round, st.rounds)), fin), ringBox),
+      h("div.sl-top", menuSlot, letter, h("div.sl-info", h("span.chip", fill(T("Round {0} of {1}"), st.round, st.rounds)), fin), ringBox),
       msg, h("div.sl-fields", ...rows), stopBtn, host);
-    W = { key, root, inputs, rows, letter, ring: ringBox, arc: ringBox.querySelector(".sl-arc"), circ, secs, stopBtn, msg, fin, host, spinning: Date.now() < spinUntil };
+    W = { key, root, inputs, rows, letter, ring: ringBox, arc: ringBox.querySelector(".sl-arc"), circ, secs, stopBtn, msg, fin, host, menuSlot, spinning: Date.now() < spinUntil };
     lockedRound = lockedRound === key ? key : null;
     inputs.forEach(i => { i.disabled = W.spinning || locked(); });
     box.replaceChildren(close, root);
@@ -298,6 +302,7 @@ function stadtlandLive(box, me, back) {
     }
     W.root.classList.toggle("stopped", !!st.stopp);
     W.host.replaceChildren(...[hostBar()].filter(Boolean));
+    W.menuSlot.replaceChildren(menu());
     mark();
     clock();
   }

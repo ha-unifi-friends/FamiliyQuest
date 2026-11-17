@@ -33,9 +33,20 @@ function arcadeView(kind) {
   const box = h("div.arcade-box");
   screen("games", h("div.quiz-full.arcade-full",
     h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => go("games") }, "✕"),
-    h("div.quiz-head", h("h1", g.icon, " ", g.title), h("button.icon-btn", { title: T("Rules"), onclick: () => toast(I18N.tr(g.text)) }, "ℹ️")), box));
+    // ☰: the rules, language, theme, sound – also for the duels on two devices and the doubles (they draw into box)
+    h("div.quiz-head", h("div.row.head-title", gameMenu({ rules: () => arcadeRulesView(kind), onLeave: () => go("games") }), h("h1", g.icon, " ", g.title))), box));
   document.body.classList.add("quiz-open");
   ({ ttt: tttGame, sudoku: sudokuGame, patience: patienceGame, pingpong: pingpongGame, slots: slotsGame })[kind](box);
+}
+
+function arcadeRulesView(kind) {
+  const g = ARCADE[kind];
+  const more = { patience: [T("Tap a card: it moves to where it fits. If it fits nowhere, it stays marked – then tap where it should go.")],
+    pingpong: [T("Move your paddle (bottom) with your finger. First to 7 points wins."),
+      T("Two players, two devices: challenge somebody of the family – they get the invitation on their device.")],
+    ttt: [T("Two players, two devices: challenge somebody of the family – they get the invitation on their device.")] }[kind] || [];
+  return h("div.form", h("h2", "📜 ", T("Rules")), h("p", g.icon, " ", h("b", g.title)),
+    h("ul.small", ...[g.text, ...more].map(x => h("li", I18N.tr(x)))));
 }
 
 function segmented(options, value, onchange) {
@@ -139,6 +150,7 @@ function tttOnline(box) {
         : h("p.muted", T("Nobody else can play right now.")));
   };
   const draw = (force = false) => {
+    turnCue("duel", st && st.status === "play" && st.turn === st.me);
     const key = JSON.stringify(st);
     if (!force && key === last) return;
     last = key;

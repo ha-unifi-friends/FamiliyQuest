@@ -88,12 +88,13 @@ function verbotenLive(box, me, back) {
   const who = id => player(id).name || "?";
   const medal = n => ["🥇", "🥈", "🥉"][n - 1] || n + ".";
   const fill = (key, ...xs) => { let s = I18N.tr(key); xs.forEach((x, i) => { s = s.replace("{" + i + "}", x); }); return s; };
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
   const mark = (result, guesser) => act("mark", { n: st.n, result, guesser });
 
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+
+    turnCue("verboten", st && st.phase === "ready" && st.me_explainer);
     if (st && st.phase === "explain" && st.left_ms != null) deadlineAt = Date.now() + st.left_ms;
     const sig = JSON.stringify(st, (k, v) => k === "left_ms" ? undefined : v);
     if (sig === lastSig && !force) return;
@@ -103,6 +104,7 @@ function verbotenLive(box, me, back) {
     clearInterval(tick);
     if (!st) return show(h("section.card.center", h("div.big-ic", VW_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     sounds();
+    if (st.phase !== "lobby") starterBanner(st.starter, "verboten");
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     if (st.phase === "done") return show(head(), result());
     if (!st.joined && st.phase === "lobby") return show(close, head(), h("section.card.center", h("p", T("Play along on this device?")),
@@ -129,9 +131,19 @@ function verbotenLive(box, me, back) {
   }
 
   function head() {
-    return h("div.quiz-head.dm-head.vw-head", h("h1", VW_ICON, " ", vwName()), h("div.row",
-      st.phase !== "lobby" && st.phase !== "done" ? h("span.chip", { title: I18N.tr(T("Round {0} of {1}")).replace("{0}", st.round).replace("{1}", st.rounds) }, st.round + " / " + st.rounds) : null,
-      h("button.btn.small.ghost", { onclick: () => openModal(verbotenRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜")));
+    // ☰: rules, guests, the actions of whoever leads (mix, skip, end), language
+    const lead = isHost() && st.status !== "done";
+    const playing = st.phase === "ready" || st.phase === "explain";
+    const menu = gameMenu({ rules: () => verbotenRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !me.guest && st.status !== "done" ? "verboten" : null,
+      actions: [
+        { ic: "🔀", label: T("Mix teams"), hidden: !lead || st.phase !== "lobby" || !st.teams, onclick: () => act("mix") },
+        { ic: "⏭", label: T("Skip turn"), hidden: !lead || !playing,
+          onclick: () => { if (confirm(I18N.tr(T("Skip the turn of {0}?")).replace("{0}", who(st.explainer)))) act("skip"); } },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game? The points so far count."), onclick: () => act("end") }],
+      onLeave: st.status !== "done" ? () => { stop(); back(); } : null });
+    return h("div.quiz-head.dm-head.vw-head", h("div.row.head-title", menu, h("h1", VW_ICON, " ", vwName())), h("div.row",
+      st.phase !== "lobby" && st.phase !== "done" ? h("span.chip", { title: I18N.tr(T("Round {0} of {1}")).replace("{0}", st.round).replace("{1}", st.rounds) }, st.round + " / " + st.rounds) : null));
   }
 
   function ruleChips() {
@@ -142,18 +154,17 @@ function verbotenLive(box, me, back) {
       st.teams ? h("span.chip", "👥 ", T("Teams")) : h("span.chip", "🙋 ", T("Everybody for themselves")));
   }
 
+  // only the main action stays as a big button – everything else is in ☰
   function hostBar() {
-    const lead = isHost() && st.status !== "done";
-    const inv = !me.guest && st.status !== "done" ? h("button.btn.ghost.small", { onclick: () => guestInvite("verboten") }, "👥 ", T("Invite guests")) : null;
-    if (!lead) return inv ? h("div.row.center.host-bar", inv) : null;
-    const playing = st.phase === "ready" || st.phase === "explain";
+    if (!(isHost() && st.status !== "done" && st.phase === "lobby")) return null;
     return h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { disabled: st.players.length < 2, onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      st.phase === "lobby" && st.teams ? h("button.btn.ghost.small", { onclick: () => act("mix") }, "🔀 ", T("Mix teams")) : null,
-      inv,
-      playing ? h("button.btn.ghost.small", { title: T("Skip this turn (e.g. somebody left)"),
-        onclick: () => { if (confirm(I18N.tr(T("Skip the turn of {0}?")).replace("{0}", who(st.explainer)))) act("skip"); } }, "⏭ ", T("Skip turn")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game? The points so far count.")))) act("end"); } }, T("End")));
+      h("button.btn", { disabled: st.players.length < 2, onclick: async () => {
+        if (busy) return;
+        busy = true;
+        try { const r = await beginGame("community/verboten/begin", st.players); if (r) { st = r; draw(true); } }
+        catch (e) { toast(e.message, "bad"); }
+        finally { busy = false; }
+      } }, "▶ ", T("Start")));
   }
 
   function seat(p) {

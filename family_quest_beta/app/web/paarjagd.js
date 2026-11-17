@@ -80,7 +80,6 @@ function paarjagdLive(box, me, back) {
   }
   const player = id => st.players.find(p => p.id === id) || {};
   const who = id => player(id).name || "?";
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
 
   // ---------- the cards: built once per game, then only their classes and faces change (so they turn over)
   const emojiOf = it => it.img ? it : it.e != null ? { emoji: (PAIR_SETS[st.rules.set] || PAIR_SETS.animals)[1].split(" ")[it.e] || "❓" } : { emoji: String((it.n ?? 0) + 1) };
@@ -142,6 +141,8 @@ function paarjagdLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+
+    turnCue("paarjagd", st && st.my_turn);
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.open, Object.keys(st.found || {}).length, st.joined, st.players.length,
       st.last && st.last.t]);
     if (sig === lastSig && !force) return;
@@ -150,15 +151,18 @@ function paarjagdLive(box, me, back) {
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
     if (!st) return show(h("section.card.center", h("div.big-ic", PJ_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", PJ_ICON, " ", pjName()), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => openModal(paarjagdRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜"),
+    // ☰: rules, guests (everybody of the family at a family table), end for whoever leads, language
+    const menu = gameMenu({ rules: () => paarjagdRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "paarjagd" : null,
+      actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
+        onclick: () => act("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", PJ_ICON, " ", pjName())), h("div.row",
       st.phase === "play" ? h("span.chip", I18N.tr(T("{0} of {1} pairs")).replace("{0}", Object.keys(st.found || {}).length / 2).replace("{1}", st.count / 2)) : null));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Deal")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("paarjagd") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    // everybody of the family who plays may invite guests – not only who leads the game
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("paarjagd") }, "👥 ", T("Invite guests")));
+    // only the main action stays as a big button – everything else is in ☰
+    const host = isHost() && st.phase === "lobby" && st.status !== "done" ? h("div.row.center.host-bar",
+      h("button.btn", { onclick: async () => { try { const r = await beginGame("community/paarjagd/begin", st.players); if (r) { st = r; draw(true); } } catch (e) { toast(e.message, "bad"); } } }, "▶ ", T("Deal"))) : null;
+    if (st.phase !== "lobby") starterBanner(st.starter, "paarjagd");
     if (st.phase === "done") return show(head, result());
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), host);

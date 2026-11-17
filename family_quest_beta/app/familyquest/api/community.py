@@ -142,6 +142,17 @@ def quiz_create(body: QuizIn, request: Request, prof: dict = Gamer) -> dict:
     return {"id": _run(app_of(request).community.save_quiz, body.model_dump(), prof)}
 
 
+# ---------------------------------------------------------------- who begins a turn-based game (cardgames.apply_starter)
+class BeginIn(BaseModel):
+    starter: str | None = None       # with the setting «choose»: the player the leader picked
+
+
+@router.get("/starter")
+def game_starter(request: Request, prof: dict = Gamer) -> dict:
+    from ..cardgames import starter_mode
+    return {"mode": starter_mode(app_of(request).db)}
+
+
 class QuizImportIn(BaseModel):
     text: str                        # the file: a quiz (or a list) in the Family Quest quiz format
 
@@ -373,10 +384,10 @@ def poker_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/poker/begin")
-def poker_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def poker_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _poker_lead(fq, prof)
-    _run(fq.poker.begin, prof["id"])
+    _run(fq.poker.begin, prof["id"], (body or BeginIn()).starter)
     return fq.poker.state(prof["id"])
 
 
@@ -483,11 +494,11 @@ def cards_join(kind: str, request: Request, prof: dict = Playing) -> dict | None
 
 
 @router.post("/cards/{kind}/begin")
-def cards_begin(kind: str, request: Request, prof: dict = Gamer) -> dict | None:
+def cards_begin(kind: str, request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     if not fq.cards.may_lead(_kind(kind), prof):
         raise HTTPException(403, "Only who started the game (or a parent) leads it")
-    _run(fq.cards.begin, kind, prof["id"])
+    _run(fq.cards.begin, kind, prof["id"], (body or BeginIn()).starter)
     return fq.cards.state(kind, prof["id"])
 
 
@@ -662,10 +673,10 @@ def pairhunt_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/paarjagd/begin")
-def pairhunt_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def pairhunt_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_pairhunt(fq, prof)
-    _run(fq.paarjagd.begin, "paarjagd", prof["id"])
+    _run(fq.paarjagd.begin, "paarjagd", prof["id"], (body or BeginIn()).starter)
     return fq.paarjagd.state("paarjagd", prof["id"])
 
 
@@ -727,10 +738,10 @@ def whoami_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/werbinich/begin")
-def whoami_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def whoami_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_whoami(fq, prof)
-    _run(fq.werbinich.begin, "werbinich", prof["id"])
+    _run(fq.werbinich.begin, "werbinich", prof["id"], (body or BeginIn()).starter)
     return fq.werbinich.state("werbinich", prof["id"])
 
 
@@ -855,10 +866,10 @@ def kartenlauf_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/kartenlauf/begin")
-def kartenlauf_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def kartenlauf_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_kartenlauf(fq, prof)
-    _run(fq.kartenlauf.begin, "kartenlauf", prof["id"])
+    _run(fq.kartenlauf.begin, "kartenlauf", prof["id"], (body or BeginIn()).starter)
     return fq.kartenlauf.state("kartenlauf", prof["id"])
 
 
@@ -1153,10 +1164,10 @@ def heimwaerts_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/heimwaerts/begin")
-def heimwaerts_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def heimwaerts_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_heimwaerts(fq, prof)
-    _run(fq.heimwaerts.begin, "heimwaerts", prof["id"])
+    _run(fq.heimwaerts.begin, "heimwaerts", prof["id"], (body or BeginIn()).starter)
     return fq.heimwaerts.state("heimwaerts", prof["id"])
 
 
@@ -1378,10 +1389,10 @@ def zeichnen_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/zeichnen/begin")
-def zeichnen_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def zeichnen_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_zeichnen(fq, prof)
-    _run(fq.zeichnen.begin, "zeichnen", prof["id"])
+    _run(fq.zeichnen.begin, "zeichnen", prof["id"], (body or BeginIn()).starter)
     return fq.zeichnen.state("zeichnen", prof["id"])
 
 
@@ -1476,10 +1487,10 @@ def verboten_mix(request: Request, prof: dict = Gamer) -> dict | None:
 
 
 @router.post("/verboten/begin")
-def verboten_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def verboten_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_verboten(fq, prof)
-    _run(fq.verboten.begin, "verboten", prof["id"])
+    _run(fq.verboten.begin, "verboten", prof["id"], (body or BeginIn()).starter)
     return fq.verboten.state("verboten", prof["id"])
 
 
@@ -1833,6 +1844,7 @@ class DorfmarktActIn(BaseModel):
     action: str = Field(max_length=20)   # roll | buy | skip | bid | end_turn | build | sell | mortgage | unmortgage | bail | use_card | liquidate | give_up | offer | answer | cancel
     field: int | None = Field(default=None, ge=0, le=35)
     amount: int | None = Field(default=None, ge=0, le=1_000_000)
+    step: int | None = Field(default=None, ge=0, le=1000)     # bid: +10 / +25 / +50 over the current price
     to: str | None = Field(default=None, max_length=20)
     give: list[int] = Field(default=[], max_length=36)
     give_money: int = Field(default=0, ge=0, le=1_000_000)
@@ -1882,10 +1894,10 @@ def dorfmarkt_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/dorfmarkt/begin")
-def dorfmarkt_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def dorfmarkt_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_dorfmarkt(fq, prof)
-    _run(fq.dorfmarkt.begin, "dorfmarkt", prof["id"])
+    _run(fq.dorfmarkt.begin, "dorfmarkt", prof["id"], (body or BeginIn()).starter)
     return fq.dorfmarkt.state("dorfmarkt", prof["id"])
 
 

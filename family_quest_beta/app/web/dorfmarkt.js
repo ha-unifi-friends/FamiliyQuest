@@ -137,7 +137,7 @@ function dorfmarktRulesView(r, rewards) {
     I18N.tr(T("Everybody starts with {0} and walks around the village with two dice.")).replace("{0}", mkMoney(r.money || 1500)),
     T("Passing or landing on Market day brings 200 Taler."),
     T("A double rolls again – the third double in a row sends you to the town meeting."),
-    r.auction ? T("Land on a free shop or place: buy it – or everybody may bid once for it (auction).") : T("Land on a free shop or place: buy it or leave it."),
+    r.auction ? T("Land on a free shop or place: buy it – or it is auctioned: everybody raises the price by 10, 25 or 50; 5 seconds after the last bid the highest bid wins.") : T("Land on a free shop or place: buy it or leave it."),
     T("Land on a field of another player: pay the rent. With the whole colour group the rent doubles."),
     T("With a whole colour group you may build market stands (up to 4, evenly) and then a market hall – the rent grows a lot."),
     T("Village bus: 25 / 50 / 100 / 200 Taler for 1 to 4 stops. Works: 4 × the dice, with both works 10 × the dice."),
@@ -513,6 +513,7 @@ function dorfmarktLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+    turnCue("dorfmarkt", st && st.my_turn && st.stage === "roll");
     if (rolling) return;
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.stage, st.roll_seq, st.joined, st.paused, st.round, st.time_left,
       st.players.map(p => [p.id, p.money, p.pos, p.place, p.out, p.meeting]), st.last && st.last.seq, st.auction, st.trades, st.may_build]);
@@ -523,15 +524,24 @@ function dorfmarktLive(box, me, back) {
     if (!st) return show(h("section.card.center", h("div.big-ic", MK_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     if (!MK_BOARD) return;
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", MK_ICON, " ", mkName()), h("div.row",
-      st.phase === "play" ? h("button.btn.small.ghost", { onclick: () => { zoom = !zoom; draw(true); }, title: T("Zoom") }, zoom ? "🔎−" : "🔎+") : null,
-      h("button.btn.small.ghost", { onclick: () => openModal(dorfmarktRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜")));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => lead("begin") }, "▶ ", T("Start")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("dorfmarkt") }, "👥 ", T("Invite guests")) : null,
-      st.phase === "play" ? h("button.btn.ghost.small", { onclick: () => lead("pause", { on: !st.paused }) }, st.paused ? "▶ " : "⏸ ", st.paused ? T("Resume") : T("Pause")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) lead("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("dorfmarkt") }, "👥 ", T("Invite guests")));
+    // ☰: rules, guests, the actions of whoever leads (pause / resume, end), language
+    const lead_ = isHost() && st.status !== "done";
+    const menu = gameMenu({ rules: () => dorfmarktRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "dorfmarkt" : null,
+      actions: [
+        { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Resume") : T("Pause"), hidden: !lead_ || st.phase !== "play", onclick: () => lead("pause", { on: !st.paused }) },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead_, confirm: T("End the game?"), onclick: () => lead("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", MK_ICON, " ", mkName())), h("div.row",
+      st.phase === "play" ? h("button.btn.small.ghost", { onclick: () => { zoom = !zoom; draw(true); }, title: T("Zoom") }, zoom ? "🔎−" : "🔎+") : null));
+    // only the main action of the moment stays as a big button: Start in the lobby, Resume in a paused game
+    const host = !lead_ ? null
+      : st.phase === "lobby" ? h("div.row.center.host-bar", h("button.btn", { onclick: async () => {
+          try { const r = await beginGame("community/dorfmarkt/begin", st.players); if (r) { st = r; draw(true); } } catch (e) { toast(e.message, "bad"); }
+        } }, "▶ ", T("Start")))
+      : st.phase === "play" && st.paused ? h("div.row.center.host-bar", h("button.btn", { onclick: () => lead("pause", { on: false }) }, "▶ ", T("Resume")))
+      : null;
+    if (st.phase !== "lobby") starterBanner(st.starter, "dorfmarkt");
     if (st.phase === "done" && st.players[0] && st.players[0].money != null) return show(head, result());
     if (st.phase === "done" || st.phase === "lobby" || !st.joined) {
       if (!st.joined && st.phase !== "lobby" && st.phase !== "done") {
@@ -592,15 +602,22 @@ function dorfmarktLive(box, me, back) {
     const a = st.auction;
     if (st.paused) msg = h("strong", "⏸ ", T("The game is paused"));
     else if (me2.out) msg = h("span.muted", "💸 ", T("You are bankrupt – watch the others play."));
-    else if (a && a.my_bid == null) {
-      const f = a.field, inp = h("input.mk-bid", { type: "number", min: 0, max: me2.money, step: 10, value: Math.min(me2.money, Math.floor(mkField(f).price / 2)), inputmode: "numeric" });
-      return h("section.card.mk-ctl.turn", { style: { "--pc": colorOf(st.turn) } },
+    else if (a) {
+      // open auction: +10 / +25 / +50 over the current price; 5 seconds after the last bid the highest bid wins
+      const f = a.field, lead = a.leader;
+      const left = Math.max(0, a.ms), full = (a.seconds || 5) * 1000;
+      const barFill = h("i", { style: { width: Math.min(100, left / full * 100) + "%", animationDuration: left + "ms" } });
+      const stepBtn = n => h("button.btn.mk-bidbtn", { disabled: a.price + n > me2.money, onclick: () => act("bid", { step: n }) }, "+" + n);
+      return h("section.card.mk-ctl.turn", { style: { "--pc": lead ? colorOf(lead) : "var(--accent)" } },
         h("div.mk-msg", h("strong", "🔨 ", say(tr(T("Auction: {0}"), mkFieldIcon(f) + " " + mkFieldName(f)))), " ",
-          h("span.small.muted", say(tr(T("price {0} · {1} s left"), mkMoney(mkField(f).price), Math.ceil(a.ms / 1000))))),
-        h("div.row.mk-btns", inp, h("button.btn.small", { onclick: () => act("bid", { amount: Math.max(0, Math.min(me2.money, +inp.value || 0)) }) }, "🔨 ", T("Bid")),
-          h("button.btn.small.ghost", { onclick: () => act("bid", { amount: 0 }) }, T("Pass")),
-          h("button.btn.small.ghost", { onclick: () => fieldCard(f) }, "ℹ️")));
-    } else if (a) msg = h("span", "🔨 ", say(tr(T("Auction: {0}"), mkFieldName(a.field))), " · ", T("waiting for the other bids …"));
+          h("button.btn.small.ghost", { onclick: () => fieldCard(f) }, "ℹ️")),
+        h("div.mk-auction",
+          h("div.mk-aprice", h("b", mkMoney(a.price)),
+            h("span.small", lead ? (lead === myId ? T("You bid the most") : tr(T("{0} bids the most"), who(lead))) : T("No bid yet"))),
+          h("div.mk-atime", barFill)),
+        me2.out ? null : h("div.row.mk-btns.mk-bids", ...(a.steps || [10, 25, 50]).map(stepBtn)),
+        h("div.small.muted", T("5 seconds after the last bid the highest bid gets the field.")));
+    }
     else if (my && stage === "roll" && st.in_meeting) {
       msg = h("strong.mk-turnmsg", "🏛️ ", say(tr(T("You are in the town meeting (try {0} of 3)"), (me2.meeting || 0) + 1)));
       B(["🎲 ", T("Roll a double")], roll);
