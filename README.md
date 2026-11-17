@@ -5,8 +5,9 @@
 <h3 align="center">Organize your family life with gamification</h3>
 
 <p align="center">
-  <b>The family app for Home Assistant: learning with points and avatars, chores, the Family Planer and a family
-  dashboard – and games that bring the whole family to one table. Everything local, no cloud.</b><br>
+  <b>The family app for Home Assistant that makes everyday family life easier: every child's tasks, learning,
+  FamilyTime and OfflineTime, bonus and malus – and games that bring the whole family to one table.
+  Everything local, no cloud.</b><br>
   learning packs · daily lesson · chore plan · 25+ family games · guests via QR code · pets · shop &amp; pranks · calendar · Bring! shopping list · kiosk dashboard · internet time with UniFi
 </p>
 
@@ -24,9 +25,11 @@
   <a href="https://ko-fi.com/haunififriends"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support Family Quest on Ko-fi" height="36"></a>
 </p>
 
-Family Quest is a Home Assistant app for the whole family. Children learn any school subject, do their chores and
-earn points for both; parents set the rules, approve rewards and see at a glance how everybody is doing. And the
-whole family plays together – more than 25 games for the family table strengthen the time you spend together. The
+Family Quest makes everyday family life easier. Every child sees its own tasks for the day – chores, learning,
+the daily goal – and earns points for them; good days bring a ☀️ bonus, bad ones a 🌧️ malus. Planned FamilyTime
+and OfflineTime, internet minutes and screen-free hours are part of the plan, and in the evening the whole family
+meets at the same table for a game. Parents set the rules, approve rewards and see at a glance how everybody is
+doing; children learn any school subject in small daily lessons. The
 [Family Planer](https://github.com/magi1982/family-planer) runs inside the app, so chores, to-dos and lists live in
 one place. No ads, no account, no cloud: all data stays in Home Assistant.
 
