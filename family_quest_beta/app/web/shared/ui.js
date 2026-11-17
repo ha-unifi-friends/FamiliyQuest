@@ -45,7 +45,20 @@ const Auth = {
 
 class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
 
-async function api(path, { method = "GET", body, form, parent = false } = {}) {
+// a 401 in the parent area: the page may set window.FQ_ON_401 (renew the session – true: try again once)
+let renewing = null;
+const NO_RENEW = /^parent\/(login|ha-login|refresh|meta)\b/;
+async function api(path, opts = {}) {
+  try { return await apiOnce(path, opts); }
+  catch (e) {
+    if (e.status !== 401 || opts._again || !window.FQ_ON_401 || NO_RENEW.test(path.replace(/^\//, ""))) throw e;
+    renewing = renewing || Promise.resolve(window.FQ_ON_401()).finally(() => { setTimeout(() => { renewing = null; }, 0); });
+    if (await renewing) return apiOnce(path, { ...opts, _again: true });
+    throw new ApiError(401, I18N.tr(T("Session expired – please log in again")));
+  }
+}
+
+async function apiOnce(path, { method = "GET", body, form, parent = false } = {}) {
   const headers = {};
   // the parent area acts as the parent – a child still logged in on this device must not be used there
   if (Auth.kid && !window.FQ_PARENT_AREA) headers["X-FQ-Token"] = Auth.kid;

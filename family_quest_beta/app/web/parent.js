@@ -53,14 +53,18 @@ async function haLogin() {
   } catch {}
 })();
 
+// the parent session ran out (30 minutes): Home Assistant logs in again – else the PIN login (shared/ui.js api)
+window.FQ_ON_401 = async () => {
+  const r = await haLogin();
+  if (r && r.parent_token) return true;
+  Auth.parent = ""; loginView();
+  return false;
+};
+
 async function call(path, opts) {
   try { return await api(path, opts); }
   catch (e) {
-    if (e.status === 401) {
-      const r = await haLogin();
-      if (r && r.parent_token) return api(path, opts);          // session ran out – Home Assistant logs in again
-      Auth.parent = ""; loginView();
-    }
+    if (e.status === 401 && Auth.parent) { Auth.parent = ""; loginView(); }       // could not be renewed (api did try)
     toast(e.message, "bad");
     throw e;
   }
