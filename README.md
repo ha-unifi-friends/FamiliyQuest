@@ -5,9 +5,13 @@
 <h3 align="center">Organize your family life with gamification</h3>
 
 <p align="center">
-  <b>The family app for Home Assistant: learning with points and avatars, chores, the Family Planer, games and a
-  family dashboard – everything local, no cloud.</b><br>
-  learning packs · daily lesson · chore plan · behaviour weather · family quiz &amp; bingo · kiosk dashboard · internet time with UniFi
+  <b>The family app for Home Assistant: learning with points and avatars, chores, the Family Planer and a family
+  dashboard – and games that bring the whole family to one table. Everything local, no cloud.</b><br>
+  learning packs · daily lesson · chore plan · 25+ family games · pets · shop &amp; pranks · behaviour weather · kiosk dashboard · internet time with UniFi
+</p>
+
+<p align="center">
+  🇬🇧 English · 🇩🇪 Deutsch · 🇨🇭 Schwiizerdütsch · 🇫🇷 Français · 🇮🇹 Italiano · 🇪🇸 Español · 🇳🇱 Nederlands · 🇵🇱 Polski · 🇧🇷 Português · 🇸🇪 Svenska
 </p>
 
 <p align="center">
@@ -21,28 +25,30 @@
 </p>
 
 Family Quest is a Home Assistant app for the whole family. Children learn any school subject, do their chores and
-earn points for both; parents set the rules, approve rewards and see at a glance how everybody is doing. The
+earn points for both; parents set the rules, approve rewards and see at a glance how everybody is doing. And the
+whole family plays together – more than 25 games for the family table strengthen the time you spend together. The
 [Family Planer](https://github.com/magi1982/family-planer) runs inside the app, so chores, to-dos and lists live in
 one place. No ads, no account, no cloud: all data stays in Home Assistant.
 
 ## Screenshots
 
+| | | |
+|---|---|---|
+| ![Log in](docs/screenshots/login.png) | ![The child's start page](docs/screenshots/child-home.png) | ![Games](docs/screenshots/games.png) |
+| **Log in** – every child with its own avatar, optional picture or digit PIN | **Start page** – weather of the day, daily goal, chores, subjects | **Games** – 25+ games for the whole family, each switchable per child |
+| ![Jass](docs/screenshots/game-jass.png) | ![Chess](docs/screenshots/game-chess.png) | ![Dorfmarkt](docs/screenshots/game-dorfmarkt.png) |
+| **Jass** – the Swiss card game with bots as partners or opponents | **Chess** – against bots or each other, games can be paused | **Dorfmarkt** – trading board game in a Swiss village |
+| ![Heimwärts](docs/screenshots/game-heimwaerts.png) | ![Shop and pranks](docs/screenshots/shop.png) | ![Pets](docs/screenshots/pets.png) |
+| **Heimwärts** – race board game for 2–4 | **Shop** – avatar items and pranks like the ink bomb | **Pets** – feed, play, wash; pet sitting and babies |
+
 | | |
 |---|---|
-| ![Log in with picture or digit PIN](docs/screenshots/login.png) | ![The child's start page](docs/screenshots/child-home.png) |
-| **Log in** – each child with its own avatar and an optional picture or digit PIN | **Start page** – weather of the day, daily goal, chores, subjects |
-| ![A lesson](docs/screenshots/lesson.png) | ![Avatar editor and mood](docs/screenshots/avatar.png) |
-| **Lessons** – flash cards, quiz, typing, pairs, drag & drop, maths trainer | **Avatar and mood** – items to earn, «How do you feel?» only for the parents |
-| ![Parent overview](docs/screenshots/parent-overview.png) | ![Behaviour weather](docs/screenshots/parent-weather.png) |
-| **Parent overview** – approvals, family goal, every child with points and progress | **Behaviour weather** – ☀️ bonus or 🌧️ malus with one tap, 30-day graph |
-| ![Packs by pack or by child](docs/screenshots/parent-packs.png) | ![Kiosk dashboard](docs/screenshots/dashboard.png) |
-| **Packs** – grouped by pack or by child | **Dashboard** – a family screen for any wall tablet or TV |
+| ![Parent overview](docs/screenshots/parent-overview.png) | ![Kiosk dashboard](docs/screenshots/dashboard.png) |
+| **Parent area** – approvals, behaviour weather, every child at a glance | **Dashboard** – a family screen for any wall tablet or TV |
 
-<sub>Demo data. The app speaks English, German, Swiss German, French, Italian, Spanish, Dutch, Polish, Portuguese and Swedish.</sub>
+<sub>Demo data. Learning content (packs) is not translated and appears in its own language.</sub>
 
 ## What it does
-
-<sub>Many of these features are new in **Family Quest Beta** (0.3.0) and come to Family Quest with the next release.</sub>
 
 **Learning**
 - **Any subject, same rules:** French, maths, German, English, geography of canton Thurgau … as *packs* (YAML/ZIP),
@@ -57,18 +63,41 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
 **Points, rewards and behaviour**
 - **Accounts and rules:** freely definable accounts (XP, coins, internet minutes …) and rules «event → amount →
   account» with daily limits.
-- **Shop:** vouchers, internet minutes, Home Assistant scripts and avatar items (pirate hat, viking helmet, parrot …);
-  parents approve in the app or with the buttons of a push message.
+- **Shop:** vouchers, internet minutes, Home Assistant scripts, avatar items and pranks; parents approve in the app
+  or with the buttons of a push message.
 - **Behaviour weather:** parents give each child its weather of the day – ☀️ with a bonus, 🌧️ or ⛈️ with a malus.
   Symbols, points and the daily reset are configurable; a child only sees its own weather.
 - **Crown for a day** (e.g. on Epiphany), moods with a quiet message to the parents.
+
+**Games – playing together as a family** (own menu item, each game can be switched on or off per child)
+
+Family Quest is made to bring the family together: parents and children sit at the same table, each with their own
+phone, play, laugh, argue a little over the rules and celebrate the winner – instead of everybody on their own screen.
+Most games are built for 2–12 people from 6 to 99 years; bots only fill empty seats.
+
+- **Alone against bots** (easy / normal / hard) **or at a family table** on everybody's own phone; guests (friends,
+  grandparents) join with a QR code. Places 1–3 earn coins, the winner wears the «No. 1» hat until the next game.
+- **Board and card games:** Jass (Schieber), chess (games can be paused), Dorfmarkt (property trading in a Swiss
+  village), Heimwärts (race board game), Tschau Sepp, Kartenkarussell, Kartenlauf, Domino, Texas Hold'em, Fünf Würfel.
+- **Party games:** Werwölfe (the app is the game master), Verbotene Wörter, Zeichnen & Raten, «Wer bin ich?»,
+  Stadt-Land-Fluss, family quiz, bingo, «Errate den Song» with a Home Assistant speaker.
+- **Action:** Jump (everybody in their own lane), Klatsch den Beat (rhythm), Paarjagd (pairs with own photo sets),
+  Ping-Pong (also 2 against 2), Tic-Tac-Toe, Sudoku, Patience and a one-armed bandit.
+
+**Pets, avatar and shop**
+- **Pets** to look after (feed, play, wash) – cat, dog, hamster that mines coins, dino egg, goldfish, turtle …,
+  babies, pet sitting by a family member or the pet hotel.
+- **Avatar items** to earn: jetpack, wings, laser sword, dark knight helmet, pirate apprentice, devil horns …
+- **Pranks:** the ink bomb (the screen of chosen family members gets smeared and must be wiped clean) and the whoopee
+  cushion (a fart on all speakers of the home).
 
 **Family life**
 - **Chore plan (Ämtliplan)** with fixed or rotating chores, duty or bonus, confirmed by the parents.
 - **Family Planer inside:** week plan, special chores, to-dos, shopping lists, awards and seasons – its persons are
   the Family Quest profiles and both share one points balance.
 - **Community:** live family quiz (kids create quizzes too, templates for cantons, capitals, flags …), family
-  council with proposals and votes, bingo with a ball carousel.
+  council with proposals and votes, polls and Wichteln (secret gift giving).
+- **Family calendar** with FamilyTime / OfflineTime, school holidays and Home Assistant calendars.
 - **Kiosk dashboard:** a read-only family screen for any browser – clock, crown, weather, learning progress, coins,
   open chores, family goal, Planer to-dos and calendar events.
 
@@ -82,9 +111,11 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
 - Several parents with their own PIN; children with a 4-digit or picture PIN (4 of 12 symbols, tap or draw a line)
   that they can change themselves.
 - Login log with IP, MAC and UniFi device name; a mini firewall limits the app and the parent area to address ranges.
-- Own texts and own languages (e.g. your dialect) with CSV import/export; backup and restore in one file.
-- **Import / export:** CSV/Excel, YAML, JSON, ZIP with pictures, a link, or – with an Anthropic API key – a photo or
-  PDF of a word list that Claude turns into a draft.
+- Own texts and own languages (e.g. your dialect) with CSV import/export; backup and restore in one small file
+  (photos from Home Assistant Media are only referenced).
+- **Import / export:** CSV/Excel, YAML, JSON, ZIP with pictures, a link, or a photo or PDF of a word list that the AI
+  set up in Home Assistant (AI Task: OpenAI, Google, Anthropic, a local Ollama …) turns into a draft.
+- Parents see every running game and can end one or all of them.
 
 ## Installation
 
