@@ -266,13 +266,13 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
 
 ## Community: family quiz and family council
 
-- **Family quiz** (learning app › Family › Quizzes, or parent area › Community): everybody – children too – makes
+- **Family quiz** (learning app › Family › Quizzes, or parent area › Games): everybody – children too – makes
   quizzes (2–4 answers, one right, time per question) or copies a template (Swiss waters, geography of Europe,
   capitals of Europe and the world, flags, food of the world, Swiss specialities, cantons, animals, space,
   inventions, Switzerland). Whoever starts a game leads it (a parent may always step in); everybody joins on their
   own device. Quick right answers give more points (1000 down to 500). Places go into everybody's history; the
   reward events *Played the family quiz* and *Won the family quiz* can give coins (Rewards › Rules).
-- **Bingo** (learning app › Family, or parent area › Community): whoever starts sets the rules (speed, one line /
+- **Bingo** (learning app › Family, or parent area › Games): whoever starts sets the rules (speed, one line /
   two lines / full card – the rules used last are the default); everybody joins with a 5 × 5 card (B-I-N-G-O, 1–75,
   free star). A ball carousel spins, stops and shows the new ball for about 5 seconds. Players mark the numbers
   themselves and press «BINGO!» – the app checks it; a false «Bingo!» blocks the button for 10 seconds. Everybody can
@@ -317,7 +317,7 @@ their cards and the pot odds; easy bots bluff and call more often. When you have
 
 ### Errate den Song
 
-Family › **🎵 Guess the song** (or parent area › Community): the game leader chooses a **speaker** of Home Assistant
+Family › **🎵 Guess the song** (or parent area › Games): the game leader chooses a **speaker** of Home Assistant
 (a media player that already has a playlist) and the rules – what who buzzes says (artist and title, artist or
 title, only one of them), the others judge by majority or unanimous, points to win (e.g. 10) and songs at most (e.g.
 40). The app switches shuffle on and only steers the speaker: play, pause, next song.
@@ -348,11 +348,25 @@ seats are filled with the animal bots.
 The button ☀️ / 🌙 (top right in the app, next to the language in the parent area) switches between light and dark and
 is remembered on the device; without a choice the system (or the Home Assistant theme) decides.
 
-### Games per game and person
+### Games per game and person (parent area › 🎲 Games)
 
-Settings › **Games**: every game on its own – *for everybody*, *only chosen children* (tick the children) or *off*:
-family quiz, bingo, Tschau Sepp, Kartenkarussell, Domino, Texas Hold'em and each game of the game corner. Parents can always
-play; the family council and polls stay open for everybody. Switched-off games disappear from the children's app.
+The parent area has two pages: **Community** (family council, polls, Wichteln, history) and **🎲 Games** (every game:
+the family quiz, bingo, guess the song, all live games with their start buttons, coins and photo sets, the running
+games, and the game corner). A **search field** at the top filters the games by name; «⚙️ For all games» holds
+*All on / All off*, who begins a game and whether guests may join.
+
+Every game has a **status**: *active*, *active without bots* or *inactive* (= off), and while active *for everybody* or
+*only chosen children* (tick the children). Parents can always play – and are not bound by «without bots» either.
+Switched-off games disappear from the children's app.
+
+**Active without bots** is offered for the games that can be played with bots: Texas Hold'em, Tschau Sepp,
+Kartenkarussell, Domino, Paarjagd, Kartenlauf, Fünf Würfel, Heimwärts, Jump, Klatsch den Beat, Jass, Werwölfe, Chess,
+Dorfmarkt, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
+the games against the app, and the server refuses every start with bots («Playing with bots is switched off for this
+game»): family tables get no bots (Kartenlauf plays with the people there, Jass needs 4 people, Werwölfe needs 5), chess
+only against the family or two on one device, Ping-Pong doubles only with people. Jump and Klatsch den Beat can still be
+played alone, without practice bots. A table where a parent plays along may still be filled with bots.
+Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `PUT /api/parent/games`).
 
 ### Family council: new topic
 
@@ -404,7 +418,7 @@ one). On your turn you turn two cards: a **pair** is yours and you go again; **n
 for a moment, then they turn back and the next player goes. When all pairs are found the most pairs win – a tie
 shares the place. The board always fits the screen, also on a phone.
 
-**Coins for places 1–3:** the parents set them in Community › Paarjagd («🪙 Coins for place 1 / 2 / 3», default
+**Coins for places 1–3:** the parents set them in Games › Paarjagd («🪙 Coins for place 1 / 2 / 3», default
 10 / 5 / 2). They are paid once at the end of a game, and only at a **family table with at least two people of the
 family**: no coins alone against bots, none for guests and none for bots. The result shows «+10 🪙» next to the place.
 The existing Pairs game in the game corner (one device, take turns) stays as it is.
@@ -434,7 +448,7 @@ questions with their answers. The game ends when everybody is finished; who lead
 somebody left) or end the game at any time – then all characters are shown and only who found theirs has a place.
 The result shows every character, the places and the coins.
 
-**Coins for places 1–3:** set by the parents in Community › Wer bin ich? (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Wer bin ich? (default 10 / 5 / 2), paid once, only at a
 table with **at least two people of the family** – never to guests. Every person gets a history entry (place, players,
 their character).
 
@@ -468,7 +482,7 @@ along the ring» opens a small menu); the jack asks for the second marble; the 7
 (step counter, «−» per marble, then «Play»); the joker first asks which card it stands for. Moves are animated along
 the track; the last move, the played card and the dealer are shown.
 
-**Coins for places 1–3:** set by the parents in Community › Kartenlauf (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Kartenlauf (default 10 / 5 / 2), paid once, only at a
 family table with **at least two people of the family** – never alone against bots, to guests or to bots. With teams
 both winners get place 1, the other team place 2. Every person gets a history entry.
 
@@ -500,7 +514,7 @@ answers of the round); after the last round the result shows the ranking (a tie 
 the winner. Who leads can end the game any time: the rounds so far count (a round in its review is scored as it stands,
 a round still being written is dropped).
 
-**Coins for places 1–3:** set by the parents in Community › Stadt-Land-Fluss (default 10 / 5 / 2), paid once, only at
+**Coins for places 1–3:** set by the parents in Games › Stadt-Land-Fluss (default 10 / 5 / 2), paid once, only at
 a table with **at least two people of the family** and only when at least one round was played – never to guests.
 Every person of the family gets a history entry (place, points, rounds).
 
@@ -530,7 +544,7 @@ ends when everybody found it or the time is up; the word is shown to all for 3 s
 can **skip** a turn (the points so far stay) and **end** the game (a drawing in progress counts as it stands). After the
 last turn the result shows the ranking (a tie shares the place) with confetti for the winner and the list of words.
 
-**Coins for places 1–3:** set by the parents in Community › Zeichnen & Raten (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Zeichnen & Raten (default 10 / 5 / 2), paid once, only at a
 table with **at least two people of the family** and only when at least one turn was played and somebody scored – never to guests. Every
 person of the family gets a history entry (place, points, words drawn).
 
@@ -559,7 +573,7 @@ House rule (start dialog, on by default): **+50 for every further Fünfling** wh
 The highest total wins (a tie shares the place); the result shows the ranking with confetti and every sheet. Who
 leads may **end** the game early: the sheets count as they stand, but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Fünf Würfel (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Fünf Würfel (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. Every person of the family gets a history entry (place, points).
 
@@ -594,7 +608,7 @@ Bots: easy moves mostly at random, normal prefers hitting, coming out and the le
 fields and the danger from pieces up to 6 fields behind. Who leads may **end** the game early: ranked as it stands,
 but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Heimwärts (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Heimwärts (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. Every person of the family gets a history entry (place, pieces home).
 
@@ -623,7 +637,7 @@ keeps the lives and the state per player and checks only sane values (a time nea
 really passes then, one life per obstacle). An app that stays silent for 12 seconds is out (left the game). Who leads
 may **end** the game early: ranked as it stands (the ones still running by their lives), but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Jump (default 10 / 5 / 2), paid once, only for a game played
+**Coins for places 1–3:** set by the parents in Games › Jump (default 10 / 5 / 2), paid once, only for a game played
 to the end at a family table with **at least two people of the family** – never alone, to guests or to bots. Every
 person of the family gets a history entry (place, distance, new personal best).
 
@@ -655,7 +669,7 @@ practice bots) or open a **family table** (1 to 8 players, optionally with bots;
 Who leads may **end** the game early: the rounds already played count, ranked as it stands, but without coins. The
 accuracy of a game played to the end is your **personal best** (alone or at a table).
 
-**Coins for places 1–3:** set by the parents in Community › Klatsch den Beat (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Klatsch den Beat (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone, to guests or to
 bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, points, accuracy).
 
@@ -692,7 +706,7 @@ ready. Who leads can **skip** a turn (e.g. the explainer left) and **end** the g
 stands). The result shows the ranking (a team shares its place, a tie shares the place), confetti for the winners and
 every card of the game.
 
-**Coins for places 1–3:** set by the parents in Community › Verbotene Wörter (default 10 / 5 / 2), paid once, only at
+**Coins for places 1–3:** set by the parents in Games › Verbotene Wörter (default 10 / 5 / 2), paid once, only at
 a table with **at least two people of the family** and only when at least one turn was played and somebody scored –
 never to guests. Every person of the family gets a history entry (place, points, team, cards explained); the winners
 get the «No. 1» hat.
@@ -742,7 +756,7 @@ hard counts the cards, pulls trumps, gives points («schmieren») when the partn
 the strength of its hand and pushes a weak hand. Who leads may **end** the game early: ranked as it stands, but without
 coins.
 
-**Coins:** the members of the **winning team** get the coins for place 1 (set by the parents in Community › Jass,
+**Coins:** the members of the **winning team** get the coins for place 1 (set by the parents in Games › Jass,
 default 10), paid once, only for a game played to the end at a family table with **at least two people of the family**
 – never alone against bots, to guests or to bots. Every person of the family gets a history entry (won / lost, the
 points, the partner); the winners get the «No. 1» hat (not on a tie).
@@ -801,7 +815,7 @@ plays a sound at every step; it also reads it aloud with the voice of the device
 leads can **move on** when somebody is idle (every step has a default: no lovers, the most werewolf votes, no look,
 no potion, no shot, close the vote) and **end** the game (no winner, no coins).
 
-**Coins:** set by the parents in Community › Werwölfe (the amount of place 1, default 10): every person of the
+**Coins:** set by the parents in Games › Werwölfe (the amount of place 1, default 10): every person of the
 family on the **winning side** – only at a table with **at least two people of the family**, only for a game played
 to the end, paid once, never to guests or bots. The winners get the «No. 1» hat; every person of the family gets a
 history entry (won or lost, the role) – bots none.
@@ -835,10 +849,10 @@ clearly worse; on one device the draw is agreed at once), or time.
 **Pausing:** either player taps **⏸ Pause** – the clock stops, nobody can move, the game waits in the database
 (also over a restart) until a player taps **▶ Continue**. Several games per person at a time (up to 12 unfinished).
 A game alone (bot or one device) with a clock pauses by itself when you leave it. Who started a game or a parent
-can **delete** a paused game (🗑) or an open invitation. The parent area lists every chess game (Community › Chess)
+can **delete** a paused game (🗑) or an open invitation. The parent area lists every chess game (Games › Chess)
 and **Running games** lists them too (paused ones marked ⏸) – «End» there ends a game without a result, no coins.
 
-**Coins:** set by the parents in Community › Chess (three numbers, default 10 / 5 / 2): the winner of a game
+**Coins:** set by the parents in Games › Chess (three numbers, default 10 / 5 / 2): the winner of a game
 between **two people of the family** / a win against the **hard bot** / against the **normal bot**. Only the winner,
 only after at least **10 own moves**, paid once – never against the easy bot, never on one device, never against
 guests. The winner of a game between two people of the family gets the «No. 1» hat; everybody of the family who
@@ -881,7 +895,7 @@ price, mortgaged at half + buildings). The game is always over when only one pla
 the start: 1000 / 1500 / 2000. Who leads may **pause** the game (nothing moves, the time stops) and **end** it early
 (ranked as it stands, without coins). The whole game is stored in the database and survives a restart of the add-on.
 
-**Coins for places 1–3:** set by the parents in Community › Dorfmarkt (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Dorfmarkt (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, worth).
 
@@ -908,7 +922,7 @@ the server; best times stay in this browser), shown when family games are on for
   sets**; alone (fewest moves), against the app (it remembers more or less well) or 2–4 players on one device.
   Card back: four patterns or the **family crest**.
 
-**Photo sets** (parent area › Community › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
+**Photo sets** (parent area › Games › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
 photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**
 (parent area › Settings): design the family crest – name, an emoji, two colours and a
 pattern (plain, split, quartered, diagonal band, chevron). Photos no set uses any more are deleted when you save.

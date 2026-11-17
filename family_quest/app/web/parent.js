@@ -1418,14 +1418,14 @@ function gameAccess(kids, data) {
     const state = a.mode === "off" ? "off" : a.bots === false ? "nobots" : "on";
     const set = v => { acc[k] = v === "off" ? { ...a, mode: "off" } : { ...a, mode: a.mode === "off" ? "all" : a.mode, bots: v === "on" }; save(k); };
     bar.classList.toggle("off", state === "off");                  // the section is dimmed (parent.css)
-    bar.replaceChildren(
+    bar.replaceChildren(...[
       h("div.pin-kind.game-state", ...[["on", "✓ ", T("Active")], botGames.has(k) ? ["nobots", "🚫 ", T("Active without bots")] : null, ["off", "✕ ", T("Inactive")]].filter(Boolean)
         .map(([v, ic, n]) => h("button.btn.small" + (state === v ? (v === "off" ? ".bad" : "") : ".ghost"), { "aria-pressed": String(state === v), onclick: () => set(v) }, ic, n))),
       state === "off" ? null : h("div.pin-kind", ...[["all", T("For everybody")], ["some", T("Only chosen children")]].map(([m, n]) =>
         h("button.btn.small" + (a.mode === m ? "" : ".ghost"), { onclick: () => { acc[k] = { ...a, mode: m }; save(k); } }, n))),
       state !== "off" && a.mode === "some" ? h("div.row.game-kids", ...kids.map(kid => h("label.check", h("input", { type: "checkbox", checked: a.profiles.includes(kid.id),
         onchange: e => { const ids = new Set(a.profiles); e.target.checked ? ids.add(kid.id) : ids.delete(kid.id); acc[k] = { ...a, profiles: [...ids] }; save(k); } }), C(kid.name)))) : null,
-      state === "nobots" ? h("p.small.muted", T("No «alone against bots», no bots at the table, no games against the app – only people play. Parents are not bound.")) : null);
+      state === "nobots" ? h("p.small.muted", T("No «alone against bots», no bots at the table, no games against the app – only people play. Parents are not bound.")) : null].filter(Boolean));
   };
   return {
     bar: k => { if (!bars[k]) { bars[k] = h("div.game-status"); setTimeout(() => draw(k)); } return bars[k]; },
