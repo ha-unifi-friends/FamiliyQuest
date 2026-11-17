@@ -21,7 +21,7 @@ function arcadeCard() {
   const open = Object.keys(ARCADE).filter(k => canPlay(k));
   if (!open.length) return null;
   return h("section.card", h("h2", "🕹️ ", T("Game corner")),
-    h("p.small.muted", T("Small games for in between – alone or with two on one device.")),
+    h("p.small.muted", T("Small games for in between.")),
     h("div.arcade-grid", ...Object.entries(ARCADE).filter(([k]) => open.includes(k)).map(([k, g]) => h("button.arcade-tile", { onclick: () => go("arcade/" + k) },
       h("span.big-ic", g.icon), h("strong", g.title)))));
 }

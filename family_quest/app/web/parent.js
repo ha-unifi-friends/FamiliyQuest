@@ -621,25 +621,38 @@ async function packsView(main) {
   const bundles = d.packs.filter(p => p.kind === "bundle" && p.status !== "draft");
   const packs = d.packs.filter(p => p.kind === "pack" && p.status !== "draft");
   const actRow = p => h("div.act", ...kids.map(k => h("label.check", h("input", { type: "checkbox", checked: p.profiles.includes(k.id),
-    onchange: async e => { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: p.id, on: e.target.checked } }); if (p.kind === "bundle") render(); } }),
+    onchange: async e => {
+      try { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: p.id, on: e.target.checked } }); toast(T("Saved"), "good"); }
+      catch { e.target.checked = !e.target.checked; return; }   // call() showed the error
+      if (p.kind === "bundle") render();
+    } }),
     C(k.name))));
+  const byId = Object.fromEntries(d.packs.map(p => [p.id, p]));
+  // «⋯»: the rarely used actions (export, delete) – the row keeps room for the title
+  const moreMenu = p => h("details.more-menu",
+    h("summary.btn.small.ghost", { title: T("More"), "aria-label": T("More") }, "⋯"),
+    h("div.more-pop",
+      h("button.btn.small.ghost", { title: T("Export as ZIP (with pictures)"), onclick: e => { e.target.closest("details").open = false; download(p.id, "zip"); } }, "⬇️ ", T("Export as ZIP (with pictures)")),
+      h("button.btn.small.ghost", { onclick: e => { e.target.closest("details").open = false; download(p.id, "json"); } }, "⬇️ ", T("Export as JSON")),
+      h("button.btn.small.ghost.danger-text", { onclick: e => { e.target.closest("details").open = false; del(p); } }, "🗑️ ", T("Delete"))));
   const card = p => h("div.card.pack" + (p.status === "draft" ? ".draft" : ""), { "data-find": [p.id, p.title, p.level, p.subject && I18N.tr(p.subject.name), ...(p.units || []).map(u => u.title)].filter(Boolean).join(" ") },
-    h("div.row", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
+    h("div.row.pack-head", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
       h("div.small.muted", p.kind === "bundle" ? T("Level pack") : subjectName(p.subject.key), p.level ? h("span", { translate: "no" }, " · " + p.level) : null, " · ",
-        STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : "")),
-      p.kind === "pack" ? h("button.btn.small.ghost", { onclick: () => packEditor(p.id) }, "✏️ ", T("Edit")) : null,
+        STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : "")), moreMenu(p)),
+    h("div.row.wrap.pack-acts",
+      // a draft is checked, then published – the same two verbs as on the import page
+      p.kind === "pack" ? h("button.btn.small.ghost", { onclick: () => packEditor(p.id) }, "✏️ ", p.status === "draft" ? T("Check") : T("Edit")) : null,
       p.kind === "pack" ? h("button.btn.small.ghost", { title: T("XP and coins per finished lesson of this pack"), onclick: () => packRewards(p) },
         "🏅 ", p.rewards && (p.rewards.xp != null || p.rewards.coins != null)
           ? [p.rewards.xp != null ? p.rewards.xp + " XP" : "", p.rewards.xp != null && p.rewards.coins != null ? " · " : "", p.rewards.coins != null ? p.rewards.coins + " 🪙" : ""]
           : T("Rewards")) : null,
-      h("button.btn.small.ghost", { title: T("Export as ZIP (with pictures)"), onclick: () => download(p.id, "zip") }, "⬇️ ZIP"),
-      h("button.btn.small.ghost", { title: T("Export as JSON"), onclick: () => download(p.id, "json") }, "⬇️ JSON"),
       p.kind === "pack" ? h("button.btn.small.ghost", { title: T("Opens the pack in the app in a new tab – parents can try every pack"), onclick: () => openInApp("pack/" + encodeURIComponent(p.id)) }, "▶ ", T("Try in the app")) : null,
       p.status === "draft" ? h("button.btn.small.good", { onclick: () => setStatus(p.id, "active") }, "✓ ", T("Publish"))
-        : h("button.btn.small.ghost", { onclick: () => setStatus(p.id, p.status === "active" ? "disabled" : "active") }, p.status === "active" ? T("Switch off") : T("Switch on")),
-      h("button.btn.small.ghost", { title: T("Delete"), onclick: () => del(p) }, "🗑️")),
+        : h("button.btn.small.ghost", { onclick: () => setStatus(p.id, p.status === "active" ? "disabled" : "active") }, p.status === "active" ? T("Switch off") : T("Switch on"))),
     p.kind === "pack" ? h("div.small.units", ...p.units.map(u => chip([u.icon ? u.icon + " " : "", C(u.title), " · " + u.count]))) :
-      h("div.small", ...(p.semesters || []).map(s => h("div", C(s.titel || s.id, "strong"), ": ", C(s.pakete.join(", ") || "–")))),
+      // level pack: its packs by title (the internal ids mean nothing to parents)
+      h("div.small", ...(p.semesters || []).map(s => h("div", C(s.titel || s.id, "strong"), ": ",
+        C(s.pakete.map(id => byId[id] ? byId[id].title : id).join(", ") || "–")))),
     kids.length ? (p.status === "draft" ? h("div", h("div.small.muted", "👧 ", T("Assign now – the child sees it as soon as you publish it:")), actRow(p)) : actRow(p)) : null);
   // switch: sorted by packs (which children have a pack) or grouped by children (which packs a child has)
   let mode = "packs"; try { mode = localStorage.getItem("fq.packs.view") || "packs"; } catch {}

@@ -48,6 +48,17 @@ label.check input { width: 20px; height: 20px; }
 .pack { display: grid; gap: 8px; margin-bottom: 10px; }
 .pack.draft { border: 2px dashed var(--warn); }
 .pack .units { display: flex; flex-wrap: wrap; }
+.pack-head { align-items: flex-start; flex-wrap: nowrap; }
+.pack-head > .grow { min-width: 0; overflow-wrap: anywhere; }
+.pack-acts { gap: 6px; }
+/* «⋯»: export and delete of a pack */
+.more-menu { position: relative; flex: none; }
+.more-menu > summary { list-style: none; cursor: pointer; font-size: 1.2rem; line-height: 1; min-width: 40px; }
+.more-menu > summary::-webkit-details-marker { display: none; }
+.more-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; display: grid; gap: 2px; min-width: 220px; padding: 6px;
+  border-radius: 12px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 10px 28px rgba(0, 0, 0, .2); }
+.more-pop .btn { justify-content: flex-start; text-align: left; width: 100%; }
+.danger-text { color: var(--bad); }
 .act { display: flex; flex-wrap: wrap; gap: 4px 14px; padding-top: 6px; border-top: 1px solid var(--line); }
 .unit-ed { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
 .unit-title { font-weight: 800; font-size: 1.05rem; flex: 1; }
