@@ -42,11 +42,15 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
 | **Heimwärts** – race board game for 2–4 | **Guests welcome** – grandparents, aunts and godparents join with a QR code, also from the guest Wi-Fi | **Shop** – avatar items and pranks like the ink bomb |
 | ![Pets](docs/screenshots/pets.png) | ![Internet time with UniFi](docs/screenshots/internet.png) | ![My devices](docs/screenshots/devices.png) |
 | **Pets** – feed, play, wash; pet sitting and babies | **Internet time** – directly integrated with UniFi: the child starts and pauses its own online time | **My devices** – the child switches and dims the lights of its own room |
+| ![Family council](docs/screenshots/council.png) | ![Polls](docs/screenshots/polls.png) | ![Wichteln](docs/screenshots/wichteln.png) |
+| **Family council** – anybody can bring up a topic, everybody adds ideas, then the family votes secretly | **Polls** – ask the family something, everybody answers on their own phone | **Wichteln** – secret gift giving: who gives to whom is drawn, everybody sees only their own |
+| ![My card box](docs/screenshots/cardbox.png) | | |
+| **My card box** – personal flash cards; words from any lesson are added with one tap | | |
 
-| | |
-|---|---|
-| ![Parent overview](docs/screenshots/parent-overview.png) | ![Kiosk dashboard](docs/screenshots/dashboard.png) |
-| **Parent area** – approvals, behaviour weather, every child at a glance | **Dashboard** – a family screen for any wall tablet or TV |
+| | | |
+|---|---|---|
+| ![Parent overview](docs/screenshots/parent-overview.png) | ![Import of learning material](docs/screenshots/parent-import.png) | ![Kiosk dashboard](docs/screenshots/dashboard.png) |
+| **Parent area** – approvals, behaviour weather, every child at a glance | **Import** – learning material made with your favourite AI and the Family Quest pack format, assigned to the children | **Dashboard** – a family screen for any wall tablet or TV |
 
 <sub>Demo data. Learning content (packs) is not translated and appears in its own language.</sub>
 
@@ -59,6 +63,13 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
 - **Learning forms:** learning path, daily lesson (~10 minutes of due repetitions plus a few new cards), quiz round,
   flash cards, pairs (also with your own photos), gap text, listening, typing with é è à ç keys, drag & drop and an
   arithmetic trainer with endless generated tasks.
+- **My card box:** every child has its own flash card decks. From any lesson or unit one tap puts the words into
+  the personal card box – repeated with the same Leitner boxes as the lessons.
+- **Learning material made with your favourite AI:** give ChatGPT, Claude, Gemini or any other AI the Family Quest
+  pack format (the example under *Parent area › Packs › Import*, details in [docs/pakete.md](docs/pakete.md)) and ask
+  for exactly what your child needs – «French vocabulary, 5th grade, unit 3», «multiplication word problems for 3rd
+  grade». Upload the file, check the draft, publish it and assign it to the children – content that fits their school
+  year and their textbook.
 - **Spaced repetition:** five Leitner boxes per card and per arithmetic skill; a unit gets 0–5 stars when its cards
   really sit.
 
@@ -104,8 +115,13 @@ guest page of the game, nothing else of Family Quest or your home.
 - **Family Planer inside:** week plan, special chores, to-dos, shopping lists, awards and seasons – its persons are
   the Family Quest profiles and both share one points balance.
 - **Guess the song:** a Home Assistant speaker plays the family playlist, whoever buzzes first answers.
-- **Community:** live family quiz (kids create quizzes too, templates for cantons, capitals, flags …), family
-  council with proposals and votes, polls and Wichteln (secret gift giving).
+- **Family council:** anybody – children too – brings up a topic («Where do we go on Sunday?»), everybody adds
+  ideas, then the family votes secretly, one vote each; decisions land in the history.
+- **Polls:** ask the family something quickly («What's for dinner on Friday?»), single or multiple choice, also
+  anonymous, everybody answers on their own phone.
+- **Wichteln:** secret gift giving – who gives a present to whom is drawn (optionally no parent–parent or kid–kid
+  pairs), everybody sees only their own, with a date and «present ready».
+- **Family quiz:** live on everybody's phone; kids create quizzes too, templates for cantons, capitals, flags …
 - **Kiosk dashboard:** a read-only family screen for any browser – clock, crown, weather, learning progress, coins,
   open chores, family goal, Planer to-dos and calendar events.
 
