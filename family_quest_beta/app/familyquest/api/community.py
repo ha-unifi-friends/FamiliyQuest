@@ -130,6 +130,13 @@ def quizzes(request: Request, prof: dict = Gamer) -> list[dict]:
     return app_of(request).community.quizzes()
 
 
+@router.get("/tables")
+def open_tables(request: Request, prof: dict = Gamer) -> list[dict]:
+    """Family tables somebody else opened just now – the app shows a note in its header (web/kid.js)."""
+    from .. import running
+    return running.open_tables(app_of(request), prof)
+
+
 @router.get("/templates")
 def templates(request: Request, prof: dict = Gamer) -> list[dict]:
     from ..quiz_templates import TEMPLATES

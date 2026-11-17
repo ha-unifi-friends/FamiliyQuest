@@ -123,6 +123,36 @@ function specialBanners(list) {
 // which games this child may play (parent area › Settings › Games – per game and person)
 const canPlay = game => !!(S.me && (S.me.games_list || []).includes(game));
 
+// somebody opened a family table: a note slides into the header (not while a game or a lesson fills the screen)
+const tableNote = { seen: null, box: null, timer: null };
+function tablesSeen() {
+  if (!tableNote.seen) { try { tableNote.seen = JSON.parse(localStorage.getItem("fq.tables.seen." + S.me.profile.id)) || []; } catch { tableNote.seen = []; } }
+  return tableNote.seen;
+}
+function showTableNote(t) {
+  tableNote.box?.remove(); clearTimeout(tableNote.timer);
+  const close = () => { box.classList.remove("on"); setTimeout(() => box.remove(), 300); };
+  const box = h("div.table-note", { role: "status" },
+    h("span.table-note-ic", t.icon),
+    h("div.grow", h("div.small.muted", "🔔 ", T("New game table")),
+      h("strong", I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)))),
+    h("button.btn.small", { onclick: () => { close(); go(t.route); } }, "▶ ", T("Join")),
+    h("button.icon-btn", { title: T("Close"), "aria-label": T("Close"), onclick: close }, "✕"));
+  document.body.append(box); tableNote.box = box;
+  requestAnimationFrame(() => box.classList.add("on"));
+  try { Sound.play("turn"); if (Sound.on && navigator.vibrate) navigator.vibrate([80, 60, 80]); } catch {}
+  tableNote.timer = setTimeout(close, 20000);
+}
+setInterval(async () => {
+  if (!Auth.kid || !S.me || S.lesson || document.hidden || document.querySelector(".quiz-full, .arcade-full")) return;
+  let list; try { list = await api("community/tables"); } catch { return; }
+  const seen = tablesSeen(), fresh = list.filter(t => !seen.includes(t.key));
+  if (!fresh.length) return;
+  seen.push(...fresh.map(t => t.key)); seen.splice(0, Math.max(0, seen.length - 60));
+  try { localStorage.setItem("fq.tables.seen." + S.me.profile.id, JSON.stringify(seen)); } catch {}
+  if (!location.hash.includes(fresh[0].route)) showTableNote(fresh[0]);
+}, 8000);
+
 // invitations to a duel (Tic-Tac-Toe or Ping-Pong on two devices) pop up wherever the child is in the app
 let duelSeen = 0;
 setInterval(async () => {
