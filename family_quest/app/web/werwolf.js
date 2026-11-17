@@ -6,7 +6,7 @@
 "use strict";
 
 const WW_ICON = "🐺";
-const wwName = () => I18N.tr(T("Werwölfe"));
+const wwName = () => I18N.tr(T("Werewolves"));
 const WW_POLL_MS = 1000;
 const WW_ROLES = {
   wolf: ["🐺", T("Werewolf"), T("At night you and the other werewolves choose a victim. By day you pretend to be a harmless villager.")],

@@ -6,7 +6,7 @@
 "use strict";
 
 const MK_ICON = "🏘️";
-const mkName = () => I18N.tr(T("Dorfmarkt"));
+const mkName = () => I18N.tr(T("Village Market"));
 const mkCoins = list => list.join(" / ") + " 🪙";
 const MK_GROUPS = ["#8fce4a", "#22b3a6", "#c27be0", "#f3b33d", "#4aa3ef", "#f06b5c", "#a77a57", "#d9367a"];   // 8 colour groups
 const MK_PLAYERS = ["#e8590c", "#1971c2", "#2f9e44", "#9c36b5", "#e6a700", "#0c8599"];                          // seat 0..5

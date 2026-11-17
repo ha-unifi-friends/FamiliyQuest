@@ -5,7 +5,7 @@
 "use strict";
 
 const FW_ICON = "🎲";
-const fwName = () => I18N.tr(T("Fünf Würfel"));
+const fwName = () => I18N.tr(T("Five Dice"));
 const fwCoins = list => list.join(" / ") + " 🪙";
 const FW_UPPER = ["ones", "twos", "threes", "fours", "fives", "sixes"];
 const FW_CATS = {

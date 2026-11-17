@@ -32,52 +32,52 @@ function communityBanners(c) {
     h("span.big-ic", "🎱"), h("span.grow", h("strong", "Bingo"), h("br"),
       h("span.small", c.bingo.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   for (const k of ["tschau", "karussell"]) if (c[k]) out.push(h("button.card.banner.quiz-banner", { onclick: () => go(k) },
-    h("span.big-ic", k === "tschau" ? "🂡" : "🎠"), h("span.grow", h("strong", k === "tschau" ? "Tschau Sepp" : "Kartenkarussell"), h("br"),
+    h("span.big-ic", k === "tschau" ? "🂡" : "🎠"), h("span.grow", h("strong", k === "tschau" ? "Tschau Sepp" : T("Card Carousel")), h("br"),
       h("span.small", c[k].joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.domino) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("domino") },
     h("span.big-ic", "🁫"), h("span.grow", h("strong", "Domino"), h("br"),
       h("span.small", c.domino.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.paarjagd) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("paarjagd") },
-    h("span.big-ic", "🧠"), h("span.grow", h("strong", T("Paarjagd")), h("br"),
+    h("span.big-ic", "🧠"), h("span.grow", h("strong", T("Pair Hunt")), h("br"),
       h("span.small", c.paarjagd.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.werbinich) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("werbinich") },
-    h("span.big-ic", "🎭"), h("span.grow", h("strong", T("Wer bin ich?")), h("br"),
+    h("span.big-ic", "🎭"), h("span.grow", h("strong", T("Who am I?")), h("br"),
       h("span.small", c.werbinich.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.kartenlauf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("kartenlauf") },
-    h("span.big-ic", "🏁"), h("span.grow", h("strong", "Kartenlauf"), h("br"),
+    h("span.big-ic", "🏁"), h("span.grow", h("strong", T("Card Race")), h("br"),
       h("span.small", c.kartenlauf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.stadtland) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("stadtland") },
-    h("span.big-ic", "🏙️"), h("span.grow", h("strong", T("Stadt-Land-Fluss")), h("br"),
+    h("span.big-ic", "🏙️"), h("span.grow", h("strong", T("City, Country, River")), h("br"),
       h("span.small", c.stadtland.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.zeichnen) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("zeichnen") },
-    h("span.big-ic", "🎨"), h("span.grow", h("strong", T("Zeichnen & Raten")), h("br"),
+    h("span.big-ic", "🎨"), h("span.grow", h("strong", T("Draw & Guess")), h("br"),
       h("span.small", c.zeichnen.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.wuerfel) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("wuerfel") },
-    h("span.big-ic", "🎲"), h("span.grow", h("strong", T("Fünf Würfel")), h("br"),
+    h("span.big-ic", "🎲"), h("span.grow", h("strong", T("Five Dice")), h("br"),
       h("span.small", c.wuerfel.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.heimwaerts) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("heimwaerts") },
-    h("span.big-ic", "🏠"), h("span.grow", h("strong", T("Heimwärts")), h("br"),
+    h("span.big-ic", "🏠"), h("span.grow", h("strong", T("Homeward")), h("br"),
       h("span.small", c.heimwaerts.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.jump) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("jump") },
     h("span.big-ic", "🦘"), h("span.grow", h("strong", "Jump"), h("br"),
       h("span.small", c.jump.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.klatsch) out.push(h("button.card.banner.quiz-banner", { onclick: () => { try { KbAudio.ensure(); } catch {} go("klatsch"); } },
-    h("span.big-ic", "👏"), h("span.grow", h("strong", T("Klatsch den Beat")), h("br"),
+    h("span.big-ic", "👏"), h("span.grow", h("strong", T("Clap the Beat")), h("br"),
       h("span.small", c.klatsch.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.verboten) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("verboten") },
-    h("span.big-ic", "🚫"), h("span.grow", h("strong", T("Verbotene Wörter")), h("br"),
+    h("span.big-ic", "🚫"), h("span.grow", h("strong", T("Forbidden Words")), h("br"),
       h("span.small", c.verboten.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.jass) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("jass") },
     h("span.big-ic", "♣️"), h("span.grow", h("strong", T("Jass")), h("br"),
       h("span.small", c.jass.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.werwolf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("werwolf") },
-    h("span.big-ic", "🐺"), h("span.grow", h("strong", T("Werwölfe")), h("br"),
+    h("span.big-ic", "🐺"), h("span.grow", h("strong", T("Werewolves")), h("br"),
       h("span.small", c.werwolf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.schach) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("schach/" + c.schach.game) },
     h("span.big-ic", "♟️"), h("span.grow", h("strong", T("Chess")), h("br"),
       h("span.small", c.schach.my_turn ? T("Your move!") : I18N.tr(T("{0} invites you to a game")).replace("{0}", c.schach.from || "?"))), h("span.big-ic", "➜")));
   if (c.dorfmarkt) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("dorfmarkt") },
-    h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Dorfmarkt")), h("br"),
+    h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Village Market")), h("br"),
       h("span.small", c.dorfmarkt.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.song) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("song") },
     h("span.big-ic", "🎵"), h("span.grow", h("strong", T("Guess the song")), h("br"),

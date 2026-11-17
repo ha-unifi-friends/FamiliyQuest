@@ -4,7 +4,7 @@
 "use strict";
 
 const PJ_ICON = "🧠";
-const pjName = () => I18N.tr(T("Paarjagd"));
+const pjName = () => I18N.tr(T("Pair Hunt"));
 const pjCoins = list => list.join(" / ") + " 🪙";
 
 function paarjagdRulesView(r, rewards) {

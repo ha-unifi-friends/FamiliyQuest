@@ -1397,8 +1397,8 @@ async function printPoster(link) {
 }
 
 // ---------------------------------------------------------------- the games of the app (parent area › Games)
-const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", "Kartenkarussell"], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Paarjagd")], ["werbinich", "🎭", T("Wer bin ich?")],
-    ["kartenlauf", "🏁", "Kartenlauf"], ["stadtland", "🏙️", T("Stadt-Land-Fluss")], ["zeichnen", "🎨", T("Zeichnen & Raten")], ["wuerfel", "🎲", T("Fünf Würfel")], ["heimwaerts", "🏠", T("Heimwärts")], ["jump", "🦘", "Jump"], ["klatsch", "👏", T("Klatsch den Beat")], ["verboten", "🚫", T("Verbotene Wörter")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werwölfe")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Dorfmarkt")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
+const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", T("Card Carousel")], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Pair Hunt")], ["werbinich", "🎭", T("Who am I?")],
+    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
     ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
 // the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
 const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
@@ -1844,7 +1844,7 @@ async function gamesView(main) {
   const showPaarjagd = async () => {
     let g = null; try { g = await call("community/paarjagd"); } catch {}
     const open = () => { const b = h("div.pj-live"); paarjagd.replaceChildren(b); paarjagdLive(b, me, () => render()); };
-    paarjagd.replaceChildren(gsec("paarjagd", "🧠 " + I18N.tr(T("Paarjagd")), appBtn("paarjagd"), g && g.status !== "done"
+    paarjagd.replaceChildren(gsec("paarjagd", "🧠 " + I18N.tr(T("Pair Hunt")), appBtn("paarjagd"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : h("div.row.wrap", h("button.btn", { onclick: () => paarjagdStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
           h("button.btn.ghost", { onclick: () => paarjagdStartDialog(true, open) }, "🤖 ", T("Alone against bots"))),
@@ -1853,7 +1853,7 @@ async function gamesView(main) {
   const showWerbinich = async () => {
     let g = null; try { g = await call("community/werbinich"); } catch {}
     const open = () => { const b = h("div.wb-live"); werbinich.replaceChildren(b); werbinichLive(b, me, () => render()); };
-    werbinich.replaceChildren(gsec("werbinich", "🎭 " + I18N.tr(T("Wer bin ich?")), appBtn("werbinich"), g && g.status !== "done"
+    werbinich.replaceChildren(gsec("werbinich", "🎭 " + I18N.tr(T("Who am I?")), appBtn("werbinich"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("Everybody gets a secret character and finds out with yes/no questions – everybody on their own device, guests via QR code.")),
          h("button.btn", { onclick: () => werbinichStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1872,7 +1872,7 @@ async function gamesView(main) {
   const showStadtland = async () => {
     let g = null; try { g = await call("community/stadtland"); } catch {}
     const open = () => { const b = h("div.sl-live"); stadtland.replaceChildren(b); stadtlandLive(b, me, () => render()); };
-    stadtland.replaceChildren(gsec("stadtland", "🏙️ " + I18N.tr(T("Stadt-Land-Fluss")), appBtn("stadtland"), g && g.status !== "done"
+    stadtland.replaceChildren(gsec("stadtland", "🏙️ " + I18N.tr(T("City, Country, River")), appBtn("stadtland"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The word game: a letter, 3 to 8 categories, the clock runs – everybody writes on their own device, guests via QR code.")),
          h("button.btn", { onclick: () => stadtlandStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1881,7 +1881,7 @@ async function gamesView(main) {
   const showZeichnen = async () => {
     let g = null; try { g = await call("community/zeichnen"); } catch {}
     const open = () => { const b = h("div.zr-live"); zeichnen.replaceChildren(b); zeichnenLive(b, me, () => render()); };
-    zeichnen.replaceChildren(gsec("zeichnen", "🎨 " + I18N.tr(T("Zeichnen & Raten")), appBtn("zeichnen"), g && g.status !== "done"
+    zeichnen.replaceChildren(gsec("zeichnen", "🎨 " + I18N.tr(T("Draw & Guess")), appBtn("zeichnen"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("One draws, the others guess – live on every device, guests via QR code.")),
          h("button.btn", { onclick: () => zeichnenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1890,7 +1890,7 @@ async function gamesView(main) {
   const showWuerfel = async () => {
     let g = null; try { g = await call("community/wuerfel"); } catch {}
     const open = () => { const b = h("div.fw-live"); wuerfel.replaceChildren(b); wuerfelLive(b, me, () => render()); };
-    wuerfel.replaceChildren(gsec("wuerfel", "🎲 " + I18N.tr(T("Fünf Würfel")), appBtn("wuerfel"), g && g.status !== "done"
+    wuerfel.replaceChildren(gsec("wuerfel", "🎲 " + I18N.tr(T("Five Dice")), appBtn("wuerfel"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The dice game with five dice: everybody rolls at the same time on their own device and fills the score sheet – with bots and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => wuerfelStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -1900,7 +1900,7 @@ async function gamesView(main) {
   const showHeimwaerts = async () => {
     let g = null; try { g = await call("community/heimwaerts"); } catch {}
     const open = () => { const b = h("div.hw-live"); heimwaerts.replaceChildren(b); heimwaertsLive(b, me, () => render()); };
-    heimwaerts.replaceChildren(gsec("heimwaerts", "🏠 " + I18N.tr(T("Heimwärts")), appBtn("heimwaerts"), g && g.status !== "done"
+    heimwaerts.replaceChildren(gsec("heimwaerts", "🏠 " + I18N.tr(T("Homeward")), appBtn("heimwaerts"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The classic race board game: roll the die, bring your 4 pieces home and send the others back to their yard – with bots and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => heimwaertsStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -1920,7 +1920,7 @@ async function gamesView(main) {
   const showKlatsch = async () => {
     let g = null; try { g = await call("community/klatsch"); } catch {}
     const open = () => { const b = h("div.kb-live"); klatsch.replaceChildren(b); klatschLive(b, me, () => render()); };
-    klatsch.replaceChildren(gsec("klatsch", "👏 " + I18N.tr(T("Klatsch den Beat")), appBtn("klatsch"), g && g.status !== "done"
+    klatsch.replaceChildren(gsec("klatsch", "👏 " + I18N.tr(T("Clap the Beat")), appBtn("klatsch"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("A rhythm game on every device: listen to a beat, then everybody claps it back at the same time – the server judges the timing. Alone for a personal best, with practice bots or at the family table.")),
          h("div.row.wrap", h("button.btn", { onclick: () => klatschStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -1930,7 +1930,7 @@ async function gamesView(main) {
   const showVerboten = async () => {
     let g = null; try { g = await call("community/verboten"); } catch {}
     const open = () => { const b = h("div.vw-live"); verboten.replaceChildren(b); verbotenLive(b, me, () => render()); };
-    verboten.replaceChildren(gsec("verboten", "🚫 " + I18N.tr(T("Verbotene Wörter")), appBtn("verboten"), g && g.status !== "done"
+    verboten.replaceChildren(gsec("verboten", "🚫 " + I18N.tr(T("Forbidden Words")), appBtn("verboten"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("Explain the word without the forbidden words – the others guess aloud. In teams or everybody for themselves, guests via QR code.")),
          h("button.btn", { onclick: () => verbotenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1949,7 +1949,7 @@ async function gamesView(main) {
   const showWerwolf = async () => {
     let g = null; try { g = await call("community/werwolf"); } catch {}
     const open = () => { const b = h("div.ww-live"); werwolf.replaceChildren(b); werwolfLive(b, me, () => render()); };
-    werwolf.replaceChildren(gsec("werwolf", "🐺 " + I18N.tr(T("Werwölfe")), appBtn("werwolf"), g && g.status !== "done"
+    werwolf.replaceChildren(gsec("werwolf", "🐺 " + I18N.tr(T("Werewolves")), appBtn("werwolf"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The classic party game for 2 to 12 players in one room (bots fill the table up to 5): the app is the game master, everybody gets a secret role on their phone – find the werewolves!")),
          h("button.btn", { onclick: () => werwolfStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1964,7 +1964,7 @@ async function gamesView(main) {
   const showDorfmarkt = async () => {
     let g = null; try { g = await call("community/dorfmarkt"); } catch {}
     const open = () => { const b = h("div.mk-live"); dorfmarkt.replaceChildren(b); dorfmarktLive(b, me, () => render()); };
-    dorfmarkt.replaceChildren(gsec("dorfmarkt", "🏘️ " + I18N.tr(T("Dorfmarkt")), appBtn("dorfmarkt"), g && g.status !== "done"
+    dorfmarkt.replaceChildren(gsec("dorfmarkt", "🏘️ " + I18N.tr(T("Village Market")), appBtn("dorfmarkt"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The property-trading board game in a Swiss village: buy shops, build market stands, collect rent and trade – with bots and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => dorfmarktStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),

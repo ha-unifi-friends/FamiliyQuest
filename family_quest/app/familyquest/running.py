@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import json
 
-TITLES = {"tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "domino": "Domino", "paarjagd": "Paarjagd",
-          "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten",
-          "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "klatsch": "Klatsch den Beat", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe", "schach": "Chess", "dorfmarkt": "Dorfmarkt"}
+TITLES = {"tschau": "Tschau Sepp", "karussell": "Card Carousel", "domino": "Domino", "paarjagd": "Pair Hunt",
+          "werbinich": "Who am I?", "kartenlauf": "Card Race", "stadtland": "City, Country, River", "zeichnen": "Draw & Guess",
+          "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market"}
 ICONS = {"quiz": "🎯", "bingo": "🎱", "song": "🎵", "poker": "🃏", "tschau": "🂡", "karussell": "🎠", "domino": "🁫",
          "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️"}
 
@@ -48,7 +48,7 @@ def running(fq) -> list[dict]:
     s = fq.songs._row()
     if s:
         st = json.loads(s["state"] or "{}")
-        out.append({"key": "song", "game": "song", "icon": ICONS["song"], "title": "Errate den Song", "status": s["status"], "solo": False,
+        out.append({"key": "song", "game": "song", "icon": ICONS["song"], "title": "Guess the song", "status": s["status"], "solo": False,
                     "host": _name(fq, s.get("host_id")), "players": _people(st.get("players")),
                     "host_id": s.get("host_id"), "members": _ids(st.get("players")), "id": s.get("id")})
     for r in fq.db.q("SELECT * FROM poker_game WHERE status!='done' ORDER BY id"):

@@ -4,7 +4,7 @@
 "use strict";
 
 const SL_ICON = "🏙️";
-const slName = () => I18N.tr(T("Stadt-Land-Fluss"));
+const slName = () => I18N.tr(T("City, Country, River"));
 const slCoins = list => list.join(" / ") + " 🪙";
 // the built-in categories in the language of the app (own categories are content and stay as typed)
 const SL_CATS = { stadt: T("City"), land: T("Country"), fluss: T("River"), tier: T("Animal"), name: T("First name"), beruf: T("Job"),

@@ -7,7 +7,7 @@
 
 const HW_ICON = "🏠";
 const HW_COLORS = ["#f2545b", "#2f8fdd", "#33a852", "#f2b705"];          // seat 0..3 (coral, sky, leaf, sun)
-const hwName = () => I18N.tr(T("Heimwärts"));
+const hwName = () => I18N.tr(T("Homeward"));
 const hwCoins = list => list.join(" / ") + " 🪙";
 const HW_PIPS = { 1: [[50, 50]], 2: [[28, 28], [72, 72]], 3: [[26, 26], [50, 50], [74, 74]], 4: [[28, 28], [72, 28], [28, 72], [72, 72]],
   5: [[26, 26], [74, 26], [50, 50], [26, 74], [74, 74]], 6: [[28, 24], [72, 24], [28, 50], [72, 50], [28, 76], [72, 76]] };

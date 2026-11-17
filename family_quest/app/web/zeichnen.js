@@ -5,7 +5,7 @@
 "use strict";
 
 const ZR_ICON = "🎨";
-const zrName = () => I18N.tr(T("Zeichnen & Raten"));
+const zrName = () => I18N.tr(T("Draw & Guess"));
 const zrCoins = list => list.join(" / ") + " 🪙";
 // the category titles in the language of the app (the words themselves are German content)
 const ZR_CATS = { tiere: T("Animals"), berufe: T("Jobs"), essen: T("Food & fruit"), gegenstaende: T("Things at home"), sport: T("Sports"), gemischt: T("Mixed") };

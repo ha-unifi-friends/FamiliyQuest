@@ -10,7 +10,7 @@
 "use strict";
 
 const KB_ICON = "👏";
-const kbName = () => T("Klatsch den Beat");
+const kbName = () => T("Clap the Beat");
 const kbCoins = list => list.join(" / ") + " 🪙";
 const KB_PERFECT = 0.06, KB_GOOD = 0.13;     // the same windows as klatsch.py (the server judges, the app shows)
 

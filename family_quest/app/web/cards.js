@@ -7,7 +7,7 @@ const FRENCH_SUITS = { s: ["♠︎", T("Spades")], h: ["♥︎", T("Hearts")], d
 const KARUSSELL_COLORS = { violet: ["var(--ans-1)", T("Violet")], pink: ["var(--ans-2)", T("Raspberry")], orange: ["var(--ans-3)", T("Orange")], petrol: ["var(--ans-4)", T("Petrol")] };
 const KARUSSELL_SIGNS = { draw2: "+2", skip: "⊘", reverse: "⇄", wish: "✦", draw4: "+4" };
 const CARD_BACKS = { classic: T("Classic"), stars: T("Stars"), waves: T("Waves"), checks: T("Checks") };
-const CARD_GAMES = { tschau: { icon: "🂡", title: "Tschau Sepp" }, karussell: { icon: "🎠", title: "Kartenkarussell" } };
+const CARD_GAMES = { tschau: { icon: "🂡", title: "Tschau Sepp" }, karussell: { icon: "🎠", title: T("Card Carousel") } };
 
 function shedCard(kind, code, opts = {}) {
   if (!code) return h("div.sh-card.back.back-" + (opts.back || "classic") + (opts.small ? ".small" : ""));

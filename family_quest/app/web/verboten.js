@@ -6,7 +6,7 @@
 "use strict";
 
 const VW_ICON = "🚫";
-const vwName = () => I18N.tr(T("Verbotene Wörter"));
+const vwName = () => I18N.tr(T("Forbidden Words"));
 const vwCoins = list => list.join(" / ") + " 🪙";
 const VW_LEVELS = { easy: ["🐣", T("Easy (younger children)")], normal: ["🦊", T("Normal")], mixed: ["🎲", T("Mixed")] };
 const VW_TEAMS = ["🟣", "🟠"];

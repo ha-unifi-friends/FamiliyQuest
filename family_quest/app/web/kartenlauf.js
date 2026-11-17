@@ -8,7 +8,7 @@ const KL_COLORS = ["#e03131", "#1c7ed6", "#2f9e44", "#f08c00"];            // se
 const KL_RANKS = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"];
 const KL_SUITS = { s: "♠︎", h: "♥︎", d: "♦︎", c: "♣︎" };
 const KL_HINT = { A: "1 · 11 · ▶", K: "13 · ▶", Q: "12", J: "⇄", 4: "± 4", 7: "7 ✂", X: "★" };
-const klName = () => "Kartenlauf";
+const klName = () => I18N.tr(T("Card Race"));
 const klCoins = list => list.join(" / ") + " 🪙";
 const klRank = c => String(c || "").split(":")[1] || "";
 
