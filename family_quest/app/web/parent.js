@@ -1187,6 +1187,15 @@ function choreDialog(c, kids) {
 }
 
 // ---------------------------------------------------------------- rewards: accounts, rules, shop
+// phones: a table with class «stack» shows each row as a small card – every cell gets its column name (also rows added later)
+function stackTable(table) {
+  const names = [...table.querySelectorAll("thead th")].map(th => I18N.tr(th.textContent.trim()));
+  const label = tr => [...tr.children].forEach((td, i) => { if (names[i]) td.dataset.label = names[i]; });
+  table.querySelectorAll("tbody tr").forEach(label);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeName === "TR") label(n); }))).observe(table.tBodies[0], { childList: true });
+  return table;
+}
+
 async function rewardsView(main, opts = {}) {
   const [accounts, rules, rewards] = await Promise.all([call("parent/accounts"), call("parent/rules"), call("parent/rewards")]);
   P.accounts = accounts;
@@ -1198,7 +1207,7 @@ async function rewardsView(main, opts = {}) {
     const save = () => call("parent/accounts", { method: "PUT", body: { key: a.key, name: f.name.value, unit: f.unit.value, icon: f.icon.value,
       spendable: f.spendable.checked, active: f.active.checked, sort: a.sort } }).then(() => toast(T("Saved"), "good"));
     Object.values(f).forEach(x => x.addEventListener("change", save));
-    return h("tr", h("td", { translate: "no" }, h("code", a.key)), h("td", f.icon), h("td", f.name), h("td", f.unit), h("td.c", f.spendable), h("td.c", f.active));
+    return h("tr", h("td.key-col", { translate: "no" }, h("code", a.key)), h("td", f.icon), h("td", f.name), h("td", f.unit), h("td.c", f.spendable), h("td.c", f.active));
   });
   const newAcc = h("input", { type: "text", placeholder: T("key, e.g. stars") });
 
@@ -1253,10 +1262,10 @@ async function rewardsView(main, opts = {}) {
         newAcc.focus();
       } }, "+ ", T("Add account")),
       h("p.small.muted", T("XP shows progress and is never spent. Spendable accounts can be used in the shop.")),
-      h("div.scroll", h("table.tbl", h("thead", h("tr", h("th", T("Key")), h("th", "Icon"), h("th", T("Name")), h("th", T("Unit")), h("th", T("Spendable")), h("th", T("Active")))), h("tbody", ...accRows)))),
+      h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th.key-col", T("Key")), h("th", "Icon"), h("th", T("Name")), h("th", T("Unit")), h("th", T("Spendable")), h("th", T("Active")))), h("tbody", ...accRows))))),
     sectionAdd(T("Rules: which action gives how much on which account"),
       h("button.btn.small", { onclick: () => rulesBody.append(ruleRow({ event: "lesson_done", account: "coins", amount: 5, daily_limit: null, label: "", active: 1, condition: {} })) }, "+ ", T("Add rule")),
-      h("div.scroll", h("table.tbl", h("thead", h("tr", h("th", T("Event")), h("th", T("Amount")), h("th", T("Account")), h("th", T("Daily limit")), h("th", T("Label")), h("th", T("Active")), h("th"))), rulesBody))),
+      h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th", T("Event")), h("th", T("Amount")), h("th", T("Account")), h("th", T("Daily limit")), h("th", T("Label")), h("th", T("Active")), h("th"))), rulesBody)))),
     section("🛍️ " + I18N.tr(T("Shop")), h("p.small.muted", T("Own rewards, avatar items and their prices are set in the menu Shop.")),
       h("button.btn.small", { onclick: () => { P.tab = "shop"; location.hash = "shop"; render(); } }, "🛍️ ", T("Open the shop settings"))));
   if (opts.onlyShop) { main.replaceChildren(); return { rewardBox, rewardCard }; }

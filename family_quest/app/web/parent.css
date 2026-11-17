@@ -275,3 +275,16 @@ details.fold[open] > summary { margin-bottom: 10px; }
 .pack-search { width: 100%; max-width: 420px; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; font-size: 1rem; }
 .pj-photos > summary { cursor: pointer; padding: 6px 0; }
 .pj-photos[open] { margin-bottom: 10px; }
+
+/* phones: tables with class «stack» (Rewards › accounts and rules) as stacked cards, the internal key hidden */
+@media (max-width: 640px) {
+  .tbl.stack thead { display: none; }
+  .tbl.stack, .tbl.stack tbody { display: block; }
+  .tbl.stack tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; padding: 10px; margin-bottom: 10px;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  .tbl.stack td { display: grid; gap: 2px; padding: 0; border: 0; min-width: 0; text-align: left; }
+  .tbl.stack td[data-label]::before { content: attr(data-label); font-size: .75rem; color: var(--muted); }
+  .tbl.stack td input:not([type=checkbox]), .tbl.stack td select { width: 100%; min-width: 0; }
+  .tbl.stack td.c { justify-items: start; }
+  .tbl.stack .key-col { display: none; }
+}
