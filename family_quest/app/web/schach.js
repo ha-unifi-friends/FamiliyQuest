@@ -284,6 +284,7 @@ function schachLive(box, me, back, gid) {
   }
   function draw(force) {
     if (!alive || !box.isConnected) return;
+    turnCue("schach", st && st.mode !== "local" && st.status === "running" && st.my_turn);
     const sig = JSON.stringify(st && [st.status, st.fen, st.draw_offer, st.paused_by, st.result, st.joined, sel, st.draw_declined]);
     if (sig === lastSig && !force) return;
     lastSig = sig;

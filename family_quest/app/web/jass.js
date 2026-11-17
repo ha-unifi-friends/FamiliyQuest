@@ -139,6 +139,7 @@ function jassLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+    turnCue("jass", st && st.phase === "play" && st.my_turn);
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.round, st.mode, st.joined, st.hand, st.trick, st.totals, st.players.map(p => [p.id, p.cards, p.place]),
       st.log && st.log.length && st.log[st.log.length - 1].seq, st.seating, st.phase === "between" ? Math.ceil((st.next_ms || 0) / 1000) : 0]);
     if (sig === lastSig && !force) return;

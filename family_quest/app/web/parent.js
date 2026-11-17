@@ -2001,7 +2001,14 @@ function backupSection() {
     info.replaceChildren(h("div.card.restore-box",
       h("p", h("strong", T("Backup from {0}").replace("{0}", when)), " · Family Quest " + (m.app_version || "?")),
       m.counts ? h("p.small.muted", T("Profiles"), ": ", String(m.counts.profile ?? "–"), " · ", T("Packs"), ": ", String(m.counts.pack ?? "–")) : null,
+      m.compat && m.compat.status === "older" ? h("div.card.warn-box",
+        h("p", h("strong", "⚠️ ", T("This backup comes from an older version")), " ",
+          I18N.tr(T("(Family Quest {0} – now {1})")).replace("{0}", m.compat.from).replace("{1}", m.compat.to)),
+        h("p.small", "✓ ", T("Checked: the backup is not damaged, and the update of its data to the current version worked on a test copy.")),
+        h("p.small", T("Things that are new since then start with their standard settings. Please check the profiles, points and packs after restoring.")))
+        : h("p.small.muted", "✓ ", T("Checked: the backup is not damaged and fits this version.")),
       h("p.warn-text", T("Restoring replaces ALL current data (profiles, learning progress, points, chores, planner, packs).")),
+      h("p.small.muted", "🛟 ", T("Before restoring, the current data are saved once more as before-restore.zip in the data folder of the app.")),
       h("div.row", h("button.btn.bad", { onclick: async e => {
         if (!confirm(I18N.tr(T("Really replace all data with this backup?")))) return;
         const btn = e.currentTarget; btn.disabled = true;

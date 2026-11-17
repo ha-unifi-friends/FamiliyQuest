@@ -298,6 +298,7 @@ function kartenlaufLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+    turnCue("kartenlauf", st && st.phase !== "exchange" && st.my_turn);
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.hand, st.round, st.joined, st.players.length, st.gave,
       st.last && st.last.t, st.players.map(p => p.gave), Math.ceil((st.next_ms || 0) / 1000)]) + JSON.stringify(sel);
     if (sig === lastSig && !force) return;

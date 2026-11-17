@@ -93,6 +93,8 @@ function verbotenLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+
+    turnCue("verboten", st && st.phase === "ready" && st.me_explainer);
     if (st && st.phase === "explain" && st.left_ms != null) deadlineAt = Date.now() + st.left_ms;
     const sig = JSON.stringify(st, (k, v) => k === "left_ms" ? undefined : v);
     if (sig === lastSig && !force) return;

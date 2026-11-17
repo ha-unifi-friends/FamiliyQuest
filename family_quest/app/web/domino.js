@@ -148,6 +148,8 @@ function dominoLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+
+    turnCue("domino", st && st.phase === "play" && st.my_turn);
     const sig = JSON.stringify(st && [st.phase, st.turn, st.line.length, st.hand, st.round, st.joined, st.players.map(p => [p.tiles, p.passed]),
       (st.sheet || []).length, Math.ceil((st.next_ms || 0) / 1000)]) + choose;
     if (sig === lastSig && !force) return;

@@ -1390,7 +1390,7 @@ def backup_sizes(request: Request, me: dict = Parent) -> dict:
 async def backup_inspect(request: Request, file: UploadFile = File(...), me: dict = Parent) -> dict:
     from .. import backup
     try:
-        return {"manifest": backup.inspect(await file.read())}
+        return {"manifest": backup.check(await file.read(), app_of(request).settings.version)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -1445,7 +1445,7 @@ async def backup_inspect_upload(request: Request, body: dict = Body(...), me: di
     from .. import backup
     _path, raw = _uploaded(request, body)
     try:
-        return {"manifest": backup.inspect(raw)}
+        return {"manifest": backup.check(raw, app_of(request).settings.version)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 

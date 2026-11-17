@@ -127,6 +127,8 @@ function werbinichLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+
+    turnCue("werbinich", st && st.my_turn);
     const sig = JSON.stringify(st);
     if (sig === lastSig && !force) return;
     lastSig = sig;

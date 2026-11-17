@@ -277,6 +277,7 @@ function heimwaertsLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+    turnCue("heimwaerts", st && st.my_turn && st.stage === "roll");
     if (rolling) return;
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.stage, st.roll_seq, st.joined, st.players.map(p => [p.id, p.pieces, p.place]), st.last && st.last.seq]);
     if (sig === lastSig && !force) return;

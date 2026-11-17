@@ -149,6 +149,7 @@ function cardsLive(box, me, back, kind) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+    turnCue("cards", st && st.phase === "play" && st.turn === myId);
     const sig = JSON.stringify(st && [st.phase, st.turn, st.top, st.hand, st.pending, st.wish, st.drawn, st.round, st.players.map(p => [p.cards, p.said]), Math.ceil((st.next_ms || 0) / 1000)]) + say;
     if (sig === lastSig && !force) return;
     lastSig = sig;

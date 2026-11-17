@@ -1830,6 +1830,9 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .quiz-head .game-menu-btn { margin-right: 8px; }
 .game-drawer .drawer-item.danger { color: var(--bad, #d33); }
 .game-menu-back { z-index: 960; }
+/* «Leave the game» is in the ☰ menu: the ✕ goes away where the menu is (old browsers without :has keep the ✕) */
+.quiz-full:has(.game-menu-btn) .quiz-close { display: none; }
+.quiz-full:has(.game-menu-btn) :is(.quiz-head, .dm-head, .sl-top, .zr-top, .kb-bar) { padding-right: 0; }
 /* who begins: the picker and the banner */
 .starter-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin: 10px 0; }
 .starter-btn { display: grid; justify-items: center; gap: 4px; padding: 8px; border: 2px solid var(--line); border-radius: 14px;
@@ -1875,3 +1878,6 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .mk-atime i { display: block; height: 100%; background: var(--pc, var(--accent)); animation-name: mk-countdown; animation-timing-function: linear; animation-fill-mode: forwards; }
 @keyframes mk-countdown { to { width: 0; } }
 .mk-bids .mk-bidbtn { flex: 1 1 0; font-size: 1.15rem; font-weight: 800; min-height: 48px; }
+.quiz-head > .row:last-child { flex-wrap: nowrap; flex-shrink: 0; }
+.warn-box { border: 2px solid var(--warn, #f08c00); background: color-mix(in srgb, var(--warn, #f08c00) 10%, var(--card)); box-shadow: none; margin: 8px 0; }
+.warn-box p { margin: 4px 0; }

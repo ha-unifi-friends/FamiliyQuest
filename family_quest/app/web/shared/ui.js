@@ -82,7 +82,7 @@ const Sound = {
     if (!this.on) return;
     try {
       this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
-      const notes = { right: [660, 880], wrong: [300, 220], done: [523, 659, 784, 1046], tap: [500] }[kind] || [440];
+      const notes = { right: [660, 880], wrong: [300, 220], done: [523, 659, 784, 1046], tap: [500], turn: [784, 1046, 1318] }[kind] || [440];
       notes.forEach((f, i) => {
         const o = this.ctx.createOscillator(), g = this.ctx.createGain(), t = this.ctx.currentTime + i * 0.11;
         o.type = kind === "wrong" ? "triangle" : "sine"; o.frequency.value = f;
@@ -92,6 +92,18 @@ const Sound = {
     } catch {}
   },
 };
+
+// «Your turn» cue: a short chime (and a buzz on phones) when it becomes my turn – only on the change, not on every redraw
+const _turnState = {};
+function turnCue(key, mine) {
+  mine = !!mine;
+  const was = _turnState[key];
+  _turnState[key] = mine;
+  if (mine && was === false) {
+    Sound.play("turn");
+    try { if (Sound.on && navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch {}
+  }
+}
 
 function speak(text, lang) {
   try {

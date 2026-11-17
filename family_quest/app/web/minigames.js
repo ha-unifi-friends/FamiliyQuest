@@ -150,6 +150,7 @@ function tttOnline(box) {
         : h("p.muted", T("Nobody else can play right now.")));
   };
   const draw = (force = false) => {
+    turnCue("duel", st && st.status === "play" && st.turn === st.me);
     const key = JSON.stringify(st);
     if (!force && key === last) return;
     last = key;

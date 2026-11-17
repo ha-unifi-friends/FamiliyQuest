@@ -513,6 +513,7 @@ function dorfmarktLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+    turnCue("dorfmarkt", st && st.my_turn && st.stage === "roll");
     if (rolling) return;
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.stage, st.roll_seq, st.joined, st.paused, st.round, st.time_left,
       st.players.map(p => [p.id, p.money, p.pos, p.place, p.out, p.meeting]), st.last && st.last.seq, st.auction, st.trades, st.may_build]);

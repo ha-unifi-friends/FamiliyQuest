@@ -77,6 +77,7 @@ function pokerLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+    turnCue("poker", st && st.to_act === me.id);
     const sig = JSON.stringify(st && [st.phase, st.hand_no, st.street, st.to_act, st.pot, st.board, st.paused, st.requests,
       st.players.map(p => [p.chips, p.bet, p.folded, p.last, p.out]), Math.ceil((st.turn_ms || 0) / 1000), Math.ceil((st.next_ms || 0) / 1000)]);
     if (sig === lastSig && !force) return;

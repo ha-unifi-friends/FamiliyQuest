@@ -141,6 +141,8 @@ function paarjagdLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+
+    turnCue("paarjagd", st && st.my_turn);
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.open, Object.keys(st.found || {}).length, st.joined, st.players.length,
       st.last && st.last.t]);
     if (sig === lastSig && !force) return;

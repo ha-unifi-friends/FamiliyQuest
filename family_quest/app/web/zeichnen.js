@@ -222,7 +222,7 @@ function zeichnenLive(box, me, back) {
     }
     if (st.phase !== lastPhase) {
       if (st.phase === "reveal" && lastPhase === "draw" && !st.me_drawer && !st.found_me && st.joined) { try { Sound.play("wrong"); } catch {} }
-      if (st.phase === "choose" && st.me_drawer) { try { Sound.play("right"); } catch {} }
+      if (st.phase === "choose" && st.me_drawer) { try { Sound.play("turn"); navigator.vibrate && navigator.vibrate([60, 40, 60]); } catch {} }
       lastPhase = st.phase;
     }
     lastFound = found;
