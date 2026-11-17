@@ -49,3 +49,15 @@ def test_editor_turns_languages_on_and_off(client):
     client.put(f"/api/community/quizzes/{qid}", json=body, headers=hm)
     q = next(x for x in client.get("/api/community/quizzes", headers=hm).json() if x["id"] == qid)
     assert q["langs"] is None and "tr" not in q["questions"][0]
+
+
+def test_a_parent_cancels_a_quiz_a_child_started(client):
+    ph, mia, leo = setup_family(client)
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    qid = client.post("/api/community/quizzes", json={"title": "T", "questions": [{"q": "?", "a": ["a", "b"], "c": 0}]}, headers=hm).json()["id"]
+    assert client.post("/api/community/quiz/start", json={"quiz_id": qid}, headers=hm).status_code == 200
+    assert client.post("/api/community/quiz/abort", headers=hl).status_code == 403          # not leading, not a parent
+    assert client.post("/api/community/quiz/abort", headers=ph).status_code == 200
+    st = client.get("/api/community/quiz", headers=hl).json()
+    assert st is None or st["status"] == "done"

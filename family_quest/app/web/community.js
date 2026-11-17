@@ -671,8 +671,8 @@ async function quizzesView() {
 // list of quizzes with start / edit / delete, templates, editor – for profile `me`
 // `actions`: the head row of the section the «+ New quiz» button goes into
 async function quizzesPanel(box, me, onStarted, { actions } = {}) {
-  let quizzes = [], templates = [];
-  try { [quizzes, templates] = await Promise.all([api("community/quizzes"), api("community/templates")]); }
+  let quizzes = [], templates = [], live = null;
+  try { [quizzes, templates, live] = await Promise.all([api("community/quizzes"), api("community/templates"), api("community/quiz").catch(() => null)]); }
   catch (e) { return box.replaceChildren(h("p.bad", e.message)); }
   const mine = q => me.role === "parent" || q.created_by === me.id;
   const start = async q => {
@@ -728,8 +728,21 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     if (!confirm(I18N.tr(T("Delete this quiz?")))) return;
     try { await api(`community/quizzes/${q.id}`, { method: "DELETE" }); reload(); } catch (e) { toast(e.message, "bad"); }
   };
+  // a quiz running just now: open it – parents (and whoever leads it) can cancel it right here
+  const running = live && Array.isArray(live.players) && live.status !== "done" ? live : null;
+  const cancel = async () => {
+    if (!confirm(I18N.tr(T("Cancel the running quiz?")))) return;
+    try { await api("community/quiz/abort", { method: "POST" }); toast(T("Quiz cancelled"), "good"); } catch (e) { toast(e.message, "bad"); }
+    reload();
+  };
+  const runningCard = running ? h("div.card.quiz-running",
+    h("div.row.wrap", h("span.big-ic", "🎯"), h("div.grow", h("div.small.muted", T("Running quiz")), C("«" + (running.title || "") + "»", "strong")),
+      h("span.small.muted", I18N.tr(T("{0} playing")).replace("{0}", (running.players || []).length))),
+    h("div.row.wrap", h("button.btn.small", { onclick: onStarted }, "▶ ", T("Open")),
+      me.role === "parent" || running.host === me.id ? h("button.btn.small.danger", { onclick: cancel }, "⏹ ", T("Cancel quiz")) : null)) : null;
   box.replaceChildren(...[
     actions ? null : h("div.sec-head", h("span.grow"), h("div.head-actions", newBtn)),
+    runningCard,
     h("p.small.muted", T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
     instList("quizzes", quizzes, { closed: q => q.games > 0,
       labels: [T("Not played yet"), T("Played")], empty: [T("All quizzes have been played – make a new one!"), T("No quiz played yet.")],
