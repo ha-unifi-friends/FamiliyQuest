@@ -301,7 +301,7 @@ function petsBox(k, render) {
         toast(paused ? T("Holiday care ended") : T("Holiday care is on"), "good"); render();
       } }, paused ? "▶ " : "⏸ ", paused ? T("End holiday care") : T("Holiday care"))),
     h("div.pet-mini-list", ...k.pets.map(p => h("div.pet-mini" + (p.dying ? ".dying" : ""),
-      h("span.pet-mini-ic", petIcon(p.kind, 34, p.emoji)), h("div.grow", h("div", C(p.name, "strong"), h("span.small.muted", " · " + I18N.tr(T("{0} days old")).replace("{0}", p.age))),
+      h("span.pet-mini-ic", petIcon(p.kind, 34, p.emoji)), h("div.grow", h("div", C(p.name, "strong"), h("span.small.muted", " · " + I18N.tr(p.age === 1 ? T("1 day old") : T("{0} days old")).replace("{0}", p.age))),
         h("div.pet-mini-bars", ...[["hunger", "🍖"], ["mood", "😊"], ["clean", "🫧"]].map(([b, ic]) => h("span.pet-mini-bar", { title: ic + " " + p[b] }, ic,
           bar(p[b], 100, p[b] < 25 ? "var(--bad)" : p[b] < 50 ? "var(--warn)" : "var(--good)")))),
         p.dying ? h("div.small.warn-text", "🆘 ", I18N.tr(T("All bars empty – dies in {0} days")).replace("{0}", Math.max(0, Math.ceil(p.days_left)))) : null)))));
@@ -1794,7 +1794,7 @@ async function gamesView(main) {
     };
     live.replaceChildren(sectionAdd("🎯 " + I18N.tr(T("Running quiz")), appBtn("quiz"),
       h("div.row.wrap", C("«" + quizTitle(st.title, st.langs) + "»", "strong.grow"),
-        h("span.small.muted", I18N.tr(T("{0} playing")).replace("{0}", (st.players || []).length)),
+        h("span.small.muted", I18N.tr((st.players || []).length === 1 ? T("1 playing") : T("{0} playing")).replace("{0}", (st.players || []).length)),
         h("button.btn.small", { onclick: open }, "▶ ", T("Open")),
         h("button.btn.small.ghost", { onclick: end }, "⏹ ", T("End")))));
   };

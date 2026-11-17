@@ -174,7 +174,7 @@ function cardsLive(box, me, back, kind) {
       const rank = (st.ranking || []).map(id => st.players.find(p => p.id === id)).filter(Boolean);
       if (rank[0] && rank[0].id === myId) { confetti(); try { Sound.play("done"); } catch {} }
       return show(head, h("section.card.center", h("h2", "🏆 ", C(rank[0] ? rank[0].name : "")),
-        h("ol.pk-rank", ...rank.map(p => h("li", seatIcon(p, 32), C(p.name, "strong.grow"), h("span.small.muted", I18N.tr(T("{0} points")).replace("{0}", p.score))))),
+        h("ol.pk-rank", ...rank.map(p => h("li", seatIcon(p, 32), C(p.name, "strong.grow"), h("span.small.muted", I18N.tr(p.score === 1 ? T("1 point") : T("{0} points")).replace("{0}", p.score))))),
         h("button.btn", { onclick: back }, T("Back"))));
     }
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
@@ -191,7 +191,7 @@ function cardsLive(box, me, back, kind) {
       seatIcon(p, 40), h("div.grow", C(p.name, "strong.small"),
         h("div.sh-count", ...Array.from({ length: Math.min(p.cards, 10) }, () => h("i")), h("span.small", " " + p.cards)),
         p.said != null && p.cards <= 1 ? h("span.pk-tag.allin", p.cards === 1 ? (st.calls[0]) : st.calls[1]) : null,
-        st.rules.rounds > 1 ? h("div.small.muted", I18N.tr(T("{0} points")).replace("{0}", p.score)) : null))));
+        st.rules.rounds > 1 ? h("div.small.muted", I18N.tr(p.score === 1 ? T("1 point") : T("{0} points")).replace("{0}", p.score)) : null))));
   }
   function middle() {
     const myTurn = st.turn === myId && st.phase === "play";

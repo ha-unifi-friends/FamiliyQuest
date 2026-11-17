@@ -138,8 +138,10 @@ label.field .hint { font-weight: 400; color: var(--muted); font-size: .82rem; }
 /* Etappe H – community: family quiz, family council, history */
 .banner { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 0; cursor: pointer; color: var(--fg);
   background: linear-gradient(120deg, var(--hover), var(--card)); margin-bottom: 14px; }
-.quiz-banner { animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 50% { box-shadow: 0 0 0 4px var(--accent); } }
+/* a running game: a soft glow that comes and goes (no animation with «reduce motion», see the rule further up) */
+.quiz-banner { animation: pulse 2.4s ease-in-out infinite; border: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); } }
+.live-banners { display: grid; } .live-banners .banner:last-child { margin-bottom: 0; }
 .quiz-head { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding-right: 48px; }
 .quiz-head .chip { white-space: nowrap; flex-shrink: 0; }
 .quiz-q { text-align: center; }

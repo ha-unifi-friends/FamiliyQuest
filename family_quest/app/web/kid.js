@@ -679,7 +679,7 @@ function resultView(res, back) {
     h("p.big", res.right + " / " + res.total + " " + T("correct")),
     h("div.chips", ...gained.map(([k, v]) => h("span.chip", accIcon(k) + " +" + fmt(v, 1) + " ", accName(k)))),
     res.goal_met ? h("p.good-text", "🎯 ", T("Daily goal reached!")) : null,
-    res.streak ? h("p", "🔥 ", T("Streak: {0} days").replace("{0}", res.streak)) : null,
+    res.streak ? h("p", "🔥 ", I18N.tr(res.streak === 1 ? T("Streak: 1 day") : T("Streak: {0} days")).replace("{0}", res.streak)) : null,
     ...(res.units || []).map(u => h("div.unit-result", C(u.title, "span.grow"), stars(u.stars),
       u.before != null && u.stars > u.before ? h("span.chip.good", "+" + (u.stars - u.before) + " ★") : null)),
     res.badges && res.badges.length ? h("div.card.new-badges", h("h2", T("New badge!")),
@@ -1446,8 +1446,8 @@ function petCardCare(p, cost, reload, d) {
   return h("div.pet-card.stage-" + p.stage + (p.dying ? ".dying" : ""),
     petScene(p, emo),
     p.owner ? h("div.pet-name", C(p.name, "strong")) : h("button.pet-name", { onclick: rename, title: T("Rename") }, C(p.name, "strong"), " ✏️"),
-    h("div.small.muted", petText(T("{0} days old"), p.age), " · ", I18N.tr(PET_STAGE[p.stage])),
-    p.dying ? h("div.pet-sos", "🆘 ", petText(T("Still {0} days – please look after {1}!"), Math.max(0, Math.ceil(p.days_left)), p.name)) : null,
+    h("div.small.muted", petText(p.age === 1 ? T("1 day old") : T("{0} days old"), p.age), " · ", I18N.tr(PET_STAGE[p.stage])),
+    p.dying ? h("div.pet-sos", "🆘 ", petText(Math.ceil(p.days_left) === 1 ? T("Still 1 day – please look after {1}!") : T("Still {0} days – please look after {1}!"), Math.max(0, Math.ceil(p.days_left)), p.name)) : null,
     h("div.pet-bars", ...PET_BARS.map(([k, ic, label]) => h("div.pet-bar" + (p[k] < 25 ? ".low" : ""), { title: label },
       h("span.pet-bar-ic", ic), bar(p[k], 100, p[k] < 25 ? "var(--bad)" : p[k] < 50 ? "var(--warn)" : "var(--good)"), h("span.small", p[k])))),
     h("div.pet-actions",
@@ -1660,7 +1660,9 @@ async function gamesView() {
     canPlay("domino") ? await dominoFamilyCard() : null, canPlay("paarjagd") ? await paarjagdFamilyCard() : null,
     canPlay("werbinich") ? await werbinichFamilyCard() : null, canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null,
     canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
-  screen("games", h("h1", "🎲 ", T("Games")), ...cards);
+  // the games running just now on top – the same pulsing banners as on the start page
+  const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
+  screen("games", h("h1", "🎲 ", T("Games")), ...(live.length ? [h("div.live-banners", ...live)] : []), ...cards);
 }
 
 // ---------------------------------------------------------------- my devices (Home Assistant)

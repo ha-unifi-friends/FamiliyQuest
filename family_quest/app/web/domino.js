@@ -188,7 +188,7 @@ function dominoLive(box, me, back) {
       h("h2", "🏆 ", C(sideName(st.winner))),
       st.pollona ? h("p.small", T("Won while the others have 0 points.")) : null,
       h("ol.pk-rank", ...sides.map(s => h("li", ...s.members.map(id => seatIcon(player(id), 30)), C(sideName(s.id), "strong.grow"),
-        h("span", I18N.tr(T("{0} points")).replace("{0}", s.score))))),
+        h("span", I18N.tr(s.score === 1 ? T("1 point") : T("{0} points")).replace("{0}", s.score))))),
       h("div.row.center", h("button.btn.ghost", { onclick: () => openModal(sheetView()) }, "📊 ", T("Score sheet")), h("button.btn", { onclick: back }, T("Back"))));
   }
 
