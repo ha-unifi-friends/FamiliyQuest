@@ -77,4 +77,22 @@ def test_the_examples_in_the_templates_import():
     pack = re.search(r"```\n(\{.*?\})\n```", (root / "pack.md").read_text(), re.S).group(1)
     assert parse_json(pack)[0].id == "french-5-unit-3"
     quiz = loads(re.search(r"```\n(\{.*?\})\n```", (root / "quiz.md").read_text(), re.S).group(1))
-    assert len(Community.clean_questions([quiz_question(q) for q in quiz["questions"]])) == 3
+    qs = Community.clean_questions([quiz_question(q) for q in quiz["questions"]])
+    assert len(qs) == 8
+    imgs = [q.get("img") for q in qs]
+    assert imgs[2] == {"flag": "PT"} and imgs[3] == {"emoji": "🦔"} and imgs[4]["svg"].startswith("<svg")
+    assert imgs[5] == {"geo": "canton", "id": "TI", "mode": "outline"}
+    assert qs[1]["a"][0] == "🇸🇪" and qs[6]["kind"] == "estimate" and qs[7]["kind"] == "pin"
+
+
+def test_pictures_of_questions(client):
+    import pytest
+    from familyquest.community import CommunityError, clean_image
+    assert clean_image({"flag": "ch"}) == {"flag": "CH"} and clean_image({"flag": "XX"}) is None
+    assert clean_image({"geo": "canton", "id": "ZH", "mode": "arms"})["mode"] == "arms"
+    assert clean_image({"emoji": "🦒"}) == {"emoji": "🦒"}
+    assert clean_image({"svg": "<svg viewBox='0 0 1 1'/>"})["svg"]
+    with pytest.raises(CommunityError):
+        clean_image({"svg": "<script>alert(1)</script>"})
+    with pytest.raises(CommunityError):
+        clean_image({"svg": "<svg>" + "x" * 40000 + "</svg>"})

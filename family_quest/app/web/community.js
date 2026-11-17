@@ -90,7 +90,12 @@ async function quizView() {
 let CH_GEO = null;
 let ARMS = null;
 function questionImage(img) {
-  if (!img || img.geo !== "canton") return null;
+  if (!img) return null;
+  // a flag, a big emoji or an own drawing (SVG as an image – nothing in it can run)
+  if (img.flag) return h("div.q-img.q-flag", h("img", { src: `flags/${img.flag}.svg`, alt: "", draggable: false }));
+  if (img.emoji) return h("div.q-img.q-emoji", img.emoji);
+  if (img.svg) return h("div.q-img.q-svg", h("img", { src: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(img.svg), alt: "", draggable: false }));
+  if (img.geo !== "canton") return null;
   const box = h("div.q-img");
   if (img.mode === "arms") {               // coats of arms as vector drawings in a shield (geo/arms.json, tools/build_arms.py)
     ARMS = ARMS || fetch("geo/arms.json").then(r => r.json());
@@ -673,9 +678,13 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
       } catch (e) { toast(e.message, "bad"); }
       file.value = "";
     } });
-    const aiBox = h("div.card.ai-box", h("h3", "🤖 ", T("Made with your AI")),
-      h("p.small.muted", T("Give the template to your favourite AI (ChatGPT, Claude, Gemini …) and say what the quiz should be about. Save its answer as a .json file and upload it here.")),
-      aiTemplateButtons("quiz"), h("div.row", h("button.btn.small", { onclick: () => file.click() }, "⬆️ ", T("Upload a quiz file")), file));
+    // … or made by an AI: download the template for the AI, then import its answer (a JSON file)
+    const aiBox = h("div.ai-box",
+      h("div.row.wrap",
+        h("button.btn.small", { onclick: () => file.click() }, "⬆️ ", T("Import")),
+        h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: "api/ai-template/quiz", download: "family-quest-quiz-template-for-ai.md" }, "⬇️ ", T("Download template")),
+        file),
+      h("p.small.muted", T("Made with your AI: give the template to ChatGPT, Claude, Gemini … and say what the quiz should be about – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer (.json).")));
     m = modal(h("div.form", h("h2", "🎯 ", T("New quiz")),
       h("button.btn.big", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz")),
       aiBox,

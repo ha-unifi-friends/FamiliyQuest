@@ -17,6 +17,7 @@ History
 from __future__ import annotations
 
 import json
+import re
 import random
 import threading
 import time
@@ -661,6 +662,14 @@ def quiz_question(q: dict) -> dict:
     out = {"kind": kind, "q": q.get("question") or q.get("q") or ""}
     if "seconds" in q or "t" in q:
         out["t"] = q.get("seconds", q.get("t"))
+    pic = q.get("image") or q.get("img")
+    if isinstance(pic, dict):
+        t = str(pic.get("type") or "").lower()
+        if t.startswith("canton") or pic.get("canton"):
+            out["img"] = {"geo": "canton", "id": str(pic.get("canton") or pic.get("id") or "").upper(),
+                          "mode": {"canton_map": "map", "canton_arms": "arms"}.get(t, pic.get("mode") or "outline")}
+        else:
+            out["img"] = {k: pic[k] for k in ("flag", "emoji", "svg") if pic.get(k)}
     if kind == "choice":
         out["a"] = q.get("answers") or q.get("a") or []
         c = q.get("correct", q.get("c", 0))
@@ -699,12 +708,33 @@ def clean_special(q: dict) -> dict:
         raise CommunityError("Type a number") from None
 
 
+SVG_MAX = 30_000
+
+
 def clean_image(img) -> dict | None:
-    """A picture of a question: a canton as outline, marked on the map (web/geo/ch.json) or its coat of arms (arms.json)."""
+    """A picture of a question:
+    - a canton as outline, marked on the map (web/geo/ch.json) or its coat of arms (arms.json): {geo, id, mode}
+    - a country flag, big: {flag: "CH"} (web/flags/<code>.svg)
+    - a big emoji: {emoji: "🦁"}
+    - an own drawing: {svg: "<svg …>"} – shown as an image (<img>), so nothing in it can run."""
     from .quiz_templates import CANTON_NAMES
-    if not isinstance(img, dict) or img.get("geo") != "canton" or img.get("id") not in CANTON_NAMES:
+    from .settings import WEB_DIR
+    if not isinstance(img, dict):
         return None
-    return {"geo": "canton", "id": img["id"], "mode": img.get("mode") if img.get("mode") in ("map", "arms") else "outline"}
+    if img.get("geo") == "canton" and img.get("id") in CANTON_NAMES:
+        return {"geo": "canton", "id": img["id"], "mode": img.get("mode") if img.get("mode") in ("map", "arms") else "outline"}
+    flag = str(img.get("flag") or "").upper()
+    if flag:
+        return {"flag": flag} if re.fullmatch(r"[A-Z]{2}", flag) and (WEB_DIR / "flags" / f"{flag}.svg").is_file() else None
+    emoji = str(img.get("emoji") or "").strip()
+    if emoji:
+        return {"emoji": emoji[:16]}
+    svg = str(img.get("svg") or "").strip()
+    if svg:
+        if len(svg) > SVG_MAX or not re.match(r"^(<\?xml[^>]*>\s*)?<svg[\s>]", svg, re.I):
+            raise CommunityError("A picture must be an SVG drawing (<svg …>) of at most 30 KB")
+        return {"svg": svg}
+    return None
 
 
 def shuffle_answers(q: dict) -> dict:
