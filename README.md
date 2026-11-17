@@ -16,6 +16,10 @@
   <sub>or add manually: <a href="https://github.com/ha-unifi-friends/FamiliyQuest"><code>https://github.com/ha-unifi-friends/FamiliyQuest</code></a></sub>
 </p>
 
+<p align="center">
+  <a href="https://ko-fi.com/haunififriends"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support Family Quest on Ko-fi" height="36"></a>
+</p>
+
 Family Quest is a Home Assistant app for the whole family. Children learn any school subject, do their chores and
 earn points for both; parents set the rules, approve rewards and see at a glance how everybody is doing. The
 [Family Planer](https://github.com/magi1982/family-planer) runs inside the app, so chores, to-dos and lists live in
@@ -127,7 +131,8 @@ Open <http://localhost:8099> (children) and <http://localhost:8099/eltern> (pare
 ## License
 
 Family Quest is a non-commercial hobby project, made for private use in families: it is not sold, has no ads
-and no tracking, and is not affiliated with any of the products or brands mentioned.
+and no tracking, and is not affiliated with any of the products or brands mentioned. If it helps your family,
+you can buy us a coffee on [Ko-fi](https://ko-fi.com/haunififriends) ☕ – thank you!
 
 MIT – see [LICENSE](LICENSE). Parts by others (Family Planer, Material Design Icons, QR code generator)
 are listed with their licenses in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
