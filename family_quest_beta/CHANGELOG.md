@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.8
+
+- «Me» page: everything at a glance at the top – level, streak, coins and internet minutes, open tasks (with the chore list), the internet time with one start / pause button, and the own lights and devices; avatar, moods and pets follow below
+
 ## 1.0.0-beta.7
 
 - Quiz template for your AI covers every question type, mixed: multiple choice with text or flag answers, questions with a picture (big flag, emoji, an own SVG drawing, canton outline / map / coat of arms), estimation and map questions
