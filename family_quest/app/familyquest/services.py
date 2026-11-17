@@ -221,7 +221,7 @@ class FamilyQuest:
             nxt = next((u for u in prog["units"] if u["id"] == prog["next"]), None)
             tiles.append({"pack": pack.id, "title": pack.title, "subject": s["subject"], "color": s.get("color"),
                           "icon": s.get("icon"), "stars": prog["stars"], "max_stars": prog["max_stars"],
-                          "percent": prog["percent"], "due": prog["due"], "next": nxt})
+                          "percent": prog["percent"], "due": prog["due"], "next": nxt, "status": s.get("status", "active")})
         return tiles
 
     def avatar_state(self, pid: int) -> tuple[int, set[str], set[str]]:

@@ -626,6 +626,7 @@ async function packsView(main) {
       p.kind === "pack" ? h("button.btn.small.ghost", { onclick: () => packEditor(p.id) }, "✏️ ", T("Edit")) : null,
       h("button.btn.small.ghost", { title: T("Export as ZIP (with pictures)"), onclick: () => download(p.id, "zip") }, "⬇️ ZIP"),
       h("button.btn.small.ghost", { title: T("Export as JSON"), onclick: () => download(p.id, "json") }, "⬇️ JSON"),
+      p.kind === "pack" ? h("button.btn.small.ghost", { title: T("Opens the pack in the app in a new tab – parents can try every pack"), onclick: () => openInApp("pack/" + encodeURIComponent(p.id)) }, "▶ ", T("Try in the app")) : null,
       p.status === "draft" ? h("button.btn.small.good", { onclick: () => setStatus(p.id, "active") }, "✓ ", T("Publish"))
         : h("button.btn.small.ghost", { onclick: () => setStatus(p.id, p.status === "active" ? "disabled" : "active") }, p.status === "active" ? T("Switch off") : T("Switch on")),
       h("button.btn.small.ghost", { title: T("Delete"), onclick: () => del(p) }, "🗑️")),

@@ -44,6 +44,8 @@ class Learning:
         st = self.states(pid, pack.id)
         units, unlocked = [], True
         path = getattr(pack.model, "pfad", False)
+        if path and self.db.val("SELECT role FROM profile WHERE id=?", pid) == "parent":
+            path = False                          # parents try out every unit, nothing is locked for them
         for u in pack.units:
             s = self.unit_stars(pid, pack, u, st)
             keys = u.keys(pack.id)
@@ -241,7 +243,7 @@ class Learning:
     def _daily(self, pid: int, n: int, n_new: int, rng: random.Random) -> list[dict]:
         """Daily lesson: due repetitions from every active pack, a few new cards, some arithmetic."""
         steps: list[dict] = []
-        packs = self.packs.for_profile(pid)
+        packs = self.packs.for_profile(pid, try_all=False)      # parents: no drafts in the daily lesson
         rng.shuffle(packs)
         due_steps, new_steps = [], []
         for pack in packs:

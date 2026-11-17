@@ -301,6 +301,26 @@ function login(p) {
     } })));
 }
 
+// the subjects (packs) of a profile as tiles: tap = the pack with its path, ▶ = go on with the next unit right away.
+// Parents see every pack – drafts and switched-off ones marked – to try them out.
+const STATUS_BADGE = { draft: () => "📝 " + I18N.tr(T("Draft")), disabled: () => "⏸ " + I18N.tr(T("Switched off")) };
+function subjectGrid(me, withStart = false) {
+  if (!me.subjects.length) return h("p.muted", T("No subjects active yet – a parent can switch on packs."));
+  return h("div.subject-grid", ...me.subjects.map(s => {
+    const tile = h("button.subject" + (s.status && s.status !== "active" ? ".trial" : ""), { style: { "--c": s.color }, onclick: () => go("pack/" + encodeURIComponent(s.pack)) },
+      h("span.subject-ic", s.icon),
+      h("span.subject-body",
+        C(s.title, "strong"),
+        STATUS_BADGE[s.status] ? h("span.small.status-badge", STATUS_BADGE[s.status]()) : null,
+        h("span.row.small", stars(Math.round(5 * s.stars / Math.max(1, s.max_stars))), h("span.muted", s.percent + " %")),
+        s.next ? h("span.small.next", T("Next:"), " ", C(s.next.title)) : h("span.small.next", "🏆 ", T("All done!")),
+        s.due ? h("span.due", s.due + " " + T("to repeat")) : null));
+    if (!withStart) return tile;
+    return h("div.subject-wrap", tile, h("button.btn.small.subject-go", { style: { "--c": s.color }, title: T("Start"),
+      onclick: () => startLesson({ mode: "path", pack: s.pack, unit: s.next ? s.next.id : undefined }) }, "▶ ", s.next ? T("Continue") : T("Repeat")));
+  }));
+}
+
 // ---------------------------------------------------------------- dashboard
 function dashboardView() {
   const me = S.me;
@@ -316,16 +336,7 @@ function dashboardView() {
 
   const subjects = h("section",
     h("div.row", h("h2.grow", T("Subjects")), h("button.btn.small.ghost", { onclick: () => go("courses") }, "🌍 ", T("Language courses & more"))),
-    me.subjects.length
-      ? h("div.subject-grid", ...me.subjects.map(s => h("button.subject", { style: { "--c": s.color }, onclick: () => go("pack/" + encodeURIComponent(s.pack)) },
-          h("span.subject-ic", s.icon),
-          h("span.subject-body",
-            C(s.title, "strong"),
-            h("span.row.small", stars(Math.round(5 * s.stars / Math.max(1, s.max_stars))), h("span.muted", s.percent + " %")),
-            s.next ? h("span.small.next", T("Next:"), " ", C(s.next.title)) : h("span.small.next", "🏆 ", T("All done!")),
-            s.due ? h("span.due", s.due + " " + T("to repeat")) : null))))
-      : h("p.muted", T("No subjects active yet – a parent can switch on packs.")));
-
+    subjectGrid(me));
   const sections = [...(me.profile.crown ? [h("section.card.banner.crown-banner", h("span.big-ic", "👑"), h("strong", T("Today you wear the crown!")))] : []),
     ...(me.weather ? [h("section.card.banner.weather-banner", h("span.weather-big", me.weather.icon),
       h("div", h("div.small.muted", T("Your weather today")), me.weather.name ? h("strong", I18N.tr(me.weather.name)) : null))] : []),
@@ -510,7 +521,7 @@ async function packView(packId) {
   }));
   screen("home", { back: () => go("") },
     h("section.pack-head", { style: { "--c": p.color } },
-      h("span.pack-ic", p.icon), h("div", C(p.title, "h1"), h("span.small", prog.percent + " % · " + prog.stars + " / " + prog.max_stars + " ★"))),
+      h("span.pack-ic", p.icon), h("div", C(p.title, "h1"), STATUS_BADGE[p.status] ? h("span.small.status-badge", STATUS_BADGE[p.status]()) : null, " ", h("span.small", prog.percent + " % · " + prog.stars + " / " + prog.max_stars + " ★"))),
     h("div.row.pack-actions",
       h("button.btn", { onclick: () => startLesson({ mode: "path", pack: p.id, unit: prog.next || undefined }), disabled: !prog.next }, "▶ ", T("Continue")),
       h("button.btn.ghost", { onclick: () => startLesson({ mode: "quiz", pack: p.id }), disabled: !learned }, "⚡ ", T("Quiz round")),
@@ -1606,7 +1617,17 @@ async function coursesView() {
     catch (e) { return toast(e.message, "bad"); }
     if (on) { Sound.play("done"); go("pack/" + encodeURIComponent(c.id)); } else coursesView();
   };
-  screen("courses", { back: () => go("") }, h("h1", "🌍 ", T("Language courses & more")),
+  try { S.me = await api("me"); } catch {}
+  const me = S.me, isParent = me.profile && me.profile.role === "parent";
+  screen("courses", { back: () => go("") },
+    h("h1", "📚 ", T("Learning")),
+    h("section.card.learn-start",
+      h("div.grow", h("strong", T("Daily lesson")), h("div.small.muted", T("A short lesson mixes repetitions and new words."))),
+      h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Start"))),
+    h("section", h("h2", T("Subjects")),
+      isParent ? h("p.small.muted", "👀 ", T("As a parent you see all packs to try them out – also drafts. Children only see the packs switched on for them.")) : null,
+      subjectGrid(me, true)),
+    h("h2", "🌍 ", T("Language courses & more")),
     h("p.muted", T("Choose a language and your level – the units unlock one after the other. Everybody can learn: children and adults.")),
     list.length ? [...groups.values()].map(cs => h("section.card.course", { style: { "--c": cs[0].subject.color } },
       h("h2", cs[0].subject.icon + " ", I18N.tr(cs[0].subject.name)),
