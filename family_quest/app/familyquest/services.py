@@ -25,6 +25,7 @@ from .translations import Translations
 from .dashboard import Dashboard
 from .guests import Guests
 from .calendar import FamilyCalendar
+from .familytime import FamilyTimeGames
 
 log = logging.getLogger("familyquest")
 
@@ -112,6 +113,7 @@ class FamilyQuest:
         self.kiosk = Dashboard(self)
         self.guests = Guests(self)
         self.calendar = FamilyCalendar(self)
+        self.familytime = FamilyTimeGames(self)
         self.internet.offline = lambda pid: self.calendar.blocks(pid, "internet")
         self.shop.internet = self.internet
         self.tokens = Tokens(settings.secret)
@@ -238,6 +240,7 @@ class FamilyQuest:
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
         out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
         out["boards_new"] = self.boards.new_count(pid)       # bulletin boards: not a game, for everybody of the family
+        out["familytime"] = self.familytime.summary(prof)            # FamilyTime: a wish or a vote is missing
         return out
 
     def games_allowed(self, prof: dict, game: str | None = None) -> bool:

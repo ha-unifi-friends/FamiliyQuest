@@ -119,7 +119,8 @@ function specialBanners(list) {
     const what = off ? [x.options.internet ? T("no internet") : null, x.options.games ? T("no games in the app") : null].filter(Boolean).map(t => I18N.tr(t)).join(" · ") : "";
     return h("section.card.banner.special-banner." + x.kind + (x.active ? ".now" : ""),
       h("span.big-ic", x.icon || (off ? "📵" : "👨‍👩‍👧")),
-      h("span.grow", h("strong", C(x.title)), h("br"), txt, what ? [h("br"), h("span.small.muted", what)] : null));
+      h("span.grow", h("strong", C(x.title)), h("br"), txt, what ? [h("br"), h("span.small.muted", what)] : null,
+        x.game ? [h("br"), h("span.small.ftg-line", x.game.icon + " ", C(ftGameLine(x.game)))] : null));     // FamilyTime: its game (community.js)
   });
 }
 
@@ -1659,7 +1660,7 @@ async function familyView() {
         m.chores && m.chores.reliability != null ? [h("dt", "🧹 " + I18N.tr(T("Chores"))), h("dd", fmt(m.chores.reliability) + " %")] : null,
         showAll && m.level ? [h("dt", "Level"), h("dd", String(m.level))] : null)))) : null,
     h("p.small.muted.center", T("Compared is the effort towards each one's own goal – not the raw points.")),
-    await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
+    await familyTimeSection(), await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
 }
 
 // ---------------------------------------------------------------- the games (own menu item)

@@ -2097,3 +2097,22 @@ svg.bb-busy .bb-hit { stroke: color-mix(in srgb, var(--who) 35%, transparent); }
 .cb-hold { display: flex; gap: 6px; }
 .cb-dot { width: 26px; height: 26px; border-radius: 6px; background: var(--c); border: 3px solid #15171c; }
 @media (max-height: 700px) { .cb-hint, .cb-ptext { display: none; } }
+
+/* FamilyTime games (community.js familyTimeSection): wishes, vote, a game bought with coins – prefix ftg */
+.ftg .ftg-ev + .ftg-ev { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+.ftg .topic { display: grid; gap: 8px; }
+.ftg-head { align-items: center; gap: 10px; }
+.ftg-game { align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: linear-gradient(120deg, #fff3bf, var(--card)); }
+:root[data-theme="dark"] .ftg-game { background: linear-gradient(120deg, #4a3b0a, var(--card)); }
+.ftg-game strong { font-size: 1.15rem; }
+.ftg-wishes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ftg-wishes li { gap: 8px; align-items: center; padding: 6px 10px; border-radius: 10px; background: var(--hover); }
+.ftg-mine { display: grid; gap: 6px; }
+.ftg-pick { display: grid; gap: 6px; }
+.ftg-pick select, .ftg-pick input { width: 100%; }
+.ftg-buy { align-items: center; gap: 8px; }
+.ftg-buy-btn { background: linear-gradient(120deg, #ffd43b, #fab005); color: #3d2c00; border: 0; }
+.ftg-ctl { gap: 6px; }
+.ftg-line { font-weight: 700; }
+.cal-game { opacity: .85; }
+.chip.ftg-voting { background: #ffe8cc; color: #a34700; }

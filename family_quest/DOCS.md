@@ -132,6 +132,33 @@ Calendar › **+ 👨‍👩‍👧 FamilyTime** / **+ 📵 OfflineTime** (or th
 - **OfflineTime** can switch off, for all or chosen children: the **internet** (a running internet time stops, it
   cannot be started) and the **games of the app** (learning stays open). Without a tick it is only a notice.
 
+### FamilyTime games: wishes, vote, fix a game for coins
+
+Which game do we play at the next FamilyTime? In the app on the **Family** page (and in the parent area › Family) the
+section **🎲 FamilyTime games** lists the FamilyTime events of the next 60 days:
+- **Wishes**: every family member (children and parents – never guests) wishes **one** game per FamilyTime: one of the
+  app's family games (the ones this person may play, parent area › Games) or a **board game** typed in (free text, max.
+  60 letters, e.g. «Monopoly»). The wish can be changed or taken back until the wishes close. The start page shows
+  «Wish a game for FamilyTime on Saturday!» until you wished.
+- **The wishes close** when a parent taps **Start the vote**, or by themselves *N* hours before the start (setting,
+  default 24 h). Only one game wished (also when several people wished the same): it is **set directly**.
+- **The vote**: one vote per family member, it can be changed. It ends when everybody voted, when a parent taps **End
+  the vote**, or when the FamilyTime starts. The start page shows **Vote now!** until you voted. A **tie**: the parents
+  choose one of the leaders or tap **🎲 Random**; a tie still open when the FamilyTime starts is drawn at random.
+- **Parents** can also **set a game** directly (one of the wishes or any game), **skip the vote** (no game from the
+  wishes this time – they can still set one, a child can still buy one), **clear the wishes** (start over) and
+  **remove the game**.
+- **Fix a game for 150 coins**: a child pays the price (setting, default 150, 0 = off) and sets the game of a
+  FamilyTime that has **no game yet** firmly – the wishes and the vote of that FamilyTime end. Refused when a game is
+  set already. If a parent removes a bought game (or deletes the FamilyTime, or makes it an ordinary event), the child
+  gets the coins back (ledger events `familytime_game` / `familytime_refund`).
+- The game shows on the FamilyTime: «🎲 Game: Tschau Sepp – chosen by vote / bought by Mia / set by Papa» in the
+  calendar of the parent area, in the planner's calendar row, on the FamilyTime banner of the start page (from 24 h
+  before) and in the section. Everybody of the family gets a history entry when the game is set.
+- **Settings** (parent area › Family › FamilyTime games › ⚙️, and the same under Settings › FamilyTime games):
+  switch the whole feature on/off (off: children see nothing of it), the coin price, the hours before the start when
+  the wishes close.
+
 ## Kiosk dashboard
 
 Parent area → **🖥️ Dashboard**: a read-only page for a wall tablet, TV or old phone – any browser, no login.

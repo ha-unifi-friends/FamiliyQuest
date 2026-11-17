@@ -216,14 +216,21 @@ class FamilyCalendar:
                             VALUES(?,?,?,?,?,?,?,?,?,?,?)""", e["title"], e["start"], e["end"], int(e["all_day"]), e["icon"],
                          e["color"], e["kind"], e["note"], e["uid"], source, json.dumps(e["options"]))
 
+    def _games(self):
+        return getattr(self.fq, "familytime", None)       # games of FamilyTime events (familytime.py)
+
     def update(self, eid: int, e: dict) -> None:
         e = clean_event(e)
+        if e["kind"] != "familytime" and self._games():   # no longer a FamilyTime: a bought game gives the coins back
+            self._games().event_gone(eid)
         if not self.db.x("""UPDATE family_event SET title=?, start=?, end=?, all_day=?, icon=?, color=?, kind=?, note=?, options=? WHERE id=?""",
                          e["title"], e["start"], e["end"], int(e["all_day"]), e["icon"], e["color"], e["kind"], e["note"],
                          json.dumps(e["options"]), eid):
             raise CalendarError("Unknown event")
 
     def delete(self, eid: int) -> None:
+        if self._games():
+            self._games().event_gone(eid)
         self.db.x("DELETE FROM family_event WHERE id=?", eid)
 
     def delete_source(self, source: str) -> int:
@@ -256,7 +263,9 @@ class FamilyCalendar:
             if b <= now or a > now + timedelta(hours=hours):
                 continue
             out.append({"id": e["id"], "kind": e["kind"], "title": e["title"], "icon": e["icon"], "start": a.isoformat(timespec="minutes"),
-                        "end": b.isoformat(timespec="minutes"), "active": a <= now, "options": e["options"]})
+                        "end": b.isoformat(timespec="minutes"), "active": a <= now, "options": e["options"],
+                        "game": self._games().game_of(e["id"]) if e["kind"] == "familytime" and self._games()
+                        and self._games().settings()["enabled"] else None})
         return sorted(out, key=lambda x: x["start"])
 
     def blocks(self, pid: int, what: str, now: datetime | None = None) -> dict | None:

@@ -96,6 +96,11 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.boards_new) out.push(h("button.card.banner", { onclick: () => go("family") },
     h("span.big-ic", "📌"), h("span.grow", h("strong", T("Bulletin boards")), h("br"),
       h("span.small", c.boards_new === 1 ? T("Something new on a board") : I18N.tr(T("Something new on {0} boards")).replace("{0}", c.boards_new))), h("span.big-ic", "➜")));
+  if (c.familytime) out.push(h("button.card.banner.ftg-banner", { onclick: () => go("family") },
+    h("span.big-ic", c.familytime.state === "vote" ? "🗳️" : "🎲"), h("span.grow", h("strong", c.familytime.state === "vote" ? T("Vote now!")
+      : I18N.tr(T("Wish a game for FamilyTime on {0}!")).replace("{0}", ftDay(c.familytime.start))), h("br"),
+      h("span.small", c.familytime.state === "vote" ? I18N.tr(T("Which game do we play at FamilyTime on {0}?")).replace("{0}", ftDay(c.familytime.start))
+        : C(c.familytime.title))), h("span.big-ic", "➜")));
   if (c.votes_open) out.push(h("button.card.banner", { onclick: () => go("family") },
     h("span.big-ic", "🗳️"), h("span.grow", h("strong", T("Family council")), h("br"),
       h("span.small", I18N.tr(T("Your vote is missing: {0}")).replace("{0}", c.votes_open))), h("span.big-ic", "➜")));
@@ -443,6 +448,122 @@ async function pollsSection(me = S.profile) {
   return sec;
 }
 
+// ---------------------------------------------------------------- FamilyTime games: wishes, the vote, a game bought with coins
+// (familyquest/familytime.py) – in the app on the «Family» page, in the parent area on the «Family» tab with the controls
+const ftDay = v => new Date(v).toLocaleDateString(I18N.locale, { weekday: "long" });
+const ftWhen = e => new Date(e.start).toLocaleDateString(I18N.locale, { weekday: "short", day: "numeric", month: "short" }) + (e.all_day ? "" : " · " + fmtTime(e.start));
+const ftTitle = g => g.app ? I18N.tr(g.title) : g.title;            // app games are translated, board games stay as typed
+function ftHow(g) {
+  const by = g.by || "?";
+  return g.how === "vote" ? I18N.tr(T("chosen by vote")) : g.how === "random" ? "🎲 " + I18N.tr(T("drawn by lot"))
+    : g.how === "single" ? I18N.tr(T("the only wish (by {0})")).replace("{0}", by)
+    : g.how === "bought" ? I18N.tr(T("bought by {0}")).replace("{0}", by) : I18N.tr(T("set by {0}")).replace("{0}", by);
+}
+// «Game: Tschau Sepp – chosen by vote» (calendar views, banners)
+const ftGameLine = g => I18N.tr(T("Game: {0}")).replace("{0}", ftTitle(g)) + " – " + ftHow(g);
+
+// choose a game: one of the app's family games or a board game typed in (max. 60 letters)
+function ftPicker(games, value = null) {
+  const BOARD = "__board__";
+  const sel = h("select", h("option", { value: "" }, I18N.tr(T("Choose a game …"))),
+    h("option", { value: BOARD }, "🎲 " + I18N.tr(T("A board game (type it in)"))),
+    ...games.map(g => h("option", { value: g.key }, g.icon + " " + I18N.tr(g.title))));
+  const txt = h("input", { type: "text", maxlength: 60, placeholder: I18N.tr(T("e.g. Monopoly")) });
+  if (value && value.key && value.key.startsWith("g:") && games.some(g => g.key === value.key.slice(2))) sel.value = value.key.slice(2);
+  else if (value && value.title) { sel.value = BOARD; txt.value = value.title; }
+  sel.onchange = () => { txt.hidden = sel.value !== BOARD; if (!txt.hidden) txt.focus(); };
+  txt.hidden = sel.value !== BOARD;
+  return { el: h("div.ftg-pick", sel, txt),
+    value: () => sel.value === BOARD ? (txt.value.trim() ? { title: txt.value.trim() } : null) : sel.value ? { game: sel.value } : null };
+}
+
+// `settings`: the parent area adds its ⚙️ box (switch, coin price, hours) at the end of the section
+async function familyTimeSection(me = S.profile, { settings = null } = {}) {
+  const parent = me.role === "parent";
+  const sec = h("section.card.ftg");
+  const draw = async () => {
+    let d;
+    try { d = await api("community/familytime"); } catch (e) { return sec.replaceChildren(h("h2", "🎲 ", T("FamilyTime games")), h("p.bad", e.message)); }
+    if (!parent && (!d.enabled || !d.events.length)) { sec.hidden = true; return; }     // switched off or nothing planned: children see nothing
+    sec.hidden = false;
+    sec.replaceChildren(...[h("h2", "🎲 ", T("FamilyTime games")),
+      h("p.small.muted", T("Wish a game for the next FamilyTime – if there are several wishes, the family votes.")),
+      parent && !d.enabled ? h("p.warn-text", T("Game wishes are switched off – children see nothing of it.")) : null,
+      d.events.length ? h("div.ftg-list", ...d.events.map(e => card(e, d))) : h("p.small.muted", T("No FamilyTime planned in the calendar yet.")),
+      settings ? settings(draw) : null].filter(Boolean));
+  };
+  const call2 = async (path, opts, msg) => { try { await api(path, opts); if (msg) toast(msg, "good"); draw(); } catch (e) { toast(e.message, "bad"); } };
+  const pickDialog = (title, games, hint, ok, wishes = []) => {
+    const p = ftPicker(games);
+    const m = modal(h("div.form", h("h2", title), hint ? h("p.small.muted", hint) : null,
+      wishes.length ? [h("b", T("One of the wishes")), h("div.row.wrap", ...wishes.map(o => h("button.btn.small.ghost", { type: "button", onclick: () => { m.close(); ok({ choice: o.key }); } },
+        o.icon + " ", C(ftTitle(o))))), h("b", T("Or another game"))] : null, p.el,
+      h("div.row", h("button.btn", { onclick: () => { const v = p.value(); if (!v) return toast(T("Which game? Choose one or type a board game"), "bad"); m.close(); ok(v); } }, "✓ ", T("OK")),
+        h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  };
+  function card(e, d) {
+    const base = `community/familytime/${e.id}`;
+    const head = h("div.row.ftg-head", h("span.big-ic", e.icon || "👨‍👩‍👧"), h("div.grow", C(e.title, "strong"), h("br"), h("span.small.muted", ftWhen(e))),
+      e.game ? h("span.chip.closed", "✓ ", T("Game set")) : e.status === "vote" ? h("span.chip.ftg-voting", T("Vote")) : e.status === "tie" ? h("span.chip.ftg-voting", T("Tie"))
+        : e.wishes_open ? h("span.chip.collect", T("Wishes")) : null);
+    const out = [head];
+    if (e.game) {
+      out.push(h("div.row.ftg-game", h("span.big-ic", e.game.icon), h("div.grow", h("small.muted", T("We play")), h("br"), C(ftTitle(e.game), "strong"), h("br"), h("span.small.muted", ftHow(e.game)))));
+      if (parent) out.push(h("div.row.wrap.ftg-ctl", h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(e.game.how === "bought"
+        ? T("Remove the game? {0} gets the coins back.") : T("Remove the game?")).replace("{0}", e.game.by || "?")) && call2(base + "/remove", { method: "POST" }) }, "✕ ", T("Remove the game"))));
+      return h("div.topic.ftg-ev", ...out);
+    }
+    // the wishes – the same game wished twice is one line (and one option of the vote)
+    const groups = new Map();
+    for (const w of e.wishes) { if (!groups.has(w.key)) groups.set(w.key, { ...w, names: [] }); groups.get(w.key).names.push(w.name || "?"); }
+    if (e.status === "wish" || e.status === "skipped") {
+      out.push(groups.size ? h("ul.ftg-wishes", ...[...groups.values()].map(w => h("li.row", h("span", w.icon), C(ftTitle(w), "strong.grow"), h("span.small.muted", C(w.names.join(", "))))))
+        : h("p.small.muted", T("No wishes yet.")));
+      if (e.wishes_open) {
+        const p = ftPicker(d.games, e.my_wish);
+        out.push(h("div.ftg-mine", h("b", e.my_wish ? T("Your wish") : T("What would you like to play?")), p.el,
+          h("div.row.wrap", h("button.btn.small", { onclick: () => { const v = p.value(); if (!v) return toast(T("Which game? Choose one or type a board game"), "bad");
+            call2(base + "/wish", { method: "POST", body: v }, T("Wish saved")); } }, "🙋 ", e.my_wish ? T("Change my wish") : T("Wish")),
+            e.my_wish ? h("button.btn.small.ghost", { onclick: () => call2(base + "/wish", { method: "DELETE" }) }, T("Take back")) : null),
+          h("p.small.muted", I18N.tr(T("Wishes until {0}")).replace("{0}", ftWhen({ start: e.wish_until })))));
+      } else if (e.status === "skipped") out.push(h("p.small.muted", T("No vote this time – the parents decide.")));
+      else out.push(h("p.small.muted", T("The wishes are closed.")));
+    }
+    if (e.status === "vote" || e.status === "tie") {
+      const max = Math.max(1, ...e.options.map(o => o.votes || 0));
+      const results = h("div.results", ...e.options.map(o => h("div.res",
+        h("div.row.small", h("span", o.icon + " "), C(ftTitle(o), "span.grow"), e.my_vote === o.key ? "✅ " : "", o.tie ? "⚖️ " : "", o.votes != null ? h("b", String(o.votes)) : null),
+        o.votes != null ? h("div.res-bar", h("i", { style: { width: (100 * (o.votes || 0) / max) + "%" } })) : null,
+        o.names && o.names.length ? h("div.small.muted", C(o.names.join(", "))) : null)));
+      const ballot = () => h("div.vote-list", ...e.options.map(o => h("button.vote" + (e.my_vote === o.key ? ".mine" : ""),
+        { onclick: () => call2(base + "/vote", { method: "POST", body: { choice: o.key } }, T("Vote saved")) },
+        h("span", e.my_vote === o.key ? "✅ " : "⬜ "), o.icon + " ", C(ftTitle(o)), h("span.small.muted", " · ", C(o.by.join(", "))))));
+      if (e.status === "tie") out.push(h("p", "⚖️ ", T("Tie! The parents decide.")), results);
+      else out.push(...(e.my_vote ? [results, h("button.link.small", { onclick: ev => ev.currentTarget.replaceWith(ballot()) }, T("Change my vote"))] : [h("b", T("Vote now!")), ballot()]),
+        h("p.small.muted", I18N.tr(T("Votes: {0} of {1}")).replace("{0}", e.voters).replace("{1}", e.members),
+          parent && e.missing.length ? " · " + I18N.tr(T("missing: {0}")).replace("{0}", e.missing.join(", ")) : ""));
+      if (parent && e.status === "tie") out.push(h("div.row.wrap.ftg-ctl", ...e.options.filter(o => o.tie).map(o => h("button.btn.small", {
+        onclick: () => call2(base + "/set", { method: "POST", body: { choice: o.key } }) }, "✓ ", C(ftTitle(o)))),
+        h("button.btn.small.ghost", { onclick: () => call2(base + "/set", { method: "POST", body: { random: true } }) }, "🎲 ", T("Random"))));
+    }
+    if (e.can_buy) out.push(h("div.row.wrap.ftg-buy",
+      h("button.btn.small.ftg-buy-btn", { disabled: d.coins < d.price, onclick: () => pickDialog("🪙 " + I18N.tr(T("Fix a game")), d.games,
+        I18N.tr(T("For {0} coins the game is set firmly on this FamilyTime – the wishes and the vote end.")).replace("{0}", d.price),
+        v => confirm(I18N.tr(T("Pay {0} coins?")).replace("{0}", d.price)) && call2(base + "/buy", { method: "POST", body: v }, T("The game is set!"))) },
+        "🪙 ", I18N.tr(T("Fix a game for {0} coins")).replace("{0}", d.price)),
+      d.coins < d.price ? h("span.small.muted", I18N.tr(T("You have {0} coins")).replace("{0}", Math.floor(d.coins))) : null));
+    if (parent) out.push(h("div.row.wrap.ftg-ctl",
+      ["wish", "skipped"].includes(e.status) && e.wishes.length ? h("button.btn.small", { onclick: () => call2(base + "/start", { method: "POST" }) }, "🗳️ ", T("Start the vote")) : null,
+      e.status === "vote" ? h("button.btn.small", { onclick: () => call2(base + "/end", { method: "POST" }) }, "🏁 ", T("End the vote")) : null,
+      h("button.btn.small.ghost", { onclick: () => pickDialog("🎲 " + I18N.tr(T("Set a game")), d.games, null, v => call2(base + "/set", { method: "POST", body: v }), [...groups.values()]) }, "🎲 ", T("Set a game")),
+      ["wish", "vote", "tie"].includes(e.status) ? h("button.btn.small.ghost", { onclick: () => call2(base + "/skip", { method: "POST" }) }, "⏭ ", T("Skip the vote")) : null,
+      e.wishes.length ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Clear all wishes and votes?"))) && call2(base + "/clear", { method: "POST" }) }, "🧹 ", T("Clear wishes")) : null));
+    return h("div.topic.ftg-ev", ...out);
+  }
+  draw();
+  return sec;
+}
+
 function pollDialog(done) {
   const q = h("input", { type: "text", maxlength: 200, placeholder: I18N.tr(T("e.g. Which pizza on Friday?")) });
   const list = h("div.poll-opts");
@@ -629,6 +750,8 @@ const pts = n => I18N.tr(+n === 1 ? T("1 point") : T("{0} points")).replace("{0}
 
 function historyText(e) {
   const d = e.data;
+  if (e.kind === "familytime") return ["🎲", I18N.tr(T("FamilyTime {0}: we play {1}")).replace("{0}", d.date ? fmtDate(d.date, { day: "numeric", month: "short" }) : "")
+    .replace("{1}", d.app ? I18N.tr(d.game) : d.game) + " · " + ftHow({ how: d.how, by: d.by }), d.mine ? "⭐" : ""];
   if (e.kind === "quiz") return ["🎯", I18N.tr(T("Family quiz «{0}»: place {1} of {2} · {3}")).replace("{0}", d.quiz).replace("{1}", d.place).replace("{2}", d.of).replace("{3}", pts(d.points)), d.won ? "🏆" : ""];
   if (e.kind === "council") return ["🗳️", I18N.tr(T("Family council «{0}»: {1}")).replace("{0}", d.topic).replace("{1}", d.decided === false ? I18N.tr(T("No decision")) : (d.winners || []).join(" / ") || "–"), d.mine_won ? I18N.tr(T("your idea!")) : ""];
   if (e.kind === "bingo") return ["🎱", I18N.tr(T("Bingo with {0} players: {1} won after {2} balls")).replace("{0}", d.players).replace("{1}", d.winner).replace("{2}", d.balls), d.won ? "🏆" : ""];

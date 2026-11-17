@@ -2262,6 +2262,84 @@ def poll_delete(poll_id: int, request: Request, prof: dict = Learner) -> dict:
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- FamilyTime: game wishes, the vote, a game bought with coins
+class FtWishIn(BaseModel):
+    game: str | None = None              # a family game of the app (key) …
+    title: str | None = Field(default=None, max_length=200)    # … or a board game typed in (max. 60 letters kept)
+
+
+class FtVoteIn(BaseModel):
+    choice: str = Field(max_length=200)
+
+
+class FtSetIn(BaseModel):
+    game: str | None = None
+    title: str | None = Field(default=None, max_length=200)
+    choice: str | None = Field(default=None, max_length=200)   # one of the wishes
+    random: bool = False                 # 🎲 among the leaders of a tie (or all wishes)
+
+
+@router.get("/familytime")
+def familytime(request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.state, prof)
+
+
+@router.post("/familytime/{eid}/wish")
+def familytime_wish(eid: int, body: FtWishIn, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.wish, prof, eid, body.game, body.title)
+    return {"ok": True}
+
+
+@router.delete("/familytime/{eid}/wish")
+def familytime_unwish(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.unwish, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/vote")
+def familytime_vote(eid: int, body: FtVoteIn, request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.vote, prof, eid, body.choice)
+
+
+@router.post("/familytime/{eid}/buy")
+def familytime_buy(eid: int, body: FtWishIn, request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.buy, prof, eid, body.game, body.title)
+
+
+@router.post("/familytime/{eid}/start")
+def familytime_start(eid: int, request: Request, prof: dict = Learner) -> dict:
+    return {"status": _run(app_of(request).familytime.start_vote, prof, eid)}
+
+
+@router.post("/familytime/{eid}/end")
+def familytime_end(eid: int, request: Request, prof: dict = Learner) -> dict:
+    return {"status": _run(app_of(request).familytime.end_vote, prof, eid)}
+
+
+@router.post("/familytime/{eid}/set")
+def familytime_set(eid: int, body: FtSetIn, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.set_game, prof, eid, body.game, body.title, body.choice, body.random)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/skip")
+def familytime_skip(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.skip, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/remove")
+def familytime_remove(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.remove_game, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/clear")
+def familytime_clear(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.clear, prof, eid)
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------- personal history
 @router.get("/history")
 def history(request: Request, profile_id: int | None = None, prof: dict = Learner) -> list[dict]:

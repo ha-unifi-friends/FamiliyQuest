@@ -1804,11 +1804,36 @@ async function communityView(main) {
   who.onchange = drawHist;
   main.append(h("h1", T("Family")),
     h("p.muted", T("Family council, polls and Wichteln – children can open topics and vote too. The games are on their own page «Games».")),
+    await familyTimeSection(me, { settings: redraw => familyTimeSettings(redraw, true) }),
     await councilSection(me), await pollsSection(me),
     await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }),
     await wichtelnSection(me),
     section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
   drawHist();
+}
+
+// FamilyTime games (community.js familyTimeSection): on/off, the coin price of «fix a game», when the wishes close –
+// in the «Family» tab (`inBox`: a small ⚙️ box at the end of the section) and in «Settings» (own section)
+function familyTimeSettings(after = null, inBox = false) {
+  const box = h("div" + (inBox ? ".game-settings.ftg-settings" : ""), h("p.small.muted", "…"));
+  call("parent/settings").then(s => {
+    const on = h("input", { type: "checkbox", checked: s.familytime_wishes !== false });
+    const price = h("input", { type: "number", min: 0, max: 10000, value: s.familytime_game_price ?? 150 });
+    const hours = h("input", { type: "number", min: 0, max: 336, value: s.familytime_vote_hours ?? 24 });
+    const save = async () => {
+      await call("parent/settings", { method: "PUT", body: { familytime_wishes: on.checked,
+        familytime_game_price: Math.max(0, Math.min(10000, Math.round(+price.value || 0))),
+        familytime_vote_hours: Math.max(0, Math.min(336, Math.round(+hours.value || 0))) } });
+      toast(T("Saved"), "good"); if (after) after();
+    };
+    box.replaceChildren(inBox ? h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")) : null,
+      h("label.check", on, T("Game wishes for FamilyTime (wishes, vote, buying a game)")),
+      h("div.grid2",
+        h("label.field", h("span", "🪙 ", T("Fix a game: price in coins")), price, h("span.hint", T("A child pays this to set the game of a FamilyTime that has none yet. 0 = buying is off."))),
+        h("label.field", h("span", "⏰ ", T("Wishes close (hours before)")), hours, h("span.hint", T("Then the vote starts by itself – one wish is set directly.")))),
+      h("button.btn.small", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
+  }).catch(() => box.replaceChildren());
+  return box;
 }
 
 // ---------------------------------------------------------------- games: per game active / without bots / inactive, start, coins, running tables
@@ -2364,8 +2389,8 @@ async function calendarView(main) {
   const time = e => e.all_day ? "" : fmtTime(e.start) + " ";
   const open = e => e.readonly ? toast("🔒 " + I18N.tr(T("From Home Assistant – read only"))) : eventDialog(e);
   const chip = e => h("button.cal-ev" + (e.readonly ? ".ro" : "") + (e.kind ? "." + e.kind : ""), {
-    title: (e.readonly ? "🔒 " + e.calendar + " · " : "") + e.title, onclick: ev => { ev.stopPropagation(); open(e); } },
-    e.icon ? e.icon + " " : "", time(e), C(e.title));
+    title: (e.readonly ? "🔒 " + e.calendar + " · " : "") + e.title + (e.game ? " · " + ftGameLine(e.game) : ""), onclick: ev => { ev.stopPropagation(); open(e); } },
+    e.icon ? e.icon + " " : "", time(e), C(e.title), e.game ? h("span.cal-game", " · " + e.game.icon + " ", C(ftTitle(e.game))) : null);
   const today = isoDay(new Date());
   const go = (v, date) => { P.calView = v; P.calDate = date ? isoDay(date) : P.calDate; render(); };
   const step = n => {
@@ -2427,7 +2452,8 @@ async function calendarView(main) {
   } else {
     const list = sorted(evs).sort((a, b) => a.start.localeCompare(b.start));
     body = h("ul.cal-list", ...list.map(e => h("li.row", { onclick: () => open(e) },
-      h("span.cal-when", fmtRange(e)), h("span.grow", e.icon ? e.icon + " " : "", C(e.title)), e.readonly ? h("span.small.muted", "🔒 ", C(e.calendar)) : null)),
+      h("span.cal-when", fmtRange(e)), h("span.grow", e.icon ? e.icon + " " : "", C(e.title),
+        e.game ? [h("br"), h("span.small.ftg-line", e.game.icon + " ", C(ftGameLine(e.game)))] : null), e.readonly ? h("span.small.muted", "🔒 ", C(e.calendar)) : null)),
       !list.length ? h("li.muted", T("No events this month.")) : null);
   }
   main.append(
@@ -2487,6 +2513,7 @@ function eventDialog(e) {
     h("div.grid2", h("label.field", T("From"), from), h("label.field", T("To"), to)),
     h("label.field", T("Symbol"), h("div.row.wrap", icon, ...EVENT_ICONS.map(ic => h("button.icon-btn", { type: "button", onclick: () => { icon.value = ic; } }, ic)))),
     offBox, note,
+    e.game ? h("p.small.ftg-line", e.game.icon + " ", C(ftGameLine(e.game)), " · ", h("button.link.small", { type: "button", onclick: () => { m.close(); P.tab = "community"; location.hash = "community"; render(); } }, T("FamilyTime games ›"))) : null,
     h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")), h("span.grow"),
       !isNew ? h("button.btn.small.bad", { onclick: async () => { if (!confirm(I18N.tr(T("Delete this event?")))) return; await call(`parent/calendar/${e.id}`, { method: "DELETE" }); m.close(); render(); } }, "🗑 ", T("Delete")) : null)));
   title.focus();
@@ -2689,6 +2716,8 @@ async function settingsView(main) {
         h("span.hint", T("Outfits, houses and furniture for the pets. XP spent there do not lower the level.")))),
     section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels)),
     h("button.btn.big", { onclick: save }, "💾 ", T("Save")),
+    section("👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), familyTimeSettings(),
+      h("button.link.small", { onclick: () => { P.tab = "community"; location.hash = "community"; render(); } }, T("Wishes and votes: tab «Family» ›"))),
     await crestSection(),
     linkSection(),
     themesSection(),
