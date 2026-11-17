@@ -175,9 +175,20 @@ function werwolfLive(box, me, back) {
     const chip = st.phase === "lobby" || st.phase === "done" ? null
       : st.phase === "night" || st.phase === "roles" ? h("span.chip.ww-phase", "🌙 ", String(Math.max(1, st.night)))
       : h("span.chip.ww-phase", "☀️ ", String(st.night));
-    return h("div.quiz-head.dm-head.ww-head", h("h1", WW_ICON, " ", wwName()), h("div.row", chip,
-      st.my_role && st.phase !== "done" ? h("button.btn.small.ghost.ww-rolebtn", { onclick: () => openModal(roleCard(true)), title: T("My role") }, "🎭") : null,
-      h("button.btn.small.ghost", { onclick: () => openModal(werwolfRulesView(st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜")));
+    // ☰: rules, guests (lobby), the actions of whoever leads (roles, move on when somebody is idle, voice, end), language
+    const lead = isLead() && st.status !== "done";
+    const skip = { night: ["⏭", T("Next")], hunter: ["⏭", T("No shot")] }[st.phase];
+    const menu = gameMenu({ rules: () => werwolfRulesView(st.coins_on ? st.rewards : null),
+      invite: !me.guest && st.phase === "lobby" ? "werwolf" : null,
+      actions: [
+        { ic: "🎭", label: T("Roles"), hidden: !lead || st.phase !== "lobby", onclick: lobbyRoles },
+        { ic: skip ? skip[0] : "⏭", label: skip ? skip[1] : "", hidden: !lead || !skip, confirm: T("Move on now?"), onclick: () => act("next") },
+        { ic: voiceOn() ? "🔊" : "🔇", label: T("Narrator voice on this device"), hidden: !lead || st.phase === "lobby",
+          onclick: () => { try { localStorage.setItem("fq.ww.voice", voiceOn() ? "0" : "1"); } catch {} draw(true); } },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game? Nobody wins."), onclick: () => act("end") }],
+      onLeave: st.status !== "done" ? () => { stop(); back(); } : null });
+    return h("div.quiz-head.dm-head.ww-head", h("div.row.head-title", menu, h("h1", WW_ICON, " ", wwName())), h("div.row", chip,
+      st.my_role && st.phase !== "done" ? h("button.btn.small.ghost.ww-rolebtn", { onclick: () => openModal(roleCard(true)), title: T("My role") }, "🎭") : null));
   }
 
   // ---------- the secret role card: tap to reveal, tap to hide (hides by itself after a while)
@@ -236,25 +247,16 @@ function werwolfLive(box, me, back) {
         h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   }
 
+  // only the main action of the moment stays as a big button – everything else is in ☰
   function hostBar() {
-    const lead = isLead() && st.status !== "done";
-    const inv = !me.guest && st.phase === "lobby" ? h("button.btn.ghost.small", { onclick: () => guestInvite("werwolf") }, "👥 ", T("Invite guests")) : null;
-    if (!lead) return inv ? h("div.row.center.host-bar", inv) : null;
-    const voice = h("button.btn.ghost.small", { title: T("Narrator voice on this device"), onclick: () => {
-      try { localStorage.setItem("fq.ww.voice", voiceOn() ? "0" : "1"); } catch {}
-      draw(true);
-    } }, voiceOn() ? "🔊" : "🔇");
-    const nextLabel = { roles: ["🌙 ", T("Night falls")], night: ["⏭ ", T("Next")], hunter: ["⏭ ", T("No shot")], day: ["🗳️ ", T("Vote now")],
-      vote: ["✅ ", T("Close the vote")], verdict: ["🌙 ", T("Night falls")] }[st.phase];
-    const bigNext = st.phase === "roles" || st.phase === "verdict";
+    if (!(isLead() && st.status !== "done")) return null;
+    const nextLabel = { roles: ["🌙 ", T("Night falls")], day: ["🗳️ ", T("Vote now")], vote: ["✅ ", T("Close the vote")], verdict: ["🌙 ", T("Night falls")] }[st.phase];
+    if (st.phase === "lobby") return h("div.row.center.host-bar.ww-bar",
+      h("button.btn", { disabled: st.players.length < st.min || !!st.deck_error, onclick: () => act("begin") }, "▶ ", T("Start")));
+    if (!nextLabel) return null;
     return h("div.row.center.host-bar.ww-bar",
-      st.phase === "lobby" ? h("button.btn", { disabled: st.players.length < st.min || !!st.deck_error, onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      st.phase === "lobby" ? h("button.btn.ghost.small", { onclick: lobbyRoles }, "🎭 ", T("Roles")) : null,
-      inv,
-      nextLabel ? h("button.btn" + (bigNext ? "" : ".ghost.small"), { title: T("Moves on – e.g. when somebody is idle"),
-        onclick: () => { if (bigNext || st.phase === "day" || confirm(I18N.tr(T("Move on now?")))) act("next"); } }, nextLabel[0], nextLabel[1]) : null,
-      st.phase !== "lobby" ? voice : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game? Nobody wins.")))) act("end"); } }, T("End")));
+      h("button.btn", { title: T("Moves on – e.g. when somebody is idle"),
+        onclick: () => { if (st.phase !== "vote" || confirm(I18N.tr(T("Move on now?")))) act("next"); } }, nextLabel[0], nextLabel[1]));
   }
 
   function leadLine() {

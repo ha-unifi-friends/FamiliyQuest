@@ -523,15 +523,24 @@ function dorfmarktLive(box, me, back) {
     if (!st) return show(h("section.card.center", h("div.big-ic", MK_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     if (!MK_BOARD) return;
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", MK_ICON, " ", mkName()), h("div.row",
-      st.phase === "play" ? h("button.btn.small.ghost", { onclick: () => { zoom = !zoom; draw(true); }, title: T("Zoom") }, zoom ? "🔎−" : "🔎+") : null,
-      h("button.btn.small.ghost", { onclick: () => openModal(dorfmarktRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜")));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => lead("begin") }, "▶ ", T("Start")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("dorfmarkt") }, "👥 ", T("Invite guests")) : null,
-      st.phase === "play" ? h("button.btn.ghost.small", { onclick: () => lead("pause", { on: !st.paused }) }, st.paused ? "▶ " : "⏸ ", st.paused ? T("Resume") : T("Pause")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) lead("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("dorfmarkt") }, "👥 ", T("Invite guests")));
+    // ☰: rules, guests, the actions of whoever leads (pause / resume, end), language
+    const lead_ = isHost() && st.status !== "done";
+    const menu = gameMenu({ rules: () => dorfmarktRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "dorfmarkt" : null,
+      actions: [
+        { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Resume") : T("Pause"), hidden: !lead_ || st.phase !== "play", onclick: () => lead("pause", { on: !st.paused }) },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead_, confirm: T("End the game?"), onclick: () => lead("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", MK_ICON, " ", mkName())), h("div.row",
+      st.phase === "play" ? h("button.btn.small.ghost", { onclick: () => { zoom = !zoom; draw(true); }, title: T("Zoom") }, zoom ? "🔎−" : "🔎+") : null));
+    // only the main action of the moment stays as a big button: Start in the lobby, Resume in a paused game
+    const host = !lead_ ? null
+      : st.phase === "lobby" ? h("div.row.center.host-bar", h("button.btn", { onclick: async () => {
+          try { const r = await beginGame("community/dorfmarkt/begin", st.players); if (r) { st = r; draw(true); } } catch (e) { toast(e.message, "bad"); }
+        } }, "▶ ", T("Start")))
+      : st.phase === "play" && st.paused ? h("div.row.center.host-bar", h("button.btn", { onclick: () => lead("pause", { on: false }) }, "▶ ", T("Resume")))
+      : null;
+    if (st.phase !== "lobby") starterBanner(st.starter, "dorfmarkt");
     if (st.phase === "done" && st.players[0] && st.players[0].money != null) return show(head, result());
     if (st.phase === "done" || st.phase === "lobby" || !st.joined) {
       if (!st.joined && st.phase !== "lobby" && st.phase !== "done") {

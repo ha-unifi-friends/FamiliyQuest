@@ -4,6 +4,16 @@
 
 const SONG_ANSWERS = { both: T("Artist and title"), either: T("Artist or title"), artist: T("Only the artist"), title: T("Only the title") };
 
+// the rules of the running game – for ☰ › Rules
+function songRulesView(r) {
+  return h("div.form", h("h2", "📜 ", T("Rules")), h("ul.small",
+    h("li", I18N.tr(T("Who buzzes says: {0}")).replace("{0}", I18N.tr(SONG_ANSWERS[r.answer] || SONG_ANSWERS.both))),
+    h("li", I18N.tr(T("The others judge by")), ": ", I18N.tr(r.vote === "unanimous" ? T("Unanimous") : T("Majority"))),
+    h("li", T("Right: +1 point · wrong: −1 point")),
+    h("li", I18N.tr(T("First to {0} points wins.")).replace("{0}", r.target)),
+    h("li", I18N.tr(T("Songs at most")), ": ", String(r.max_songs))));
+}
+
 async function songStartDialog(onStarted) {
   let d = { ha: false, players: [], rules: {} };
   try { d = await api("community/song/players"); } catch {}
@@ -61,24 +71,29 @@ function songLive(box, me, back) {
     box.classList.toggle("quiz-full", !!st); document.body.classList.toggle("quiz-open", !!st);
     if (!st) return show(h("section.card.center", h("div.big-ic", "🎵"), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     const close = h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕");
-    const head = h("div.quiz-head", h("h1", "🎵 ", T("Guess the song")),
+    // ☰: rules, guests (everybody of the family), pause / «nobody knows it» / end for whoever leads, language
+    const leads = isHost() && running;
+    const menu = gameMenu({ rules: () => songRulesView(st.rules),
+      invite: !me.guest && running ? "song" : null,
+      actions: [
+        { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Go on") : T("Pause"), hidden: !leads || st.phase !== "playing", onclick: () => act("pause", { on: !st.paused }) },
+        { ic: "⏭", label: T("Nobody knows it"), hidden: !leads || st.phase !== "playing", onclick: () => act("next") },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !leads, confirm: T("End the game?"), onclick: () => act("end") }],
+      onLeave: () => { stop(); back(); } });
+    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎵 ", T("Guess the song"))),
       st.song ? h("span.chip", I18N.tr(T("Song {0} of {1}")).replace("{0}", st.song).replace("{1}", st.rules.max_songs)) : null);
     const scores = h("section.card", h("ol.scores", ...st.players.map((p, i) => h("li" + (p.id === me.id ? ".me" : ""),
       h("b", (i + 1) + "."), avatarSvg(p.avatar || {}, 28), C(p.name, "span.grow"), h("span", String(p.points))))),
       h("p.small.muted", I18N.tr(T("First to {0} points wins.")).replace("{0}", st.rules.target)));
-    let lead = isHost() && running ? h("div.row.center.host-bar",
+    // the main flow stays as buttons (start, volume, «go on» while paused, close the vote, next song) – the rest is in ☰
+    const lead = leads ? h("div.row.center.host-bar",
       st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start")) : null,
       st.phase !== "lobby" ? h("span.row.song-vol", h("button.btn.ghost.small", { title: T("Quieter"), onclick: () => act("volume", { step: -1 }) }, "🔉 −"),
         h("b.small", "🔊 ", st.volume != null ? st.volume + " %" : "–"),
         h("button.btn.ghost.small", { title: T("Louder"), onclick: () => act("volume", { step: 1 }) }, "🔊 +")) : null,
-      st.phase === "playing" ? h("button.btn.ghost.small", { onclick: () => act("pause", { on: !st.paused }) }, st.paused ? "▶ " + I18N.tr(T("Go on")) : "⏸ " + I18N.tr(T("Pause"))) : null,
-      st.phase === "playing" ? h("button.btn.ghost.small", { onclick: () => act("next") }, "⏭ ", T("Nobody knows it")) : null,
+      st.phase === "playing" && st.paused ? h("button.btn.small", { onclick: () => act("pause", { on: false }) }, "▶ ", T("Go on")) : null,
       st.phase === "reveal" ? h("button.btn.small", { onclick: () => act("decide") }, "⚖️ ", T("Close the vote")) : null,
-      st.phase === "result" ? h("button.btn", { onclick: () => act("next") }, "⏭ ", T("Next song")) : null,
-      !me.guest && st.phase === "lobby" ? h("button.btn.ghost.small", { onclick: () => guestInvite("song") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end"); } }, T("End"))) : null;
-    // everybody of the family who plays may invite guests – not only who leads the game
-    if (!lead && !me.guest && running) lead = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("song") }, "👥 ", T("Invite guests")));
+      st.phase === "result" ? h("button.btn", { onclick: () => act("next") }, "⏭ ", T("Next song")) : null) : null;
     if (st.phase === "done") {
       const top = st.players[0];
       if (top && top.id === me.id && cheered !== st.game) { cheered = st.game; confetti(); try { Sound.play("done"); } catch {} }
