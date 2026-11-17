@@ -366,6 +366,25 @@ def test_auction_without_bids_and_too_little_money():
     assert t.owner(5) is None and t.st["stage"] == "done" and t.st["auction"] is None
 
 
+def test_auction_of_the_old_sealed_bid_format_does_not_break():
+    """A game saved during an auction of the old format (sealed bids: no price, leader, history) goes on."""
+    t, clock = table(3, rolls=[2, 3], auction=True)
+    t.roll("1")
+    t.skip("1")
+    t.st["auction"] = {"field": 5, "player": "1", "after": "done", "bids": {}, "until": clock.t + 5}
+    t.bid("2", 25)
+    assert t.st["auction"]["price"] == 25 and t.st["auction"]["leader"] == "2"
+    clock.t += dm.AUCTION_SECONDS + 1
+    assert t.tick() and t.owner(5) == "2" and t.st["stage"] == "done"
+    # without bids and without a deadline: it closes at the next tick – also with bots at the table
+    t, clock = table(1, bots=2, rolls=[2, 3], auction=True)
+    t.roll("1")
+    t.skip("1")
+    t.st["auction"] = {"field": 5, "player": "1", "bids": {"bot1": 100}}
+    t.tick()
+    assert t.st["auction"] is None or t.st["auction"].get("price") is not None
+
+
 # ---------------------------------------------------------------- trading
 def test_trade_offer_accept_decline_and_rules():
     t, _ = table(3)

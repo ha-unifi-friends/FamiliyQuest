@@ -444,12 +444,14 @@ async function beginGame(path, players, body = {}) {
 }
 
 // «🎲 Mia begins!» – once per game on every device (st.starter from cardgames.apply_starter)
-function starterBanner(starter, key) {
+// deals: the starter gets the dealer button (poker) – the first to act sits left of the big blind, so «… deals!»
+function starterBanner(starter, key, deals) {
   if (!starter || !starter.id) return;
   const k = "fq.starter." + key + "." + (starter.at || "");
   try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch {}
   if (starter.at && Date.now() / 1000 - starter.at > 120) return;           // an old game: no banner any more
-  const text = I18N.tr(starter.how === "dice" ? T("The dice decided: {0} begins!") : T("{0} begins!")).replace("{0}", starter.name);
+  const text = I18N.tr(deals ? (starter.how === "dice" ? T("The dice decided: {0} deals!") : T("{0} deals!"))
+    : starter.how === "dice" ? T("The dice decided: {0} begins!") : T("{0} begins!")).replace("{0}", starter.name);
   const b = h("div.starter-banner" + (starter.how === "dice" ? ".dice" : ""), h("span.starter-die", starter.how === "dice" ? "🎲" : "👉"), h("span", text));
   document.body.append(b);
   setTimeout(() => b.classList.add("gone"), 2600);

@@ -97,7 +97,8 @@ async function kartenlaufStartDialog(solo, onStarted) {
       h("span.muted", T("Coins only at a family table with at least two people of the family – not alone against bots, not for guests or bots."))) : null;
   const m = modal(h("div.form", h("h2", KL_ICON, " ", klName(), solo ? " – " + I18N.tr(T("alone against bots")) : ""),
     h("div.grid2", h("label.field", T("Players"), seats), h("label.field", T("Bots play"), level)),
-    h("p.small.muted", solo ? T("Bots take the other seats.") : T("Free seats are taken by bots when the game starts.")),
+    h("p.small.muted", solo ? T("Bots take the other seats.") : botsOn("kartenlauf") ? T("Free seats are taken by bots when the game starts.")
+      : T("Without bots only the people at the table play (2 to 4).")),
     h("div.cards-rules", teamLbl, sevenLbl, h("label.check", joker, T("The joker may be the card that wins"))),
     picker.el,
     coins,
