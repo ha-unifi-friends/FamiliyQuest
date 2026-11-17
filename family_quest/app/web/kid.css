@@ -48,7 +48,7 @@
 /* Learning page: «▶ Continue» sits inside the card, bottom right (it is its own button – a button cannot hold another one) */
 .subject-wrap { position: relative; display: grid; }
 .subject-wrap .subject { width: 100%; height: 100%; padding-bottom: 64px; }
-.subject-go { position: absolute; right: 12px; bottom: 12px; min-height: 44px; }
+.subject-go { position: absolute; right: 12px; bottom: 12px; }
 .learn-start { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .subject .next { color: var(--muted); }
 .due { display: inline-block; width: fit-content; font-size: .78rem; font-weight: 800; color: #fff; background: var(--warn);
@@ -482,6 +482,6 @@
 .table-note .btn.small { flex: none; }
 .table-note .icon-btn { flex: none; }
 /* children: tap targets of at least 44 px (Continue, + Start, Buy, quiz tabs, ⟳, avatar tabs) */
-.course-level .btn.small, .subject-go, .offer .btn, .inst-filter button, .av-tabs button, .quiz-running .btn, .learn-start .btn { min-height: 44px; }
+.screen .course-level .btn.small, .screen .btn.subject-go, .screen .offer .btn, .screen .inst-filter button, .screen .av-tabs button, .screen .quiz-running .btn, .screen .learn-start .btn { min-height: 44px; }
 .fq-head .icon-btn { min-width: 44px; min-height: 44px; }
 .inst-item > summary { min-height: 44px; }
