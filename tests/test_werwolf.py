@@ -384,6 +384,8 @@ def test_family_flow_coins_once_history_hat_and_guests(client):
     assert r["rewards"] == [7, 3, 1] and r["talks"] == [60, 120, 180, 300, 600] and r["presets"]["5"]["wolves"] == 1
     client.post("/api/community/werwolf/start", json={}, headers=hm)
     assert client.post("/api/community/werwolf/start", json={}, headers=heads[str(ids[1])]).status_code == 400
+    r = client.post("/api/community/werwolf/begin", headers=hm)
+    assert r.status_code == 400 and r.json()["detail"] == "At least 2 players are needed"      # alone: not even with bots
     # a guest via the invitation
     inv = client.post("/api/community/guests", json={"game": "werwolf"}, headers=heads[str(ids[1])]).json()["invite"]
     assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Werwölfe"
@@ -392,7 +394,6 @@ def test_family_flow_coins_once_history_hat_and_guests(client):
     gid = str(g["profile"]["id"])
     for path in ("start", "begin", "end", "next", "rules"):
         assert client.post("/api/community/werwolf/" + path, json={}, headers=hg).status_code in (401, 403), path
-    assert client.post("/api/community/werwolf/begin", headers=hm).status_code == 400        # only 2 players
     for pid in ids[1:]:
         client.post("/api/community/werwolf/join", headers=heads[str(pid)])
     # the leader changes the roles in the lobby
