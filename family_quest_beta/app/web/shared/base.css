@@ -1818,3 +1818,6 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
   .mk-live.quiz-full .host-bar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); margin-top: 4px; }
   .mk-live.quiz-full .card.mk-ctl { padding: 5px 8px; margin: 2px 0 4px; }
 }
+/* «Made with your AI» in «New quiz» (community.js) */
+.ai-box { margin: 12px 0 4px; padding: 12px 14px; background: var(--hover); box-shadow: none; }
+.ai-box h3 { margin: 0 0 4px; }

@@ -15,7 +15,7 @@ def import_bytes(fq, name: str, raw: bytes) -> list[dict]:
     low = name.lower()
     if low.endswith(".zip") or raw[:2] == b"PK":
         packs, media = parse_zip(raw)
-    elif low.endswith((".yaml", ".yml", ".json", ".txt")) or "." not in low:
+    elif low.endswith((".yaml", ".yml", ".json", ".txt", ".md")) or "." not in low:
         try:
             packs, media = parse_text(low, raw.decode("utf-8-sig")), {}
         except UnicodeDecodeError:
