@@ -43,8 +43,8 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
 | **Jass** – the Swiss card game with bots as partners or opponents | **Chess** – against bots or each other, games can be paused | **Dorfmarkt** – trading board game in a Swiss village |
 | ![Heimwärts](docs/screenshots/game-heimwaerts.png) | ![Guests via QR code](docs/screenshots/guests.png) | ![Shop and pranks](docs/screenshots/shop.png) |
 | **Heimwärts** – race board game for 2–4 | **Guests welcome** – grandparents, aunts and godparents join with a QR code, also from the guest Wi-Fi | **Shop** – avatar items and pranks like the ink bomb |
-| ![Pets](docs/screenshots/pets.png) | ![Internet time with UniFi](docs/screenshots/internet.png) | ![My devices](docs/screenshots/devices.png) |
-| **Pets** – feed, play, wash; pet sitting and babies | **Internet time** – directly integrated with UniFi: the child starts and pauses its own online time | **My devices** – the child switches and dims the lights of its own room |
+| ![Pets](docs/screenshots/pets.png) | ![Me: points, tasks, internet time](docs/screenshots/internet.png) | ![My devices](docs/screenshots/devices.png) |
+| **Pets** – feed, play, wash; pet sitting and babies | **Me** – points, open tasks, the internet time (directly integrated with UniFi: one button to start and pause) and the lights at a glance | **My devices** – the child switches and dims the lights of its own room |
 | ![Family council](docs/screenshots/council.png) | ![Polls](docs/screenshots/polls.png) | ![Wichteln](docs/screenshots/wichteln.png) |
 | **Family council** – anybody can bring up a topic, everybody adds ideas, then the family votes secretly | **Polls** – ask the family something, everybody answers on their own phone | **Wichteln** – secret gift giving: who gives to whom is drawn, everybody sees only their own |
 | ![My card box](docs/screenshots/cardbox.png) | | |

@@ -285,6 +285,7 @@
 /* internet time */
 .net { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .net.on { box-shadow: 0 0 0 4px var(--good), var(--shadow); }
+.net-inline.on { box-shadow: inset 0 0 0 3px var(--good); }   /* inside a card: the frame stays inside */
 .net-inline { margin: 12px 0; padding: 14px; border-radius: 16px; background: var(--soft, rgba(127,127,127,.08)); }
 .net-inline .net-ic { font-size: 2rem; } .net-inline h2 { font-size: 1.05rem; margin: 0; } .net-inline .net-clock { font-size: 1.8rem; }
 .net-ic { font-size: 2.6rem; }
@@ -439,3 +440,9 @@
   .fq-head .me, .fq-head .clk { padding: 4px 7px; }
   .fq-head .clk .tl { gap: 5px; }
 }
+/* «Me»: the summary at the top (meSummary) */
+.me-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.me-tile { display: grid; justify-items: center; gap: 2px; padding: 10px 6px; border-radius: 14px; background: var(--hover); text-align: center; }
+.me-tile .me-ic { font-size: 1.5rem; line-height: 1.1; }
+.me-tile b { font-size: 1.25rem; }
+.me-sum .net { margin-top: 12px; }
