@@ -485,7 +485,7 @@ def test_twelve_players_no_more_and_running_list_end(client):
     assert v["phase"] == "roles" and v["deck"]["wolves"] == 3 and len(v["players"]) == 12
     games = client.get("/api/parent/games/running", headers=phd).json()
     g = next(x for x in games if x["game"] == "werwolf")
-    assert g["icon"] == "🐺" and g["title"] == "Werwölfe" and g["players"] == 12 and g["host"] == "Mia"
+    assert g["icon"] == "🐺" and g["title"] == "Werewolves" and g["players"] == 12 and g["host"] == "Mia"
     client.post("/api/parent/games/end", json={"key": g["key"]}, headers=phd)
     v = get(client, hm)
     assert v["phase"] == "done" and v["winner"] is None

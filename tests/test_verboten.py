@@ -63,6 +63,24 @@ def test_teams_schedule_and_alone():
     assert not t4.teams() and len(t4.st["schedule"]) == 4
 
 
+def test_the_starter_keeps_the_lobby_teams():
+    """apply_starter turns the player list round – the teams of the lobby (every second seat) must stay, the starter
+    only explains first (5 players: an odd rotation would otherwise mix the teams)."""
+    from familyquest.cardgames import apply_starter
+    for n, chosen in ((5, "2"), (4, "2"), (5, "5"), (6, "3")):
+        players = [{"id": str(i), "name": f"P{i}"} for i in range(1, n + 1)]
+        lobby = {p["id"]: str(i % 2) for i, p in enumerate(players)}
+        st = {"kind": "verboten", "rules": {"level": "mixed", "time": 60, "rounds": 1, "teams": True, "skip_penalty": 0},
+              "players": players, "phase": "lobby"}
+        seats = [p["id"] for p in players]
+        apply_starter(st, "choose", chosen, leader="1")
+        t = vw.Table(st, random.Random(1), now=Clock())
+        t.begin(seats)
+        assert t.st["team_of"] == lobby and t.st["explainer"] == chosen
+        sched = t.st["schedule"]
+        assert all(lobby[a] != lobby[b] for a, b in zip(sched[::2], sched[1::2]))      # the teams take turns
+
+
 def test_only_the_explainer_starts_and_marks_the_other_team_buzzes():
     c = Clock()
     t = table(4, clock=c)

@@ -118,13 +118,17 @@ class Table:
         return min(int(self.r.get("rounds") or 1), max(0, self.st.get("turn", 0)) // per + 1)
 
     # ---------- the game
-    def begin(self) -> None:
+    def begin(self, seats: list[str] | None = None) -> None:
+        """seats: the seat order of the lobby (the teams: every second seat) – the player list itself may be turned
+        round by the starter (cardgames.apply_starter); the starter's team then explains first, the teams stay."""
         order = self.order()
         teams = bool(self.r.get("teams")) and len(order) >= MIN_TEAMS
         rounds = int(self.r.get("rounds") or 1)
         if teams:
-            team_of = {p: str(i % 2) for i, p in enumerate(order)}
-            a, b = [p for p in order if team_of[p] == "0"], [p for p in order if team_of[p] == "1"]
+            seats = [p for p in (seats or []) if p in order] + [p for p in order if p not in (seats or [])]
+            team_of = {p: str(seats.index(p) % 2) for p in order}
+            first = team_of[order[0]]                                   # the starter's team explains first
+            a, b = [p for p in order if team_of[p] == first], [p for p in order if team_of[p] != first]
             schedule = []
             for i in range(rounds * max(len(a), len(b))):          # the teams take turns, members in turn
                 schedule += [a[i % len(a)], b[i % len(b)]]
@@ -391,20 +395,21 @@ class Verboten(CardGames):
             st = json.loads(row["state"])
             if st["phase"] != "lobby":
                 raise CommunityError("The game has already started")
-            fn(st)
+            fn(st, row)
             self._save(row, st)
 
     def begin(self, kind: str, viewer: int, starter=None) -> None:
-        def go(st):
+        def go(st, row):
             if len(st["players"]) < MIN_PLAYERS:
                 raise CommunityError("Wait for a second player")
-            apply_starter(st, starter_mode(self.db), starter, leader=st["players"][0]["id"])   # who explains first
-            self.table(st).begin()
+            seats = [p["id"] for p in st["players"]]          # the teams as shown in the lobby
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])   # only who explains first
+            self.table(st).begin(seats)
         self._lobby(viewer, go)
 
     def mix(self, viewer: int) -> None:
         """Who leads mixes the seats in the lobby (the teams: every second seat)."""
-        self._lobby(viewer, lambda st: (self.rng or random).shuffle(st["players"]))
+        self._lobby(viewer, lambda st, row: (self.rng or random).shuffle(st["players"]))
 
     def _act(self, pid: int, fn):
         with self.lock:

@@ -8,8 +8,8 @@ kennel with 4 marbles and 4 home fields that branch off the ring just before the
 2 players sit opposite (seats 0, 2), 3 players on seats 0, 1, 2. 4 players: teams of two (partners opposite) or alone.
 
 Cards: two French decks with 3 jokers each (110 cards, only the rank counts). Rounds deal 6, 5, 4, 3, 2 cards, then
-again 6 … (a fresh shuffled deck with every 6). The dealer rotates; the player after the dealer starts. With teams
-every player first passes one card face-down to the partner.
+again 6 … (a fresh shuffled deck with every 6). The dealer rotates; the player after the dealer starts (round 1: the
+chosen starter – the seat before them deals). With teams every player first passes one card face-down to the partner.
   A    1 or 11 forward, or bring a marble out onto its start field
   K    13 forward, or bring a marble out
   Q    12 forward
@@ -188,7 +188,7 @@ class Table:
             self.rng.shuffle(deck)
             self.st["deck"] = deck
             self.st["discard"] = []
-        dealer = order[(rnd - 1) % len(order)]
+        dealer = order[(rnd - 2) % len(order)]          # the seat before the starter (order[0]) deals round 1: the starter plays first
         self.st["hands"] = {p: [self.st["deck"].pop() for _ in range(size)] for p in order}
         self.st.update(round=rnd, dealer=dealer, turn=None, give={}, got={}, last=None, round_size=size)
         self.st["turn_at"] = self.now()

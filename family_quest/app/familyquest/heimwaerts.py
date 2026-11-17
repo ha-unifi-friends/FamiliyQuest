@@ -93,13 +93,14 @@ class Table:
         return [(p, i) for p in self.order() for i, rel in enumerate(P[p]) if 0 <= rel < RING and self.field(p, rel) == f]
 
     # ---------- the game
-    def setup(self) -> None:
+    def setup(self, first: str | None = None) -> None:
+        """The seats (colours) in the order of the lobby – `first` (the starter) rolls first, then clockwise."""
         ids = self.order()
         if not 2 <= len(ids) <= MAX_PLAYERS:
             raise CommunityError("Add a bot or wait for a second player")
         self.st["seats"] = {pid: s for pid, s in zip(ids, SEATS[len(ids)])}
         self.st["pieces"] = {pid: [YARD] * PIECES for pid in ids}
-        self.st.update(phase="play", turn=ids[0], stage="roll", die=None, roll_seq=0, tries=0, turns=0, last=None, log=[],
+        self.st.update(phase="play", turn=first if first in ids else ids[0], stage="roll", die=None, roll_seq=0, tries=0, turns=0, last=None, log=[],
                        finished_order=[], ranking=None, places=None, complete=False, turn_at=self.now())
 
     def _check(self, pid: str) -> None:
@@ -471,7 +472,7 @@ class Heimwaerts(CardGames):
                         "owner": b.get("owner"), "bot": True, "level": lvl})
         return out
 
-    def _deal(self, st: dict) -> None:
+    def _deal(self, st: dict, first: str | None = None) -> None:
         humans = [p for p in st["players"] if not p.get("bot")]
         n = st["rules"]["bots"]
         if st.get("solo"):
@@ -481,7 +482,7 @@ class Heimwaerts(CardGames):
         st.pop("bot_pool", None)
         if len(st["players"]) < 2:
             raise CommunityError("Add a bot or wait for a second player")
-        self.table(st).setup()
+        self.table(st).setup(first)
 
     def start(self, kind: str, host: int, rules: dict | None = None, solo: bool = False, bots: list[dict] | None = None) -> int:
         if kind != KIND:
@@ -526,8 +527,10 @@ class Heimwaerts(CardGames):
             st = json.loads(row["state"])
             if st["phase"] != "lobby":
                 raise CommunityError("The game has already started")
-            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (parent area › Games)
-            self._deal(st)
+            seats = list(st["players"])          # the seats and colours stay as in the lobby – the starter only rolls first
+            first = apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (parent area › Games)
+            st["players"] = seats
+            self._deal(st, first)
             self._save(row, st)
 
     def _with(self, viewer: int, fn):

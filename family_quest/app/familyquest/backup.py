@@ -22,6 +22,7 @@ from pathlib import Path
 
 FORMAT = "family-quest-backup"
 MAX_RESTORE_BYTES = 500 * 1024 * 1024
+MAX_UNPACKED_BYTES = 2 * 1024 * 1024 * 1024    # everything in the backup, unpacked
 FILE_DIRS = ("media", "family_planer")
 
 
@@ -90,6 +91,8 @@ def inspect(raw: bytes) -> dict:
     for n in names:
         if n.startswith("/") or ".." in Path(n).parts:
             raise BackupError("invalid path in backup")
+    if sum(i.file_size for i in z.infolist()) > MAX_UNPACKED_BYTES:          # a «zip bomb»: refused before unpacking
+        raise BackupError("backup file too large")
     return manifest
 
 
@@ -172,6 +175,8 @@ def restore(fq, raw: bytes) -> dict:
                 out.parent.mkdir(parents=True, exist_ok=True)
                 out.write_bytes(z.read(n))
     fq.packs.invalidate()
+    if fq.db.q1("SELECT 1 FROM setting WHERE key='xp_items_from'") is None:   # a backup from before the XP items:
+        fq.db.set_setting("xp_items_from", int(fq.db.val("SELECT MAX(id) FROM ledger", default=0) or 0))  # old XP stay old
     from .rewards import avatar as av
     av.set_overrides(fq.db.get_setting("shop_items", {}))      # the shop as in the backup
     try:                                        # the pictures of the built-in packs come from the app again

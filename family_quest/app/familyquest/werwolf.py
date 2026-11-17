@@ -369,7 +369,12 @@ class Table:
         """Seconds a bot thinks in this night step – 4 … 10, not the same in every step."""
         step = self.st.get("step")
         k = STEPS.index(step) if step in STEPS else 0
-        return BOT_NIGHT + (int(self.st.get("night") or 0) * 5 + k * 3) % BOT_NIGHT_SPREAD
+        # random per table, night and step with a secret seed (never sent to the players): from the time a step
+        # takes nobody can tell whether a bot holds the role
+        if "bot_seed" not in self.st:
+            self.st["bot_seed"] = random.SystemRandom().randrange(1 << 30)
+        r = random.Random(f'{self.st["bot_seed"]}:{int(self.st.get("night") or 0)}:{k}')
+        return BOT_NIGHT + r.randrange(BOT_NIGHT_SPREAD)
 
     def _bots_move(self) -> bool:
         ph, step = self.st.get("phase"), self.st.get("step")

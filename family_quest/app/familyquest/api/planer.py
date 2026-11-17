@@ -27,6 +27,7 @@ from .auth import INGRESS_IP, KID_MAX_AGE, PARENT_MAX_AGE, Learner, Parent, app_
 log = logging.getLogger("familyquest.planer")
 router = APIRouter(prefix="/api/planer")
 TODO_SERVICES = {"add_item", "update_item", "remove_item", "remove_completed_items"}
+TODO_FIELDS = {"item", "rename", "status", "due_date", "due_datetime", "description"}
 
 
 def _host(fq):
@@ -56,11 +57,7 @@ async def planer_ws(websocket: WebSocket, token: str = "", parent: str = "") -> 
     if kid is None and par is None:
         await websocket.close(code=4401)
         return
-    # a parent logged in in the app (own profile, PIN or Home Assistant user): changes without the planner's PIN –
-    # under the same network rules as the parent area
-    if par is None and kid is not None and fq.db.val("SELECT role FROM profile WHERE id=?", kid) == "parent" \
-            and not netfilter.check(fq, ip, "/api/parent/") \
-            and not (fq.db.get_setting("parent_ha_only") and (websocket.client and websocket.client.host) != INGRESS_IP):
+    if par is None and kid is not None and _parent_in_app(fq, token, ip):
         par = kid
     host = fq.planer_host
     if host is None:
@@ -124,6 +121,9 @@ async def _todo_subscribe(host, conn, mid: int, entity: str) -> None:
     if not re.fullmatch(r"todo\.[a-z0-9_]+", entity):
         conn.send_error(mid, "invalid_format", "todo entity expected")
         return
+    if not conn.user.is_admin and not _used_by_planner(host, entity):          # children: only the planner's lists
+        conn.send_error(mid, "unauthorized", "This list is not part of the planner")
+        return
 
     async def push() -> None:
         conn.send_message({"id": mid, "type": "event", "event": {"items": await _todo_items(host, entity)}})
@@ -157,6 +157,31 @@ async def _weather_subscribe(host, conn, mid: int, entity: str, kind: str) -> No
     conn.send_result(mid)
 
 
+# ---------------------------------------------------------------- a parent in the app
+APP_PARENT_MAX_AGE = 12 * 3600       # a parent's login in the app counts as a parent (no planner PIN) for 12 hours
+
+
+def _parent_in_app(fq, kid_token: str, ip: str) -> bool:
+    """The app token of a parent profile – fresh (12 h), from the parent networks and not when the parent area is only
+    for Home Assistant: then the planner asks for its PIN as before (a family tablet stays safe)."""
+    from .. import netfilter
+    pid = fq.tokens.read(kid_token, "kid", APP_PARENT_MAX_AGE)
+    if pid is None or fq.db.val("SELECT role FROM profile WHERE id=?", pid) != "parent":
+        return False
+    return not netfilter.check(fq, ip, "/api/parent/") and not fq.db.get_setting("parent_ha_only")
+
+
+def _privileged(request: Request, prof: dict) -> bool:
+    """Parent rights for the pass-throughs: a parent token, or a parent's fresh app token (see _parent_in_app)."""
+    if prof["role"] != "parent":
+        return False
+    fq = app_of(request)
+    if fq.tokens.read(request.headers.get("x-fq-parent"), "parent", PARENT_MAX_AGE) == prof["id"]:
+        return True
+    from .. import loginlog
+    return _parent_in_app(fq, request.headers.get("x-fq-token") or "", loginlog.client_ip(request))
+
+
 # ---------------------------------------------------------------- REST pass-throughs (learner or parent token)
 # children see only what the planner shows them – never locations, addresses, cameras, alarms or locks
 KID_DOMAINS = ("todo", "calendar", "sun", "weather", "person", "zone")
@@ -167,7 +192,7 @@ SECRET_ATTRS = {"latitude", "longitude", "gps_accuracy", "altitude", "course", "
 def _used_by_planner(host, entity: str) -> bool:
     """An entity the planner itself is set up with (its lists, calendars …) – children may only touch those."""
     try:
-        return entity in json.dumps(host.planner.data, default=str)
+        return re.search(r'"' + re.escape(entity) + r'"', json.dumps(host.planner.data, default=str)) is not None
     except Exception:  # noqa: BLE001
         return False
 
@@ -175,7 +200,7 @@ def _used_by_planner(host, entity: str) -> bool:
 @router.get("/ha/states")
 def ha_states(request: Request, prof: dict = Learner) -> list[dict]:
     host = _host(app_of(request))
-    if prof["role"] == "parent":
+    if _privileged(request, prof):
         return [{"entity_id": s.entity_id, "state": s.state, "attributes": s.attributes} for s in host.hass.states.async_all()]
     out = []
     for s in host.hass.states.async_all():
@@ -215,7 +240,7 @@ async def ha_calendar(entity: str, start: str, end: str, request: Request, prof:
     host = _host(app_of(request))
     if not re.fullmatch(r"calendar\.[a-z0-9_]+", entity):
         raise HTTPException(400, "calendar entity expected")
-    if prof["role"] != "parent" and not _used_by_planner(host, entity) and entity not in app_of(request).calendar.settings()["ha_calendars"]:
+    if not _privileged(request, prof) and not _used_by_planner(host, entity) and entity not in app_of(request).calendar.settings()["ha_calendars"]:
         raise HTTPException(403, "This calendar is not part of the planner")
     try:
         res = await host.hass.services.async_call("calendar", "get_events",
@@ -246,10 +271,12 @@ async def ha_service(body: ServiceIn, request: Request, prof: dict = Learner) ->
         raise HTTPException(403, "service not allowed")
     if not re.fullmatch(r"todo\.[a-z0-9_]+", str(body.data.get("entity_id", ""))):
         raise HTTPException(400, "todo entity expected")
-    if prof["role"] != "parent" and not _used_by_planner(host, body.data["entity_id"]):
+    if not _privileged(request, prof) and not _used_by_planner(host, body.data["entity_id"]):
         raise HTTPException(403, "This list is not part of the planner")
+    # only the fields of the to-do services – no other targets (area_id, device_id …) ride along
+    data = {"entity_id": body.data["entity_id"], **{k: v for k, v in body.data.items() if k in TODO_FIELDS}}
     try:
-        await host.hass.services.async_call("todo", body.service, body.data)
+        await host.hass.services.async_call("todo", body.service, data)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, str(e)) from None
     return {"ok": True}

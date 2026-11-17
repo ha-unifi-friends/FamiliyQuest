@@ -77,6 +77,10 @@ class Community:
             out.append(item)
         if not out:
             raise CommunityError("Add at least one question")
+        if len(out) > MAX_QUESTIONS:
+            raise CommunityError("A quiz can have at most 100 questions")
+        if sum(len((q.get("img") or {}).get("svg") or "") for q in out) > MAX_QUIZ_SVG:
+            raise CommunityError("The drawings of this quiz are too big together (max. 300 KB)")
         return out
 
     def quizzes(self) -> list[dict]:
@@ -759,6 +763,8 @@ def clean_special(q: dict) -> dict:
 
 
 SVG_MAX = 30_000
+MAX_QUESTIONS = 100                 # per quiz – keeps the list of quizzes small for every device
+MAX_QUIZ_SVG = 300_000              # all own drawings of one quiz together
 
 
 def clean_image(img) -> dict | None:
