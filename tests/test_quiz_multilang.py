@@ -77,3 +77,11 @@ def test_a_quiz_from_a_template_gets_the_template_translations(client, monkeypat
     q = next(x for x in client.get("/api/community/quizzes", headers=hm).json() if x["id"] == qid)
     assert q["langs"] == {"base": "de", "more": ["en"], "title": {"en": "Estimates"}}
     assert q["questions"][0]["tr"]["en"]["q"] == "Q0"
+
+
+def test_every_template_translation_is_complete():
+    import subprocess, sys
+    from pathlib import Path
+    tool = Path(__file__).resolve().parent.parent / "tools" / "quiz_templates_tr.py"
+    r = subprocess.run([sys.executable, str(tool), "check"], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout
