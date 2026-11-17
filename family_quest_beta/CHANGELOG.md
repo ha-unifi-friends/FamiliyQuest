@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.7
+
+- Quiz template for your AI covers every question type, mixed: multiple choice with text or flag answers, questions with a picture (big flag, emoji, an own SVG drawing, canton outline / map / coat of arms), estimation and map questions
+- New quiz pictures: a big country flag, a big emoji or an own SVG drawing
+- «New quiz» offers «Import» and «Download template» right next to «Make an own quiz»
+
 ## 1.0.0-beta.6
 
 - Templates for your AI: English instructions plus the Family Quest format for learning packs (Parent area › Packs › Import) and for quizzes (New quiz) – download or copy, give it to ChatGPT, Claude, Gemini …, upload the answer

@@ -1819,5 +1819,9 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
   .mk-live.quiz-full .card.mk-ctl { padding: 5px 8px; margin: 2px 0 4px; }
 }
 /* «Made with your AI» in «New quiz» (community.js) */
-.ai-box { margin: 12px 0 4px; padding: 12px 14px; background: var(--hover); box-shadow: none; }
-.ai-box h3 { margin: 0 0 4px; }
+.ai-box { margin: 4px 0 8px; }
+.ai-box p { margin: 6px 0 0; }
+/* quiz pictures: a big flag, a big emoji, an own SVG drawing (community.js questionImage) */
+.q-img.q-flag img { height: min(26vh, 170px); width: auto; max-width: 100%; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.q-img.q-emoji { font-size: min(18vh, 120px); line-height: 1.1; text-align: center; }
+.q-img.q-svg img { max-height: min(30vh, 220px); max-width: 100%; }
