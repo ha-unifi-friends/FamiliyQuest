@@ -388,6 +388,24 @@ def test_solo_against_bots_plays_and_no_coins(client):
     assert client.get("/api/community/heimwaerts", headers=login(client, leo)).json() is None
 
 
+def test_the_starter_rolls_first_but_the_seats_stay(client):
+    """The chosen starter rolls first – the seats (colours) stay in the order of the lobby, the turn goes on clockwise."""
+    from test_api import setup_family
+    phd, mia, leo = setup_family(client)
+    ben = client.post("/api/parent/profiles", json={"name": "Ben"}, headers=phd).json()["id"]
+    client.put("/api/parent/settings", json={"game_starter": "choose"}, headers=phd)
+    hm, hl, hb = login(client, mia, "1111"), login(client, leo), login(client, ben)
+    client.post("/api/community/heimwaerts/start", json={"bots": 0, "bot_ms": 0}, headers=hm)
+    client.post("/api/community/heimwaerts/join", headers=hl)
+    client.post("/api/community/heimwaerts/join", headers=hb)
+    st = client.post("/api/community/heimwaerts/begin", json={"starter": str(leo)}, headers=hm).json()
+    assert [(p["id"], p["seat"]) for p in st["players"]] == [(str(mia), 0), (str(leo), 1), (str(ben), 2)]
+    assert st["turn"] == str(leo) and st["starter"]["id"] == str(leo)
+    t = hw.Table(json.loads(client.app.state.fq.db.val("SELECT state FROM card_game WHERE id=?", st["game"])))
+    t._next()
+    assert t.st["turn"] == str(ben)
+
+
 def test_family_table_turns_coins_once_and_history(client):
     from test_api import setup_family
     phd, mia, leo = setup_family(client)
