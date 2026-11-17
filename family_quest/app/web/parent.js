@@ -612,6 +612,9 @@ async function profileDialog(p, persons, role = "kid") {
 }
 
 // ---------------------------------------------------------------- packs
+// an open «⋯» menu closes with a tap anywhere else
+document.addEventListener("click", e => document.querySelectorAll("details.more-menu[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
+
 async function packsView(main) {
   const [d, profiles] = await Promise.all([call("parent/packs"), call("parent/profiles")]);
   const kids = profiles.filter(p => p.role === "kid");
