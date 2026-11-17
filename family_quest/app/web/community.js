@@ -278,7 +278,7 @@ function quizLive(box, me, back) {
       h("select.quiz-lang", { "aria-label": T("Language of the questions"),
         onchange: e => { qlang = e.target.value; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} last = ""; draw(raw); } },
         ...langs.map(l => h("option", { value: l, selected: l === lang, title: QUIZ_LANG_NAMES[l] || l }, "🌐 " + l.toUpperCase() + " ▾")))) : null;
-    const head = h("div.quiz-head.ql-head", h("div.row.head-title", menu, h("h1", "🎯 ", C(st.title))),
+    const head = h("div.quiz-head.ql-head", h("div.row.head-title", menu, h("h1", h("span.ql-ic", "🎯 "), C(st.title))),
       h("div.row", langSel, st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null));
     // only the main action stays as a big button – everything else is in ☰
     const hostBar = isHost(st) && st.status !== "done" ? h("div.row.center.host-bar",

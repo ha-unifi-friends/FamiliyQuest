@@ -57,7 +57,7 @@ label.check input { width: 20px; height: 20px; }
 .more-menu > summary::-webkit-details-marker { display: none; }
 .more-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; display: grid; gap: 2px; min-width: 220px; padding: 6px;
   border-radius: 12px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 10px 28px rgba(0, 0, 0, .2); }
-.more-pop .btn { justify-content: flex-start; text-align: left; width: 100%; }
+.more-pop .btn { justify-content: flex-start; text-align: left; width: 100%; border-color: transparent; }
 .danger-text { color: var(--bad); }
 .act { display: flex; flex-wrap: wrap; gap: 4px 14px; padding-top: 6px; border-top: 1px solid var(--line); }
 .unit-ed { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
@@ -252,9 +252,9 @@ details.fold[open] > summary { margin-bottom: 10px; }
 /* Games page: each game folded; play first, the settings set apart below */
 details.game-sec > summary { cursor: pointer; list-style: none; margin-bottom: 0; }
 details.game-sec > summary::-webkit-details-marker { display: none; }
-details.game-sec > summary h2::before { content: "▸ "; color: var(--muted); display: inline-block; transition: transform .15s; }
+details.game-sec > summary h2::before { content: "▸"; color: var(--muted); display: inline-block; margin-right: 8px; }
 details.game-sec[open] > summary { margin-bottom: 10px; }
-details.game-sec[open] > summary h2::before { content: "▾ "; }
+details.game-sec[open] > summary h2::before { content: "▾"; }
 .run-chip { margin-left: 8px; font-size: .75rem; padding: 2px 8px; background: var(--good-bg, #d3f9d8); color: var(--good); vertical-align: middle; }
 .game-play { display: grid; gap: 8px; margin-bottom: 14px; }
 .game-settings { display: grid; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }

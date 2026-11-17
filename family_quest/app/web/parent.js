@@ -727,7 +727,8 @@ async function packsView(main) {
     const m = modal(h("div.form", h("h2", "🏅 ", C(p.title)),
       h("p.small.muted", T("What a finished lesson of this pack gives. Empty: the family rule (Rewards › Rules «Lesson finished»). The daily limit of the rule still applies.")),
       // both numbers side by side, the icon inline in the label; empty = the family rule, «Reset» empties both
-      h("div.reward-nums", h("label.field", h("span", "⭐ ", T("XP per finished lesson")), xp), h("label.field", h("span", "🪙 ", T("Coins per finished lesson")), coins)),
+      h("div.reward-nums", h("label.field", { title: T("XP per finished lesson") }, h("span", "⭐ XP"), xp),
+        h("label.field", { title: T("Coins per finished lesson") }, h("span", "🪙 ", T("Coins")), coins)),
       h("p.small.muted", T("Empty = family rule"), " · ", h("a", { href: "#", onclick: e => { e.preventDefault(); xp.value = ""; coins.value = ""; } }, T("Reset"))),
       h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   }
