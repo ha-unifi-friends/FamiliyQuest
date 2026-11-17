@@ -36,21 +36,26 @@ def running(fq) -> list[dict]:
     out = []
     g = fq.community._game()
     if g:
-        out.append({"key": "quiz", "game": "quiz", "icon": ICONS["quiz"], "title": (g.get("quiz") or {}).get("title") or "Quiz",
-                    "status": g["status"], "solo": False, "host": _name(fq, g.get("host_id")), "players": len(g.get("players") or [])})
+        out.append({"key": "quiz", "id": g["id"], "game": "quiz", "icon": ICONS["quiz"], "title": (g.get("quiz") or {}).get("title") or "Quiz",
+                    "status": g["status"], "solo": False, "host": _name(fq, g.get("host_id")), "players": len(g.get("players") or []),
+                    "host_id": g.get("host_id"), "members": _ids(g.get("players"))})
     b = fq.bingo._game()
     if b:
         out.append({"key": "bingo", "game": "bingo", "icon": ICONS["bingo"], "title": "Bingo", "status": b["status"], "solo": False,
-                    "host": _name(fq, b.get("host_id")), "players": int(fq.db.val("SELECT COUNT(*) FROM bingo_card WHERE game_id=?", b["id"], default=0) or 0)})
+                    "host": _name(fq, b.get("host_id")), "players": int(fq.db.val("SELECT COUNT(*) FROM bingo_card WHERE game_id=?", b["id"], default=0) or 0),
+                    "host_id": b.get("host_id"), "members": [str(r["profile_id"]) for r in fq.db.q("SELECT profile_id FROM bingo_card WHERE game_id=?", b["id"])],
+                    "id": b["id"]})
     s = fq.songs._row()
     if s:
         st = json.loads(s["state"] or "{}")
         out.append({"key": "song", "game": "song", "icon": ICONS["song"], "title": "Errate den Song", "status": s["status"], "solo": False,
-                    "host": _name(fq, s.get("host_id")), "players": _people(st.get("players"))})
+                    "host": _name(fq, s.get("host_id")), "players": _people(st.get("players")),
+                    "host_id": s.get("host_id"), "members": _ids(st.get("players")), "id": s.get("id")})
     for r in fq.db.q("SELECT * FROM poker_game WHERE status!='done' ORDER BY id"):
         st = json.loads(r["state"] or "{}")
         out.append({"key": f"poker:{r['id']}", "game": "poker", "icon": ICONS["poker"], "title": "Texas Hold'em", "status": r["status"],
-                    "solo": bool(st.get("solo")), "host": _name(fq, r["host_id"]), "players": _people(st.get("players"))})
+                    "solo": bool(st.get("solo")), "host": _name(fq, r["host_id"]), "players": _people(st.get("players")),
+                    "host_id": r["host_id"], "members": _ids(st.get("players"))})
     for r in fq.db.q("SELECT * FROM card_game WHERE status!='done' ORDER BY id"):
         if r["kind"] not in TITLES:
             continue
@@ -59,7 +64,30 @@ def running(fq) -> list[dict]:
         if isinstance(players, dict):                   # chess: {"w": …, "b": …}
             players = list({p["id"]: p for p in players.values() if p}.values())
         out.append({"key": f"card:{r['id']}", "game": r["kind"], "icon": ICONS[r["kind"]], "title": TITLES[r["kind"]], "status": r["status"],
-                    "solo": bool(r["solo"]), "host": _name(fq, r["host_id"]), "players": _people(players)})
+                    "solo": bool(r["solo"]), "host": _name(fq, r["host_id"]), "players": _people(players),
+                    "host_id": r["host_id"], "members": _ids(players)})
+    return out
+
+
+def _ids(players) -> list[str]:
+    return sorted({str(p.get("id") if isinstance(p, dict) else p) for p in players or []})
+
+
+# games with their own invitation popup (chess, duels) are not announced here
+ROUTES = {"quiz": "quiz", "bingo": "bingo", "song": "song", "poker": "poker", **{k: k for k in TITLES if k != "schach"}}
+
+
+def open_tables(fq, prof: dict) -> list[dict]:
+    """Family tables somebody else opened that this profile may join – for the note in the header of the app."""
+    ok = set(fq.games_for(prof))
+    out = []
+    for t in running(fq):
+        if t["solo"] or t["game"] not in ROUTES or t["status"] in ("done", "paused") or t["game"] not in ok:
+            continue
+        if t.get("host_id") == prof["id"] or str(prof["id"]) in t.get("members", []):
+            continue
+        out.append({"key": f"{t['key']}:{t.get('id') or ''}", "game": t["game"], "route": ROUTES[t["game"]], "icon": t["icon"],
+                    "title": t["title"], "host": t["host"]})
     return out
 
 

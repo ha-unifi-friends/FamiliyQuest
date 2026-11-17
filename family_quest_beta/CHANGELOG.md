@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0-beta.8
+
+- App: when somebody opens a family game table, everybody else who may play it gets a note in the header (with a chime) – «Mia opened a table: Tschau Sepp» – and joins with one tap
+
 ## 1.1.0-beta.7
 
 - Parent area › Learning packs: all own packs (imported, made with the AI or edited) in their own box «Own packs» on top

@@ -457,3 +457,11 @@
 .refresh-btn { background: color-mix(in srgb, var(--accent) 22%, var(--card)); color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 .refresh-btn:hover { background: color-mix(in srgb, var(--accent) 32%, var(--card)); }
+/* «somebody opened a table»: a note that slides into the header (kid.js showTableNote) */
+.table-note { position: fixed; z-index: 940; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); width: min(560px, calc(100vw - 16px));
+  transform: translate(-50%, -140%); transition: transform .3s ease; display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 16px; background: var(--card); color: var(--fg); border: 2px solid var(--accent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .3); }
+.table-note.on { transform: translate(-50%, 0); }
+.table-note-ic { font-size: 1.9rem; flex: none; }
+.table-note strong { display: block; line-height: 1.2; }
