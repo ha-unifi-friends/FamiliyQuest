@@ -27,7 +27,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -1745,6 +1745,104 @@ def verboten_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.verboten.state("verboten", prof["id"])
 
 
+# ---------------------------------------------------------------- «Escape Room» (familyquest/escape.py)
+class EscapeStartIn(BaseModel):
+    rooms: int | None = None             # 1 – 5
+    level: str | None = None             # easy | medium | hard | mixed
+    types: list[str] | None = Field(default=None, max_length=20)   # kinds of riddles (escape_riddles.TYPES)
+    mode: str | None = None              # together | teams
+    time: int | None = None              # minutes: 0 (none) | 15 | 30 | 45
+
+
+class EscapeKeyIn(BaseModel):
+    key: str = Field(max_length=12)      # the riddle: "<room>.<number>"
+
+
+class EscapeAnswerIn(BaseModel):
+    key: str | None = Field(default=None, max_length=12)     # the riddle (none: the door)
+    answer: list[int] | int | str | None = None              # text / number, a choice, or a list (order, moves …)
+
+
+def _lead_escape(fq, prof: dict) -> None:
+    if not fq.escape.may_lead("escape", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/escape")
+def escape_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).escape.state("escape", prof["id"])
+
+
+@router.get("/escape/rules")
+def escape_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).escape.rules_info()
+
+
+@router.post("/escape/start")
+def escape_start(body: EscapeStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _run(fq.escape.start, "escape", prof["id"], body.model_dump())
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/join")
+def escape_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.escape.join, "escape", prof["id"])
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/mix")
+def escape_mix(request: Request, prof: dict = Gamer) -> dict | None:
+    """Who leads mixes the seats (and so the teams) in the lobby."""
+    fq = app_of(request)
+    _lead_escape(fq, prof)
+    _run(fq.escape.mix, prof["id"])
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/begin")
+def escape_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_escape(fq, prof)
+    _run(fq.escape.begin, "escape", prof["id"])
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/answer")
+def escape_answer(body: EscapeAnswerIn, request: Request, prof: dict = Playing) -> dict:
+    """An answer for a riddle of the own team's room – or (without key) the code of the door. {"ok": …, "state": …}"""
+    fq = app_of(request)
+    a = body.answer
+    if (isinstance(a, str) and len(a) > 60) or (isinstance(a, list) and len(a) > 400):
+        raise HTTPException(400, "This answer is too long")
+    ok = _run(fq.escape.door, prof["id"], a) if body.key is None else _run(fq.escape.answer, prof["id"], body.key, a)
+    return {"ok": bool(ok), "state": fq.escape.state("escape", prof["id"])}
+
+
+@router.post("/escape/hint")
+def escape_hint(body: EscapeKeyIn, request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.escape.hint, prof["id"], body.key)
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/peek")
+def escape_peek(body: EscapeKeyIn, request: Request, prof: dict = Playing) -> dict | None:
+    """A memory riddle: its picture for a few seconds."""
+    fq = app_of(request)
+    _run(fq.escape.peek, prof["id"], body.key)
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/end")
+def escape_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_escape(fq, prof)
+    fq.escape.end("escape", prof["id"])
+    return fq.escape.state("escape", prof["id"])
+
+
 # ---------------------------------------------------------------- «Jass» – Schieber (familyquest/jass.py)
 class JassStartIn(BaseModel):
     solo: bool = False                   # alone with 3 bots (private)
@@ -2178,10 +2276,10 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
                  "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
-                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt}.get(body.game, fq.cards)
+                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:
         game = {"quiz": fq.community, "bingo": fq.bingo, "poker": fq.poker, "song": fq.songs}.get(body.game)

@@ -1437,7 +1437,7 @@ async function printPoster(link) {
 
 // ---------------------------------------------------------------- the games of the app (parent area › Games)
 const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", T("Card Carousel")], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Pair Hunt")], ["werbinich", "🎭", T("Who am I?")],
-    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["snack", "🍔", T("Snack Rush")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")], ["cube", "🧊", T("Cube solver")],
+    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["snack", "🍔", T("Snack Rush")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["escape", "🗝️", T("Escape Room")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")], ["cube", "🧊", T("Cube solver")],
     ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
 // the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
 const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
@@ -1854,7 +1854,7 @@ async function gamesView(main) {
       play.length ? h("div.game-play", ...play) : null,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
   };
-  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div");
+  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div"), escape = h("div");
   let quizHead = null;
   const showLive = async () => {
     let st = null; try { st = await call("community/quiz"); } catch {}
@@ -2069,6 +2069,17 @@ async function gamesView(main) {
            h("button.btn.ghost", { onclick: () => dorfmarktStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
       await gameRewardsRow("dorfmarkt")));
   };
+  const showEscape = async () => {
+    let g = null; try { g = await call("community/escape"); } catch {}
+    const open = () => { const b = h("div.er-live"); escape.replaceChildren(b); escapeLive(b, me, () => render()); };
+    let info = null; try { info = (await call("community/escape/rules")).played; } catch {}
+    escape.replaceChildren(gsec("escape", "🗝️ " + I18N.tr(T("Escape Room")), appBtn("escape"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("Solve riddles together and find the way out of every room – all together or in two teams.")),
+         info ? h("p.small", "🧩 ", I18N.tr(T("{0} of {1} riddles not played yet – round {2}")).replace("{0}", info.new).replace("{1}", info.total).replace("{2}", info.round)) : null,
+         h("button.btn", { onclick: () => escapeStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      await gameRewardsRow("escape")));
+  };
   // the small games of the game corner: only the status (they run on the device)
   const arcade = ["ttt", "pingpong", "sudoku", "patience", "slots"].map(k => {
     const [, ic, name] = GAME_LIST.find(g => g[0] === k);
@@ -2076,7 +2087,7 @@ async function gamesView(main) {
   });
   const quiz = h("div", live, (quizHead = gsec("quiz", "🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)));
   const blocks = { quiz, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
-    heimwaerts, jump, sternlauf, snack, klatsch, verboten, jass, werwolf, schach, dorfmarkt, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
+    heimwaerts, jump, sternlauf, snack, klatsch, verboten, jass, werwolf, schach, dorfmarkt, escape, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
   for (const [k, el] of Object.entries(blocks)) {
     const g = GAME_LIST.find(x => x[0] === k);
     el.classList.add("game-block");
@@ -2110,7 +2121,7 @@ async function gamesView(main) {
     h("p.muted", T("Every game on its own: active, active without bots (only people play) or inactive – for everybody or only for chosen children. Parents can always play.")),
     search, general, runningGamesBox(), none, ...Object.values(blocks));
   filter();
-  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt();
+  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
 }
 
@@ -2121,7 +2132,7 @@ async function gameRewardsRow(game) {
   try { r = await call("parent/game-rewards"); } catch {}
   const cur = r[game] || [10, 5, 2];
   const inputs = cur.map(v => h("input.pj-reward", { type: "number", min: 0, max: 1000, step: 1, value: v, inputmode: "numeric" }));
-  if (game === "jass") {
+  if (game === "jass" || game === "escape") {
     const save1 = async () => {
       const v = Number(inputs[0].value);
       if (!Number.isInteger(v) || v < 0 || v > 1000) return toast(T("Three numbers of coins (0 to 1000) are needed"), "bad");
@@ -2129,7 +2140,8 @@ async function gameRewardsRow(game) {
     };
     return h("div.pj-rewards", h("b", "🪙 ", T("Coins for each person of the family in the winning team")),
       h("div.row", inputs[0], h("button.btn.small", { onclick: save1 }, T("Save"))),
-      h("p.small.muted", T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
+      h("p.small.muted", game === "escape" ? T("Only when the team escaped (together: everybody; two teams: the team out first) – at a family table with at least two people of the family, not for guests.")
+        : T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
   }
   const save = async () => {
     const vals = inputs.map(i => Number(i.value));

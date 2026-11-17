@@ -83,6 +83,8 @@ class FamilyQuest:
         self.schach = Schach(self.db, self.community.add_history, self.rewards)
         from .dorfmarkt import Dorfmarkt
         self.dorfmarkt = Dorfmarkt(self.db, self.community.add_history, self.rewards)
+        from .escape import Escape
+        self.escape = Escape(self.db, self.community.add_history, self.rewards)
         # games without bots (parent area › Games): the engines ask before bots take a seat (cardgames.CardGames.bots_off)
         for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.snack, self.klatsch,
                     self.jass, self.werwolf, self.dorfmarkt):
@@ -158,7 +160,7 @@ class FamilyQuest:
     # the games that can be played with bots (alone against bots, bots at the table, chess / Tic-Tac-Toe / Ping-Pong
     # against the computer, Werwölfe filled up with bots) – the parents can switch the bots off per game
     BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "pingpong")
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
+    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -240,6 +242,7 @@ class FamilyQuest:
         out["werwolf"] = self.werwolf.summary("werwolf", pid) if "werwolf" in ok else None
         out["schach"] = self.schach.summary("schach", pid) if "schach" in ok else None
         out["dorfmarkt"] = self.dorfmarkt.summary("dorfmarkt", pid) if "dorfmarkt" in ok else None
+        out["escape"] = self.escape.summary("escape", pid) if "escape" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
         out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
         out["boards_new"] = self.boards.new_count(pid)       # bulletin boards: not a game, for everybody of the family
