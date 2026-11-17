@@ -1319,7 +1319,7 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
     return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES)}
 
 
-REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt")       # live games with coins for places 1–3 (game_rewards)
+REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt")       # live games with coins for places 1–3 (game_rewards)
 
 
 @router.get("/game-rewards")

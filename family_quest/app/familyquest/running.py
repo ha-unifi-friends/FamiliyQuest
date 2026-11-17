@@ -12,16 +12,16 @@ import json
 
 TITLES = {"tschau": "Tschau Sepp", "karussell": "Card Carousel", "domino": "Domino", "paarjagd": "Pair Hunt",
           "werbinich": "Who am I?", "kartenlauf": "Card Race", "stadtland": "City, Country, River", "zeichnen": "Draw & Guess",
-          "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market"}
+          "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "sternlauf": "Star Runner", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market"}
 ICONS = {"quiz": "🎯", "bingo": "🎱", "song": "🎵", "poker": "🃏", "tschau": "🂡", "karussell": "🎠", "domino": "🁫",
-         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️"}
+         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "sternlauf": "🌠", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️"}
 
 
 def _games(fq) -> dict:
     """The object that leads the tables of a card_game kind."""
     return {"tschau": fq.cards, "karussell": fq.cards, "domino": fq.domino, "paarjagd": fq.paarjagd,
             "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf, "stadtland": fq.stadtland, "zeichnen": fq.zeichnen,
-            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf, "schach": fq.schach, "dorfmarkt": fq.dorfmarkt}
+            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf, "schach": fq.schach, "dorfmarkt": fq.dorfmarkt}
 
 
 def _name(fq, pid) -> str:

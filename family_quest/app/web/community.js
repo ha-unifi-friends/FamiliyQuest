@@ -62,6 +62,9 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.jump) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("jump") },
     h("span.big-ic", "🦘"), h("span.grow", h("strong", "Jump"), h("br"),
       h("span.small", c.jump.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.sternlauf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("sternlauf") },
+    h("span.big-ic", "🌠"), h("span.grow", h("strong", T("Star Runner")), h("br"),
+      h("span.small", c.sternlauf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.klatsch) out.push(h("button.card.banner.quiz-banner", { onclick: () => { try { KbAudio.ensure(); } catch {} go("klatsch"); } },
     h("span.big-ic", "👏"), h("span.grow", h("strong", T("Clap the Beat")), h("br"),
       h("span.small", c.klatsch.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -647,6 +650,10 @@ function historyText(e) {
     ? I18N.tr(T("Jump: place {0} of {1} · {2} m")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
     : I18N.tr(T("Jump alone: {0} m")).replace("{0}", d.score)) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
+  if (e.kind === "sternlauf") return ["🌠", (d.players > 1
+    ? I18N.tr(T("Star Runner: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
+    : I18N.tr(T("Star Runner alone: {0} points")).replace("{0}", d.score)) + " · " + (d.dist || 0) + " m · " + (d.sparks || 0) + " ✨"
+    + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
   if (e.kind === "klatsch") return ["👏", (d.players > 1
     ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.score))
     : I18N.tr(T("Klatsch den Beat alone: {0}")).replace("{0}", pts(d.score))) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)

@@ -1437,7 +1437,7 @@ async function printPoster(link) {
 
 // ---------------------------------------------------------------- the games of the app (parent area › Games)
 const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", T("Card Carousel")], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Pair Hunt")], ["werbinich", "🎭", T("Who am I?")],
-    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
+    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
     ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
 // the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
 const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
@@ -1827,7 +1827,7 @@ async function gamesView(main) {
       play.length ? h("div.game-play", ...play) : null,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
   };
-  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div");
+  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div");
   let quizHead = null;
   const showLive = async () => {
     let st = null; try { st = await call("community/quiz"); } catch {}
@@ -1968,6 +1968,16 @@ async function gamesView(main) {
            h("button.btn.ghost", { onclick: () => jumpStartDialog(true, open) }, JU_ICON, " ", T("Alone")))],
       await gameRewardsRow("jump")));
   };
+  const showSternlauf = async () => {
+    let g = null; try { g = await call("community/sternlauf"); } catch {}
+    const open = () => { const b = h("div.sr-live"); sternlauf.replaceChildren(b); sternlaufLive(b, me, () => render()); };
+    sternlauf.replaceChildren(gsec("sternlauf", "🌠 " + I18N.tr(T("Star Runner")), appBtn("sternlauf"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("An endless runner on a forest path at night: swipe to change the lane, jump and duck, catch falling star sparks for the village lantern. Everybody runs the same course at the same time on their own device – alone, with practice bots or at the family table.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => sternlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => sternlaufStartDialog(true, open) }, SR_ICON, " ", T("Alone")))],
+      await gameRewardsRow("sternlauf")));
+  };
   const showKlatsch = async () => {
     let g = null; try { g = await call("community/klatsch"); } catch {}
     const open = () => { const b = h("div.kb-live"); klatsch.replaceChildren(b); klatschLive(b, me, () => render()); };
@@ -2029,7 +2039,7 @@ async function gamesView(main) {
   });
   const quiz = h("div", live, (quizHead = gsec("quiz", "🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)));
   const blocks = { quiz, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
-    heimwaerts, jump, klatsch, verboten, jass, werwolf, schach, dorfmarkt, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
+    heimwaerts, jump, sternlauf, klatsch, verboten, jass, werwolf, schach, dorfmarkt, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
   for (const [k, el] of Object.entries(blocks)) {
     const g = GAME_LIST.find(x => x[0] === k);
     el.classList.add("game-block");
@@ -2063,7 +2073,7 @@ async function gamesView(main) {
     h("p.muted", T("Every game on its own: active, active without bots (only people play) or inactive – for everybody or only for chosen children. Parents can always play.")),
     search, general, runningGamesBox(), none, ...Object.values(blocks));
   filter();
-  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt();
+  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
 }
 

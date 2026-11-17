@@ -70,6 +70,7 @@ async function route() {
   if (view === "wuerfel") return wuerfelView();
   if (view === "heimwaerts") return heimwaertsView();
   if (view === "jump") return jumpView();
+  if (view === "sternlauf") return sternlaufView();
   if (view === "klatsch") return klatschView();
   if (view === "verboten") return verbotenView();
   if (view === "jass") return jassView();
@@ -1666,7 +1667,7 @@ async function gamesView() {
     canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
     canPlay("domino") ? await dominoFamilyCard() : null, canPlay("paarjagd") ? await paarjagdFamilyCard() : null,
     canPlay("werbinich") ? await werbinichFamilyCard() : null, canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null,
-    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
+    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("sternlauf") ? await sternlaufFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
   // the games running just now on top – the same pulsing banners as on the start page
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
   screen("games", h("h1", "🎲 ", T("Games")), ...(live.length ? [h("div.live-banners", ...live)] : []), ...cards);

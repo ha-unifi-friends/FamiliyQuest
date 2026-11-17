@@ -1134,6 +1134,40 @@ nav.bottom button.on { color: var(--accent); background: var(--hover); }
 @keyframes ju-hop { 50% { transform: translateY(-12px); } }
 .ju-record { font-weight: 800; color: var(--good); }
 .ju-result li.ju-me { font-weight: 800; }
+
+/* «Star Runner» (sternlauf.js) – one screen on a phone: lives / sparks / metres / time, the live mini ranking, the forest
+   path on a canvas (swipes), four buttons (◀ ▲ ▼ ▶) */
+.sr-live.quiz-full { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; padding-bottom: 0; }
+.sr-live.quiz-full > * { flex: none; }
+.sr-live.quiz-full > .sr-wrap { flex: 1 1 auto; min-height: 0; }
+.sr-live.quiz-full > .host-bar { margin-top: 0; }
+.sr-wrap { position: relative; min-height: 220px; margin-bottom: 6px; border-radius: 14px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+.sr-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+.sr-bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 4px 4px; min-height: 24px; font-variant-numeric: tabular-nums; }
+.sr-lives { letter-spacing: 1px; font-size: .9rem; white-space: nowrap; }
+.sr-sparks, .sr-dist { font-size: 1.05rem; white-space: nowrap; }
+.sr-time { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+.sr-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 3px 4px; margin: 0 0 5px; max-height: 50px; overflow: hidden; }
+.sr-chip { display: flex; align-items: center; gap: 3px; min-width: 0; padding: 1px 5px 1px 3px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-size: .72rem; line-height: 1.2; }
+.sr-chip .avatar, .sr-chip .bot-av { flex: none; }
+.sr-chip.sr-mine { outline: 2px solid var(--accent, #5b5bd6); }
+.sr-chip.sr-outp { opacity: .55; }
+.sr-rank { flex: none; font-size: .7rem; color: var(--muted); }
+.sr-nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-pts { flex: none; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sr-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 0 calc(6px + env(safe-area-inset-bottom)); }
+.sr-btn { height: clamp(46px, 8vh, 64px); height: clamp(46px, 8dvh, 64px); border: 0; border-radius: 16px; cursor: pointer; font: 800 1.35rem var(--font); color: #fff;
+  background: linear-gradient(#6d6ae8, #4338ca); box-shadow: 0 4px 0 #312a9a, var(--shadow);
+  touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.sr-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #312a9a; }
+.sr-record { font-weight: 800; color: var(--good); }
+.sr-result li.sr-me { font-weight: 800; }
+.sr-live .dm-head .head-title { min-width: 0; }
+.sr-live .dm-head h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: clamp(1.1rem, 5.6vw, 1.6rem); }
+@media (max-width: 600px), (max-height: 760px) {
+  .sr-live.quiz-full .dm-head h1 { font-size: 1.2rem; margin: 2px 0 4px; }
+  .sr-live.quiz-full .host-bar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+}
 @media (max-width: 600px), (max-height: 760px) {
   .ju-live.quiz-full .dm-head h1 { font-size: 1.2rem; margin: 2px 0 4px; }
   .ju-live.quiz-full .host-bar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }

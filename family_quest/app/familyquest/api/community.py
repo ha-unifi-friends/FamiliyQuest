@@ -27,7 +27,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -1330,6 +1330,79 @@ def jump_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.jump.state("jump", prof["id"])
 
 
+# ---------------------------------------------------------------- «Star Runner» (familyquest/sternlauf.py)
+class SternlaufStartIn(BaseModel):
+    solo: bool = False                   # alone (private) – optionally with practice bots
+    bots: int | None = None              # 0–7 bots
+    level: str | None = None             # easy | normal | hard
+    lives: int | None = None             # 1 | 3 | 5
+    minutes: int | None = None           # 2 | 3 | 5
+    bot_ids: list[int | str] = []
+
+
+class SternlaufSyncIn(BaseModel):
+    # the app's own new inputs: [game time (s), "l" | "r" | "u" | "d"] – the server replays them on the course
+    inputs: list[tuple[float, str]] = Field(default_factory=list, max_length=40)
+
+
+def _lead_sternlauf(fq, prof: dict) -> None:
+    if not fq.sternlauf.may_lead("sternlauf", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/sternlauf")
+def sternlauf_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).sternlauf.state("sternlauf", prof["id"])
+
+
+@router.get("/sternlauf/rules")
+def sternlauf_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).sternlauf.rules_info()
+
+
+@router.post("/sternlauf/start")
+def sternlauf_start(body: SternlaufStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    if _no_bots(fq, prof, "sternlauf", body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 7, body.level or "normal", BOTS)
+    _run(fq.sternlauf.start, "sternlauf", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.sternlauf.state("sternlauf", prof["id"])
+
+
+@router.post("/sternlauf/join")
+def sternlauf_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.sternlauf.join, "sternlauf", prof["id"])
+    return fq.sternlauf.state("sternlauf", prof["id"])
+
+
+@router.post("/sternlauf/begin")
+def sternlauf_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_sternlauf(fq, prof)
+    _run(fq.sternlauf.begin, "sternlauf", prof["id"])
+    return fq.sternlauf.state("sternlauf", prof["id"])
+
+
+@router.post("/sternlauf/sync")
+def sternlauf_sync(body: SternlaufSyncIn, request: Request, prof: dict = Playing) -> dict | None:
+    """The app reports its own inputs (only its own runner) and gets everybody's progress back."""
+    fq = app_of(request)
+    return _run(fq.sternlauf.report, prof["id"], body.inputs)
+
+
+@router.post("/sternlauf/end")
+def sternlauf_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_sternlauf(fq, prof)
+    fq.sternlauf.end("sternlauf", prof["id"])
+    return fq.sternlauf.state("sternlauf", prof["id"])
+
+
 # ---------------------------------------------------------------- «Klatsch den Beat» (familyquest/klatsch.py)
 class KlatschStartIn(BaseModel):
     solo: bool = False                   # alone (private) – optionally with practice bots
@@ -2027,9 +2100,9 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
-                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "klatsch": fq.klatsch, "verboten": fq.verboten,
+                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "klatsch": fq.klatsch, "verboten": fq.verboten,
                  "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:

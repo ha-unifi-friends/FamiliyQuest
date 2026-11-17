@@ -656,6 +656,44 @@ may **end** the game early: ranked as it stands (the ones still running by their
 to the end at a family table with **at least two people of the family** – never alone, to guests or to bots. Every
 person of the family gets a history entry (place, distance, new personal best).
 
+### Star Runner
+
+Games → **🌠 Star Runner** (Sternschnuppen-Lauf): a live endless runner with its own little story – at night the big
+lantern of the village went out; the children run as forest messengers along a forest path and catch the falling
+**star sparks ✨** to light it again. The path has **three lanes**; you run with **your own avatar** (face, hair,
+outfit and worn items on running legs), seen from the front, the village with its lantern on the horizon – the more
+sparks you catch, the brighter it glows.
+
+- **Controls:** swipe **left / right** to change the lane, **up** to jump, **down** to duck. On a computer the arrow
+  keys or W A S D (space jumps); four buttons ◀ ▲ ▼ ▶ below the path work everywhere.
+- **On the path:** fallen **logs** and **puddles** (jump), **low branches** with hanging vines (duck), **rocks** and
+  **tree stumps** that block a lane (change the lane), sparks on the ground and high above some logs (jump for them).
+  Every row of obstacles leaves at least one lane open; the speed grows (the maximum after about 2 minutes), the rows
+  come closer together.
+- **Everybody at the same time:** alone (high score, optionally with 1–7 practice bots) or at a **family table** (1 to
+  8 players, optionally with bots; guests via QR code). Everybody runs the **same course** (a seed of the server) on
+  their own device; the others run along as **translucent ghosts** with their avatars and name tags – the ones with
+  more sparks a little ahead, a player who is out stays behind. Ghosts never collide with you. Above the path a live
+  **mini ranking** (points, 💥 for who is out).
+- **Lives:** 3 (start dialog: 1 / 3 / 5); a hit costs one, then you blink for a moment. **Time:** 2 / 3 / 5 minutes
+  (default 3). The run ends when no person is running any more or the time is up.
+- **Points:** every metre 1, every spark 10. Places by points (the same points share the place). Personal best (points)
+  is kept.
+- **Bots** (easy / normal / hard) play by the same rules: they plan their swipes a moment ahead with a timing error and
+  now and then a mistake (forget to jump or duck, swerve too late) – the faster, the more mistakes.
+
+**What the server decides:** the app runs the game at 60 fps by itself, but reports only its **inputs** (each swipe with
+its game time). The server replays them on the course with the same rules and decides **itself** which obstacle hit
+and which spark was caught – an app cannot report a distance, sparks or "no hit". An input counts only when it arrives
+in time: not before the previous one, not ahead of the server's clock and not for a part of the course the server
+already settled (1.5 s behind the game clock), so nobody can dodge afterwards. An app that stays silent for 10 seconds
+is out. Who leads may **end** the game early: ranked as it stands, without coins.
+
+**Coins for places 1–3:** set by the parents in Games › Star Runner (default 10 / 5 / 2), paid once, only for a game
+played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots.
+The winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, metres, sparks, new
+personal best). In the parent area › Games the runner can be active, active without bots or inactive.
+
 ### Klatsch den Beat
 
 Games → **👏 Klatsch den Beat**: a live rhythm game – **everybody plays at the same time**, each on their own device.
