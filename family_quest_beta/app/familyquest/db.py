@@ -526,6 +526,10 @@ MIGRATIONS: list[str] = [
     """
     ALTER TABLE unlock ADD COLUMN new_xp INTEGER NOT NULL DEFAULT 0;
     """,
+    # 30 – multilingual quizzes: {"base": "de", "more": ["fr", "en"], "title": {"fr": "…"}} (NULL: one language)
+    """
+    ALTER TABLE quiz ADD COLUMN langs TEXT;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [

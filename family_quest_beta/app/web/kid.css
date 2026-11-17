@@ -452,3 +452,4 @@
 .me-tile .me-ic { font-size: 1.5rem; line-height: 1.1; }
 .me-tile b { font-size: 1.25rem; }
 .me-sum .net { margin-top: 12px; }
+.today .ring .xp-total { display: inline-block; margin-top: 3px; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-size: .72rem; }

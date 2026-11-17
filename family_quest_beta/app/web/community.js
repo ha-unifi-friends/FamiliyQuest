@@ -185,6 +185,23 @@ async function guestInvite(game, gid) {
 }
 
 // the live game in `box` for profile `me` (learning app and parent area); `back` leaves it
+// multilingual quizzes: the languages a quiz can have (names in their own language – no translation needed)
+const QUIZ_LANG_NAMES = { de: "Deutsch", fr: "Français", it: "Italiano", en: "English", es: "Español", nl: "Nederlands",
+  pl: "Polski", pt: "Português", sv: "Svenska", rm: "Rumantsch" };
+const uiLang2 = () => String(I18N.base || I18N.lang || "de").slice(0, 2).toLowerCase();
+// the state of the game in the chosen language: question, answers, unit, place – what is not translated stays as it is
+function quizInLang(st, lang) {
+  if (!st || !st.langs || !lang || lang === st.langs.base) return st;
+  const out = { ...st, title: (st.langs.title || {})[lang] || st.title };
+  const q = st.question;
+  if (q && q.tr && q.tr[lang]) {
+    const t = q.tr[lang];
+    out.question = { ...q, q: t.q || q.q, a: t.a && t.a.length === (q.a || []).length ? t.a : q.a, unit: t.unit || q.unit };
+  }
+  if (st.solution && st.solution.tr && st.solution.tr[lang]) out.solution = { ...st.solution, ...st.solution.tr[lang] };
+  return out;
+}
+
 function quizLive(box, me, back) {
   let last = "", timer = null, alive = true, tick = null;
   let input = { idx: -1 };          // my estimate / pin of the current question – kept when the view is drawn again
@@ -215,10 +232,16 @@ function quizLive(box, me, back) {
     try { draw(await api("community/quiz")); } catch {}
     timer = setTimeout(poll, 800);
   }
+  let raw = null;                   // the last state from the server (the language switch draws it again)
+  let qlang = null; try { qlang = localStorage.getItem("fq.quiz.lang"); } catch {}
   function draw(st) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                   // an answer that is not a game state: no game
-    const sig = JSON.stringify(st && [st.status, st.idx, st.joined, st.my_choice, (st.answered || []).length, st.players.map(p => p.id + ":" + p.points)]);
+    raw = st;
+    const langs = st && st.langs ? [st.langs.base, ...st.langs.more] : [];
+    const lang = langs.includes(qlang) ? qlang : langs.includes(uiLang2()) ? uiLang2() : langs[0];
+    st = quizInLang(st, lang);
+    const sig = JSON.stringify(st && [st.status, st.idx, st.joined, st.my_choice, (st.answered || []).length, st.players.map(p => p.id + ":" + p.points), lang]);
     if (sig === last) return;
     last = sig;
     clearInterval(tick);
@@ -228,7 +251,12 @@ function quizLive(box, me, back) {
     const menu = gameMenu({ invite: !me.guest && st.status !== "done" ? "quiz" : null,
       actions: [{ ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
       onLeave: () => { full(false); stop(); back(); } });
-    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎯 ", C(st.title))), st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null);
+    // a multilingual quiz: everybody picks the language of the questions on their own device
+    const langSel = langs.length > 1 ? h("select.quiz-lang", { "aria-label": T("Language of the questions"), title: T("Language of the questions"),
+      onchange: e => { qlang = e.target.value; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} last = ""; draw(raw); } },
+      ...langs.map(l => h("option", { value: l, selected: l === lang, title: QUIZ_LANG_NAMES[l] || l }, "🌐 " + l.toUpperCase()))) : null;
+    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎯 ", C(st.title))),
+      h("div.row", langSel, st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null));
     // only the main action stays as a big button – everything else is in ☰
     const hostBar = isHost(st) && st.status !== "done" ? h("div.row.center.host-bar",
       h("button.btn", { onclick: () => act("next") }, st.status === "lobby" ? "▶ " + I18N.tr(T("Start")) : st.status === "question" ? I18N.tr(T("Show answer")) :
@@ -724,6 +752,39 @@ function quizEditor(q, done) {
   const quiz = q ? JSON.parse(JSON.stringify(q)) : { title: "", questions: [{ q: "", a: ["", ""], c: 0, t: 20 }] };
   const title = h("input", { type: "text", maxlength: 80, value: quiz.title, placeholder: I18N.tr(T("e.g. Our holidays")) });
   const list = h("div.qe-list");
+  // multilingual: off by default – switched on, a main language and further languages; only then the extra fields appear
+  const ml = quiz.langs ? JSON.parse(JSON.stringify(quiz.langs)) : { base: QUIZ_LANG_NAMES[uiLang2()] ? uiLang2() : "de", more: [], title: {} };
+  ml.title = ml.title || {};
+  let mlOn = !!quiz.langs;
+  const langBox = h("div.qe-langs");
+  const drawLangs = () => {
+    const on = h("input", { type: "checkbox", checked: mlOn, onchange: e => { mlOn = e.target.checked; drawLangs(); draw(); } });
+    const base = h("select", { onchange: e => { ml.base = e.target.value; ml.more = ml.more.filter(x => x !== ml.base); drawLangs(); draw(); } },
+      ...Object.entries(QUIZ_LANG_NAMES).map(([k, n]) => h("option", { value: k, selected: k === ml.base }, n)));
+    const free = Object.keys(QUIZ_LANG_NAMES).filter(k => k !== ml.base && !ml.more.includes(k));
+    const add = h("select", { onchange: e => { if (e.target.value) { ml.more.push(e.target.value); drawLangs(); draw(); } } },
+      h("option", { value: "" }, "+ " + I18N.tr(T("Add a language"))), ...free.map(k => h("option", { value: k }, QUIZ_LANG_NAMES[k])));
+    langBox.replaceChildren(h("label.check", on, "🌐 ", T("Multilingual quiz")),
+      !mlOn ? null : h("div.qe-langs-body",
+        h("div.grid2", h("label.field", T("Main language"), base), ml.more.length < 5 && free.length ? h("label.field", T("Further languages"), add) : h("span")),
+        ml.more.length ? h("div.qe-lang-chips", ...ml.more.map(l => h("span.chip", "🌐 " + QUIZ_LANG_NAMES[l] + " ",
+          h("button.icon-btn", { title: T("Remove"), onclick: () => { ml.more = ml.more.filter(x => x !== l); delete ml.title[l]; drawLangs(); draw(); } }, "✕")))) :
+          h("p.small.muted", T("Choose a further language – then every question gets fields for it. The players switch the language during the game.")),
+        ...ml.more.map(l => h("label.field.qe-tr", I18N.tr(T("Title")) + " · " + QUIZ_LANG_NAMES[l],
+          h("input", { type: "text", maxlength: 80, value: ml.title[l] || "", placeholder: title.value, oninput: e => { ml.title[l] = e.target.value; } })))));
+  };
+  const more = () => mlOn ? ml.more : [];
+  const trOf = (x, l) => { x.tr = x.tr || {}; x.tr[l] = x.tr[l] || {}; return x.tr[l]; };
+  // the fields of a question in the further languages
+  const trFields = x => more().map(l => {
+    const t = trOf(x, l), kind = x.kind || "choice";
+    return h("div.qe-tr-block", h("div.small.qe-tr-head", "🌐 ", QUIZ_LANG_NAMES[l]),
+      h("input", { type: "text", maxlength: 300, value: t.q || "", placeholder: x.q || I18N.tr(T("Question")), oninput: e => { t.q = e.target.value; } }),
+      kind === "choice" ? h("div.qe-tr-answers", ...x.a.map((a, j) => h("input", { type: "text", maxlength: 120, value: (t.a || [])[j] || "", placeholder: a || I18N.tr(T("Answer")),
+        style: { "--c": QUIZ_COLORS[j] }, oninput: e => { t.a = t.a || []; t.a[j] = e.target.value; } }))) : null,
+      kind === "estimate" ? h("input", { type: "text", maxlength: 20, value: t.unit || "", placeholder: (x.unit || I18N.tr(T("Unit"))), oninput: e => { t.unit = e.target.value; } }) : null,
+      kind === "pin" ? h("input", { type: "text", maxlength: 60, value: t.label || "", placeholder: (x.label || I18N.tr(T("Name of the place"))), oninput: e => { t.label = e.target.value; } }) : null);
+  });
   const KINDS = { choice: T("Multiple choice"), estimate: T("Estimate a number"), pin: T("Place on a map") };
   const setKind = (i, k) => {       // keep text and time, start the new type empty
     const x = quiz.questions[i], base = { q: x.q, t: x.t || 20 };
@@ -761,13 +822,14 @@ function quizEditor(q, done) {
       h("button.icon-btn", { title: T("Delete"), onclick: () => { quiz.questions.splice(i, 1); draw(); } }, "✕")),
     h("select.qe-kind", { onchange: e => setKind(i, e.target.value) },
       ...Object.entries(KINDS).map(([k, n]) => h("option", { value: k, selected: (x.kind || "choice") === k }, I18N.tr(n)))),
-    ...body(x, i))));
-  draw();
-  const m = modal(h("div.form", h("h2", q ? T("Edit quiz") : T("New quiz")), h("label.field", T("Title"), title), list,
+    ...body(x, i), ...trFields(x))));
+  draw(); drawLangs();
+  const m = modal(h("div.form", h("h2", q ? T("Edit quiz") : T("New quiz")), h("label.field", T("Title"), title), langBox, list,
     h("button.btn.ghost", { onclick: () => { quiz.questions.push({ q: "", a: ["", ""], c: 0, t: 20 }); draw(); } }, "+ ", T("Question")),
     h("div.row.sticky-actions", h("button.btn", { onclick: async () => {
       quiz.title = title.value;
-      try { await api(q ? `community/quizzes/${q.id}` : "community/quizzes", { method: q ? "PUT" : "POST", body: { title: quiz.title, questions: quiz.questions } }); m.close(); done(); }
+      const langs = mlOn && ml.more.length ? { base: ml.base, more: ml.more, title: ml.title } : null;
+      try { await api(q ? `community/quizzes/${q.id}` : "community/quizzes", { method: q ? "PUT" : "POST", body: { title: quiz.title, questions: quiz.questions, langs } }); m.close(); done(); }
       catch (e) { toast(e.message, "bad"); }
     } }, "💾 ", T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
 }
