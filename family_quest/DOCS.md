@@ -997,6 +997,23 @@ the server; best times stay in this browser), shown when family games are on for
 - **Pairs** – turn over two cards and find the pairs: animals, fruit, vehicles, sea animals or **your own photo
   sets**; alone (fewest moves), against the app (it remembers more or less well) or 2–4 players on one device.
   Card back: four patterns or the **family crest**.
+- **🧊 Cube solver** – helps to bring a mixed-up puzzle cube back to one colour per side. Choose **2×2** or **3×3**
+  (4×4 is shown as «coming later»), then paint the colours you see on a **3D cube**: drag it with a finger or the
+  mouse, or jump to a side with the six side buttons; pick a colour and tap a sticker. On small phones the flat
+  **net** (▦) is easier. The 3×3 centres are fixed – hold the cube with **yellow on top and green in front**. 🧽 clears
+  everything, ✨ fills in a solved cube, 🎲 mixes one to try it out. The colours stay in this browser, so a refresh
+  loses nothing. **Solve** first checks the colours and says in plain words what is wrong – a colour used too often,
+  stickers without colour, «This corner cannot exist: white-yellow-red», two colours of a corner swapped, a piece
+  that is there twice (the stickers blink), or «one corner is twisted / one edge is flipped / two pieces are
+  swapped» (a cube that cannot be solved like this – usually one sticker is painted wrong). Then a **step-by-step
+  guide**: the move in standard notation (U D L R F B, ' = anticlockwise, 2 = twice) plus a sentence and an arrow
+  («Turn the RIGHT side up ↑»), the 3D cube turns the layer and shows the result; ◀ Back, Next ▶, 🔁 show again,
+  «Step 12 of 110», the next moves, and confetti at the end. The 3×3 is solved **layer by layer** like in the
+  beginner's method, in seven phases with a short explanation each (white cross, white corners, middle layer,
+  yellow cross, yellow edges, yellow corners to their place, turn the yellow corners) – about 135 moves on average,
+  never more than about 200; the cube is never turned as a whole. The 2×2 is solved the **shortest way** (at most
+  11 moves); the corner at the back, bottom left never moves. Everything runs on the device (the search in a Web
+  Worker); nothing is sent to the server. Parents switch it on or off in Settings › Games like the other games.
 
 **Photo sets** (parent area › Games › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
 photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**

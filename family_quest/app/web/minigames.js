@@ -1,4 +1,4 @@
-// Game corner: small games that run on this device only – Tic-Tac-Toe, Sudoku, Patience and Ping-Pong.
+// Game corner: small games that run on this device only – Tic-Tac-Toe, Sudoku, Patience, Ping-Pong and the cube solver (cube.js).
 // Alone against the app or two players on one tablet. Nothing is sent to the server; best results stay in this browser.
 "use strict";
 
@@ -7,6 +7,7 @@ const ARCADE = {
   sudoku: { icon: "🔢", title: T("Sudoku"), text: T("Every number once in each row, column and box. From 4×4 to 9×9.") },
   patience: { icon: "🃏", title: T("Patience"), text: T("Sort all cards by suit onto the four piles.") },
   pingpong: { icon: "🏓", title: T("Ping-Pong"), text: T("Bounce the ball back – against the app or face to face on one tablet.") },
+  cube: { icon: "🧊", title: T("Cube solver"), text: T("Paint the colours of your puzzle cube and get the moves to solve it, step by step.") },
   slots: { icon: "🎰", title: T("One-armed bandit"), text: T("Buy it once, then pull the lever for 1 coin – three times a day. Three alike win, cherries too.") },
 };
 
@@ -36,7 +37,7 @@ function arcadeView(kind) {
     // ☰: the rules, language, theme, sound – also for the duels on two devices and the doubles (they draw into box)
     h("div.quiz-head", h("div.row.head-title", gameMenu({ rules: () => arcadeRulesView(kind), onLeave: () => go("games") }), h("h1", g.icon, " ", g.title))), box));
   document.body.classList.add("quiz-open");
-  ({ ttt: tttGame, sudoku: sudokuGame, patience: patienceGame, pingpong: pingpongGame, slots: slotsGame })[kind](box);
+  ({ ttt: tttGame, sudoku: sudokuGame, patience: patienceGame, pingpong: pingpongGame, slots: slotsGame, cube: cubeGame })[kind](box);
 }
 
 function arcadeRulesView(kind) {
