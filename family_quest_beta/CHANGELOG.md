@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0-beta.7
+
+- Parent area › Learning packs: all own packs (imported, made with the AI or edited) in their own box «Own packs» on top
+- Import page: shorter – only «From a file» and «Made with your AI»
+
 ## 1.1.0-beta.6
 
 - Parent area: after a long pause every button works again – Home Assistant renews the session by itself (otherwise the PIN login appears with «Session expired») instead of the message «HTTP 401»
