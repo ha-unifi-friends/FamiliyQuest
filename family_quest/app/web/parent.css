@@ -233,12 +233,13 @@ details.fold[open] > summary { margin-bottom: 10px; }
 
 #poster .poster-crest { width: 46mm; margin: 0 auto; }
 
-/* games per game and person */
-.games-tbl { display: grid; gap: 6px; }
-.game-row { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--hover); }
-.game-row.off { opacity: .6; }
-.game-row .game-kids { grid-column: 2 / -1; gap: 4px 14px; }
-@media (max-width: 600px) { .game-row { grid-template-columns: 2.2rem minmax(0, 1fr); } .game-row .pin-kind { grid-column: 1 / -1; } }
+/* parent area › Games: per game active / without bots / inactive and for whom */
+.game-status { display: grid; gap: 6px; margin: 0 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--hover); }
+.game-status .game-kids { gap: 4px 14px; }
+.game-status p { margin: 0; }
+.sec:has(> .game-status.off) > :not(.sec-head):not(.game-status) { opacity: .55; }
+.games-general summary { cursor: pointer; }
+.games-general[open] summary { margin-bottom: 10px; }
 
 /* foot of the menu: one item per line */
 .side-foot { display: grid; gap: 2px; }

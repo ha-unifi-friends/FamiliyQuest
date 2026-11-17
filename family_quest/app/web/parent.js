@@ -1417,7 +1417,7 @@ function gameAccess(kids, data) {
     const a = acc[k] || { mode: "all", profiles: [], bots: true }, bar = bars[k];
     const state = a.mode === "off" ? "off" : a.bots === false ? "nobots" : "on";
     const set = v => { acc[k] = v === "off" ? { ...a, mode: "off" } : { ...a, mode: a.mode === "off" ? "all" : a.mode, bots: v === "on" }; save(k); };
-    bar.closest(".game-block")?.classList.toggle("off", state === "off");
+    bar.classList.toggle("off", state === "off");                  // the section is dimmed (parent.css)
     bar.replaceChildren(
       h("div.pin-kind.game-state", ...[["on", "✓ ", T("Active")], botGames.has(k) ? ["nobots", "🚫 ", T("Active without bots")] : null, ["off", "✕ ", T("Inactive")]].filter(Boolean)
         .map(([v, ic, n]) => h("button.btn.small" + (state === v ? (v === "off" ? ".bad" : "") : ".ghost"), { "aria-pressed": String(state === v), onclick: () => set(v) }, ic, n))),
@@ -1429,7 +1429,7 @@ function gameAccess(kids, data) {
   };
   return {
     bar: k => { if (!bars[k]) { bars[k] = h("div.game-status"); setTimeout(() => draw(k)); } return bars[k]; },
-    allTo: mode => { for (const [k] of GAME_LIST) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; save(null); },
+    allTo: mode => { for (const [k] of GAME_LIST) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; return save(null); },
   };
 }
 
