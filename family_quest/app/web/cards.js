@@ -156,15 +156,18 @@ function cardsLive(box, me, back, kind) {
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
     if (!st) return show(h("section.card.center", h("div.big-ic", CARD_GAMES[kind].icon), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head", h("h1", CARD_GAMES[kind].icon, " ", st.title), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => { const m = modal(h("div", cardsRulesView(kind, st.rules), h("button.btn", { onclick: () => m.close() }, T("Close")))); } }, "📜 ", T("Rules")),
+    // ☰: rules, guests (everybody of the family at a family table), the actions of whoever leads, language
+    const menu = gameMenu({ rules: () => cardsRulesView(kind, st.rules),
+      invite: !st.solo && !me.guest && st.status !== "done" ? kind : null,
+      actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
+        onclick: () => act("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", CARD_GAMES[kind].icon, " ", st.title)), h("div.row",
       st.round ? h("span.chip", I18N.tr(T("Round {0} of {1}")).replace("{0}", st.round).replace("{1}", st.rules.rounds)) : null));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Deal")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite(kind) }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    // everybody of the family who plays may invite guests – not only who leads the game
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite(kind) }, "👥 ", T("Invite guests")));
+    // only the main action stays as a big button – everything else is in ☰
+    const host = isHost() && st.phase === "lobby" && st.status !== "done" ? h("div.row.center.host-bar",
+      h("button.btn", { onclick: async () => { try { const r = await beginGame(`community/cards/${kind}/begin`, st.players); if (r) { st = r; draw(true); } } catch (e) { toast(e.message, "bad"); } } }, "▶ ", T("Deal"))) : null;
+    if (st.phase !== "lobby") starterBanner(st.starter, "cards-" + kind);
     if (st.phase === "done") {
       const rank = (st.ranking || []).map(id => st.players.find(p => p.id === id)).filter(Boolean);
       if (rank[0] && rank[0].id === myId) { confetti(); try { Sound.play("done"); } catch {} }

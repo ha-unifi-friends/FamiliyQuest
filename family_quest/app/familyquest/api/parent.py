@@ -986,6 +986,8 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         if isinstance(v, list):
             return all(finite(x) for x in v)
         return True
+    if "game_starter" in body and body["game_starter"] not in ("dice", "leader", "choose"):
+        raise HTTPException(400, "Unknown setting")
     for k, v in body.items():
         if k in DEFAULT_SETTINGS and not finite(v):
             raise HTTPException(400, "Invalid number")

@@ -21,6 +21,7 @@ def fq(settings):
     from familyquest.services import FamilyQuest
     core = FamilyQuest(settings)
     core.packs.sync_folders(settings.packs_dirs)
+    core.db.set_setting("game_starter", "leader")     # the tests know who begins; the dice is tested on its own
     return core
 
 
@@ -29,6 +30,7 @@ def client(settings):
     from fastapi.testclient import TestClient
     from familyquest.main import create_app
     app = create_app(settings)
+    app.state.fq.db.set_setting("game_starter", "leader")   # the tests know who begins; the dice is tested on its own
     with TestClient(app) as c:
         yield c
 

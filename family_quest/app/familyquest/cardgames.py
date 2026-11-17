@@ -20,6 +20,7 @@ rounds (or when somebody passes the point limit) the lowest points win.
 from __future__ import annotations
 
 import json
+import secrets
 import random
 import threading
 import time
@@ -329,6 +330,40 @@ def bot_delay(rules: dict, default: float) -> float:
 
 
 # ================================================================ the games in the database
+# ---------------------------------------------------------------- who begins (parent area › Settings › Games)
+STARTER_MODES = ("dice", "leader", "choose")
+
+
+def starter_mode(db) -> str:
+    m = db.get_setting("game_starter")
+    return m if m in STARTER_MODES else "dice"
+
+
+def apply_starter(st: dict, mode: str, chosen=None, leader=None) -> str:
+    """Who begins a turn-based game: the player list is turned round so that this player comes first – seat order,
+    teams and partners stay as they are. dice = drawn at random, leader = whoever leads the table, choose = the
+    player the leader picked (`chosen`; without a valid choice: the leader). Stores st["starter"] for the banner."""
+    players = st.get("players") or []
+    if not players:
+        return ""
+    ids = [str(p["id"]) for p in players]
+    how = mode if mode in STARTER_MODES else "dice"
+    first = None
+    if how == "choose" and chosen is not None and str(chosen) in ids:
+        first = str(chosen)
+    elif how in ("leader", "choose"):
+        first = str(leader) if leader is not None and str(leader) in ids else ids[0]
+        how = "leader" if how == "leader" or chosen is None else how
+    else:
+        first = secrets.choice(ids)
+        how = "dice"
+    i = ids.index(first)
+    st["players"] = players[i:] + players[:i]
+    p = st["players"][0]
+    st["starter"] = {"id": first, "how": how, "name": p.get("name") or "?", "at": time.time()}
+    return first
+
+
 class CardGames:
     def __init__(self, db, add_history=None):
         self.db = db
@@ -436,6 +471,7 @@ class CardGames:
             gid = self.db.x("INSERT INTO card_game(kind, host_id, solo, state) VALUES(?,?,?,?)", kind, host, int(solo), json.dumps(st))
             if solo:                                  # alone against bots: deal right away
                 row = self.db.q1("SELECT * FROM card_game WHERE id=?", gid)
+                apply_starter(st, starter_mode(self.db), None, leader=host)     # «choose» without a choice: you begin
                 Shed(st).deal()
                 self._save(row, st)
             return gid
@@ -456,7 +492,7 @@ class CardGames:
             st["players"].insert(len(humans), self._person(pid))
             self._save(row, st)
 
-    def begin(self, kind: str, viewer: int) -> None:
+    def begin(self, kind: str, viewer: int, starter=None) -> None:
         with self.lock:
             row = self._row(kind, viewer)
             if not row:
@@ -466,6 +502,7 @@ class CardGames:
                 raise CommunityError("The game has already started")
             if len(st["players"]) < 2:
                 raise CommunityError("Add a bot or wait for a second player")
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])
             Shed(st).deal()
             self._save(row, st)
 
@@ -522,7 +559,7 @@ class CardGames:
                    for p in st["players"]]
         mine = hands.get(me)
         return {"game": row["id"], "kind": st["kind"], "title": GAMES[st["kind"]]["title"], "calls": GAMES[st["kind"]]["calls"],
-                "status": row["status"], "phase": st["phase"], "solo": bool(row["solo"]), "host": row["host_id"], "rules": st["rules"],
+                "status": row["status"], "phase": st["phase"], "starter": st.get("starter"), "solo": bool(row["solo"]), "host": row["host_id"], "rules": st["rules"],
                 "players": players, "joined": any(p["id"] == me for p in st["players"]),
                 "round": st.get("round", 0), "top": st["discard"][-1] if st.get("discard") else None,
                 "deck_left": len(st.get("deck") or []), "turn": st.get("turn"), "direction": st.get("direction", 1),

@@ -1328,12 +1328,17 @@ async function gamesSection(s) {
   }));
   draw();
   const allTo = mode => { for (const [k] of GAMES) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; save(); };
+  // who begins a turn-based game (cardgames.apply_starter)
+  const starter = h("select", { onchange: async () => { await call("parent/settings", { method: "PUT", body: { game_starter: starter.value } }); toast(T("Saved"), "good"); } },
+    ...[["dice", "🎲 " + I18N.tr(T("The dice decides"))], ["leader", "👑 " + I18N.tr(T("Whoever leads the game"))], ["choose", "👉 " + I18N.tr(T("Whoever leads chooses a player"))]]
+      .map(([k, n]) => h("option", { value: k, selected: (s.game_starter || "dice") === k }, n)));
   const guests = h("input", { type: "checkbox", checked: s.games_guests !== false, onchange: async () => {
     await call("parent/settings", { method: "PUT", body: { games_guests: guests.checked } }); toast(T("Saved"), "good"); } });
   return section("🎲 " + I18N.tr(T("Games")),
     h("p.small.muted", T("Every game on its own: for everybody, only for chosen children or off. Parents can always play; the family council and polls stay open for everybody.")),
     h("div.row", h("button.btn.small.ghost", { onclick: () => allTo("all") }, "✓ ", T("All on")), h("button.btn.small.ghost", { onclick: () => allTo("off") }, "✕ ", T("All off"))),
     box,
+    h("label.field", T("Who begins a game (card and board games)"), starter),
     h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
 }
 

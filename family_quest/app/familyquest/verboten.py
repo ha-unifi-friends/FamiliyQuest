@@ -36,7 +36,7 @@ import time
 from functools import lru_cache
 from pathlib import Path
 
-from .cardgames import CardGames
+from .cardgames import CardGames, apply_starter, starter_mode
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
 
@@ -394,10 +394,11 @@ class Verboten(CardGames):
             fn(st)
             self._save(row, st)
 
-    def begin(self, kind: str, viewer: int) -> None:
+    def begin(self, kind: str, viewer: int, starter=None) -> None:
         def go(st):
             if len(st["players"]) < MIN_PLAYERS:
                 raise CommunityError("Wait for a second player")
+            apply_starter(st, starter_mode(self.db), starter, leader=st["players"][0]["id"])   # who explains first
             self.table(st).begin()
         self._lobby(viewer, go)
 
@@ -491,7 +492,7 @@ class Verboten(CardGames):
             return {"n": e["n"], "explainer": e["explainer"], "side": e.get("side"), "points": e["points"], "skipped": e.get("skipped", False),
                     "cards": [{"word": (card(c["key"]) or {}).get("word", "?"), "res": c["res"], "pts": c["pts"], "by": c.get("by")} for c in e["cards"]],
                     "open": (card(e["open"]) or {}).get("word") if e.get("open") else None}
-        out = {"game": row["id"], "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph, "solo": False,
+        out = {"game": row["id"], "starter": st.get("starter"), "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph, "solo": False,
                "host": row["host_id"], "rules": st["rules"], "players": players, "joined": joined,
                "teams": bool(team_of), "scores": dict(st.get("scores") or {}) if ph != "lobby" else {},
                "my_team": team_of.get(me), "turn": st.get("turn", -1) if ph != "lobby" else None,

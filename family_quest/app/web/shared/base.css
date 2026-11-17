@@ -1825,3 +1825,25 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .q-img.q-flag img { height: min(26vh, 170px); width: auto; max-width: 100%; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 .q-img.q-emoji { font-size: min(18vh, 120px); line-height: 1.1; text-align: center; }
 .q-img.q-svg img { max-height: min(30vh, 220px); max-width: 100%; }
+
+/* ☰ in a running game (ui.js gameMenu) – left in the header like the menu of the app */
+.game-menu-btn { font-size: 1.35rem; flex: none; background: var(--card); box-shadow: var(--shadow); }
+.quiz-head .game-menu-btn { margin-right: 8px; }
+.game-drawer .drawer-item.danger { color: var(--bad, #d33); }
+.game-menu-back { z-index: 960; }
+/* who begins: the picker and the banner */
+.starter-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin: 10px 0; }
+.starter-btn { display: grid; justify-items: center; gap: 4px; padding: 8px; border: 2px solid var(--line); border-radius: 14px;
+  background: var(--card); color: var(--fg); font: inherit; cursor: pointer; }
+.starter-btn:hover { border-color: var(--accent); }
+.starter-emoji { font-size: 2.6rem; line-height: 52px; }
+.starter-banner { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 990; display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; border-radius: 18px; background: var(--card); color: var(--fg); box-shadow: 0 8px 30px rgba(0,0,0,.3);
+  font-size: 1.2rem; font-weight: 700; max-width: calc(100% - 32px); transition: opacity .5s, transform .5s; }
+.starter-banner.gone { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+.starter-die { font-size: 2rem; }
+.starter-banner.dice .starter-die { animation: fq-roll .8s ease-out; }
+@keyframes fq-roll { 0% { transform: rotate(-540deg) scale(.4); } 70% { transform: rotate(20deg) scale(1.15); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .starter-banner.dice .starter-die { animation: none; } }
+.quiz-head .head-title { flex-wrap: nowrap; min-width: 0; gap: 0; }
+.quiz-head .head-title h1 { min-width: 0; }
