@@ -397,6 +397,23 @@ function internetCard(st) {
       : h("button.btn.big.good", { disabled: !st.can_start, onclick: () => act("start") }, "▶ ", T("Start")));
 }
 
+// «Me»: at the top everything about me at a glance – points, open tasks, internet time (one button: start / pause)
+// and my lights; the avatar, moods and pets follow below
+function meSummary() {
+  const me = S.me;
+  const accs = (me.accounts || []).filter(a => a.spendable);
+  const open = (me.chores || []).filter(c => !c.done && !c.pending);
+  const tile = (ic, value, label) => h("div.me-tile", h("span.me-ic", ic), h("b", value), h("span.small.muted", label));
+  const stats = h("section.card.me-sum",
+    h("div.me-tiles",
+      tile("⭐", "Level " + me.level.level, fmt(me.xp_today) + " / " + fmt(me.daily_goal) + " XP " + I18N.tr(T("today"))),
+      tile("🔥", String(me.streak), T("Days in a row")),
+      ...accs.map(a => tile(a.icon || "🪙", fmt(me.balances[a.key], 1), I18N.tr(a.name))),
+      tile(open.length ? "🧹" : "✅", String(open.length), open.length ? T("open tasks") : T("All done!"))),
+    me.internet ? internetCard(me.internet) : null);
+  return [stats, open.length ? choresCard(me.chores) : null, me.has_devices ? devicesCard() : null];
+}
+
 function badgesCard(badges) {
   const got = badges.filter(b => b.earned).length;
   return h("section.card", h("div.row", h("h2.grow", "🏅 ", T("Badges")), h("span.muted", got + " / " + badges.length)),
@@ -1142,7 +1159,7 @@ async function avatarView() {
     h("label.feel", h("span", T("Today I feel …")), feel),
     h("span.small.muted", "🔒 ", T("Only your parents see this.")));
   draw(); drawTabs(); drawPanel();
-  screen("avatar", h("h1", "🧑‍🎨 ", T("Me")), moods, petsSection(), h("div.av-editor", preview, h("div.av-side", tabs, panel)),
+  screen("avatar", h("h1", "🧑‍🎨 ", T("Me")), ...meSummary(), moods, petsSection(), h("div.av-editor", preview, h("div.av-side", tabs, panel)),
     h("div.row.center", h("button.btn.big", { onclick: save }, "💾 ", T("Save"))),
     h("div.row.center", h("button.btn.ghost", { onclick: changePin }, "🔑 ", T("Change my PIN"))),
     S.me.games ? botsSection() : null);
