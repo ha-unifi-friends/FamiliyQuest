@@ -616,7 +616,7 @@ async function packsView(main) {
   const [d, profiles] = await Promise.all([call("parent/packs"), call("parent/profiles")]);
   const kids = profiles.filter(p => p.role === "kid");
   const drafts = d.packs.filter(p => p.status === "draft");
-  const imported = p => ["upload", "import", "ai"].includes(p.source);   // from a file, a table or the AI – shown on top
+  const imported = p => !["builtin", "share"].includes(p.source);      // own packs: imported, made with the AI or edited – shown on top
   const importedPacks = d.packs.filter(p => p.status !== "draft" && imported(p));
   const bundles = d.packs.filter(p => p.kind === "bundle" && p.status !== "draft");
   const packs = d.packs.filter(p => p.kind === "pack" && p.status !== "draft");
@@ -687,7 +687,7 @@ async function packsView(main) {
   const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
     drafts.length ? section("📝 " + I18N.tr(T("Imported as draft – to check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
-    importedPacks.length ? section("📥 " + I18N.tr(T("Imported packs")), ...importedPacks.map(card)) : null,
+    importedPacks.length ? section("⭐ " + I18N.tr(T("Own packs")), ...importedPacks.map(card)) : null,
     levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
     ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
   function packRewards(p) {
@@ -848,7 +848,6 @@ async function packEditor(id, { afterSave } = {}) {
 // ---------------------------------------------------------------- import
 async function importView(main) {
   const file = h("input", { type: "file", accept: ".yaml,.yml,.json,.zip,.csv,.tsv,.xlsx" + (P.meta.ai ? ",.pdf,.png,.jpg,.jpeg,.webp" : "") });
-  const url = h("input", { type: "url", placeholder: "https://…/pack.yaml" });
   const out = h("div");
   const drop = h("label.drop", file, h("span.big-ic", "📄"), h("strong", T("Choose or drop a file")),
     h("span.small.muted", P.meta.ai ? T("YAML, JSON, ZIP, CSV, Excel, PDF or photo") : T("YAML, JSON, ZIP, CSV or Excel")));
@@ -864,20 +863,7 @@ async function importView(main) {
         h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section("🤖 " + I18N.tr(T("Made with your AI")),
       h("p", T("Learning material that fits your child's school year and textbook: the template – and every JSON export of a pack – is a JSON file that explains itself to an AI (instructions and every field). Give it to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3», «the words on this photo» or «add 10 cards». Save the answer as a .json file and upload it above. Then check the draft, publish it and assign it to your children.")),
-      aiTemplateButtons("pack")),
-    section(T("From a link"), h("div.row", url, h("button.btn", { onclick: fromUrl }, T("Load")))),
-    section(T("Format"), h("pre.small.example", { translate: "no" }, `id: franz-5kl-einheit-3
-titel: "Französisch 5. Klasse – Einheit 3"
-fach: franzoesisch
-stufe: 5. Klasse
-sprache: fr
-einheiten:
-  - id: zimmer
-    titel: Zimmer im Haus
-    karten:
-      - {de: das Haus, fr: la maison, emoji: "🏠"}
-      - {de: die Küche, fr: la cuisine}
-    uebungen: [auswahl, eintippen, paare, hoeren]`)));
+      aiTemplateButtons("pack")));
   async function upload(f) {
     const fd = new FormData(); fd.append("file", f);
     out.replaceChildren(h("p", "⏳ ", T("Reading…")));
@@ -885,11 +871,6 @@ einheiten:
     try { r = await call("parent/import/file", { method: "POST", form: fd }); } catch { out.replaceChildren(); return; }
     if (r.table) return tableMapping(r.table, out);
     showDrafts(r.drafts, out);
-  }
-  async function fromUrl() {
-    if (!url.value) return url.focus();
-    out.replaceChildren(h("p", "⏳ ", T("Loading…")));
-    try { showDrafts((await call("parent/import/url", { method: "POST", body: { url: url.value } })).drafts, out); } catch { out.replaceChildren(); }
   }
 }
 
