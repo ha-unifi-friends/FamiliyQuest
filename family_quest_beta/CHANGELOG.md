@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0-beta.1
+
+- ☰ game menu in every running game: rules, invite guests, leader actions, language, light/dark, sound and «Leave the game» (replaces the ✕)
+- Who begins: dice (default), game leader or choose a player – set in Parent area › Settings › Games; a banner shows who starts
+- A short chime (and a buzz on phones) when it becomes your turn
+- Dorfmarkt: open auction with +10 / +25 / +50 buttons, ends 5 seconds after the last bid
+- Older iPhones (before iOS 16): Dorfmarkt board and other game boards display correctly
+- Backups of older versions can be restored: checked on a test copy first, with a warning, and the current data are kept as before-restore.zip
+- Parent area › Packs: imported packs are shown on top in their own category
+
 ## 1.0.0-beta.9
 
 - Learning packs and quizzes in a self-describing JSON: the file itself carries English instructions for an AI and a guide to every field (question types, pictures, flags, SVG, cantons, map positions, pack fields, learning forms, maths generators) – template, export and import are the same format

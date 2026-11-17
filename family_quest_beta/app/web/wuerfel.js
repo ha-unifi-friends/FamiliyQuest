@@ -80,7 +80,6 @@ function wuerfelLive(box, me, back) {
   window.addEventListener("hashchange", stop, { once: true });
   const mine = () => st && st.players && st.players.find(p => p.id === myId);
   const who = id => (st.players.find(p => p.id === id) || {}).name || "?";
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
   const act = async (path, body) => {
     if (busy) return null;
     busy = true;
@@ -160,14 +159,16 @@ function wuerfelLive(box, me, back) {
       seenRound = st.round;
     }
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", FW_ICON, " ", fwName()), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => openModal(wuerfelRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜"),
+    // ☰: rules, guests, End (whoever leads), language – only the main action (Start) stays as a big button
+    const menu = gameMenu({ rules: () => wuerfelRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "wuerfel" : null,
+      actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
+        onclick: () => act("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", FW_ICON, " ", fwName())), h("div.row",
       st.round && st.phase === "play" ? h("span.chip.fw-round", { title: I18N.tr(T("Round {0} of {1}")).replace("{0}", st.round).replace("{1}", st.rounds) }, st.round + " / " + st.rounds) : null));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("wuerfel") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("wuerfel") }, "👥 ", T("Invite guests")));
+    const host = isHost() && st.status !== "done" && st.phase === "lobby" ? h("div.row.center.host-bar",
+      h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start"))) : null;
     if (st.phase === "done") return show(head, result());
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       st.phase === "lobby" ? h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")) : h("p.muted", T("The game has already started"))),

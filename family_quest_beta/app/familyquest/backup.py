@@ -93,9 +93,56 @@ def inspect(raw: bytes) -> dict:
     return manifest
 
 
-def restore(fq, raw: bytes) -> dict:
-    """Replace all data with the backup. The caller stops and restarts the planner around this."""
+SAFETY_FILE = "before-restore.zip"        # the data before the last restore – in the data folder, one copy
+
+
+def check(raw: bytes, current_version: str = "") -> dict:
+    """Everything a restore needs, tried out first on a copy: the file, the database (not damaged, a Family Quest
+    database), its version – and for an older backup the update to the current version. Returns the manifest plus
+    "compat": {"status": same | older, "schema", "current", "from", "to"}. Raises BackupError if it cannot work."""
+    from .db import MIGRATIONS, Database
     manifest = inspect(raw)
+    z = zipfile.ZipFile(io.BytesIO(raw))
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "check.db"
+        path.write_bytes(z.read("family_quest.db"))
+        c = sqlite3.connect(path)
+        try:
+            if c.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                raise BackupError("the database in the backup is damaged")
+            if not c.execute("SELECT name FROM sqlite_master WHERE name='profile'").fetchone():
+                raise BackupError("not a Family Quest backup")
+            ver = c.execute("PRAGMA user_version").fetchone()[0]
+        finally:
+            c.close()
+        if ver > len(MIGRATIONS):
+            raise BackupError("the backup comes from a newer version of Family Quest – update the app first")
+        if ver < len(MIGRATIONS):                # older: try the update to the current version on the copy
+            try:
+                db = Database(path)
+                db.val("SELECT COUNT(*) FROM profile")
+                db.val("SELECT COUNT(*) FROM ledger")
+                db.conn.close()
+            except Exception as e:  # noqa: BLE001
+                import logging
+                logging.getLogger(__name__).warning("older backup cannot be migrated: %s", e)
+                raise BackupError("this older backup cannot be updated to the current version") from None
+    manifest["compat"] = {"status": "older" if ver < len(MIGRATIONS) else "same", "schema": ver, "current": len(MIGRATIONS),
+                          "from": manifest.get("app_version") or "?", "to": current_version or "?"}
+    return manifest
+
+
+def restore(fq, raw: bytes) -> dict:
+    """Replace all data with the backup. The caller stops and restarts the planner around this.
+    First the backup is checked (an older one is updated on a copy), then the current data are saved as
+    before-restore.zip in the data folder – only then the data are replaced."""
+    manifest = check(raw, fq.settings.version)
+    try:
+        safety, _name = create(fq)
+        (fq.settings.data_dir / SAFETY_FILE).write_bytes(safety)
+        manifest["safety"] = SAFETY_FILE
+    except Exception:  # noqa: BLE001 – no safety copy (e.g. disk full): the restore itself still works
+        manifest["safety"] = None
     z = zipfile.ZipFile(io.BytesIO(raw))
     data_dir: Path = fq.settings.data_dir
     with tempfile.TemporaryDirectory() as tmp:

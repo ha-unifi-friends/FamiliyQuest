@@ -148,6 +148,8 @@ function dominoLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+
+    turnCue("domino", st && st.phase === "play" && st.my_turn);
     const sig = JSON.stringify(st && [st.phase, st.turn, st.line.length, st.hand, st.round, st.joined, st.players.map(p => [p.tiles, p.passed]),
       (st.sheet || []).length, Math.ceil((st.next_ms || 0) / 1000)]) + choose;
     if (sig === lastSig && !force) return;
@@ -156,16 +158,18 @@ function dominoLive(box, me, back) {
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
     if (!st) return show(h("section.card.center", h("div.big-ic", "🁫"), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", "🁫 Domino"), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => openModal(dominoRulesView(st.rules)), title: T("Rules") }, "📜"),
+    // ☰: rules, guests (everybody of the family at a family table), end for whoever leads, language
+    const menu = gameMenu({ rules: () => dominoRulesView(st.rules),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "domino" : null,
+      actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
+        onclick: () => act("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", "🁫 Domino")), h("div.row",
       st.round ? h("button.btn.small.ghost", { onclick: () => openModal(sheetView()), title: T("Score sheet") }, "📊") : null,
       st.round ? h("span.chip", I18N.tr(T("Round {0}")).replace("{0}", st.round)) : null));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Deal")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("domino") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    // everybody of the family who plays may invite guests – not only who leads the game
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("domino") }, "👥 ", T("Invite guests")));
+    // only the main action stays as a big button – everything else is in ☰ (domino: the highest double begins)
+    const host = isHost() && st.phase === "lobby" && st.status !== "done" ? h("div.row.center.host-bar",
+      h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Deal"))) : null;
     if (st.phase === "done") return show(head, result());
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), host);

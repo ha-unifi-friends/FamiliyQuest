@@ -224,14 +224,15 @@ function quizLive(box, me, back) {
     clearInterval(tick);
     if (!st) return show(h("section.card.center", h("div.big-ic", "🎯"), h("h2", T("No family quiz right now")),
       h("p.muted", T("Start one from the list of quizzes – everybody can join on their own device.")), h("button.btn", { onclick: back }, T("Back"))));
-    const head = h("div.quiz-head", h("h1", "🎯 ", C(st.title)), st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null);
-    let hostBar = isHost(st) && st.status !== "done" ? h("div.row.center.host-bar",
+    // ☰: guests (everybody of the family), stop for whoever leads, language
+    const menu = gameMenu({ invite: !me.guest && st.status !== "done" ? "quiz" : null,
+      actions: [{ ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
+      onLeave: () => { full(false); stop(); back(); } });
+    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎯 ", C(st.title))), st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null);
+    // only the main action stays as a big button – everything else is in ☰
+    const hostBar = isHost(st) && st.status !== "done" ? h("div.row.center.host-bar",
       h("button.btn", { onclick: () => act("next") }, st.status === "lobby" ? "▶ " + I18N.tr(T("Start")) : st.status === "question" ? I18N.tr(T("Show answer")) :
-        st.idx + 1 >= st.total ? "🏁 " + I18N.tr(T("Finish")) : I18N.tr(T("Next question")) + " ➜"),
-      !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("quiz") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("Stop the quiz?")))) act("abort"); } }, T("Stop"))) : null;
-    // everybody of the family who plays may invite guests – not only who leads the game
-    if (!hostBar && !me.guest && st.status !== "done") hostBar = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("quiz") }, "👥 ", T("Invite guests")));
+        st.idx + 1 >= st.total ? "🏁 " + I18N.tr(T("Finish")) : I18N.tr(T("Next question")) + " ➜")) : null;
     if (!st.joined && st.status !== "done") return show(head, h("section.card.center",
       h("p", T("Play along on this device?")), h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), playersRow(st));
     if (st.status === "lobby") return show(head, h("section.card.center", h("h2", T("Waiting for the start …")),
@@ -853,17 +854,21 @@ function bingoLive(box, me, back) {
     if (!st) return show(h("section.card.center", h("div.big-ic", "🎱"), h("h2", T("No bingo right now")),
       h("p.muted", T("Start a game – everybody plays on their own device.")), h("button.btn", { onclick: back }, T("Back"))));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head", h("h1", "🎱 Bingo"), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => { const m = modal(h("div", bingoRules(st.rules), h("button.btn", { onclick: () => m.close() }, T("Close")))); } }, "📜 ", T("Rules")),
+    // ☰: rules, guests (everybody of the family), pause / end for whoever leads, language
+    const lead = isHost() && st.status !== "done";
+    const menu = gameMenu({ rules: () => bingoRules(st.rules),
+      invite: !me.guest && st.status !== "done" ? "bingo" : null,
+      actions: [
+        { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Go on") : T("Pause"), hidden: !lead || st.status === "lobby", onclick: () => act("pause", { on: !st.paused }) },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game?"), onclick: () => act("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎱 Bingo")), h("div.row",
       st.count ? h("span.chip", st.count + " / 75") : null));
     const players = h("div.quiz-players", ...st.players.map(p => h("div.qp.done", avatarSvg(p.avatar, 40), C(p.name, "span.small"))));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.status === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start")) :
-        h("button.btn", { onclick: () => act("pause", { on: !st.paused }) }, st.paused ? "▶ " + I18N.tr(T("Go on")) : "⏸ " + I18N.tr(T("Pause"))),
-      !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("bingo") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    // everybody of the family who plays may invite guests – not only who leads the game
-    if (!host && !me.guest && st.status !== "done") host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("bingo") }, "👥 ", T("Invite guests")));
+    // only the main action stays as a big button (start; «go on» while paused) – everything else is in ☰
+    const host = lead && (st.status === "lobby" || st.paused) ? h("div.row.center.host-bar",
+      st.status === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start"))
+        : h("button.btn", { onclick: () => act("pause", { on: false }) }, "▶ ", T("Go on"))) : null;
     if (st.status === "done") {
       const won = st.winner && st.winner.id === me.id;
       if (won) { confetti(); try { Sound.play("done"); } catch {} }

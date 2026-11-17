@@ -257,21 +257,16 @@ function schachLive(box, me, back, gid) {
     setTimeout(() => { const l = d.querySelector(".ch-mlist"); if (l) l.scrollTop = l.scrollHeight; }, 0);
     return d;
   }
+  // draw and resign are part of the play and stay here – pause and delete are in ☰; «Continue» is the main action of a paused game
   function controls() {
     const playing = st.joined && (st.status === "running" || st.status === "paused");
     if (!playing) return null;
-    const isLead = st.host === me.id || me.role === "parent";
     return h("div.row.center.ch-ctl",
-      st.status === "paused" ? h("button.btn.small", { onclick: () => act("resume") }, "▶ ", T("Continue"))
-        : h("button.btn.small.ghost", { onclick: () => act("pause") }, "⏸ ", T("Pause")),
+      st.status === "paused" ? h("button.btn.small", { onclick: () => act("resume") }, "▶ ", T("Continue")) : null,
       st.status === "running" && st.mode !== "local" ? h("button.btn.small.ghost", { disabled: st.draw_offer === st.my_side || st.draw_declined,
         onclick: () => { if (confirm(I18N.tr(T("Offer a draw?")))) act("draw", { action: "offer" }); } }, "½ ", T("Offer draw")) : null,
       st.status === "running" && st.mode === "local" ? h("button.btn.small.ghost", { onclick: () => { if (confirm(I18N.tr(T("Agree to a draw?")))) act("draw", { action: "offer" }); } }, "½ ", T("Draw by agreement")) : null,
-      h("button.btn.small.ghost", { onclick: () => { if (confirm(I18N.tr(st.mode === "local" ? (st.turn === "w" ? T("White resigns?") : T("Black resigns?")) : T("Resign this game?")))) act("resign"); } }, "🏳 ", T("Resign")),
-      st.status === "paused" && isLead ? h("button.btn.small.ghost", { onclick: async () => {
-        if (!confirm(I18N.tr(T("Delete this paused game?")))) return;
-        try { await api(`community/schach/${gid}/delete`, { method: "POST", body: {} }); stop(); back(); } catch (e) { toast(e.message, "bad"); }
-      } }, "🗑") : null);
+      h("button.btn.small.ghost", { onclick: () => { if (confirm(I18N.tr(st.mode === "local" ? (st.turn === "w" ? T("White resigns?") : T("Black resigns?")) : T("Resign this game?")))) act("resign"); } }, "🏳 ", T("Resign")));
   }
   function result() {
     const r = st.result || {};
@@ -289,6 +284,7 @@ function schachLive(box, me, back, gid) {
   }
   function draw(force) {
     if (!alive || !box.isConnected) return;
+    turnCue("schach", st && st.mode !== "local" && st.status === "running" && st.my_turn);
     const sig = JSON.stringify(st && [st.status, st.fen, st.draw_offer, st.paused_by, st.result, st.joined, sel, st.draw_declined]);
     if (sig === lastSig && !force) return;
     lastSig = sig;
@@ -297,8 +293,17 @@ function schachLive(box, me, back, gid) {
     if (!st) return show(h("section.card.center", h("div.big-ic", CH_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: () => { stop(); back(); } }, T("Back"))));
     if (sel && !((st.legal || {})[sel])) sel = null;
     const close = h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { leave(); back(); } }, "✕");
-    const head = h("div.quiz-head.dm-head", h("h1", CH_ICON, " ", chName()), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => { const m = modal(h("div", schachRulesView(st.rewards), h("button.btn", { onclick: () => m.close() }, T("Close")))); }, title: T("Rules") }, "📜")));
+    // ☰: rules, guests (an open seat), pause / delete, language – works in a paused game too
+    const isLead = st.host === me.id || me.role === "parent";
+    const menu = gameMenu({ rules: () => schachRulesView(st.rewards),
+      invite: st.status === "lobby" && !st.invite && !me.guest && st.host === me.id ? ["schach", st.game] : null,
+      actions: [
+        { ic: "⏸", label: T("Pause"), hidden: !st.joined || st.status !== "running", onclick: () => act("pause") },
+        { ic: "▶", label: T("Continue"), hidden: !st.joined || st.status !== "paused", onclick: () => act("resume") },
+        { ic: "🗑", label: T("Delete"), danger: true, hidden: st.status !== "paused" || !isLead, confirm: T("Delete this paused game?"),
+          onclick: async () => { try { await api(`community/schach/${gid}/delete`, { method: "POST", body: {} }); stop(); back(); } catch (e) { toast(e.message, "bad"); } } }],
+      onLeave: () => { leave(); back(); } });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", CH_ICON, " ", chName())));
     if (!st.joined && st.status === "lobby") {
       const from = (who("w") || who("b") || {}).name || "?";
       return show(close, head, h("section.card.center", h("p", I18N.tr(st.invite ? T("{0} invites you to a game") : T("{0} is looking for an opponent")).replace("{0}", from)),
@@ -309,10 +314,8 @@ function schachLive(box, me, back, gid) {
     }
     const top = flip() ? "w" : "b", bot = flip() ? "b" : "w";
     const board = h("div.ch-board", { html: boardSvg(), onclick: tapBoard });
-    const host = st.status === "lobby" && !st.invite && !me.guest && st.host === me.id
-      ? h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("schach", st.game) }, "👥 ", T("Invite guests"))) : null;
     show(close, head, h("div.ch-area", strip(top), h("div.ch-mid", board), strip(bot)),
-      st.status === "done" ? result() : statusLine(), controls(), moveList(), host);
+      st.status === "done" ? result() : statusLine(), controls(), moveList());
   }
   // the clocks tick in the app between two looks at the server
   tick = setInterval(() => {

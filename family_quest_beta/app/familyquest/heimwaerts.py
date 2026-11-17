@@ -33,7 +33,7 @@ import json
 import random
 import time
 
-from .cardgames import BOTS, BOT_DELAY, CardGames, bot_delay
+from .cardgames import BOTS, BOT_DELAY, CardGames, bot_delay, apply_starter, starter_mode
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
 
@@ -515,7 +515,7 @@ class Heimwaerts(CardGames):
             st["players"].append(self._person(pid))
             self._save(row, st)
 
-    def begin(self, kind: str, viewer: int) -> None:
+    def begin(self, kind: str, viewer: int, starter=None) -> None:
         with self.lock:
             row = self._row(KIND, viewer)
             if not row:
@@ -523,6 +523,7 @@ class Heimwaerts(CardGames):
             st = json.loads(row["state"])
             if st["phase"] != "lobby":
                 raise CommunityError("The game has already started")
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (Settings › Games)
             self._deal(st)
             self._save(row, st)
 
@@ -584,7 +585,7 @@ class Heimwaerts(CardGames):
         ph = st["phase"]
         if row["status"] == "done" and ph != "lobby":
             ph = "done"
-        base = {"game": row["id"], "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph,
+        base = {"game": row["id"], "starter": st.get("starter"), "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph,
                 "solo": bool(row["solo"]), "host": row["host_id"], "rules": st["rules"], "joined": joined,
                 "rewards": rewards_of(self.db), "coins_on": not st.get("solo") and people >= 2, "max_players": MAX_PLAYERS}
         if st["phase"] == "lobby":

@@ -588,6 +588,9 @@ def pack_raw(pack_id: str, request: Request, me: dict = Parent) -> dict:
             "summary": info.summary() if info else None}
 
 
+IMPORTED_SOURCES = ("upload", "import", "ai")
+
+
 @router.put("/packs/{pack_id}/raw")
 def pack_save(pack_id: str, body: RawIn, request: Request, me: dict = Parent) -> dict:
     """Save an edited pack (cards edited in the editor or YAML)."""
@@ -599,8 +602,9 @@ def pack_save(pack_id: str, body: RawIn, request: Request, me: dict = Parent) ->
         raise HTTPException(400, str(e)) from None
     if p.id != pack_id:
         raise HTTPException(400, "The id cannot be changed here")
-    row = fq.db.q1("SELECT status FROM pack WHERE id=?", pack_id)
-    fq.packs.upsert(p, "edited", status=row["status"] if row else "draft", force=True)
+    row = fq.db.q1("SELECT status, source FROM pack WHERE id=?", pack_id)
+    source = row["source"] if row and row["source"] in IMPORTED_SOURCES else "edited"   # an imported pack stays «imported»
+    fq.packs.upsert(p, source, status=row["status"] if row else "draft", force=True)
     # photos uploaded in the editor but no longer used by any card
     folder = fq.settings.media_dir / pack_id
     if folder.is_dir():
@@ -986,6 +990,8 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         if isinstance(v, list):
             return all(finite(x) for x in v)
         return True
+    if "game_starter" in body and body["game_starter"] not in ("dice", "leader", "choose"):
+        raise HTTPException(400, "Unknown setting")
     for k, v in body.items():
         if k in DEFAULT_SETTINGS and not finite(v):
             raise HTTPException(400, "Invalid number")
@@ -1388,7 +1394,7 @@ def backup_sizes(request: Request, me: dict = Parent) -> dict:
 async def backup_inspect(request: Request, file: UploadFile = File(...), me: dict = Parent) -> dict:
     from .. import backup
     try:
-        return {"manifest": backup.inspect(await file.read())}
+        return {"manifest": backup.check(await file.read(), app_of(request).settings.version)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -1443,7 +1449,7 @@ async def backup_inspect_upload(request: Request, body: dict = Body(...), me: di
     from .. import backup
     _path, raw = _uploaded(request, body)
     try:
-        return {"manifest": backup.inspect(raw)}
+        return {"manifest": backup.check(raw, app_of(request).settings.version)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 

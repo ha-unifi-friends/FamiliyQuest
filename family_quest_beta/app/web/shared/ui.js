@@ -82,7 +82,7 @@ const Sound = {
     if (!this.on) return;
     try {
       this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
-      const notes = { right: [660, 880], wrong: [300, 220], done: [523, 659, 784, 1046], tap: [500] }[kind] || [440];
+      const notes = { right: [660, 880], wrong: [300, 220], done: [523, 659, 784, 1046], tap: [500], turn: [784, 1046, 1318] }[kind] || [440];
       notes.forEach((f, i) => {
         const o = this.ctx.createOscillator(), g = this.ctx.createGain(), t = this.ctx.currentTime + i * 0.11;
         o.type = kind === "wrong" ? "triangle" : "sine"; o.frequency.value = f;
@@ -92,6 +92,18 @@ const Sound = {
     } catch {}
   },
 };
+
+// «Your turn» cue: a short chime (and a buzz on phones) when it becomes my turn – only on the change, not on every redraw
+const _turnState = {};
+function turnCue(key, mine) {
+  mine = !!mine;
+  const was = _turnState[key];
+  _turnState[key] = mine;
+  if (mine && was === false) {
+    Sound.play("turn");
+    try { if (Sound.on && navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch {}
+  }
+}
 
 function speak(text, lang) {
   try {
@@ -365,6 +377,70 @@ function crestSvg(c, { ribbon = true } = {}) {
 // ---------------------------------------------------------------- ☰ the menu of the app (also on the planner page)
 const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learning")], ["deck", "📇", T("My card box")], ["shop", "🛍️", T("Shop")],
   ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]];
+
+// ---------------------------------------------------------------- ☰ in a running game: rules, guests, actions, language
+// gameMenu({ rules, invite, actions, onLeave }) → the ☰ button for the header of a live game.
+//   rules:   a view (or a function returning one) shown in a popup – e.g. cardsRulesView(st.rules)
+//   invite:  game key or [game, gid] → guestInvite (only for family members, not at solo tables)
+//   actions: [{ ic, label, onclick, confirm, danger, hidden }] – the actions of whoever leads (skip, mix, pause, end …)
+//   onLeave: leave the game screen (like ✕)
+function gameMenu({ rules = null, invite = null, actions = [], onLeave = null } = {}) {
+  return h("button.icon-btn.game-menu-btn", { title: T("Menu"), "aria-label": T("Menu"),
+    onclick: () => openGameMenu({ rules, invite, actions, onLeave }) }, "☰");
+}
+
+function openGameMenu({ rules, invite, actions, onLeave }) {
+  const close = () => { back.remove(); document.removeEventListener("keydown", esc); };
+  const esc = e => { if (e.key === "Escape") close(); };
+  const item = (ic, label, fn, cls = "") => h("button.drawer-item" + cls, { onclick: () => { close(); fn(); } }, h("span.foot-ic", ic), h("span", label));
+  const showRules = () => { const view = typeof rules === "function" ? rules() : rules;
+    const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
+  const soundItem = h("button.foot-item", { onclick: () => { Sound.on = !Sound.on; drawSound(); } });
+  const drawSound = () => soundItem.replaceChildren(h("span.foot-ic", Sound.on ? "🔊" : "🔇"), h("span", Sound.on ? T("Sound on") : T("Sound off")));
+  drawSound();
+  const acts = (actions || []).filter(a => a && !a.hidden);
+  const drawer = h("nav.drawer.game-drawer", { role: "dialog", "aria-label": T("Menu") },
+    h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", T("Game"))),
+    rules ? item("📜", T("Rules"), showRules) : null,
+    invite ? item("👥", T("Invite guests"), () => guestInvite(...[].concat(invite))) : null,
+    ...acts.map(a => item(a.ic || "▶", a.label, () => { if (a.confirm && !confirm(I18N.tr(a.confirm))) return; a.onclick(); }, a.danger ? ".danger" : "")),
+    h("hr"),
+    footLang(), footTheme(), soundItem,
+    onLeave ? item("🚪", T("Leave the game"), onLeave) : null);
+  const back = h("div.drawer-back.game-menu-back", { onclick: e => { if (e.target === back) close(); } }, drawer);
+  document.body.append(back);
+  document.addEventListener("keydown", esc);
+  requestAnimationFrame(() => back.classList.add("open"));
+}
+
+// who begins (parent area › Settings › Games): «choose» → the leader picks a player when starting the game.
+// beginGame(path, players) posts to path (e.g. "community/cards/tschau/begin") – with {starter} when chosen.
+let _starterMode = null;
+async function beginGame(path, players, body = {}) {
+  if (_starterMode === null) { try { _starterMode = (await api("community/starter")).mode; } catch { _starterMode = "dice"; } }
+  if (_starterMode !== "choose" || !(players || []).length) return api(path, { method: "POST", body });
+  const pick = await new Promise(resolve => {
+    const m = modal(h("div.form.center", h("h2", "👉 ", T("Who begins?")),
+      h("div.starter-pick", ...players.map(p => h("button.starter-btn", { onclick: () => { resolve(p.id); m.close(); } },
+        p.bot ? h("span.starter-emoji", p.emoji || "🤖") : avatarSvg(p.avatar || {}, 52), C(p.name, "strong")))),
+      h("button.btn.ghost", { onclick: () => { m.close(); resolve(undefined); } }, T("Cancel"))), { onClose: () => resolve(undefined) });
+  });
+  if (pick === undefined) return null;
+  return api(path, { method: "POST", body: { ...body, starter: String(pick) } });
+}
+
+// «🎲 Mia begins!» – once per game on every device (st.starter from cardgames.apply_starter)
+function starterBanner(starter, key) {
+  if (!starter || !starter.id) return;
+  const k = "fq.starter." + key + "." + (starter.at || "");
+  try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch {}
+  if (starter.at && Date.now() / 1000 - starter.at > 120) return;           // an old game: no banner any more
+  const text = I18N.tr(starter.how === "dice" ? T("The dice decided: {0} begins!") : T("{0} begins!")).replace("{0}", starter.name);
+  const b = h("div.starter-banner" + (starter.how === "dice" ? ".dice" : ""), h("span.starter-die", starter.how === "dice" ? "🎲" : "👉"), h("span", text));
+  document.body.append(b);
+  setTimeout(() => b.classList.add("gone"), 2600);
+  setTimeout(() => b.remove(), 3200);
+}
 
 // «Made with your AI»: the English instructions + format for an AI (familyquest/ai_format.py: self-describing JSON) – download or copy
 // a file from the API (with the login of this device) as a download

@@ -612,6 +612,8 @@ async function packsView(main) {
   const [d, profiles] = await Promise.all([call("parent/packs"), call("parent/profiles")]);
   const kids = profiles.filter(p => p.role === "kid");
   const drafts = d.packs.filter(p => p.status === "draft");
+  const imported = p => ["upload", "import", "ai"].includes(p.source);   // from a file, a table or the AI – shown on top
+  const importedPacks = d.packs.filter(p => p.status !== "draft" && imported(p));
   const bundles = d.packs.filter(p => p.kind === "bundle" && p.status !== "draft");
   const packs = d.packs.filter(p => p.kind === "pack" && p.status !== "draft");
   const actRow = p => h("div.act", ...kids.map(k => h("label.check", h("input", { type: "checkbox", checked: p.profiles.includes(k.id),
@@ -660,10 +662,12 @@ async function packsView(main) {
     h("button.btn", { onclick: () => { P.tab = "import"; render(); } }, "📥 ", T("Import"))));
   if (mode === "kids") return main.append(...byKid(),
     drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null);
+  const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
+    importedPacks.length ? section("📥 " + I18N.tr(T("Imported packs")), ...importedPacks.map(card)) : null,
     drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
-    bundles.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...bundles.map(card)) : null,
-    section("📚 " + I18N.tr(T("Packs")), ...packs.map(card)));
+    levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
+    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
   async function setStatus(id, status) { await call(`parent/packs/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } }); render(); }
   async function del(p) { if (!confirm(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
 }
@@ -1328,12 +1332,17 @@ async function gamesSection(s) {
   }));
   draw();
   const allTo = mode => { for (const [k] of GAMES) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; save(); };
+  // who begins a turn-based game (cardgames.apply_starter)
+  const starter = h("select", { onchange: async () => { await call("parent/settings", { method: "PUT", body: { game_starter: starter.value } }); toast(T("Saved"), "good"); } },
+    ...[["dice", "🎲 " + I18N.tr(T("The dice decides"))], ["leader", "👑 " + I18N.tr(T("Whoever leads the game"))], ["choose", "👉 " + I18N.tr(T("Whoever leads chooses a player"))]]
+      .map(([k, n]) => h("option", { value: k, selected: (s.game_starter || "dice") === k }, n)));
   const guests = h("input", { type: "checkbox", checked: s.games_guests !== false, onchange: async () => {
     await call("parent/settings", { method: "PUT", body: { games_guests: guests.checked } }); toast(T("Saved"), "good"); } });
   return section("🎲 " + I18N.tr(T("Games")),
     h("p.small.muted", T("Every game on its own: for everybody, only for chosen children or off. Parents can always play; the family council and polls stay open for everybody.")),
     h("div.row", h("button.btn.small.ghost", { onclick: () => allTo("all") }, "✓ ", T("All on")), h("button.btn.small.ghost", { onclick: () => allTo("off") }, "✕ ", T("All off"))),
     box,
+    h("label.field", T("Who begins a game (card and board games)"), starter),
     h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
 }
 
@@ -1996,7 +2005,14 @@ function backupSection() {
     info.replaceChildren(h("div.card.restore-box",
       h("p", h("strong", T("Backup from {0}").replace("{0}", when)), " · Family Quest " + (m.app_version || "?")),
       m.counts ? h("p.small.muted", T("Profiles"), ": ", String(m.counts.profile ?? "–"), " · ", T("Packs"), ": ", String(m.counts.pack ?? "–")) : null,
+      m.compat && m.compat.status === "older" ? h("div.card.warn-box",
+        h("p", h("strong", "⚠️ ", T("This backup comes from an older version")), " ",
+          I18N.tr(T("(Family Quest {0} – now {1})")).replace("{0}", m.compat.from).replace("{1}", m.compat.to)),
+        h("p.small", "✓ ", T("Checked: the backup is not damaged, and the update of its data to the current version worked on a test copy.")),
+        h("p.small", T("Things that are new since then start with their standard settings. Please check the profiles, points and packs after restoring.")))
+        : h("p.small.muted", "✓ ", T("Checked: the backup is not damaged and fits this version.")),
       h("p.warn-text", T("Restoring replaces ALL current data (profiles, learning progress, points, chores, planner, packs).")),
+      h("p.small.muted", "🛟 ", T("Before restoring, the current data are saved once more as before-restore.zip in the data folder of the app.")),
       h("div.row", h("button.btn.bad", { onclick: async e => {
         if (!confirm(I18N.tr(T("Really replace all data with this backup?")))) return;
         const btn = e.currentTarget; btn.disabled = true;
