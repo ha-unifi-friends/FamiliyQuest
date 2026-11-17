@@ -34,8 +34,8 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
 
 | | | |
 |---|---|---|
-| ![Log in](docs/screenshots/login.png) | ![The child's start page](docs/screenshots/child-home.png) | ![Games](docs/screenshots/games.png) |
-| **Log in** – every child with its own avatar, optional picture or digit PIN | **Start page** – weather of the day, daily goal, chores, subjects | **Games** – 25+ games for the whole family, each switchable per child |
+| ![Picture PIN](docs/screenshots/login.png) | ![The child's start page](docs/screenshots/child-home.png) | ![Games](docs/screenshots/games.png) |
+| **Picture PIN** – children log in by tapping or drawing 4 of 12 symbols (a digit PIN is possible too) | **Start page** – weather of the day, daily goal, chores, subjects | **Games** – 25+ games for the whole family, each switchable per child |
 | ![Jass](docs/screenshots/game-jass.png) | ![Chess](docs/screenshots/game-chess.png) | ![Dorfmarkt](docs/screenshots/game-dorfmarkt.png) |
 | **Jass** – the Swiss card game with bots as partners or opponents | **Chess** – against bots or each other, games can be paused | **Dorfmarkt** – trading board game in a Swiss village |
 | ![Heimwärts](docs/screenshots/game-heimwaerts.png) | ![Shop and pranks](docs/screenshots/shop.png) | ![Pets](docs/screenshots/pets.png) |
