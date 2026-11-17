@@ -68,6 +68,9 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.snack) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("snack") },
     h("span.big-ic", "🍔"), h("span.grow", h("strong", T("Snack Rush")), h("br"),
       h("span.small", c.snack.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.verkehr) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("verkehr") },
+    h("span.big-ic", "🚦"), h("span.grow", h("strong", T("Traffic Cadet")), h("br"),
+      h("span.small", c.verkehr.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.klatsch) out.push(h("button.card.banner.quiz-banner", { onclick: () => { try { KbAudio.ensure(); } catch {} go("klatsch"); } },
     h("span.big-ic", "👏"), h("span.grow", h("strong", T("Clap the Beat")), h("br"),
       h("span.small", c.klatsch.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -83,6 +86,9 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.schach) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("schach/" + c.schach.game) },
     h("span.big-ic", "♟️"), h("span.grow", h("strong", T("Chess")), h("br"),
       h("span.small", c.schach.my_turn ? T("Your move!") : I18N.tr(T("{0} invites you to a game")).replace("{0}", c.schach.from || "?"))), h("span.big-ic", "➜")));
+  if (c.escape) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("escape") },
+    h("span.big-ic", "🗝️"), h("span.grow", h("strong", T("Escape Room")), h("br"),
+      h("span.small", c.escape.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.dorfmarkt) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("dorfmarkt") },
     h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Village Market")), h("br"),
       h("span.small", c.dorfmarkt.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -787,6 +793,11 @@ function historyText(e) {
     ? I18N.tr(T("Snack Rush: place {0} of {1} · 💰 {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
     : I18N.tr(T("Snack Rush alone: 💰 {0}")).replace("{0}", d.score)) + " · 🍽️ " + (d.served || 0) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
+  if (e.kind === "verkehr") return ["🚦", (d.players > 1
+    ? I18N.tr(T("Traffic Cadet: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
+    : I18N.tr(T("Traffic Cadet alone: {0} points")).replace("{0}", d.score))
+    + " · 🚗" + (d.passed || 0) + " 💥" + (d.accidents || 0) + " 😡" + (d.angry || 0) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
   if (e.kind === "klatsch") return ["👏", (d.players > 1
     ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.score))
     : I18N.tr(T("Klatsch den Beat alone: {0}")).replace("{0}", pts(d.score))) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)
@@ -801,6 +812,8 @@ function historyText(e) {
     ? I18N.tr(d.result === "draw" ? T("Chess on one device: draw") : d.result === "white" ? T("Chess on one device: White won") : T("Chess on one device: Black won"))
     : I18N.tr(d.result === "win" ? T("Chess: won against {0}") : d.result === "loss" ? T("Chess: lost against {0}") : T("Chess: draw against {0}")).replace("{0}", d.opp || "?"))
     + " · " + I18N.tr(chReason(d.reason)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.result === "win" ? "🏆" : ""];
+  if (e.kind === "escape") return ["🗝️", (d.out ? I18N.tr(T("Escape Room: out after {0} rooms in {1}")) : I18N.tr(T("Escape Room: {0} of {1} rooms"))).replace("{0}", d.rooms).replace("{1}", d.out ? Math.floor((d.time || 0) / 60) + ":" + String((d.time || 0) % 60).padStart(2, "0") : d.of)
+    + (d.teams ? " · " + I18N.tr(d.won ? T("our team won") : T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.won ? "🏆" : ""];
   if (e.kind === "dorfmarkt") return ["🏘️", I18N.tr(T("Dorfmarkt: place {0} of {1} · {2} Taler")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", Number(d.worth || 0).toLocaleString("de-CH"))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   return ["•", e.kind, ""];
