@@ -56,6 +56,12 @@ async def planer_ws(websocket: WebSocket, token: str = "", parent: str = "") -> 
     if kid is None and par is None:
         await websocket.close(code=4401)
         return
+    # a parent logged in in the app (own profile, PIN or Home Assistant user): changes without the planner's PIN –
+    # under the same network rules as the parent area
+    if par is None and kid is not None and fq.db.val("SELECT role FROM profile WHERE id=?", kid) == "parent" \
+            and not netfilter.check(fq, ip, "/api/parent/") \
+            and not (fq.db.get_setting("parent_ha_only") and (websocket.client and websocket.client.host) != INGRESS_IP):
+        par = kid
     host = fq.planer_host
     if host is None:
         await websocket.close(code=4503)

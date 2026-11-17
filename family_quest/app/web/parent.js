@@ -1294,7 +1294,22 @@ async function shopSettingsView(main) {
   };
   const DEFAULT_AV = { skin: "#f1c27d", hair: "short", hairColor: "#6b3e1f", eyes: "round", mouth: "smile", outfit: "tshirt", outfitColor: "#4f8cff", items: {} };
   const bySlot = d.slots.map(sl => [sl, d.items.filter(i => i.slot === sl)]).filter(([, l]) => l.length);
-  main.append(pageHead(T("Shop")),
+  // search: own rewards (name) and avatar items (name, kind) – matching groups open, the others hide
+  const search = h("input.pack-search", { type: "search", placeholder: "🔍 " + I18N.tr(T("Search the shop …")), value: P.shopSearch || "",
+    "aria-label": T("Search the shop …"), oninput: () => { P.shopSearch = search.value; filterShop(); } });
+  const filterShop = () => {
+    const q = (search.value || "").trim().toLowerCase();
+    main.querySelectorAll(".reward-ed").forEach(c => { c.hidden = !!q && ![...c.querySelectorAll("input")].some(i => (i.value || "").toLowerCase().includes(q)); });
+    main.querySelectorAll("details.shop-slot").forEach(dt => {
+      const rows = [...dt.querySelectorAll("tbody tr")];
+      rows.forEach(r => { r.hidden = !!q && !r.textContent.toLowerCase().includes(q) && !dt.querySelector("summary").textContent.toLowerCase().includes(q); });
+      const any = rows.some(r => !r.hidden);
+      dt.hidden = !!q && !any;
+      if (q && any) dt.open = true;
+    });
+  };
+  setTimeout(filterShop);
+  main.append(pageHead(T("Shop")), search,
     sectionAdd("🎁 " + I18N.tr(T("Own rewards")), h("button.btn.small", { onclick: () => rewardBox.prepend(rewardCard({ name: "", kind: "voucher", account: "coins", cost: 50, approval: 1, weekly_limit: null, icon: "🎁", config: {}, active: 1 })) }, "+ ", T("Add reward")),
       h("p.small.muted", T("Your own rewards come first in the children's shop.")), rewardBox),
     section("🧑‍🎨 " + I18N.tr(T("Avatar items")),

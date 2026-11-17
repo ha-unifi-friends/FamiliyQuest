@@ -154,8 +154,9 @@ async function fqHass(conn, prev) {
     locale: { language: lang, time_format: "24", number_format: "language" },
     user: { is_admin: !!Auth.parent, name: "Family Quest" },
     themes: { darkMode: matchMedia("(prefers-color-scheme: dark)").matches },
-    async callService(domain, service, data) {
-      return api("planer/ha/service", { method: "POST", body: { domain, service, data: data || {} } });
+    async callService(domain, service, data, target) {
+      // like Home Assistant: the target (e.g. { entity_id }) is the 4th argument – sent together with the data
+      return api("planer/ha/service", { method: "POST", body: { domain, service, data: { ...(target || {}), ...(data || {}) } } });
     },
     async callApi(method, path) {
       const m = String(path).match(/^calendars\/([^?]+)\?(.*)$/);
