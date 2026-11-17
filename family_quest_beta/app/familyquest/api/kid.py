@@ -276,6 +276,12 @@ def redeem(body: RedeemIn, request: Request, prof: dict = Learner) -> dict:
 
 
 # ---------------------------------------------------------------- avatar
+def new_xp_left(fq, pid: int) -> int:
+    """New XP not yet used for XP items (backgrounds …) – the XP account itself is never touched by them."""
+    used = int(fq.db.val("SELECT SUM(new_xp) FROM unlock WHERE profile_id=?", pid, default=0) or 0)
+    return max(0, int(fq.rewards.new_xp(pid)) - used)
+
+
 @router.get("/me/avatar")
 def avatar(request: Request, prof: dict = Learner) -> dict:
     fq = app_of(request)
@@ -291,7 +297,8 @@ def avatar(request: Request, prof: dict = Learner) -> dict:
     return {"avatar": {**a, "pet": pet} if pet else a, **cat,
             "mood_text": json.loads(prof["settings"] or "{}").get("mood_text") or "",
             "mood": json.loads(prof["settings"] or "{}").get("mood") or "",
-            "coins": fq.rewards.balance(prof["id"], "coins"), "level": level}
+            "coins": fq.rewards.balance(prof["id"], "coins"), "level": level,
+            "new_xp": new_xp_left(fq, prof["id"])}
 
 
 @router.get("/dashboard")
@@ -357,9 +364,23 @@ def save_avatar(body: AvatarIn, request: Request, prof: dict = Learner) -> dict:
 @router.post("/me/avatar/buy")
 def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
     fq = app_of(request)
-    rule = av.ITEMS[body.item][2] if body.item in av.ITEMS else {}
+    rule = av.rule_of(body.item) if body.item in av.ITEMS else {}
+    if rule.get("off"):
+        raise HTTPException(400, "This item is not in the shop")
     if "cost" not in rule and body.item in fq.pets.lost_kinds(prof["id"]):
         rule = {"cost": REBUY_COST}
+    if "xp" in rule:                                   # XP backgrounds: paid with new XP, the XP account stays as it is
+        with fq.db.tx():
+            if fq.db.q1("SELECT 1 FROM unlock WHERE profile_id=? AND item=?", prof["id"], body.item):
+                return {"ok": True}
+            if new_xp_left(fq, prof["id"]) < rule["xp"]:
+                raise HTTPException(400, "Not enough yet")
+            fq.db.x("INSERT INTO unlock(profile_id,item,new_xp) VALUES(?,?,?)", prof["id"], body.item, int(rule["xp"]))
+        if body.item in PET_KINDS:
+            fq.pets.adopt(prof["id"], body.item)
+        if fq.ha:
+            fq.ha.profile_changed(prof["id"])
+        return {"ok": True}
     if "cost" not in rule:
         raise HTTPException(400, "This item cannot be bought")
     cost = float(rule["cost"])

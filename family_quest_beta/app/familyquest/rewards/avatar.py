@@ -88,7 +88,56 @@ ITEMS: dict[str, tuple[str, str, dict]] = {
     "dino": (_t("Dinosaur"), "pet", {"cost": 400}),        # starts as an egg and hatches on day 1 (pets.py)
     "goldfish": (_t("Goldfish"), "pet", {"cost": 60}),
     "turtle": (_t("Turtle"), "pet", {"cost": 120}),     # special: mines coins on its wheel while it is healthy (pets.py)
+    # backgrounds for new XP: every 500 XP earned from now on unlock one – the XP account itself stays as it is
+    "bg_sunset": (_t("Sunset beach"), "background", {"xp": 500}),
+    "bg_forest": (_t("Forest"), "background", {"xp": 500}),
+    "bg_desert": (_t("Desert"), "background", {"xp": 500}),
+    "bg_ocean": (_t("Under the sea"), "background", {"xp": 500}),
+    "bg_space": (_t("Space"), "background", {"xp": 500}),
+    "bg_snow": (_t("Snowy hills"), "background", {"xp": 500}),
+    "bg_city": (_t("City at night"), "background", {"xp": 500}),
+    "bg_volcano": (_t("Volcano"), "background", {"xp": 500}),
+    "bg_aurora": (_t("Northern lights"), "background", {"xp": 500}),
+    "bg_meadow": (_t("Flower meadow"), "background", {"xp": 500}),
+    "bg_candy": (_t("Candy land"), "background", {"xp": 500}),
+    "bg_castle": (_t("Castle"), "background", {"xp": 500}),
+    "bg_balloons": (_t("Hot-air balloons"), "background", {"xp": 500}),
+    "bg_autumn": (_t("Autumn leaves"), "background", {"xp": 500}),
+    "bg_savanna": (_t("Savanna"), "background", {"xp": 500}),
 }
+
+XP_ITEMS_FROM = "xp_items_from"      # setting: the ledger id from which XP count for the XP backgrounds («new» XP)
+
+
+# the parents' changes to the shop (parent area › Shop; setting «shop_items»): {id: {"off", "price", "currency"}} –
+# loaded by services.FamilyQuest and on every save
+OVERRIDES: dict[str, dict] = {}
+CURRENCIES = ("coins", "xp")          # xp = new XP (the XP account stays as it is)
+
+
+def set_overrides(value: dict | None) -> None:
+    OVERRIDES.clear()
+    OVERRIDES.update({k: v for k, v in (value or {}).items() if k in ITEMS and isinstance(v, dict)})
+
+
+def rule_of(item_id: str) -> dict:
+    """The unlock rule of an item with the parents' changes: locked (off), a new price, coins or new XP."""
+    rule = dict(ITEMS[item_id][2])
+    o = OVERRIDES.get(item_id) or {}
+    cur = o.get("currency") if o.get("currency") in CURRENCIES else None
+    price = o.get("price")
+    if price is not None:
+        old_cur = "xp" if "xp" in rule else "coins"
+        rule.pop("cost", None)
+        rule.pop("xp", None)
+        rule["xp" if (cur or old_cur) == "xp" else "cost"] = max(0, int(price))
+    elif cur == "xp" and "cost" in rule:
+        rule["xp"] = rule.pop("cost")
+    elif cur == "coins" and "xp" in rule:
+        rule["cost"] = rule.pop("xp")
+    if o.get("off"):
+        rule["off"] = True
+    return rule
 
 # given by the parents for one day (parent area › Overview › 👑) – cannot be chosen or bought
 ROYAL = "royal"
@@ -102,19 +151,14 @@ DEFAULT_AVATAR = {"skin": "#f1c27d", "hair": "short", "hairColor": "#6b3e1f", "e
 
 
 def item_status(item_id: str, level: int, badges: set[str], bought: set[str], today: date | None = None) -> dict:
-    name, slot, rule = ITEMS[item_id]
+    name, slot, _base = ITEMS[item_id]
+    rule = rule_of(item_id)
     t = today or date.today()
-    unlocked = False
-    if rule.get("free"):
-        unlocked = True
-    elif "level" in rule:
-        unlocked = level >= rule["level"]
-    elif "badge" in rule:
-        unlocked = rule["badge"] in badges
-    elif "cost" in rule:
-        unlocked = item_id in bought
-    elif "season" in rule:
-        unlocked = t.month in rule["season"]
+    if rule.get("off"):
+        unlocked = False                       # locked by the parents: only who has it already keeps it
+    else:
+        unlocked = bool(rule.get("free")) or ("level" in rule and level >= rule["level"]) \
+            or ("badge" in rule and rule["badge"] in badges) or ("season" in rule and t.month in rule["season"])
     if slot == "pet":
         # pets live in the table «pet» (pets.py): owned only while unlocked – a badge brings the pet once, a pet that
         # died is gone until it is bought again

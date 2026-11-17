@@ -225,10 +225,16 @@ class PackStore:
         return json.loads(r["data"]) if r else None
 
     # ---------- activation per profile ----------
-    def for_profile(self, profile_id: int) -> list[PackInfo]:
-        rows = self.db.q("""SELECT p.id FROM pack p JOIN pack_profile pp ON pp.pack_id=p.id
-                            WHERE pp.profile_id=? AND p.status='active' AND p.kind='pack' ORDER BY p.subject, p.title""",
-                         profile_id)
+    def for_profile(self, profile_id: int, try_all: bool = True) -> list[PackInfo]:
+        """The packs a profile learns with. Children: the active packs switched on for them. Parents: every pack –
+        also drafts and switched-off ones, to try them out (try_all=False: only the active packs, e.g. daily lesson)."""
+        if self.db.val("SELECT role FROM profile WHERE id=?", profile_id) == "parent":
+            sql = "SELECT id FROM pack WHERE kind='pack'" + ("" if try_all else " AND status='active'")
+            rows = self.db.q(sql + " ORDER BY status<>'active', subject, title")
+        else:
+            rows = self.db.q("""SELECT p.id FROM pack p JOIN pack_profile pp ON pp.pack_id=p.id
+                                WHERE pp.profile_id=? AND p.status='active' AND p.kind='pack' ORDER BY p.subject, p.title""",
+                             profile_id)
         return [i for r in rows if (i := self.get(r["id"]))]
 
     def activated(self, profile_id: int) -> set[str]:

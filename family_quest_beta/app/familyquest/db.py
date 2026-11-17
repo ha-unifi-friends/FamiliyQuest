@@ -522,6 +522,10 @@ MIGRATIONS: list[str] = [
     INSERT INTO prank_stock(profile_id, kind, n) SELECT profile_id, 'ink', n FROM prank_charge WHERE n > 0;
     DROP TABLE prank_charge;
     """,
+    # 29 – avatar items unlocked with new XP: how many new XP were used (the XP account stays as it is)
+    """
+    ALTER TABLE unlock ADD COLUMN new_xp INTEGER NOT NULL DEFAULT 0;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [

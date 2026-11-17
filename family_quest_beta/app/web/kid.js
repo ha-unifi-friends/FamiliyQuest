@@ -301,6 +301,26 @@ function login(p) {
     } })));
 }
 
+// the subjects (packs) of a profile as tiles: tap = the pack with its path, ▶ = go on with the next unit right away.
+// Parents see every pack – drafts and switched-off ones marked – to try them out.
+const STATUS_BADGE = { draft: () => "📝 " + I18N.tr(T("Draft")), disabled: () => "⏸ " + I18N.tr(T("Switched off")) };
+function subjectGrid(me, withStart = false) {
+  if (!me.subjects.length) return h("p.muted", T("No subjects active yet – a parent can switch on packs."));
+  return h("div.subject-grid", ...me.subjects.map(s => {
+    const tile = h("button.subject" + (s.status && s.status !== "active" ? ".trial" : ""), { style: { "--c": s.color }, onclick: () => go("pack/" + encodeURIComponent(s.pack)) },
+      h("span.subject-ic", s.icon),
+      h("span.subject-body",
+        C(s.title, "strong"),
+        STATUS_BADGE[s.status] ? h("span.small.status-badge", STATUS_BADGE[s.status]()) : null,
+        h("span.row.small", stars(Math.round(5 * s.stars / Math.max(1, s.max_stars))), h("span.muted", s.percent + " %")),
+        s.next ? h("span.small.next", T("Next:"), " ", C(s.next.title)) : h("span.small.next", "🏆 ", T("All done!")),
+        s.due ? h("span.due", s.due + " " + T("to repeat")) : null));
+    if (!withStart) return tile;
+    return h("div.subject-wrap", tile, h("button.btn.small.subject-go", { style: { "--c": s.color }, title: T("Start"),
+      onclick: () => startLesson({ mode: "path", pack: s.pack, unit: s.next ? s.next.id : undefined }) }, "▶ ", s.next ? T("Continue") : T("Repeat")));
+  }));
+}
+
 // ---------------------------------------------------------------- dashboard
 function dashboardView() {
   const me = S.me;
@@ -316,16 +336,7 @@ function dashboardView() {
 
   const subjects = h("section",
     h("div.row", h("h2.grow", T("Subjects")), h("button.btn.small.ghost", { onclick: () => go("courses") }, "🌍 ", T("Language courses & more"))),
-    me.subjects.length
-      ? h("div.subject-grid", ...me.subjects.map(s => h("button.subject", { style: { "--c": s.color }, onclick: () => go("pack/" + encodeURIComponent(s.pack)) },
-          h("span.subject-ic", s.icon),
-          h("span.subject-body",
-            C(s.title, "strong"),
-            h("span.row.small", stars(Math.round(5 * s.stars / Math.max(1, s.max_stars))), h("span.muted", s.percent + " %")),
-            s.next ? h("span.small.next", T("Next:"), " ", C(s.next.title)) : h("span.small.next", "🏆 ", T("All done!")),
-            s.due ? h("span.due", s.due + " " + T("to repeat")) : null))))
-      : h("p.muted", T("No subjects active yet – a parent can switch on packs.")));
-
+    subjectGrid(me));
   const sections = [...(me.profile.crown ? [h("section.card.banner.crown-banner", h("span.big-ic", "👑"), h("strong", T("Today you wear the crown!")))] : []),
     ...(me.weather ? [h("section.card.banner.weather-banner", h("span.weather-big", me.weather.icon),
       h("div", h("div.small.muted", T("Your weather today")), me.weather.name ? h("strong", I18N.tr(me.weather.name)) : null))] : []),
@@ -510,7 +521,7 @@ async function packView(packId) {
   }));
   screen("home", { back: () => go("") },
     h("section.pack-head", { style: { "--c": p.color } },
-      h("span.pack-ic", p.icon), h("div", C(p.title, "h1"), h("span.small", prog.percent + " % · " + prog.stars + " / " + prog.max_stars + " ★"))),
+      h("span.pack-ic", p.icon), h("div", C(p.title, "h1"), STATUS_BADGE[p.status] ? h("span.small.status-badge", STATUS_BADGE[p.status]()) : null, " ", h("span.small", prog.percent + " % · " + prog.stars + " / " + prog.max_stars + " ★"))),
     h("div.row.pack-actions",
       h("button.btn", { onclick: () => startLesson({ mode: "path", pack: p.id, unit: prog.next || undefined }), disabled: !prog.next }, "▶ ", T("Continue")),
       h("button.btn.ghost", { onclick: () => startLesson({ mode: "quiz", pack: p.id }), disabled: !learned }, "⚡ ", T("Quiz round")),
@@ -944,6 +955,7 @@ async function shopView() {
       o.can ? h("button.btn", { onclick: () => redeem(o) }, T("Redeem")) : h("div.small.muted.reason", o.reason),
       !o.can && o.missing > 0 ? bar(o.cost - o.missing, o.cost) : null))) : h("p.muted", T("The shop is still empty.")),
     await avatarSpecials(),
+    await xpBackgrounds(),
     await pranksCard(),
     d.history.length ? h("section.card", h("h2", T("My wishes")), h("ul.history", ...d.history.map(r =>
       h("li", h("span", r.icon + " "), h("span.grow", r.name), h("span.small.status." + r.status, status[r.status] || r.status))))) : null);
@@ -962,7 +974,7 @@ async function shopView() {
 async function avatarSpecials() {
   let d;
   try { d = await api("me/avatar"); } catch { return null; }
-  const items = d.items.filter(i => i.rule && i.rule.cost);
+  const items = d.items.filter(i => i.rule && i.rule.cost != null && !i.rule.off);
   if (!items.length) return null;
   const a = d.avatar;
   const wear = async i => {
@@ -982,6 +994,35 @@ async function avatarSpecials() {
         avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
         i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
           : [h("div.price", "🪙 " + i.rule.cost), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, T("Buy")) : bar(d.coins, i.rule.cost)]);
+    })));
+}
+
+// backgrounds for new XP: every 500 XP earned from now on unlock one – the XP account stays as it is
+async function xpBackgrounds() {
+  let d;
+  try { d = await api("me/avatar"); } catch { return null; }
+  const items = d.items.filter(i => i.rule && i.rule.xp && !i.rule.off);
+  if (!items.length) return null;
+  const a = d.avatar, have = d.new_xp || 0;
+  const wear = async i => {
+    const next = { ...a, items: { ...(a.items || {}), [i.slot]: i.id } };
+    try { await api("me/avatar", { method: "POST", body: { avatar: next } }); Sound.play("right"); toast(T("Your avatar wears it now"), "good"); shopView(); }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  const get = async i => {
+    if (!confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) return;
+    try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  return h("section.card", h("h2", "✨ ", T("For new XP")),
+    h("p.small.muted", T("Paid with the XP you earn from now on – your XP and your level stay as they are.")),
+    h("p", h("strong", "✨ " + fmt(have) + " "), T("new XP to use")),
+    h("div.shop-grid", ...items.map(i => {
+      const worn = (a.items || {})[i.slot] === i.id;
+      return h("div.offer.card" + (i.unlocked || have >= i.rule.xp ? "" : ".cant"),
+        avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
+        i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
+          : [h("div.price", "✨ " + i.rule.xp + " XP"), have >= i.rule.xp ? h("button.btn.small", { onclick: () => get(i) }, T("Unlock")) : bar(have, i.rule.xp)]);
     })));
 }
 
@@ -1112,8 +1153,9 @@ async function avatarView() {
   let tab = "skin";
   const tabs = h("div.av-tabs");
   const panel = h("div.av-panel");
-  const ruleText = r => r.level ? T("From level {0}").replace("{0}", r.level)
+  const ruleText = r => r.off ? T("Not in the shop") : r.level ? T("From level {0}").replace("{0}", r.level)
     : r.badge ? T("With a badge") : r.cost ? T("Buy for {0} coins").replace("{0}", r.cost)
+    : r.xp ? I18N.tr(T("For {0} new XP")).replace("{0}", r.xp)
     : r.season ? T("Only in season") : "";
   const drawTabs = () => tabs.replaceChildren(...TABS.map(([k, n]) => h("button" + (tab === k ? ".on" : ""), { onclick: () => { tab = k; drawTabs(); drawPanel(); } }, n)));
   const drawPanel = () => {
@@ -1139,6 +1181,9 @@ async function avatarView() {
   async function pickItem(i) {
     if (!i.unlocked) {
       if (i.rule.cost && confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) {
+        try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
+        catch (e) { return toast(e.message, "bad"); }
+      } else if (i.rule.xp && confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) {
         try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
         catch (e) { return toast(e.message, "bad"); }
       } else return toast(ruleText(i.rule));
@@ -1606,7 +1651,17 @@ async function coursesView() {
     catch (e) { return toast(e.message, "bad"); }
     if (on) { Sound.play("done"); go("pack/" + encodeURIComponent(c.id)); } else coursesView();
   };
-  screen("courses", { back: () => go("") }, h("h1", "🌍 ", T("Language courses & more")),
+  try { S.me = await api("me"); } catch {}
+  const me = S.me, isParent = me.profile && me.profile.role === "parent";
+  screen("courses", { back: () => go("") },
+    h("h1", "📚 ", T("Learning")),
+    h("section.card.learn-start",
+      h("div.grow", h("strong", T("Daily lesson")), h("div.small.muted", T("A short lesson mixes repetitions and new words."))),
+      h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Start"))),
+    h("section", h("h2", T("Subjects")),
+      isParent ? h("p.small.muted", "👀 ", T("As a parent you see all packs to try them out – also drafts. Children only see the packs switched on for them.")) : null,
+      subjectGrid(me, true)),
+    h("h2", "🌍 ", T("Language courses & more")),
     h("p.muted", T("Choose a language and your level – the units unlock one after the other. Everybody can learn: children and adults.")),
     list.length ? [...groups.values()].map(cs => h("section.card.course", { style: { "--c": cs[0].subject.color } },
       h("h2", cs[0].subject.icon + " ", I18N.tr(cs[0].subject.name)),

@@ -172,6 +172,8 @@ def restore(fq, raw: bytes) -> dict:
                 out.parent.mkdir(parents=True, exist_ok=True)
                 out.write_bytes(z.read(n))
     fq.packs.invalidate()
+    from .rewards import avatar as av
+    av.set_overrides(fq.db.get_setting("shop_items", {}))      # the shop as in the backup
     try:                                        # the pictures of the built-in packs come from the app again
         fq.packs.sync_folders(fq.settings.packs_dirs)
     except Exception:  # noqa: BLE001
