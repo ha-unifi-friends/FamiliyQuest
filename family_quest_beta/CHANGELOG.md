@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0-beta.5
+
+- Werwölfe: playable from 2 people – bots fill the table up to 5 (or up to the number chosen, max. 12) and play every role (Amor, wolves, seer, witch, hunter) and vote; no coins for bots
+- App: the refresh button is light purple
+- The language list in the game menu (☰) and in the app menu stays on screen; the game menu closes when you go to another page
+
 ## 1.1.0-beta.4
 
 - All 28 quiz templates (539 questions) are translated into English, French, Italian, Spanish, Dutch, Polish, Portuguese and Swedish – a quiz made from a template is multilingual, everybody picks the language in the game; the template list shows titles in the app language

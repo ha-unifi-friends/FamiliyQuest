@@ -1,8 +1,10 @@
 """«Werwölfe» – the classic social deduction party game, played in one room; the app is the game master.
 
-Everybody has the app on their own device (family and guests via QR code – no bots, it is a talking game), 5 to 12
-players. The tables live in the `card_game` table with kind "werwolf" (lobby, join, summary and may_lead come from
-cardgames.CardGames). Who opens the table (or a parent) leads: starts, advances a phase when somebody is idle and ends.
+Everybody has the app on their own device (family and guests via QR code), 2 to 12 people; a game has 5 to 12
+players: when the leader begins with fewer than 5 at the table, bots (the animal bots of the card games) fill the table
+up to 5 – or up to the number the leader chose (rule `fill`, 5–12). The tables live in the `card_game` table with kind
+"werwolf" (lobby, join, summary and may_lead come from cardgames.CardGames). Who opens the table (or a parent) leads:
+starts, advances a phase when somebody is idle and ends.
 
 Roles (dealt at random when the game begins; the leader chooses them – `auto` picks a set by the number of players):
   wolf      1–3 – wake up at night and choose a victim together
@@ -12,7 +14,8 @@ Roles (dealt at random when the game begins; the leader chooses them – `auto` 
   hunter    when he dies (night or vote) he shoots one living player who dies too
   amor      in the first night links two players as lovers: when one dies, the other dies of grief
 Rules (start dialog / lobby, remembered): auto (the role set by the number of players, see `preset`) or the number of
-wolves (1–3) and seer / witch / hunter / amor on or off; talk – the minutes to talk during the day (1, 2, 3, 5, 10).
+wolves (1–3) and seer / witch / hunter / amor on or off; talk – the minutes to talk during the day (1, 2, 3, 5, 10);
+fill – bots fill the table up to this number of players (5–12).
 A custom set needs fewer wolves than half of the players and must fit the number of players.
 
 The phases:
@@ -36,11 +39,26 @@ Win (checked after every night and every vote, after the hunter shot):
   village  no wolf is alive: all who are not wolves win (dead or alive)
   wolves   at least as many wolves alive as others: all wolves win
 Dead players are spectators: they see every role, the lovers and the wolves' votes – and cannot act (only a dead
-hunter shoots once). Secrecy: the state of a player holds only what that player may know (`_view`).
-Coins (setting `game_rewards["werwolf"]`, the amount of place 1): every person of the family on the winning side –
+hunter shoots once). Secrecy: the state of a player holds only what that player may know (`_view`) – a bot's role
+too: it is shown like a person's (dead, the own wolves, the seer's vision, the end).
+Bots (lazy like the card games: every state request moves them, no background thread; `Table.tick`) act after a
+"thinking" time – at night 4–10 s after the step began (it varies, so the length of a step does not tell whether a
+bot holds the role), in the vote 3 s plus 1.5 s per bot:
+  amor     links two random living players (night 1)
+  wolves   a bot wolf bites the pick of a human wolf (if one chose already), else the pick of a fellow bot wolf, else a
+           random living non-wolf – so the bot wolves always agree with each other
+  seer     looks at a random living player not seen yet, then closes the eyes
+  witch    heals the victim with 50 % (potion left), poisons with 15 % a random living other player (not the victim)
+  hunter   shoots a random living player
+  vote     a bot wolf votes for a random living non-wolf; any other bot for a random living other player – a bot seer
+           votes for a wolf it saw (rather not for one it saw innocent) and the other village bots lean towards it
+           while the bot seer lives
+Roles, day and verdict wait for the leader as before (the talk timer still runs for the people).
+Coins (setting `game_rewards["werwolf"]`, the amount of place 1): every person of the family on the winning side (never
+bots or guests) –
 only with at least two people of the family at the table, only for a game played to the end (not ended by the leader);
 paid once (flag `paid`, a unique ledger `ref` per player). The winners get the «No. 1» hat, everybody of the family a
-history entry.
+history entry (bots and guests none).
 """
 from __future__ import annotations
 
@@ -48,20 +66,26 @@ import json
 import random
 import time
 
-from .cardgames import CardGames
+from .cardgames import BOTS, CardGames
 from .community import CommunityError
 from .pairhunt import rewards_of as _rewards_of
 
 KIND = "werwolf"
 TITLE = "Werwölfe"
 EMOJI = "🐺"
-MIN_PLAYERS, MAX_PLAYERS = 5, 12
+MIN_PLAYERS, MAX_PLAYERS = 5, 12               # the size of a game (bots fill up to MIN_PLAYERS – or to the rule `fill`)
+MIN_HUMANS = 2                                  # people at the table to begin
 SPECIALS = ("seer", "witch", "hunter", "amor")
 ROLES = ("wolf", "villager") + SPECIALS
 TALKS = (60, 120, 180, 300, 600)
-DEFAULTS = {"auto": True, "wolves": 2, "seer": True, "witch": True, "hunter": True, "amor": True, "talk": 180}
+DEFAULTS = {"auto": True, "wolves": 2, "seer": True, "witch": True, "hunter": True, "amor": True, "talk": 180, "fill": MIN_PLAYERS}
 STEPS = ("amor", "wolves", "seer", "witch")
 ACTIONS = ("lovers", "bite", "look", "sleep", "potion", "shoot", "vote")
+# the bots: the animals of the card games and a few more (up to 10 bots at a table of 2 people)
+BOT_NAMES = list(BOTS) + [("Maus Mimi", "🐭"), ("Dachs Dani", "🦡"), ("Reh Rosi", "🦌"), ("Biber Benno", "🦫")]
+BOT_NIGHT, BOT_NIGHT_SPREAD = 4.0, 7            # seconds before a bot acts at night: 4 … 10 (varies by night and step)
+BOT_VOTE, BOT_STAGGER = 3.0, 1.5                # the vote: 3 s, then one bot after the other
+WITCH_HEAL, WITCH_POISON = 0.5, 0.15
 
 
 def rewards_of(db) -> list[int]:
@@ -123,6 +147,9 @@ class Table:
     def lover_of(self, pid: str) -> str | None:
         lv = self.st.get("lovers") or []
         return (lv[1] if lv[0] == pid else lv[0]) if pid in lv else None
+
+    def is_bot(self, pid: str | None) -> bool:
+        return any(p["id"] == pid and p.get("bot") for p in self.st["players"])
 
     # ---------- the start
     def begin(self) -> None:
@@ -327,10 +354,102 @@ class Table:
         self._after_deaths("verdict")
 
     def tick(self) -> bool:
-        if self.st.get("phase") == "day" and self.now() >= (self.st.get("deadline") or 0):
-            self._open_vote()
-            return True
+        """Time moves the game on: the talk timer runs out, the bots act. True if something changed."""
+        changed = False
+        for _ in range(8 * MAX_PLAYERS):
+            if self.st.get("phase") == "day" and self.now() >= (self.st.get("deadline") or 0):
+                self._open_vote()
+            elif not self._bots_move():
+                break
+            changed = True
+        return changed
+
+    # ---------- the bots (one move per call; tick calls again until nobody moves)
+    def bot_wait(self) -> float:
+        """Seconds a bot thinks in this night step – 4 … 10, not the same in every step."""
+        step = self.st.get("step")
+        k = STEPS.index(step) if step in STEPS else 0
+        return BOT_NIGHT + (int(self.st.get("night") or 0) * 5 + k * 3) % BOT_NIGHT_SPREAD
+
+    def _bots_move(self) -> bool:
+        ph, step = self.st.get("phase"), self.st.get("step")
+        bots = [p for p in self.actors() if self.is_bot(p)]
+        if not bots:
+            return False
+        waited = self.now() - (self.st.get("step_at") or 0)
+        if ph in ("night", "hunter") and waited < self.bot_wait():
+            return False
+        rng = self.rng
+        b = bots[0]
+        if ph == "night" and step == "wolves":
+            return self._bot_wolves(bots)
+        if ph == "night" and step == "amor":
+            a, c = rng.sample(self.living(), 2)
+            self.act(b, "lovers", a, c)
+        elif ph == "night" and step == "seer":
+            others = [p for p in self.living() if p != b]
+            seen = {s["id"] for s in self.st.get("seen") or []}
+            fresh = [p for p in others if p not in seen] or others
+            if not self.st.get("looked") and fresh:
+                self.act(b, "look", rng.choice(fresh))
+            else:
+                self.act(b, "sleep")
+        elif ph == "night" and step == "witch":
+            pot, victim = self.st["potions"], self.st.get("victim")
+            heal = bool(victim and pot["heal"] and rng.random() < WITCH_HEAL)
+            poison = None
+            if pot["poison"] and rng.random() < WITCH_POISON:
+                cands = [p for p in self.living() if p != b and (heal or p != victim)]
+                poison = rng.choice(cands) if cands else None
+            self.act(b, "potion", heal=heal, poison=poison)
+        elif ph == "hunter":
+            others = [p for p in self.living() if p != b]
+            if others:
+                self.act(b, "shoot", rng.choice(others))
+            else:
+                self._hunter_done()
+        elif ph == "vote":
+            votes = self.st.get("votes") or {}
+            for i, v in enumerate(bots):
+                if v not in votes and waited >= BOT_VOTE + i * BOT_STAGGER:
+                    self.act(v, "vote", self._bot_vote(v))
+                    return True
+            return False
+        else:
+            return False
+        return True
+
+    def _bot_wolves(self, bots: list[str]) -> bool:
+        """A bot wolf bites what a human wolf chose, else what a fellow bot wolf chose, else a random non-wolf."""
+        wv = self.st["wolf_votes"]
+        targets = [p for p in self.living() if self.role(p) != "wolf"]
+        if not targets:
+            return False
+        human = next((wv[w] for w in self.wolves() if not self.is_bot(w) and wv.get(w) in targets), None)
+        for b in bots:
+            want = human or next((wv[w] for w in bots if wv.get(w) in targets), None) or self.rng.choice(targets)
+            if wv.get(b) != want:
+                self.act(b, "bite", want)
+                return True
         return False
+
+    def _bot_vote(self, b: str) -> str:
+        others = [p for p in self.living() if p != b]
+        if self.role(b) == "wolf":
+            others = [p for p in others if self.role(p) != "wolf"]
+        if not others:
+            return ""
+        weight = {p: 1.0 for p in others}
+        if self.role(b) != "wolf":
+            seer = self.holder("seer")
+            if seer and self.is_bot(seer) and self.alive(seer):
+                for s in self.st.get("seen") or []:
+                    if s["id"] in weight:
+                        if s["role"] == "wolf":
+                            weight[s["id"]] = 8.0 if b == seer else 3.0
+                        elif b == seer:
+                            weight[s["id"]] = 0.2
+        return self.rng.choices(others, [weight[p] for p in others])[0]
 
     # ---------- the end
     def winner(self) -> str | None:
@@ -415,13 +534,17 @@ class Werwolf(CardGames):
             talk = int(r.get("talk"))
         except (TypeError, ValueError):
             talk = DEFAULTS["talk"]
+        try:
+            fill = max(MIN_PLAYERS, min(MAX_PLAYERS, int(r.get("fill"))))
+        except (TypeError, ValueError):
+            fill = DEFAULTS["fill"]
         return {"auto": bool(r.get("auto")), "wolves": wolves if wolves in (1, 2, 3) else DEFAULTS["wolves"],
-                **{s: bool(r.get(s)) for s in SPECIALS}, "talk": talk if talk in TALKS else DEFAULTS["talk"]}
+                **{s: bool(r.get(s)) for s in SPECIALS}, "talk": talk if talk in TALKS else DEFAULTS["talk"], "fill": fill}
 
     def rules_info(self) -> dict:
         """The remembered rules, the choices, the role sets per number of players and the coins (start dialog)."""
         return {**self.default_rules(), "rewards": rewards_of(self.db), "talks": list(TALKS), "min": MIN_PLAYERS,
-                "max": MAX_PLAYERS, "presets": {str(n): preset(n) for n in range(MIN_PLAYERS, MAX_PLAYERS + 1)}}
+                "max": MAX_PLAYERS, "min_humans": MIN_HUMANS, "presets": {str(n): preset(n) for n in range(MIN_PLAYERS, MAX_PLAYERS + 1)}}
 
     def _person(self, pid: int) -> dict:
         out = super()._person(pid)
@@ -521,8 +644,25 @@ class Werwolf(CardGames):
             self.db.set_setting(f"game_rules.{KIND}", st["rules"])
         self._lobby(viewer, go)
 
+    def seats(self, st: dict) -> int:
+        """How many players the game will have: the people, filled up with bots to 5 (or to the rule `fill`)."""
+        humans = sum(1 for p in st["players"] if not p.get("bot"))
+        return max(humans, min(MAX_PLAYERS, max(MIN_PLAYERS, int(st["rules"].get("fill") or MIN_PLAYERS))))
+
+    def _bots(self, n: int) -> list[dict]:
+        rng = self.rng or random
+        return [{"id": f"bot{i + 1}", "name": name, "emoji": emoji, "bot": True}
+                for i, (name, emoji) in enumerate(rng.sample(BOT_NAMES, len(BOT_NAMES))[:n])]
+
     def begin(self, kind: str, viewer: int) -> None:
-        self._lobby(viewer, lambda st: self.table(st).begin())
+        """Who leads begins: at least 2 people – bots fill the table up to 5 (or `fill`), the roles are dealt."""
+        def go(st):
+            humans = [p for p in st["players"] if not p.get("bot")]
+            if len(humans) < MIN_HUMANS:
+                raise CommunityError("At least 2 players are needed")
+            st["players"] = humans + self._bots(self.seats(st) - len(humans))
+            self.table(st).begin()
+        self._lobby(viewer, go)
 
     def _act(self, pid: int, fn):
         with self.lock:
@@ -615,12 +755,13 @@ class Werwolf(CardGames):
         def deaths(ds):
             return [{"id": d["id"], "role": d["role"], "cause": cause(d["cause"])} for d in ds or []]
         players = [{"id": p["id"], "name": p["name"], "avatar": p.get("avatar"), "guest": bool(p.get("guest")),
+                    "bot": bool(p.get("bot")), "emoji": p.get("emoji"), "color": p.get("color"),
                     "alive": ph == "lobby" or t.alive(p["id"]), "role": known.get(p["id"]),
                     "lover": see_lovers and p["id"] in lovers, "coins": coins.get(p["id"], 0),
                     "won": ph == "done" and p["id"] in (st.get("winners") or [])} for p in st["players"]]
         people = sum(1 for p in st["players"] if not p.get("bot") and not p.get("guest"))
         try:
-            deck = deck_for(st["rules"], max(len(order), MIN_PLAYERS)) if ph == "lobby" else st.get("deck")
+            deck = deck_for(st["rules"], self.seats(st)) if ph == "lobby" else st.get("deck")
             deck_error = None
         except CommunityError as e:
             deck, deck_error = None, str(e)
@@ -630,6 +771,7 @@ class Werwolf(CardGames):
                "joined": joined, "me": me if joined else None, "my_role": my_role, "alive": alive, "spectator": spectator,
                "my_lover": my_lover, "lovers": list(lovers) if see_lovers else None,
                "my_turn": me in actors, "deck": deck, "deck_error": deck_error, "min": MIN_PLAYERS, "max": MAX_PLAYERS,
+               "min_humans": MIN_HUMANS, "bots": self.seats(st) - len(order) if ph == "lobby" else None,
                "step_ms": int((now - (st.get("step_at") or now)) * 1000) if playing else None,
                "left_ms": None, "time_ms": None, "deaths": None, "hunter": st.get("hunter") if ph == "hunter" else None,
                "voted": None, "my_vote": None, "votes": None, "lynch": None, "wolf_votes": None, "victim": None,

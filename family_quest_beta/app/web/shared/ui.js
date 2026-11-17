@@ -390,8 +390,9 @@ function gameMenu({ rules = null, invite = null, actions = [], onLeave = null } 
 }
 
 function openGameMenu({ rules, invite, actions, onLeave }) {
-  const close = () => { back.remove(); document.removeEventListener("keydown", esc); };
+  const close = () => { back.remove(); document.removeEventListener("keydown", esc); window.removeEventListener("hashchange", close); };
   const esc = e => { if (e.key === "Escape") close(); };
+  window.addEventListener("hashchange", close);              // another page: the menu of the game goes away
   const item = (ic, label, fn, cls = "") => h("button.drawer-item" + cls, { onclick: () => { close(); fn(); } }, h("span.foot-ic", ic), h("span", label));
   const showRules = () => { const view = typeof rules === "function" ? rules() : rules;
     const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
