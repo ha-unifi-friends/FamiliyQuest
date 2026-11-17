@@ -10,7 +10,7 @@ The speed grows with the distance (V0 → VMAX); from speed 7 also double crates
 Crates carry you: landing on top is safe (you run along and may jump on from there), only running into their side costs
 a life. Cacti (and hedges) cost a life when touched. At about CLOUD_T seconds (then again CLOUD_EVERY s after the end of
 the last one) comes a cloud parcours: after a free stretch with a signpost (the app shows a warning) 4–6 crates on
-clouds at heights 0.9–1.3, a short jump apart, over a dense cactus field – falling down costs a life (one per field piece).
+clouds at heights 1.0–1.4, a short jump apart, over a dense cactus field – falling down costs a life (one per field piece).
 After any hit you hop up a little and are invulnerable for INVULN s.
 
 The jump physics run in the app (no waiting for the network) step by step (`Runner`, the same in web/jump.js as
@@ -64,7 +64,7 @@ AW = 0.25                    # half the width of the avatar (forgiving)
 # 5 the dense cactus field under the cloud boxes (costs a life)
 WIDTH = (0.6, 1.6, 2.6, 0.5)
 TALL = (0.7, 0.7, 0.7, 0.8)
-FIELD_H = 0.55               # the cactus field
+FIELD_H = 0.5                # the cactus field
 FIRST = 2.5                  # the first obstacle after about 2.5 s
 CLOUD_T = 45.0               # the first cloud parcours at about this game time …
 CLOUD_EVERY = 60.0           # … then again this long after the end of the last one
@@ -127,18 +127,18 @@ def mulberry32(seed: int):
 
 
 def _clouds(out: list, x: float, rnd) -> float:
-    """A cloud parcours from x on: 4–6 crates on clouds (heights 0.9–1.3, gaps a short jump wide), under them a dense
+    """A cloud parcours from x on: 4–6 crates on clouds (heights 1.0–1.4, gaps a short jump wide), under them a dense
     cactus field (one piece per box). Answers where the normal course goes on."""
     v = speed_at(x)
     n = 4 + int(rnd() * 3)
     x = x + v * CLOUD_LEAD
-    top = 1.0
+    top = 1.1
     plats = []
     for k in range(n):
         w = v * ((0.85 if k == 0 else 0.6) + 0.25 * rnd())
         plats.append((x, w, top))
         x = x + w + v * (0.24 + 0.1 * rnd())
-        top = min(1.3, max(0.9, top + (rnd() - 0.5) * 0.8))
+        top = min(1.4, max(1.0, top + (rnd() - 0.5) * 0.8))
     for k in range(n):
         px, w, top = plats[k]
         out.append((px, 4, w, top))

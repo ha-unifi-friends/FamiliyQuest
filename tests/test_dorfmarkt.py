@@ -667,7 +667,7 @@ def test_running_list_and_end(client):
     assert client.post("/api/community/dorfmarkt/start", json={"solo": True, "bots": 2, "bot_ms": 5000}, headers=hm).status_code == 200
     games = client.get("/api/parent/games/running", headers=ph).json()
     g = next(x for x in games if x["game"] == "dorfmarkt")
-    assert g["title"] == "Dorfmarkt" and g["icon"] == "🏘️" and g["solo"] and g["players"] == 1
+    assert g["title"] == "Village Market" and g["icon"] == "🏘️" and g["solo"] and g["players"] == 1
     r = client.post("/api/parent/games/end", json={"key": g["key"]}, headers=ph).json()
     assert not any(x["game"] == "dorfmarkt" for x in r["running"])
     v = client.get("/api/community/dorfmarkt", headers=hm).json()

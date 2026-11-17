@@ -325,7 +325,7 @@ def test_parents_end_it_in_the_running_list(client):
     v = client.post("/api/community/verboten/mark", json={"n": 1, "result": "got", "guesser": str(leo)}, headers=hm).json()
     games = client.get("/api/parent/games/running", headers=phd).json()
     g = next(x for x in games if x["game"] == "verboten")
-    assert g["icon"] == "🚫" and g["title"] == "Verbotene Wörter" and g["players"] == 2 and g["host"] == "Mia"
+    assert g["icon"] == "🚫" and g["title"] == "Forbidden Words" and g["players"] == 2 and g["host"] == "Mia"
     client.post("/api/parent/games/end", json={"key": g["key"]}, headers=phd)
     v = client.get("/api/community/verboten", headers=hm).json()
     assert v["phase"] == "done" and v["ranking"] == [str(mia), str(leo)] and {p["coins"] for p in v["players"]} == {10}

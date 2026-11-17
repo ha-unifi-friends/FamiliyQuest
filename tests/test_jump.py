@@ -80,7 +80,7 @@ def test_cloud_parcours_comes_after_the_set_time_with_a_free_stretch_and_cacti_b
                 e += 1
             boxes, field = c[s:e:2], c[s + 1:e:2]
             assert 4 <= len(boxes) <= 6 and all(o[1] == 4 for o in boxes) and all(o[1] == 5 for o in field)
-            assert all(0.9 <= o[3] <= 1.3 for o in boxes) and all(abs(a[3] - b[3]) <= 0.4 + 1e-9 for a, b in zip(boxes, boxes[1:]))
+            assert all(1.0 <= o[3] <= 1.4 for o in boxes) and all(abs(a[3] - b[3]) <= 0.4 + 1e-9 for a, b in zip(boxes, boxes[1:]))
             assert field[0][0] > boxes[0][0] and field[-1][0] + field[-1][2] < boxes[-1][0] + boxes[-1][2]
             for f, g in zip(field, field[1:]):
                 assert abs(f[0] + f[2] - g[0]) < 1e-9                            # dense: no way through below

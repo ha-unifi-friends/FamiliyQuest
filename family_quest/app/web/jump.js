@@ -14,7 +14,7 @@ const juCoins = list => list.join(" / ") + " 🪙";
 // the course – the same numbers as in jump.py. Kinds: 0 crate, 1 double crate (stand on them, their side costs a life),
 // 2 long hedge, 3 cactus (touching costs a life), 4 a crate on a cloud (a platform), 5 the cactus field under the clouds
 const JU = { V0: 5, VMAX: 12, ACC: 0.05, JT: 0.6, JH: 1.5, OH: 0.7, AW: 0.25, WIDTH: [0.6, 1.6, 2.6, 0.5], TALL: [0.7, 0.7, 0.7, 0.8],
-  FIELD_H: 0.55, FIRST: 2.5, CLOUD_T: 45, CLOUD_EVERY: 60, CLOUD_LEAD: 1.6, INVULN: 1.2, VIEW: 12,
+  FIELD_H: 0.5, FIRST: 2.5, CLOUD_T: 45, CLOUD_EVERY: 60, CLOUD_LEAD: 1.6, INVULN: 1.2, VIEW: 12,
   HZ: 120, LG: 0.2, COYOTE: 0.1 };
 JU.T1 = (JU.VMAX - JU.V0) / JU.ACC;
 JU.D1 = JU.V0 * JU.T1 + JU.ACC * JU.T1 * JU.T1 / 2;
@@ -39,12 +39,12 @@ function juRand(seed) {
 function juClouds(out, x, rnd) {               // a cloud parcours: crates on clouds, a dense cactus field below
   const v = juSpeedAt(x), n = 4 + Math.floor(rnd() * 3), plats = [];
   x = x + v * JU.CLOUD_LEAD;
-  let top = 1.0;
+  let top = 1.1;
   for (let k = 0; k < n; k++) {
     const w = v * ((k === 0 ? 0.85 : 0.6) + 0.25 * rnd());
     plats.push([x, w, top]);
     x = x + w + v * (0.24 + 0.1 * rnd());
-    top = Math.min(1.3, Math.max(0.9, top + (rnd() - 0.5) * 0.8));
+    top = Math.min(1.4, Math.max(1.0, top + (rnd() - 0.5) * 0.8));
   }
   for (let k = 0; k < n; k++) {
     const [px, w, tp] = plats[k];
@@ -459,8 +459,8 @@ function jumpLive(box, me, back) {
         const n = Math.max(1, Math.round(ww / 0.42)), cwid = w / n;
         for (let k = 0; k < n; k++) drawCactus(fx - (k + 0.5) * cwid, ground, cwid * 1.5, oh * (k % 2 ? 0.85 : 1), dark);
       } else if (kind === 4) {                     // crates resting on a cloud
-        const bh = 0.5 * sy, n = Math.max(1, Math.round(ww / 0.8)), bw = w / n;
-        drawCloud(fx - w / 2, ground - oh + bh + 0.12 * sy, w + 0.4 * sx, Math.max(5, 0.26 * sy), dark);
+        const bh = 0.36 * sy, n = Math.max(1, Math.round(ww / 0.8)), bw = w / n;
+        drawCloud(fx - w / 2, ground - oh + bh + 0.1 * sy, w + 0.5 * sx, Math.max(5, 0.22 * sy), dark);
         for (let k = 0; k < n; k++) drawCrate(fx - (k + 1) * bw, ground - oh, bw, bh);
       } else {
         const n = kind === 1 ? 2 : 1, bw = w / n;
