@@ -88,7 +88,30 @@ ITEMS: dict[str, tuple[str, str, dict]] = {
     "dino": (_t("Dinosaur"), "pet", {"cost": 400}),        # starts as an egg and hatches on day 1 (pets.py)
     "goldfish": (_t("Goldfish"), "pet", {"cost": 60}),
     "turtle": (_t("Turtle"), "pet", {"cost": 120}),     # special: mines coins on its wheel while it is healthy (pets.py)
+    # backgrounds for new XP: every 500 XP earned from now on unlock one – the XP account itself stays as it is
+    "bg_sunset": (_t("Sunset beach"), "background", {"xp": 500}),
+    "bg_forest": (_t("Forest"), "background", {"xp": 500}),
+    "bg_desert": (_t("Desert"), "background", {"xp": 500}),
+    "bg_ocean": (_t("Under the sea"), "background", {"xp": 500}),
+    "bg_space": (_t("Space"), "background", {"xp": 500}),
+    "bg_snow": (_t("Snowy hills"), "background", {"xp": 500}),
+    "bg_city": (_t("City at night"), "background", {"xp": 500}),
+    "bg_volcano": (_t("Volcano"), "background", {"xp": 500}),
+    "bg_aurora": (_t("Northern lights"), "background", {"xp": 500}),
+    "bg_meadow": (_t("Flower meadow"), "background", {"xp": 500}),
+    "bg_candy": (_t("Candy land"), "background", {"xp": 500}),
+    "bg_castle": (_t("Castle"), "background", {"xp": 500}),
+    "bg_balloons": (_t("Hot-air balloons"), "background", {"xp": 500}),
+    "bg_autumn": (_t("Autumn leaves"), "background", {"xp": 500}),
+    "bg_savanna": (_t("Savanna"), "background", {"xp": 500}),
 }
+
+XP_ITEMS_FROM = "xp_items_from"      # setting: the ledger id from which XP count for the XP backgrounds («new» XP)
+
+
+def xp_used(bought: set[str]) -> int:
+    """New XP already used for XP items (the XP account is not touched)."""
+    return sum(int(ITEMS[i][2]["xp"]) for i in bought if i in ITEMS and "xp" in ITEMS[i][2])
 
 # given by the parents for one day (parent area › Overview › 👑) – cannot be chosen or bought
 ROYAL = "royal"
@@ -111,7 +134,7 @@ def item_status(item_id: str, level: int, badges: set[str], bought: set[str], to
         unlocked = level >= rule["level"]
     elif "badge" in rule:
         unlocked = rule["badge"] in badges
-    elif "cost" in rule:
+    elif "cost" in rule or "xp" in rule:
         unlocked = item_id in bought
     elif "season" in rule:
         unlocked = t.month in rule["season"]

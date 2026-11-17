@@ -35,6 +35,8 @@ class FamilyQuest:
         self.db = db or Database(settings.db_path)
         self.packs = PackStore(self.db, settings.media_dir)
         self.rewards = Rewards(self.db)
+        if self.db.q1("SELECT 1 FROM setting WHERE key='xp_items_from'") is None:   # «new» XP count from today on
+            self.db.set_setting("xp_items_from", int(self.db.val("SELECT MAX(id) FROM ledger", default=0) or 0))
         self.learning = Learning(self.db, self.packs, self.rewards)
         from .decks import Decks
         self.decks = Decks(self.db, self.packs)

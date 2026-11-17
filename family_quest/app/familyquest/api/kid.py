@@ -291,7 +291,8 @@ def avatar(request: Request, prof: dict = Learner) -> dict:
     return {"avatar": {**a, "pet": pet} if pet else a, **cat,
             "mood_text": json.loads(prof["settings"] or "{}").get("mood_text") or "",
             "mood": json.loads(prof["settings"] or "{}").get("mood") or "",
-            "coins": fq.rewards.balance(prof["id"], "coins"), "level": level}
+            "coins": fq.rewards.balance(prof["id"], "coins"), "level": level,
+            "new_xp": max(0, int(fq.rewards.new_xp(prof["id"]) - av.xp_used(bought)))}
 
 
 @router.get("/dashboard")
@@ -360,6 +361,17 @@ def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
     rule = av.ITEMS[body.item][2] if body.item in av.ITEMS else {}
     if "cost" not in rule and body.item in fq.pets.lost_kinds(prof["id"]):
         rule = {"cost": REBUY_COST}
+    if "xp" in rule:                                   # XP backgrounds: paid with new XP, the XP account stays as it is
+        with fq.db.tx():
+            bought = {r["item"] for r in fq.db.q("SELECT item FROM unlock WHERE profile_id=?", prof["id"])}
+            if body.item in bought:
+                return {"ok": True}
+            if fq.rewards.new_xp(prof["id"]) - av.xp_used(bought) < rule["xp"]:
+                raise HTTPException(400, "Not enough yet")
+            fq.db.x("INSERT INTO unlock(profile_id,item) VALUES(?,?)", prof["id"], body.item)
+        if fq.ha:
+            fq.ha.profile_changed(prof["id"])
+        return {"ok": True}
     if "cost" not in rule:
         raise HTTPException(400, "This item cannot be bought")
     cost = float(rule["cost"])

@@ -178,6 +178,12 @@ class Rewards:
             d -= timedelta(days=1)
         return n
 
+    def new_xp(self, pid: int) -> float:
+        """XP earned since the XP backgrounds exist (setting xp_items_from) – what they are «bought» with."""
+        start = int(self.db.get_setting("xp_items_from", 0) or 0)
+        return float(self.db.val(f"""SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account='xp' AND amount>0
+                                     AND id>? AND {_NOT_SPENT}""", pid, start, *SPEND_EVENTS, default=0))
+
     def total_xp(self, pid: int) -> float:
         """XP earned (the level counts these) – XP spent in the pet shop does not lower it; `balance(pid, "xp")` does."""
         return float(self.db.val(f"SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account='xp' AND {_NOT_SPENT}",

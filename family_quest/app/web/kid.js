@@ -955,6 +955,7 @@ async function shopView() {
       o.can ? h("button.btn", { onclick: () => redeem(o) }, T("Redeem")) : h("div.small.muted.reason", o.reason),
       !o.can && o.missing > 0 ? bar(o.cost - o.missing, o.cost) : null))) : h("p.muted", T("The shop is still empty.")),
     await avatarSpecials(),
+    await xpBackgrounds(),
     await pranksCard(),
     d.history.length ? h("section.card", h("h2", T("My wishes")), h("ul.history", ...d.history.map(r =>
       h("li", h("span", r.icon + " "), h("span.grow", r.name), h("span.small.status." + r.status, status[r.status] || r.status))))) : null);
@@ -993,6 +994,35 @@ async function avatarSpecials() {
         avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
         i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
           : [h("div.price", "🪙 " + i.rule.cost), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, T("Buy")) : bar(d.coins, i.rule.cost)]);
+    })));
+}
+
+// backgrounds for new XP: every 500 XP earned from now on unlock one – the XP account stays as it is
+async function xpBackgrounds() {
+  let d;
+  try { d = await api("me/avatar"); } catch { return null; }
+  const items = d.items.filter(i => i.rule && i.rule.xp);
+  if (!items.length) return null;
+  const a = d.avatar, have = d.new_xp || 0;
+  const wear = async i => {
+    const next = { ...a, items: { ...(a.items || {}), [i.slot]: i.id } };
+    try { await api("me/avatar", { method: "POST", body: { avatar: next } }); Sound.play("right"); toast(T("Your avatar wears it now"), "good"); shopView(); }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  const get = async i => {
+    if (!confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) return;
+    try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  return h("section.card", h("h2", "✨ ", T("Backgrounds for XP")),
+    h("p.small.muted", I18N.tr(T("Every {0} XP you earn from now on unlock a background – your XP and your level stay as they are.")).replace("{0}", 500)),
+    h("p", h("strong", "✨ " + fmt(have) + " "), T("new XP to use")),
+    h("div.shop-grid", ...items.map(i => {
+      const worn = (a.items || {}).background === i.id;
+      return h("div.offer.card" + (i.unlocked || have >= i.rule.xp ? "" : ".cant"),
+        avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
+        i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
+          : [h("div.price", "✨ " + i.rule.xp + " XP"), have >= i.rule.xp ? h("button.btn.small", { onclick: () => get(i) }, T("Unlock")) : bar(have, i.rule.xp)]);
     })));
 }
 
@@ -1125,6 +1155,7 @@ async function avatarView() {
   const panel = h("div.av-panel");
   const ruleText = r => r.level ? T("From level {0}").replace("{0}", r.level)
     : r.badge ? T("With a badge") : r.cost ? T("Buy for {0} coins").replace("{0}", r.cost)
+    : r.xp ? I18N.tr(T("For {0} new XP")).replace("{0}", r.xp)
     : r.season ? T("Only in season") : "";
   const drawTabs = () => tabs.replaceChildren(...TABS.map(([k, n]) => h("button" + (tab === k ? ".on" : ""), { onclick: () => { tab = k; drawTabs(); drawPanel(); } }, n)));
   const drawPanel = () => {
@@ -1150,6 +1181,9 @@ async function avatarView() {
   async function pickItem(i) {
     if (!i.unlocked) {
       if (i.rule.cost && confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) {
+        try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
+        catch (e) { return toast(e.message, "bad"); }
+      } else if (i.rule.xp && confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) {
         try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
         catch (e) { return toast(e.message, "bad"); }
       } else return toast(ruleText(i.rule));
