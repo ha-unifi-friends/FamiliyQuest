@@ -77,6 +77,19 @@ def _ids(players) -> list[str]:
 ROUTES = {"quiz": "quiz", "bingo": "bingo", "song": "song", "poker": "poker", **{k: k for k in TITLES if k != "schach"}}
 
 
+def _joinable(fq, t: dict) -> bool:
+    """Whether somebody new can still sit down – as the game's own join allows it: the tables of the `card_game`
+    table only in their lobby; poker also during the game (from the next hand) while a seat is free; bingo (a card
+    any time before the end), the family quiz and guess the song take players any time."""
+    if t["key"].startswith("card:"):
+        return t["status"] == "lobby"
+    if t["game"] == "poker":
+        r = fq.db.q1("SELECT state FROM poker_game WHERE id=?", int(t["key"][6:]))
+        st = json.loads((r or {}).get("state") or "{}")
+        return len(st.get("players") or []) < int((st.get("rules") or {}).get("max_players") or 0)
+    return True
+
+
 def open_tables(fq, prof: dict) -> list[dict]:
     """Family tables somebody else opened that this profile may join – for the note in the header of the app."""
     ok = set(fq.games_for(prof))
@@ -85,6 +98,8 @@ def open_tables(fq, prof: dict) -> list[dict]:
         if t["solo"] or t["game"] not in ROUTES or t["status"] in ("done", "paused") or t["game"] not in ok:
             continue
         if t.get("host_id") == prof["id"] or str(prof["id"]) in t.get("members", []):
+            continue
+        if not _joinable(fq, t):
             continue
         out.append({"key": f"{t['key']}:{t.get('id') or ''}", "game": t["game"], "route": ROUTES[t["game"]], "icon": t["icon"],
                     "title": t["title"], "host": t["host"]})

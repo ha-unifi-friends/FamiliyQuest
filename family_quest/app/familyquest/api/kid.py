@@ -389,7 +389,8 @@ def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
             return {"ok": True}
         if fq.rewards.balance(prof["id"], "coins") < cost:
             raise HTTPException(400, "Not enough yet")
-        fq.rewards.book(prof["id"], "coins", -cost, "avatar", av.ITEMS[body.item][0], f"avatar:{body.item}")
+        if cost > 0:                                   # price 0 (parent area › Shop): free – nothing to book
+            fq.rewards.book(prof["id"], "coins", -cost, "avatar", av.ITEMS[body.item][0], f"avatar:{body.item}")
         fq.db.x("INSERT INTO unlock(profile_id,item) VALUES(?,?)", prof["id"], body.item)
     if body.item in PET_KINDS:
         fq.pets.adopt(prof["id"], body.item)           # a new pet: a baby from today

@@ -41,3 +41,30 @@ def test_drafts_can_be_assigned_before_publishing(client):
     assert not has()
     client.post("/api/parent/packs/early/status", json={"status": "active"}, headers=ph)
     assert has()
+
+
+def test_price_zero_is_free_and_off_keeps_earned_items(client):
+    """Price 0: one tap, nothing booked (coins or new XP). «off» only takes an item out of the shop – a free, level or
+    badge item a child wears stays unlocked."""
+    ph, mia, _ = setup_family(client)
+    fq = client.app.state.fq
+    h = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    coins = fq.rewards.balance(mia, "coins")
+    assert client.put("/api/parent/shop/items/cap", json={"price": 0}, headers=ph).json()["rule"] == {"cost": 0}
+    assert client.post("/api/me/avatar/buy", json={"item": "cap"}, headers=h).status_code == 200
+    assert fq.rewards.balance(mia, "coins") == coins and not fq.db.q1("SELECT 1 FROM ledger WHERE ref='avatar:cap'")
+    assert client.put("/api/parent/shop/items/bg_space", json={"price": 0}, headers=ph).json()["rule"] == {"xp": 0}
+    assert client.post("/api/me/avatar/buy", json={"item": "bg_space"}, headers=h).status_code == 200
+    items = {i["id"]: i for i in client.get("/api/me/avatar", headers=h).json()["items"]}
+    assert items["cap"]["unlocked"] and items["bg_space"]["unlocked"]
+    # a free item worn – then switched off by the parents: still unlocked and worn, but not to buy
+    client.post("/api/me/avatar", json={"avatar": {"items": {"eyewear": "glasses", "hat": "cap"}}}, headers=h)
+    client.put("/api/parent/shop/items/glasses", json={"off": True}, headers=ph)
+    client.put("/api/parent/shop/items/cap", json={"off": True}, headers=ph)
+    items = {i["id"]: i for i in client.get("/api/me/avatar", headers=h).json()["items"]}
+    assert items["glasses"]["unlocked"] and items["glasses"]["rule"]["off"] and items["cap"]["unlocked"]
+    a = client.post("/api/me/avatar", json={"avatar": {"items": {"eyewear": "glasses", "hat": "cap"}}}, headers=h).json()["avatar"]
+    assert a["items"] == {"eyewear": "glasses", "hat": "cap"}
+    assert client.post("/api/me/avatar/buy", json={"item": "sunglasses"}, headers=h).status_code == 400          # no coins
+    client.put("/api/parent/shop/items/sunglasses", json={"off": True, "price": 0}, headers=ph)
+    assert client.post("/api/me/avatar/buy", json={"item": "sunglasses"}, headers=h).status_code == 400          # off: not to buy

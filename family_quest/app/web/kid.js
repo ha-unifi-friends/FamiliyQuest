@@ -1014,7 +1014,7 @@ async function avatarSpecials() {
     catch (e) { toast(e.message, "bad"); }
   };
   const buy = async i => {
-    if (!confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) return;
+    if (i.rule.cost > 0 && !confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) return;   // price 0: free, one tap
     try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
     catch (e) { toast(e.message, "bad"); }
   };
@@ -1024,7 +1024,7 @@ async function avatarSpecials() {
       return h("div.offer.card" + (i.unlocked || d.coins >= i.rule.cost ? "" : ".cant"),
         avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
         i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
-          : [h("div.price", "🪙 " + i.rule.cost), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, T("Buy")) : bar(d.coins, i.rule.cost)]);
+          : [h("div.price", i.rule.cost > 0 ? "🪙 " + i.rule.cost : T("Free")), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, i.rule.cost > 0 ? T("Buy") : T("Unlock")) : bar(d.coins, i.rule.cost)]);
     })));
 }
 
@@ -1032,7 +1032,7 @@ async function avatarSpecials() {
 async function xpBackgrounds() {
   let d;
   try { d = await api("me/avatar"); } catch { return null; }
-  const items = d.items.filter(i => i.rule && i.rule.xp && !i.rule.off);
+  const items = d.items.filter(i => i.rule && i.rule.xp != null && !i.rule.off);      // price 0 = free
   if (!items.length) return null;
   const a = d.avatar, have = d.new_xp || 0;
   const wear = async i => {
@@ -1041,7 +1041,7 @@ async function xpBackgrounds() {
     catch (e) { toast(e.message, "bad"); }
   };
   const get = async i => {
-    if (!confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) return;
+    if (i.rule.xp > 0 && !confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) return;
     try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
     catch (e) { toast(e.message, "bad"); }
   };
@@ -1053,7 +1053,7 @@ async function xpBackgrounds() {
       return h("div.offer.card" + (i.unlocked || have >= i.rule.xp ? "" : ".cant"),
         avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
         i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
-          : [h("div.price", "✨ " + i.rule.xp + " XP"), have >= i.rule.xp ? h("button.btn.small", { onclick: () => get(i) }, T("Unlock")) : bar(have, i.rule.xp)]);
+          : [h("div.price", i.rule.xp > 0 ? "✨ " + i.rule.xp + " XP" : T("Free")), have >= i.rule.xp ? h("button.btn.small", { onclick: () => get(i) }, T("Unlock")) : bar(have, i.rule.xp)]);
     })));
 }
 
@@ -1185,8 +1185,8 @@ async function avatarView() {
   const tabs = h("div.av-tabs");
   const panel = h("div.av-panel");
   const ruleText = r => r.off ? T("Not in the shop") : r.level ? T("From level {0}").replace("{0}", r.level)
-    : r.badge ? T("With a badge") : r.cost ? T("Buy for {0} coins").replace("{0}", r.cost)
-    : r.xp ? I18N.tr(T("For {0} new XP")).replace("{0}", r.xp)
+    : r.badge ? T("With a badge") : r.cost != null ? (r.cost > 0 ? T("Buy for {0} coins").replace("{0}", r.cost) : T("Free"))
+    : r.xp != null ? (r.xp > 0 ? I18N.tr(T("For {0} new XP")).replace("{0}", r.xp) : T("Free"))
     : r.season ? T("Only in season") : "";
   const drawTabs = () => tabs.replaceChildren(...TABS.map(([k, n]) => h("button" + (tab === k ? ".on" : ""), { onclick: () => { tab = k; drawTabs(); drawPanel(); } }, n)));
   const drawPanel = () => {
@@ -1211,10 +1211,12 @@ async function avatarView() {
   };
   async function pickItem(i) {
     if (!i.unlocked) {
-      if (i.rule.cost && confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) {
+      if (i.rule.off) return toast(ruleText(i.rule));
+      // price 0 (parent area › Shop): free – one tap, no question
+      if (i.rule.cost != null && (i.rule.cost <= 0 || confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost)))) {
         try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
         catch (e) { return toast(e.message, "bad"); }
-      } else if (i.rule.xp && confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) {
+      } else if (i.rule.cost == null && i.rule.xp != null && (i.rule.xp <= 0 || confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp)))) {
         try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
         catch (e) { return toast(e.message, "bad"); }
       } else return toast(ruleText(i.rule));

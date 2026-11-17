@@ -15,3 +15,26 @@ def test_open_tables_for_the_others(client):
     assert client.get("/api/community/tables", headers=hl).json() == []                                       # joined: no note
     # alone against bots: nobody is told; the parent area still lists everything (JSON)
     assert client.get("/api/parent/games/running", headers=ph).status_code == 200
+
+
+def test_only_tables_that_can_still_be_joined(client):
+    """A card-game table that already started is not announced any more (its join refuses) – poker only while a seat
+    is free (later players sit down for the next hand)."""
+    import json
+    ph, mia, leo = setup_family(client)
+    fq = client.app.state.fq
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    ben = client.post("/api/parent/profiles", json={"name": "Ben"}, headers=ph).json()["id"]
+    hb = {"X-FQ-Token": client.post("/api/login", json={"profile_id": ben}).json()["token"]}
+    client.post("/api/community/cards/tschau/start", json={"bots": 0}, headers=hm)
+    client.post("/api/community/cards/tschau/join", headers=hl)
+    assert [t["game"] for t in client.get("/api/community/tables", headers=hb).json()] == ["tschau"]
+    client.post("/api/community/cards/tschau/begin", headers=hm)
+    assert client.post("/api/community/cards/tschau/join", headers=hb).status_code == 400                    # too late
+    assert client.get("/api/community/tables", headers=hb).json() == []
+    assert client.post("/api/community/poker/start", json={"max_players": 2}, headers=hm).status_code == 200
+    assert [t["game"] for t in client.get("/api/community/tables", headers=hb).json()] == ["poker"]
+    client.post("/api/community/poker/join", headers=hl)                                                     # full now
+    st = json.loads(fq.db.val("SELECT state FROM poker_game WHERE status!='done'"))
+    assert len(st["players"]) == 2 and client.get("/api/community/tables", headers=hb).json() == []
