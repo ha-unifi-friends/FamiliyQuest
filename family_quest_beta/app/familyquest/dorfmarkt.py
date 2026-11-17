@@ -504,7 +504,7 @@ class Table:
         """An open bid: the current price + 10, 25 or 50 (also to raise the own bid). Every bid starts the 5 seconds again."""
         self._check(pid, ("auction",), own_turn=False)
         a = self.st["auction"]
-        if self.now() >= a["until"]:
+        if self.now() >= a.get("until", 0):
             raise CommunityError("The auction is over")
         try:
             step = int(step)
@@ -512,7 +512,7 @@ class Table:
             raise CommunityError("Not a number") from None
         if step not in BID_STEPS:
             raise CommunityError("Bid 10, 25 or 50 more")
-        amount = a["price"] + step
+        amount = a.get("price", 0) + step
         if amount > self.st["money"][pid]:
             raise CommunityError("Not enough Taler")
         a.update(price=amount, leader=pid, until=self.now() + AUCTION_SECONDS, last_at=self.now())
@@ -521,7 +521,7 @@ class Table:
     def _auction_check(self, force: bool = False) -> None:
         """5 seconds after the last bid (or the start): the highest bidder pays and gets the field."""
         a = self.st.get("auction")
-        if not a or (not force and self.now() < a["until"]):
+        if not a or (not force and self.now() < a.get("until", 0)):
             return
         best, amount = a.get("leader"), a.get("price", 0)
         self.st["auction"] = None
@@ -531,7 +531,7 @@ class Table:
             self._log({"kind": "auction", "player": best, "field": a["field"], "amount": amount})
         else:
             self._log({"kind": "auction", "player": None, "field": a["field"], "amount": 0})
-        self._settle(a["after"])
+        self._settle(a.get("after", "done"))
 
     # ---------- the turn ends
     def end_turn(self, pid: str) -> None:
@@ -586,7 +586,7 @@ class Table:
             gap = self.now() - (self.st.get("paused_at") or self.now())
             self.st["paused_total"] = self.st.get("paused_total", 0.0) + gap
             if self.st.get("auction"):
-                self.st["auction"]["until"] += gap
+                self.st["auction"]["until"] = self.st["auction"].get("until", 0) + gap
             self.st.update(paused=False, paused_at=None, turn_at=self.now())
 
     # ---------- the Gemeindeversammlung
@@ -880,8 +880,8 @@ class Table:
             if self.st.get("phase") != "play" or self.st.get("paused"):
                 break
             a = self.st.get("auction")
-            if a:
-                if self.now() >= a["until"]:
+            if a:                       # an auction of the old sealed-bid format has no price / until: the defaults
+                if self.now() >= a.get("until", 0):
                     self._auction_check()
                     changed = True
                     continue
@@ -894,7 +894,7 @@ class Table:
                         continue
                     if b not in limits:
                         limits[b] = self.bot_bid(b, a["field"], (self.seat_of(b) or {}).get("level", "normal"))
-                    step = next((x for x in BID_STEPS if a["price"] + x <= min(limits[b], self.st["money"][b])), None)
+                    step = next((x for x in BID_STEPS if a.get("price", 0) + x <= min(limits[b], self.st["money"][b])), None)
                     if step:
                         bidders.append((b, step))
                 if bidders and self.now() - a.get("last_at", 0) >= wait:
@@ -1014,6 +1014,9 @@ class Dorfmarkt(CardGames):
         return out
 
     def _bots(self, st: dict, need: int) -> list[dict]:
+        if need > 0 and self.bots_off(KIND, st["players"]):          # parent area › Games: without bots
+            st.pop("bot_pool", None)
+            return []
         pool = st.pop("bot_pool", None) or []
         taken = {b["name"] for b in pool}
         for n, e in random.sample(BOTS, len(BOTS)):
@@ -1084,7 +1087,7 @@ class Dorfmarkt(CardGames):
             st = json.loads(row["state"])
             if st["phase"] != "lobby":
                 raise CommunityError("The game has already started")
-            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (Settings › Games)
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (parent area › Games)
             self._deal(st)
             self._save(row, st)
 
@@ -1198,9 +1201,9 @@ class Dorfmarkt(CardGames):
         a = st.get("auction")
         auction = None
         if a and live:
-            auction = {"field": a["field"], "player": a["player"], "price": a.get("price", 0), "leader": a.get("leader"),
+            auction = {"field": a["field"], "player": a.get("player"), "price": a.get("price", 0), "leader": a.get("leader"),
                        "history": (a.get("history") or [])[-5:], "steps": list(BID_STEPS), "seconds": AUCTION_SECONDS,
-                       "ms": max(0, int((a["until"] - self.now()) * 1000))}
+                       "ms": max(0, int((a.get("until", 0) - self.now()) * 1000))}
         trades = [x for x in st.get("trades") or [] if me in (x["from"], x["to"])] if joined else []
         in_meeting = joined and me in st["meeting"]
         return {**base, "players": players, "turn": st.get("turn") if live else None, "stage": stage,

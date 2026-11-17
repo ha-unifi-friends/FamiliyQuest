@@ -115,28 +115,48 @@ class Rewards:
     def emit(self, pid: int, event: str, ref: str = "", ctx: dict | None = None, _depth: int = 0,
              amounts: dict | None = None) -> list[dict]:
         """Apply all rules for an event. Returns the bookings (incl. follow-up events).
-        `amounts` {account: amount} replaces the amount of the rules of that account (e.g. a pack's own XP / coins)."""
+        `amounts` {account: amount} replaces the rules of that account (e.g. a pack's own XP / coins): the amount is
+        booked once per account – limited by the smallest daily limit of the matching rules; without any rule for
+        that event and account it is booked as it is (a rule the parents switched off: nothing)."""
         ctx = ctx or {}
         out: list[dict] = []
         active = {a["key"] for a in self.accounts()}
+        own = {k: float(v) for k, v in (amounts or {}).items() if v is not None}
         with self.db.tx():
-            for r in self.db.q("SELECT * FROM rule WHERE event=? AND active=1", event):
-                if r["account"] not in active:
+            def used_today(account: str) -> float:
+                return float(self.db.val(
+                    """SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account=? AND event=?
+                       AND date(at)=date('now','localtime')""", pid, account, event, default=0) or 0)
+
+            rows = self.db.q("SELECT * FROM rule WHERE event=?", event)
+            matching: dict[str, list] = {}
+            for r in rows:
+                if not r["active"] or r["account"] not in active:
                     continue
                 cond = json.loads(r["condition"] or "{}")
                 if any(str(ctx.get(k)) != str(v) for k, v in cond.items() if v not in (None, "")):
                     continue
+                matching.setdefault(r["account"], []).append(r)
+            for r in (r for rs in matching.values() for r in rs):
+                if r["account"] in own:
+                    continue                            # booked once below
                 amount = float(r["amount"])
-                if amounts and amounts.get(r["account"]) is not None:
-                    amount = float(amounts[r["account"]])
                 if r["daily_limit"] is not None:
-                    used = float(self.db.val(
-                        """SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account=? AND event=?
-                           AND date(at)=date('now','localtime')""", pid, r["account"], event, default=0))
-                    amount = max(0.0, min(amount, float(r["daily_limit"]) - used))
+                    amount = max(0.0, min(amount, float(r["daily_limit"]) - used_today(r["account"])))
                 if amount <= 0:
                     continue
                 out.append(self.book(pid, r["account"], amount, event, r["label"] or EVENTS.get(event, event), ref))
+            for account, amount in own.items():
+                rs = matching.get(account) or []
+                if account not in active or (not rs and any(r["account"] == account for r in rows)):
+                    continue                            # the account is off, or its rule is switched off / does not match
+                limits = [float(r["daily_limit"]) for r in rs if r["daily_limit"] is not None]
+                if limits:
+                    amount = max(0.0, min(amount, min(limits) - used_today(account)))
+                if amount <= 0:
+                    continue
+                label = next((r["label"] for r in rs if r["label"]), None) or EVENTS.get(event, event)
+                out.append(self.book(pid, account, amount, event, label, ref))
         if out:
             self._notify("ledger", pid, {"event": event, "bookings": out})
         if _depth < 3 and any(b["account"] == "xp" for b in out):

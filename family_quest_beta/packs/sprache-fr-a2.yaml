@@ -9,6 +9,14 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇫🇷"
 beschreibung: "Französisch für den Alltag: einkaufen, reisen, Wetter, Gesundheit, Hobbys und über Vergangenes und Pläne sprechen."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "French for everyday life: shopping, travelling, weather, health, hobbies and talking about the past and plans."
+  it: "Il francese di tutti i giorni: spesa, viaggi, tempo, salute, hobby e parlare del passato e dei progetti."
+  es: "Francés para el día a día: compras, viajes, el tiempo, la salud, aficiones y hablar del pasado y de planes."
+  nl: "Frans voor elke dag: boodschappen, reizen, weer, gezondheid, hobby's en praten over vroeger en plannen."
+  pl: "Francuski na co dzień: zakupy, podróże, pogoda, zdrowie, hobby oraz rozmowy o przeszłości i planach."
+  pt: "Francês para o dia a dia: compras, viagens, tempo, saúde, hobbies e falar do passado e de planos."
+  sv: "Franska i vardagen: handla, resa, väder, hälsa, fritid och prata om det som har hänt och om planer."
 pfad: true
 standard: false
 selbst: true

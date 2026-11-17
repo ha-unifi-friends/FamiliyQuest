@@ -6,7 +6,7 @@
 "use strict";
 
 const MK_ICON = "🏘️";
-const mkName = () => I18N.tr(T("Dorfmarkt"));
+const mkName = () => I18N.tr(T("Village Market"));
 const mkCoins = list => list.join(" / ") + " 🪙";
 const MK_GROUPS = ["#8fce4a", "#22b3a6", "#c27be0", "#f3b33d", "#4aa3ef", "#f06b5c", "#a77a57", "#d9367a"];   // 8 colour groups
 const MK_PLAYERS = ["#e8590c", "#1971c2", "#2f9e44", "#9c36b5", "#e6a700", "#0c8599"];                          // seat 0..5
@@ -192,6 +192,7 @@ async function dorfmarktStartDialog(solo, onStarted) {
       else Object.assign(body, { mode: "rounds", rounds: +len.slice(1) });
       try { await api("community/dorfmarkt/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("dorfmarkt", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function dorfmarktLive(box, me, back) {
@@ -521,7 +522,7 @@ function dorfmarktLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", MK_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", MK_ICON), h("h2", T("No game right now")), noTableActions("dorfmarkt", back)));
     if (!MK_BOARD) return;
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     // ☰: rules, guests, the actions of whoever leads (pause / resume, end), language
@@ -686,6 +687,6 @@ async function dorfmarktFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("dorfmarkt") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Buy the shops of the village, build market stands and collect rent – who is the richest at the end? Places 1 to 3 win coins at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => dorfmarktStartDialog(true, () => go("dorfmarkt")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("dorfmarkt") ? h("button.btn", { onclick: () => dorfmarktStartDialog(true, () => go("dorfmarkt")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => dorfmarktStartDialog(false, () => go("dorfmarkt")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

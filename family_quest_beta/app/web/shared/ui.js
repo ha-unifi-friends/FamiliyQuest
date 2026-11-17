@@ -427,7 +427,7 @@ function openGameMenu({ rules, invite, actions, onLeave }) {
   requestAnimationFrame(() => back.classList.add("open"));
 }
 
-// who begins (parent area › Settings › Games): «choose» → the leader picks a player when starting the game.
+// who begins (parent area › Games): «choose» → the leader picks a player when starting the game.
 // beginGame(path, players) posts to path (e.g. "community/cards/tschau/begin") – with {starter} when chosen.
 let _starterMode = null;
 async function beginGame(path, players, body = {}) {
@@ -444,12 +444,14 @@ async function beginGame(path, players, body = {}) {
 }
 
 // «🎲 Mia begins!» – once per game on every device (st.starter from cardgames.apply_starter)
-function starterBanner(starter, key) {
+// deals: the starter gets the dealer button (poker) – the first to act sits left of the big blind, so «… deals!»
+function starterBanner(starter, key, deals) {
   if (!starter || !starter.id) return;
   const k = "fq.starter." + key + "." + (starter.at || "");
   try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch {}
   if (starter.at && Date.now() / 1000 - starter.at > 120) return;           // an old game: no banner any more
-  const text = I18N.tr(starter.how === "dice" ? T("The dice decided: {0} begins!") : T("{0} begins!")).replace("{0}", starter.name);
+  const text = I18N.tr(deals ? (starter.how === "dice" ? T("The dice decided: {0} deals!") : T("{0} deals!"))
+    : starter.how === "dice" ? T("The dice decided: {0} begins!") : T("{0} begins!")).replace("{0}", starter.name);
   const b = h("div.starter-banner" + (starter.how === "dice" ? ".dice" : ""), h("span.starter-die", starter.how === "dice" ? "🎲" : "👉"), h("span", text));
   document.body.append(b);
   setTimeout(() => b.classList.add("gone"), 2600);
@@ -517,4 +519,19 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   document.body.append(back);
   document.addEventListener("keydown", esc);
   requestAnimationFrame(() => back.classList.add("open"));
+}
+
+// a game page opened directly (link, bookmark) while no table is open: in the app the child can open one right here –
+// the start dialog of the game, then the page shows the new table. Elsewhere (parent area, guests) only «Back».
+function noTableActions(game, back) {
+  const backBtn = h("button.btn.ghost", { onclick: back }, T("Back"));
+  if (window.FQ_PARENT_AREA || typeof canPlay !== "function" || !canPlay(game) || typeof route !== "function") return h("div.row.center", h("button.btn", { onclick: back }, T("Back")));
+  const again = () => route();
+  const fn = { tschau: () => cardsStartDialog("tschau", false, again), karussell: () => cardsStartDialog("karussell", false, again),
+    domino: () => dominoStartDialog(false, again), dorfmarkt: () => dorfmarktStartDialog(false, again), heimwaerts: () => heimwaertsStartDialog(false, again),
+    jass: () => jassStartDialog(false, again), kartenlauf: () => kartenlaufStartDialog(false, again), klatsch: () => klatschStartDialog(false, again),
+    paarjagd: () => paarjagdStartDialog(false, again), song: () => songStartDialog(again), stadtland: () => stadtlandStartDialog(again),
+    verboten: () => verbotenStartDialog(again), werwolf: () => werwolfStartDialog(again), werbinich: () => werbinichStartDialog(again),
+    wuerfel: () => wuerfelStartDialog(false, again), zeichnen: () => zeichnenStartDialog(again) }[game];
+  return h("div.row.center.wrap", fn ? h("button.btn", { onclick: () => fn() }, "👨‍👩‍👧 ", T("Open a family table")) : null, backBtn);
 }

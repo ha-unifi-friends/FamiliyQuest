@@ -9,6 +9,15 @@ version: 1
 quelle: "Family Quest (eigene Inhalte, CC0)"
 icon: "🇬🇧"
 beschreibung: "Englisch für den Alltag: einkaufen, reisen, über Wetter, Gesundheit und Hobbys reden und von gestern und morgen erzählen."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "English for everyday life: shopping, travelling, talking about weather, health and hobbies, and about yesterday and tomorrow."
+  fr: "L'anglais au quotidien : faire les courses, voyager, parler de la météo, de la santé et des loisirs, d'hier et de demain."
+  it: "L'inglese di tutti i giorni: fare la spesa, viaggiare, parlare di tempo, salute e hobby, di ieri e di domani."
+  es: "Inglés para el día a día: compras, viajes, hablar del tiempo, la salud y las aficiones, de ayer y de mañana."
+  nl: "Engels voor elke dag: boodschappen doen, reizen, praten over het weer, gezondheid en hobby's, over gisteren en morgen."
+  pl: "Angielski na co dzień: zakupy, podróże, rozmowy o pogodzie, zdrowiu i hobby, o wczoraj i jutrze."
+  pt: "Inglês para o dia a dia: compras, viagens, falar do tempo, da saúde e de hobbies, de ontem e de amanhã."
+  sv: "Engelska i vardagen: handla, resa, prata om väder, hälsa och fritid, om i går och i morgon."
 pfad: true
 standard: false
 selbst: true

@@ -5,7 +5,7 @@
 "use strict";
 
 const ZR_ICON = "🎨";
-const zrName = () => I18N.tr(T("Zeichnen & Raten"));
+const zrName = () => I18N.tr(T("Draw & Guess"));
 const zrCoins = list => list.join(" / ") + " 🪙";
 // the category titles in the language of the app (the words themselves are German content)
 const ZR_CATS = { tiere: T("Animals"), berufe: T("Jobs"), essen: T("Food & fruit"), gegenstaende: T("Things at home"), sport: T("Sports"), gemischt: T("Mixed") };
@@ -200,7 +200,7 @@ function zeichnenLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", ZR_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", ZR_ICON), h("h2", T("No game right now")), noTableActions("zeichnen", back)));
     sounds();
     if (st.phase !== "lobby") starterBanner(st.starter, "zeichnen");
     if (st.phase === "draw" || st.phase === "reveal") return turnView();

@@ -9,6 +9,15 @@ version: 1
 quelle: "Family Quest (eigene Inhalte, CC0)"
 icon: "🇬🇧"
 beschreibung: "Englisch für Schule, Beruf und Gespräche: Meinungen äussern, Gefühle beschreiben, Present Perfect, If-Sätze und Redewendungen."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "English for school, work and conversations: giving opinions, describing feelings, present perfect, if-clauses and idioms."
+  fr: "L'anglais pour l'école, le travail et la conversation : donner son avis, décrire ses sentiments, present perfect, phrases en if et expressions."
+  it: "L'inglese per la scuola, il lavoro e la conversazione: esprimere opinioni, descrivere sentimenti, present perfect, frasi con if e modi di dire."
+  es: "Inglés para la escuela, el trabajo y la conversación: dar opiniones, describir sentimientos, present perfect, oraciones con if y expresiones."
+  nl: "Engels voor school, werk en gesprekken: meningen geven, gevoelens beschrijven, present perfect, if-zinnen en uitdrukkingen."
+  pl: "Angielski do szkoły, pracy i rozmów: wyrażanie opinii, opisywanie uczuć, present perfect, zdania z if i idiomy."
+  pt: "Inglês para a escola, o trabalho e conversas: dar opiniões, descrever sentimentos, present perfect, frases com if e expressões."
+  sv: "Engelska för skola, arbete och samtal: säga sin åsikt, beskriva känslor, present perfect, if-satser och uttryck."
 pfad: true
 standard: false
 selbst: true

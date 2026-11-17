@@ -6,10 +6,16 @@ cardgames.CardGames, like «Heimwärts»).
 
 Fair for everybody: all lanes get the SAME obstacles – a course made from a seed of the server (`course()`, the same
 generator runs in web/jump.js) – and run on the same game clock (game time 0 = `t0`, a short countdown after the start).
-The speed grows with the distance (V0 → VMAX); from speed 7 also double obstacles, from speed 10 long ones.
+The speed grows with the distance (V0 → VMAX); from speed 7 also double crates, from speed 10 long hedges.
+Crates carry you: landing on top is safe (you run along and may jump on from there), only running into their side costs
+a life. Cacti (and hedges) cost a life when touched. At about CLOUD_T seconds (then again CLOUD_EVERY s after the end of
+the last one) comes a cloud parcours: after a free stretch with a signpost (the app shows a warning) 4–6 crates on
+clouds at heights 1.0–1.4, a short jump apart, over a dense cactus field – falling down costs a life (one per field piece).
+After any hit you hop up a little and are invulnerable for INVULN s.
 
-The jump physics run in the app (no waiting for the network): it reports its jumps (game times) and the obstacles it hit
-(index + game time). The server is tolerant – it keeps lives and the state per player, checks only sane values (a time
+The jump physics run in the app (no waiting for the network) step by step (`Runner`, the same in web/jump.js as
+JuRunner, so every app draws the others' lanes from their jump times exactly): it reports its jumps (game times) and the
+elements it hit (index + game time). The server is tolerant – it keeps lives and the state per player, checks only sane values (a time
 near the game clock, an obstacle that really passes then, one life per obstacle, a short invulnerability) and shows the
 others' lanes from the reported jump times (the app draws them a moment late, so they look smooth).
 Everybody has 3 lives (rule `lives`: 1 / 3 / 5); without lives you are out. A player whose app stays silent for
@@ -20,8 +26,9 @@ practice bots) you play until you are out – the distance (m) is your score, yo
 it stands (the ones still running by lives), no coins. Safety: after MAX_T seconds everybody still running is first.
 Coins (setting `game_rewards["jump"]`): places 1–3, only people of the family at a family table with at least two of
 them – never alone; paid once (flag `paid`, a unique ledger `ref` per player).
-Bots (easy / normal / hard): they jump for every obstacle with a timing error (and sometimes forget it) – the faster the
-game, the narrower the window; planned LOOKAHEAD seconds ahead so the others see their jumps in time.
+Bots (easy / normal / hard) run the same Runner: when a hit is coming they look for the jump times that get them past
+(over it, onto a crate, onto the next cloud box) and aim at the middle with a timing error (and sometimes forget it) –
+the faster the game, the narrower the window; planned LOOKAHEAD seconds ahead so the others see their jumps in time.
 """
 from __future__ import annotations
 
@@ -48,12 +55,20 @@ VMAX = 12.0
 ACC = 0.05                   # units per second² (VMAX after 140 s)
 T1 = (VMAX - V0) / ACC
 D1 = V0 * T1 + ACC * T1 * T1 / 2
-JT = 0.6                     # a jump lasts 0.6 s …
+JT = 0.6                     # a jump from the ground back to the ground lasts 0.6 s …
 JH = 1.5                     # … and goes 1.5 units high
-OH = 0.7                     # every obstacle is 0.7 units high
+OH = 0.7                     # a crate / a hedge is 0.7 units high
 AW = 0.25                    # half the width of the avatar (forgiving)
-WIDTH = (0.6, 1.6, 2.6)      # single, double, long
+# the kinds: 0 crate, 1 double crate (both solid: stand on them, only their side costs a life), 2 long hedge,
+# 3 cactus (both: touching costs a life), 4 a crate on a cloud (a platform: only landed on from above, never a hit),
+# 5 the dense cactus field under the cloud boxes (costs a life)
+WIDTH = (0.6, 1.6, 2.6, 0.5)
+TALL = (0.7, 0.7, 0.7, 0.8)
+FIELD_H = 0.5                # the cactus field
 FIRST = 2.5                  # the first obstacle after about 2.5 s
+CLOUD_T = 45.0               # the first cloud parcours at about this game time …
+CLOUD_EVERY = 60.0           # … then again this long after the end of the last one
+CLOUD_LEAD = 1.6             # free ground before the first cloud box (the warning shows ~3 s before)
 COUNTDOWN = 3.0              # seconds from the start to game time 0
 INVULN = 1.2                 # after a hit: invulnerable (blinking)
 STALE = 12.0                 # a silent app for this long: out
@@ -61,6 +76,15 @@ MAX_T = 900.0                # safety: after 15 minutes everybody still running 
 GRACE = 1.0                  # one left: the game ends this much later (a hit at the same moment may be on its way)
 LOOKAHEAD = 0.9              # bots plan their jump this early
 BOT_SKILL = {"easy": (0.06, 0.03), "normal": (0.035, 0.012), "hard": (0.02, 0.004)}   # timing error σ (s), forgetting
+# the physics, step by step (the same in web/jump.js – JuRunner)
+HZ = 120                     # steps per second
+G = 8 * JH / (JT * JT)       # gravity, units/s²
+VJ = 4 * JH / JT             # the jump's start speed
+VB = 0.6 * VJ                # the little hop after a hit
+LG = 0.2                     # landing grace: feet up to this much below a top still land on it (and do not hit its side)
+COYOTE = 0.1                 # a jump just after walking off an edge still counts
+MINJ = 0.2                   # two reported jumps at least this far apart
+KEEP = 40                    # the last jumps kept per player (the others' apps draw the lanes from them)
 
 
 def rewards_of(db) -> list[int]:
@@ -102,36 +126,211 @@ def mulberry32(seed: int):
     return nxt
 
 
-def course(seed: int, upto: float) -> list[tuple[float, int]]:
-    """The obstacles (distance of the front edge, kind 0 single / 1 double / 2 long) up to this distance."""
+def _clouds(out: list, x: float, rnd) -> float:
+    """A cloud parcours from x on: 4–6 crates on clouds (heights 1.0–1.4, gaps a short jump wide), under them a dense
+    cactus field (one piece per box). Answers where the normal course goes on."""
+    v = speed_at(x)
+    n = 4 + int(rnd() * 3)
+    x = x + v * CLOUD_LEAD
+    top = 1.1
+    plats = []
+    for k in range(n):
+        w = v * ((0.85 if k == 0 else 0.6) + 0.25 * rnd())
+        plats.append((x, w, top))
+        x = x + w + v * (0.24 + 0.1 * rnd())
+        top = min(1.4, max(1.0, top + (rnd() - 0.5) * 0.8))
+    for k in range(n):
+        px, w, top = plats[k]
+        out.append((px, 4, w, top))
+        fs = px + 0.4 if k == 0 else px
+        fe = plats[k + 1][0] if k + 1 < n else px + w - 0.4
+        out.append((fs, 5, fe - fs, FIELD_H))
+    return plats[-1][0] + plats[-1][1] + v * 1.4
+
+
+def course(seed: int, upto: float) -> list[tuple[float, int, float, float]]:
+    """The course up to this distance: (x of the front edge, kind, width, height of the top) – see WIDTH for the kinds.
+    A longer course starts with the same elements (the indexes stay)."""
     rnd = mulberry32(seed)
     out = []
     x = V0 * FIRST
+    nc = dist(CLOUD_T)
     while x <= upto:
+        if x >= nc:
+            x = _clouds(out, x, rnd)
+            nc = dist(time_at(x) + CLOUD_EVERY)
+            continue
         v = speed_at(x)
         r1 = rnd()
         r2 = rnd()
+        r3 = rnd()
         prog = (v - V0) / (VMAX - V0)
-        kind = 0
+        kind = 3 if r3 < 0.4 else 0
         if v >= 10 and r1 < 0.2:
             kind = 2
         elif v >= 7 and r1 < 0.5:
             kind = 1
-        out.append((x, kind))
+        out.append((x, kind, WIDTH[kind], TALL[kind]))
         x = x + WIDTH[kind] + v * (0.95 + r2 * (1.3 - 0.4 * prog))
     return out
 
 
-def window(x: float, kind: int) -> tuple[float, float]:
-    """The game times while the obstacle is under the avatar."""
-    return time_at(x - AW), time_at(x + WIDTH[kind] + AW)
+def clouds(obs) -> list[int]:
+    """The indexes where a cloud parcours starts (its first cloud box)."""
+    return [i for i, o in enumerate(obs) if o[1] == 4 and (i == 0 or obs[i - 1][1] < 4)]
 
 
-def clears(jump: float, x: float, kind: int) -> bool:
-    """A jump started at this game time carries the avatar over the obstacle."""
-    s = math.sqrt(1 - OH / JH)
-    a, b = window(x, kind)
+def window(x: float, kind: int, w: float | None = None, h: float | None = None) -> tuple[float, float]:
+    """The game times while the element is under the avatar."""
+    return time_at(x - AW), time_at(x + (WIDTH[kind] if w is None else w) + AW)
+
+
+def clears(jump: float, x: float, kind: int, w: float | None = None, h: float | None = None) -> bool:
+    """A jump from the ground started at this game time carries the avatar over the element (without landing on it)."""
+    s = math.sqrt(1 - (TALL[kind] if h is None else h) / JH)
+    a, b = window(x, kind, w)
     return jump + JT * (1 - s) / 2 <= a and b <= jump + JT * (1 + s) / 2
+
+
+class Runner:
+    """The jump physics of one runner, step by step (1/HZ s) – the same in web/jump.js (JuRunner), so every app draws
+    the others' lanes from their jump times exactly as they ran. Crates and cloud boxes carry you (landing grace LG),
+    the side of a crate, a cactus, a hedge or the cactus field costs a life (one per element, then INVULN s
+    invulnerable, with a little hop). A jump counts only from the ground / a box (or just after walking off: COYOTE)."""
+    FIELDS = ("k", "y", "vy", "ground", "walk", "left", "jt", "last", "lo", "hits")
+
+    def __init__(self, d: dict | None = None):
+        self.k, self.y, self.vy, self.ground, self.walk = 0, 0.0, 0.0, True, False
+        self.left, self.jt, self.last, self.lo, self.hits = -99.0, -99.0, -99.0, 0, []
+        for f in self.FIELDS:
+            if d and f in d:
+                setattr(self, f, d[f])
+        self.hits = [list(h) for h in self.hits]
+        self.ids = {h[0] for h in self.hits} | set((d or {}).get("ids") or ())
+        self.jumped = False
+
+    def dump(self) -> dict:
+        return {f: getattr(self, f) for f in self.FIELDS}
+
+    def copy(self) -> "Runner":
+        c = Runner(self.dump())
+        c.hits, c.ids = [], set(self.ids)
+        return c
+
+    def t(self) -> float:
+        return self.k / HZ
+
+    def can_jump(self) -> bool:
+        return self.ground or (self.walk and (self.k + 1) / HZ - self.left <= COYOTE)
+
+    def ji(self, jumps) -> int:
+        """The first jump not used yet."""
+        i = len(jumps)
+        while i > 0 and jumps[i - 1] > self.jt:
+            i -= 1
+        return i
+
+    def near(self, obs, d: float) -> list[int]:
+        while self.lo < len(obs) and obs[self.lo][0] + obs[self.lo][2] < d - AW:
+            self.lo += 1
+        out, i = [], self.lo
+        while i < len(obs) and obs[i][0] <= d + AW:
+            if obs[i][0] + obs[i][2] >= d - AW:
+                out.append(i)
+            i += 1
+        return out
+
+    def step(self, obs, jumps, ji: int) -> tuple[int, list | None]:
+        k1 = self.k + 1
+        t1 = k1 / HZ
+        want = False
+        while ji < len(jumps) and jumps[ji] < t1:
+            want = True
+            self.jt = jumps[ji]
+            ji += 1
+        self.jumped = False
+        if want and self.can_jump():
+            self.vy, self.ground, self.walk, self.jumped = VJ, False, False, True
+        near = self.near(obs, dist(t1))
+        y0 = self.y
+        if self.ground:
+            s = 0.0
+            for i in near:
+                o = obs[i]
+                if (o[1] <= 1 or o[1] == 4) and s < o[3] <= y0 + 1e-6:
+                    s = o[3]
+            if s < y0 - 1e-6:                              # walked off an edge: falling
+                self.ground, self.walk, self.left, self.vy = False, True, t1, 0.0
+            else:
+                self.y = s
+        if not self.ground:
+            y1 = y0 + self.vy / HZ - G / (2 * HZ * HZ)
+            self.vy = self.vy - G / HZ
+            land = None
+            if self.vy <= 0:
+                if y1 <= 0:
+                    land = 0.0
+                for i in near:
+                    o = obs[i]
+                    if (o[1] <= 1 or o[1] == 4) and y1 <= o[3] <= y0 + LG and (land is None or o[3] > land):
+                        land = o[3]
+            if land is not None:
+                self.y, self.vy, self.ground, self.walk = land, 0.0, True, False
+            else:
+                self.y = y1
+        self.k = k1
+        if t1 >= self.last + INVULN:
+            for i in near:
+                o = obs[i]
+                if o[1] == 4 or i in self.ids:
+                    continue
+                if self.y < (o[3] - LG if o[1] <= 1 else o[3]):
+                    hit = [i, t1]
+                    self.ids.add(i)
+                    self.hits.append(hit)
+                    self.last = t1
+                    self.vy, self.ground, self.walk = VB, False, False
+                    return ji, hit
+        return ji, None
+
+    def run(self, obs, jumps, t: float) -> list[list]:
+        """On to game time t: the new hits."""
+        ji, out = self.ji(jumps), []
+        while (self.k + 1) / HZ <= t:
+            ji, hit = self.step(obs, jumps, ji)
+            if hit:
+                out.append(hit)
+        return out
+
+
+def _danger(run: Runner, obs, steps: int) -> tuple[int, int] | None:
+    """Without a jump: (the step of the first hit, the element) within this many steps – or None."""
+    c = run.copy()
+    c.last = -99.0
+    for _ in range(steps):
+        _, hit = c.step(obs, (), 0)
+        if hit:
+            return c.k, hit[0]
+    return None
+
+
+def _safe(run: Runner, obs, j: float, i0: int, steps: int) -> bool:
+    """A jump at j gets past element i0 (or onto a box) without a hit."""
+    c = run.copy()
+    c.last = -99.0
+    js, ji, jumped = [j], 0, False
+    end = obs[i0][0] + obs[i0][2]
+    for _ in range(steps):
+        before = ji
+        ji, hit = c.step(obs, js, ji)
+        if hit:
+            return False
+        if ji > before and not c.jumped:
+            return False
+        jumped = jumped or c.jumped
+        if jumped and c.ground and (c.y > 0.3 or dist(c.t()) - AW > end):
+            return True
+    return True
 
 
 # ================================================================ one table (pure logic on a dict)
@@ -165,7 +364,7 @@ class Table:
         lives = int(self.st["rules"].get("lives", 3))
         self.st.update(phase="play", seed=seed if seed is not None else self.rng.randrange(1, 2 ** 31), t0=self.now() + COUNTDOWN,
                        lives=lives, ranking=None, places=None, complete=False, end_t=None,
-                       run={pid: {"lives": lives, "jumps": [], "hits": [], "out": None, "t": -COUNTDOWN, "next": 0, "seen": self.now()}
+                       run={pid: {"lives": lives, "jumps": [], "hits": [], "out": None, "t": -COUNTDOWN, "seen": self.now()}
                             for pid in ids})
 
     def alive(self, t: float | None = None) -> list[str]:
@@ -195,9 +394,9 @@ class Table:
         if tt is not None:
             r["t"] = max(r["t"], tt)
         for j in sorted(x for x in (ok(j) for j in list(jumps)[:20]) if x is not None):
-            if not r["jumps"] or j >= r["jumps"][-1] + JT * 0.8:
+            if not r["jumps"] or j >= r["jumps"][-1] + MINJ:
                 r["jumps"].append(round(j, 3))
-        del r["jumps"][:-8]
+        del r["jumps"][:-KEEP]
         obs = self.obstacles(now_t + 2)
         for h in list(hits)[:10]:
             if r["out"] is not None:
@@ -206,8 +405,8 @@ class Table:
                 i, th = int(h[0]), ok(h[1])
             except (TypeError, ValueError, IndexError, KeyError):
                 continue
-            if th is None or not 0 <= i < len(obs) or any(k == i for k, _ in r["hits"]):
-                continue
+            if th is None or not 0 <= i < len(obs) or obs[i][1] == 4 or any(k == i for k, _ in r["hits"]):
+                continue                                  # a cloud box never hits
             a, b = window(*obs[i])
             if not a - 1.5 <= th <= b + 1.5:
                 continue
@@ -242,27 +441,58 @@ class Table:
         return self.st.get("phase") != "play" or json.dumps(self.st["run"], sort_keys=True) != before
 
     def _bot(self, p: dict, r: dict, obs: list, now_t: float) -> None:
+        """A bot runs the same physics as the apps, planned LOOKAHEAD s ahead: when a hit is coming without a jump
+        (a crate, a cactus, the gap between two cloud boxes), it looks for the jump times that get it past (over it
+        or onto a box), aims at the middle with a timing error – and sometimes forgets it."""
         sigma, forget = BOT_SKILL.get(p.get("level"), BOT_SKILL["normal"])
-        while r["out"] is None and r["next"] < len(obs):
-            i = r["next"]
-            x, kind = obs[i]
-            a, b = window(x, kind)
-            if a - JT > now_t + LOOKAHEAD:
-                break
-            r["next"] += 1
-            v = speed_at(x)
-            lost = self.rng.random() < forget * (1 + (v - V0) / V0)        # forgot to jump
-            last = r["jumps"][-1] if r["jumps"] else -99.0
-            if not lost:
-                j = (a + b) / 2 - JT / 2 + self.rng.gauss(0, sigma)
-                j = max(j, last + JT)
-                r["jumps"].append(round(j, 3))
-                del r["jumps"][:-8]
-                ok = clears(j, x, kind)
-            else:
-                ok = clears(last, x, kind)
-            if not ok and not (r["hits"] and a < r["hits"][-1][1] + INVULN):
-                self._hit(r, i, round(a, 3))
+        run = Runner(r.get("sim"))
+        jumps = r["jumps"]
+        ji = run.ji(jumps)
+        until = int((now_t + LOOKAHEAD) * HZ)
+        while run.k < until and r["out"] is None:
+            if run.k >= r.get("wait", 0) and run.can_jump() and not (jumps and jumps[-1] >= run.t()):
+                self._bot_plan(r, run, obs, sigma, forget)
+                ji = run.ji(jumps)
+            ji, hit = run.step(obs, jumps, ji)
+            if hit and r["out"] is None:
+                self._hit(r, hit[0], round(hit[1], 3))
+        run.hits = []                                      # the hits are kept in r["hits"]
+        r["sim"] = run.dump()
+        r["sim"]["ids"] = sorted(run.ids)
+
+    def _bot_plan(self, r: dict, run: Runner, obs: list, sigma: float, forget: float) -> None:
+        d = dist(run.t())
+        v = speed_at(d)
+        nxt = next((o for o in obs[run.lo:] if o[0] + o[2] >= d - AW), None)
+        if run.y <= 0 and (nxt is None or nxt[0] > d + v * 1.3 + 1):   # nothing near: look again a bit later
+            r["wait"] = run.k + 12
+            return
+        dg = _danger(run, obs, int(1.3 * HZ))
+        if dg is None:
+            r["wait"] = run.k + 12
+            return
+        kh, i0 = dg
+        if self.rng.random() < forget * (1 + (v - V0) / V0):           # forgot to jump
+            r["wait"] = kh + 1
+            return
+        cands = list(range(max(run.k, kh - int(0.9 * HZ)), kh, 4))
+        ok = [_safe(run, obs, kj / HZ, i0, int(1.6 * HZ)) for kj in cands]
+        best, cur = (0, 0), None                                       # the longest stretch of good jump times
+        for n, good in enumerate(ok + [False]):
+            if good and cur is None:
+                cur = n
+            elif not good and cur is not None:
+                if n - cur > best[1] - best[0]:
+                    best = (cur, n)
+                cur = None
+        if best[1] > best[0]:
+            mid = (cands[best[0]] + cands[best[1] - 1]) / 2 / HZ
+        else:
+            mid = max(run.k, kh - int(0.3 * HZ)) / HZ
+        j = round(max(run.t(), mid + self.rng.gauss(0, sigma)), 3)
+        r["jumps"].append(j)
+        del r["jumps"][:-KEEP]
+        r["wait"] = run.k + 1
 
     def _maybe_end(self) -> None:
         if self.st.get("phase") != "play":
@@ -411,6 +641,9 @@ class Jump(CardGames):
         return out
 
     def _bots(self, st: dict, need: int) -> list[dict]:
+        if need > 0 and self.bots_off(KIND, st["players"]):          # parent area › Games: without bots
+            st.pop("bot_pool", None)
+            return []
         pool = st.pop("bot_pool", None) or []
         taken = {b["name"] for b in pool}
         for n, e in random.sample(BOTS, len(BOTS)):

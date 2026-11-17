@@ -9,6 +9,14 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇪🇸"
 beschreibung: "Spanisch vertiefen: Arbeit, Meinungen, Umwelt, Medien, Gefühle, Vergangenheitszeiten, Konditional und Redewendungen."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "Deepen your Spanish: work, opinions, environment, media, feelings, past tenses, conditional and idioms."
+  fr: "Approfondir l'espagnol : travail, opinions, environnement, médias, sentiments, temps du passé, conditionnel et expressions."
+  it: "Approfondire lo spagnolo: lavoro, opinioni, ambiente, media, sentimenti, tempi del passato, condizionale e modi di dire."
+  nl: "Je Spaans verdiepen: werk, meningen, milieu, media, gevoelens, verleden tijden, voorwaardelijke wijs en uitdrukkingen."
+  pl: "Pogłębianie hiszpańskiego: praca, opinie, środowisko, media, uczucia, czasy przeszłe, tryb warunkowy i idiomy."
+  pt: "Aprofundar o espanhol: trabalho, opiniões, meio ambiente, mídia, sentimentos, tempos do passado, condicional e expressões."
+  sv: "Fördjupa din spanska: arbete, åsikter, miljö, medier, känslor, dåtid, konditionalis och uttryck."
 pfad: true
 standard: false
 selbst: true

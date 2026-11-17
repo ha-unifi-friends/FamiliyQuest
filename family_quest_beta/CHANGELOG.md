@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0-beta.9
+
+- New game «Star Runner» (Sternschnuppen-Lauf): a 3-lane forest run at night – swipe to change lane, up to jump, down to duck; you run as your own avatar, the others as ghosts; bots, guests, coins for places 1–3
+- New: bulletin boards (Schwarzes Brett) in Family – endless boards with sticky notes, texts, drawings and shapes, zoom 5–400 %, live with everybody's pointer
+- Game corner: cube solver for 2×2 and 3×3 – enter the colours on a 3D cube, then a step-by-step guide
+- Jump: landing on crates is safe, new cacti cost a life, a cloud parcours over a cactus field
+- Parent area: own «Games» menu (search, status active / without bots / inactive per game); «Community» is now «Family»; game names translated
+- Planner: ticking off shopping items works; parents in the app need no planner PIN; the PIN dialog is no longer transparent; shop search
+- Quiz titles in the app language everywhere; game table note joins with one tap; running games blink on top of Games
+- Many fixes from code, security and usability reviews (e.g. who begins really begins, safer planner rights, quiz size limits, compact pack rows, plurals, currency names, larger tap targets)
+
 ## 1.1.0-beta.8
 
 - App: when somebody opens a family game table, everybody else who may play it gets a note in the header (with a chime) – «Mia opened a table: Tschau Sepp» – and joins with one tap

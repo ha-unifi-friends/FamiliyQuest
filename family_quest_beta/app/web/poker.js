@@ -103,7 +103,7 @@ function pokerLive(box, me, back) {
       st.phase === "lobby" ? h("button.btn", { disabled: st.players.length < 2, onclick: async () => {
         try { const r = await beginGame("community/poker/begin", st.players); if (r) { st = r; draw(true); } } catch (e) { toast(e.message, "bad"); } } }, "▶ ", T("Deal"))
         : h("button.btn", { onclick: () => act("pause", { on: false }) }, "▶ ", T("Go on"))) : null;
-    if (st.phase !== "lobby") starterBanner(st.starter, "poker");
+    if (st.phase !== "lobby") starterBanner(st.starter, "poker", true);          // the starter gets the dealer button
     if (st.phase === "done") {
       const rank = st.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99));
       if (rank[0] && rank[0].id === me.id) { confetti(); try { Sound.play("done"); } catch {} }
@@ -191,7 +191,7 @@ async function pokerFamilyCard() {
     p ? [h("p", p.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("poker") }, "🙋 ", p.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Poker with play chips – everybody on their own device.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => pokerSoloDialog(() => go("poker")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("poker") ? h("button.btn", { onclick: () => pokerSoloDialog(() => go("poker")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => pokerStartDialog(() => go("poker")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }
 

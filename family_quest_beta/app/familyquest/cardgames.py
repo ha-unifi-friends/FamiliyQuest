@@ -330,7 +330,7 @@ def bot_delay(rules: dict, default: float) -> float:
 
 
 # ================================================================ the games in the database
-# ---------------------------------------------------------------- who begins (parent area › Settings › Games)
+# ---------------------------------------------------------------- who begins (parent area › Games)
 STARTER_MODES = ("dice", "leader", "choose")
 
 
@@ -365,10 +365,19 @@ def apply_starter(st: dict, mode: str, chosen=None, leader=None) -> str:
 
 
 class CardGames:
+    no_bots = None     # hook (services.table_without_bots): (kind, ids of the people) → True when no bot may sit at the table
+
     def __init__(self, db, add_history=None):
         self.db = db
         self.add_history = add_history
         self.lock = threading.Lock()
+
+    def bots_off(self, kind: str, players: list) -> bool:
+        """The parents switched the bots off for this game (parent area › Games) – not when a parent plays along."""
+        if not self.no_bots:
+            return False
+        ids = [p["id"] if isinstance(p, dict) else p for p in players if not (isinstance(p, dict) and (p.get("bot") or p.get("guest")))]
+        return bool(self.no_bots(kind, ids))
 
     def default_rules(self, kind: str) -> dict:
         return {**GAMES[kind]["defaults"], **(self.db.get_setting(f"game_rules.{kind}") or {})}
@@ -461,6 +470,8 @@ class CardGames:
             self.db.set_setting(f"game_rules.{kind}", r)
             players = [self._person(host)]
             n_bots = r["bots"] if not solo else max(1, r["bots"])
+            if n_bots and self.bots_off(kind, [host]):
+                raise CommunityError("Playing with bots is switched off for this game")
             if bots is None:
                 bots = [{"name": n, "emoji": e, "level": r["level"]} for n, e in random.sample(BOTS, len(BOTS))[:n_bots]]
             for i, b in enumerate(bots[:n_bots]):

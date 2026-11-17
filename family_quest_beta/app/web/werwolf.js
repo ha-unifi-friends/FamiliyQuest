@@ -6,7 +6,7 @@
 "use strict";
 
 const WW_ICON = "🐺";
-const wwName = () => I18N.tr(T("Werwölfe"));
+const wwName = () => I18N.tr(T("Werewolves"));
 const WW_POLL_MS = 1000;
 const WW_ROLES = {
   wolf: ["🐺", T("Werewolf"), T("At night you and the other werewolves choose a victim. By day you pretend to be a harmless villager.")],
@@ -70,8 +70,9 @@ function wwRolesForm(r) {
   drawCustom();
   const form = [h("div.cards-rules", h("label.check", auto, T("Roles by the number of players (recommended)"))), custom,
     h("div.field", h("b", "☀️ ", T("Time to talk by day")), seg(r.talks || WW_TALKS, s.talk, n => n / 60 + " min", n => { s.talk = n; })),
-    h("div.field", h("b", "🤖 ", T("Fill with bots up to")), seg(WW_FILLS, s.fill, n => String(n), n => { s.fill = n; }),
-      h("small.muted", T("Fewer than 5? Bots fill the table.")))];
+    botsOn("werwolf") ? h("div.field", h("b", "🤖 ", T("Fill with bots up to")), seg(WW_FILLS, s.fill, n => String(n), n => { s.fill = n; }),
+      h("small.muted", T("Fewer than 5? Bots fill the table.")))
+      : h("p.small.muted", "🤖 ", T("Playing with bots is switched off – at least 5 people are needed."))];
   return { form, value: () => ({ ...s }) };
 }
 
@@ -136,7 +137,7 @@ function werwolfLive(box, me, back) {
     box.classList.toggle("ww-night", !!st && (st.phase === "night" || st.phase === "roles" || (st.phase === "hunter" && st.votes == null)));
     box.classList.toggle("ww-day", !!st && ["day", "vote", "verdict"].includes(st.phase));
     clearInterval(tick);
-    if (!st) return show(h("section.card.center", h("div.big-ic", WW_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", WW_ICON), h("h2", T("No game right now")), noTableActions("werwolf", back)));
     const key = st.phase + ":" + (st.step || "") + ":" + st.night;
     if (key !== selKey) { selKey = key; sel = []; heal = false; }
     narrate(key);
@@ -239,7 +240,7 @@ function werwolfLive(box, me, back) {
     const n = st.players.length, bots = st.bots || 0;
     return h("section.card.center.ww-lobby", h("h2", st.joined ? T("Waiting for the start …") : T("Play along on this device?")),
       st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")),
-      h("p.small.muted", fill(T("{0} players – {1} to {2} can play."), n, st.min_humans || 2, st.max), " ", I18N.tr(T("Fewer than 5? Bots fill the table."))),
+      h("p.small.muted", fill(T("{0} players – {1} to {2} can play."), n, st.min_humans || 2, st.max), " ", I18N.tr(st.no_bots ? T("Playing with bots is switched off – at least 5 people are needed.") : T("Fewer than 5? Bots fill the table."))),
       grid(st.players, { cls: ".ww-seats" }),
       bots ? h("p.small.ww-bots", "🤖 ", fill(T("{0} bots join when the game starts."), bots)) : null,
       st.deck ? h("div.sl-chips.ww-deck", ...wwDeckChips(st.deck, n + bots), h("span.chip", "☀️ ", st.rules.talk / 60 + " min")) : null,

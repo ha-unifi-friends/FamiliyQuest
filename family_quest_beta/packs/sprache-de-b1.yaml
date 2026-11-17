@@ -9,6 +9,15 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇩🇪"
 beschreibung: "Express opinions and feelings, talk about work, media and the environment, and build longer sentences."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  de: "Meinungen und Gefühle ausdrücken, über Arbeit, Medien und Umwelt sprechen und längere Sätze bauen."
+  fr: "Exprimer des opinions et des sentiments, parler du travail, des médias et de l'environnement, et construire des phrases plus longues."
+  it: "Esprimere opinioni e sentimenti, parlare di lavoro, media e ambiente e costruire frasi più lunghe."
+  es: "Expresar opiniones y sentimientos, hablar del trabajo, los medios y el medio ambiente y formar frases más largas."
+  nl: "Meningen en gevoelens uiten, praten over werk, media en milieu en langere zinnen maken."
+  pl: "Wyrażanie opinii i uczuć, rozmowy o pracy, mediach i środowisku oraz budowanie dłuższych zdań."
+  pt: "Expressar opiniões e sentimentos, falar sobre trabalho, mídia e meio ambiente e formar frases mais longas."
+  sv: "Uttrycka åsikter och känslor, prata om arbete, medier och miljö och bygga längre meningar."
 pfad: true
 standard: false
 selbst: true

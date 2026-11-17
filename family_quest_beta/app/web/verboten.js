@@ -6,7 +6,7 @@
 "use strict";
 
 const VW_ICON = "🚫";
-const vwName = () => I18N.tr(T("Verbotene Wörter"));
+const vwName = () => I18N.tr(T("Forbidden Words"));
 const vwCoins = list => list.join(" / ") + " 🪙";
 const VW_LEVELS = { easy: ["🐣", T("Easy (younger children)")], normal: ["🦊", T("Normal")], mixed: ["🎲", T("Mixed")] };
 const VW_TEAMS = ["🟣", "🟠"];
@@ -102,7 +102,7 @@ function verbotenLive(box, me, back) {
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
     clearInterval(tick);
-    if (!st) return show(h("section.card.center", h("div.big-ic", VW_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", VW_ICON), h("h2", T("No game right now")), noTableActions("verboten", back)));
     sounds();
     if (st.phase !== "lobby") starterBanner(st.starter, "verboten");
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;

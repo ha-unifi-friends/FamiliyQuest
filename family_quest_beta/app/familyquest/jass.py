@@ -625,6 +625,9 @@ class Jass(CardGames):
         return {p["id"]: amount for p in people if pl.get(p["id"]) == 1 and amount > 0}
 
     def _bots(self, st: dict, need: int) -> list[dict]:
+        if need > 0 and self.bots_off(KIND, st["players"]):          # parent area › Games: without bots
+            st.pop("bot_pool", None)
+            return []
         pool = st.pop("bot_pool", None) or []
         taken = {b["name"] for b in pool}
         for n, e in random.sample(BOTS, len(BOTS)):
@@ -642,7 +645,10 @@ class Jass(CardGames):
 
     def _deal(self, st: dict) -> None:
         humans = [p for p in st["players"] if not p.get("bot")][:SEATS]
-        st["players"] = seating(humans, self._bots(st, SEATS - len(humans)), st["rules"].get("partners", True))
+        bots = self._bots(st, SEATS - len(humans))
+        if len(humans) + len(bots) < SEATS:                            # bots switched off (parent area › Games)
+            raise CommunityError("Jass needs 4 people when playing with bots is switched off")
+        st["players"] = seating(humans, bots, st["rules"].get("partners", True))
         st.pop("bot_pool", None)
         self.table(st).setup()
 

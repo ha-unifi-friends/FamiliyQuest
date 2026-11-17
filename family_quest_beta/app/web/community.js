@@ -4,65 +4,84 @@
 
 const QUIZ_COLORS = ["var(--ans-1)", "var(--ans-2)", "var(--ans-3)", "var(--ans-4)"];     // same as the learning tiles
 const QUIZ_SHAPES = ["♠\uFE0E", "♥\uFE0E", "♦\uFE0E", "♣\uFE0E"];   // \uFE0E: as text, not as emoji
+// parent area › Games: «active without bots» – the app hides every bot option for these games (S.me.games_nobots; parents
+// are not bound, the server checks too). withoutBots() in a start dialog: the bot fields go away, the table gets 0 bots.
+const botsOn = game => typeof S === "undefined" || !S.me || !(S.me.games_nobots || []).includes(game);
+function withoutBots(game, bots, ...more) {
+  if (botsOn(game)) return false;
+  if (bots) {
+    if (![...bots.options].some(o => o.value === "0")) bots.append(h("option", { value: 0 }, "0"));
+    bots.value = "0";
+  }
+  for (const el of [bots, ...more]) {
+    const box = el && (el.closest("label.field") || el);
+    if (box) box.style.display = "none";
+  }
+  return true;
+}
 const onlyEmoji = s => /^[\p{Extended_Pictographic}\p{Regional_Indicator}\u200d\ufe0f\s]+$/u.test(s || ""); // flags as answers: show them big
 
 // ---------------------------------------------------------------- start page: banners
-function communityBanners(c) {
+// running games (pulse gently) and open polls/votes – `gamesOnly`: just the games (top of the «Games» page)
+function communityBanners(c, { gamesOnly = false } = {}) {
   if (!c) return [];
   const out = [];
   if (c.quiz && c.quiz.status !== "done") out.push(h("button.card.banner.quiz-banner", { onclick: () => go("quiz") },
-    h("span.big-ic", "🎯"), h("span.grow", h("strong", T("Family quiz")), " ", C("«" + c.quiz.title + "»"), h("br"),
+    h("span.big-ic", "🎯"), h("span.grow", h("strong", T("Family quiz")), " ", C("«" + quizTitle(c.quiz.title, c.quiz.langs) + "»"), h("br"),
       h("span.small", c.quiz.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.bingo) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("bingo") },
     h("span.big-ic", "🎱"), h("span.grow", h("strong", "Bingo"), h("br"),
       h("span.small", c.bingo.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   for (const k of ["tschau", "karussell"]) if (c[k]) out.push(h("button.card.banner.quiz-banner", { onclick: () => go(k) },
-    h("span.big-ic", k === "tschau" ? "🂡" : "🎠"), h("span.grow", h("strong", k === "tschau" ? "Tschau Sepp" : "Kartenkarussell"), h("br"),
+    h("span.big-ic", k === "tschau" ? "🂡" : "🎠"), h("span.grow", h("strong", k === "tschau" ? "Tschau Sepp" : T("Card Carousel")), h("br"),
       h("span.small", c[k].joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.domino) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("domino") },
     h("span.big-ic", "🁫"), h("span.grow", h("strong", "Domino"), h("br"),
       h("span.small", c.domino.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.paarjagd) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("paarjagd") },
-    h("span.big-ic", "🧠"), h("span.grow", h("strong", T("Paarjagd")), h("br"),
+    h("span.big-ic", "🧠"), h("span.grow", h("strong", T("Pair Hunt")), h("br"),
       h("span.small", c.paarjagd.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.werbinich) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("werbinich") },
-    h("span.big-ic", "🎭"), h("span.grow", h("strong", T("Wer bin ich?")), h("br"),
+    h("span.big-ic", "🎭"), h("span.grow", h("strong", T("Who am I?")), h("br"),
       h("span.small", c.werbinich.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.kartenlauf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("kartenlauf") },
-    h("span.big-ic", "🏁"), h("span.grow", h("strong", "Kartenlauf"), h("br"),
+    h("span.big-ic", "🏁"), h("span.grow", h("strong", T("Card Race")), h("br"),
       h("span.small", c.kartenlauf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.stadtland) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("stadtland") },
-    h("span.big-ic", "🏙️"), h("span.grow", h("strong", T("Stadt-Land-Fluss")), h("br"),
+    h("span.big-ic", "🏙️"), h("span.grow", h("strong", T("City, Country, River")), h("br"),
       h("span.small", c.stadtland.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.zeichnen) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("zeichnen") },
-    h("span.big-ic", "🎨"), h("span.grow", h("strong", T("Zeichnen & Raten")), h("br"),
+    h("span.big-ic", "🎨"), h("span.grow", h("strong", T("Draw & Guess")), h("br"),
       h("span.small", c.zeichnen.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.wuerfel) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("wuerfel") },
-    h("span.big-ic", "🎲"), h("span.grow", h("strong", T("Fünf Würfel")), h("br"),
+    h("span.big-ic", "🎲"), h("span.grow", h("strong", T("Five Dice")), h("br"),
       h("span.small", c.wuerfel.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.heimwaerts) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("heimwaerts") },
-    h("span.big-ic", "🏠"), h("span.grow", h("strong", T("Heimwärts")), h("br"),
+    h("span.big-ic", "🏠"), h("span.grow", h("strong", T("Homeward")), h("br"),
       h("span.small", c.heimwaerts.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.jump) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("jump") },
     h("span.big-ic", "🦘"), h("span.grow", h("strong", "Jump"), h("br"),
       h("span.small", c.jump.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.sternlauf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("sternlauf") },
+    h("span.big-ic", "🌠"), h("span.grow", h("strong", T("Star Runner")), h("br"),
+      h("span.small", c.sternlauf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.klatsch) out.push(h("button.card.banner.quiz-banner", { onclick: () => { try { KbAudio.ensure(); } catch {} go("klatsch"); } },
-    h("span.big-ic", "👏"), h("span.grow", h("strong", T("Klatsch den Beat")), h("br"),
+    h("span.big-ic", "👏"), h("span.grow", h("strong", T("Clap the Beat")), h("br"),
       h("span.small", c.klatsch.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.verboten) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("verboten") },
-    h("span.big-ic", "🚫"), h("span.grow", h("strong", T("Verbotene Wörter")), h("br"),
+    h("span.big-ic", "🚫"), h("span.grow", h("strong", T("Forbidden Words")), h("br"),
       h("span.small", c.verboten.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.jass) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("jass") },
     h("span.big-ic", "♣️"), h("span.grow", h("strong", T("Jass")), h("br"),
       h("span.small", c.jass.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.werwolf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("werwolf") },
-    h("span.big-ic", "🐺"), h("span.grow", h("strong", T("Werwölfe")), h("br"),
+    h("span.big-ic", "🐺"), h("span.grow", h("strong", T("Werewolves")), h("br"),
       h("span.small", c.werwolf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.schach) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("schach/" + c.schach.game) },
     h("span.big-ic", "♟️"), h("span.grow", h("strong", T("Chess")), h("br"),
       h("span.small", c.schach.my_turn ? T("Your move!") : I18N.tr(T("{0} invites you to a game")).replace("{0}", c.schach.from || "?"))), h("span.big-ic", "➜")));
   if (c.dorfmarkt) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("dorfmarkt") },
-    h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Dorfmarkt")), h("br"),
+    h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Village Market")), h("br"),
       h("span.small", c.dorfmarkt.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.song) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("song") },
     h("span.big-ic", "🎵"), h("span.grow", h("strong", T("Guess the song")), h("br"),
@@ -70,9 +89,13 @@ function communityBanners(c) {
   if (c.poker) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("poker") },
     h("span.big-ic", "🃏"), h("span.grow", h("strong", "Texas Hold'em"), h("br"),
       h("span.small", c.poker.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (gamesOnly) return out;
   if (c.polls_open) out.push(h("button.card.banner", { onclick: () => go("family") },
     h("span.big-ic", "📊"), h("span.grow", h("strong", T("Polls")), h("br"),
       h("span.small", I18N.tr(T("Your answer is missing: {0}")).replace("{0}", c.polls_open))), h("span.big-ic", "➜")));
+  if (c.boards_new) out.push(h("button.card.banner", { onclick: () => go("family") },
+    h("span.big-ic", "📌"), h("span.grow", h("strong", T("Bulletin boards")), h("br"),
+      h("span.small", c.boards_new === 1 ? T("Something new on a board") : I18N.tr(T("Something new on {0} boards")).replace("{0}", c.boards_new))), h("span.big-ic", "➜")));
   if (c.votes_open) out.push(h("button.card.banner", { onclick: () => go("family") },
     h("span.big-ic", "🗳️"), h("span.grow", h("strong", T("Family council")), h("br"),
       h("span.small", I18N.tr(T("Your vote is missing: {0}")).replace("{0}", c.votes_open))), h("span.big-ic", "➜")));
@@ -189,6 +212,9 @@ async function guestInvite(game, gid) {
 const QUIZ_LANG_NAMES = { de: "Deutsch", fr: "Français", it: "Italiano", en: "English", es: "Español", nl: "Nederlands",
   pl: "Polski", pt: "Português", sv: "Svenska", rm: "Rumantsch" };
 const uiLang2 = () => String(I18N.base || I18N.lang || "de").slice(0, 2).toLowerCase();
+// the title of a quiz in the language of the app (or the one chosen in the game), else the main title
+const quizTitle = (title, langs, lang) => (langs && (langs.title || {})[lang || (() => { try { return localStorage.getItem("fq.quiz.lang"); } catch { return null; } })() || uiLang2()])
+  || (langs && (langs.title || {})[uiLang2()]) || title || "";
 // the state of the game in the chosen language: question, answers, unit, place – what is not translated stays as it is
 function quizInLang(st, lang) {
   if (!st || !st.langs || !lang || lang === st.langs.base) return st;
@@ -252,10 +278,13 @@ function quizLive(box, me, back) {
       actions: [{ ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
       onLeave: () => { full(false); stop(); back(); } });
     // a multilingual quiz: everybody picks the language of the questions on their own device
-    const langSel = langs.length > 1 ? h("select.quiz-lang", { "aria-label": T("Language of the questions"), title: T("Language of the questions"),
-      onchange: e => { qlang = e.target.value; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} last = ""; draw(raw); } },
-      ...langs.map(l => h("option", { value: l, selected: l === lang, title: QUIZ_LANG_NAMES[l] || l }, "🌐 " + l.toUpperCase()))) : null;
-    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎯 ", C(st.title))),
+    // the language of the questions (not the app language in ☰): a small caption says what the select is for
+    const langSel = langs.length > 1 ? h("label.quiz-lang-box", { title: T("Language of the questions") },
+      h("span.quiz-lang-cap", T("Questions")),
+      h("select.quiz-lang", { "aria-label": T("Language of the questions"),
+        onchange: e => { qlang = e.target.value; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} last = ""; draw(raw); } },
+        ...langs.map(l => h("option", { value: l, selected: l === lang, title: QUIZ_LANG_NAMES[l] || l }, "🌐 " + l.toUpperCase() + " ▾")))) : null;
+    const head = h("div.quiz-head.ql-head", h("div.row.head-title", menu, h("h1", h("span.ql-ic", "🎯 "), C(st.title))),
       h("div.row", langSel, st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null));
     // only the main action stays as a big button – everything else is in ☰
     const hostBar = isHost(st) && st.status !== "done" ? h("div.row.center.host-bar",
@@ -328,7 +357,7 @@ function quizLive(box, me, back) {
     if (st.players.some(p => p.id === me.id && p.place === 1 && p.points > 0)) { confetti(); try { Sound.play("done"); } catch {} }
     show(head, h("section.card.center", h("h2", "🏁 ", T("Result")),
       h("div.podium", ...[1, 0, 2].map(i => top[i] ? h("div.pod.p" + top[i].place, avatarSvg(top[i].avatar, top[i].place === 1 ? 84 : 64),
-        C(top[i].name, "strong"), h("span.small", top[i].points + " " + I18N.tr(T("points"))), h("div.step", top[i].place === 1 ? "🏆" : String(top[i].place))) : h("div")))),
+        C(top[i].name, "strong"), h("span.small", pts(top[i].points)), h("div.step", top[i].place === 1 ? "🏆" : String(top[i].place))) : h("div")))),
       scoreList(st, 99), h("div.row.center.host-bar", h("button.btn", { onclick: back }, T("Back"))));
   }
   function playersRow(st) {
@@ -595,25 +624,28 @@ async function councilSection(me = S.profile) {
 }
 
 // ---------------------------------------------------------------- personal history
+// «1 point» / «5 points» – the number with its word, for the lines of the history
+const pts = n => I18N.tr(+n === 1 ? T("1 point") : T("{0} points")).replace("{0}", n);
+
 function historyText(e) {
   const d = e.data;
-  if (e.kind === "quiz") return ["🎯", I18N.tr(T("Family quiz «{0}»: place {1} of {2} · {3} points")).replace("{0}", d.quiz).replace("{1}", d.place).replace("{2}", d.of).replace("{3}", d.points), d.won ? "🏆" : ""];
+  if (e.kind === "quiz") return ["🎯", I18N.tr(T("Family quiz «{0}»: place {1} of {2} · {3}")).replace("{0}", d.quiz).replace("{1}", d.place).replace("{2}", d.of).replace("{3}", pts(d.points)), d.won ? "🏆" : ""];
   if (e.kind === "council") return ["🗳️", I18N.tr(T("Family council «{0}»: {1}")).replace("{0}", d.topic).replace("{1}", d.decided === false ? I18N.tr(T("No decision")) : (d.winners || []).join(" / ") || "–"), d.mine_won ? I18N.tr(T("your idea!")) : ""];
   if (e.kind === "bingo") return ["🎱", I18N.tr(T("Bingo with {0} players: {1} won after {2} balls")).replace("{0}", d.players).replace("{1}", d.winner).replace("{2}", d.balls), d.won ? "🏆" : ""];
-  if (e.kind === "song") return ["🎵", I18N.tr(T("Guess the song: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "song") return ["🎵", I18N.tr(T("Guess the song: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points)), d.place === 1 ? "🏆" : ""];
   if (e.kind === "domino") return ["🁫", I18N.tr(T("Domino: {0} to {1} points")).replace("{0}", d.points).replace("{1}", d.best) + (d.pollona ? " · Pollona" : ""), d.won ? "🏆" : ""];
   if (e.kind === "paarjagd") return ["🧠", I18N.tr(T("Paarjagd: place {0} of {1} · {2} pairs")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.pairs)
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "werbinich") return ["🎭", (d.found
-    ? I18N.tr(T("Wer bin ich?: place {0} of {1} · I was {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.char)
-    : I18N.tr(T("Wer bin ich?: I was {0} – not found")).replace("{0}", d.char)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+    ? I18N.tr(T("Wer bin ich? – place {0} of {1} · I was {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.char)
+    : I18N.tr(T("Wer bin ich? – I was {0} – not found")).replace("{0}", d.char)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "kartenlauf") return ["🏁", I18N.tr(T("Kartenlauf: place {0} of {1} · {2} marbles home")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.home)
     + (d.teams ? " · " + I18N.tr(T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
-  if (e.kind === "stadtland") return ["🏙️", I18N.tr(T("Stadt-Land-Fluss: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+  if (e.kind === "stadtland") return ["🏙️", I18N.tr(T("Stadt-Land-Fluss: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
-  if (e.kind === "zeichnen") return ["🎨", I18N.tr(T("Zeichnen & Raten: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+  if (e.kind === "zeichnen") return ["🎨", I18N.tr(T("Zeichnen & Raten: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
-  if (e.kind === "wuerfel") return ["🎲", I18N.tr(T("Fünf Würfel: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+  if (e.kind === "wuerfel") return ["🎲", I18N.tr(T("Fünf Würfel: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "heimwaerts") return ["🏠", I18N.tr(T("Heimwärts: place {0} of {1} · {2} pieces home")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.home)
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
@@ -621,11 +653,15 @@ function historyText(e) {
     ? I18N.tr(T("Jump: place {0} of {1} · {2} m")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
     : I18N.tr(T("Jump alone: {0} m")).replace("{0}", d.score)) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
-  if (e.kind === "klatsch") return ["👏", (d.players > 1
-    ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
-    : I18N.tr(T("Klatsch den Beat alone: {0} points")).replace("{0}", d.score)) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)
+  if (e.kind === "sternlauf") return ["🌠", (d.players > 1
+    ? I18N.tr(T("Star Runner: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
+    : I18N.tr(T("Star Runner alone: {0} points")).replace("{0}", d.score)) + " · " + (d.dist || 0) + " m · " + (d.sparks || 0) + " ✨"
     + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
-  if (e.kind === "verboten") return ["🚫", I18N.tr(T("Verbotene Wörter: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+  if (e.kind === "klatsch") return ["👏", (d.players > 1
+    ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.score))
+    : I18N.tr(T("Klatsch den Beat alone: {0}")).replace("{0}", pts(d.score))) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)
+    + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
+  if (e.kind === "verboten") return ["🚫", I18N.tr(T("Verbotene Wörter: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.points))
     + (d.teams ? " · " + I18N.tr(T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "jass") return ["♣️", I18N.tr(d.place === 1 ? T("Jass won {0} : {1}") : T("Jass lost {0} : {1}")).replace("{0}", d.points).replace("{1}", d.other)
     + (d.partner ? " · " + I18N.tr(T("with {0}")).replace("{0}", d.partner) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
@@ -640,14 +676,21 @@ function historyText(e) {
   return ["•", e.kind, ""];
 }
 
+// the history of a profile – 30 lines, then «Show more»; `title` null: only the list (the parent area has its own heading)
 async function historySection(profileId, title = T("My history")) {
-  const sec = h("section.card", h("h2", "📜 ", title));
+  const sec = title == null ? h("div.history-box") : h("section.card", h("h2", "📜 ", title));
   try {
     const items = await api("community/history" + (profileId ? "?profile_id=" + profileId : ""));
-    sec.append(items.length ? h("ul.list.history", ...items.map(e => { const [ic, txt, extra] = historyText(e);
+    if (!items.length) { sec.append(h("p.muted", T("Family quiz wins and council decisions will show up here."))); return sec; }
+    const line = e => { const [ic, txt, extra] = historyText(e);
       return h("li.row", h("span.big-ic", ic), h("span.grow", h("span", { translate: "no" }, txt), extra ? h("b", " ", extra) : null),
-        h("span.small.muted", new Date(e.at.replace(" ", "T")).toLocaleDateString(I18N.locale, { day: "numeric", month: "short" }))); }))
-      : h("p.muted", T("Family quiz wins and council decisions will show up here.")));
+        h("span.small.muted", new Date(e.at.replace(" ", "T")).toLocaleDateString(I18N.locale, { day: "numeric", month: "short" }))); };
+    const list = h("ul.list.history"), PAGE = 30;
+    let n = 0;
+    const more = h("button.btn.small.ghost.history-more", { onclick: () => page() }, T("Show more"));
+    const page = () => { list.append(...items.slice(n, n + PAGE).map(line)); n += PAGE; more.hidden = n >= items.length; };
+    page();
+    sec.append(list, more);
   } catch (e) { sec.append(h("p.bad", e.message)); }
   return sec;
 }
@@ -656,7 +699,7 @@ async function quizCard() {
   const c = S.me && S.me.community;
   const q = c && c.quiz;
   return h("section.card.quiz-card", h("h2", "🎯 ", T("Family quiz")),
-    q && q.status !== "done" ? [h("p", C("«" + q.title + "»"), " ", T("is running – join in!")), h("button.btn.big", { onclick: () => go("quiz") }, "🙋 ", q.joined ? T("Back to the quiz") : T("Join"))]
+    q && q.status !== "done" ? [h("p", C("«" + quizTitle(q.title, q.langs) + "»"), " ", T("is running – join in!")), h("button.btn.big", { onclick: () => go("quiz") }, "🙋 ", q.joined ? T("Back to the quiz") : T("Join"))]
       : [h("p.muted", T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
          h("button.btn", { onclick: () => go("quizzes") }, "🎯 ", T("Quizzes"))]);
 }
@@ -677,7 +720,7 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
   const mine = q => me.role === "parent" || q.created_by === me.id;
   const start = async q => {
     const count = h("select", ...[5, 10, 15, 0].filter(n => !n || n < q.questions.length).map(n => h("option", { value: n }, n ? String(n) : I18N.tr(T("all")) + " (" + q.questions.length + ")")));
-    const m = modal(h("div.form", h("h2", "▶ ", C(q.title)), h("label.field", T("How many questions?"), count),
+    const m = modal(h("div.form", h("h2", "▶ ", C(quizTitle(q.title, q.langs))), h("label.field", T("How many questions?"), count),
       h("p.small.muted", T("Questions and answers come in a mixed order. You lead the game: you show the next question.")),
       h("div.row", h("button.btn.big", { onclick: async () => {
         try { await api("community/quiz/start", { method: "POST", body: { quiz_id: q.id, count: +count.value || null } }); m.close(); onStarted(); }
@@ -694,7 +737,7 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     const drawTemplates = () => tplGrid.replaceChildren(...templates.filter(t => region === "all" || t.region === region).map(t => h("button.card.tpl", { onclick: async () => {
         try { await api("community/quizzes/from-template", { method: "POST", body: { template: t.id } }); toast(T("Added to our quizzes"), "good"); m.close(); reload(); }
         catch (e) { toast(e.message, "bad"); }
-      } }, h("span.big-ic", t.icon), C((t.titles || {})[uiLang2()] || t.title, "strong"), h("span.small.muted", t.questions + " " + I18N.tr(T("questions"))),
+      } }, h("span.big-ic", t.icon), C((t.titles || {})[uiLang2()] || t.title, "strong"), h("span.small.muted", I18N.tr(t.questions === 1 ? T("1 question") : T("{0} questions")).replace("{0}", t.questions)),
         C((t.examples || {})[uiLang2()] || t.example, "span.small.tpl-ex"))));
     const regionSel = h("select", { style: { width: "auto", minWidth: "160px" }, onchange: e => { region = e.target.value; try { localStorage.setItem("fq.tplRegion", region); } catch {} drawTemplates(); } },
       ...Object.entries(TPL_REGIONS).filter(([k]) => k === "all" || templates.some(t => t.region === k))
@@ -716,11 +759,13 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
         quizzes.length ? h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all")) : null,
         file),
       h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")));
-    m = modal(h("div.form", h("h2", "🎯 ", T("New quiz")),
-      h("button.btn.big", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz")),
-      aiBox,
-      h("div.row.wrap", h("h3.grow", T("… or take a template")), h("label.row.small", { style: { flexWrap: "nowrap" } }, T("Show:"), regionSel)),
-      tplGrid, h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
+    // templates first (one tap), the own quiz next to it; AI and import folded away – rarely needed
+    m = modal(h("div.form", h("div.row.wrap", h("h2.grow", "🎯 ", T("New quiz")),
+        h("button.btn", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz"))),
+      h("div.row.wrap", h("h3.grow", T("Take a template")), h("label.row.small", { style: { flexWrap: "nowrap" } }, T("Show:"), regionSel)),
+      tplGrid,
+      h("details.ai-fold", h("summary", "🤖 ", T("With an AI or from a file")), aiBox),
+      h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
     drawTemplates();
   };
   const newBtn = h("button.btn", { onclick: newQuiz }, "+ ", T("New quiz"));
@@ -737,17 +782,19 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     reload();
   };
   const runningCard = running ? h("div.card.quiz-running",
-    h("div.row.wrap", h("span.big-ic", "🎯"), h("div.grow", h("div.small.muted", T("Running quiz")), C("«" + (running.title || "") + "»", "strong")),
-      h("span.small.muted", I18N.tr(T("{0} playing")).replace("{0}", (running.players || []).length))),
-    h("div.row.wrap", h("button.btn.small", { onclick: onStarted }, "▶ ", T("Open")),
-      me.role === "parent" || running.host === me.id ? h("button.btn.small.danger", { onclick: cancel }, "⏹ ", T("Cancel quiz")) : null)) : null;
+    h("div.row.wrap", h("span.big-ic", "🎯"), h("div.grow", h("div.small.muted", T("Running quiz")), C("«" + quizTitle(running.title, running.langs) + "»", "strong")),
+      h("span.small.muted", I18N.tr((running.players || []).length === 1 ? T("1 playing") : T("{0} playing")).replace("{0}", (running.players || []).length))),
+    h("div.row.wrap", h("button.btn", { onclick: onStarted }, "▶ ", T("Open")),
+      // «Cancel» far from «Open» (right edge) – a child should not hit it by mistake
+      me.role === "parent" || running.host === me.id ? h("button.btn.small.danger", { style: { marginLeft: "auto" }, onclick: cancel }, "⏹ ", T("Cancel quiz")) : null)) : null;
   box.replaceChildren(...[
     actions ? null : h("div.sec-head", h("span.grow"), h("div.head-actions", newBtn)),
     runningCard,
     h("p.small.muted", T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
     instList("quizzes", quizzes, { closed: q => q.games > 0,
       labels: [T("Not played yet"), T("Played")], empty: [T("All quizzes have been played – make a new one!"), T("No quiz played yet.")],
-      summary: q => [C(q.title, "strong.grow"), h("span.chip", q.questions.length + " " + I18N.tr(T("questions")))],
+      summary: q => [C(quizTitle(q.title, q.langs), "strong.grow"), q.langs ? h("span.chip", { title: [q.langs.base, ...q.langs.more].join(" ").toUpperCase() }, "🌐 " + (1 + q.langs.more.length)) : null,
+        h("span.chip", I18N.tr(q.questions.length === 1 ? T("1 question") : T("{0} questions")).replace("{0}", q.questions.length))],
       body: q => h("div.topic",
         h("p.small.muted", I18N.tr(T("by {0}")).replace("{0}", q.author || "?"),
           q.games ? " · " + I18N.tr(T("played {0}×")).replace("{0}", q.games) : "",

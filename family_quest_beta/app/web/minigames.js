@@ -1,4 +1,4 @@
-// Game corner: small games that run on this device only – Tic-Tac-Toe, Sudoku, Patience and Ping-Pong.
+// Game corner: small games that run on this device only – Tic-Tac-Toe, Sudoku, Patience, Ping-Pong and the cube solver (cube.js).
 // Alone against the app or two players on one tablet. Nothing is sent to the server; best results stay in this browser.
 "use strict";
 
@@ -7,6 +7,7 @@ const ARCADE = {
   sudoku: { icon: "🔢", title: T("Sudoku"), text: T("Every number once in each row, column and box. From 4×4 to 9×9.") },
   patience: { icon: "🃏", title: T("Patience"), text: T("Sort all cards by suit onto the four piles.") },
   pingpong: { icon: "🏓", title: T("Ping-Pong"), text: T("Bounce the ball back – against the app or face to face on one tablet.") },
+  cube: { icon: "🧊", title: T("Cube solver"), text: T("Paint the colours of your puzzle cube and get the moves to solve it, step by step.") },
   slots: { icon: "🎰", title: T("One-armed bandit"), text: T("Buy it once, then pull the lever for 1 coin – three times a day. Three alike win, cherries too.") },
 };
 
@@ -21,7 +22,7 @@ function arcadeCard() {
   const open = Object.keys(ARCADE).filter(k => canPlay(k));
   if (!open.length) return null;
   return h("section.card", h("h2", "🕹️ ", T("Game corner")),
-    h("p.small.muted", T("Small games for in between – alone or with two on one device.")),
+    h("p.small.muted", T("Small games for in between.")),
     h("div.arcade-grid", ...Object.entries(ARCADE).filter(([k]) => open.includes(k)).map(([k, g]) => h("button.arcade-tile", { onclick: () => go("arcade/" + k) },
       h("span.big-ic", g.icon), h("strong", g.title)))));
 }
@@ -36,7 +37,7 @@ function arcadeView(kind) {
     // ☰: the rules, language, theme, sound – also for the duels on two devices and the doubles (they draw into box)
     h("div.quiz-head", h("div.row.head-title", gameMenu({ rules: () => arcadeRulesView(kind), onLeave: () => go("games") }), h("h1", g.icon, " ", g.title))), box));
   document.body.classList.add("quiz-open");
-  ({ ttt: tttGame, sudoku: sudokuGame, patience: patienceGame, pingpong: pingpongGame, slots: slotsGame })[kind](box);
+  ({ ttt: tttGame, sudoku: sudokuGame, patience: patienceGame, pingpong: pingpongGame, slots: slotsGame, cube: cubeGame })[kind](box);
 }
 
 function arcadeRulesView(kind) {
@@ -91,7 +92,8 @@ async function tttGame(box) {
   try { duel = await api("community/duel"); } catch {}
   if ((duel && duel.kind !== "pong") || S.tttOnline) { S.tttOnline = false; return tttOnline(box); }
   const saved = arcadeStore.get().ttt || {};
-  let mode = saved.mode || "easy", board, turn, starter = "X", done = null, score = { X: 0, O: 0, draw: 0 };
+  const noBot = !botsOn("ttt");                   // parent area › Games: without bots – no games against the app
+  let mode = noBot ? "two" : saved.mode || "easy", board, turn, starter = "X", done = null, score = { X: 0, O: 0, draw: 0 };
   const names = () => mode === "two" ? { X: T("Player 1"), O: T("Player 2") } : { X: T("You"), O: T("App") };
   const status = h("p.center.ttt-status"), grid = h("div.ttt-grid"), tally = h("div.row.center.wrap.ttt-tally");
   const reset = () => { board = Array(9).fill(null); turn = starter; done = null; draw(); botMove(); };
@@ -121,7 +123,7 @@ async function tttGame(box) {
       h("span", I18N.tr(T("Turn: {0}")).replace("{0}", I18N.tr(n[turn])), " ", turn === "X" ? "✕" : "◯"));
     tally.replaceChildren(h("span.chip", "✕ ", n.X, ": ", String(score.X)), h("span.chip", T("Draw"), ": ", String(score.draw)), h("span.chip", "◯ ", n.O, ": ", String(score.O)));
   };
-  const modes = segmented([["easy", T("easy")], ["medium", T("medium")], ["hard", T("unbeatable")], ["two", "👥 " + I18N.tr(T("Two players"))],
+  const modes = segmented([...(noBot ? [] : [["easy", T("easy")], ["medium", T("medium")], ["hard", T("unbeatable")]]), ["two", "👥 " + I18N.tr(T("Two players"))],
     ["online", "📱 " + I18N.tr(T("Two devices"))]], mode,
     v => { if (v === "online") return tttOnline(box); mode = v; arcadeStore.set("ttt", { mode }); score = { X: 0, O: 0, draw: 0 }; starter = "X"; reset(); });
   box.replaceChildren(h("section.card", modes, status, grid, tally,
@@ -417,7 +419,8 @@ async function pingpongGame(box) {
   try { table = await api("community/pong4"); } catch {}
   if (table || S.pong4Online) { S.pong4Online = false; return pong4Online(box); }
   const saved = arcadeStore.get().pingpong || {};
-  let mode = saved.mode || "medium", to = 7;
+  const noBot = !botsOn("pingpong");              // parent area › Games: without bots – no games against the app
+  let mode = noBot ? "two" : saved.mode || "medium", to = 7;
   const W = 400, H = 640, PW = 80, PH = 12, R = 9;
   const canvas = h("canvas.pp-canvas", { width: W, height: H });
   const ctx = canvas.getContext("2d");
@@ -499,7 +502,7 @@ async function pingpongGame(box) {
   const hint = h("p.small.muted.arcade-hint");
   const drawHint = () => hint.replaceChildren(mode === "two" ? T("Each player moves the paddle on their side with a finger (or the keys A/D and ←/→). First to 7 points wins.")
     : T("Move your paddle (bottom) with your finger or the arrow keys. First to 7 points wins."));
-  const modes = segmented([["easy", T("easy")], ["medium", T("medium")], ["hard", T("hard")], ["two", "👥 " + I18N.tr(T("Two players"))],
+  const modes = segmented([...(noBot ? [] : [["easy", T("easy")], ["medium", T("medium")], ["hard", T("hard")]]), ["two", "👥 " + I18N.tr(T("Two players"))],
     ["online", "📱 " + I18N.tr(T("Two devices"))], ["four", "📱📱 " + I18N.tr(T("Doubles"))]], mode,
     v => { if (v === "online") return pongOnline(box); if (v === "four") return pong4Online(box); mode = v; arcadeStore.set("pingpong", { mode }); reset(); drawHint(); });
   drawHint();
@@ -804,14 +807,15 @@ function pong4Online(box) {
   // ---- setting up the table
   const SEAT_LABEL = { A1: T("You – back"), A2: T("Partner – front"), B1: T("Opponent – back"), B2: T("Opponent – front") };
   const choice = (list, cur, onchange) => h("select.p4-sel", { onchange: e => onchange(e.target.value) },
-    ...["easy", "normal", "hard"].map(l => h("option", { value: "bot:" + l, selected: cur === "bot:" + l }, "🤖 ", I18N.tr(T("Bot")), " · ", I18N.tr(LVL[l]))),
+    ...(botsOn("pingpong") ? ["easy", "normal", "hard"] : []).map(l => h("option", { value: "bot:" + l, selected: cur === "bot:" + l }, "🤖 ", I18N.tr(T("Bot")), " · ", I18N.tr(LVL[l]))),
     ...list.map(o => h("option", { value: "pid:" + o.id, disabled: o.busy, selected: cur === "pid:" + o.id }, o.name, o.busy ? " · " + I18N.tr(T("is playing")) : "")));
   const spec = v => v.startsWith("bot:") ? { bot: v.slice(4) } : { pid: +v.slice(4) };
   const setup = async () => {
     let list = [];
     try { list = await api("community/pong4/players"); } catch (e) { toast(e.message, "bad"); }
     const free = list.filter(o => !o.busy);
-    const pick = { A2: free[0] ? "pid:" + free[0].id : "bot:normal", B1: free[1] ? "pid:" + free[1].id : "bot:normal", B2: free[2] ? "pid:" + free[2].id : "bot:normal" };
+    const fb = botsOn("pingpong") ? "bot:normal" : list[0] ? "pid:" + list[0].id : "";     // without bots: people only
+    const pick = { A2: free[0] ? "pid:" + free[0].id : fb, B1: free[1] ? "pid:" + free[1].id : fb, B2: free[2] ? "pid:" + free[2].id : fb };
     let to = 7;
     body.replaceChildren(h("p.small.muted", T("Two against two: each team has a back paddle and a short front paddle near the net. Invite up to three family members – bots take the other seats.")),
       h("div.p4-seats", ...["A2", "B1", "B2"].map(s => h("label.p4-seat", h("span.p4-lbl", s[0] === "A" ? "🟦 " : "🟥 ", SEAT_LABEL[s]), choice(list, pick[s], v => { pick[s] = v; })))),

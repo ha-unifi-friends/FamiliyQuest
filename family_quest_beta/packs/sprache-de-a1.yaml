@@ -9,6 +9,15 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇩🇪"
 beschreibung: "Your first steps in German: greetings, numbers, family, food and simple everyday sentences."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  de: "Erste Schritte auf Deutsch: Begrüssungen, Zahlen, Familie, Essen und einfache Sätze für den Alltag."
+  fr: "Tes premiers pas en allemand : salutations, nombres, famille, nourriture et phrases simples du quotidien."
+  it: "I primi passi in tedesco: saluti, numeri, famiglia, cibo e frasi semplici di tutti i giorni."
+  es: "Tus primeros pasos en alemán: saludos, números, familia, comida y frases sencillas del día a día."
+  nl: "Je eerste stappen in het Duits: begroeten, getallen, familie, eten en eenvoudige zinnen voor elke dag."
+  pl: "Pierwsze kroki w niemieckim: powitania, liczby, rodzina, jedzenie i proste codzienne zdania."
+  pt: "Seus primeiros passos em alemão: cumprimentos, números, família, comida e frases simples do dia a dia."
+  sv: "Dina första steg på tyska: hälsningar, siffror, familj, mat och enkla vardagsmeningar."
 pfad: true
 standard: false
 selbst: true

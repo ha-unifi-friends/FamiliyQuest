@@ -5162,7 +5162,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
     return new Promise((resolve, reject) => {
       const el = document.createElement('div');
       const cs = ctx.host ? getComputedStyle(ctx.host) : null;
-      el.style.cssText = 'position:fixed;inset:0;z-index:9999;' + (cs ? VARS.map((v) => `${v}:${cs.getPropertyValue(v)}`).join(';') : '');
+      el.style.cssText = 'position:fixed;inset:0;z-index:9999;' + (cs ? VARS.map((v) => [v, cs.getPropertyValue(v).trim()]).filter(([, x]) => x).map(([v, x]) => `${v}:${x}`).join(';') : '');
       const root = el.attachShadow({ mode: 'open' });
       const vals = []; let step = 0; let pin = ''; let msg = firstMsg || ''; let err = !!firstMsg;
       const close = () => { el.remove(); document.removeEventListener('keydown', onKey, true); };

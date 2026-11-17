@@ -66,6 +66,8 @@ class FamilyQuest:
         self.heimwaerts = Heimwaerts(self.db, self.community.add_history, self.rewards)
         from .jump import Jump
         self.jump = Jump(self.db, self.community.add_history, self.rewards)
+        from .sternlauf import Sternlauf
+        self.sternlauf = Sternlauf(self.db, self.community.add_history, self.rewards)
         from .klatsch import Klatsch
         self.klatsch = Klatsch(self.db, self.community.add_history, self.rewards)
         from .verboten import Verboten
@@ -78,6 +80,10 @@ class FamilyQuest:
         self.schach = Schach(self.db, self.community.add_history, self.rewards)
         from .dorfmarkt import Dorfmarkt
         self.dorfmarkt = Dorfmarkt(self.db, self.community.add_history, self.rewards)
+        # games without bots (parent area › Games): the engines ask before bots take a seat (cardgames.CardGames.bots_off)
+        for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.klatsch,
+                    self.jass, self.werwolf, self.dorfmarkt):
+            eng.no_bots = self.table_without_bots
         from .songquiz import SongQuiz
         self.lan_base = None      # http://<Home Assistant IP>:<port of the direct access> – for sounds on speakers
         self.songs = SongQuiz(self.db, self.community.add_history, lambda: self.ha,
@@ -95,6 +101,8 @@ class FamilyQuest:
         self.bots.pets = self.pets
         from .wichteln import Wichteln
         self.wichteln = Wichteln(self.db, lambda: self.planer_host)
+        from .boards import Boards
+        self.boards = Boards(self.db)
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
         from .pong4 import Doubles
@@ -143,7 +151,10 @@ class FamilyQuest:
             out.update(pin_kind="symbols", symbol_set=random.sample(st["symbol_set"], len(st["symbol_set"])))
         return out
 
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "sudoku", "patience", "pingpong", "slots")
+    # the games that can be played with bots (alone against bots, bots at the table, chess / Tic-Tac-Toe / Ping-Pong
+    # against the computer, Werwölfe filled up with bots) – the parents can switch the bots off per game
+    BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "pingpong")
+    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -158,13 +169,33 @@ class FamilyQuest:
         if not acc:
             mode = self.db.get_setting("games") or "all"
             old = {"mode": mode if mode in ("all", "some", "off") else "all", "profiles": list(self.db.get_setting("games_profiles") or [])}
-            return {g: dict(old) for g in self.GAMES}
+            return {g: {**old, "bots": True} for g in self.GAMES}
         # a game that came with an update (not in the stored setting yet): open only if the parents left every game
         # open – if they restricted any game, a new one starts switched off until they decide
         stored = [(acc.get(g) or {}).get("mode", "all") for g in self.GAMES if g in acc]
         new_mode = "all" if all(m == "all" for m in stored) else "off"
         return {g: {"mode": (acc.get(g) or {}).get("mode", "all") if g in acc else new_mode,
-                    "profiles": list((acc.get(g) or {}).get("profiles") or [])} for g in self.GAMES}
+                    "profiles": list((acc.get(g) or {}).get("profiles") or []),
+                    "bots": (acc.get(g) or {}).get("bots") is not False or g not in self.BOT_GAMES} for g in self.GAMES}
+
+    def games_without_bots(self, prof: dict) -> list[str]:
+        """The games this profile may play only without bots (parent area › Games: «active without bots») – parents
+        are not bound, like they can always play every game."""
+        if prof.get("role") == "parent":
+            return []
+        return [g for g, a in self.games_access().items() if not a.get("bots", True)]
+
+    def bots_allowed(self, prof: dict, game: str) -> bool:
+        return game not in self.games_without_bots(prof)
+
+    def table_without_bots(self, kind: str, people: list) -> bool:
+        """For the game engines: may no bot sit at this table? Not when a parent plays along (parents decide)."""
+        if (self.games_access().get(kind) or {}).get("bots", True):
+            return False
+        ids = [int(x) for x in people if str(x).isdigit()]
+        if ids and self.db.q1(f"SELECT id FROM profile WHERE role='parent' AND id IN ({','.join('?' * len(ids))})", *ids):
+            return False
+        return True
 
     def games_for(self, prof: dict) -> list[str]:
         """The games this profile may play: parents all, children as set in the parent area (per game)."""
@@ -197,6 +228,7 @@ class FamilyQuest:
         out["wuerfel"] = self.wuerfel.summary("wuerfel", pid) if "wuerfel" in ok else None
         out["heimwaerts"] = self.heimwaerts.summary("heimwaerts", pid) if "heimwaerts" in ok else None
         out["jump"] = self.jump.summary("jump", pid) if "jump" in ok else None
+        out["sternlauf"] = self.sternlauf.summary("sternlauf", pid) if "sternlauf" in ok else None
         out["klatsch"] = self.klatsch.summary("klatsch", pid) if "klatsch" in ok else None
         out["verboten"] = self.verboten.summary("verboten", pid) if "verboten" in ok else None
         out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None
@@ -205,6 +237,7 @@ class FamilyQuest:
         out["dorfmarkt"] = self.dorfmarkt.summary("dorfmarkt", pid) if "dorfmarkt" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
         out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
+        out["boards_new"] = self.boards.new_count(pid)       # bulletin boards: not a game, for everybody of the family
         return out
 
     def games_allowed(self, prof: dict, game: str | None = None) -> bool:
@@ -261,6 +294,7 @@ class FamilyQuest:
             "chores": chores,
             "games": self.games_allowed(prof),
             "games_list": self.games_for(prof),
+            "games_nobots": self.games_without_bots(prof),        # these only without bots (no «alone against bots»)
             "community": self._community_summary(prof),
             "has_devices": bool(profile_settings(prof).get("devices")) and bool(self.ha and self.ha.connected),
             "internet": self.internet.state(prof),
