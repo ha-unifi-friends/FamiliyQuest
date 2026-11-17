@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.9
+
+- Learning packs and quizzes in a self-describing JSON: the file itself carries English instructions for an AI and a guide to every field (question types, pictures, flags, SVG, cantons, map positions, pack fields, learning forms, maths generators) – template, export and import are the same format
+- New: export quizzes (each one or all) – an AI can change, extend or translate them, then import them again
+- JSON exports of packs now carry the same explanations; old files still import
+
 ## 1.0.0-beta.8
 
 - «Me» page: everything at a glance at the top – level, streak, coins and internet minutes, open tasks (with the chore list), the internet time with one start / pause button, and the own lights and devices; avatar, moods and pets follow below

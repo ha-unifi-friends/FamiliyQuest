@@ -821,7 +821,7 @@ async function importView(main) {
       P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: the AI of Home Assistant reads it and makes a draft. Packs from school material stay private.")) :
         h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section("🤖 " + I18N.tr(T("Made with your AI")),
-      h("p", T("Learning material that fits your child's school year and textbook: give the template to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3» or «the words on this photo». Save the answer as a .json file and upload it above. Then check the draft, publish it and assign it to your children.")),
+      h("p", T("Learning material that fits your child's school year and textbook: the template – and every JSON export of a pack – is a JSON file that explains itself to an AI (instructions and every field). Give it to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3», «the words on this photo» or «add 10 cards». Save the answer as a .json file and upload it above. Then check the draft, publish it and assign it to your children.")),
       aiTemplateButtons("pack")),
     section(T("From a link"), h("div.row", url, h("button.btn", { onclick: fromUrl }, T("Load")))),
     section(T("Format"), h("pre.small.example", { translate: "no" }, `id: franz-5kl-einheit-3
