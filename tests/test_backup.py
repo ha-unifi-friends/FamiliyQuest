@@ -65,3 +65,29 @@ def test_restore_rejects_bad_files(client):
     r = client.post("/api/parent/restore", files={"file": ("x.zip", buf.getvalue())}, headers=h)
     assert r.status_code == 400 and "newer" in r.json()["detail"]
     assert client.get("/api/parent/backup").status_code == 401                 # parent PIN needed
+
+
+def test_restore_in_pieces_for_big_backups(client):
+    """Home Assistant refuses uploads above ~16 MB: the parent area sends the backup in pieces."""
+    h = ph(client)
+    fq = client.app.state.fq
+    mia = client.post("/api/parent/profiles", json={"name": "Mia"}, headers=h).json()["id"]
+    client.post("/api/parent/book", json={"profile_id": mia, "account": "coins", "amount": 70}, headers=h)
+    backup = client.get("/api/parent/backup", headers=h).content
+    client.post("/api/parent/book", json={"profile_id": mia, "account": "coins", "amount": 500}, headers=h)
+    up, step = "abc123def456", 1000
+    pieces = [backup[i:i + step] for i in range(0, len(backup), step)]
+    assert len(pieces) > 2
+    assert client.post("/api/parent/backup/chunk?upload=abc123def456&index=1", content=b"x", headers=h).status_code == 400   # not started
+    for i, piece in enumerate(pieces):
+        r = client.post(f"/api/parent/backup/chunk?upload={up}&index={i}", content=piece, headers={**h, "content-type": "application/octet-stream"})
+        assert r.status_code == 200, r.text
+    assert r.json()["size"] == len(backup)
+    m = client.post("/api/parent/backup/inspect-upload", json={"upload": up}, headers=h).json()["manifest"]
+    assert m["format"] == "family-quest-backup"
+    r = client.post("/api/parent/restore-upload", json={"upload": up}, headers=h)
+    assert r.status_code == 200, r.text
+    assert fq.rewards.balance(mia, "coins") == 70
+    assert client.post("/api/parent/restore-upload", json={"upload": up}, headers=h).status_code == 400    # used up
+    assert client.post("/api/parent/backup/chunk?upload=../x&index=0", content=b"x", headers=h).status_code == 400
+    assert client.post(f"/api/parent/backup/chunk?upload={up}&index=0", content=b"x").status_code == 401    # parents only

@@ -37,3 +37,35 @@ window.FQN = (() => {
     return root;
   };
 })();
+
+// parent area (planer?mode=parent): the planer's views in the look of the parent area – their shadow roots get a
+// style sheet on top (adoptedStyleSheets stay when a view draws itself anew) with the colours, font and controls
+// of Family Quest instead of the planer's own dark design
+(() => {
+  if (window.FQ_PLANER_MODE !== "parent" || !("adoptedStyleSheets" in Document.prototype)) return;
+  const css = `
+    .card{background:transparent!important;border:0!important;padding:0!important;color:var(--fg)!important;font-family:var(--font)!important;box-shadow:none!important}
+    .title{color:var(--fg)!important}.subt,.rl,.hint,.muted{color:var(--muted)!important}.rl b{color:var(--fg)!important}
+    .badge{background:color-mix(in srgb,var(--accent) 14%,transparent)!important;color:var(--accent)!important}
+    .sec{color:var(--accent)!important}
+    .ov{background:var(--card)!important;border:1px solid var(--line)!important}.ovh,.ovt{color:var(--muted)!important}.ovp{color:var(--fg)!important}
+    .list{background:var(--card)!important;border-color:var(--line)!important}.row{border-color:var(--line)!important}
+    .in,.sel,.fq,input,select,textarea{background:var(--card)!important;border:1px solid var(--line)!important;color:var(--fg)!important;border-radius:12px!important;font-family:var(--font)!important}
+    .in:focus,.sel:focus,.fq:focus{border-color:var(--accent)!important}
+    .hadd,.fc,.pre,.addb,.del,.btn,button.b{background:var(--card)!important;border:1px solid var(--line)!important;color:var(--fg)!important;font-family:var(--font)!important;border-radius:12px!important}
+    .hadd ha-icon,.addb ha-icon{color:var(--accent)!important}
+    .fc.on,.pre.on{border-color:var(--accent)!important;color:var(--accent)!important}.fc i{color:var(--muted)!important}
+    .day{background:var(--card)!important;border-color:var(--line)!important;color:var(--muted)!important}
+    .day.on{color:var(--c)!important;border-color:var(--c)!important;background:var(--cb)!important}
+    .new,.nw,.newbox{border-color:var(--line)!important;background:transparent!important}
+    .pn{color:var(--fg)!important}
+  `;
+  const sheet = new CSSStyleSheet();
+  try { sheet.replaceSync(css); } catch { return; }
+  const attach = Element.prototype.attachShadow;
+  Element.prototype.attachShadow = function (opts) {
+    const root = attach.call(this, opts);
+    try { root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]; } catch {}
+    return root;
+  };
+})();

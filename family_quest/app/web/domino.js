@@ -26,6 +26,31 @@ function dominoTile(a, b, opts = {}) {
   return h(cls, { html: dominoSvg(a, b, opts), translate: "no", onclick: opts.onclick, title: `${a}–${b}` });
 }
 
+// positions of the line as a snake, in half-tile units: rows run right, then back left; a tile that does not fit
+// any more stands upright at the row end (top half beside the row, bottom half above the next row's first half)
+function dominoSnake(line, W) {
+  const pos = [];
+  let x = 0, y = 0, dir = 1, afterTurn = false;           // y = top of the current row's line (row line height 1)
+  for (const [a, b] of line) {
+    const dbl = a === b, cross = dbl && !afterTurn, len = cross ? 1 : 2;
+    const fits = dir > 0 ? x + len <= W - 1 : x - len >= 1;
+    if (!fits) {                                           // turn: upright tile at the row end, a on top
+      const cx = dir > 0 ? x : x - 1;
+      pos.push({ x: cx, y, v: true, flip: false });
+      y += 2; x = dir > 0 ? x + 1 : x - 1; dir = -dir; afterTurn = true;
+      continue;
+    }
+    if (cross) pos.push({ x: dir > 0 ? x : x - 1, y: y - 0.5, v: true, flip: false });
+    else pos.push({ x: dir > 0 ? x : x - 2, y, v: false, flip: dir < 0 });   // running back: b|a so the halves touch
+    x += dir * len; afterTurn = false;
+  }
+  const minY = Math.min(0, ...pos.map(p => p.y));
+  for (const p of pos) p.y -= minY;
+  const w = Math.max(1, ...pos.map(p => p.x + (p.v ? 1 : 2)));
+  const hgt = Math.max(1, ...pos.map(p => p.y + (p.v ? 2 : 1)));
+  return { pos, w, h: hgt };
+}
+
 function dominoRulesView(r) {
   const cuban = r.mode === "cuban";
   const items = [
@@ -62,7 +87,7 @@ async function dominoStartDialog(solo, onStarted) {
     set.value = cuban ? "9" : "6"; teams.checked = cuban; drawOn.checked = !cuban; sync();
   };
   sync();
-  const picker = botPicker();
+  const picker = botPicker(r.bot_ms);
   const m = modal(h("div.form", h("h2", "🁫 ", "Domino", solo ? " – " + I18N.tr(T("alone against bots")) : ""),
     h("div.grid3", h("label.field", T("Rules"), mode), h("label.field", T("Tiles"), set), h("label.field", T("Points to win"), target),
       h("label.field", solo ? T("Bots") : T("Bots at the table"), bots), h("label.field", T("Bots play"), level)),
@@ -71,7 +96,7 @@ async function dominoStartDialog(solo, onStarted) {
     h("p.small.muted", T("These rules are remembered for the next game.")),
     h("div.row", h("button.btn.big", { onclick: async () => {
       const body = { solo, mode: mode.value, set: +set.value, target: +target.value, teams: teams.checked, draw: drawOn.checked,
-        bots: Math.max(+bots.value, picker.ids().length), level: level.value, bot_ids: picker.ids() };
+        bots: Math.max(+bots.value, picker.ids().length), level: level.value, bot_ids: picker.ids(), bot_ms: picker.ms() };
       try { await api("community/domino/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
 }
@@ -180,24 +205,24 @@ function dominoLive(box, me, back) {
   function table() {
     const line = st.line || [];
     const pick = choose && st.my_turn && line.length > 1;
-    // the line snakes: at most 8 tiles per row on a phone (more on wide screens), every second row runs back,
-    // the tile at a turn stands upright – the green table scrolls when the line gets long
-    const per = innerWidth < 600 ? 8 : Math.max(8, Math.min(16, Math.floor((Math.min(innerWidth, 1100) - 60) / 52)));
-    const tile = ([a, b], i, back, turn) => {
-      const first = i === 0, last = i === line.length - 1;
-      const isNew = !!(st.last && st.last.tile) && (st.last.end === "left" ? first : last);
-      const vertical = a === b || turn;
-      const [x, y] = back && !vertical ? [b, a] : [a, b];          // running back: the matching halves still touch
-      return dominoTile(x, y, { vertical, colored: colored(), end: first || last, on: isNew, pick: pick && (first || last),
-        onclick: pick && (first || last) ? () => act("play", { tile: choose, end: first ? "left" : "right" }) : null });
-    };
-    const rows = [];
-    for (let r = 0; r * per < line.length; r++) {
-      const part = line.slice(r * per, (r + 1) * per), back = r % 2 === 1;
-      const more = (r + 1) * per < line.length;
-      rows.push(h("div.dm-row" + (back ? ".back" : ""), ...part.map((t, k) => tile(t, r * per + k, back, more && k === part.length - 1))));
-    }
-    const tiles = h("div.dm-snake", { style: { "--per": per } }, ...rows);
+    // the line snakes like on a real table: tiles touch end to end, doubles stand crosswise, at the row end a tile
+    // stands upright and the next row runs back below it (dominoSnake – positions in half-tile units)
+    const tbl = box.querySelector(".dm-table");
+    const avail = Math.max(260, (tbl ? tbl.clientWidth : (box.clientWidth || innerWidth)) - 24);
+    const per = innerWidth < 600 ? 6 : Math.max(6, Math.min(12, Math.floor(avail / 96)));
+    const W = 2 * per + 1;
+    const u = Math.max(18, Math.min(52, Math.floor(avail / W)));
+    const lay = dominoSnake(line, W);
+    const tiles = h("div.dm-snake", { style: { "--tw": 2 * u + "px", width: lay.w * u + "px", height: lay.h * u + "px" } },
+      ...line.map((t, i) => {
+        const p = lay.pos[i], first = i === 0, last = i === line.length - 1;
+        const isNew = !!(st.last && st.last.tile) && (st.last.end === "left" ? first : last);
+        const [x, y] = p.flip ? [t[1], t[0]] : t;
+        const el = dominoTile(x, y, { vertical: p.v, colored: colored(), end: first || last, on: isNew, pick: pick && (first || last),
+          onclick: pick && (first || last) ? () => act("play", { tile: choose, end: first ? "left" : "right" }) : null });
+        el.style.left = p.x * u + "px"; el.style.top = p.y * u + "px";
+        return el;
+      }));
     let info = "";
     if (st.last) info = st.last.tile ? I18N.tr(T("{0} played")).replace("{0}", who(st.last.player))
       : st.last.passed ? I18N.tr(T("{0} passes")).replace("{0}", who(st.last.player)) : I18N.tr(T("{0} drew a tile")).replace("{0}", who(st.last.player));

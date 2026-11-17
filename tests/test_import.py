@@ -1,4 +1,5 @@
 import io
+import json
 
 import yaml
 
@@ -106,3 +107,41 @@ def test_json_import_and_export(client):
         z.writestr("x.json", json.dumps(dict(pack, id="zip-json")))
     r = client.post("/api/parent/import/file", files={"file": ("x.zip", buf.getvalue())}, headers=h)
     assert r.json()["drafts"][0]["id"] == "zip-json"
+
+
+class FakeAI:
+    """Home Assistant with an AI Task entity: answers like ai_task.generate_data (text with the JSON)."""
+    connected = True
+
+    def __init__(self, media_dir):
+        self.media_dir, self.seen = media_dir, []
+
+    def ai_task_entities(self):
+        return ["ai_task.openai"]
+
+    def ai_task(self, instructions, media_id, mime):
+        rel = media_id.split("media_source/local/", 1)[1]
+        self.seen.append((rel, mime, (self.media_dir / rel).read_bytes()[:3]))       # the file is there during the call
+        return '```json\n' + json.dumps({"titel": "Obst", "fach": "franzoesisch", "stufe": "5", "sprache": "fr", "quellsprache": "de",
+                "einheiten": [{"titel": "Obst", "karten": [{"frage": "der Apfel", "antwort": "la pomme", "satz": "", "hinweis": "", "emoji": "🍎"}]}],
+                "unsicher": []}) + '\n```'
+
+
+def test_photo_import_through_the_ai_of_home_assistant(client, settings, tmp_path):
+    h = ph(client)
+    fq = client.app.state.fq
+    photo = ("liste.jpg", b"\xff\xd8\xff\xe0 photo", "image/jpeg")
+    assert client.post("/api/parent/import/file", files={"file": photo}, headers=h).status_code == 400    # no AI in Home Assistant
+    settings.ha_media_dir = tmp_path / "media"
+    fake = FakeAI(settings.ha_media_dir)
+    fq.ha = fake
+    try:
+        from familyquest.importers import ai_draft
+        assert ai_draft.available(fq)
+        r = client.post("/api/parent/import/file", files={"file": photo}, headers=h)
+        assert r.status_code == 200, r.text
+        d = r.json()["drafts"][0]
+        assert fake.seen[0][1] == "image/jpeg" and fake.seen[0][2] == b"\xff\xd8\xff"
+        assert not any((settings.ha_media_dir / "family_quest_import").iterdir())           # deleted right after the call
+    finally:
+        fq.ha = None

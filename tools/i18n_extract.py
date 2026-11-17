@@ -24,7 +24,7 @@ STR = r'"((?:[^"\\]|\\.)*)"'
 JS_PATTERNS = [re.compile(r"\bT\(" + STR + r"\)")]
 PY_PATTERNS = [re.compile(r"\b_t\(" + STR + r"\)"),
                re.compile(r"HTTPException\(\d+,\s*" + STR + r"\)"),
-               re.compile(r"(?:LearnError|ShopError|PackError|ChoreError|BackupError|InternetError|ImportError_|CommunityError|DeviceError|MemoryError_|DuelError|DeckError|ThemeError)\(" + STR + r"\)")]
+               re.compile(r"(?:LearnError|ShopError|PackError|ChoreError|BackupError|InternetError|ImportError_|CommunityError|DeviceError|MemoryError_|DuelError|DoublesError|DeckError|ThemeError|PetError)\(" + STR + r"\)")]
 EXTRA = ["Level", "Family Quest", "Family Quest – Parents", "Family Quest needs JavaScript.", "XP"]
 
 

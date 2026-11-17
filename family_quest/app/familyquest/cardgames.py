@@ -28,7 +28,7 @@ from .community import CommunityError
 
 BOTS = [("Fuchs Fridolin", "🦊"), ("Bär Bruno", "🐻"), ("Eule Olga", "🦉"), ("Frosch Fritz", "🐸"), ("Katze Kiki", "🐱"),
         ("Hase Hoppel", "🐰"), ("Pinguin Pino", "🐧"), ("Igel Ida", "🦔")]
-BOT_DELAY = 1.4                      # seconds before a bot moves
+BOT_DELAY = 1.4                      # seconds before a bot moves (default – the reaction time is set at the start: bot_ms)
 
 # ---------------------------------------------------------------- the two games
 SWISS = {"suits": ["schellen", "schilten", "rosen", "eicheln"], "ranks": ["6", "7", "8", "9", "10", "U", "O", "K", "A"]}
@@ -39,12 +39,12 @@ GAMES = {
     "tschau": {
         "title": "Tschau Sepp",
         "defaults": {"deck": "swiss", "hand": 7, "rounds": 1, "draw2": True, "skip": True, "wish": True, "again": True,
-                     "reverse": False, "stack": True, "penalty": 2, "bots": 2, "level": "normal", "back": "classic"},
+                     "reverse": False, "stack": True, "penalty": 2, "bots": 2, "level": "normal", "back": "classic", "bot_ms": 1400},
         "calls": ("Tschau", "Sepp"),
     },
     "karussell": {
         "title": "Kartenkarussell",
-        "defaults": {"hand": 7, "rounds": 1, "stack": True, "penalty": 2, "bots": 2, "level": "normal", "back": "classic"},
+        "defaults": {"hand": 7, "rounds": 1, "stack": True, "penalty": 2, "bots": 2, "level": "normal", "back": "classic", "bot_ms": 1400},
         "calls": ("Letzte!", "Fertig!"),
     },
 }
@@ -312,12 +312,20 @@ class Shed:
             if self.st.get("phase") != "play":
                 break
             p = self.seat(self.st["turn"])
-            if not p or not p.get("bot") or self.now() - self.st.get("turn_at", 0) < BOT_DELAY:
+            if not p or not p.get("bot") or self.now() - self.st.get("turn_at", 0) < bot_delay(self.st["rules"], BOT_DELAY):
                 break
             self.bot_move(p["id"], p.get("level", "normal"))
             changed = True
             self.st["turn_at"] = self.now()
         return changed
+
+
+def bot_delay(rules: dict, default: float) -> float:
+    """Seconds before a bot moves – set when starting a game (bot_ms, 0 = at once)."""
+    try:
+        return max(0, min(5000, int(rules.get("bot_ms", default * 1000)))) / 1000
+    except (TypeError, ValueError):
+        return default
 
 
 # ================================================================ the games in the database
@@ -348,6 +356,7 @@ class CardGames:
         out["rounds"] = max(1, min(10, out["rounds"]))
         out["penalty"] = max(0, min(4, out["penalty"]))
         out["bots"] = max(0, min(5, out["bots"]))
+        out["bot_ms"] = max(0, min(5000, out["bot_ms"]))
         out["level"] = out["level"] if out["level"] in ("easy", "normal") else "normal"
         out["back"] = out["back"] if out["back"] in ("classic", "stars", "waves", "checks") else "classic"
         if kind == "tschau":
@@ -379,6 +388,7 @@ class CardGames:
         if status == "done" and self.add_history and not st.get("history_written"):
             st["history_written"] = True
             self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
+            self._champion(st, (st.get("ranking") or [])[:1])
             for i, pid in enumerate(st.get("ranking", [])):
                 p = next(x for x in st["players"] if x["id"] == pid)
                 if not p.get("bot"):
@@ -386,6 +396,17 @@ class CardGames:
                         self.add_history(int(pid), "cards", {"game": GAMES[st["kind"]]["title"], "place": i + 1, "players": len(st["players"])})
                     except Exception:  # noqa: BLE001
                         pass
+
+    def _champion(self, st: dict, winners: list) -> None:
+        """A family game is over: the «No. 1» hat goes to the winners (community.family_result) – not alone against
+        bots, not without a winner; guests and bots do not count."""
+        if st.get("solo") or not self.add_history or not winners:
+            return
+        people = [p["id"] for p in st["players"] if not p.get("bot") and not p.get("guest")]
+        try:
+            self.add_history(0, "__family__", {"people": people, "winners": [w for w in winners if w in people]})
+        except Exception:  # noqa: BLE001
+            pass
 
     def _person(self, pid: int) -> dict:
         p = self.db.q1("SELECT name, avatar FROM profile WHERE id=?", pid)

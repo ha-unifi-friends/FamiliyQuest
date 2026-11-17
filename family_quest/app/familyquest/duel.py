@@ -1,4 +1,7 @@
-"""Duels of the game corner on two devices – Tic-Tac-Toe between two family members.
+"""Duels of the game corner on two devices – Tic-Tac-Toe or Ping-Pong between two family members.
+
+Ping-Pong: the inviting device (X, paddle at the bottom) moves the ball; both send their paddle and get the other's
+about 20 times a second (POST pong). The ball, the points and the end of a match come from X only.
 
 One invites another; the invitation shows on the other's start page. The state lives in memory only (a round lasts a
 minute; after a restart you simply invite again). Both devices poll the state.
@@ -47,7 +50,7 @@ class Duels:
         return next((g for g in mine if g["status"] in ("invite", "play", "done")), mine[0] if mine else None)
 
     def invite(self, pid: int, opponent: int, kind: str = "ttt") -> dict:
-        if kind != "ttt":
+        if kind not in ("ttt", "pong"):
             raise DuelError("Unknown game")
         if opponent == pid:
             raise DuelError("Choose somebody else")
@@ -60,6 +63,37 @@ class Duels:
             self.games[gid] = {"id": gid, "kind": kind, "host": pid, "guest": opponent, "status": "invite", "board": [None] * 9,
                                "turn": "X", "starter": "X", "result": None, "line": [], "score": {"X": 0, "O": 0, "draw": 0},
                                "touched": time.time()}
+            if kind == "pong":
+                self.games[gid]["pong"] = self._pong_new()
+            return self.state(pid)
+
+    @staticmethod
+    def _pong_new() -> dict:
+        return {"pads": {"X": 0.5, "O": 0.5}, "ball": None, "points": {"X": 0, "O": 0}, "to": 7}
+
+    def pong(self, pid: int, pad, ball=None, points=None, over=None) -> dict:
+        """Ping-Pong: my paddle (0…1, left to right as X sees the table); X also sends the ball, the points, the end."""
+        with self.lock:
+            g = self._mine(pid)
+            if g["kind"] != "pong":
+                raise DuelError("Unknown game")
+            p = g["pong"]
+            me = "X" if pid == g["host"] else "O"
+            try:
+                p["pads"][me] = max(0.0, min(1.0, float(pad)))
+            except (TypeError, ValueError):
+                pass
+            if me == "X" and g["status"] == "play":
+                if isinstance(ball, dict):
+                    try:
+                        p["ball"] = {k: round(float(ball[k]), 4) for k in ("x", "y", "vx", "vy")}
+                    except (KeyError, TypeError, ValueError):
+                        pass
+                if isinstance(points, dict):
+                    p["points"] = {k: max(0, min(99, int(points.get(k, 0) or 0))) for k in ("X", "O")}
+                if over in ("X", "O"):
+                    g.update(status="done", result=over)
+                    g["score"][over] += 1
             return self.state(pid)
 
     def _mine(self, pid: int) -> dict:
@@ -104,6 +138,8 @@ class Duels:
                 raise DuelError("The round is still running")
             g["starter"] = "O" if g["starter"] == "X" else "X"
             g.update(status="play", board=[None] * 9, turn=g["starter"], result=None, line=[])
+            if g["kind"] == "pong":
+                g["pong"] = self._pong_new()
             return self.state(pid)
 
     def leave(self, pid: int) -> None:
@@ -131,7 +167,7 @@ class Duels:
             return None
         me = "X" if pid == g["host"] else "O"
         return {"id": g["id"], "kind": g["kind"], "status": g["status"], "me": me, "board": g["board"], "turn": g["turn"],
-                "result": g["result"], "line": g["line"], "score": g["score"],
+                "result": g["result"], "line": g["line"], "score": g["score"], "pong": g.get("pong"),
                 "names": {"X": self.names(g["host"]), "O": self.names(g["guest"])},
                 "host": g["host"] == pid}
 

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -14,6 +14,7 @@ from ..db import profile_settings
 from ..learning.lesson import LearnError
 from ..rewards import avatar as av
 from ..rewards.shop import ShopError
+from ..pets import KINDS as PET_KINDS, REBUY_COST, PetError
 from .auth import INGRESS_IP, KID_MAX_AGE, Learner, app_of, check_pin, hash_pin, valid_pin
 
 router = APIRouter(prefix="/api")
@@ -62,12 +63,22 @@ def info(request: Request) -> dict:
     return {"version": fq.settings.version,
             "setup_needed": not fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0),
             "ha": bool(fq.ha and fq.ha.connected), "planer": bool(fq.ha and fq.ha.planer_available),
-            "ai": bool(fq.settings.anthropic_api_key), "sound": s.get("sound", True),
+            "ai": False, "sound": s.get("sound", True),
             "family_visibility": s.get("family_visibility"), "kid_max_age": KID_MAX_AGE,
             # parent area only in Home Assistant: on the app port (tablets) it is not offered at all
             "parent_ha_only": bool(s.get("parent_ha_only")),
             "via_ha": bool(request.client and request.client.host == INGRESS_IP),
             "season": themes.active(s.get("themes"))}
+
+
+@router.get("/app-link")
+async def app_link(request: Request) -> dict:
+    """Where the app is reached directly in the home network (port of the direct access, IPs of Home Assistant): links
+    from the parent area in Home Assistant open the app there – an ingress address opened outside of Home Assistant
+    (e.g. Safari from the companion app) only answers «401: Unauthorized»."""
+    from ..netinfo import home_access
+    acc = await home_access(app_of(request).settings)
+    return {"port": acc.get("port") if acc.get("enabled") else None, "ips": acc.get("ips") or []}
 
 
 @router.get("/ha-panel")
@@ -124,6 +135,12 @@ def setup(body: SetupIn, request: Request) -> dict:
 
 
 # ---------------------------------------------------------------- learner
+@router.get("/me/community")
+def my_community(request: Request, prof: dict = Learner) -> dict:
+    """Only the running games and open votes – the start page asks for it every few seconds to update itself."""
+    return app_of(request)._community_summary(prof)
+
+
 @router.get("/me")
 def me(request: Request, prof: dict = Learner) -> dict:
     return app_of(request).dashboard(prof)
@@ -263,7 +280,15 @@ def redeem(body: RedeemIn, request: Request, prof: dict = Learner) -> dict:
 def avatar(request: Request, prof: dict = Learner) -> dict:
     fq = app_of(request)
     level, badges, bought = fq.avatar_state(prof["id"])
-    return {"avatar": json.loads(prof["avatar"] or "{}") or av.DEFAULT_AVATAR, **av.catalog(level, badges, bought),
+    cat = av.catalog(level, badges, bought)
+    lost = fq.pets.lost_kinds(prof["id"])
+    for i in cat["items"]:
+        if i["id"] in lost and "cost" not in i["rule"]:
+            i["rule"] = {"cost": REBUY_COST}          # an earned pet that died: buy it again as a baby
+    a = json.loads(prof["avatar"] or "{}") or av.DEFAULT_AVATAR
+    kind = (a.get("items") or {}).get("pet")
+    pet = fq.pets.badge(prof["id"], kind) if kind else None
+    return {"avatar": {**a, "pet": pet} if pet else a, **cat,
             "mood_text": json.loads(prof["settings"] or "{}").get("mood_text") or "",
             "mood": json.loads(prof["settings"] or "{}").get("mood") or "",
             "coins": fq.rewards.balance(prof["id"], "coins"), "level": level}
@@ -332,9 +357,12 @@ def save_avatar(body: AvatarIn, request: Request, prof: dict = Learner) -> dict:
 @router.post("/me/avatar/buy")
 def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
     fq = app_of(request)
-    if body.item not in av.ITEMS or "cost" not in av.ITEMS[body.item][2]:
+    rule = av.ITEMS[body.item][2] if body.item in av.ITEMS else {}
+    if "cost" not in rule and body.item in fq.pets.lost_kinds(prof["id"]):
+        rule = {"cost": REBUY_COST}
+    if "cost" not in rule:
         raise HTTPException(400, "This item cannot be bought")
-    cost = float(av.ITEMS[body.item][2]["cost"])
+    cost = float(rule["cost"])
     with fq.db.tx():
         if fq.db.q1("SELECT 1 FROM unlock WHERE profile_id=? AND item=?", prof["id"], body.item):
             return {"ok": True}
@@ -342,6 +370,8 @@ def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
             raise HTTPException(400, "Not enough yet")
         fq.rewards.book(prof["id"], "coins", -cost, "avatar", av.ITEMS[body.item][0], f"avatar:{body.item}")
         fq.db.x("INSERT INTO unlock(profile_id,item) VALUES(?,?)", prof["id"], body.item)
+    if body.item in PET_KINDS:
+        fq.pets.adopt(prof["id"], body.item)           # a new pet: a baby from today
     if fq.ha:
         fq.ha.profile_changed(prof["id"])
     return {"ok": True}
@@ -403,3 +433,212 @@ def internet_stop(request: Request, prof: dict = Learner) -> dict:
 @router.get("/me/badges")
 def my_badges(request: Request, prof: dict = Learner) -> dict:
     return {"badges": app_of(request).badge_overview(prof["id"])}
+
+
+# ---------------------------------------------------------------- pet care (pets.py)
+class PetNameIn(BaseModel):
+    name: str
+
+
+def _pet(fn, *args):
+    try:
+        return fn(*args)
+    except PetError as e:
+        raise HTTPException(403 if str(e) == "That is not your pet" else 400, str(e)) from None
+
+
+@router.get("/me/pets")
+def my_pets(request: Request, prof: dict = Learner) -> dict:
+    return app_of(request).pets.summary(prof["id"])
+
+
+@router.post("/me/pets/seen")
+def pets_seen(request: Request, prof: dict = Learner) -> dict:
+    """The child saw the message that a pet died."""
+    app_of(request).pets.seen(prof["id"])
+    return {"ok": True}
+
+
+class PetBuyIn(BaseModel):
+    item: str
+    pay: Literal["coins", "xp"] | None = None     # None: what the parents chose (coins in «mixed»)
+
+
+class PetWearIn(BaseModel):
+    outfit: str | None = None                     # None / "": take it off
+
+
+class PetHomeIn(BaseModel):
+    house: str | None = None
+    furniture: list[str] = []
+
+
+@router.get("/me/pets/shop")
+def pet_shop(request: Request, prof: dict = Learner) -> dict:
+    """Pet shop: outfits, houses and furniture with prices, how to pay, and what each pet owns."""
+    return app_of(request).pets.shop(prof["id"])
+
+
+@router.post("/me/pets/{pet_id}/buy")
+def pet_buy(pet_id: int, body: PetBuyIn, request: Request, prof: dict = Learner) -> dict:
+    fq = app_of(request)
+    pet = _pet(fq.pets.buy, prof["id"], pet_id, body.item, body.pay)
+    if fq.ha:
+        fq.ha.profile_changed(prof["id"])
+    return {"pet": pet, "shop": fq.pets.shop(prof["id"])}
+
+
+@router.put("/me/pets/{pet_id}/wear")
+def pet_wear(pet_id: int, body: PetWearIn, request: Request, prof: dict = Learner) -> dict:
+    fq = app_of(request)
+    pet = _pet(fq.pets.wear, prof["id"], pet_id, body.outfit)
+    if fq.ha:
+        fq.ha.profile_changed(prof["id"])           # the outfit shows on the avatar badge
+    return {"pet": pet, "shop": fq.pets.shop(prof["id"])}
+
+
+@router.put("/me/pets/{pet_id}/home")
+def pet_home(pet_id: int, body: PetHomeIn, request: Request, prof: dict = Learner) -> dict:
+    fq = app_of(request)
+    return {"pet": _pet(fq.pets.home, prof["id"], pet_id, body.house, body.furniture), "shop": fq.pets.shop(prof["id"])}
+
+
+# ---------------------------------------------------------------- game corner: one-armed bandit (slots.py)
+def _slots(request: Request, prof: dict, fn, *args):
+    from ..slots import SlotError
+    fq = app_of(request)
+    if not fq.games_allowed(prof, "slots"):
+        raise HTTPException(403, "This game is switched off")
+    try:
+        return fn(*args)
+    except SlotError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.get("/me/slots")
+def slots_state(request: Request, prof: dict = Learner) -> dict:
+    return _slots(request, prof, app_of(request).slots.state, prof["id"])
+
+
+@router.post("/me/slots/buy")
+def slots_buy(request: Request, prof: dict = Learner) -> dict:
+    return _slots(request, prof, app_of(request).slots.buy, prof["id"])
+
+
+@router.post("/me/slots/spin")
+def slots_spin(request: Request, prof: dict = Learner) -> dict:
+    return _slots(request, prof, app_of(request).slots.spin, prof["id"])
+
+
+class PetMoreIn(BaseModel):
+    kind: str
+
+
+class PetBreedIn(BaseModel):
+    partner: int
+
+
+@router.post("/me/pets/more")
+def pet_more(body: PetMoreIn, request: Request, prof: dict = Learner) -> dict:
+    """One more pet of a kind the child already has (same price as in the shop)."""
+    fq = app_of(request)
+    pet = _pet(fq.pets.buy_another, prof["id"], body.kind)
+    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+
+
+@router.post("/me/pets/{pet_id}/breed")
+def pet_breed(pet_id: int, body: PetBreedIn, request: Request, prof: dict = Learner) -> dict:
+    """Two healthy pets of the same kind have babies."""
+    return _pet(app_of(request).pets.breed, prof["id"], pet_id, body.partner)
+
+
+class PetSitIn(BaseModel):
+    sitter: int                                   # profile of the family member
+    until: str                                    # ISO date (inclusive)
+
+
+class PetHotelIn(BaseModel):
+    days: int
+
+
+@router.post("/me/pets/{pet_id}/sit")
+def pet_sit(pet_id: int, body: PetSitIn, request: Request, prof: dict = Learner) -> dict:
+    """Give the pet to a family member for pet sitting."""
+    return {"pet": _pet(app_of(request).pets.sit, prof["id"], pet_id, body.sitter, body.until)}
+
+
+@router.post("/me/pets/{pet_id}/hotel")
+def pet_hotel(pet_id: int, body: PetHotelIn, request: Request, prof: dict = Learner) -> dict:
+    """The Family Quest pet hotel: paid per day at once."""
+    fq = app_of(request)
+    pet = _pet(fq.pets.hotel, prof["id"], pet_id, body.days)
+    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+
+
+@router.post("/me/pets/{pet_id}/fetch")
+def pet_fetch(pet_id: int, request: Request, prof: dict = Learner) -> dict:
+    """Take the pet back from the sitter or from the hotel."""
+    fq = app_of(request)
+    pet = _pet(fq.pets.fetch, prof["id"], pet_id)
+    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+
+
+@router.post("/me/pets/{pet_id}/{action}")
+def pet_action(pet_id: int, action: str, request: Request, prof: dict = Learner) -> dict:
+    if action not in ("feed", "play", "wash"):
+        raise HTTPException(404, "Unknown action")
+    fq = app_of(request)
+    pet = _pet(fq.pets.act, prof["id"], pet_id, action)
+    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+
+
+@router.put("/me/pets/{pet_id}")
+def pet_rename(pet_id: int, body: PetNameIn, request: Request, prof: dict = Learner) -> dict:
+    return {"pet": _pet(app_of(request).pets.rename, prof["id"], pet_id, body.name)}
+
+
+# ---------------------------------------------------------------- shop: pranks (pranks.py) – the ink bomb
+class PrankThrowIn(BaseModel):
+    targets: list[int]
+
+
+def _prank(fn, *args):
+    from ..pranks import PrankError
+    try:
+        return fn(*args)
+    except PrankError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.get("/me/pranks")
+def pranks_state(request: Request, prof: dict = Learner) -> dict:
+    return app_of(request).pranks.state(prof["id"])
+
+
+class PrankBuyIn(BaseModel):
+    kind: str = "ink"
+
+
+@router.post("/me/pranks/buy")
+def pranks_buy(request: Request, body: PrankBuyIn | None = None, prof: dict = Learner) -> dict:
+    return _prank(app_of(request).pranks.buy, prof["id"], (body.kind if body else "ink"))
+
+
+@router.post("/me/pranks/fart")
+def pranks_fart(request: Request, prof: dict = Learner) -> dict:
+    return _prank(app_of(request).pranks.fart, prof["id"])
+
+
+@router.post("/me/pranks/throw")
+def pranks_throw(body: PrankThrowIn, request: Request, prof: dict = Learner) -> dict:
+    return _prank(app_of(request).pranks.throw, prof["id"], body.targets)
+
+
+@router.get("/me/pranks/pending")
+def pranks_pending(request: Request, prof: dict = Learner) -> dict:
+    return {"prank": app_of(request).pranks.pending(prof["id"])}
+
+
+@router.post("/me/pranks/{prank_id}/clean")
+def pranks_clean(prank_id: int, request: Request, prof: dict = Learner) -> dict:
+    return app_of(request).pranks.cleaned(prof["id"], prank_id)

@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.0.0
+
+Version 1 – everything that was tested in the betas 0.4.0-beta.1 … 26 and 1.0.0-beta.1 … 5.
+
+**Before updating:** download a backup in the parent area (Settings › Backup & restore). After the update restart the
+app once – the media folder of Home Assistant is now mapped writable (for the photo/PDF import).
+
+- **14 new games** (own menu item, switchable per game and child; alone against bots and / or at a family table,
+  guests via QR code, coins for places 1–3, the «No. 1» hat until the next family game):
+  Paarjagd (pairs with own photo sets), «Wer bin ich?», Kartenlauf, Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel,
+  Verbotene Wörter, Heimwärts (race board game), Jass (Schieber), Jump (own lanes, same obstacles for all), Werwölfe
+  (party game, the app is the game master), Klatsch den Beat (rhythm), **Schach** (chess – games can be paused and
+  continued) and **Dorfmarkt** (property trading in a Swiss village).
+- **More to play:** Ping-Pong and Tic-Tac-Toe on two phones, Ping-Pong doubles (2 against 2), the one-armed bandit in
+  the game corner, bot reaction time in all bot games.
+- **Pets:** pet sitting by a family member or the pet hotel, more pets of one kind, babies, the hamster that mines
+  coins, dino egg, goldfish, turtle, aquarium, terrarium and nest.
+- **Shop:** many new avatar items (jetpack, wings, laser sword, dark knight helmet, bat mask, devil horns, pirate
+  apprentice, pyjamas, round belly …), new slots «on the back», «costume», «figure» and «in the hand»; pranks:
+  the **ink bomb** (smears the screen of chosen family members) and the **whoopee cushion** (a fart on all
+  speakers of the home); own coin icon.
+- **Parents:** list of all running games (end one or all), failed logins folded, parent area link on the login
+  screen and in the app menu, refresh button ⟳ everywhere, chore plan in the standard look and fit for phones.
+- **Photos from Home Assistant Media** for photo sets and the family crest – only referenced, not copied.
+- **Backup:** much smaller (only own data; Home Assistant Media photos as references, the app's own content left
+  out), restore in 4 MB pieces (no more «HTTP 413» behind Home Assistant), sizes shown; old photo copies are linked
+  back to Home Assistant Media at start.
+- **Photo/PDF → draft pack** now uses the AI set up in Home Assistant (AI Task: OpenAI, Google, Anthropic, a local
+  Ollama …). The options «Anthropic API key» and «Claude model» are gone.
+- Sharp SVG flags and coats of arms, France quiz templates, Domino as a snake, song quiz «the others show the
+  solution», many fixes.
+
 ## 0.3.0
 
 The big community and family release – everything that was tested in the beta 0.3.0-beta.1 … beta.76.

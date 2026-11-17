@@ -461,6 +461,67 @@ MIGRATIONS: list[str] = [
         used INTEGER NOT NULL DEFAULT 0
     );
     """,
+    # 22 – pet care: the pets of the avatar shop have bars that drop (pets.py); one living pet per kind and profile
+    """
+    CREATE TABLE pet(
+        id INTEGER PRIMARY KEY,
+        profile_id INTEGER NOT NULL,
+        kind TEXT NOT NULL,                        -- dog | cat | owl | parrot | degu (avatar item of the slot «pet»)
+        name TEXT NOT NULL,
+        born_at TEXT NOT NULL,                     -- the first time the pet appeared (age and stage count from here)
+        hunger REAL NOT NULL DEFAULT 100,
+        mood REAL NOT NULL DEFAULT 100,
+        clean REAL NOT NULL DEFAULT 100,
+        updated_at TEXT NOT NULL,                  -- the bars are valid at this time (decay is computed on read)
+        zero_secs REAL NOT NULL DEFAULT 0,         -- unpaused seconds with all bars at 0 – 3 days and the pet dies
+        zero_since TEXT,                           -- reached all-zero (the parents are told once)
+        dead_at TEXT,
+        seen INTEGER NOT NULL DEFAULT 0            -- the child saw the message that it died
+    );
+    CREATE INDEX pet_profile ON pet(profile_id, dead_at);
+    """,
+    # 23 – pet shop: outfits, houses and furniture belong to one pet (pets.SHOP); lost with the pet
+    """
+    CREATE TABLE pet_item(
+        id INTEGER PRIMARY KEY,
+        pet_id INTEGER NOT NULL,
+        item TEXT NOT NULL,                        -- id of pets.SHOP
+        used INTEGER NOT NULL DEFAULT 0,           -- outfit worn / house lived in / furniture placed
+        worn_once INTEGER NOT NULL DEFAULT 0,      -- an outfit gave its mood bonus already
+        bought_at TEXT NOT NULL,
+        UNIQUE(pet_id, item)
+    );
+    """,
+    # 24 – pet sitting (a family member looks after the pet, or the Family Quest pet hotel) and the hamster mining coins
+    """
+    ALTER TABLE pet ADD COLUMN sitter_id INTEGER;            -- a family member looks after the pet …
+    ALTER TABLE pet ADD COLUMN sit_until TEXT;               -- … until this day (ISO date, inclusive)
+    ALTER TABLE pet ADD COLUMN hotel_until TEXT;             -- in the pet hotel until this time: no decay, back fed and happy
+    ALTER TABLE pet ADD COLUMN mined REAL NOT NULL DEFAULT 0;           -- hamster: coins not yet booked (fraction)
+    ALTER TABLE pet ADD COLUMN mined_total INTEGER NOT NULL DEFAULT 0;  -- hamster: coins mined in all
+    """,
+    # 25 – pet hotel: the price per day that was paid (an early fetch pays back exactly that)
+    """
+    ALTER TABLE pet ADD COLUMN hotel_cost INTEGER NOT NULL DEFAULT 0;
+    """,
+    # 26 – more pets of one kind and babies: when a pet last had babies (a pair rests 14 days)
+    """
+    ALTER TABLE pet ADD COLUMN bred_at TEXT;
+    """,
+    # 27 – pranks from the shop (pranks.py): ink bombs bought and thrown
+    """
+    CREATE TABLE prank_charge(profile_id INTEGER PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE, n INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE prank(id INTEGER PRIMARY KEY, kind TEXT NOT NULL, from_id INTEGER, to_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+                       at TEXT NOT NULL DEFAULT (datetime('now','localtime')), seen_at TEXT);
+    CREATE INDEX prank_to ON prank(to_id, seen_at);
+    """,
+    # 28 – more pranks (the whoopee cushion): what is left per kind; the ink bombs move over
+    """
+    CREATE TABLE prank_stock(profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE, kind TEXT NOT NULL,
+                             n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(profile_id, kind));
+    INSERT INTO prank_stock(profile_id, kind, n) SELECT profile_id, 'ink', n FROM prank_charge WHERE n > 0;
+    DROP TABLE prank_charge;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -514,6 +575,12 @@ DEFAULT_SETTINGS = {
     "translations": None,                # own texts and languages (translations.py)
     "weather": None,                     # behaviour weather – None = defaults (weather.DEFAULT)
     "themes": None,                      # season designs of the app header – None = defaults (themes.clean)
+    "pet_food_cost": 2,                  # coins for feeding a pet once (pets.py)
+    "pet_hotel_cost": 10,                # Family Quest pet hotel: coins per day (pets.py)
+    "hamster_coins_per_day": 15,         # the hamster mines (default: 5 more than a day in the pet hotel) this many coins per day while it is healthy (pets.py)
+    "pet_shop_currency": "coins",        # pet shop (outfits, houses, furniture): coins | xp | mixed (the child chooses)
+    "lesson_perfect_coins": 5,           # coins for a lesson without a single mistake (on top of «lesson finished»)
+    "game_rewards": {"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2]},   # live games: coins for places 1, 2, 3 (pairhunt.py, whoami.py, kartenlauf.py, stadtland.py, zeichnen.py, wuerfel.py, heimwaerts.py, jump.py, klatsch.py, verboten.py; jass.py: place 1 only; werwolf.py: place 1 for the winning side; schach.py: [win against family, against the hard bot, against the normal bot]; dorfmarkt.py) – family tables with ≥ 2 people
     "memory": None,                      # pairs game: own photo sets and the family crest (memorygame.py)
     "planer_points_account": "coins",    # built-in planner: its points and this account are one balance ("" = separate)
 }

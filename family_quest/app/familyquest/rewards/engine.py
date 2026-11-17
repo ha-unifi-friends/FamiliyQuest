@@ -52,6 +52,12 @@ EVENTS = {
 }
 
 
+# XP spent in a shop (pet shop) is booked with one of these events: it lowers the XP balance, but not the level, the
+# daily goal or the weekly XP – those count the XP earned
+SPEND_EVENTS = ("pet_shop",)
+_NOT_SPENT = "COALESCE(event, '') NOT IN (" + ",".join("?" * len(SPEND_EVENTS)) + ")"
+
+
 def today() -> date:
     return datetime.now().date()
 
@@ -87,7 +93,7 @@ class Rewards:
     def book(self, pid: int, account: str, amount: float, event: str = "", reason: str = "", ref: str = "") -> dict:
         lid = self.db.x("INSERT INTO ledger(profile_id,account,amount,event,reason,ref) VALUES(?,?,?,?,?,?)",
                         pid, account, amount, event, reason, ref)
-        if account == "xp":
+        if account == "xp" and event not in SPEND_EVENTS:
             self._add_daily(pid, xp=amount)
         for fn in self.book_listeners:
             try:
@@ -173,7 +179,9 @@ class Rewards:
         return n
 
     def total_xp(self, pid: int) -> float:
-        return self.balance(pid, "xp")
+        """XP earned (the level counts these) – XP spent in the pet shop does not lower it; `balance(pid, "xp")` does."""
+        return float(self.db.val(f"SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account='xp' AND {_NOT_SPENT}",
+                                 pid, *SPEND_EVENTS, default=0))
 
     def level(self, pid: int) -> dict:
         thresholds = self.db.get_setting("levels")

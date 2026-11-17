@@ -82,3 +82,11 @@ def test_release_notes(client):
     ph, _, _ = setup_family(client)
     assert client.get("/api/parent/changelog").status_code in (401, 403)
     assert "## " in client.get("/api/parent/changelog", headers=ph).json()["text"]
+
+
+def test_ingress_opens_the_parent_area_and_app_has_its_own_address(client, monkeypatch):
+    import familyquest.api.auth as auth
+    assert "kid.js" in client.get("/").text and "kid.js" in client.get("/app").text      # direct port: the app
+    assert client.get("/app/", follow_redirects=False).headers["location"] == "../app"
+    monkeypatch.setattr(auth, "INGRESS_IP", "testclient")                                # through Home Assistant
+    assert "parent.js" in client.get("/").text and "kid.js" in client.get("/app").text

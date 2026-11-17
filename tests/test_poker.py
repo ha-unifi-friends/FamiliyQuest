@@ -143,7 +143,7 @@ def test_family_game_api(client):
 def test_alone_against_bots(client, monkeypatch):
     from test_api import setup_family
     from familyquest import poker as pk
-    monkeypatch.setattr(pk, "BOT_DELAY", 0)
+    monkeypatch.setattr(pk, "bot_delay", lambda rules, default: 0)
     assert pk.strength(["As", "Ah"], []) > pk.strength(["7c", "2d"], []) and pk.strength(["As", "Ah"], ["Ad", "Ac", "5s"]) > .9
     ph, mia, leo = setup_family(client)
     hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}

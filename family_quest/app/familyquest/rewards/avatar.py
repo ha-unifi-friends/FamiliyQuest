@@ -61,12 +61,41 @@ ITEMS: dict[str, tuple[str, str, dict]] = {
     "mustache_curl": (_t("Twirled moustache"), "face", {"cost": 1000}),
     "bowtie": (_t("Bow tie"), "neck", {"cost": 35}),
     "parrot": (_t("Parrot"), "pet", {"cost": 150}),
+    "degu": (_t("Degu"), "pet", {"cost": 120}),
+    "hamster": (_t("Hamster"), "pet", {"cost": 300}),
+    # back, costumes and more fun things (shop)
+    "jetpack": (_t("Jetpack"), "back", {"cost": 500}),
+    "lightsaber": (_t("Laser sword"), "hand", {"cost": 1500}),
+    "dark_helmet": (_t("Dark knight helmet"), "hat", {"cost": 2500}),
+    "bat_mask": (_t("Bat mask"), "hat", {"cost": 500}),
+    "devil_horns": (_t("Devil horns"), "hat", {"cost": 600}),
+    "pirate_apprentice": (_t("Pirate apprentice"), "suit", {"cost": 3500}),
+    "wings": (_t("Wings"), "back", {"cost": 100}),
+    "chicken_suit": (_t("Chicken suit"), "suit", {"cost": 150}),
+    "camo_sweater": (_t("Camo sweater"), "suit", {"cost": 20}),
+    "helmet": (_t("Helmet"), "hat", {"cost": 50}),
+    "mouse_ears": (_t("Mouse ears hat"), "hat", {"cost": 5}),
+    "drink_helmet": (_t("Drinking helmet with straws"), "hat", {"cost": 30}),
+    "earbuds": (_t("White wireless earbuds"), "ear", {"cost": 750}),
+    "pants_head": (_t("White underpants on the head"), "hat", {"cost": 20}),
+    "tshirt_pets": (_t("T-shirt «I love my pets»"), "suit", {"cost": 35}),
+    "round_belly": (_t("Round belly"), "figure", {"cost": 50}),
+    "pyjamas": (_t("Pyjamas"), "suit", {"cost": 40}),
+    "sleep_mask": (_t("Sleep mask"), "eyewear", {"cost": 15}),
+    "sleep_cap": (_t("Nightcap"), "hat", {"cost": 15}),
+    "bg_rainbow": (_t("Rainbow"), "background", {"cost": 60}),
+    "monocle": (_t("Monocle"), "eyewear", {"cost": 40}),
+    "dino": (_t("Dinosaur"), "pet", {"cost": 400}),        # starts as an egg and hatches on day 1 (pets.py)
+    "goldfish": (_t("Goldfish"), "pet", {"cost": 60}),
+    "turtle": (_t("Turtle"), "pet", {"cost": 120}),     # special: mines coins on its wheel while it is healthy (pets.py)
 }
 
 # given by the parents for one day (parent area › Overview › 👑) – cannot be chosen or bought
 ROYAL = "royal"
+# won the last family game: the «No. 1» hat until the next family game (community.family_result) – cannot be bought
+CHAMPION = "champion"
 
-SLOTS = ["background", "hat", "hairclip", "eyewear", "face", "teeth", "ear", "neck", "pet"]
+SLOTS = ["background", "hat", "hairclip", "eyewear", "face", "teeth", "ear", "neck", "suit", "figure", "back", "hand", "pet"]
 
 DEFAULT_AVATAR = {"skin": "#f1c27d", "hair": "short", "hairColor": "#6b3e1f", "eyes": "round", "mouth": "smile",
                   "outfit": "tshirt", "outfitColor": "#4f8cff", "items": {}}
@@ -86,6 +115,10 @@ def item_status(item_id: str, level: int, badges: set[str], bought: set[str], to
         unlocked = item_id in bought
     elif "season" in rule:
         unlocked = t.month in rule["season"]
+    if slot == "pet":
+        # pets live in the table «pet» (pets.py): owned only while unlocked – a badge brings the pet once, a pet that
+        # died is gone until it is bought again
+        unlocked = False
     return {"id": item_id, "name": name, "slot": slot, "rule": rule, "unlocked": unlocked or item_id in bought}
 
 
@@ -108,9 +141,12 @@ def clean(avatar: dict, level: int, badges: set[str], bought: set[str]) -> dict:
     return out
 
 
-def with_crown(avatar: dict, crown_until: str | None, today: date | None = None) -> dict:
-    """The avatar as everybody sees it: with the crown of the day if the parents gave it."""
+def with_crown(avatar: dict, crown_until: str | None, today: date | None = None, champion: bool = False) -> dict:
+    """The avatar as everybody sees it: with the crown of the day if the parents gave it, else with the «No. 1» hat
+    of the last family game won."""
     t = (today or date.today()).isoformat()
     if crown_until and crown_until >= t:
         return {**avatar, "items": {**(avatar.get("items") or {}), "hat": ROYAL}}
+    if champion:
+        return {**avatar, "items": {**(avatar.get("items") or {}), "hat": CHAMPION}}
     return avatar

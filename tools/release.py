@@ -12,6 +12,7 @@ installs, so family_quest/ on main changes only with a stable release – a new 
         write the changelog first) → Home Assistant offers the update for «Family Quest».
 
 Add --no-push to prepare the commit on main without pushing it.
+Release notes are written in English (they appear in Home Assistant's «Changelog» and in the parent area).
 """
 from __future__ import annotations
 
@@ -70,7 +71,8 @@ def main(argv: list[str]) -> None:
             git("push", "-q", "origin", "HEAD")
         to_main(["family_quest_beta"], f"Family Quest Beta {argv[1]}", push)
     elif argv[:1] == ["stable"]:
-        to_main(["."], f"Family Quest {version_of(ROOT / 'family_quest' / 'config.yaml')}", push)
+        # everything except the beta folder: the beta on main may already be newer than this stable state
+        to_main([".", ":(exclude)family_quest_beta"], f"Family Quest {version_of(ROOT / 'family_quest' / 'config.yaml')}", push)
     else:
         sys.exit(__doc__)
 

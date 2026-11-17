@@ -12,7 +12,7 @@ const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare
 const STATUS = { active: T("active"), draft: T("draft – to check"), disabled: T("switched off") };
 
 async function boot() {
-  try { P.info = await api("info"); } catch (e) { return app.replaceChildren(h("div.login", h("div.card", h("h2", T("Family Quest cannot be reached")), h("p", e.message)))); }
+  try { P.info = await api("info"); if (P.info.via_ha) P.appLink = await api("app-link").catch(() => null); } catch (e) { return app.replaceChildren(h("div.login", h("div.card", h("h2", T("Family Quest cannot be reached")), h("p", e.message)))); }
   if (P.info.setup_needed) return setupView();
   if (P.info.parent_ha_only && !P.info.via_ha) {
     let ha = null;
@@ -20,7 +20,7 @@ async function boot() {
     return app.replaceChildren(h("div.login", h("div.card.login-card.center",
       h("h2", "🏠 ", T("Parent area")), h("p", T("The parent area opens only in Home Assistant – in the sidebar under Family Quest.")),
       h("div.row.center", ha ? h("a.btn", { href: ha }, "🏠 ", T("Open in Home Assistant")) : null,
-        h("a.btn.ghost", { href: "./" }, "← ", T("To the app"))))));
+        h("a.btn.ghost", { href: "app" }, "← ", T("To the app"))))));
   }
   if (!Auth.parent) return loginView();
   try { P.meta = await api("parent/meta"); } catch (e) { Auth.parent = ""; return loginView(); }
@@ -110,7 +110,7 @@ async function loginView(auto = true) {
   };
   const card = h("div.card.login-card");
   const digits = () => card.replaceChildren(...[
-    h("div.row", h("a.link", { href: "./", target: "_blank", rel: "noopener", translate: "no" }, "⭐ Family Quest App ↗"), h("span.grow"), themeBtn(), langPicker()),
+    h("div.row", h("a.link", appLinkAttrs(), "⭐ Family Quest App ↗"), h("span.grow"), themeBtn(), langPicker()),
     linked ? h("div.center", h("button.btn", { onclick: () => loginView(true) }, "🏠 ", I18N.tr(T("Log in as {0}")).replace("{0}", haUser.name || haUser.user)))
       : haUser ? h("p.small.muted.center", "🏠 ", I18N.tr(T("Home Assistant user: {0}")).replace("{0}", haUser.name || haUser.user)) : null,
     pinPad({ title: T("Parent PIN"), length: 4, maxLength: 8, cancel: false, onSubmit: async pin => done(await api("parent/login", { method: "POST", body: { pin } })) }),
@@ -155,13 +155,28 @@ async function releaseNotes() {
       h("button.btn", { onclick: () => m.close() }, T("Close")))), { wide: true });
 }
 
+// link to the kid app: in Home Assistant through the direct access (http://<host>:<port>/app) – an ingress address opened
+// in a new tab outside of Home Assistant (Safari from the companion app) only shows «401: Unauthorized»
+function appLinkAttrs() {
+  const base = { rel: "noopener", translate: "no" };
+  if (!P.info || !P.info.via_ha) return { ...base, href: "app", target: "_blank" };
+  const l = P.appLink;
+  if (!l || !l.port) return { ...base, href: "app" };            // no direct access: open it right here inside Home Assistant
+  const host = location.hostname, local = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.)|\.local$|^[^.]+$/.test(host);
+  const ip = (local ? host : (l.ips || [])[0] || host).replace(/^\[|\]$/g, "");
+  return { ...base, href: `http://${ip.includes(":") ? `[${ip}]` : ip}:${l.port}/app`, target: "_blank" };
+}
+
 // ---------------------------------------------------------------- layout
+// load the page anew – well visible top right (phone: in the bar with ☰)
+const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: () => location.reload() }, "⟳");
+
 function render() {
-  const nav = h("nav.side", h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong", "Family Quest")),
+  const nav = h("nav.side", h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn()),
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
       // four items one below the other, written out: app, light / dark, language, log out
-      h("a.foot-item", { href: "./", target: "_blank", rel: "noopener", translate: "no" }, h("span.foot-ic", "⭐"), h("span", "Family Quest App")),
+      h("a.foot-item", appLinkAttrs(), h("span.foot-ic", "⭐"), h("span", "Family Quest App")),
       footTheme(), footLang(),
       h("button.foot-item", { onclick: () => { Auth.parent = ""; loginView(false); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),
       h("button.foot-item", { onclick: releaseNotes }, h("span.foot-ic", "📝"), h("span", T("Release notes"))),
@@ -169,7 +184,10 @@ function render() {
         : "v" + P.meta.version, " · ", P.meta.ha ? "🟢 Home Assistant" : "⚪ " + I18N.tr(T("without Home Assistant")))));
   const main = h("main.main");
   // views pass optional sections as null – DOM append would print them as the text "null"
-  main.append = (...xs) => Element.prototype.append.apply(main, xs.flat().filter(x => x != null && x !== false));
+  // until the page has its data: a loading spinner (the first content the view adds replaces it)
+  const spinner = h("div.page-loading", { role: "status", "aria-label": T("Loading…") }, h("span.spinner"), h("span.small.muted", T("Loading…")));
+  main.append = (...xs) => { spinner.remove(); Element.prototype.append.apply(main, xs.flat().filter(x => x != null && x !== false)); };
+  Element.prototype.append.call(main, spinner);
   // phone: the side bar is a ☰ menu that slides in from the left; a slim bar shows ☰ and the page
   const back = h("div.side-back", { onclick: () => closeNav() });
   const closeNav = () => { nav.classList.remove("open"); back.classList.remove("open"); };
@@ -177,10 +195,16 @@ function render() {
   const cur = TABS.find(t => t[0] === (P.tab === "import" ? "packs" : P.tab)) || TABS[0];
   const mob = h("header.mob-bar",
     h("button.icon-btn.mob-menu", { "aria-label": T("Menu"), title: T("Menu"), onclick: () => { nav.classList.add("open"); back.classList.add("open"); } }, "☰"),
-    h("span.mob-ic", cur[1]), h("strong.mob-title", cur[2]));
+    h("span.mob-ic", cur[1]), h("strong.mob-title", cur[2]), h("span.grow"), refreshBtn());
   app.replaceChildren(h("div.layout", nav, back, h("div.main-wrap", mob, main)));
   const views = { dashboard: dashboardView, community: communityView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, goals: goalsView, settings: settingsView };
-  views[P.tab](main).catch(e => main.append(h("p.bad", e.message)));
+  // a page that cannot load shows why and offers to try again – instead of an empty or broken page
+  views[P.tab](main).catch(e => {
+    if (!main.isConnected) return;                 // another page was opened meanwhile
+    main.replaceChildren(h("section.card.page-error", h("h2", "⚠️ ", T("This page could not be loaded")),
+      h("p.muted", e && e.message ? e.message : String(e)),
+      h("button.btn", { onclick: () => render() }, "⟳ ", T("Try again"))));
+  });
 }
 
 function section(title, ...content) { return h("section.card.sec", h("h2", title), ...content); }
@@ -224,6 +248,7 @@ async function overviewView(main) {
       k.internet ? h("div.kpi" + (k.internet.running ? ".net-on" : ""), h("b", (k.internet.running ? "🟢 " : "🌐 ") + fmt(k.internet.minutes) + " min"),
         h("span.small.muted", k.internet.running ? I18N.tr(T("Internet is on")) : I18N.tr(T("Internet time"))),
         k.internet.running ? h("button.btn.small.bad", { onclick: async () => { await call(`parent/internet/${k.profile.id}/stop`, { method: "POST" }); toast(T("Internet stopped"), "good"); render(); } }, "⏸ ", T("Stop")) : null) : null),
+    k.pets && k.pets.length ? petsBox(k, render) : null,
     h("div.cols",
       h("div", h("h3", T("Packs")), k.packs.length ? h("ul.list", ...k.packs.map(p => h("li", h("div.row", C(p.title, "span.grow"), h("b", p.percent + " %"),
         p.due ? chip(p.due + " " + I18N.tr(T("due")), "warn") : null), bar(p.percent, 100, p.color)))) : h("p.muted", T("No packs active."))),
@@ -233,7 +258,8 @@ async function overviewView(main) {
       h("div", h("h3", T("Weak spots")), k.weak.length ? h("ul.list.weak", ...k.weak.map(w => h("li", C(w.label, "strong"),
         h("div.small.muted", C(w.unit), " · ", w.wrong + " / " + w.tries + " " + I18N.tr(T("wrong")))))) : h("p.muted", T("No weak spots yet – great!"))))));
   const failed = await call("parent/logins/failed?days=30").catch(() => []);
-  const failBox = failed.length ? section("🔐 " + I18N.tr(T("Failed logins (30 days)")),
+  // folded, the number in the title – details only when wanted
+  const failBox = failed.length ? h("details.card.sec.fold", h("summary", h("h2", "🔐 " + I18N.tr(T("Failed logins (30 days)")) + " ", chip(String(failed.length), "warn"))),
     h("p.small.muted", T("Wrong PINs with the device they came from. «Usually» = who normally logs in successfully from this address.")),
     h("div.scroll", h("table.tbl.logins",
       h("thead", h("tr", h("th", T("When")), h("th", T("Profile")), h("th", T("IP address")), h("th", "MAC"), h("th", T("Device")), h("th", T("Usually")))),
@@ -258,6 +284,23 @@ async function overviewView(main) {
     toast(r.created.length ? I18N.tr(T("Created: {0}")).replace("{0}", r.created.join(", ")) : T("All persons are already linked"), "good");
     render();
   }
+}
+
+// the pets of a child (pets.py): bars and status, «holiday care» pauses them
+function petsBox(k, render) {
+  const paused = k.pets_paused, away = !paused && k.pets.some(p => p.paused === "away");
+  return h("div.pets-box",
+    h("div.row", h("h3.grow", "🐾 ", T("Pets")),
+      away ? chip(I18N.tr(T("away (Family Planer)")), "") : null,
+      h("button.btn.small" + (paused ? "" : ".ghost"), { title: T("While holiday care is on, the pets do not get hungry, sad or dirty."), onclick: async () => {
+        await call(`parent/profiles/${k.profile.id}/pet-pause`, { method: "PUT", body: { on: !paused } });
+        toast(paused ? T("Holiday care ended") : T("Holiday care is on"), "good"); render();
+      } }, paused ? "▶ " : "⏸ ", paused ? T("End holiday care") : T("Holiday care"))),
+    h("div.pet-mini-list", ...k.pets.map(p => h("div.pet-mini" + (p.dying ? ".dying" : ""),
+      h("span.pet-mini-ic", petIcon(p.kind, 34, p.emoji)), h("div.grow", h("div", C(p.name, "strong"), h("span.small.muted", " · " + I18N.tr(T("{0} days old")).replace("{0}", p.age))),
+        h("div.pet-mini-bars", ...[["hunger", "🍖"], ["mood", "😊"], ["clean", "🫧"]].map(([b, ic]) => h("span.pet-mini-bar", { title: ic + " " + p[b] }, ic,
+          bar(p[b], 100, p[b] < 25 ? "var(--bad)" : p[b] < 50 ? "var(--warn)" : "var(--good)")))),
+        p.dying ? h("div.small.warn-text", "🆘 ", I18N.tr(T("All bars empty – dies in {0} days")).replace("{0}", Math.max(0, Math.ceil(p.days_left)))) : null)))));
 }
 
 // archived (inactive) profiles: restore or delete for good
@@ -635,15 +678,28 @@ async function download(id, format = "zip") {
 }
 
 // Phone photos are large: scale down to max. 1024 px as JPEG before uploading.
+// photos made smaller (and turned into JPEG) in the browser before the upload – also iPhone photos (HEIC), which Safari can read
 async function shrinkPhoto(file, max = 1024) {
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+  if (file.type === "image/gif") return file;                       // keep animations
+  const heic = /hei[cf]$/i.test(file.type) || /\.hei[cf]$/i.test(file.name || "");
+  if (!/^image\//.test(file.type) && !heic) return file;
+  const decode = async () => {
+    try { return await createImageBitmap(file); } catch {}
+    const url = URL.createObjectURL(file);                          // fallback: some browsers only decode through <img>
+    try { const img = new Image(); img.src = url; await img.decode(); return img; } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  };
   try {
-    const bmp = await createImageBitmap(file);
-    const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
-    const cv = h("canvas", { width: Math.round(bmp.width * k), height: Math.round(bmp.height * k) });
+    const bmp = await decode();
+    const w0 = bmp.width || bmp.naturalWidth, h0 = bmp.height || bmp.naturalHeight;
+    const k = Math.min(1, max / Math.max(w0, h0));
+    const cv = h("canvas", { width: Math.round(w0 * k), height: Math.round(h0 * k) });
     cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
-    return await new Promise(res => cv.toBlob(b => res(b || file), "image/jpeg", 0.85));
-  } catch { return file; }
+    const alpha = /^image\/(png|webp)$/.test(file.type);          // keep transparency (a drawn crest) – photos become JPEG
+    return await new Promise(res => cv.toBlob(b => res(b || file), alpha ? "image/png" : "image/jpeg", 0.85));
+  } catch {
+    if (heic) throw new Error(I18N.tr(T("This photo format cannot be read – please use JPEG or PNG.")));
+    return file;
+  }
 }
 
 async function packEditor(id, { afterSave } = {}) {
@@ -762,8 +818,8 @@ async function importView(main) {
   main.append(pageHead(T("Import"), h("button.btn.ghost", { onclick: () => { P.tab = "packs"; location.hash = "packs"; render(); } }, "← ", T("Packs"))),
     section(T("From a file"), drop,
       h("p.small.muted", T("Everything imported becomes a draft first. You check it, then publish it for the children.")),
-      P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: Claude reads it and makes a draft. Packs from school material stay private.")) :
-        h("p.small.muted", "📸 ", T("Photo/PDF import: add an Anthropic API key in the app configuration."))),
+      P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: the AI of Home Assistant reads it and makes a draft. Packs from school material stay private.")) :
+        h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section(T("From a link"), h("div.row", url, h("button.btn", { onclick: fromUrl }, T("Load")))),
     section(T("Format"), h("pre.small.example", { translate: "no" }, `id: franz-5kl-einheit-3
 titel: "Französisch 5. Klasse – Einheit 3"
@@ -1027,7 +1083,7 @@ async function choresView(main) {
   const own = d.chores.filter(c => c.active);
   const planerBox = section("📅 " + I18N.tr(T("One chore plan: the Planner")),
     h("p.small.muted", T("The built-in planner has the bigger chore plan (days, rhythm, time to do it, special chores, awards). Its chores also appear on the children's start page.")),
-    h("iframe.planer-frame", { src: "planer?mode=parent#/aemtliplan", title: I18N.tr(T("Chore plan")) }),
+    planerFrame("planer?mode=parent#/aemtliplan", T("Chore plan")),
     h("div.row", own.some(c => c.frequency !== "once") ? h("button.btn.ghost", { onclick: async () => {
         if (!confirm(I18N.tr(T("Move the chores of this list into the Planner? They are switched off here (their history stays).")))) return;
         const r = await call("planer/chores/take-over", { method: "POST" });
@@ -1253,9 +1309,9 @@ async function printPoster(link) {
 async function gamesSection(s) {
   const kids = (await call("parent/profiles")).filter(p => p.role === "kid");
   let acc = (await call("parent/games")).access;
-  const GAMES = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", "Kartenkarussell"], ["domino", "🁫", "Domino"],
-    ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
-    ["pingpong", "🏓", T("Ping-Pong")], ["pairs", "🧩", T("Pairs")]];
+  const GAMES = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", "Kartenkarussell"], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Paarjagd")], ["werbinich", "🎭", T("Wer bin ich?")],
+    ["kartenlauf", "🏁", "Kartenlauf"], ["stadtland", "🏙️", T("Stadt-Land-Fluss")], ["zeichnen", "🎨", T("Zeichnen & Raten")], ["wuerfel", "🎲", T("Fünf Würfel")], ["heimwaerts", "🏠", T("Heimwärts")], ["jump", "🦘", "Jump"], ["klatsch", "👏", T("Klatsch den Beat")], ["verboten", "🚫", T("Verbotene Wörter")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werwölfe")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Dorfmarkt")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
+    ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
   const box = h("div.games-tbl");
   const save = async () => { try { acc = (await call("parent/games", { method: "PUT", body: { access: acc } })).access; toast(T("Saved"), "good"); } catch {} draw(); };
   const draw = () => box.replaceChildren(...GAMES.map(([k, ic, name]) => {
@@ -1279,51 +1335,184 @@ async function gamesSection(s) {
 }
 
 // ---------------------------------------------------------------- pairs game: own photo sets and the family crest
-async function memorySection() {
-  let d = { sets: [], crest: null };
+// pick pictures from Home Assistant Media (Media → My media, mapped read-only): folders, thumbnails, choose
+const MAX_PICK = 40;                                           // as many as a photo set holds (memorygame.MAX_PHOTOS)
+async function haMediaPicker({ single = false } = {}) {
+  return new Promise(resolve => {
+    let picked = new Set(), cur = "", data = null, done = false;
+    const body = h("div.hm-body"), foot = h("div.row");
+    const finish = v => { if (done) return; done = true; if (seen) seen.disconnect(); m.close(); resolve(v);
+      setTimeout(() => urls.forEach(p => p.then(u => u && URL.revokeObjectURL(u))), 5000); };
+    const urls = new Map();                                    // thumbnails loaded once (the parent header cannot go into <img src>)
+    const load = (el, rel) => {
+      if (!urls.has(rel)) urls.set(rel, fetch("api/parent/ha-media/file?path=" + encodeURIComponent(rel), { headers: { "X-FQ-Parent": Auth.parent } })
+        .then(r => r.ok ? r.blob() : null).then(b => b ? URL.createObjectURL(b) : null).catch(() => null));
+      urls.get(rel).then(u => { if (u) el.src = u; });
+    };
+    // only the pictures that come into view are loaded – a camera folder with hundreds of photos stays light
+    const seen = "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) { seen.unobserve(e.target); load(e.target, e.target.dataset.rel); }
+    }), { rootMargin: "200px" }) : null;
+    const thumb = (img, rel) => {
+      const el = h("img", { alt: "" });
+      el.dataset.rel = rel;
+      if (seen) seen.observe(el); else load(el, rel);
+      return el;
+    };
+    const drawFoot = () => foot.replaceChildren(...[
+      !single && data && data.images.length ? h("button.btn.ghost.small", { onclick: () => {
+        const all = data.images.map(x => (cur ? cur + "/" : "") + x.name).slice(0, MAX_PICK);
+        picked = picked.size === all.length ? new Set() : new Set(all); draw(); } }, T("Select all")) : null,
+      !single && picked.size >= MAX_PICK ? h("span.small.muted", I18N.tr(T("At most {0} pictures at once")).replace("{0}", MAX_PICK)) : null,
+      h("span.grow"), h("button.btn.ghost", { onclick: () => finish(null) }, T("Cancel")),
+      single ? null : h("button.btn", { disabled: !picked.size, onclick: () => finish([...picked]) }, "✓ ", I18N.tr(T("Add ({0})")).replace("{0}", picked.size))].filter(Boolean));
+    const draw = () => {
+      if (!data) return;
+      if (!data.available) {
+        body.replaceChildren(h("p", T("No Home Assistant Media found.")),
+          h("p.small.muted", T("Put photos into Home Assistant → Media → My media (e.g. with the File editor, Samba or the upload in the Media browser). After an update of the app, restart it once so it can see the folder.")));
+        return drawFoot();
+      }
+      const parts = cur ? cur.split("/") : [];
+      body.replaceChildren(...[
+        h("div.hm-crumbs", h("button.link", { onclick: () => open("") }, "🏠 ", T("My media")),
+          ...parts.map((p, i) => [" / ", h("button.link", { onclick: () => open(parts.slice(0, i + 1).join("/")) }, C(p))])),
+        data.folders.length ? h("div.hm-folders", ...data.folders.map(f => h("button.hm-folder", { onclick: () => open((cur ? cur + "/" : "") + f) }, "📁 ", C(f)))) : null,
+        data.images.length ? h("div.hm-grid", ...data.images.map(x => {
+          const rel = (cur ? cur + "/" : "") + x.name;
+          return h("button.hm-pic" + (picked.has(rel) ? ".on" : ""), { title: x.name, onclick: () => {
+            if (single) return finish([rel]);
+            if (picked.has(rel)) picked.delete(rel); else if (picked.size < MAX_PICK) picked.add(rel);
+            draw(); } }, thumb(x, rel));
+        })) : !data.folders.length ? h("p.small.muted", T("No pictures in this folder.")) : null].filter(Boolean));
+      drawFoot();
+    };
+    const open = async path => {
+      cur = path; body.replaceChildren(h("div.spinner"));
+      try { data = await call("parent/ha-media?path=" + encodeURIComponent(path)); cur = data.path || ""; } catch { data = { available: true, path: cur, folders: [], images: [] }; }
+      draw();
+    };
+    const m = modal(h("div", h("div.sec-head", h("h2", "🏠 ", T("Home Assistant Media")),
+        h("div.head-actions", haMediaOpenBtn(), h("button.btn.small.ghost", { title: T("Refresh"), onclick: () => open(cur) }, "🔄 ", T("Refresh")))),
+      h("p.small.muted", T("Upload new photos in the Home Assistant media browser (new tab), then tap «Refresh».")), body, foot), { wide: true, onClose: () => finish(null) });
+    open("");
+  });
+}
+
+// photos for the pairs game and the crest: upload from this device or take them from Home Assistant Media
+const Photos = {
+  async upload(file) {
+    const fd = new FormData(); fd.append("file", await shrinkPhoto(file, 800), "foto.jpg");
+    return (await api("parent/memory/photo", { method: "POST", form: fd })).name;
+  },
+  async uploadAll(files) {                                 // every photo on its own – one bad file does not stop the others
+    const out = [];
+    for (const file of files) {
+      try { out.push(await Photos.upload(file)); } catch (e) { toast(`${file.name}: ${e.message}`, "bad"); }
+    }
+    return out;
+  },
+  pick(multiple, then) {
+    const f = h("input", { type: "file", accept: "image/*,.heic,.heif", multiple });
+    f.onchange = async () => { const names = await Photos.uploadAll([...f.files]); if (names.length) await then(names); };
+    f.click();
+  },
+  async fromHa(single, then) {
+    const paths = await haMediaPicker({ single });
+    if (!paths || !paths.length) return;
+    try { const r = await call("parent/memory/ha-media", { method: "POST", body: { paths } }); await then(r.names); } catch {}
+  },
+};
+
+// the media browser of Home Assistant (upload photos there), in a new tab
+async function haMediaHref() {
+  if (P.info && P.info.via_ha) return "/media-browser/browser";
+  try { const p = await api("ha-panel"); if (p.port) return `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/media-browser/browser`; } catch {}
+  return null;
+}
+function haMediaOpenBtn() {
+  const a = h("a.btn.small.ghost", { href: "/media-browser/browser", target: "_blank", rel: "noopener" }, "↗ ", T("Open Home Assistant Media"));
+  haMediaHref().then(u => { if (u) a.href = u; else a.hidden = true; });
+  return a;
+}
+
+// family crest (Settings): drawn from colours, pattern and symbol – or an own picture
+async function crestSection() {
+  let d = { crest: null };
   try { d = await call("parent/memory"); } catch {}
-  const crest = d.crest || { name: "", icon: "🏠", colors: ["#5b5bd6", "#fcc419"], pattern: "split", motto: "" };
+  const crest = d.crest || { name: "", icon: "🏠", colors: ["#5b5bd6", "#fcc419"], pattern: "split", motto: "", image: null };
   let useCrest = !!d.crest;
-  const preview = h("div.crest-prev"), setsBox = h("div.mm-sets");
+  const preview = h("div.crest-prev");
   const drawCrest = () => preview.replaceChildren(useCrest ? crestSvg(crest) : h("p.small.muted", T("No family crest yet.")));
   const inp = (key, attrs = {}) => h("input", { type: "text", value: crest[key] || "", ...attrs, oninput: e => { crest[key] = e.target.value; drawCrest(); } });
   const color = i => h("input", { type: "color", value: crest.colors[i], oninput: e => { crest.colors[i] = e.target.value; drawCrest(); } });
   const PATTERNS = { plain: T("plain"), split: T("split"), quarter: T("quartered"), band: T("diagonal band"), chevron: T("chevron") };
-  const crestForm = h("div.form",
-    h("div.grid2", h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: "Muster" })),
-      h("label.field", T("Symbol (emoji)"), inp("icon", { maxlength: 8 }))),
-    h("div.grid2", h("label.field", T("Pattern"), h("select", { onchange: e => { crest.pattern = e.target.value; drawCrest(); } },
-        ...Object.entries(PATTERNS).map(([k, n]) => h("option", { value: k, selected: crest.pattern === k }, I18N.tr(n))))),
-      h("label.field", T("Colours"), h("div.row", color(0), color(1)))));
-  const onOff = h("input", { type: "checkbox", checked: useCrest, onchange: e => { useCrest = e.target.checked; crestForm.hidden = !useCrest; drawCrest(); } });
-  crestForm.hidden = !useCrest;
-  const upload = async file => {
-    const fd = new FormData(); fd.append("file", await shrinkPhoto(file, 600), "foto.jpg");
-    return (await call("parent/memory/photo", { method: "POST", form: fd })).name;
-  };
-  const drawSets = () => setsBox.replaceChildren(...d.sets.map((st, i) => h("div.card.qe",
-    h("div.row", h("input.grow", { type: "text", maxlength: 60, value: st.name, placeholder: I18N.tr(T("e.g. Our holidays")), oninput: e => { st.name = e.target.value; } }),
-      h("button.icon-btn", { title: T("Delete"), onclick: () => { if (confirm(I18N.tr(T("Delete the photo set «{0}»?")).replace("{0}", st.name || "–"))) { d.sets.splice(i, 1); drawSets(); } } }, "🗑️")),
-    h("div.mm-thumbs", ...st.photos.map((ph, j) => h("div.mm-thumb", h("img", { src: "media/_memory/" + encodeURIComponent(ph), alt: "" }),
-      h("button", { title: T("Remove photo"), onclick: () => { st.photos.splice(j, 1); drawSets(); } }, "✕"))),
-      h("button.btn.ghost.small", { onclick: () => {
-        const f = h("input", { type: "file", accept: "image/*", multiple: true });
-        f.onchange = async () => { for (const file of f.files) { try { st.photos.push(await upload(file)); } catch (e) { toast(e.message, "bad"); } drawSets(); } };
-        f.click();
-      } }, "📷 ", T("Add photos"))),
-    h("p.small.muted", I18N.tr(T("Photos: {0}")).replace("{0}", st.photos.length), st.photos.length < 3 ? [" – ", T("at least 3 photos for a game")] : null))));
-  drawCrest(); drawSets();
-  const save = async () => {
-    try { d = await call("parent/memory", { method: "PUT", body: { sets: d.sets, crest: useCrest ? crest : null } }); drawSets(); toast(T("Saved"), "good"); }
+  const save = async (quiet = false) => {
+    try { d = await call("parent/memory", { method: "PUT", body: { crest: useCrest ? crest : null } }); if (!quiet) toast(T("Saved"), "good"); }
     catch (e) { toast(e.message, "bad"); }
   };
-  return section("🧩 " + I18N.tr(T("Pairs game: photo sets and family crest")),
-    h("p.small.muted", T("In the game corner the children find pairs – with animals, fruit … or with your own photos. Every photo becomes a pair. The family crest can be chosen as the back of the cards.")),
-    h("h3", T("Family crest")), h("label.check", onOff, h("span", T("We have a family crest"))),
+  const setImage = async ([n]) => { crest.image = n; drawCrest(); drawPictureRow(); await save(true); };
+  const pictureRow = h("div.row.wrap");
+  const drawnFields = h("div",
+    h("div.grid2", h("label.field", T("Symbol (emoji)"), inp("icon", { maxlength: 8 })),
+      h("label.field", T("Pattern"), h("select", { onchange: e => { crest.pattern = e.target.value; drawCrest(); } },
+        ...Object.entries(PATTERNS).map(([k, n]) => h("option", { value: k, selected: crest.pattern === k }, I18N.tr(n)))))),
+    h("label.field", T("Colours"), h("div.row", color(0), color(1))));
+  const drawPictureRow = () => { drawnFields.hidden = !!crest.image; pictureRow.replaceChildren(...[
+    h("button.btn.small.ghost", { onclick: () => Photos.pick(false, setImage) }, "📷 ", T("Upload picture")),
+    h("button.btn.small.ghost", { onclick: () => Photos.fromHa(true, setImage) }, "🏠 ", T("From Home Assistant Media")),
+    crest.image ? h("button.btn.small.ghost", { onclick: () => { crest.image = null; drawCrest(); drawPictureRow(); } }, "✕ ", T("Remove picture")) : null].filter(Boolean)); };
+  const crestForm = h("div.form",
+    h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: "Muster" })),
+    h("div.field", h("span", T("Own picture as crest")), h("p.small.muted", T("A photo or drawing of your crest – it is shown in the shield. Without a picture the crest is drawn from colours, pattern and symbol.")), pictureRow),
+    drawnFields);
+  const onOff = h("input", { type: "checkbox", checked: useCrest, onchange: e => { useCrest = e.target.checked; crestForm.hidden = !useCrest; drawCrest(); } });
+  crestForm.hidden = !useCrest;
+  drawCrest(); drawPictureRow();
+  return section("🛡️ " + I18N.tr(T("Family crest")),
+    h("p.small.muted", T("Your family crest – on the card backs of the games, on the dashboard and on posters.")),
+    h("label.check", onOff, h("span", T("We have a family crest"))),
     h("div.crest-edit", preview, crestForm),
-    h("div.sec-head", h("h3", T("Photo sets")), h("div.head-actions", h("button.btn.small", { onclick: () => { d.sets.unshift({ name: "", photos: [] }); drawSets(); } }, "+ ", T("New photo set")))),
+    h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save"))));
+}
+
+// photo sets of the pairs game and the Paarjagd
+async function memorySection() {
+  let d = { sets: [] };
+  try { d = await call("parent/memory"); } catch {}
+  const setsBox = h("div.mm-sets");
+  const save = async (quiet = false) => {
+    for (const st of d.sets) if (!st.name.trim()) {               // a set without a name gets a free «Photos n»
+      let n = 1; const taken = new Set(d.sets.map(x => x.name));
+      while (taken.has(I18N.tr(T("Photos {0}")).replace("{0}", n))) n++;
+      st.name = I18N.tr(T("Photos {0}")).replace("{0}", n);
+    }
+    try {
+      const r = await call("parent/memory", { method: "PUT", body: { sets: d.sets } });
+      // keep the objects on screen (an upload still running adds to them), only take over what the server decided
+      r.sets.forEach((x, i) => { if (d.sets[i]) Object.assign(d.sets[i], { id: x.id, name: x.name }); });
+      drawSets(); if (!quiet) toast(T("Saved"), "good");
+    }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  const addTo = st => async names => { st.photos.push(...names.filter(n => !st.photos.includes(n))); drawSets(); await save(true); toast(I18N.tr(T("{0} photos added")).replace("{0}", names.length), "good"); };
+  const drawSets = () => setsBox.replaceChildren(...d.sets.map((st, i) => h("div.card.qe",
+    h("div.row", h("input.grow", { type: "text", maxlength: 60, value: st.name, placeholder: I18N.tr(T("e.g. Our holidays")), oninput: e => { st.name = e.target.value; } }),
+      h("button.icon-btn", { title: T("Delete"), onclick: () => { if (confirm(I18N.tr(T("Delete the photo set «{0}»?")).replace("{0}", st.name || "–"))) { d.sets.splice(i, 1); drawSets(); save(true); } } }, "🗑️")),
+    h("div.mm-thumbs", ...st.photos.map((ph, j) => h("div.mm-thumb", h("img", { src: memPhotoUrl(ph), alt: "", loading: "lazy" }),
+      h("button", { title: T("Remove photo"), onclick: () => { st.photos.splice(j, 1); drawSets(); } }, "✕")))),
+    h("div.row.wrap",
+      h("button.btn.ghost.small", { onclick: () => Photos.fromHa(false, addTo(st)) }, "🏠 ", T("From Home Assistant Media")),
+      h("button.btn.ghost.small", { onclick: () => Photos.pick(true, addTo(st)) }, "📷 ", T("Add photos"))),
+    h("p.small.muted", I18N.tr(T("Photos: {0}")).replace("{0}", st.photos.length), st.photos.length < 3 ? [" – ", T("at least 3 photos for a game")] : null))));
+  drawSets();
+  return sectionAdd("🧩 " + I18N.tr(T("Pairs game: photo sets")),
+    h("button.btn.small", { onclick: () => { d.sets.unshift({ name: "", photos: [] }); drawSets(); } }, "+ ", T("New photo set")),
+    h("p.small.muted", T("In the game corner the children find pairs – with animals, fruit … or with your own photos. Every photo becomes a pair.")),
+    h("p.small.muted", T("Take the photos from Home Assistant Media (Media → My media) or upload them from this device. Chosen photos are copied into Family Quest right away.")),
+    h("div.row.wrap", haMediaOpenBtn()),
     setsBox,
-    h("div.row", h("button.btn", { onclick: save }, "💾 ", T("Save"))));
+    h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save"))));
 }
 
 // ---------------------------------------------------------------- mini firewall: allowed networks
@@ -1418,21 +1607,79 @@ async function firewallSection(s) {
 function openInApp(path) {
   const win = window.open("about:blank", "_blank");          // opened right away: browsers block windows opened later
   call("parent/app-token", { method: "POST" }).then(r => {
-    const url = "./#/as/" + r.token + "/" + path;
+    const url = "app#/as/" + r.token + "/" + path;
     if (win) win.location.href = url; else location.href = url;
   }).catch(() => win && win.close());
 }
 const appBtn = path => h("button.btn.small.ghost", { title: T("Opens the game in the app in a new tab"), onclick: () => openInApp(path) }, "↗ ", T("Open in the app"));
 
+// the planner in a frame (same origin): on phones as tall as its content – no second scroll area inside the page
+function planerFrame(src, title) {
+  const f = h("iframe.planer-frame", { src, title: I18N.tr(title) });
+  const fit = () => {
+    if (!f.isConnected) return clearInterval(timer);
+    if (innerWidth > 700) { f.style.height = ""; return; }
+    try {
+      const d = f.contentDocument && f.contentDocument.documentElement;
+      if (d) f.style.height = Math.max(400, d.scrollHeight) + "px";
+    } catch {}
+  };
+  const timer = setInterval(fit, 700);
+  f.addEventListener("load", fit);
+  return f;
+}
+
+// ---------------------------------------------------------------- running games: end one or all (familyquest/running.py)
+function runningGamesBox() {
+  const box = h("div");
+  const draw = list => {
+    if (!list.length) return box.replaceChildren();
+    const endOne = async g => {
+      if (!confirm(I18N.tr(T("End «{0}» now?")).replace("{0}", I18N.tr(g.title)))) return;
+      try { draw((await call("parent/games/end", { method: "POST", body: { key: g.key } })).running); toast(T("Game ended"), "good"); render(); } catch {}
+    };
+    const endAll = async () => {
+      if (!confirm(I18N.tr(T("End all {0} running games?")).replace("{0}", list.length))) return;
+      try { draw((await call("parent/games/end", { method: "POST", body: { all: true } })).running); toast(T("All games ended"), "good"); render(); } catch {}
+    };
+    box.replaceChildren(sectionAdd("⏹ " + I18N.tr(T("Running games")),
+      list.length > 1 ? h("button.btn.small.ghost", { onclick: endAll }, "⏹ ", T("End all")) : null,
+      h("p.small.muted", T("Every game that is running just now – family tables and games alone against bots. Ending works like the «End» button of whoever leads it.")),
+      h("div.run-list", ...list.map(g => h("div.row.run-item",
+        h("span.run-ic", g.icon), h("div.grow", h("strong", I18N.tr(g.title)), h("br"),
+          h("span.small.muted", [g.solo ? T("alone against bots") : T("family table"), g.host ? " · " + g.host : "",
+            " · ", I18N.tr(T("Players: {0}")).replace("{0}", g.players), g.status === "lobby" ? [" · ", T("waiting to start")] : null,
+            g.status === "paused" ? [" · ⏸ ", T("paused")] : null])),
+        h("button.btn.small.ghost", { onclick: () => endOne(g) }, "⏹ ", T("End")))))));
+  };
+  call("parent/games/running").then(draw).catch(() => {});
+  return box;
+}
+
 // ---------------------------------------------------------------- community: family quiz, family council, history
 async function communityView(main) {
   const me = P.meta.me;
-  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div");
+  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div");
   let quizHead = null;
   const showLive = async () => {
     let st = null; try { st = await call("community/quiz"); } catch {}
-    if (st && st.status !== "done") { live.replaceChildren(sectionAdd("🎯 " + I18N.tr(T("Running quiz")), appBtn("quiz"), h("div.quiz-live"))); quizLive(live.querySelector(".quiz-live"), me, () => render()); }
-    else live.replaceChildren();
+    if (!st || st.status === "done") return live.replaceChildren();
+    // a running quiz is a card here – it opens full screen only on «Open» (✕ comes back to the card, not into the quiz again)
+    const open = () => {
+      const box = h("div.quiz-live");
+      live.replaceChildren(sectionAdd("🎯 " + I18N.tr(T("Running quiz")), appBtn("quiz"), box));
+      quizLive(box, me, () => showLive());
+    };
+    const end = async () => {
+      if (!confirm(I18N.tr(T("End the running quiz?")))) return;
+      try { await call("community/quiz/abort", { method: "POST" }); } catch {}
+      showLive();
+    };
+    live.replaceChildren(sectionAdd("🎯 " + I18N.tr(T("Running quiz")), appBtn("quiz"),
+      h("div.row.wrap", C("«" + (st.title || "") + "»", "strong.grow"),
+        h("span.small.muted", I18N.tr(T("{0} playing")).replace("{0}", (st.players || []).length)),
+        h("button.btn.small", { onclick: open }, "▶ ", T("Open")),
+        h("button.btn.small.ghost", { onclick: end }, "⏹ ", T("End")))));
   };
   // bingo: start it here, lead and play in the full-screen view
   const showBingo = async () => {
@@ -1477,6 +1724,136 @@ async function communityView(main) {
       : h("div.row.wrap", h("button.btn", { onclick: () => dominoStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
           h("button.btn.ghost", { onclick: () => dominoStartDialog(true, open) }, "🤖 ", T("Alone against bots")))));
   };
+  const showPaarjagd = async () => {
+    let g = null; try { g = await call("community/paarjagd"); } catch {}
+    const open = () => { const b = h("div.pj-live"); paarjagd.replaceChildren(b); paarjagdLive(b, me, () => render()); };
+    paarjagd.replaceChildren(sectionAdd("🧠 " + I18N.tr(T("Paarjagd")), appBtn("paarjagd"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : h("div.row.wrap", h("button.btn", { onclick: () => paarjagdStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+          h("button.btn.ghost", { onclick: () => paarjagdStartDialog(true, open) }, "🤖 ", T("Alone against bots"))),
+      await gameRewardsRow("paarjagd")));
+  };
+  const showWerbinich = async () => {
+    let g = null; try { g = await call("community/werbinich"); } catch {}
+    const open = () => { const b = h("div.wb-live"); werbinich.replaceChildren(b); werbinichLive(b, me, () => render()); };
+    werbinich.replaceChildren(sectionAdd("🎭 " + I18N.tr(T("Wer bin ich?")), appBtn("werbinich"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("Everybody gets a secret character and finds out with yes/no questions – everybody on their own device, guests via QR code.")),
+         h("button.btn", { onclick: () => werbinichStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      await gameRewardsRow("werbinich")));
+  };
+  const showKartenlauf = async () => {
+    let g = null; try { g = await call("community/kartenlauf"); } catch {}
+    const open = () => { const b = h("div.kl-live"); kartenlauf.replaceChildren(b); kartenlaufLive(b, me, () => render()); };
+    kartenlauf.replaceChildren(sectionAdd("🏁 Kartenlauf", appBtn("kartenlauf"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("The race board game with cards: bring your four marbles home – alone or in teams of two, with bots and guests.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => kartenlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => kartenlaufStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
+      await gameRewardsRow("kartenlauf")));
+  };
+  const showStadtland = async () => {
+    let g = null; try { g = await call("community/stadtland"); } catch {}
+    const open = () => { const b = h("div.sl-live"); stadtland.replaceChildren(b); stadtlandLive(b, me, () => render()); };
+    stadtland.replaceChildren(sectionAdd("🏙️ " + I18N.tr(T("Stadt-Land-Fluss")), appBtn("stadtland"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("The word game: a letter, 3 to 8 categories, the clock runs – everybody writes on their own device, guests via QR code.")),
+         h("button.btn", { onclick: () => stadtlandStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      await gameRewardsRow("stadtland")));
+  };
+  const showZeichnen = async () => {
+    let g = null; try { g = await call("community/zeichnen"); } catch {}
+    const open = () => { const b = h("div.zr-live"); zeichnen.replaceChildren(b); zeichnenLive(b, me, () => render()); };
+    zeichnen.replaceChildren(sectionAdd("🎨 " + I18N.tr(T("Zeichnen & Raten")), appBtn("zeichnen"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("One draws, the others guess – live on every device, guests via QR code.")),
+         h("button.btn", { onclick: () => zeichnenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      await gameRewardsRow("zeichnen")));
+  };
+  const showWuerfel = async () => {
+    let g = null; try { g = await call("community/wuerfel"); } catch {}
+    const open = () => { const b = h("div.fw-live"); wuerfel.replaceChildren(b); wuerfelLive(b, me, () => render()); };
+    wuerfel.replaceChildren(sectionAdd("🎲 " + I18N.tr(T("Fünf Würfel")), appBtn("wuerfel"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("The dice game with five dice: everybody rolls at the same time on their own device and fills the score sheet – with bots and guests.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => wuerfelStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => wuerfelStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
+      await gameRewardsRow("wuerfel")));
+  };
+  const showHeimwaerts = async () => {
+    let g = null; try { g = await call("community/heimwaerts"); } catch {}
+    const open = () => { const b = h("div.hw-live"); heimwaerts.replaceChildren(b); heimwaertsLive(b, me, () => render()); };
+    heimwaerts.replaceChildren(sectionAdd("🏠 " + I18N.tr(T("Heimwärts")), appBtn("heimwaerts"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("The classic race board game: roll the die, bring your 4 pieces home and send the others back to their yard – with bots and guests.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => heimwaertsStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => heimwaertsStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
+      await gameRewardsRow("heimwaerts")));
+  };
+  const showJump = async () => {
+    let g = null; try { g = await call("community/jump"); } catch {}
+    const open = () => { const b = h("div.ju-live"); jump.replaceChildren(b); jumpLive(b, me, () => render()); };
+    jump.replaceChildren(sectionAdd("🦘 Jump", appBtn("jump"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("A jumping race on every device: the obstacles come from the left, jump over them – the last one running wins. Alone for a high score, with practice bots or at the family table.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => jumpStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => jumpStartDialog(true, open) }, JU_ICON, " ", T("Alone")))],
+      await gameRewardsRow("jump")));
+  };
+  const showKlatsch = async () => {
+    let g = null; try { g = await call("community/klatsch"); } catch {}
+    const open = () => { const b = h("div.kb-live"); klatsch.replaceChildren(b); klatschLive(b, me, () => render()); };
+    klatsch.replaceChildren(sectionAdd("👏 " + I18N.tr(T("Klatsch den Beat")), appBtn("klatsch"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("A rhythm game on every device: listen to a beat, then everybody claps it back at the same time – the server judges the timing. Alone for a personal best, with practice bots or at the family table.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => klatschStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => klatschStartDialog(true, open) }, KB_ICON, " ", T("Alone")))],
+      await gameRewardsRow("klatsch")));
+  };
+  const showVerboten = async () => {
+    let g = null; try { g = await call("community/verboten"); } catch {}
+    const open = () => { const b = h("div.vw-live"); verboten.replaceChildren(b); verbotenLive(b, me, () => render()); };
+    verboten.replaceChildren(sectionAdd("🚫 " + I18N.tr(T("Verbotene Wörter")), appBtn("verboten"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("Explain the word without the forbidden words – the others guess aloud. In teams or everybody for themselves, guests via QR code.")),
+         h("button.btn", { onclick: () => verbotenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      await gameRewardsRow("verboten")));
+  };
+  const showJass = async () => {
+    let g = null; try { g = await call("community/jass"); } catch {}
+    const open = () => { const b = h("div.ja-live"); jass.replaceChildren(b); jassLive(b, me, () => render()); };
+    jass.replaceChildren(sectionAdd("♣️ " + I18N.tr(T("Jass")), appBtn("jass"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("The Swiss card game Schieber: 2 against 2 with Trumpf, Obenabe and Undeufe, Weis and Stöck – with bots, the family and guests.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => jassStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => jassStartDialog(true, open) }, "🤖 ", T("With 3 bots")))],
+      await gameRewardsRow("jass")));
+  };
+  const showWerwolf = async () => {
+    let g = null; try { g = await call("community/werwolf"); } catch {}
+    const open = () => { const b = h("div.ww-live"); werwolf.replaceChildren(b); werwolfLive(b, me, () => render()); };
+    werwolf.replaceChildren(sectionAdd("🐺 " + I18N.tr(T("Werwölfe")), appBtn("werwolf"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("The classic party game for 5 to 12 players in one room: the app is the game master, everybody gets a secret role on their phone – find the werewolves!")),
+         h("button.btn", { onclick: () => werwolfStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      await gameRewardsRow("werwolf")));
+  };
+  const showSchach = async () => {
+    const open = id => { const b = h("div.ch-live"); schach.replaceChildren(b); schachLive(b, me, () => render(), id); };
+    schach.replaceChildren(sectionAdd("♟️ " + I18N.tr(T("Chess")), appBtn("schach"),
+      h("p.muted", T("Chess with the full rules: against the bot (easy / normal / hard), against somebody of the family on two devices (guests via QR code) or two on one device. Games can be paused and continued later; here you see all games and can delete paused ones.")),
+      await schachPanel(me, open), await gameRewardsRow("schach")));
+  };
+  const showDorfmarkt = async () => {
+    let g = null; try { g = await call("community/dorfmarkt"); } catch {}
+    const open = () => { const b = h("div.mk-live"); dorfmarkt.replaceChildren(b); dorfmarktLive(b, me, () => render()); };
+    dorfmarkt.replaceChildren(sectionAdd("🏘️ " + I18N.tr(T("Dorfmarkt")), appBtn("dorfmarkt"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("The property-trading board game in a Swiss village: buy shops, build market stands, collect rent and trade – with bots and guests.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => dorfmarktStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => dorfmarktStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
+      await gameRewardsRow("dorfmarkt")));
+  };
   const profiles = await call("parent/profiles");
   const who = h("select", ...profiles.map(p => h("option", { value: p.id }, p.name)));
   const hist = h("div");
@@ -1485,10 +1862,50 @@ async function communityView(main) {
   main.append(h("h1", T("Community")),
     h("p.muted", T("Family quiz and family council – children can make quizzes, open topics and vote too.")),
     await councilSection(me), await pollsSection(me), await wichtelnSection(me),
-    live, (quizHead = sectionAdd("🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)), bingo, song, cardBoxes.tschau, cardBoxes.karussell, domino, poker,
+    runningGamesBox(), live, (quizHead = sectionAdd("🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)), bingo, song, cardBoxes.tschau, cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel, heimwaerts, jump, klatsch, verboten, jass, werwolf, schach, dorfmarkt, poker,
     section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
-  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); drawHist();
+  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); drawHist();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
+}
+
+// live games (Paarjagd, «Wer bin ich?», Kartenlauf, Stadt-Land-Fluss, «Zeichnen & Raten», «Fünf Würfel», «Verbotene Wörter»): coins for places 1 / 2 / 3 (only family tables with at least two people of the family)
+// Jass: only place 1 – the coins for each person of the family in the winning team
+async function gameRewardsRow(game) {
+  let r = {};
+  try { r = await call("parent/game-rewards"); } catch {}
+  const cur = r[game] || [10, 5, 2];
+  const inputs = cur.map(v => h("input.pj-reward", { type: "number", min: 0, max: 1000, step: 1, value: v, inputmode: "numeric" }));
+  if (game === "jass") {
+    const save1 = async () => {
+      const v = Number(inputs[0].value);
+      if (!Number.isInteger(v) || v < 0 || v > 1000) return toast(T("Three numbers of coins (0 to 1000) are needed"), "bad");
+      try { await call("parent/game-rewards", { method: "PUT", body: { [game]: [v, cur[1], cur[2]] } }); toast(T("Saved"), "good"); } catch {}
+    };
+    return h("div.pj-rewards", h("b", "🪙 ", T("Coins for each person of the family in the winning team")),
+      h("div.row", inputs[0], h("button.btn.small", { onclick: save1 }, T("Save"))),
+      h("p.small.muted", T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
+  }
+  const save = async () => {
+    const vals = inputs.map(i => Number(i.value));
+    if (vals.some(v => !Number.isInteger(v) || v < 0 || v > 1000)) return toast(T("Three numbers of coins (0 to 1000) are needed"), "bad");
+    try { await call("parent/game-rewards", { method: "PUT", body: { [game]: vals } }); toast(T("Saved"), "good"); } catch {}
+  };
+  const row = [h("b", "🪙 ", T("Coins for place 1 / 2 / 3")),
+    h("div.row", ...inputs.flatMap((i, k) => [k ? h("span.muted", "/") : null, i]).filter(Boolean), h("button.btn.small", { onclick: save }, T("Save")))];
+  if (game === "schach") return h("div.pj-rewards", h("b", "🪙 ", T("Coins for a win: against the family / the hard bot / the normal bot")), row[1],
+    h("p.small.muted", T("Only the winner gets coins, only after at least 10 own moves – not against the easy bot, not on one device, not against guests.")));
+  if (game === "werwolf") return h("div.pj-rewards", ...row,
+    h("p.small.muted", T("Werwölfe: everybody of the family on the winning side gets the coins of place 1 – only at a table with at least two people of the family, only for a game played to the end, not for guests.")));
+  if (game !== "paarjagd") return h("div.pj-rewards", ...row,
+    h("p.small.muted", T("Coins only at a table with at least two people of the family – not for guests.")));
+  // own pictures: the photo sets (shared with the pairs game) – every photo becomes a pair, choose the set when starting
+  const photos = h("div.pj-photos", h("b", "📷 ", T("Own pictures")),
+    h("p.small.muted", T("Upload photo sets (e.g. the family, the holidays) – every photo becomes a pair. Choose the set when starting a Paarjagd.")),
+    h("button.btn.small.ghost", { onclick: async () => {
+      const m = modal(h("div", await memorySection(), h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Close")))), { wide: true });
+    } }, "📷 ", T("Manage photo sets")));
+  return h("div.pj-rewards", photos, ...row,
+    h("p.small.muted", T("Coins only at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
 }
 
 // ---------------------------------------------------------------- Family Planer (built in)
@@ -1548,25 +1965,53 @@ function planerSection(s) {
 function backupSection() {
   const file = h("input", { type: "file", accept: ".zip" });
   const info = h("div");
+  // in pieces of 4 MB: Home Assistant (ingress) refuses bigger uploads with «HTTP 413»
+  const CHUNK = 4 * 1024 * 1024;
+  const sendInPieces = async f => {
+    const upload = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, "0")).join("");
+    const n = Math.max(1, Math.ceil(f.size / CHUNK));
+    for (let i = 0; i < n; i++) {
+      info.replaceChildren(h("div.card.restore-box", h("p", "⏫ ", I18N.tr(T("Uploading the backup … {0} %")).replace("{0}", Math.round(i * 100 / n))),
+        h("progress", { max: n, value: i, style: { width: "100%" } })));
+      const r = await fetch(`api/parent/backup/chunk?upload=${upload}&index=${i}`, { method: "POST",
+        headers: { "X-FQ-Parent": Auth.parent, "Content-Type": "application/octet-stream" }, body: f.slice(i * CHUNK, (i + 1) * CHUNK) });
+      if (!r.ok) {
+        let msg = "HTTP " + r.status; try { msg = (await r.json()).detail || msg; } catch {}
+        throw new Error(msg);
+      }
+    }
+    return upload;
+  };
   file.addEventListener("change", async () => {
     const f = file.files[0]; if (!f) return;
-    const fd = new FormData(); fd.append("file", f);
-    let m;
-    try { m = (await call("parent/backup/inspect", { method: "POST", form: fd })).manifest; } catch { file.value = ""; return; }
+    let upload, m;
+    try {
+      upload = await sendInPieces(f);
+      m = (await call("parent/backup/inspect-upload", { method: "POST", body: { upload } })).manifest;
+    } catch (e) { toast(e.message, "bad"); info.replaceChildren(); file.value = ""; return; }
     const when = new Date(m.created).toLocaleString(I18N.locale);
     info.replaceChildren(h("div.card.restore-box",
       h("p", h("strong", T("Backup from {0}").replace("{0}", when)), " · Family Quest " + (m.app_version || "?")),
       m.counts ? h("p.small.muted", T("Profiles"), ": ", String(m.counts.profile ?? "–"), " · ", T("Packs"), ": ", String(m.counts.pack ?? "–")) : null,
       h("p.warn-text", T("Restoring replaces ALL current data (profiles, learning progress, points, chores, planner, packs).")),
-      h("div.row", h("button.btn.bad", { onclick: async () => {
+      h("div.row", h("button.btn.bad", { onclick: async e => {
         if (!confirm(I18N.tr(T("Really replace all data with this backup?")))) return;
-        const fd2 = new FormData(); fd2.append("file", f);
-        await call("parent/restore", { method: "POST", form: fd2 });
+        const btn = e.currentTarget; btn.disabled = true;
+        try { await call("parent/restore-upload", { method: "POST", body: { upload } }); }
+        catch { btn.disabled = false; return; }
         toast(T("Restored"), "good"); setTimeout(() => location.reload(), 800);
       } }, "♻️ ", T("Restore now")), h("button.btn.ghost", { onclick: () => { info.replaceChildren(); file.value = ""; } }, T("Cancel")))));
   });
+  // what takes how much room – pictures of Home Assistant Media and the app's own packs are not in the backup
+  const sizes = h("p.small.muted");
+  const mb = n => (n / 1048576).toLocaleString(I18N.locale, { maximumFractionDigits: n < 10485760 ? 1 : 0 }) + " MB";
+  call("parent/backup/sizes").then(s => sizes.replaceChildren(
+    T("Size of the backup: about {0}").replace("{0}", mb(s.backup)), " (",
+    T("Data"), " ", mb(s.database), " · ", T("Photo sets"), " ", mb(s.photo_sets), " · ",
+    T("Pack pictures"), " ", mb(s.pack_pictures), " · ", T("Planner photos"), " ", mb(s.planner_photos), ")")).catch(() => {});
   return section("💾 " + I18N.tr(T("Backup & restore")),
-    h("p.small.muted", T("Saves everything in one file: profiles, learning progress, points, chores, planner, packs, pictures and settings.")),
+    h("p.small.muted", T("Saves your own data in one file: profiles, learning progress, points, chores, planner, own packs, own pictures and settings. Pictures from Home Assistant Media and the app's own content are not copied – only the reference.")),
+    sizes,
     h("div.row", h("button.btn", { onclick: () => downloadBackup() }, "⬇️ ", T("Download backup"))),
     h("label.field", T("Restore from a backup file"), file), info);
 }
@@ -1998,6 +2443,12 @@ async function settingsView(main) {
     planer_points: h("input", { type: "checkbox", checked: !!s.planer_points }),
     planer_points_factor: h("input", { type: "number", step: "0.1", min: 0, value: s.planer_points_factor ?? 1 }),
     levels: h("input", { type: "text", value: (s.levels || []).join(", ") }),
+    lesson_perfect_coins: h("input", { type: "number", min: 0, max: 1000, value: s.lesson_perfect_coins ?? 5 }),
+    pet_food_cost: h("input", { type: "number", min: 0, max: 100, value: s.pet_food_cost ?? 2 }),
+    pet_hotel_cost: h("input", { type: "number", min: 0, max: 1000, value: s.pet_hotel_cost ?? 10 }),
+    hamster_coins_per_day: h("input", { type: "number", min: 0, max: 1000, value: s.hamster_coins_per_day ?? 15 }),
+    pet_shop_currency: h("select", ...[["coins", T("Coins")], ["xp", "XP"], ["mixed", T("Both (the child chooses)")]]
+      .map(([k, n]) => h("option", { value: k, selected: (s.pet_shop_currency || "coins") === k }, n))),
   };
   const dl = h("datalist#notify-list", ...notifyOpts.map(o => h("option", { value: o.entity_id })));
   main.append(h("h1", T("Settings")),
@@ -2009,9 +2460,20 @@ async function settingsView(main) {
         h("label.field", T("Push messages for approvals"), f.notify_service, dl, h("span.hint", T("Notify service of the Companion app – with buttons OK / No.")))),
       h("label.check", f.planer_points, T("Also book learning coins as Family Planer points")),
       h("label.field", T("Factor for Family Planer points"), f.planer_points_factor)),
+    section("📚 " + I18N.tr(T("Learning")), h("label.field", T("Coins for a perfect lesson"), f.lesson_perfect_coins,
+      h("span.hint", T("A lesson finished without a single mistake. Comes on top of the coins for a finished lesson; 0 = none."))),
+      h("label.field", "🐾 ", T("Pets: food costs (coins)"), f.pet_food_cost,
+        h("span.hint", T("Feeding a pet once. Playing and washing are free; 0 = food is free."))),
+      h("label.field", "🏨 ", T("Pet hotel: coins per day"), f.pet_hotel_cost,
+        h("span.hint", T("The Family Quest pet hotel looks after a pet while the child is away (e.g. at a camp) – paid per day in advance; the pet comes back fed, happy and clean. 0 = free."))),
+      h("label.field", "🐹 ", T("Hamster: coins per day"), f.hamster_coins_per_day,
+        h("span.hint", T("While the hamster is healthy (every bar at least 50) it runs in its wheel and mines this many coins per day for its owner."))),
+      h("label.field", "🐾 ", T("Pet shop: pay with"), f.pet_shop_currency,
+        h("span.hint", T("Outfits, houses and furniture for the pets. XP spent there do not lower the level.")))),
     section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels)),
     h("button.btn.big", { onclick: save }, "💾 ", T("Save")),
     await gamesSection(s),
+    await crestSection(),
     await memorySection(),
     linkSection(),
     themesSection(),
@@ -2025,12 +2487,16 @@ async function settingsView(main) {
     section(T("About"), h("p.small", "Family Quest v" + P.meta.version), h("ul.small",
       h("li", "Home Assistant: ", P.meta.ha ? "✓" : h("span", { translate: "no" }, "– ", P.meta.ha_status || "")), h("li", I18N.tr(T("Planner")) + ": ✓ ", h("span.small.muted", T("(built in)"))),
       P.meta.planer ? h("li", T("Family Planer integration in Home Assistant: found – take it over under «Family Planer» above.")) : null,
-      h("li", I18N.tr(T("Photo/PDF import")) + ": ", P.meta.ai ? "✓" : h("span.small.muted", "– ", T("needs an Anthropic API key in the app configuration"))))));
+      h("li", I18N.tr(T("Photo/PDF import")) + ": ", P.meta.ai ? "✓" : h("span.small.muted", "– ", T("needs an AI Task in Home Assistant"))))));
   async function save() {
     const body = { family_visibility: f.family_visibility.value, sound: f.sound.checked, reminder_time: f.reminder_time.value.trim(),
       chore_reminder_time: f.chore_reminder_time.value.trim(),
       notify_service: f.notify_service.value.trim(), planer_points: f.planer_points.checked, planer_points_factor: +f.planer_points_factor.value,
-      levels: f.levels.value.split(/[,; ]+/).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b) };
+      levels: f.levels.value.split(/[,; ]+/).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b),
+      lesson_perfect_coins: Math.max(0, Math.min(1000, Math.round(+f.lesson_perfect_coins.value || 0))),
+      pet_food_cost: Math.max(0, Math.min(100, Math.round(+f.pet_food_cost.value || 0))), pet_shop_currency: f.pet_shop_currency.value,
+      pet_hotel_cost: Math.max(0, Math.min(1000, Math.round(+f.pet_hotel_cost.value || 0))),
+      hamster_coins_per_day: Math.max(0, Math.min(1000, Math.round(+f.hamster_coins_per_day.value || 0))) };
     await call("parent/settings", { method: "PUT", body }); toast(T("Saved"), "good");
   }
 }

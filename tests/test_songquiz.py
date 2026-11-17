@@ -40,7 +40,7 @@ def test_song_game(client):
     client.app.state.fq.ha = spk
     assert client.get("/api/community/song/players", headers=hm).json()["players"][0]["entity_id"] == "media_player.wohnzimmer"
     assert client.post("/api/community/song/start", json={"player": ""}, headers=hm).status_code == 400
-    st = client.post("/api/community/song/start", json={"player": "media_player.wohnzimmer", "target": 2, "max_songs": 5, "reveal_delay": 0}, headers=hm).json()
+    st = client.post("/api/community/song/start", json={"player": "media_player.wohnzimmer", "target": 2, "max_songs": 5, "reveal_delay": 0, "reveal_by": "all"}, headers=hm).json()
     assert st["phase"] == "lobby"
     assert client.post("/api/community/song/begin", headers=hm).status_code == 400          # alone: nobody to judge
     client.post("/api/community/song/join", headers=hl)
@@ -88,7 +88,7 @@ def test_countdown_before_the_solution(client):
     hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
     hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
     client.app.state.fq.ha = FakeSpeaker()
-    client.post("/api/community/song/start", json={"player": "media_player.x", "reveal_delay": 5}, headers=hm)
+    client.post("/api/community/song/start", json={"player": "media_player.x", "reveal_delay": 5, "reveal_by": "all"}, headers=hm)
     client.post("/api/community/song/join", headers=hl)
     client.post("/api/community/song/begin", headers=hm)
     st = client.post("/api/community/song/buzz", headers=hl).json()
@@ -116,6 +116,22 @@ def test_only_the_leader_shows_the_solution(client):
     client.app.state.fq.ha = None
 
 
+def test_the_others_show_the_solution_by_default(client):
+    ph, mia, leo = setup_family(client)
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    client.app.state.fq.ha = FakeSpeaker()
+    client.app.state.fq.db.set_setting("song_rules", None)
+    st = client.post("/api/community/song/start", json={"player": "media_player.x", "reveal_delay": 0}, headers=hm).json()
+    assert st["rules"]["reveal_by"] == "others"
+    client.post("/api/community/song/join", headers=hl)
+    client.post("/api/community/song/begin", headers=hm)
+    client.post("/api/community/song/buzz", headers=hl)
+    assert client.post("/api/community/song/reveal", headers=hl).status_code == 400      # Leo buzzed: the others show it
+    assert client.post("/api/community/song/reveal", headers=hm).json()["phase"] == "reveal"
+    client.app.state.fq.ha = None
+
+
 def test_ping_and_brrr_on_the_speaker(client):
     import time
     ph, mia, leo = setup_family(client)
@@ -124,7 +140,7 @@ def test_ping_and_brrr_on_the_speaker(client):
     fq = client.app.state.fq
     spk = FakeSpeaker()
     fq.ha, fq.lan_base = spk, "http://192.168.1.5:8099"
-    client.post("/api/community/song/start", json={"player": "media_player.x", "reveal_delay": 0}, headers=hm)
+    client.post("/api/community/song/start", json={"player": "media_player.x", "reveal_delay": 0, "reveal_by": "all"}, headers=hm)
     client.post("/api/community/song/join", headers=hl)
     client.post("/api/community/song/begin", headers=hm)
     client.post("/api/community/song/buzz", headers=hl)

@@ -4,11 +4,5 @@ configuration:
   direct_access:
     name: Accès direct dans le réseau domestique
     description: Proposer aussi l'app sur le port 8099 (à saisir sous Réseau). Les enfants choisissent alors leur profil, avec un code PIN optionnel, au lieu de se connecter à Home Assistant.
-  anthropic_api_key:
-    name: Clé API Anthropic (facultatif)
-    description: Active « photo ou PDF vers brouillon de paquet » dans l'espace parents. La photo est envoyée à l'API Claude ; chaque brouillon est vérifié par un parent avant que les enfants le voient.
-  anthropic_model:
-    name: Modèle Claude
-    description: Modèle pour l'import photo/PDF.
 network:
   8099/tcp: Accès direct (seulement avec l'option accès direct)

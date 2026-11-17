@@ -46,7 +46,7 @@
       try { await startPlaner(root); } catch (e) { root.replaceChildren(h("div.fq-wait", e.message || String(e))); }
       return;
     }
-    if (!Auth.kid && !Auth.parent) { location.href = "./"; return; }
+    if (!Auth.kid && !Auth.parent) { location.href = "app"; return; }
     // back to the app: the 🏠 button in the planer's top bar (planer/host.js FQ_NAV_HOOK)
     try { await startPlaner(root); }
     catch (e) { root.replaceChildren(h("div.fq-wait", e.message || String(e))); }

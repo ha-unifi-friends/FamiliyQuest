@@ -19,7 +19,7 @@ async function songStartDialog(onStarted) {
     max_songs: sel(r.max_songs || 40, [20, 30, 40, 60].map(n => [n, String(n)])),
     reveal_delay: sel(r.reveal_delay ?? 5, [0, 3, 5, 10, 15].map(n => [n, n + " s"])),
     speaker_sound: h("input", { type: "checkbox", checked: r.speaker_sound !== false }),
-    reveal_by: sel(r.reveal_by || "all", [["all", T("Who buzzed or the game leader")], ["leader", T("Only the game leader")]]),
+    reveal_by: sel(r.reveal_by || "others", [["others", T("Everybody who did not buzz")], ["all", T("Who buzzed or the game leader")], ["leader", T("Only the game leader")]]),
   };
   const m = modal(h("div.form", h("h2", "🎵 ", T("Guess the song")),
     h("p.small.muted", T("Choose a speaker that has a playlist ready. The app switches shuffle on and plays, stops and skips – cover, artist and title come from the speaker.")),
@@ -100,7 +100,7 @@ function songLive(box, me, back) {
       return show(close, head, h("section.card.center.song-turn",
         h("div.big-ic", "🔔"), h("h2", mine ? T("You buzzed first!") : I18N.tr(T("{0} buzzed first")).replace("{0}", name(st.buzzer))),
         h("p", mine ? I18N.tr(T("Say it out loud: {0}")).replace("{0}", I18N.tr(SONG_ANSWERS[st.rules.answer])) : T("Listen to the answer …")),
-        countdownBtn((mine && st.rules.reveal_by !== "leader") || isHost())), scores, lead);
+        countdownBtn(isHost() || (st.rules.reveal_by === "others" ? !mine : st.rules.reveal_by !== "leader" && mine))), scores, lead);
     }
     const sol = st.solution || {};
     const cover = sol.cover ? h("img.song-cover", { alt: "", onerror: e => e.target.replaceWith(h("div.song-cover.empty", "🎵")) }) : h("div.song-cover.empty", "🎵");

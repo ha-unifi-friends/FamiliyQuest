@@ -2270,7 +2270,18 @@ customElements.whenDefined('fp-week-inner').then(() => {
         .ips2{font-size:11px;color:var(--fp-text3,#777);margin-top:5px}
         .ib{width:56px;height:56px;border-radius:12px;background:var(--fp-bg3,#2a2a2a);border:1px solid var(--fp-line,#333);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
         .ib.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
-      .card,.pnl{-webkit-backdrop-filter:var(--fp-blur,none);backdrop-filter:var(--fp-blur,none);box-shadow:var(--fp-glow,none)}.card{position:relative}.card::before{content:"";position:absolute;left:18px;right:18px;top:-1px;height:3px;border-radius:3px;background:var(--fp-band,none);pointer-events:none}</style>
+      
+        @media (max-width:560px){
+          .card{padding:14px 12px}
+          .ov{grid-template-columns:minmax(56px,1fr) repeat(7,minmax(22px,1fr)) 34px;gap:3px;padding:8px;width:100%}
+          .ovp{gap:5px;font-size:12px}.ovp ha-icon,.ovp .av{display:none}
+          .ovc{height:26px;font-size:11px}.ovt{font-size:12px}.ovh{font-size:10px;letter-spacing:0}
+          .row{grid-template-columns:1fr;gap:10px}
+          .asg{width:100%}.asg .sel,.asg select{max-width:100%}
+          .days{flex-wrap:wrap}.day{width:34px;height:36px}
+          .head{gap:10px}.hadd{height:38px;padding:0 10px}
+        }
+.card,.pnl{-webkit-backdrop-filter:var(--fp-blur,none);backdrop-filter:var(--fp-blur,none);box-shadow:var(--fp-glow,none)}.card{position:relative}.card::before{content:"";position:absolute;left:18px;right:18px;top:-1px;height:3px;border-radius:3px;background:var(--fp-band,none);pointer-events:none}</style>
       <div class="card">
         <div class="head"><div class="badge"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon></div>
           <div><div class="title">${esc(this._cfg.titel)}</div><div class="subt">Tag antippen = zuteilen · nochmals antippen = Zeit zum Erledigen (z. B. Mi bis Sa) und Rhythmus (alle 2–4 Wochen). Änderungen gelten ab sofort.</div></div><span class="hsp"></span>
@@ -3575,7 +3586,18 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
         .ips2{font-size:11px;color:var(--fp-text3,#777);margin-top:5px}
         .ib{width:56px;height:56px;border-radius:12px;background:var(--fp-bg3,#2a2a2a);border:1px solid var(--fp-line,#333);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
         .ib.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
-      .card,.pnl{-webkit-backdrop-filter:var(--fp-blur,none);backdrop-filter:var(--fp-blur,none);box-shadow:var(--fp-glow,none)}.card{position:relative}.card::before{content:"";position:absolute;left:18px;right:18px;top:-1px;height:3px;border-radius:3px;background:var(--fp-band,none);pointer-events:none}</style>
+      
+        @media (max-width:560px){
+          .card{padding:14px 12px}
+          .ov{grid-template-columns:minmax(56px,1fr) repeat(7,minmax(22px,1fr)) 34px;gap:3px;padding:8px;width:100%}
+          .ovp{gap:5px;font-size:12px}.ovp ha-icon,.ovp .av{display:none}
+          .ovc{height:26px;font-size:11px}.ovt{font-size:12px}.ovh{font-size:10px;letter-spacing:0}
+          .row{grid-template-columns:1fr;gap:10px}
+          .asg{width:100%}.asg .sel,.asg select{max-width:100%}
+          .days{flex-wrap:wrap}.day{width:34px;height:36px}
+          .head{gap:10px}.hadd{height:38px;padding:0 10px}
+        }
+.card,.pnl{-webkit-backdrop-filter:var(--fp-blur,none);backdrop-filter:var(--fp-blur,none);box-shadow:var(--fp-glow,none)}.card{position:relative}.card::before{content:"";position:absolute;left:18px;right:18px;top:-1px;height:3px;border-radius:3px;background:var(--fp-band,none);pointer-events:none}</style>
       <div class="card">
         <div class="head"><div class="badge"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon></div>
           <div><div class="title">${esc(this._cfg.titel)}</div><div class="subt">Tap a day = assign · tap again = time to do it (e.g. Wed to Sat) and rhythm (every 2–4 weeks). Changes apply right away.</div></div><span class="hsp"></span>

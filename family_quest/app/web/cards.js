@@ -25,6 +25,27 @@ function shedCard(kind, code, opts = {}) {
     h("b", rank), h("i", sign));
 }
 
+// ---------------------------------------------------------------- pairs: emoji sets, photo sets and card backs (paarjagd.js)
+const PAIR_SETS = {
+  animals: [T("Animals"), "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🦉 🦄 🐝"],
+  fruit: [T("Fruit and vegetables"), "🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🥑 🥕 🌽 🥦"],
+  vehicles: [T("Vehicles"), "🚗 🚕 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🚚 🚜 🛵 🏍️ 🚲 🛴 🚂 ✈️ 🚀 🚁 ⛵"],
+  sea: [T("In the sea"), "🐳 🐬 🐟 🐠 🐡 🦈 🐙 🦑 🦀 🦞 🦐 🐚 🪼 🐢 🦭 🦦 🦩 🦢 ⚓ 🏝️"],
+};
+// the emoji sets and the family's photo sets (GET community/memory): key → { name, items: [{ emoji } | { img }] }
+function pairSets(fam) {
+  return { ...Object.fromEntries(Object.entries(PAIR_SETS).map(([k, [n, list]]) => [k, { name: I18N.tr(n), items: list.split(" ").map(e => ({ emoji: e })) }])),
+    ...Object.fromEntries(((fam && fam.sets) || []).map(st => ["photo:" + st.id, { name: "📷 " + st.name, items: st.photos.map(u => ({ img: u })) }])) };
+}
+// the back of a pairs card: a card back (CARD_BACKS) or the family crest
+function pairBack(back, crest) {
+  return h("div.mm-back.back-" + back, back === "crest" ? crestSvg(crest, { ribbon: false }) : null);
+}
+// the face of a pairs card
+function pairFace(it) {
+  return h("div.mm-face", it.img ? h("img", { src: it.img, alt: "" }) : h("span", { translate: "no" }, it.emoji));
+}
+
 function suitName(kind, s) {
   if (kind === "karussell") return I18N.tr(KARUSSELL_COLORS[s][1]);
   return SWISS_SUITS[s] ? SWISS_SUITS[s][1] : I18N.tr(FRENCH_SUITS[s][1]);
@@ -36,15 +57,20 @@ function suitsOf(kind, rules) {
 }
 
 // own and shared bots of the children: tap to put them at the table (the rest are animal bots)
-function botPicker() {
+// bots at the table: own bots of the children, and how fast the bots react (0 = at once)
+function botPicker(ms = 1400) {
   const chosen = new Set(), box = h("div.bot-pick");
+  const speed = h("select", ...[[0, T("at once")], [500, "0.5 s"], [1000, "1 s"], [1400, "1.4 s"], [2000, "2 s"], [3000, "3 s"], [5000, "5 s"]]
+    .map(([v, n]) => h("option", { value: v, selected: v === (ms ?? 1400) }, I18N.tr(n))));
+  if (![0, 500, 1000, 1400, 2000, 3000, 5000].includes(ms ?? 1400)) speed.append(h("option", { value: ms, selected: true }, (ms / 1000) + " s"));
+  const speedRow = h("label.field.bot-speed", "⏱️ ", T("Reaction time of the bots"), speed);
   api("community/bots").then(d => {
     if (!d.bots.length) return;
     box.replaceChildren(h("b.small", T("Your bots at the table")), h("div.row.wrap", ...d.bots.map(b => h("button.bot-chip", { type: "button",
       onclick: e => { chosen.has(b.id) ? chosen.delete(b.id) : chosen.add(b.id); e.currentTarget.classList.toggle("on", chosen.has(b.id)); } },
-      h("span.bot-av", { style: { width: "26px", height: "26px", fontSize: "15px", background: b.color } }, b.emoji), C(b.name)))));
+      h("span.bot-av", { style: { width: "26px", height: "26px", fontSize: "15px", background: b.color } }, ["degu", "goldfish"].includes(b.kind) && typeof petIcon === "function" ? petIcon(b.kind, 20) : b.emoji), C(b.name)))));
   }).catch(() => {});
-  return { el: box, ids: () => [...chosen] };
+  return { el: h("div", speedRow, box), ids: () => [...chosen], ms: () => +speed.value };
 }
 
 async function cardsStartDialog(kind, solo, onStarted) {
@@ -71,7 +97,7 @@ async function cardsStartDialog(kind, solo, onStarted) {
     { type: "button", title: I18N.tr(CARD_BACKS[b]), "aria-pressed": String(b === back), onclick: () => { back = b; drawBacks(); } },
     shedCard(kind, null, { back: b, small: true }))));
   drawBacks();
-  const picker = botPicker();
+  const picker = botPicker(r.bot_ms);
   const m = modal(h("div.form", h("h2", CARD_GAMES[kind].icon, " ", CARD_GAMES[kind].title, solo ? " – " + I18N.tr(T("alone against bots")) : ""),
     f.deck ? h("label.field", T("Cards"), f.deck) : null,
     h("div.grid3", h("label.field", T("Cards in the hand"), f.hand), h("label.field", T("Rounds"), f.rounds),
@@ -83,7 +109,7 @@ async function cardsStartDialog(kind, solo, onStarted) {
     h("p.small.muted", T("These rules are remembered for the next game.")),
     h("div.row", h("button.btn.big", { onclick: async () => {
       const body = { solo, hand: +f.hand.value, rounds: +f.rounds.value, bots: Math.max(+f.bots.value, picker.ids().length), level: f.level.value,
-        penalty: +f.penalty.value, back, bot_ids: picker.ids() };
+        penalty: +f.penalty.value, back, bot_ids: picker.ids(), bot_ms: picker.ms() };
       if (f.deck) body.deck = f.deck.value;
       for (const [k, i] of special) body[k] = i.checked;
       try { await api(`community/cards/${kind}/start`, { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }

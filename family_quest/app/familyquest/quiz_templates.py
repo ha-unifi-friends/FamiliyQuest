@@ -2,7 +2,7 @@
 
 Every question: (question, right answer, wrong answer, wrong answer, wrong answer). Copying a template makes an
 ordinary quiz that can be changed; the answers are shuffled (community.template_questions).
-Flags are emoji – most phones and tablets show them; Windows shows the two letters instead.
+Flags are emoji in the data; the app shows them as sharp SVG flags (web/flags, shared/ui.js CF).
 """
 from __future__ import annotations
 
@@ -475,12 +475,93 @@ TEMPLATES["niederlande"] = {"title": "Niederlande allgemein", "icon": "🌷", "q
     ("Welche Währung hatten die Niederlande vor dem Euro?", "Gulden", "Mark", "Franken", "Krone"),
 ]}
 
+TEMPLATES["frankreich"] = {"title": "Frankreich allgemein", "icon": "🇫🇷", "questions": [
+    ("Was ist die Hauptstadt Frankreichs?", "Paris", "Lyon", "Marseille", "Bordeaux"),
+    ("Wie heisst der höchste Berg Frankreichs (und der Alpen)?", "Mont Blanc", "Matterhorn", "Mont Ventoux", "Puy de Dôme"),
+    ("Welcher ist der längste Fluss, der nur durch Frankreich fliesst?", "Loire", "Seine", "Rhône", "Garonne"),
+    ("Welcher Fluss fliesst durch Paris?", "Seine", "Loire", "Rhône", "Marne"),
+    ("Wann ist der französische Nationalfeiertag?", "14. Juli", "1. August", "3. Oktober", "11. November"),
+    ("Welche Farben hat die französische Flagge (von links)?", "Blau, Weiss, Rot", "Rot, Weiss, Blau", "Blau, Weiss, Grün", "Weiss, Blau, Rot"),
+    ("Wie heisst die französische Nationalhymne?", "La Marseillaise", "La Parisienne", "Le Chant du Départ", "La Bretonne"),
+    ("Welche Insel im Mittelmeer gehört zu Frankreich?", "Korsika", "Sardinien", "Mallorca", "Elba"),
+    ("Wie heisst das berühmte Radrennen durch Frankreich?", "Tour de France", "Giro d’Italia", "Vuelta", "Paris–Roubaix"),
+    ("Welche Währung hatte Frankreich vor dem Euro?", "Französischer Franc", "Livre", "Écu", "Gulden"),
+    ("In welcher Stadt steht das Europäische Parlament?", "Strassburg", "Paris", "Lyon", "Lille"),
+    ("Welches Tier gilt als Symbol Frankreichs?", "Hahn", "Adler", "Löwe", "Bär"),
+    ("Welcher Tunnel verbindet Frankreich mit England?", "Eurotunnel (Ärmelkanaltunnel)", "Gotthardtunnel", "Mont-Blanc-Tunnel", "Fréjus-Tunnel"),
+    ("Welches Museum in Paris zeigt die «Mona Lisa»?", "Louvre", "Musée d’Orsay", "Centre Pompidou", "Musée Rodin"),
+    ("Wie heisst die Prachtstrasse in Paris, die zum Arc de Triomphe führt?", "Champs-Élysées", "Boulevard Saint-Germain", "Rue de Rivoli", "Avenue Foch"),
+    ("An wie viele Länder grenzt das französische Festland (inkl. Andorra und Monaco)?", "8", "6", "7", "9"),
+]}
+
+TEMPLATES["frankreich-regionen"] = {"title": "Frankreich: Regionen", "icon": "🗺️", "questions": [
+    ("Wie viele Regionen hat das französische Festland (seit 2016) – mit Korsika?", "13", "22", "18", "10"),
+    ("Welche Region liegt ganz im Nordwesten am Atlantik?", "Bretagne", "Normandie", "Elsass", "Provence"),
+    ("Zu welcher Region gehört das Elsass heute?", "Grand Est", "Hauts-de-France", "Bourgogne-Franche-Comté", "Normandie"),
+] + _caps([
+    ("Île-de-France", "Paris", "Versailles", "Orléans", "Reims"),
+    ("Auvergne-Rhône-Alpes", "Lyon", "Grenoble", "Clermont-Ferrand", "Saint-Étienne"),
+    ("Bourgogne-Franche-Comté", "Dijon", "Besançon", "Auxerre", "Mâcon"),
+    ("Bretagne", "Rennes", "Brest", "Quimper", "Saint-Malo"),
+    ("Centre-Val de Loire", "Orléans", "Tours", "Bourges", "Chartres"),
+    ("Korsika", "Ajaccio", "Bastia", "Calvi", "Porto-Vecchio"),
+    ("Grand Est", "Strassburg", "Metz", "Nancy", "Reims"),
+    ("Hauts-de-France", "Lille", "Amiens", "Calais", "Dunkerque"),
+    ("Normandie", "Rouen", "Caen", "Le Havre", "Cherbourg"),
+    ("Nouvelle-Aquitaine", "Bordeaux", "Limoges", "Poitiers", "La Rochelle"),
+    ("Okzitanien", "Toulouse", "Montpellier", "Nîmes", "Perpignan"),
+    ("Pays de la Loire", "Nantes", "Angers", "Le Mans", "Saint-Nazaire"),
+    ("Provence-Alpes-Côte d’Azur", "Marseille", "Nizza", "Toulon", "Avignon"),
+], "Was ist die Hauptstadt der Region {}?")}
+
+TEMPLATES["frankreich-geschichte"] = {"title": "Frankreich: Geschichte", "icon": "🏰", "questions": [
+    ("In welchem Jahr begann die Französische Revolution?", "1789", "1799", "1776", "1815"),
+    ("Welches Gefängnis wurde am 14. Juli 1789 gestürmt?", "Bastille", "Conciergerie", "Louvre", "Tour de Londres"),
+    ("Wie lautet das Motto der Französischen Republik?", "Freiheit, Gleichheit, Brüderlichkeit", "Einigkeit und Recht und Freiheit", "Einer für alle, alle für einen", "Gott, König, Vaterland"),
+    ("Welcher Kaiser verlor 1815 die Schlacht bei Waterloo?", "Napoleon Bonaparte", "Karl der Grosse", "Ludwig XIV.", "Napoleon III."),
+    ("Auf welcher Insel wurde Napoleon geboren?", "Korsika", "Elba", "Sardinien", "St. Helena"),
+    ("Welcher König wurde «Sonnenkönig» genannt?", "Ludwig XIV.", "Ludwig XVI.", "Franz I.", "Heinrich IV."),
+    ("Welches Schloss liess der Sonnenkönig prächtig ausbauen?", "Versailles", "Chambord", "Fontainebleau", "Chenonceau"),
+    ("Welche junge Frau führte im Hundertjährigen Krieg die Franzosen an?", "Jeanne d’Arc", "Marie Antoinette", "Katharina von Medici", "Marie Curie"),
+    ("Für welche Weltausstellung wurde der Eiffelturm gebaut?", "1889", "1900", "1867", "1937"),
+    ("Welcher König wurde in der Revolution hingerichtet?", "Ludwig XVI.", "Ludwig XIV.", "Karl X.", "Ludwig XVIII."),
+    ("Wie hiess der Fürst, der um 800 Kaiser eines Grossreichs wurde?", "Karl der Grosse", "Chlodwig", "Pippin", "Ludwig der Fromme"),
+    ("An welcher Küste landeten die Alliierten am 6. Juni 1944 (D-Day)?", "Normandie", "Bretagne", "Côte d’Azur", "Aquitanien"),
+]}
+
+TEMPLATES["frankreich-kueche"] = {"title": "Frankreich: Küche und Kultur", "icon": "🥐", "questions": [
+    ("Wie heisst das lange französische Weissbrot?", "Baguette", "Brioche", "Ciabatta", "Fougasse"),
+    ("Was ist ein «Croissant»?", "Ein Blätterteig-Gipfeli", "Ein Käse", "Eine Suppe", "Ein Dessert aus Eiern"),
+    ("Aus welcher Stadt kommt die Fischsuppe «Bouillabaisse»?", "Marseille", "Paris", "Lyon", "Brest"),
+    ("Welcher dieser Käse kommt aus Frankreich?", "Camembert", "Gouda", "Emmentaler", "Parmesan"),
+    ("Was sind «Crêpes»?", "Dünne Pfannkuchen", "Schnecken", "Kartoffelgratin", "Gemüseeintopf"),
+    ("Aus welcher Region kommen die Crêpes ursprünglich?", "Bretagne", "Provence", "Elsass", "Burgund"),
+    ("Welcher Gemüse-Eintopf kommt aus der Provence?", "Ratatouille", "Cassoulet", "Pot-au-feu", "Choucroute"),
+    ("Welche Region ist berühmt für ihren Schaumwein?", "Champagne", "Normandie", "Bretagne", "Korsika"),
+    ("Was sind «Macarons»?", "Kleines Mandelgebäck mit Füllung", "Nudeln", "Salzige Kekse", "Gefüllte Teigtaschen"),
+    ("Welches Elsässer Gericht ist ein dünner Fladen mit Speck und Zwiebeln?", "Flammkuchen", "Quiche", "Tarte Tatin", "Galette"),
+    ("Welcher Maler mit Seerosen-Bildern lebte in Giverny?", "Claude Monet", "Vincent van Gogh", "Pablo Picasso", "Paul Klee"),
+    ("Wie heisst die berühmte Kathedrale in Paris, die 2019 brannte?", "Notre-Dame", "Sacré-Cœur", "Saint-Sulpice", "Sainte-Chapelle"),
+    ("Welche Stadt ist berühmt für ihr Filmfestival?", "Cannes", "Nizza", "Lyon", "Bordeaux"),
+    ("Wie sagt man auf Französisch «Guten Tag»?", "Bonjour", "Bonsoir", "Merci", "Salut"),
+]}
+
+TEMPLATES["wo-liegt-frankreich"] = {"title": "Wo liegt das? (Frankreich)", "icon": "📌", "t": 25, "questions": [
+    _pin("Paris", 48.857, 2.352, "europe"), _pin("Marseille", 43.296, 5.370, "europe"), _pin("Lyon", 45.764, 4.836, "europe"),
+    _pin("Bordeaux", 44.838, -0.579, "europe"), _pin("Strassburg", 48.573, 7.752, "europe"), _pin("Nizza", 43.710, 7.262, "europe"),
+    _pin("Lille", 50.629, 3.057, "europe"), _pin("Brest", 48.390, -4.486, "europe"), _pin("Toulouse", 43.605, 1.444, "europe"),
+    _pin("Nantes", 47.218, -1.554, "europe"), _pin("der Mont-Saint-Michel", 48.636, -1.511, "europe"),
+    _pin("der Mont Blanc", 45.833, 6.865, "europe"), _pin("Ajaccio (Korsika)", 41.919, 8.738, "europe"),
+    _pin("Calais", 50.951, 1.858, "europe"), _pin("Biarritz", 43.483, -1.559, "europe"),
+]}
+
 # the region of every template: the collection can be filtered (general, Switzerland, Germany …)
-REGIONS = ["general", "ch", "de", "at", "nl"]
+REGIONS = ["general", "ch", "de", "at", "nl", "fr"]
 _REGION = {"ch": ["schweiz", "schweizer-gewaesser", "schweizer-spezialitaeten", "kantone-hauptorte", "kantone-umrisse", "kantone-karte",
                   "kantone-wappen", "wo-liegt-schweiz"],
            "de": ["deutschland", "deutschland-bundeslaender"], "at": ["oesterreich-bundeslaender"],
-           "nl": ["niederlande", "niederlande-provinzen"]}
+           "nl": ["niederlande", "niederlande-provinzen"],
+           "fr": ["frankreich", "frankreich-regionen", "frankreich-geschichte", "frankreich-kueche", "wo-liegt-frankreich"]}
 for _r, _ids in _REGION.items():
     for _i in _ids:
         TEMPLATES[_i]["region"] = _r

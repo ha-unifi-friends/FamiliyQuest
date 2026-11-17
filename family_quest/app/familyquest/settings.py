@@ -5,6 +5,7 @@ Environment variables (handy for local development and tests):
   FQ_PACKS_DIRS    extra pack folders, separated by ':' (default /share/family_quest/packs)
   FQ_HA_DISABLED   "1" = do not talk to Home Assistant
   FQ_HA_URL        Home Assistant base URL (default http://supervisor/core)
+  FQ_HA_MEDIA_DIR  Home Assistant's media folder («My media», mapped read-only; default /media)
   SUPERVISOR_TOKEN set by the Supervisor inside the add-on
 """
 from __future__ import annotations
@@ -49,8 +50,6 @@ class Settings:
     ha_url: str
     ha_token: str | None
     direct_access: bool = False
-    anthropic_api_key: str = ""
-    anthropic_model: str = "claude-opus-5-5"
     log_level: str = "info"
     version: str = "dev"
     secret: bytes = b""
@@ -58,6 +57,8 @@ class Settings:
     # prefix of entities, events and notifications in Home Assistant = the app slug
     # (family_quest, or family_quest_beta for the beta channel, so both can run side by side)
     entity_prefix: str = "family_quest"
+    # Home Assistant's media folder (Media → My media), mapped read-only: pictures for the pairs game and the crest
+    ha_media_dir: Path = field(default_factory=lambda: Path(os.environ.get("FQ_HA_MEDIA_DIR", "/media")))
 
     @property
     def db_path(self) -> Path:
@@ -105,8 +106,6 @@ def load_settings() -> Settings:
         ha_url=os.environ.get("FQ_HA_URL", "http://supervisor/core"),
         ha_token=token,
         direct_access=bool(options.get("direct_access", False)) or os.environ.get("FQ_DIRECT_ACCESS") == "1",
-        anthropic_api_key=str(options.get("anthropic_api_key") or os.environ.get("FQ_ANTHROPIC_API_KEY", "")),
-        anthropic_model=str(options.get("anthropic_model") or "claude-opus-5-5"),
         log_level=str(options.get("log_level", "info")),
         version=_version(),
         secret=secret_file.read_bytes(),

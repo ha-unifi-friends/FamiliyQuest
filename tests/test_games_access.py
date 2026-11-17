@@ -6,7 +6,7 @@ def test_games_per_game_and_person(client):
     ph, mia, leo = setup_family(client)
     hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
     hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
-    assert set(client.get("/api/me", headers=hm).json()["games_list"]) >= {"quiz", "bingo", "tschau", "ttt", "pairs"}
+    assert set(client.get("/api/me", headers=hm).json()["games_list"]) >= {"quiz", "bingo", "tschau", "ttt", "paarjagd"}
     r = client.put("/api/parent/games", json={"access": {"bingo": {"mode": "off"}, "tschau": {"mode": "some", "profiles": [mia]}}}, headers=ph)
     assert r.status_code == 200 and r.json()["access"]["tschau"]["profiles"] == [mia]
     assert client.get("/api/community/bingo", headers=hm).status_code == 403

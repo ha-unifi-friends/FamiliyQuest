@@ -57,9 +57,9 @@ class HAClient:
             raise HAError(f"{domain}.{service}: HTTP {r.status_code} {r.text[:200]}")
         return r.json() if r.content else None
 
-    async def call_response(self, domain: str, service: str, data: dict) -> Any:
+    async def call_response(self, domain: str, service: str, data: dict, timeout: float = 40) -> Any:
         """Service call that returns data (calendar.get_events, todo.get_items, ai_task.generate_data …)."""
-        r = await self.http.post(f"/api/services/{domain}/{service}", params={"return_response": ""}, json=data, timeout=40)
+        r = await self.http.post(f"/api/services/{domain}/{service}", params={"return_response": ""}, json=data, timeout=timeout)
         if r.status_code >= 400:
             raise HAError(f"{domain}.{service}: HTTP {r.status_code} {r.text[:200]}")
         body = r.json() if r.content else {}

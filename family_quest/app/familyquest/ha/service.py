@@ -28,25 +28,29 @@ NOTIFY_TEXT = {
            "chore": "{name} hat «{chore}» erledigt.", "again": "Nochmals",
            "chores_open": "{name}, deine Ämtli warten noch: {list}.",
            "sad": "{name} fühlt sich gerade traurig. Vielleicht magst du kurz nachfragen.",
-           "feel": "{name}: «Heute fühle ich mich {text}»"},
+           "feel": "{name}: «Heute fühle ich mich {text}»",
+           "pet": "🐾 {pet} von {name} hat Hunger, ist traurig und schmutzig – ohne Pflege stirbt es in 3 Tagen."},
     "fr": {"title": "Family Quest", "redeem": "{name} aimerait échanger « {reward} » ({cost}).", "ok": "OK", "no": "Non",
            "remind": "{name}, ton objectif d'apprentissage du jour t'attend encore !",
            "chore": "{name} a terminé « {chore} ».", "again": "À refaire",
            "chores_open": "{name}, tes tâches t'attendent encore : {list}.",
            "sad": "{name} se sent triste en ce moment. Tu pourrais peut-être lui demander comment ça va.",
-           "feel": "{name} : « Aujourd'hui je me sens {text} »"},
+           "feel": "{name} : « Aujourd'hui je me sens {text} »",
+           "pet": "🐾 {pet} de {name} a faim, est triste et sale – sans soins, il mourra dans 3 jours."},
     "it": {"title": "Family Quest", "redeem": "{name} vorrebbe riscattare «{reward}» ({cost}).", "ok": "OK", "no": "No",
            "remind": "{name}, il tuo obiettivo di oggi ti aspetta ancora!",
            "chore": "{name} ha finito «{chore}».", "again": "Da rifare",
            "chores_open": "{name}, le tue faccende ti aspettano ancora: {list}.",
            "sad": "{name} si sente triste in questo momento. Forse puoi chiedergli come sta.",
-           "feel": "{name}: «Oggi mi sento {text}»"},
+           "feel": "{name}: «Oggi mi sento {text}»",
+           "pet": "🐾 {pet} di {name} ha fame, è triste e sporco – senza cure morirà tra 3 giorni."},
     "en": {"title": "Family Quest", "redeem": "{name} would like to redeem “{reward}” ({cost}).", "ok": "OK", "no": "No",
            "remind": "{name}, today's learning goal is still waiting for you!",
            "chore": "{name} has done “{chore}”.", "again": "Again",
            "chores_open": "{name}, your chores are still waiting: {list}.",
            "sad": "{name} is feeling sad right now. Maybe ask how they are doing.",
-           "feel": "{name}: “Today I feel {text}”"},
+           "feel": "{name}: “Today I feel {text}”",
+           "pet": "🐾 {name}'s pet {pet} is hungry, sad and dirty – without care it dies in 3 days."},
 }
 
 
@@ -74,6 +78,8 @@ class HAService:
         fq.internet.on_change.append(self.profile_changed)
         fq.chores.on_pending.append(self._on_chore_pending)
         fq.on_mood.append(self._on_mood)
+        fq.pets.on_zero.append(self._on_pet_zero)
+        fq.pets.on_change.append(self.profile_changed)
         fq.chores.on_change.append(self.profile_changed)
 
     # ---------------------------------------------------------------- helpers
@@ -444,6 +450,15 @@ class HAService:
         self._soon(self.client.fire(f"{self.px}_stimmung", {"profile": prof["name"], "profile_id": prof["id"],
                                                              "mood": "sad" if sad else "", "text": text or ""}))
 
+    def _on_pet_zero(self, prof: dict, pet: dict) -> None:
+        """A pet of a child has all bars at 0 – told once (no buttons)."""
+        t = self._text()
+        msg = t["pet"].format(name=prof["name"], pet=pet["name"])
+        tag = f"{self.px}_pet_{pet['id']}"
+        self._soon(self.client.call("persistent_notification", "create", {"title": t["title"], "message": msg, "notification_id": tag}))
+        for svc in self._notify_services():
+            self._soon(self.client.call("notify", svc.split(".", 1)[1], {"title": t["title"], "message": msg, "data": {"tag": tag}}))
+
     def _on_chore_pending(self, task: dict) -> None:
         t = self._text()
         msg = t["chore"].format(name=task["profile_name"], chore=task["name"])
@@ -496,6 +511,12 @@ class HAService:
                 await asyncio.to_thread(self._remind)
             except Exception:  # noqa: BLE001
                 log.exception("reminder failed")
+            if time.monotonic() - getattr(self, "_pets_at", 0) >= 600:      # pet care: warnings, parents' message, death
+                self._pets_at = time.monotonic()
+                try:
+                    await asyncio.to_thread(self.fq.pets.tick)
+                except Exception:  # noqa: BLE001
+                    log.exception("pet tick failed")
 
     def _remind(self) -> None:
         if not self.connected:
@@ -641,6 +662,31 @@ class HAService:
         self._reg_cache = (time.time(), reg)
         return reg
 
+    # ---------------------------------------------------------------- AI Task (photo / PDF → draft pack)
+    def ai_task_entities(self) -> list[str]:
+        """The AI Task entities set up in Home Assistant (Settings › Devices & services, e.g. OpenAI, Google, Anthropic, Ollama)."""
+        try:
+            states = self._sync(self.client.states())
+        except Exception:  # noqa: BLE001
+            return []
+        return sorted(s["entity_id"] for s in states if s["entity_id"].startswith("ai_task.") and s.get("state") != "unavailable")
+
+    def ai_task(self, instructions: str, media_id: str, mime: str) -> str:
+        """ai_task.generate_data with one attachment from the media folder; the answer as text. Uses the AI Task entity
+        preferred in Home Assistant, else the first one there is."""
+        data = {"task_name": "Family Quest import", "instructions": instructions,
+                "attachments": [{"media_content_id": media_id, "media_content_type": mime}]}
+        try:
+            res = self._sync(self.client.call_response("ai_task", "generate_data", data, timeout=180), timeout=190)
+        except Exception as e:  # noqa: BLE001 – no preferred entity set: take the first AI Task entity
+            ents = self.ai_task_entities()
+            if not ents:
+                raise
+            log.info("AI task without preferred entity (%s) – using %s", e, ents[0])
+            res = self._sync(self.client.call_response("ai_task", "generate_data", {**data, "entity_id": ents[0]}, timeout=180), timeout=190)
+        out = (res or {}).get("data") if isinstance(res, dict) else res
+        return out if isinstance(out, str) else __import__("json").dumps(out)
+
     # ---------------------------------------------------------------- speakers for «Errate den Song»
     def media_players(self) -> list[dict]:
         try:
@@ -659,11 +705,14 @@ class HAService:
                              "shuffle": ("shuffle_set", {"shuffle": True})}[action]
         self._sync(self.client.call("media_player", service, {"entity_id": entity_id, **data}))
 
-    def announce(self, entity_id: str, url: str) -> None:
+    def announce(self, entity_id: str, url: str, volume: float | None = None) -> None:
         """A short sound as an announcement: the speaker (e.g. Sonos) lowers / pauses its playlist, plays the sound and
-        goes on where it was – the queue stays as it is. Speakers without announcements are left alone."""
-        self._sync(self.client.call("media_player", "play_media", {"entity_id": entity_id, "media_content_id": url,
-                                                                   "media_content_type": "music", "announce": True}))
+        goes on where it was – the queue stays as it is. Speakers without announcements are left alone.
+        `volume` (0–1): the volume of the announcement only, where the speaker supports it (e.g. Sonos)."""
+        data = {"entity_id": entity_id, "media_content_id": url, "media_content_type": "music", "announce": True}
+        if volume is not None:
+            data["extra"] = {"volume": max(0.0, min(1.0, float(volume)))}
+        self._sync(self.client.call("media_player", "play_media", data))
 
     def media_info(self, entity_id: str) -> dict:
         st = self._sync(self.client.get_state(entity_id)) or {}

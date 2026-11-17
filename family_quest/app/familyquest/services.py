@@ -47,16 +47,55 @@ class FamilyQuest:
         self.cards = CardGames(self.db, self.community.add_history)
         from .domino import Domino
         self.domino = Domino(self.db, self.community.add_history)
+        from .pairhunt import Pairhunt
+        self.paarjagd = Pairhunt(self.db, self.community.add_history, self.rewards)
+        from .whoami import Whoami
+        self.werbinich = Whoami(self.db, self.community.add_history, self.rewards)
+        from .kartenlauf import Kartenlauf
+        self.kartenlauf = Kartenlauf(self.db, self.community.add_history, self.rewards)
+        from .stadtland import Stadtland
+        self.stadtland = Stadtland(self.db, self.community.add_history, self.rewards)
+        from .zeichnen import Zeichnen
+        self.zeichnen = Zeichnen(self.db, self.community.add_history, self.rewards)
+        from .wuerfel import Wuerfel
+        self.wuerfel = Wuerfel(self.db, self.community.add_history, self.rewards)
+        from .heimwaerts import Heimwaerts
+        self.heimwaerts = Heimwaerts(self.db, self.community.add_history, self.rewards)
+        from .jump import Jump
+        self.jump = Jump(self.db, self.community.add_history, self.rewards)
+        from .klatsch import Klatsch
+        self.klatsch = Klatsch(self.db, self.community.add_history, self.rewards)
+        from .verboten import Verboten
+        self.verboten = Verboten(self.db, self.community.add_history, self.rewards)
+        from .jass import Jass
+        self.jass = Jass(self.db, self.community.add_history, self.rewards)
+        from .werwolf import Werwolf
+        self.werwolf = Werwolf(self.db, self.community.add_history, self.rewards)
+        from .schach import Schach
+        self.schach = Schach(self.db, self.community.add_history, self.rewards)
+        from .dorfmarkt import Dorfmarkt
+        self.dorfmarkt = Dorfmarkt(self.db, self.community.add_history, self.rewards)
         from .songquiz import SongQuiz
         self.lan_base = None      # http://<Home Assistant IP>:<port of the direct access> – for sounds on speakers
         self.songs = SongQuiz(self.db, self.community.add_history, lambda: self.ha,
                               lambda name: f"{self.lan_base}/sounds/{name}.mp3" if self.lan_base else None)
+        from .pets import Pets
+        self.pets = Pets(self.db, self.rewards)
+        from .slots import Slots
+        self.slots = Slots(self.db, self.rewards)
+        from .pranks import Pranks
+        self.pranks = Pranks(self.db, self.rewards, lambda: self.ha,
+                             lambda name: f"{self.lan_base}/sounds/{name}.mp3" if self.lan_base else None)
+        self.pets.away = self._away_days
         from .bots import Bots
         self.bots = Bots(self.db)
+        self.bots.pets = self.pets
         from .wichteln import Wichteln
         self.wichteln = Wichteln(self.db, lambda: self.planer_host)
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
+        from .pong4 import Doubles
+        self.pong4 = Doubles(self.duels.names)
         self.weather = Weather(self.db, self.rewards)
         self.translations = Translations(self.db)
         self.kiosk = Dashboard(self)
@@ -71,12 +110,29 @@ class FamilyQuest:
         self.planer_host = None   # Family Planer core (planer.host.PlanerHost), started by main
         self.on_mood: list = []   # fn(profile_row) – a child set its avatar to «sad»
 
+    def _away_days(self, pid: int) -> set[str]:
+        """Days the Family Planer has this profile away on holiday («away» decision) – pet care pauses then."""
+        host = self.planer_host
+        bridge = getattr(host, "bridge", None) if host else None
+        person = bridge.person_of(pid) if bridge else None
+        if not person:
+            return set()
+        return set((getattr(host.planner, "away", None) or {}).get(person) or ())
+
     # ---------------------------------------------------------------- profiles
+    def avatar_public(self, p: dict, avatar: dict) -> dict:
+        """The avatar as the clients draw it: with the crown of the day and the age / stage of the pet."""
+        st = profile_settings(p)
+        a = av.with_crown(avatar, st.get("crown_until"), champion=bool(st.get("champion")))
+        kind = (a.get("items") or {}).get("pet")
+        pet = self.pets.badge(p["id"], kind) if kind else None
+        return {**a, "pet": pet} if pet else a
+
     def profile_public(self, p: dict) -> dict:
         st = profile_settings(p)
         crown = st.get("crown_until")
         out = {"id": p["id"], "name": p["name"], "role": p["role"], "color": p["color"],
-               "avatar": av.with_crown(json.loads(p["avatar"] or "{}") or av.DEFAULT_AVATAR, crown), "has_pin": bool(p["pin_hash"]),
+               "avatar": self.avatar_public(p, json.loads(p["avatar"] or "{}") or av.DEFAULT_AVATAR), "has_pin": bool(p["pin_hash"]),
                "crown": bool(crown and crown >= date.today().isoformat()),
                "auto_logout_min": st["auto_logout_min"], "pin_kind": "digits" if p["pin_hash"] else ""}
         if p["pin_hash"] and st.get("pin_kind") == "symbols" and st.get("symbol_set"):
@@ -84,7 +140,7 @@ class FamilyQuest:
             out.update(pin_kind="symbols", symbol_set=random.sample(st["symbol_set"], len(st["symbol_set"])))
         return out
 
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "ttt", "sudoku", "patience", "pingpong", "pairs")
+    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "sudoku", "patience", "pingpong", "slots")
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -130,7 +186,22 @@ class FamilyQuest:
         for k in ("tschau", "karussell"):
             out[k] = self.cards.summary(k, pid) if k in ok else None
         out["domino"] = self.domino.summary("domino", pid) if "domino" in ok else None
+        out["paarjagd"] = self.paarjagd.summary("paarjagd", pid) if "paarjagd" in ok else None
+        out["werbinich"] = self.werbinich.summary("werbinich", pid) if "werbinich" in ok else None
+        out["kartenlauf"] = self.kartenlauf.summary("kartenlauf", pid) if "kartenlauf" in ok else None
+        out["stadtland"] = self.stadtland.summary("stadtland", pid) if "stadtland" in ok else None
+        out["zeichnen"] = self.zeichnen.summary("zeichnen", pid) if "zeichnen" in ok else None
+        out["wuerfel"] = self.wuerfel.summary("wuerfel", pid) if "wuerfel" in ok else None
+        out["heimwaerts"] = self.heimwaerts.summary("heimwaerts", pid) if "heimwaerts" in ok else None
+        out["jump"] = self.jump.summary("jump", pid) if "jump" in ok else None
+        out["klatsch"] = self.klatsch.summary("klatsch", pid) if "klatsch" in ok else None
+        out["verboten"] = self.verboten.summary("verboten", pid) if "verboten" in ok else None
+        out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None
+        out["werwolf"] = self.werwolf.summary("werwolf", pid) if "werwolf" in ok else None
+        out["schach"] = self.schach.summary("schach", pid) if "schach" in ok else None
+        out["dorfmarkt"] = self.dorfmarkt.summary("dorfmarkt", pid) if "dorfmarkt" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
+        out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
         return out
 
     def games_allowed(self, prof: dict, game: str | None = None) -> bool:
@@ -154,6 +225,7 @@ class FamilyQuest:
         return tiles
 
     def avatar_state(self, pid: int) -> tuple[int, set[str], set[str]]:
+        self.pets.sync(pid)                 # a pet earned with a badge becomes an unlock (and a living pet)
         level = self.rewards.level(pid)["level"]
         badges = {b["id"] for b in self.rewards.badges(pid)}
         bought = {r["item"] for r in self.db.q("SELECT item FROM unlock WHERE profile_id=?", pid)}
@@ -170,6 +242,7 @@ class FamilyQuest:
         goals = self.goals_for(pid)
         chores = self.all_chores(prof)
         return {
+            "prank": self.pranks.pending(pid),            # an ink bomb waiting for this profile (web/kid.js)
             "profile": self.profile_public(prof),
             "level": self.rewards.level(pid),
             "streak": self.rewards.streak(pid),
@@ -193,6 +266,7 @@ class FamilyQuest:
             "special_times": self.calendar.special(pid) if prof.get("role") != "parent" else self.calendar.special(None),
             "weather_alarm": self.kiosk.weather_alarm() if self.kiosk.config().get("kids_alarm") else None,
             "pending": [r for r in self.shop.list("pending", pid)],
+            "pets": self.pets.summary(pid),
         }
 
     def _offline_lock(self, prof: dict) -> dict | None:
@@ -410,6 +484,8 @@ class FamilyQuest:
                 "mood_text": json.loads(k["settings"] or "{}").get("mood_text") or None,
                 "mood": json.loads(k["settings"] or "{}").get("mood") or None,
                 "mood_text_at": json.loads(k["settings"] or "{}").get("mood_text_at"),
+                "pets": self.pets.list(pid),
+                "pets_paused": self.pets.paused_by_parents(pid),
             })
         return out
 

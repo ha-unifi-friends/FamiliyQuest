@@ -140,6 +140,8 @@ class PackStore:
         h = content_hash(p)
         row = self.db.q1("SELECT source, status, hash FROM pack WHERE id=?", pid)
         if row and row["hash"] == h and not force and (status is None or status == row["status"]):
+            if media and not (self.media_dir / pid).is_dir():          # e.g. after a restore (backups leave them out)
+                store_media(self.media_dir, pid, media, media_refs(p) or None)
             return pid, "unchanged"
         if row and not force and source in ("builtin", "share") and row["source"] not in ("builtin", "share"):
             return pid, "kept"            # edited / uploaded by a parent – folder copy does not override

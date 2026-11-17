@@ -21,6 +21,8 @@ window.FQ_NAV_HOOK = root => {
   // the same header as the other pages of the app: ☰ menu at the left, «check holidays» next to the calendar,
   // only «refresh» stays on the right (home, language and log out are in the ☰ menu)
   const left = root.querySelector(".bar .t");
+  // the planer's own ☰ (it opens the Home Assistant sidebar) does nothing here – the app's ☰ replaces it
+  root.querySelectorAll(".bar .t button.menu[data-menu]").forEach(b => { b.style.display = "none"; });
   if (left && !left.querySelector(".fq-menu")) {
     const btn = document.createElement("button");
     btn.className = "ic sq fq-menu";
@@ -28,8 +30,8 @@ window.FQ_NAV_HOOK = root => {
     btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
     btn.style.cssText = "margin-right:10px;flex:none";
     btn.onclick = e => { e.stopPropagation(); openAppMenu({ active: "planer",
-      onGo: k => { location.href = k === "planer" ? "planer" : "./#/" + (k === "home" ? "" : k); },
-      onLogout: () => { Auth.kid = ""; Auth.parent = ""; location.href = "./"; } }); };
+      onGo: k => { location.href = k === "planer" ? "planer" : "app#/" + (k === "home" ? "" : k); },
+      onLogout: () => { Auth.kid = ""; Auth.parent = ""; location.href = "app"; } }); };
     left.prepend(btn);
     left.style.display = "flex"; left.style.alignItems = "center";
   }
@@ -105,7 +107,7 @@ class FqConnection {
       this._fire("disconnected");
       if (ev.code === 4401) {                                           // not logged in (any more)
         if (window.FQ_PLANER_MODE === "parent") { try { window.parent.location.reload(); } catch {} return; }
-        location.href = "./"; return;
+        location.href = "app"; return;
       }
       setTimeout(() => this._open(), 3000);
     };

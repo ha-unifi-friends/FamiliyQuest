@@ -193,14 +193,14 @@ function pokerSoloDialog(onStarted) {
   const bots = h("select", ...[1, 2, 3, 4, 5].map(n => h("option", { value: n, selected: n === 3 }, String(n))));
   const level = h("select", ...[["easy", T("easy")], ["normal", T("normal")], ["hard", T("hard")]].map(([v, n]) => h("option", { value: v, selected: v === "normal" }, I18N.tr(n))));
   const chips = h("select", ...[[500, "500 / 10–20"], [1000, "1000 / 10–20"], [2000, "2000 / 20–40"]].map(([v, n]) => h("option", { value: v, selected: v === 1000 }, n)));
-  const picker = botPicker();
+  const picker = botPicker(1300);
   const m = modal(h("div.form", h("h2", "🤖 ", T("Alone against bots")),
     h("p.small.muted", T("Played with play chips only – they have nothing to do with coins or points.")),
     h("div.grid3", h("label.field", T("Bots"), bots), h("label.field", T("Bots play"), level), h("label.field", T("Start chips / blinds"), chips)),
     picker.el,
     h("div.row", h("button.btn.big", { onclick: async () => {
       const c = +chips.value, sb = c >= 2000 ? 20 : 10;
-      try { await api("community/poker/start", { method: "POST", body: { solo: true, bots: Math.max(+bots.value, picker.ids().length), bot_ids: picker.ids(), level: level.value, start_chips: c, small_blind: sb, big_blind: sb * 2 } }); m.close(); onStarted(); }
+      try { await api("community/poker/start", { method: "POST", body: { solo: true, bots: Math.max(+bots.value, picker.ids().length), bot_ids: picker.ids(), level: level.value, bot_ms: picker.ms(), start_chips: c, small_blind: sb, big_blind: sb * 2 } }); m.close(); onStarted(); }
       catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", T("Deal")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
 }

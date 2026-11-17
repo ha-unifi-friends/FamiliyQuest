@@ -175,6 +175,14 @@ class PlanerHost:
         await self.save_now()
         await self.reload()
 
+    def freeze(self) -> None:
+        """Before a restore: the in-memory planner must not write its (old) state into the restored database any
+        more – no pending save, no sync of the bridge (both check `closing`)."""
+        self.planner.closing = True
+        self.planner._store._pending = None
+        if self.planner._store._delay:
+            self.planner._store._delay.cancel()
+
     async def reload(self) -> None:
         """After a restore: drop the in-memory planner without saving and load it again from the database."""
         self.planner.closing = True

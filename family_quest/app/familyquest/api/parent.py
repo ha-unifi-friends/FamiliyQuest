@@ -5,15 +5,17 @@ import asyncio
 import hashlib
 import io
 import json
+import math
 import os
 import re
+import time
 import zipfile
 from typing import Any
 
 import httpx
 import yaml
 from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 from ..weather import WeatherError
@@ -279,7 +281,7 @@ def meta(request: Request, me: dict = Parent) -> dict:
             "subjects": [subject_meta(k) for k in SUBJECTS], "profile_defaults": DEFAULT_PROFILE_SETTINGS,
             "ha": bool(fq.ha and fq.ha.connected), "planer": bool(fq.ha and fq.ha.planer_available),
             "ha_status": _ha_status(fq),
-            "ai": bool(fq.settings.anthropic_api_key), "version": fq.settings.version, "me": fq.profile_public(me),
+            "ai": ai_draft.available(fq), "version": fq.settings.version, "me": fq.profile_public(me),
             "ha_user": ha_user(request), "my_ha_user": profile_settings(me).get("ha_user_name") if profile_settings(me).get("ha_user_id") else None,
             "parent_ha_only": bool(fq.db.get_setting("parent_ha_only"))}
 
@@ -476,6 +478,20 @@ def crown(pid: int, body: CrownIn, request: Request, me: dict = Parent) -> dict:
         st.pop("crown_until", None)
     fq.db.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(st), pid)
     return fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid))
+
+
+class PetPauseIn(BaseModel):
+    on: bool = True
+
+
+@router.put("/profiles/{pid}/pet-pause")
+def pet_pause(pid: int, body: PetPauseIn, request: Request, me: dict = Parent) -> dict:
+    """«Ferienbetreuung»: the pets of this child do not get hungry, sad or dirty while it is switched on."""
+    fq = app_of(request)
+    if not fq.db.q1("SELECT 1 FROM profile WHERE id=? AND archived=0", pid):
+        raise HTTPException(404, "Unknown profile")
+    fq.pets.set_paused(pid, body.on)
+    return {"paused": fq.pets.paused_by_parents(pid), "pets": fq.pets.list(pid)}
 
 
 @router.delete("/profiles/{pid}")
@@ -684,8 +700,6 @@ async def import_file(request: Request, file: UploadFile = File(...), me: dict =
         if table.is_table(name):
             return {"table": table.stage(fq, name, raw)}
         if ai_draft.is_document(name):
-            if not fq.settings.anthropic_api_key:
-                raise HTTPException(400, "Photo/PDF import needs an Anthropic API key in the app configuration")
             return {"drafts": ai_draft.draft_from_document(fq, name, raw)}
         return {"drafts": yaml_zip.import_bytes(fq, name, raw)}
     try:
@@ -962,6 +976,17 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         u = ha_user(request)
         if not u or profile_settings(me).get("ha_user_id") != u["id"]:
             raise HTTPException(400, "Link your Home Assistant user first and open the parent area through Home Assistant")
+    def finite(v) -> bool:                       # JSON may carry Infinity / NaN – such a number would break the readers
+        if isinstance(v, float):
+            return math.isfinite(v)
+        if isinstance(v, dict):
+            return all(finite(x) for x in v.values())
+        if isinstance(v, list):
+            return all(finite(x) for x in v)
+        return True
+    for k, v in body.items():
+        if k in DEFAULT_SETTINGS and not finite(v):
+            raise HTTPException(400, "Invalid number")
     for k, v in body.items():
         if k in DEFAULT_SETTINGS:
             fq.db.set_setting(k, v)
@@ -1216,6 +1241,32 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
     return {"access": acc}
 
 
+REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt")       # live games with coins for places 1–3 (game_rewards)
+
+
+@router.get("/game-rewards")
+def game_rewards_get(request: Request, me: dict = Parent) -> dict:
+    """Coins for places 1, 2, 3 of the live games (Paarjagd, «Wer bin ich?», Kartenlauf, Stadt-Land-Fluss, «Zeichnen & Raten», «Fünf Würfel», «Heimwärts», «Verbotene Wörter», «Jass», «Werwölfe», «Schach», «Dorfmarkt») – only family tables with at least two people."""
+    from ..pairhunt import rewards_of
+    db = app_of(request).db
+    return {k: rewards_of(db, k) for k in REWARD_GAMES}
+
+
+@router.put("/game-rewards")
+def game_rewards_put(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    from ..pairhunt import rewards_of
+    fq = app_of(request)
+    out = dict(fq.db.get_setting("game_rewards") or {})
+    for k, v in body.items():
+        if k not in REWARD_GAMES:
+            raise HTTPException(400, "Unknown game")
+        if not isinstance(v, list) or len(v) != 3 or not all(type(x) is int and 0 <= x <= 1000 for x in v):
+            raise HTTPException(400, "Three numbers of coins (0 to 1000) are needed")
+        out[k] = v
+    fq.db.set_setting("game_rewards", out)
+    return {k: rewards_of(fq.db, k) for k in REWARD_GAMES}
+
+
 # ---------------------------------------------------------------- failed logins, network filter
 @router.get("/my-address")
 def my_address(request: Request, me: dict = Parent) -> dict:
@@ -1324,6 +1375,13 @@ async def backup_download(request: Request, me: dict = Parent) -> Response:
     return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
+@router.get("/backup/sizes")
+def backup_sizes(request: Request, me: dict = Parent) -> dict:
+    """What takes how much room in a backup."""
+    from .. import backup
+    return backup.sizes(app_of(request))
+
+
 @router.post("/backup/inspect")
 async def backup_inspect(request: Request, file: UploadFile = File(...), me: dict = Parent) -> dict:
     from .. import backup
@@ -1331,6 +1389,83 @@ async def backup_inspect(request: Request, file: UploadFile = File(...), me: dic
         return {"manifest": backup.inspect(await file.read())}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
+
+
+# Uploads through Home Assistant (ingress) may be at most about 16 MB («HTTP 413») – a backup with photos is bigger.
+# The parent area therefore sends the file in pieces (CHUNK), they are put together here, then inspected and restored.
+UPLOAD_RE = re.compile(r"[a-z0-9]{8,40}")
+
+
+def _upload_path(request: Request, upload: str):
+    if not UPLOAD_RE.fullmatch(upload or ""):
+        raise HTTPException(400, "Unknown upload")
+    folder = app_of(request).settings.data_dir / "restore_upload"
+    folder.mkdir(parents=True, exist_ok=True)
+    now = time.time()
+    for f in folder.iterdir():                    # leftovers of uploads that were not finished
+        try:
+            if now - f.stat().st_mtime > 3600:
+                f.unlink()
+        except OSError:
+            pass
+    return folder / (upload + ".zip")
+
+
+@router.post("/backup/chunk")
+async def backup_chunk(request: Request, upload: str, index: int, me: dict = Parent) -> dict:
+    """One piece of a backup file (raw bytes, in order: index 0, 1, 2 …)."""
+    path = _upload_path(request, upload)
+    data = await request.body()
+    if index == 0:
+        path.write_bytes(b"")
+    elif not path.exists():
+        raise HTTPException(400, "Unknown upload")
+    size = path.stat().st_size + len(data)
+    if size > BACKUP_MAX:
+        path.unlink(missing_ok=True)
+        raise HTTPException(400, "The backup is too large (max. 500 MB)")
+    with path.open("ab") as f:
+        f.write(data)
+    return {"size": size}
+
+
+def _uploaded(request: Request, body: dict) -> tuple:
+    path = _upload_path(request, str(body.get("upload") or ""))
+    if not path.exists():
+        raise HTTPException(400, "Unknown upload")
+    return path, path.read_bytes()
+
+
+@router.post("/backup/inspect-upload")
+async def backup_inspect_upload(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    from .. import backup
+    _path, raw = _uploaded(request, body)
+    try:
+        return {"manifest": backup.inspect(raw)}
+    except backup.BackupError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.post("/restore-upload")
+async def backup_restore_upload(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    """Replace all data with a backup that was sent in pieces."""
+    from .. import backup
+    fq = app_of(request)
+    path, raw = _uploaded(request, body)
+    try:
+        backup.inspect(raw)
+        if fq.planer_host:
+            fq.planer_host.freeze()              # the old planner must not save into the restored database
+        manifest = await asyncio.to_thread(backup.restore, fq, raw)
+    except backup.BackupError as e:
+        raise HTTPException(400, str(e)) from None
+    finally:
+        path.unlink(missing_ok=True)
+    if fq.planer_host:
+        await fq.planer_host.reload()
+    if fq.ha:
+        fq.ha.all_changed()
+    return {"ok": True, "manifest": manifest}
 
 
 @router.post("/restore")
@@ -1343,6 +1478,8 @@ async def backup_restore(request: Request, file: UploadFile = File(...), me: dic
         raise HTTPException(400, "The backup is too large (max. 500 MB)")
     try:
         backup.inspect(raw)
+        if fq.planer_host:
+            fq.planer_host.freeze()              # the old planner must not save into the restored database
         manifest = await asyncio.to_thread(backup.restore, fq, raw)
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
@@ -1378,6 +1515,63 @@ async def memory_photo(request: Request, file: UploadFile = File(...), me: dict 
     folder.mkdir(parents=True, exist_ok=True)
     (folder / name).write_bytes(raw)
     return {"name": name, "url": f"media/{memorygame.FOLDER}/{name}"}
+
+
+# ---------------------------------------------------------------- running games: end one or all (running.py)
+@router.get("/games/running")
+def games_running(request: Request, me: dict = Parent) -> list[dict]:
+    from .. import running
+    return running.running(app_of(request))
+
+
+@router.post("/games/end")
+def games_end(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    """{"key": "<key>"} ends one game, {"all": true} every running game."""
+    from .. import running
+    fq = app_of(request)
+    if body.get("all"):
+        n = running.end_all(fq)
+    else:
+        try:
+            running.end(fq, str(body.get("key") or ""))
+        except ValueError:
+            raise HTTPException(400, "Unknown game") from None
+        n = 1
+    return {"ended": n, "running": running.running(fq)}
+
+
+@router.get("/ha-media")
+def ha_media(request: Request, path: str = "", me: dict = Parent) -> dict:
+    """Browse Home Assistant Media (My media, mapped read-only as /media): folders and pictures."""
+    from .. import memorygame
+    try:
+        return memorygame.ha_media_list(app_of(request).settings.ha_media_dir, path)
+    except memorygame.MemoryError_ as e:
+        raise HTTPException(404, str(e)) from None
+
+
+@router.get("/ha-media/file")
+def ha_media_file(request: Request, path: str, me: dict = Parent):
+    """One picture of Home Assistant Media – for the preview in the parent area."""
+    from .. import memorygame
+    try:
+        f = memorygame.ha_media_path(app_of(request).settings.ha_media_dir, path)
+    except memorygame.MemoryError_:
+        raise HTTPException(404) from None
+    if not f.is_file() or f.suffix.lower() not in memorygame.PICTURE_EXT:
+        raise HTTPException(404)
+    return FileResponse(f, headers={"Cache-Control": "private, max-age=3600"})
+
+
+@router.post("/memory/ha-media")
+def memory_ha_media(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    """Take pictures from Home Assistant Media for photo sets or the crest (copied into the photo folder)."""
+    from .. import memorygame
+    fq = app_of(request)
+    try:
+        return {"names": memorygame.ha_media_copy(fq, fq.settings.ha_media_dir, body.get("paths"))}
+    except memorygame.MemoryError_ as e:
+        raise HTTPException(400, str(e)) from None
 
 
 @router.get("/ha/users")

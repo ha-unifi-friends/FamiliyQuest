@@ -29,6 +29,16 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     async def lifespan(app: FastAPI):
         core = app.state.fq
         core.packs.sync_folders(settings.packs_dirs)
+        async def relink():
+            """Old copies of Home Assistant Media photos become references (smaller backup) – in the background."""
+            from . import memorygame
+            try:
+                n = await asyncio.to_thread(memorygame.relink_ha_copies, core)
+                if n:
+                    log.info("%d photos now refer to Home Assistant Media instead of a copy", n)
+            except Exception:  # noqa: BLE001
+                log.exception("Linking photos to Home Assistant Media failed")
+        asyncio.create_task(relink())
         from .planer.host import PlanerHost
         core.planer_host = PlanerHost(core)
         await core.planer_host.start(ha_expected=bool(settings.ha_enabled and settings.ha_token))
@@ -97,8 +107,20 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
     @app.get("/", include_in_schema=False)
-    def index():
+    def index(request: Request):
+        # through Home Assistant («Open Web UI», sidebar) the address opens the parent area; on the direct port
+        # (tablets, phones of the children) it stays the app
+        from .api.auth import INGRESS_IP
+        via_ha = bool(request.client and request.client.host == INGRESS_IP)
+        return page("eltern.html" if via_ha else "index.html")
+
+    @app.get("/app", include_in_schema=False)
+    def kid_app():
         return page("index.html")
+
+    @app.get("/app/", include_in_schema=False)
+    def kid_app_slash():
+        return Response(status_code=307, headers={"Location": "../app"})        # relative links need /app without slash
 
     @app.get("/eltern", include_in_schema=False)
     def parents():
@@ -158,6 +180,16 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         f = (settings.media_dir / pack_id / name).resolve()
         if settings.media_dir.resolve() not in f.parents or not f.is_file():
             raise HTTPException(404)
+        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"})
+
+    @app.get("/hamedia/{path:path}", include_in_schema=False)
+    def ha_media_photo(path: str):
+        """A photo of a set / the crest that stays in Home Assistant Media – only pictures a set or the crest uses."""
+        from . import memorygame
+        name = memorygame.HA + path
+        if not memorygame.referenced(app.state.fq, name) or not memorygame.ha_ref_ok(app.state.fq, name):
+            raise HTTPException(404)
+        f = memorygame.ha_media_path(settings.ha_media_dir, path)
         return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"})
 
     @app.get("/family_planer_files/{path:path}", include_in_schema=False)

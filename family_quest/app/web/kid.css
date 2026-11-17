@@ -16,7 +16,7 @@
 .parents-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
 .parent-chip { display: inline-flex; align-items: center; gap: 8px; border: 2px solid var(--line); background: var(--card);
   border-radius: 99px; padding: 4px 14px 4px 4px; font-weight: 700; }
-.parent-link { display: inline-block; margin-top: 28px; font-weight: 700; text-decoration: none; }
+.parent-link { display: flex; width: fit-content; margin: 28px auto 0; font-weight: 700; text-decoration: none; }
 .welcome { text-align: center; margin: 20px 0; }
 
 /* ---------- chrome ---------- */
@@ -359,3 +359,83 @@
 .fq-head .head-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .fq-head .head-actions .btn, .fq-head .head-actions .icon-btn { box-shadow: var(--shadow); }
 @media (max-width: 640px) { .fq-head .clk .dt, .fq-head .me-text { display: none; } .fq-head .clk .tl b { font-size: 1.15rem; } }
+
+/* pet care (Me page and start page) */
+.pet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.pet-card { display: grid; justify-items: center; gap: 6px; padding: 14px 12px; border-radius: 18px; background: linear-gradient(180deg, #fff9db, var(--card) 70%); border: 2px solid #ffe8a3; text-align: center; }
+.pet-card.dying { border-color: var(--bad); background: linear-gradient(180deg, var(--bad-bg), var(--card) 70%); }
+.pet-emoji { position: relative; line-height: 1.1; font-size: 4.2rem; user-select: none; }
+.pet-card.stage-baby .pet-emoji { font-size: 3.2rem; } .pet-card.stage-adult .pet-emoji { font-size: 5.2rem; }
+.pet-bottle { position: absolute; left: -22px; top: -4px; font-size: 1.4rem; transform: rotate(-20deg); }
+.pet-hop { animation: pet-hop .6s ease; }
+@keyframes pet-hop { 0%, 100% { transform: translateY(0) scale(1); } 35% { transform: translateY(-18px) scale(1.12, .95); } 65% { transform: translateY(0) scale(.95, 1.06); } }
+.pet-fx { position: absolute; left: 50%; top: 0; font-size: 1.8rem; pointer-events: none; animation: pet-fx 1.1s ease-out forwards; }
+@keyframes pet-fx { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -60px) scale(1.4); } }
+@media (prefers-reduced-motion: reduce) { .pet-hop, .pet-fx { animation: none; } }
+.pet-name { border: 0; background: none; color: inherit; font: inherit; font-size: 1.15rem; cursor: pointer; padding: 2px 6px; border-radius: 8px; }
+.pet-name:hover { background: var(--hover); }
+.pet-bars { width: 100%; display: grid; gap: 6px; margin: 4px 0; }
+.pet-bar { display: grid; grid-template-columns: 26px 1fr 30px; align-items: center; gap: 6px; text-align: right; }
+.pet-bar .bar { height: 12px; }
+.pet-bar-ic { font-size: 1.2rem; text-align: center; }
+.pet-bar.low .pet-bar-ic { animation: pet-wiggle 1.2s ease-in-out infinite; }
+@keyframes pet-wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+.pet-actions { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pet-actions .btn { min-width: 0; padding: 8px 4px; font-size: .9rem; display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.15; white-space: nowrap; }
+.pet-act-ic { font-size: 1.3rem; }
+.pet-cost { opacity: .9; font-size: .78rem; font-weight: 600; }
+.pet-sos { color: var(--bad); font-weight: 700; font-size: .9rem; }
+.pet-paused { background: #e7f5ff; color: #1864ab; border-radius: 12px; padding: 8px 12px; font-weight: 700; }
+.pet-banner { display: flex; align-items: center; gap: 14px; border-left: 6px solid #fab005; cursor: pointer; }
+.pet-banner.sos { border-left-color: var(--bad); background: var(--bad-bg); }
+/* pet shop: the pet at home (house as backdrop, furniture around) and the outfit on the pet */
+.pet-home { position: relative; width: 100%; height: 190px; border-radius: 14px; overflow: hidden; display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 10px; background: linear-gradient(180deg, #e7f5ff 0%, #f8f9fa 62%, #d3f9d8 62%, #b2f2bb 100%); }
+.pet-house { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); line-height: 0; z-index: 0; }
+.pet-house .pet-shop-ic { filter: drop-shadow(0 2px 2px rgba(0,0,0,.15)); }
+.pet-home .pet-emoji { z-index: 2; }
+.pet-home.has-house .pet-emoji { margin-bottom: -2px; }
+.pet-furn { position: absolute; z-index: 1; line-height: 0; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
+.pet-furn.spot-fl { left: 5%; bottom: 6px; } .pet-furn.spot-fr { right: 5%; bottom: 6px; }
+.pet-furn.spot-ml { left: 4%; bottom: 66px; } .pet-furn.spot-mr { right: 4%; bottom: 66px; }
+.pet-furn.spot-tl { left: 5%; top: 10px; } .pet-furn.spot-tr { right: 5%; top: 10px; }
+.pet-happy { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; background: rgba(255,255,255,.9); color: #e67700;
+  border-radius: 999px; padding: 2px 10px; font-size: .8rem; font-weight: 700; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.pet-dressed { position: relative; display: inline-block; line-height: 1; }
+.pet-wear { position: absolute; transform: translate(-50%, -50%); line-height: 0; pointer-events: none; }
+.pet-wear.pos-top { left: 50%; top: 2%; } .pet-wear.pos-ear { left: 80%; top: 14%; } .pet-wear.pos-eyes { left: 50%; top: 44%; }
+.pet-wear.pos-neck { left: 50%; top: 86%; } .pet-wear.pos-body { left: 50%; top: 98%; }
+.kind-degu .pet-wear.pos-top { left: 68%; top: 18%; } .kind-degu .pet-wear.pos-ear { left: 84%; top: 22%; }
+.kind-degu .pet-wear.pos-eyes { left: 76%; top: 44%; } .kind-degu .pet-wear.pos-neck { left: 64%; top: 64%; } .kind-degu .pet-wear.pos-body { left: 52%; top: 72%; }
+.pet-shop-btn { width: 100%; }
+.petshop h2 { margin-top: 0; font-size: 1.2rem; }
+.petshop-scene .pet-home { height: 170px; }
+.petshop-info { display: flex; flex-wrap: wrap; gap: 4px; font-weight: 600; }
+.petshop-tabs { margin: 8px 0 4px; flex-wrap: nowrap; }
+.petshop-tabs button { flex: 1; min-width: 0; padding: 8px 4px; font-size: .9rem; white-space: nowrap; }
+.petshop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.petshop-item { display: grid; justify-items: center; align-content: start; gap: 4px; padding: 10px 6px; border-radius: 14px; border: 2px solid var(--line); text-align: center; background: var(--card); }
+.petshop-item.own { border-color: #74c0fc; }
+.petshop-item.on { border-color: var(--good); background: var(--good-bg, #ebfbee); }
+.petshop-item strong { line-height: 1.2; }
+.petshop-state { color: var(--good); font-weight: 700; }
+.petshop-pay { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.petshop-pay .btn, .petshop-item > .btn { padding: 4px 8px; min-height: 32px; }
+.pet-best { font-size: .75rem; font-weight: 700; color: #e67700; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pet-home { background: linear-gradient(180deg, #1c2a3a 0%, #22262c 62%, #1f3a26 62%, #2b5a34 100%); }
+  :root:not([data-theme="light"]) .petshop-item.on { background: #1f3a26; } }
+:root[data-theme="dark"] .pet-home { background: linear-gradient(180deg, #1c2a3a 0%, #22262c 62%, #1f3a26 62%, #2b5a34 100%); }
+:root[data-theme="dark"] .petshop-item.on { background: #1f3a26; }
+.pet-died-ic { font-size: 4rem; }
+.pet-died { max-width: 360px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pet-card { background: linear-gradient(180deg, #3b3214, var(--card) 70%); border-color: #5c4a12; }
+  :root:not([data-theme="light"]) .pet-paused { background: #1c3a52; color: #a5d8ff; } }
+:root[data-theme="dark"] .pet-card { background: linear-gradient(180deg, #3b3214, var(--card) 70%); border-color: #5c4a12; }
+:root[data-theme="dark"] .pet-paused { background: #1c3a52; color: #a5d8ff; }
+/* small phones: ☰, ⟳, avatar, streak and clock on one line */
+@media (max-width: 420px) {
+  .fq-head .head-row { gap: 5px; padding: 10px 8px; }
+  .fq-head .streak { padding: 4px 8px; font-size: 1.05rem; }
+  .fq-head .me, .fq-head .clk { padding: 4px 7px; }
+  .fq-head .clk .tl { gap: 5px; }
+}

@@ -22,6 +22,48 @@ function communityBanners(c) {
   if (c.domino) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("domino") },
     h("span.big-ic", "🁫"), h("span.grow", h("strong", "Domino"), h("br"),
       h("span.small", c.domino.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.paarjagd) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("paarjagd") },
+    h("span.big-ic", "🧠"), h("span.grow", h("strong", T("Paarjagd")), h("br"),
+      h("span.small", c.paarjagd.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.werbinich) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("werbinich") },
+    h("span.big-ic", "🎭"), h("span.grow", h("strong", T("Wer bin ich?")), h("br"),
+      h("span.small", c.werbinich.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.kartenlauf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("kartenlauf") },
+    h("span.big-ic", "🏁"), h("span.grow", h("strong", "Kartenlauf"), h("br"),
+      h("span.small", c.kartenlauf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.stadtland) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("stadtland") },
+    h("span.big-ic", "🏙️"), h("span.grow", h("strong", T("Stadt-Land-Fluss")), h("br"),
+      h("span.small", c.stadtland.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.zeichnen) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("zeichnen") },
+    h("span.big-ic", "🎨"), h("span.grow", h("strong", T("Zeichnen & Raten")), h("br"),
+      h("span.small", c.zeichnen.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.wuerfel) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("wuerfel") },
+    h("span.big-ic", "🎲"), h("span.grow", h("strong", T("Fünf Würfel")), h("br"),
+      h("span.small", c.wuerfel.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.heimwaerts) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("heimwaerts") },
+    h("span.big-ic", "🏠"), h("span.grow", h("strong", T("Heimwärts")), h("br"),
+      h("span.small", c.heimwaerts.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.jump) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("jump") },
+    h("span.big-ic", "🦘"), h("span.grow", h("strong", "Jump"), h("br"),
+      h("span.small", c.jump.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.klatsch) out.push(h("button.card.banner.quiz-banner", { onclick: () => { try { KbAudio.ensure(); } catch {} go("klatsch"); } },
+    h("span.big-ic", "👏"), h("span.grow", h("strong", T("Klatsch den Beat")), h("br"),
+      h("span.small", c.klatsch.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.verboten) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("verboten") },
+    h("span.big-ic", "🚫"), h("span.grow", h("strong", T("Verbotene Wörter")), h("br"),
+      h("span.small", c.verboten.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.jass) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("jass") },
+    h("span.big-ic", "♣️"), h("span.grow", h("strong", T("Jass")), h("br"),
+      h("span.small", c.jass.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.werwolf) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("werwolf") },
+    h("span.big-ic", "🐺"), h("span.grow", h("strong", T("Werwölfe")), h("br"),
+      h("span.small", c.werwolf.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.schach) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("schach/" + c.schach.game) },
+    h("span.big-ic", "♟️"), h("span.grow", h("strong", T("Chess")), h("br"),
+      h("span.small", c.schach.my_turn ? T("Your move!") : I18N.tr(T("{0} invites you to a game")).replace("{0}", c.schach.from || "?"))), h("span.big-ic", "➜")));
+  if (c.dorfmarkt) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("dorfmarkt") },
+    h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Dorfmarkt")), h("br"),
+      h("span.small", c.dorfmarkt.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.song) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("song") },
     h("span.big-ic", "🎵"), h("span.grow", h("strong", T("Guess the song")), h("br"),
       h("span.small", c.song.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -50,10 +92,12 @@ let ARMS = null;
 function questionImage(img) {
   if (!img || img.geo !== "canton") return null;
   const box = h("div.q-img");
-  if (img.mode === "arms") {               // pixel symbols of the coats of arms (geo/arms.json, CC BY-SA)
+  if (img.mode === "arms") {               // coats of arms as vector drawings in a shield (geo/arms.json, tools/build_arms.py)
     ARMS = ARMS || fetch("geo/arms.json").then(r => r.json());
     ARMS.then(a => { if (!a.arms[img.id]) return; box.classList.add("arms");
-      box.innerHTML = `<svg viewBox="0 0 ${a.size} ${a.size}" shape-rendering="crispEdges" role="img">${a.arms[img.id]}</svg>`; }).catch(() => {});
+      const id = "arms-clip-" + Math.random().toString(36).slice(2, 8);
+      box.innerHTML = `<svg viewBox="-2 -2 ${a.width + 4} ${a.height + 4}" role="img"><defs><clipPath id="${id}"><path d="${a.shield}"/></clipPath></defs>`
+        + `<g clip-path="url(#${id})">${a.arms[img.id]}</g><path d="${a.shield}" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="1.6"/></svg>`; }).catch(() => {});
     return box;
   }
   const draw = g => {
@@ -119,9 +163,9 @@ function geoMap(name, { pick, pins = [], target = null } = {}) {
 }
 
 // guests: who leads a game opens an invitation – a QR code for the phones of friends and grandparents
-async function guestInvite(game) {
+async function guestInvite(game, gid) {
   let r;
-  try { r = await api("community/guests", { method: "POST", body: { game, on: true } }); } catch (e) { return toast(e.message, "bad"); }
+  try { r = await api("community/guests", { method: "POST", body: { game, on: true, gid } }); } catch (e) { return toast(e.message, "bad"); }
   const a = r.access || {};
   const host = (a.ips && a.ips[0]) || location.hostname;
   const url = `http://${host}:${a.port || a.default_port || 8099}/gast?c=${encodeURIComponent(r.invite.code)}`;
@@ -132,7 +176,7 @@ async function guestInvite(game) {
     !a.enabled && a.port == null ? h("p.warn-text", T("Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.")) : null,
     h("div.qr-box.guest-qr", qrSvg(url)), field,
     h("div.row.center", h("button.btn", { onclick: () => m.close() }, T("Close")),
-      h("button.btn.ghost", { onclick: async () => { await api("community/guests", { method: "POST", body: { game, on: false } }); toast(T("Invitation closed"), "good"); m.close(); } }, "🚪 ", T("Close the invitation")))));
+      h("button.btn.ghost", { onclick: async () => { await api("community/guests", { method: "POST", body: { game, on: false, gid } }); toast(T("Invitation closed"), "good"); m.close(); } }, "🚪 ", T("Close the invitation")))));
 }
 
 // the live game in `box` for profile `me` (learning app and parent area); `back` leaves it
@@ -201,7 +245,7 @@ function quizLive(box, me, back) {
           oninput: e => { input.value = +e.target.value; slider.value = input.value; } });
         const slider = h("input.est-slider", { type: "range", min: q.min, max: q.max, step: q.step, value: input.value, disabled: answered,
           oninput: e => { input.value = +e.target.value; num.value = input.value; } });
-        return show(head, h("section.card.quiz-q", C(q.q, "h2"), questionImage(q.img), bar),
+        return show(head, h("section.card.quiz-q", CF(q.q, "h2"), questionImage(q.img), bar),
           h("section.card.est-box", h("div.row.center", num, q.unit ? C(q.unit, "span.est-unit") : null), slider,
             h("div.row.small.muted", h("span.grow", fmt(q.min, 2)), h("span", fmt(q.max, 2))),
             h("button.btn.big", { disabled: answered, onclick: () => act("answer", { idx: st.idx, value: input.value }) }, "✓ ", T("Answer"))),
@@ -209,17 +253,17 @@ function quizLive(box, me, back) {
       }
       if (q.kind === "pin") {
         const send = h("button.btn.big", { disabled: answered || input.lat == null, onclick: () => act("answer", { idx: st.idx, lat: input.lat, lon: input.lon }) }, "📌 ", T("Answer"));
-        return show(head, h("section.card.quiz-q", C(q.q, "h2"), bar),
+        return show(head, h("section.card.quiz-q", CF(q.q, "h2"), bar),
           h("section.card", answered ? null : h("p.small.muted.center", T("Tap the map to set your pin.")),
             geoMap(q.map, { pick: answered ? null : (lat, lon) => { input.lat = lat; input.lon = lon; send.disabled = false; },
               pins: input.lat != null ? [{ lat: input.lat, lon: input.lon, me: true }] : [] }),
             h("div.row.center", send)),
           progress, hostBar);
       }
-      return show(head, h("section.card.quiz-q", C(q.q, "h2"), questionImage(q.img), bar),
+      return show(head, h("section.card.quiz-q", CF(q.q, "h2"), questionImage(q.img), bar),
         h("div.quiz-answers", ...q.a.map((a, i) => h("button.quiz-a" + (st.my_choice === i ? ".mine" : "") + (answered && st.my_choice !== i ? ".dim" : ""),
           { style: { "--c": QUIZ_COLORS[i] }, disabled: answered, onclick: () => act("answer", { idx: st.idx, choice: i }) },
-          h("span.shape", QUIZ_SHAPES[i]), C(a, onlyEmoji(a) ? "span.big-emoji" : "span")))),
+          h("span.shape", QUIZ_SHAPES[i]), CF(a, onlyEmoji(a) ? "span.big-emoji" : "span")))),
         progress, hostBar);
     }
     if (st.status === "reveal" && st.solution) {
@@ -230,7 +274,7 @@ function quizLive(box, me, back) {
       const list = h("ol.guess-list", ...(st.guesses || []).map(x => h("li" + (x.id === me.id ? ".me" : ""),
         C(x.name || "?", "strong.grow"), q.kind === "estimate" ? h("span", fmt(x.value, 2), sol.unit ? " " + sol.unit : "") : null,
         h("span.small.muted", missTxt(x)), x.points ? h("b", "+" + x.points) : null)));
-      return show(head, h("section.card.quiz-q", C(q.q, "h2"),
+      return show(head, h("section.card.quiz-q", CF(q.q, "h2"),
           q.kind === "estimate" ? h("div.est-solution", fmt(sol.value, 2), sol.unit ? " " + sol.unit : "") : h("div.est-solution", "📍 ", C(sol.label || "")),
           h("p.quiz-msg" + (myG && myG.points ? ".good" : ""), msg)),
         q.kind === "pin" ? h("section.card", geoMap(q.map, { target: sol, pins: (st.guesses || []).map(x => ({ lat: x.lat, lon: x.lon, name: x.name, me: x.id === me.id })) })) : null,
@@ -240,9 +284,9 @@ function quizLive(box, me, back) {
       const q = st.question, mine = st.my_choice;
       const msg = mine == null ? T("Too late this time") : mine === st.correct ? I18N.tr(T("Right! +{0} points")).replace("{0}", st.my_points) : T("Not this time");
       if (mine === st.correct) { try { Sound.play("right"); } catch {} }
-      return show(head, h("section.card.quiz-q", C(q.q, "h2"), questionImage(q.img), h("p.quiz-msg" + (mine === st.correct ? ".good" : ""), msg)),
+      return show(head, h("section.card.quiz-q", CF(q.q, "h2"), questionImage(q.img), h("p.quiz-msg" + (mine === st.correct ? ".good" : ""), msg)),
         h("div.quiz-answers", ...q.a.map((a, i) => h("div.quiz-a" + (i === st.correct ? ".right" : ".dim"), { style: { "--c": QUIZ_COLORS[i] } },
-          h("span.shape", QUIZ_SHAPES[i]), C(a, onlyEmoji(a) ? "span.big-emoji" : "span"), h("b.count", String(st.counts[i]))))),
+          h("span.shape", QUIZ_SHAPES[i]), CF(a, onlyEmoji(a) ? "span.big-emoji" : "span"), h("b.count", String(st.counts[i]))))),
         scoreList(st, 5), hostBar);
     }
     // done: podium
@@ -524,6 +568,41 @@ function historyText(e) {
   if (e.kind === "bingo") return ["🎱", I18N.tr(T("Bingo with {0} players: {1} won after {2} balls")).replace("{0}", d.players).replace("{1}", d.winner).replace("{2}", d.balls), d.won ? "🏆" : ""];
   if (e.kind === "song") return ["🎵", I18N.tr(T("Guess the song: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points), d.place === 1 ? "🏆" : ""];
   if (e.kind === "domino") return ["🁫", I18N.tr(T("Domino: {0} to {1} points")).replace("{0}", d.points).replace("{1}", d.best) + (d.pollona ? " · Pollona" : ""), d.won ? "🏆" : ""];
+  if (e.kind === "paarjagd") return ["🧠", I18N.tr(T("Paarjagd: place {0} of {1} · {2} pairs")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.pairs)
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "werbinich") return ["🎭", (d.found
+    ? I18N.tr(T("Wer bin ich?: place {0} of {1} · I was {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.char)
+    : I18N.tr(T("Wer bin ich?: I was {0} – not found")).replace("{0}", d.char)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "kartenlauf") return ["🏁", I18N.tr(T("Kartenlauf: place {0} of {1} · {2} marbles home")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.home)
+    + (d.teams ? " · " + I18N.tr(T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "stadtland") return ["🏙️", I18N.tr(T("Stadt-Land-Fluss: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "zeichnen") return ["🎨", I18N.tr(T("Zeichnen & Raten: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "wuerfel") return ["🎲", I18N.tr(T("Fünf Würfel: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "heimwaerts") return ["🏠", I18N.tr(T("Heimwärts: place {0} of {1} · {2} pieces home")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.home)
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "jump") return ["🦘", (d.players > 1
+    ? I18N.tr(T("Jump: place {0} of {1} · {2} m")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
+    : I18N.tr(T("Jump alone: {0} m")).replace("{0}", d.score)) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
+  if (e.kind === "klatsch") return ["👏", (d.players > 1
+    ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.score)
+    : I18N.tr(T("Klatsch den Beat alone: {0} points")).replace("{0}", d.score)) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)
+    + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
+  if (e.kind === "verboten") return ["🚫", I18N.tr(T("Verbotene Wörter: place {0} of {1} · {2} points")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.points)
+    + (d.teams ? " · " + I18N.tr(T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "jass") return ["♣️", I18N.tr(d.place === 1 ? T("Jass won {0} : {1}") : T("Jass lost {0} : {1}")).replace("{0}", d.points).replace("{1}", d.other)
+    + (d.partner ? " · " + I18N.tr(T("with {0}")).replace("{0}", d.partner) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "werwolf") return ["🐺", I18N.tr(d.won ? T("Werwölfe: won as {0}") : T("Werwölfe: lost as {0}")).replace("{0}", I18N.tr(werwolfRoleName(d.role)))
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.won ? "🏆" : ""];
+  if (e.kind === "schach") return ["♟️", (d.mode === "local"
+    ? I18N.tr(d.result === "draw" ? T("Chess on one device: draw") : d.result === "white" ? T("Chess on one device: White won") : T("Chess on one device: Black won"))
+    : I18N.tr(d.result === "win" ? T("Chess: won against {0}") : d.result === "loss" ? T("Chess: lost against {0}") : T("Chess: draw against {0}")).replace("{0}", d.opp || "?"))
+    + " · " + I18N.tr(chReason(d.reason)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.result === "win" ? "🏆" : ""];
+  if (e.kind === "dorfmarkt") return ["🏘️", I18N.tr(T("Dorfmarkt: place {0} of {1} · {2} Taler")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", Number(d.worth || 0).toLocaleString("de-CH"))
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   return ["•", e.kind, ""];
 }
 
@@ -614,7 +693,7 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
 }
 
 // the template collections by region – the choice is remembered on this device
-const TPL_REGIONS = { all: T("All"), general: T("General"), ch: T("Switzerland"), de: T("Germany"), at: T("Austria"), nl: T("Netherlands") };
+const TPL_REGIONS = { all: T("All"), general: T("General"), ch: T("Switzerland"), de: T("Germany"), at: T("Austria"), nl: T("Netherlands"), fr: T("France") };
 
 function quizEditor(q, done) {
   const quiz = q ? JSON.parse(JSON.stringify(q)) : { title: "", questions: [{ q: "", a: ["", ""], c: 0, t: 20 }] };

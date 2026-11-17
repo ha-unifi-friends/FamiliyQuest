@@ -4,6 +4,10 @@ Contents: manifest.json, family_quest.db (consistent copy via the SQLite backup 
 progress, points, chores, Family Planer data, packs, settings), media/ (pictures and audio of packs) and
 family_planer/ (uploaded photos). The signing key (secret.key) is not part of it, so a backup cannot be used
 to log in somewhere else; after a restore on the same installation everybody stays logged in.
+
+Only what cannot be made again goes in: the pictures of the packs that come with the app (built-in / share folder)
+are left out – the app copies them again after a restore; photos taken from Home Assistant Media are only
+referenced (they belong to Home Assistant's own backup); the database copy is compacted (VACUUM).
 """
 from __future__ import annotations
 
@@ -34,6 +38,8 @@ def create(fq) -> tuple[bytes, str]:
         dst = sqlite3.connect(copy)
         with fq.db.lock:
             fq.db.conn.backup(dst)
+        dst.execute("VACUUM")                    # without the free pages of deleted rows
+        skip = {f"media/{r[0]}" for r in dst.execute("SELECT id FROM pack WHERE source IN ('builtin','share')")}
         dst.close()
         counts = _counts(copy)
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -42,8 +48,9 @@ def create(fq) -> tuple[bytes, str]:
                 base = data_dir / d
                 if base.is_dir():
                     for f in base.rglob("*"):
-                        if f.is_file():
-                            z.write(f, f"{d}/{f.relative_to(base).as_posix()}")
+                        name = f"{d}/{f.relative_to(base).as_posix()}"
+                        if f.is_file() and not any(name.startswith(s + "/") for s in skip):
+                            z.write(f, name)
             z.writestr("manifest.json", json.dumps({
                 "format": FORMAT, "version": 1, "app_version": fq.settings.version,
                 "created": datetime.now().isoformat(timespec="seconds"), "counts": counts}, ensure_ascii=False, indent=1))
@@ -118,4 +125,35 @@ def restore(fq, raw: bytes) -> dict:
                 out.parent.mkdir(parents=True, exist_ok=True)
                 out.write_bytes(z.read(n))
     fq.packs.invalidate()
+    try:                                        # the pictures of the built-in packs come from the app again
+        fq.packs.sync_folders(fq.settings.packs_dirs)
+    except Exception:  # noqa: BLE001
+        pass
     return manifest
+
+
+def sizes(fq) -> dict:
+    """What takes how much room (bytes) – shown in the parent area next to «Download backup»."""
+    data_dir: Path = fq.settings.data_dir
+    builtin = {r["id"] for r in fq.db.q("SELECT id FROM pack WHERE source IN ('builtin','share')")}
+    out = {"database": 0, "pack_pictures": 0, "photo_sets": 0, "planner_photos": 0, "app_pictures": 0}
+    try:
+        out["database"] = int(fq.db.val("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()", default=0) or 0)
+        out["database"] -= int(fq.db.val("SELECT freelist_count * page_size FROM pragma_freelist_count(), pragma_page_size()", default=0) or 0)
+    except Exception:  # noqa: BLE001
+        pass
+    def size(p: Path) -> int:
+        return sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) if p.is_dir() else 0
+    media = data_dir / "media"
+    if media.is_dir():
+        for sub in media.iterdir():
+            n = size(sub)
+            if sub.name == "_memory":
+                out["photo_sets"] += n
+            elif sub.name in builtin:
+                out["app_pictures"] += n
+            else:
+                out["pack_pictures"] += n
+    out["planner_photos"] = size(data_dir / "family_planer")
+    out["backup"] = out["database"] + out["pack_pictures"] + out["photo_sets"] + out["planner_photos"]
+    return out

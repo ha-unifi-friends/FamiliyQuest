@@ -37,12 +37,12 @@ def test_lesson_flow_and_rewards(fq, kid):
     res = fq.learning.finish(s["id"], kid)
     assert res["right"] == res["total"] and res["completed"]
     assert res["gained"]["xp"] >= 10 + res["total"]
-    assert res["gained"]["coins"] == 10
+    assert res["gained"]["coins"] == 10 + 5               # lesson finished + perfect lesson (no mistake)
     assert any(b["id"] == "first_lesson" for b in res["badges"])
     # finishing twice does not book twice
     again = fq.learning.finish(s["id"], kid)
     assert again == res
-    assert fq.rewards.balance(kid, "coins") == 10
+    assert fq.rewards.balance(kid, "coins") == 15                 # booked only once (10 + 5 perfect)
 
 
 def test_wrong_answers_come_back(fq, kid):

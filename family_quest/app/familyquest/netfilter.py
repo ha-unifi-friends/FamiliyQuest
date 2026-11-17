@@ -78,7 +78,10 @@ def is_parent_path(path: str) -> bool:
 
 # guest networks (e.g. the guest Wi-Fi): only the guest page and playing a game with an invitation
 GUEST_API = ("/api/community/guest/", "/api/community/quiz", "/api/community/bingo", "/api/community/poker",
-             "/api/community/cards/", "/api/community/domino")
+             "/api/community/cards/", "/api/community/domino", "/api/community/paarjagd",
+             "/api/community/werbinich", "/api/community/kartenlauf", "/api/community/stadtland",
+             "/api/community/zeichnen", "/api/community/wuerfel", "/api/community/heimwaerts", "/api/community/jump", "/api/community/klatsch", "/api/community/verboten",
+             "/api/community/jass", "/api/community/werwolf", "/api/community/schach", "/api/community/dorfmarkt")
 GUEST_API_DENY = ("/api/community/quiz/start", "/api/community/quiz/next", "/api/community/quiz/end", "/api/community/quiz/abort",
                   "/api/community/bingo/start", "/api/community/bingo/begin", "/api/community/bingo/pause", "/api/community/bingo/end",
                   "/api/community/bingo/rules", "/api/community/quizzes", "/api/community/poker/start",
@@ -100,8 +103,14 @@ def is_guest_path(path: str) -> bool:
     if path == "/gast" or path.startswith("/i18n/"):
         return True
     if path.startswith("/api/"):
-        if path.startswith(("/api/community/cards/", "/api/community/domino/")) and path.endswith(GUEST_API_DENY_PARTS):
+        if path.startswith(("/api/community/cards/", "/api/community/domino/", "/api/community/paarjagd/",
+                             "/api/community/werbinich/", "/api/community/kartenlauf/", "/api/community/stadtland/",
+                             "/api/community/zeichnen/", "/api/community/wuerfel/", "/api/community/heimwaerts/", "/api/community/jump/", "/api/community/klatsch/", "/api/community/verboten/",
+                             "/api/community/jass/", "/api/community/werwolf/", "/api/community/schach/", "/api/community/dorfmarkt/")) \
+                and path.endswith(GUEST_API_DENY_PARTS + ("/skip", "/next", "/override", "/mix", "/delete")):
             return False
+        if path.startswith("/api/community/dorfmarkt/") and path.endswith(("/pause", "/resume")):
+            return False                     # Dorfmarkt: only whoever leads pauses (chess: both players may)
         return path.startswith(GUEST_API) and not path.startswith(GUEST_API_DENY)
     last = path.rsplit("/", 1)[-1]
     return "." in last and not path.startswith(("/eltern", "/media", "/family_planer_files"))   # scripts, styles, icons

@@ -167,6 +167,10 @@ class Bingo:
             return {"bingo": False, "late": True}
         players = [r["profile_id"] for r in self.db.q("SELECT profile_id FROM bingo_card WHERE game_id=?", g["id"])]
         winner = self.db.q1("SELECT name FROM profile WHERE id=?", pid)
+        try:
+            self.add_history(0, "__family__", {"people": players, "winners": [pid]})      # the «No. 1» hat
+        except Exception:  # noqa: BLE001
+            pass
         for p in players:
             self.add_history(p, "bingo", {"winner": winner["name"] if winner else "?", "won": p == pid,
                                           "balls": len(drawn), "players": len(players), "game": g["id"]})

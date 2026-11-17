@@ -32,7 +32,12 @@ RANKS = "23456789TJQKA"
 SUITS = "shdc"
 RULES_KEY = "game_rules.poker"
 DEFAULT_RULES = {"start_chips": 1000, "small_blind": 10, "big_blind": 20, "ante": 0, "blind_minutes": 10,
-                 "turn_seconds": 30, "pause_seconds": 6, "mode": "equal", "rebuys": 3, "max_players": 9}
+                 "turn_seconds": 30, "pause_seconds": 6, "mode": "equal", "rebuys": 3, "max_players": 9, "bot_ms": 1300}
+def bot_delay(rules: dict, default: float) -> float:
+    from .cardgames import bot_delay as bd
+    return bd(rules, default)
+
+
 BOT_DELAY = 1.3                       # seconds before a bot moves (so people can follow)
 BOT_LEVELS = {"easy": {"noise": .25, "bluff": .22, "aggr": .25}, "normal": {"noise": .12, "bluff": .1, "aggr": .4},
               "hard": {"noise": .05, "bluff": .05, "aggr": .55}}
@@ -320,7 +325,7 @@ class Table:
             if h.get("bot_key") != key:
                 h["bot_key"], h["bot_at"] = key, self.now()
                 return
-            if self.now() - h["bot_at"] < BOT_DELAY:
+            if self.now() - h["bot_at"] < bot_delay(self.st["rules"], BOT_DELAY):
                 return
             self.bot_act(h["to_act"])
             h = self.hand
@@ -460,7 +465,7 @@ class Poker:
         out = {"start_chips": num("start_chips", 100, 1_000_000), "small_blind": num("small_blind", 1, 100_000),
                "ante": num("ante", 0, 100_000), "blind_minutes": num("blind_minutes", 0, 120),
                "turn_seconds": num("turn_seconds", 0, 300), "pause_seconds": num("pause_seconds", 2, 30),
-               "rebuys": num("rebuys", 0, 99), "max_players": num("max_players", 2, 10),
+               "rebuys": num("rebuys", 0, 99), "max_players": num("max_players", 2, 10), "bot_ms": num("bot_ms", 0, 5000),
                "mode": r.get("mode") if r.get("mode") in ("equal", "bank") else "equal"}
         out["big_blind"] = max(out["small_blind"] * 2, num("big_blind", 2, 200_000))
         if out["big_blind"] * 5 > out["start_chips"]:
@@ -487,6 +492,12 @@ class Poker:
         if status == "done" and self.add_history and not st.get("history_written"):
             st["history_written"] = True
             self.db.x("UPDATE poker_game SET state=? WHERE id=?", json.dumps(st), row["id"])
+            if not st.get("solo"):                                    # the «No. 1» hat (family tables only)
+                try:
+                    self.add_history(0, "__family__", {"people": [p["id"] for p in st["players"] if not p.get("bot")],
+                                                       "winners": [p["id"] for p in st["players"] if p.get("place") == 1 and not p.get("bot")]})
+                except Exception:  # noqa: BLE001
+                    pass
             for p in st["players"]:
                 try:
                     self.add_history(int(p["id"]), "poker", {"place": p.get("place"), "players": len(st["players"]),

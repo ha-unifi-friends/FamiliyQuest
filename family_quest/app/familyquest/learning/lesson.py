@@ -7,6 +7,7 @@ import secrets
 from datetime import date, datetime
 
 from ..db import Database, profile_settings
+from ..i18n import _t
 from ..packs.registry import PackInfo, PackStore, UnitInfo
 from ..rewards.engine import Rewards, today
 from . import exercises as ex
@@ -287,6 +288,22 @@ class Learning:
                 "steps": [{"kind": s["kind"], **s["public"]} for s in data["steps"]],
                 "answered": data["answered"]}
 
+    def _perfect_coins(self, pid: int) -> int:
+        """Coins for a perfect lesson – within the parents' daily coin limit of the lesson rule (if it has one)."""
+        v = self.db.get_setting("lesson_perfect_coins")
+        try:
+            coins = max(0, min(1000, int(5 if v is None else v)))
+        except (TypeError, ValueError, OverflowError):
+            coins = 5
+        limit = self.db.val("""SELECT MIN(daily_limit) FROM rule WHERE event='lesson_done' AND account='coins' AND active=1
+                               AND daily_limit IS NOT NULL""")
+        if limit is not None and coins:
+            # one limit for all lesson coins of the day: the finished lessons and the perfect ones together
+            used = float(self.db.val("""SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account='coins'
+                                        AND event IN ('lesson_done','lesson_perfect') AND date(at)=date('now','localtime')""", pid, default=0) or 0)
+            coins = int(max(0.0, min(coins, float(limit) - used)))
+        return coins
+
     def answer(self, sid: str, pid: int, idx: int, answer, ms: int | None = None) -> dict:
         row, data = self._load(sid, pid)
         if row["finished"]:
@@ -344,11 +361,16 @@ class Learning:
         bookings: list[dict] = []
         unit_stars = []
         with self.db.tx():
-            self.db.x("UPDATE session SET finished=1 WHERE id=?", sid)
+            if not self.db.x("UPDATE session SET finished=1 WHERE id=? AND finished=0", sid):
+                return self._load(sid, pid)[1].get("result", {})        # finished at the same time by a double tap: no second booking
             completed = done >= max(1, total // 2)
             self.rewards.add_time(pid, seconds, lessons=1 if completed else 0)
             if completed and row["mode"] in ("path", "daily", "cards"):
                 bookings += self.rewards.emit(pid, "lesson_done", ref=sid, ctx={"mode": row["mode"]})
+                if total and done == total and right == total:          # a perfect lesson: every answer right
+                    coins = self._perfect_coins(pid)
+                    if coins > 0 and "coins" in {a["key"] for a in self.rewards.accounts()}:
+                        bookings.append(self.rewards.book(pid, "coins", coins, "lesson_perfect", _t("Perfect lesson"), sid))
             if row["mode"] == "quiz" and done == total and right == total:
                 bookings += self.rewards.emit(pid, "quiz_perfect", ref=sid)
                 bookings += self.rewards.award(pid, "quiz_ace")

@@ -198,6 +198,8 @@ def test_direct_access_info(client):
     d = client.get("/api/parent/direct-access", headers=ph).json()
     assert d == {"enabled": False, "port": None, "default_port": 8099, "ips": []}
     assert client.get("/shared/qrcode.js").status_code == 200
+    # without login: where the parent area in Home Assistant links the app to (no direct access → no port)
+    assert client.get("/api/app-link").json() == {"port": None, "ips": []}
 
 
 def test_picture_pin_for_children(client):
@@ -327,3 +329,33 @@ def test_remove_profile_archive_or_delete(client):
     assert client.delete(f"/api/parent/profiles/{leo}?name=leo&mode=delete", headers=ph).status_code == 200
     assert leo not in [p["id"] for p in client.get("/api/parent/profiles", headers=ph).json()]
     assert client.get("/api/parent/profiles/archived", headers=ph).json() == []
+
+
+def test_perfect_lesson_gives_coins(client):
+    ph, mia, leo = setup_family(client)
+    h = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    client.post("/api/me/courses/franz-5kl-la-maison", json={"on": True}, headers=h)
+    def lesson(answer):
+        s = client.post("/api/me/session", json={"mode": "cards", "pack": "franz-5kl-la-maison"}, headers=h).json()
+        for i, _ in enumerate(s["steps"]):
+            client.post(f"/api/me/session/{s['id']}/answer", json={"step": i, "answer": answer}, headers=h)
+        client.post(f"/api/me/session/{s['id']}/finish", headers=h)
+        return s["id"]
+    fq = client.app.state.fq
+    sid = lesson("correct")
+    assert fq.db.val("SELECT SUM(amount) FROM ledger WHERE profile_id=? AND event='lesson_perfect' AND ref=?", mia, sid) == 5
+    sid = lesson("wrong")
+    assert not fq.db.val("SELECT COUNT(*) FROM ledger WHERE event='lesson_perfect' AND ref=?", sid)
+    client.put("/api/parent/settings", headers=ph, json={"lesson_perfect_coins": 12})
+    sid = lesson("correct")
+    assert fq.db.val("SELECT SUM(amount) FROM ledger WHERE event='lesson_perfect' AND ref=?", sid) == 12
+
+
+def test_start_page_asks_for_new_games(client):
+    ph, mia, leo = setup_family(client)
+    h = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    before = client.get("/api/me/community", headers=h).json()
+    client.post("/api/community/cards/tschau/start", json={}, headers=hl)        # Leo opens a family table
+    after = client.get("/api/me/community", headers=h).json()
+    assert before != after and after["tschau"]["status"] == "lobby"

@@ -20,12 +20,12 @@ import json
 import random
 import time
 
-from .cardgames import BOTS, BOT_DELAY, CardGames
+from .cardgames import BOTS, BOT_DELAY, CardGames, bot_delay
 from .community import CommunityError
 
 KIND = "domino"
 TITLE = "Domino"
-DEFAULTS = {"mode": "cuban", "set": 9, "teams": True, "draw": False, "target": 100, "bots": 3, "level": "normal"}
+DEFAULTS = {"mode": "cuban", "set": 9, "teams": True, "draw": False, "target": 100, "bots": 3, "level": "normal", "bot_ms": 1400}
 TEAM_WAIT = 12.0          # seconds a bot waits before it leads for a team that has people in it too
 
 
@@ -281,7 +281,7 @@ class Table:
         bots = [p for p in self.members(side) if (self.seat(p) or {}).get("bot")]
         if not bots:
             return None, 0
-        wait = TEAM_WAIT if len(bots) < len(self.members(side)) else BOT_DELAY
+        wait = TEAM_WAIT if len(bots) < len(self.members(side)) else bot_delay(self.st["rules"], BOT_DELAY)
         best = max(bots, key=lambda p: max((nums(t)[0] == nums(t)[1], pips(t)) for t in self.st["hands"][p]))
         return best, wait
 
@@ -300,7 +300,7 @@ class Table:
                 pid, wait = self._team_bot(turn[5:])
             else:
                 p = self.seat(turn)
-                pid, wait = (turn, BOT_DELAY) if p and p.get("bot") else (None, 0)
+                pid, wait = (turn, bot_delay(self.st["rules"], BOT_DELAY)) if p and p.get("bot") else (None, 0)
             if not pid or self.now() - self.st.get("turn_at", 0) < wait:
                 break
             self.bot_move(pid, (self.seat(pid) or {}).get("level", "normal"))
@@ -333,6 +333,7 @@ class Domino(CardGames):
         out["set"] = 9 if out["set"] == 9 else 6
         out["target"] = out["target"] if out["target"] in (100, 150, 200) else 100
         out["bots"] = max(0, min(5, out["bots"]))
+        out["bot_ms"] = max(0, min(5000, out["bot_ms"]))
         out["level"] = out["level"] if out["level"] in ("easy", "normal") else "normal"
         if out["mode"] == "cuban":
             out["draw"] = False                          # Cuban: no boneyard – pass instead
@@ -347,6 +348,7 @@ class Domino(CardGames):
             self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
             t = Table(st)
             scores = st.get("scores") or {}
+            self._champion(st, [p["id"] for p in st["players"] if st.get("winner") is not None and t.side(p["id"]) == st.get("winner")])
             for p in st["players"]:
                 if p.get("bot"):
                     continue

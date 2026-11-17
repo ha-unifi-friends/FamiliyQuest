@@ -22,6 +22,17 @@ function h(sel, attrs, ...kids) {
 }
 // content that must never be translated (names, words to learn, pack titles)
 const C = (text, sel = "span") => h(sel, { translate: "no" }, text);
+// a photo of a photo set / the crest: in the photo folder, or «ha:<path>» = stays in Home Assistant Media (memorygame.py)
+const memPhotoUrl = name => String(name || "").startsWith("ha:")
+  ? "hamedia/" + name.slice(3).split("/").map(encodeURIComponent).join("/") : "media/_memory/" + encodeURIComponent(name || "");
+// like C, but flag emoji become crisp SVG flags (web/flags, country-flag-icons, MIT) – emoji flags are blurry or just letters on Windows
+const CF = (text, sel = "span") => {
+  const parts = String(text ?? "").split(/([\u{1F1E6}-\u{1F1FF}]{2})/u);
+  if (parts.length === 1) return C(text, sel);
+  return h(sel, { translate: "no" }, ...parts.filter(Boolean).map(p => /^[\u{1F1E6}-\u{1F1FF}]{2}$/u.test(p)
+    ? h("img.flag-img", { src: "flags/" + [...p].map(c => String.fromCharCode(c.codePointAt(0) - 0x1F1E6 + 65)).join("") + ".svg", alt: p, draggable: false })
+    : p));
+};
 const $ = (s, root = document) => root.querySelector(s);
 
 // ---------------------------------------------------------------- API
@@ -300,21 +311,75 @@ function crestSvg(c, { ribbon = true } = {}) {
   }[c.pattern] ?? "";
   const esc = t => String(t || "").replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[m]);
   const H = ribbon && c.name ? 142 : 122;
+  // own picture as crest (photo folder of the pairs game), drawn into the shield
+  const img = c.image && (/^[\w.-]+$/.test(c.image) || /^ha:[^<>"]+$/.test(c.image)) ? memPhotoUrl(c.image) : null;
   const box = h("span.crest");
   box.innerHTML = `<svg viewBox="0 0 100 ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(c.name)}">
     <defs><clipPath id="${id}"><path d="${shield}"/></clipPath></defs>
-    <g clip-path="url(#${id})"><rect width="100" height="120" fill="${a}"/>${pat}</g>
+    ${img ? `<g clip-path="url(#${id})"><rect width="100" height="120" fill="#fff"/><image href="${esc(img)}" x="0" y="0" width="100" height="120" preserveAspectRatio="xMidYMid slice"/></g>`
+      : `<g clip-path="url(#${id})"><rect width="100" height="120" fill="${a}"/>${pat}</g>`}
     <path d="${shield}" fill="none" stroke="#fff" stroke-width="4"/><path d="${shield}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.2"/>
-    <circle cx="50" cy="56" r="25" fill="#fff" opacity=".9"/>
-    <text x="50" y="57" font-size="30" text-anchor="middle" dominant-baseline="central">${esc(c.icon || "🏠")}</text>
+    ${img ? "" : `<circle cx="50" cy="56" r="25" fill="#fff" opacity=".9"/>
+    <text x="50" y="57" font-size="30" text-anchor="middle" dominant-baseline="central">${esc(c.icon || "🏠")}</text>`}
     ${ribbon && c.name ? `<path d="M4 120 H96 L90 130 L96 140 H4 L10 130 Z" fill="#fff" stroke="rgba(0,0,0,.3)"/><text x="50" y="131" font-size="11" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="#1f2433">${esc(c.name)}</text>` : ""}
   </svg>`;
   return box;
 }
 
+// ---------------------------------------------------------------- coins: own icon instead of the 🪙 emoji
+// (the emoji looks like a grey moon on some devices) – every 🪙 in the page, also in texts from the server, becomes
+// a small golden coin (img/coin.svg). Not inside form fields, options or SVG text, where only text is possible.
+(function coinIcons() {
+  const COIN = "\u{1FA99}", SKIP = new Set(["OPTION", "TEXTAREA", "INPUT", "SCRIPT", "STYLE", "TITLE", "text", "tspan"]);
+  const swap = node => {
+    const p = node.parentNode;
+    if (!p || SKIP.has(p.nodeName) || (p.closest && p.closest("svg, select, [contenteditable]"))) return;
+    const parts = node.nodeValue.split(COIN);
+    if (parts.length < 2) return;
+    const frag = document.createDocumentFragment();
+    parts.forEach((t, i) => {
+      if (i) {
+        const img = document.createElement("img");
+        img.src = "img/coin.svg"; img.alt = COIN; img.className = "coin-ic"; img.draggable = false;
+        frag.append(img);
+      }
+      if (t) frag.append(document.createTextNode(t));
+    });
+    p.replaceChild(frag, node);
+  };
+  const scan = root => {
+    if (root.nodeType === 3) { if (root.nodeValue.includes(COIN)) swap(root); return; }
+    if (root.nodeType !== 1 || SKIP.has(root.nodeName)) return;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => n.nodeValue.includes(COIN) ? 1 : 3 });
+    const found = []; while (w.nextNode()) found.push(w.currentNode);
+    found.forEach(swap);
+  };
+  const start = () => {
+    scan(document.body);
+    new MutationObserver(ms => { for (const m of ms) { if (m.type === "characterData") scan(m.target); else m.addedNodes.forEach(scan); } })
+      .observe(document.body, { childList: true, subtree: true, characterData: true });
+  };
+  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+})();
+
 // ---------------------------------------------------------------- ☰ the menu of the app (also on the planner page)
 const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learning")], ["deck", "📇", T("My card box")], ["shop", "🛍️", T("Shop")],
   ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]];
+
+// link to the parent area: when it is only offered in Home Assistant, straight to the Family Quest panel there
+let _parentHref = null;
+async function parentAreaHref() {
+  if (_parentHref) return _parentHref;
+  let href = "eltern";
+  try {
+    const i = await api("info");
+    if (i.parent_ha_only && !i.via_ha) {
+      const p = await api("ha-panel");
+      if (p.slug) href = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/${p.slug}`;
+    }
+  } catch { /* «eltern» explains where the parent area is */ }
+  return (_parentHref = href);
+}
 
 function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, onSeason = null }) {
   const close = () => { back.remove(); document.removeEventListener("keydown", esc); };
@@ -324,12 +389,15 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   drawSound();
   const seasonItem = season && onSeason ? h("button.foot-item", { onclick: () => { close(); onSeason(); } },
     h("span.foot-ic", season.icon || "🎨"), h("span", seasonOn ? T("Season design on") : T("Season design off"))) : null;
+  const parentItem = h("a.foot-item.parent-item", { href: "eltern" }, h("span.foot-ic", "🔐"), h("span", T("Parent area")));
   const drawer = h("nav.drawer", { role: "dialog", "aria-label": T("Menu") },
     h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", "Family Quest")),
     ...APP_NAV().map(([k, ic, n]) => h("button.drawer-item" + (k === active ? ".on" : ""), { onclick: () => { close(); onGo(k); } }, h("span.foot-ic", ic), h("span", n))),
     h("hr"),
     footLang(), footTheme(), soundItem, seasonItem,
-    h("button.foot-item", { onclick: () => { close(); onLogout(); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))));
+    h("button.foot-item", { onclick: () => { close(); onLogout(); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),
+    parentItem);
+  parentAreaHref().then(href => { parentItem.href = href; });
   const back = h("div.drawer-back", { onclick: e => { if (e.target === back) close(); } }, drawer);
   document.body.append(back);
   document.addEventListener("keydown", esc);

@@ -18,7 +18,7 @@ import time
 from .community import CommunityError
 
 RULES_KEY = "game_rules.song"
-DEFAULT_RULES = {"player": "", "answer": "both", "vote": "majority", "target": 10, "max_songs": 40, "reveal_delay": 5, "reveal_by": "all", "speaker_sound": True}
+DEFAULT_RULES = {"player": "", "answer": "both", "vote": "majority", "target": 10, "max_songs": 40, "reveal_delay": 5, "reveal_by": "others", "speaker_sound": True}
 ANSWERS = ("artist", "title", "both", "either")
 
 
@@ -49,6 +49,12 @@ class SongQuiz:
             st["history_written"] = True
             self.db.x("UPDATE song_game SET state=? WHERE id=?", json.dumps(st), row["id"])
             ranking = sorted(st["players"], key=lambda p: -p["points"])
+            best = ranking[0]["points"] if ranking else 0
+            try:
+                self.add_history(0, "__family__", {"people": [p["id"] for p in ranking],
+                                                   "winners": [p["id"] for p in ranking if best > 0 and p["points"] == best]})
+            except Exception:  # noqa: BLE001
+                pass
             for i, p in enumerate(ranking):
                 try:
                     self.add_history(int(p["id"]), "song", {"place": i + 1, "players": len(ranking), "points": p["points"]})
@@ -72,7 +78,8 @@ class SongQuiz:
                 "vote": "unanimous" if r.get("vote") == "unanimous" else "majority",
                 "target": num("target", 1, 50), "max_songs": num("max_songs", 1, 200),
                 "reveal_delay": num("reveal_delay", 0, 30),     # seconds after the buzz before the solution can be shown
-                "reveal_by": "leader" if r.get("reveal_by") == "leader" else "all",
+                # who shows the solution: the others (everybody who did not buzz), who buzzed, or only the leader
+                "reveal_by": r.get("reveal_by") if r.get("reveal_by") in ("others", "all", "leader") else "others",
                 "speaker_sound": r.get("speaker_sound", True) is not False}         # «ping» / «brrr» on the speaker after the verdict   # who may show it: who buzzed too, or only the leader
 
     def may_lead(self, prof: dict) -> bool:
@@ -213,9 +220,15 @@ class SongQuiz:
             if st["phase"] != "buzzed":
                 raise CommunityError("Nobody has buzzed")
             leader = prof["role"] == "parent" or row["host_id"] == prof["id"]
-            if st["rules"].get("reveal_by") == "leader" and not leader:
+            mode = st["rules"].get("reveal_by", "all")
+            if mode == "leader" and not leader:
                 raise CommunityError("Only the game leader shows the solution")
-            if str(prof["id"]) != st["buzzer"] and not leader:
+            if mode == "others" and not leader:
+                if str(prof["id"]) == st["buzzer"]:
+                    raise CommunityError("The others show the solution")
+                if not any(p["id"] == str(prof["id"]) for p in st["players"]):
+                    raise CommunityError("You do not play in this game")
+            if mode == "all" and str(prof["id"]) != st["buzzer"] and not leader:
                 raise CommunityError("Only who buzzed or the game leader")
             if time.time() < (st.get("buzz_at") or 0) + st["rules"].get("reveal_delay", 5):
                 raise CommunityError("Wait for the countdown")       # first say the answer, then look

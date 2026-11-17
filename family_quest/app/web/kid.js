@@ -17,7 +17,12 @@ async function boot() {
   if (S.info.sound === false && localStorage.getItem("fq.sound") == null) Sound.on = false;
   window.addEventListener("hashchange", route);
   ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, idleReset, { passive: true }));
-  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) {
+    if (location.pathname.includes("/hassio_ingress/")) {
+      // inside Home Assistant: no offline cache – the address changes per session, an old cache can leave the page black
+      navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+    } else if (location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
   route();
 }
 
@@ -56,6 +61,20 @@ async function route() {
   if (view === "song") return songView();
   if (view === "tschau" || view === "karussell") return cardsView(view);
   if (view === "domino") return dominoView();
+  if (view === "paarjagd") return paarjagdView();
+  if (view === "werbinich") return werbinichView();
+  if (view === "kartenlauf") return kartenlaufView();
+  if (view === "stadtland") return stadtlandView();
+  if (view === "zeichnen") return zeichnenView();
+  if (view === "wuerfel") return wuerfelView();
+  if (view === "heimwaerts") return heimwaertsView();
+  if (view === "jump") return jumpView();
+  if (view === "klatsch") return klatschView();
+  if (view === "verboten") return verbotenView();
+  if (view === "jass") return jassView();
+  if (view === "werwolf") return werwolfView();
+  if (view === "schach") return schachView(arg);
+  if (view === "dorfmarkt") return dorfmarktView();
   if (view === "arcade") return arcadeView(arg);
   if (view === "deck") return arg ? deckView(+arg) : decksView();
   return dashboardView();
@@ -66,6 +85,7 @@ const go = path => { if (location.hash === "#/" + path) route(); else location.h
 async function loadMe() {
   S.me = await api("me");
   S.profile = S.me.profile;
+  if (S.me.prank) setTimeout(() => inkOverlay(S.me.prank), 400);     // somebody threw an ink bomb meanwhile
   idleReset();
 }
 
@@ -103,18 +123,33 @@ function specialBanners(list) {
 // which games this child may play (parent area › Settings › Games – per game and person)
 const canPlay = game => !!(S.me && (S.me.games_list || []).includes(game));
 
-// invitations to a duel (Tic-Tac-Toe on two devices) pop up wherever the child is in the app
+// invitations to a duel (Tic-Tac-Toe or Ping-Pong on two devices) pop up wherever the child is in the app
 let duelSeen = 0;
 setInterval(async () => {
-  if (!Auth.kid || !S.me || !canPlay("ttt") || S.lesson || document.hidden || /arcade\/ttt/.test(location.hash)) return;
+  if (!Auth.kid || !S.me || !(canPlay("ttt") || canPlay("pingpong")) || S.lesson || document.hidden || /arcade\/(ttt|pingpong)/.test(location.hash)) return;
   let d; try { d = await api("community/duel"); } catch { return; }
   if (!d || d.status !== "invite" || d.host || d.id === duelSeen) return;
   duelSeen = d.id;
   try { Sound.play("tap"); } catch {}
-  const other = d.names.X;
-  const m = modal(h("div.form.center", h("h2", "⭕ ", T("Tic-Tac-Toe")), h("p", I18N.tr(T("{0} invites you to Tic-Tac-Toe")).replace("{0}", other)),
-    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/duel/accept", { method: "POST" }); } catch {} go("arcade/ttt"); } }, "▶ ", T("Play")),
+  const other = d.names.X, pong = d.kind === "pong";
+  const m = modal(h("div.form.center", h("h2", pong ? "🏓 " : "⭕ ", pong ? T("Ping-Pong") : T("Tic-Tac-Toe")),
+    h("p", I18N.tr(pong ? T("{0} invites you to Ping-Pong") : T("{0} invites you to Tic-Tac-Toe")).replace("{0}", other)),
+    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/duel/accept", { method: "POST" }); } catch {} go(pong ? "arcade/pingpong" : "arcade/ttt"); } }, "▶ ", T("Play")),
       h("button.btn.ghost", { onclick: async () => { m.close(); try { await api("community/duel/decline", { method: "POST" }); } catch {} } }, T("No thanks")))));
+}, 5000);
+// invitations to a Ping-Pong doubles table (familyquest/pong4.py) – same popup as for a duel
+let pong4Seen = 0;
+setInterval(async () => {
+  if (!Auth.kid || !S.me || !canPlay("pingpong") || S.lesson || document.hidden || S.p4Open) return;
+  let d; try { d = await api("community/pong4"); } catch { return; }
+  if (!d || d.status !== "lobby" || d.seats[d.me].state !== "invite" || d.seats[d.me].inv === pong4Seen) return;
+  pong4Seen = d.seats[d.me].inv;                       // a new invitation (also to the same table) pops up again
+  try { Sound.play("tap"); } catch {}
+  const m = modal(h("div.form.center", h("h2", "🏓 ", T("Doubles (2 against 2)")),
+    h("p", I18N.tr(T("{0} invites you to Ping-Pong doubles")).replace("{0}", d.seats.A1.name)),
+    h("p.small.muted", I18N.tr(d.team === "A" ? T("You play in the team of the host.") : T("You play against the host."))),
+    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/pong4/accept", { method: "POST" }); } catch {} S.pong4Online = true; go("arcade/pingpong"); } }, "▶ ", T("Play")),
+      h("button.btn.ghost", { onclick: async () => { m.close(); try { await api("community/pong4/decline", { method: "POST" }); } catch {} } }, T("No thanks")))));
 }, 5000);
 
 function idleReset() {
@@ -168,6 +203,8 @@ function topBar(active, opts = {}) {
     seasonScene(),
     h("div.head-row",
       h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰"),
+      // load everything anew (e.g. a pet just bought, a game somebody opened)
+      h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: () => location.reload() }, "⟳"),
       opts.back ? h("button.icon-btn.back-btn", { title: T("Back"), "aria-label": T("Back"), onclick: opts.back }, "←") : null,
       h("button.me", { onclick: () => go("avatar"), title: T("Me") },
         avatarSvg(me.profile.avatar, 44),
@@ -190,7 +227,31 @@ function openDrawer(active) {
 function screen(active, ...content) {
   const opts = content[0] && content[0].constructor === Object ? content.shift() : {};
   app.replaceChildren(h("div.screen", topBar(active, opts), h("main.content", ...content)));
-  window.scrollTo(0, 0);
+  if (S.keepScroll != null) { window.scrollTo(0, S.keepScroll); S.keepScroll = null; } else window.scrollTo(0, 0);
+  watchCommunity(active);
+}
+
+// the start page, «Games» and «Family» update themselves when somebody opens a game, a table or a vote
+let _commTimer = null;
+function watchCommunity(active) {
+  clearInterval(_commTimer);
+  if (!["home", "games", "family"].includes(active)) return;
+  const at = location.hash;
+  _commTimer = setInterval(async () => {
+    if (location.hash !== at || document.hidden || S.lesson || document.querySelector(".modal-back, .quiz-full")) return;
+    // somebody is typing (e.g. an idea for the family council): do not draw the page anew under their fingers
+    const typing = [...document.querySelectorAll("main.content input[type=text], main.content textarea")].some(e => e.value.trim())
+      || ["INPUT", "TEXTAREA", "SELECT"].includes((document.activeElement || {}).tagName);
+    if (typing) return;
+    let c;
+    try { c = await api("me/community"); } catch { return; }
+    if (location.hash !== at || !S.me) return;
+    if (JSON.stringify(c) === JSON.stringify(S.me.community)) return;
+    S.me.community = c;
+    S.keepScroll = window.scrollY;
+    await route();
+    S.keepScroll = null;                                          // used up by screen() – or the page did not draw one
+  }, 6000);
 }
 
 // ---------------------------------------------------------------- profiles
@@ -200,6 +261,7 @@ async function profilesView() {
   const kids = profiles.filter(p => p.role === "kid"), parents = profiles.filter(p => p.role === "parent");
   const tile = p => h("button.profile-tile", { onclick: () => login(p) }, avatarSvg(p.avatar, 120),
     C(p.name, "strong"), p.has_pin ? h("span.lock", { title: T("With PIN") }, "🔒") : null);
+  const parentBtn = h("a.btn.ghost.parent-link", { href: "eltern" }, "🔐 ", T("Parent area"));
   const body = h("div.profiles-screen",
     h("div.row.profiles-head", h("h1.grow", T("Log in")), themeBtn(), langPicker()),
     S.info.setup_needed
@@ -209,8 +271,9 @@ async function profilesView() {
     kids.length ? h("div.profile-grid", ...kids.map(tile)) : (!S.info.setup_needed ? h("p.muted.center", T("No child profile yet – add one in the parent area.")) : null),
     parents.length ? h("div.parents-row", h("span.muted", T("Learn along:")), ...parents.map(p =>
       h("button.parent-chip", { onclick: () => login(p) }, avatarSvg(p.avatar, 36), C(p.name)))) : null,
-    S.info.parent_ha_only && !S.info.via_ha ? null : h("a.parent-link", { href: "eltern" }, "🔐 ", T("Parent area")));
+    parentBtn);
   app.replaceChildren(body);
+  parentBtn.href = await parentAreaHref();
 }
 
 function login(p) {
@@ -269,7 +332,7 @@ function dashboardView() {
     ...(me.weather_alarm && me.weather_alarm.hints.length ? [h("section.card.banner.alarm-banner",
       h("span.big-ic", me.weather_alarm.now ? me.weather_alarm.now.icon : "🌂"),
       h("div.grow", ...me.weather_alarm.hints.map(x => h("div", x.icon, " ", C(I18N.tr(x.text), "strong")))))] : []),
-    ...specialBanners(me.special_times), ...communityBanners(me.community), today];
+    ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today];
   if (me.profile && me.has_devices) sections.push(devicesCard());
   if (me.chores) sections.push(choresCard(me.chores));
   sections.push(subjects, deckHomeCard(), pointsCard());
@@ -279,6 +342,7 @@ function dashboardView() {
   if (me.family_goal) sections.push(familyGoalCard(me.family_goal));
   if (me.badges.length) sections.push(badgesCard(me.badges));
   screen("home", ...sections);
+  petDiedNote(me.pets);
 }
 
 /** Block time «only a message»: the app shows that it is OfflineTime until it ends. */
@@ -863,6 +927,7 @@ async function shopView() {
       o.can ? h("button.btn", { onclick: () => redeem(o) }, T("Redeem")) : h("div.small.muted.reason", o.reason),
       !o.can && o.missing > 0 ? bar(o.cost - o.missing, o.cost) : null))) : h("p.muted", T("The shop is still empty.")),
     await avatarSpecials(),
+    await pranksCard(),
     d.history.length ? h("section.card", h("h2", T("My wishes")), h("ul.history", ...d.history.map(r =>
       h("li", h("span", r.icon + " "), h("span.grow", r.name), h("span.small.status." + r.status, status[r.status] || r.status))))) : null);
   async function redeem(o) {
@@ -902,6 +967,120 @@ async function avatarSpecials() {
           : [h("div.price", "🪙 " + i.rule.cost), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, T("Buy")) : bar(d.coins, i.rule.cost)]);
     })));
 }
+
+// ---------------------------------------------------------------- pranks: the ink bomb (familyquest/pranks.py)
+async function pranksCard() {
+  let d;
+  try { d = await api("me/pranks"); } catch { return null; }
+  const buy = async () => {
+    if (!confirm(I18N.tr(T("Buy an ink bomb for {0} coins?")).replace("{0}", d.price))) return;
+    try { await api("me/pranks/buy", { method: "POST" }); Sound.play("done"); toast(T("Ink bomb bought!"), "good"); shopView(); }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  const throwIt = () => {
+    const chosen = new Set();
+    const go = h("button.btn.big.bad", { disabled: true, onclick: async () => {
+      try {
+        const r = await api("me/pranks/throw", { method: "POST", body: { targets: [...chosen] } });
+        m.close(); Sound.play("wrong");
+        toast(I18N.tr(T("Splash! {0} got ink")).replace("{0}", d.family.filter(p => r.hit.includes(p.id)).map(p => p.name).join(", ")), "good");
+        shopView();
+      } catch (e) { toast(e.message, "bad"); }
+    } }, "💣 ", T("Throw!"));
+    const chips = d.family.map(p => {
+      const b = h("button.ink-target" + (p.hit_today ? ".off" : ""), { disabled: p.hit_today, onclick: () => {
+        chosen.has(p.id) ? chosen.delete(p.id) : chosen.add(p.id);
+        b.classList.toggle("on", chosen.has(p.id)); go.disabled = !chosen.size;
+      } }, avatarSvg(p.avatar, 52), C(p.name, "strong"), p.hit_today ? h("span.small.muted", T("got ink today")) : null);
+      return b;
+    });
+    const m = modal(h("div.form", h("h2", "💣 ", T("Who gets the ink bomb?")),
+      h("p.small.muted", T("Choose one or more – one bomb hits all of them. Everybody can be hit once a day.")),
+      h("div.ink-targets", ...chips), h("div.row", go, h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  };
+  const f = d.fart;
+  const buyFart = async () => {
+    if (!confirm(I18N.tr(T("Buy a whoopee cushion for {0} coins?")).replace("{0}", f.price))) return;
+    try { await api("me/pranks/buy", { method: "POST", body: { kind: "fart" } }); Sound.play("done"); toast(T("Whoopee cushion bought!"), "good"); shopView(); }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  const fart = async e => {
+    const b = e.currentTarget; b.disabled = true;
+    try { const r = await api("me/pranks/fart", { method: "POST" }); toast(I18N.tr(T("Pfffrrt! On {0} speakers")).replace("{0}", r.speakers), "good"); shopView(); }
+    catch (err) { b.disabled = false; toast(err.message, "bad"); }
+  };
+  const fartCard = h("div.offer.card" + (f.left || d.coins >= f.price ? "" : ".cant"),
+    h("div.offer-ic", "💨"), h("strong", T("Whoopee cushion")),
+    h("span.small.muted", I18N.tr(T("A fart on all speakers of the home – {0} times per cushion.")).replace("{0}", f.uses)),
+    !f.speakers ? h("span.small.warn-text", T("Needs speakers in Home Assistant")) : null,
+    h("div.price", "🪙 " + f.price),
+    f.left ? h("button.btn.small.bad", { disabled: !f.speakers, onclick: fart }, "💨 ", I18N.tr(T("Pfffrrt! ({0})")).replace("{0}", f.left)) : null,
+    d.coins >= f.price ? h("button.btn.small" + (f.left ? ".ghost" : ""), { onclick: buyFart }, T("Buy")) : bar(d.coins, f.price));
+  return h("section.card", h("h2", "😈 ", T("Pranks")),
+    h("div.shop-grid", fartCard, h("div.offer.card" + (d.charges || d.coins >= d.price ? "" : ".cant"),
+      h("div.offer-ic", "💣"), h("strong", T("Ink bomb")),
+      h("span.small.muted", T("Smears the screen of whoever you choose with ink – they have to wipe it clean with their finger.")),
+      h("div.price", "🪙 " + d.price),
+      d.charges ? h("button.btn.small.bad", { onclick: throwIt }, "💣 ", I18N.tr(T("Throw ({0})")).replace("{0}", d.charges)) : null,
+      d.coins >= d.price ? h("button.btn.small" + (d.charges ? ".ghost" : ""), { onclick: buy }, T("Buy")) : bar(d.coins, d.price))));
+}
+
+// the victim: ink all over the screen, wiped away with the finger; at about 85 % clean the rest fades
+let inkOpen = false;
+function inkOverlay(p) {
+  if (inkOpen || !p) return;
+  inkOpen = true;
+  const cv = h("canvas.ink-canvas"), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = window.innerWidth, H = window.innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  // ink: a dark wash, big blobs, splashes and drips
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  g.fillStyle = "rgba(8,8,16,.93)"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#05050c";
+  for (let i = 0; i < 14; i++) {
+    const x = rnd(0, W), y = rnd(0, H), r = rnd(40, 130);
+    g.beginPath();
+    for (let k = 0; k <= 18; k++) { const a = k / 18 * Math.PI * 2, rr = r * rnd(.75, 1.25); g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+    g.fill();
+    for (let k = 0; k < 7; k++) { const a = rnd(0, 6.3), d = r * rnd(1.2, 2); g.beginPath(); g.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, rnd(4, 14), 0, 7); g.fill(); }
+  }
+  for (let i = 0; i < 12; i++) { const x = rnd(0, W), y = rnd(0, H * .6), w = rnd(6, 16); g.fillRect(x, y, w, rnd(60, 220)); g.beginPath(); g.arc(x + w / 2, y + 220, w * .9, 0, 7); g.fill(); }
+  g.fillStyle = "rgba(255,255,255,.07)";                                     // a little gloss
+  for (let i = 0; i < 10; i++) { g.beginPath(); g.ellipse(rnd(0, W), rnd(0, H), rnd(10, 40), rnd(4, 12), rnd(0, 3), 0, 7); g.fill(); }
+  const msg = h("div.ink-msg", avatarSvg(p.from.avatar, 44), h("div", h("strong", I18N.tr(T("{0} hit you with an ink bomb!")).replace("{0}", p.from.name)), h("br"), T("Wipe it clean!")));
+  const box = h("div.ink-over", { role: "dialog", "aria-label": I18N.tr(T("Ink bomb")) }, cv, msg);
+  document.body.append(box);
+  try { Sound.play("wrong"); } catch {}
+  // wiping
+  g.globalCompositeOperation = "destination-out"; g.lineCap = "round"; g.lineJoin = "round"; g.lineWidth = 64;
+  let last = null, done = false;
+  const pos = e => [e.clientX, e.clientY];
+  const wipe = e => {
+    if (done) return;
+    const [x, y] = pos(e);
+    g.beginPath(); if (last) { g.moveTo(...last); g.lineTo(x, y); g.stroke(); } else { g.arc(x, y, 32, 0, 7); g.fill(); }
+    last = [x, y]; msg.classList.add("fade");
+  };
+  cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); last = null; wipe(e); });
+  cv.addEventListener("pointermove", e => { if (e.buttons || e.pointerType === "touch") wipe(e); });
+  cv.addEventListener("pointerup", () => { last = null; });
+  // how clean? (alpha on a coarse grid)
+  const check = setInterval(() => {
+    const step = 12 * dpr, data = g.getImageData(0, 0, cv.width, cv.height).data;
+    let n = 0, clean = 0;
+    for (let y = 0; y < cv.height; y += step) for (let x = 0; x < cv.width; x += step) { n++; if (data[(Math.floor(y) * cv.width + Math.floor(x)) * 4 + 3] < 40) clean++; }
+    if (clean / n < 0.85) return;
+    done = true; clearInterval(check);
+    box.classList.add("gone");
+    api(`me/pranks/${p.id}/clean`, { method: "POST" }).then(r => { setTimeout(() => { box.remove(); inkOpen = false; toast(T("All clean!"), "good"); if (r && r.next) inkOverlay(r.next); }, 600); })
+      .catch(() => { setTimeout(() => { box.remove(); inkOpen = false; }, 600); });
+  }, 300);
+}
+setInterval(async () => {
+  if (!Auth.kid || !S.me || inkOpen || document.hidden) return;
+  try { const r = await api("me/pranks/pending"); if (r.prank) inkOverlay(r.prank); } catch {}
+}, 5000);
 
 // ---------------------------------------------------------------- avatar editor
 async function avatarView() {
@@ -963,7 +1142,7 @@ async function avatarView() {
     h("label.feel", h("span", T("Today I feel …")), feel),
     h("span.small.muted", "🔒 ", T("Only your parents see this.")));
   draw(); drawTabs(); drawPanel();
-  screen("avatar", h("h1", "🧑‍🎨 ", T("Me")), moods, h("div.av-editor", preview, h("div.av-side", tabs, panel)),
+  screen("avatar", h("h1", "🧑‍🎨 ", T("Me")), moods, petsSection(), h("div.av-editor", preview, h("div.av-side", tabs, panel)),
     h("div.row.center", h("button.btn.big", { onclick: save }, "💾 ", T("Save"))),
     h("div.row.center", h("button.btn.ghost", { onclick: changePin }, "🔑 ", T("Change my PIN"))),
     S.me.games ? botsSection() : null);
@@ -973,11 +1152,282 @@ async function avatarView() {
   }
 }
 
+// ---------------------------------------------------------------- pet care (familyquest/pets.py)
+const PET_BARS = [["hunger", "🍖", T("Hunger")], ["mood", "😊", T("Mood")], ["clean", "🫧", T("Cleanliness")]];
+const PET_STAGE = { egg: T("Egg"), baby: T("Baby"), young: T("Young"), adult: T("Adult") };
+const petText = (t, name, x) => I18N.tr(t).replace("{0}", name).replace("{1}", x ?? "");
+
+/** Start page: a pet that needs something (not while pet care is paused). */
+function petBanners(d) {
+  if (!d) return [];
+  const out = [];
+  for (const p of [...(d.pets || []), ...(d.sitting || [])]) {
+    if (p.paused || (p.sitter && !p.owner)) continue;               // in the hotel / with a sitter: not my job now
+    if (p.dying) {
+      out.push(h("section.card.banner.pet-banner.sos", { onclick: () => go("avatar") }, h("span.big-ic", petIcon(p.kind, 44, p.emoji)),
+        h("div.grow", C(petText(T("{0} needs you now!"), p.name), "strong"), h("br"),
+          h("span.small", petText(T("All bars are empty – without care {0} leaves you in {1} days."), p.name, Math.max(0, Math.ceil(p.days_left)))))));
+      continue;
+    }
+    const words = { hunger: T("{0} is hungry"), mood: T("{0} is bored"), clean: T("{0} needs a bath") };
+    if (p.low.length) out.push(h("section.card.banner.pet-banner", { onclick: () => go("avatar") }, h("span.big-ic", petIcon(p.kind, 44, p.emoji)),
+      h("div.grow", ...p.low.map(b => h("div", C(petText(words[b], p.name), "strong")))), h("span.btn.small", "🐾 ", T("Look after"))));
+  }
+  return out;
+}
+
+/** A pet died: a gentle message once, at the next login. */
+let petDiedShown = "";
+function petDiedNote(d) {
+  if (!d || !d.died || !d.died.length) return;
+  const key = d.died.map(p => p.id).join(",");
+  if (key === petDiedShown) return;                  // the start page draws itself again – one message is enough
+  petDiedShown = key;
+  const m = modal(h("div.form.center.pet-died",
+    h("div.pet-died-ic", "🕊️"),
+    ...d.died.map(p => h("p", C(petText(T("{0} has died – take good care of your next pet"), p.name), "strong"))),
+    h("p.small.muted", T("You can find a new pet in the shop.")),
+    h("button.btn", { onclick: () => m.close() }, T("OK"))), { onClose: () => api("me/pets/seen", { method: "POST" }).catch(() => {}) });
+}
+
+function petsSection() {
+  const sec = h("section.card.pets-sec");
+  const load = async () => {
+    let d; try { d = await api("me/pets"); } catch (e) { return sec.replaceChildren(h("p.bad", e.message)); }
+    const head = h("div.sec-head", h("h2", "🐾 ", T("My pets")));
+    const care = d.sitting && d.sitting.length ? [h("h3", "🤝 ", T("Pets in my care")),
+      h("div.pet-grid", ...d.sitting.map(p => petCard(p, d.food_cost, load, d)))] : [];
+    if (!d.pets.length) return sec.replaceChildren(head, h("p.muted", T("No pet yet – you can buy one in the shop.")),
+      h("button.btn", { onclick: () => go("shop") }, "🛍️ ", T("To the shop")), ...care);
+    const pause = d.pets[0].paused;
+    sec.replaceChildren(head, ...(pause === "away" || pause === "parents" ? [h("p.pet-paused", "⏸ ", T("Holiday care"), " – ",
+      h("span.small", pause === "away" ? T("you are away – your pets are looked after") : T("your parents look after your pets")))] : []),
+      h("div.pet-grid", ...d.pets.map(p => petCard(p, d.food_cost, load, d))), ...care, petMoreRow(d, load));
+  };
+  load();
+  return sec;
+}
+
+/** The pet with its outfit on (emoji or drawn degu, the outfit on top of it). */
+function dressedPet(p, size) {
+  if (p.stage === "egg") return h("span.pet-dressed.pet-egg", { title: I18N.tr(T("It hatches tomorrow")) }, "🥚");   // the dinosaur's egg
+  const wrap = h("span.pet-dressed.kind-" + p.kind, petIcon(p.kind, size, p.emoji));
+  if (p.outfit) {
+    const pos = PET_WEAR_POS[p.outfit] || "body";
+    wrap.append(h("span.pet-wear.pos-" + pos, petShopIcon(p.outfit, Math.round(size * { top: .5, ear: .38, eyes: .5, neck: .55, body: .62 }[pos]), true)));
+  }
+  return wrap;
+}
+
+/** The pet at home: the house as a backdrop, the furniture around it, the pet (element `emo`) in front. */
+function petScene(p, emo) {
+  const spots = ["fl", "fr", "ml", "mr", "tl", "tr"];
+  return h("div.pet-home" + (p.house ? ".has-house" : ""),
+    p.house ? h("div.pet-house", petShopIcon(p.house, 150)) : null,
+    ...(p.furniture || []).map((f, i) => h("div.pet-furn.spot-" + spots[i % spots.length], petShopIcon(f, 36))),
+    emo,
+    p.happy_home ? h("span.pet-happy", "✨ ", T("Happy home")) : null);
+}
+
+/** One more pet of a kind the child has – same price as in the shop, at most 6 per kind. */
+function petMoreRow(d, reload) {
+  const more = (d.more || []).filter(m => m.count < m.max);
+  if (!more.length) return null;
+  const buy = async m => {
+    if (!confirm(I18N.tr(T("Buy one more for {0} coins?")).replace("{0}", m.price))) return;
+    try { await api("me/pets/more", { method: "POST", body: { kind: m.kind } }); Sound.play("right"); reload(); }
+    catch (e) { Sound.play("wrong"); toast(e.message, "bad"); }
+  };
+  return h("div.pet-more-row", h("span.small.muted", T("One more of the same kind:")),
+    ...more.map(m => h("button.btn.small.ghost", { onclick: () => buy(m) }, petIcon(m.kind, 20, m.emoji), " + · 🪙 ", String(m.price))));
+}
+
+/** Babies: two healthy pets of the same kind, at least 3 days old – 1 or 2 babies, then the pair rests 14 days. */
+function petBreedDialog(p, d, reload) {
+  const info = d.breeding[p.id] || {};
+  const why = { too_young: T("at least 3 days old"), not_healthy: T("healthy – every bar at least 50"), away: T("at home"),
+    resting: T("rested – they had babies not long ago") };
+  const mates = d.pets.filter(x => info.partners.includes(x.id));
+  const go = async mate => {
+    try {
+      const r = await api(`me/pets/${p.id}/breed`, { method: "POST", body: { partner: mate.id } });
+      Sound.play("right"); confetti(); m.close();
+      toast(I18N.tr(r.babies.length > 1 ? T("Twins! {0} babies were born") : T("A baby was born")).replace("{0}", r.babies.length), "good");
+      reload();
+    } catch (e) { Sound.play("wrong"); toast(e.message, "bad"); }
+  };
+  const m = modal(h("div.form.pet-breed",
+    h("h2", "💕 ", petText(T("Babies for {0}"), p.name)),
+    h("p.small.muted", T("Two healthy pets of the same kind, both at least 3 days old, can have 1 or 2 babies. Then they rest 14 days. At most 6 pets of one kind.")),
+    info.why ? h("p.warn-text", petText(T("{0} must be {1} first."), p.name, I18N.tr(why[info.why]))) : null,
+    !info.room ? h("p.warn-text", T("You have 6 of this kind already.")) : null,
+    h("div.pet-breed-list", ...mates.map(x => {
+      const ready = !info.why && info.room && (info.ready_partners || []).includes(x.id);
+      const w = (d.breeding[x.id] || {}).why;
+      return h("button.pet-breed-mate" + (ready ? "" : ".off"), { disabled: !ready, onclick: () => go(x) },
+        dressedPet(x, 44), h("span", C(x.name, "strong"), h("br"),
+          h("span.small.muted", ready ? T("ready") : w ? I18N.tr(why[w]) : "–")));
+    })),
+    h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Close")))));
+}
+
+/** Pet sitting: give the pet to a family member until a day – or to the Family Quest pet hotel for some days. */
+function petSitDialog(p, d, reload) {
+  const today = new Date(), iso = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+  const inDays = n => { const x = new Date(today); x.setDate(x.getDate() + n); return iso(x); };
+  const who = h("select", ...(d.family || []).map(f => h("option", { value: f.id }, f.name)));
+  const until = h("input", { type: "date", value: inDays(6), min: iso(today), max: inDays(60) });
+  const days = h("input", { type: "number", min: 1, max: 30, value: 7 });
+  const price = h("b");
+  const drawPrice = () => price.textContent = d.hotel_cost ? `🪙 ${Math.max(1, Math.min(30, +days.value || 1)) * d.hotel_cost}` : T("free");
+  days.oninput = drawPrice; drawPrice();
+  const run = async (path, body) => {
+    try { await api(`me/pets/${p.id}/${path}`, { method: "POST", body }); Sound.play("right"); m.close(); reload(); }
+    catch (e) { Sound.play("wrong"); toast(e.message, "bad"); }
+  };
+  const m = modal(h("div.form.pet-sit",
+    h("h2", "🧳 ", petText(T("Pet sitting for {0}"), p.name)),
+    h("p.small.muted", T("Away for some days, e.g. at a camp? Somebody has to look after your pet.")),
+    (d.family || []).length ? h("div.card.pet-sit-opt",
+      h("h3", "🤝 ", T("A family member looks after it")),
+      h("p.small.muted", T("They see your pet in «Pets in my care» and feed, play and wash it – the food is on them.")),
+      h("div.grid2", h("label.field", T("Who?"), who), h("label.field", T("Until (inclusive)"), until)),
+      h("button.btn", { onclick: () => run("sit", { sitter: +who.value, until: until.value }) }, "🤝 ", T("Hand over"))) : null,
+    h("div.card.pet-sit-opt",
+      h("h3", "🏨 ", T("Family Quest pet hotel")),
+      h("p.small.muted", I18N.tr(T("Your pet is looked after – no hunger, no boredom. It comes back fed, happy and clean. {0} coins per day, paid now; fetched early, full days left are paid back.")).replace("{0}", d.hotel_cost)),
+      h("div.row.wrap", h("label.field", T("Days"), days), h("span.grow"), price),
+      h("button.btn", { onclick: () => run("hotel", { days: +days.value }) }, "🏨 ", T("Book the pet hotel"))),
+    h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+}
+
+function petCard(p, cost, reload, d = {}) {
+  const fetchBack = async () => {
+    try { await api(`me/pets/${p.id}/fetch`, { method: "POST" }); Sound.play("right"); reload(); } catch (e) { toast(e.message, "bad"); }
+  };
+  if (p.hotel_until && !p.owner) return h("div.pet-card.away-card",                  // in the pet hotel
+    h("div.pet-emoji", dressedPet(p, 64), h("span.pet-away-ic", "🏨")),
+    C(p.name, "strong"),
+    h("p.small", I18N.tr(T("In the pet hotel until {0}")).replace("{0}", fmtDate(p.hotel_until.slice(0, 10)))),
+    h("button.btn.small", { onclick: fetchBack }, "🏠 ", T("Fetch early")));
+  if (p.sitter && !p.owner) return h("div.pet-card.away-card",                        // with a family member
+    h("div.pet-emoji", dressedPet(p, 64), h("span.pet-away-ic", "🤝")),
+    C(p.name, "strong"),
+    h("p.small", I18N.tr(T("{0} looks after it until {1}")).replace("{0}", p.sitter.name).replace("{1}", fmtDate(p.sit_until))),
+    h("div.row.small.pet-mini-bars", ...PET_BARS.map(([k, ic]) => h("span", ic, " ", p[k]))),
+    h("button.btn.small", { onclick: fetchBack }, "🏠 ", T("Take back")));
+  return petCardCare(p, cost, reload, d);
+}
+
+function petCardCare(p, cost, reload, d) {
+  const emo = h("div.pet-emoji", dressedPet(p, { baby: 56, young: 72, adult: 88 }[p.stage] || 72), p.stage === "baby" ? h("span.pet-bottle", "🍼") : null);
+  const act = async (action, icon) => {
+    try {
+      await api(`me/pets/${p.id}/${action}`, { method: "POST" });
+      Sound.play("right");
+      emo.classList.remove("pet-hop"); void emo.offsetWidth; emo.classList.add("pet-hop");
+      const fx = h("span.pet-fx", icon); emo.append(fx); setTimeout(() => fx.remove(), 1100);
+      setTimeout(reload, 700);
+    } catch (e) { Sound.play("wrong"); toast(e.message, "bad"); }
+  };
+  const rename = async () => {
+    if (p.owner) return;                                             // only the owner names the pet
+    const n = prompt(I18N.tr(T("New name for your pet")), p.name);
+    if (n == null || !n.trim()) return;
+    try { await api(`me/pets/${p.id}`, { method: "PUT", body: { name: n } }); reload(); } catch (e) { toast(e.message, "bad"); }
+  };
+  return h("div.pet-card.stage-" + p.stage + (p.dying ? ".dying" : ""),
+    petScene(p, emo),
+    p.owner ? h("div.pet-name", C(p.name, "strong")) : h("button.pet-name", { onclick: rename, title: T("Rename") }, C(p.name, "strong"), " ✏️"),
+    h("div.small.muted", petText(T("{0} days old"), p.age), " · ", I18N.tr(PET_STAGE[p.stage])),
+    p.dying ? h("div.pet-sos", "🆘 ", petText(T("Still {0} days – please look after {1}!"), Math.max(0, Math.ceil(p.days_left)), p.name)) : null,
+    h("div.pet-bars", ...PET_BARS.map(([k, ic, label]) => h("div.pet-bar" + (p[k] < 25 ? ".low" : ""), { title: label },
+      h("span.pet-bar-ic", ic), bar(p[k], 100, p[k] < 25 ? "var(--bad)" : p[k] < 50 ? "var(--warn)" : "var(--good)"), h("span.small", p[k])))),
+    h("div.pet-actions",
+      h("button.btn.small", { onclick: () => act("feed", "🍖") }, h("span.pet-act-ic", "🍖"), h("span", T("Feed")), cost ? h("span.pet-cost", "🪙 " + cost) : null),
+      h("button.btn.small", { onclick: () => act("play", "❤️") }, h("span.pet-act-ic", "🎾"), h("span", T("Play"))),
+      h("button.btn.small", { onclick: () => act("wash", "🫧") }, h("span.pet-act-ic", "🫧"), h("span", T("Wash")))),
+    p.mining ? h("div.pet-mine" + (p.mining.on ? ".on" : ""), h("span.pet-wheel", "🎡"),
+      h("span.small", p.mining.on ? I18N.tr(T("Runs in its wheel and mines {0} coins a day")).replace("{0}", p.mining.per_day)
+        : T("Not healthy enough to run – every bar needs at least 50")),
+      h("span.small.muted", " · ", I18N.tr(T("mined so far: {0}")).replace("{0}", p.mining.total))) : null,
+    p.owner ? h("p.small.muted.pet-owner", "🤝 ", I18N.tr(T("You look after it for {0} until {1}")).replace("{0}", p.owner.name).replace("{1}", fmtDate(p.sit_until)))
+      : h("div.row.wrap.pet-more",
+        h("button.btn.small.ghost.pet-shop-btn", { onclick: () => petShopDialog(p, reload) }, "🛍️ ", T("Furnish & dress up")),
+        h("button.btn.small.ghost", { onclick: () => petSitDialog(p, d, reload) }, "🧳 ", T("Pet sitting")),
+        (d.breeding && d.breeding[p.id] && d.breeding[p.id].partners.length) ? h("button.btn.small.ghost", { onclick: () => petBreedDialog(p, d, reload) }, "💕 ", T("Babies")) : null));
+}
+
+/** Pet shop for one pet: three tabs (clothes, house, furniture) – buy, put on, move in, place. */
+async function petShopDialog(p0, reload) {
+  let d;
+  try { d = await api("me/pets/shop"); } catch (e) { return toast(e.message, "bad"); }
+  let tab = "outfit";
+  const box = h("div.petshop");
+  const m = modal(box, { onClose: reload });
+  const pet = () => d.pets.find(x => x.id === p0.id) || { ...p0, owned: [], furniture: [] };
+  const run = async (call, sound = "right") => {
+    try { const r = await call(); d = r.shop; Sound.play(sound); draw(); return r; }
+    catch (e) { Sound.play("wrong"); toast(e.message, "bad"); }
+  };
+  const buy = (it, pay) => run(() => api(`me/pets/${p0.id}/buy`, { method: "POST", body: { item: it.id, pay } }), "done")
+    .then(r => { if (r) { confetti(); toast(T("Bought!"), "good"); } });
+  const wear = outfit => run(() => api(`me/pets/${p0.id}/wear`, { method: "PUT", body: { outfit } }));
+  const home = (house, furniture) => run(() => api(`me/pets/${p0.id}/home`, { method: "PUT", body: { house, furniture } }));
+  const TABS = [["outfit", "👗", T("Clothes")], ["house", "🏠", T("House")], ["furniture", "🛋️", T("Furniture")]];
+  const pays = () => d.currency === "mixed" ? ["coins", "xp"] : [d.currency];
+  const priceLabel = (pay, n) => pay === "xp" ? `⭐ ${n} XP` : `🪙 ${n}`;
+
+  function tile(it, p) {
+    const own = p.owned.includes(it.id);
+    let on = false, action = null;
+    if (it.cat === "outfit") {
+      on = p.outfit === it.id;
+      if (own) action = h("button.btn.small" + (on ? ".ghost" : ""), { onclick: () => wear(on ? "" : it.id) }, on ? T("Take off") : T("Put on"));
+    } else if (it.cat === "house") {
+      on = p.house === it.id;
+      if (own) action = h("button.btn.small" + (on ? ".ghost" : ""), { onclick: () => home(on ? null : it.id, p.furniture) }, on ? T("Move out") : T("Move in"));
+    } else {
+      on = p.furniture.includes(it.id);
+      const full = p.furniture.length >= d.max_furniture;
+      if (own) action = h("button.btn.small" + (on ? ".ghost" : ""), { disabled: !on && full,
+        onclick: () => home(p.house, on ? p.furniture.filter(f => f !== it.id) : [...p.furniture, it.id]) }, on ? T("Put away") : T("Place"));
+    }
+    const state = on ? { outfit: T("Wears it"), house: T("Lives here"), furniture: T("Placed") }[it.cat] : own ? T("Yours") : null;
+    const best = it.cat === "house" && it.best.includes(p.kind) && it.best.length < 5;
+    return h("div.petshop-item" + (on ? ".on" : own ? ".own" : ""),
+      petShopIcon(it.id, 52), h("strong.small", it.name),
+      best ? h("span.pet-best", "★ ", T("Fits best")) : null,
+      state ? h("span.small.petshop-state", "✓ ", state) : null,
+      own ? action : h("div.petshop-pay", ...pays().map(pay => h("button.btn.small", { disabled: d.balance[pay] < it.price, onclick: () => buy(it, pay) },
+        priceLabel(pay, it.price)))));
+  }
+
+  function draw() {
+    const p = pet();
+    const items = d.items.filter(i => i.cat === tab);
+    const bal = pays().map(pay => priceLabel(pay, Math.floor(d.balance[pay]))).join(" · ");
+    box.replaceChildren(
+      h("h2", "🛍️ ", T("Furnish & dress up"), " – ", C(p.name)),
+      h("div.petshop-scene", petScene(p, h("div.pet-emoji", dressedPet(p, 72)))),
+      h("p.small.petshop-info", h("span", T("You have"), " ", bal), p.slow ? h("span", "😊 ", I18N.tr(T("Mood drops {0} % slower")).replace("{0}", p.slow)) : null),
+      h("div.av-tabs.petshop-tabs", ...TABS.map(([k, ic, n]) => h("button" + (tab === k ? ".on" : ""), { onclick: () => { tab = k; draw(); } }, ic, " ", n))),
+      h("p.small.muted", { outfit: T("A new outfit makes your pet happy (+20 mood, once)."),
+        house: T("With a house the mood drops 25 % slower."),
+        furniture: I18N.tr(T("Every piece of furniture: 5 % slower (at most 50 % with the house). {0} of {1} placed."))
+          .replace("{0}", p.furniture.length).replace("{1}", d.max_furniture) }[tab]),
+      h("div.petshop-grid", ...items.map(it => tile(it, p))),
+      h("div.row.center", h("button.btn", { onclick: () => m.close() }, T("Close"))));
+  }
+  draw();
+}
+
 // ---------------------------------------------------------------- own bots for the games (shared with the family or not)
 const BOT_COLORS = ["#5b5bd6", "#d6336c", "#e8590c", "#0c8599", "#2f9e44", "#7048e8", "#f59f00", "#495057"];
 const BOT_LEVELS = { easy: T("easy"), normal: T("normal"), hard: T("hard") };
 function botBadge(b, size = 52) {
-  return h("span.bot-av", { style: { width: size + "px", height: size + "px", fontSize: (size * .58) + "px", background: b.color || "var(--hover)" } }, b.emoji || "🤖");
+  return h("span.bot-av", { style: { width: size + "px", height: size + "px", fontSize: (size * .58) + "px", background: b.color || "var(--hover)" } },
+    ["degu", "goldfish"].includes(b.kind) ? petIcon(b.kind, size * .72) : b.emoji || "🤖");
 }
 function botsSection() {
   const sec = h("section.card.bots-sec");
@@ -985,7 +1435,7 @@ function botsSection() {
     let d; try { d = await api("community/bots"); } catch (e) { return sec.replaceChildren(h("p.bad", e.message)); }
     sec.replaceChildren(h("div.sec-head", h("h2", "🤖 ", T("My bots")), h("div.head-actions", h("button.btn", { onclick: () => botDialog(null, d.emojis, load) }, "+ ", T("New bot")))),
       h("p.small.muted", T("Make your own bots – they play with you in Tschau Sepp, Kartenkarussell and Texas Hold'em. Shared bots can play with your siblings too.")),
-      d.bots.length ? h("div.bot-grid", ...d.bots.map(b => h("button.bot-tile", { onclick: () => b.mine ? botDialog(b, d.emojis, load) : toast(I18N.tr(T("A bot of {0}")).replace("{0}", b.owner || "?")) },
+      d.bots.filter(b => !b.pet).length ? h("div.bot-grid", ...d.bots.filter(b => !b.pet).map(b => h("button.bot-tile", { onclick: () => b.mine ? botDialog(b, d.emojis, load) : toast(I18N.tr(T("A bot of {0}")).replace("{0}", b.owner || "?")) },
         botBadge(b), C(b.name, "strong"), h("span.small.muted", I18N.tr(BOT_LEVELS[b.level])),
         b.mine ? (b.shared ? h("span.chip.good", "👨‍👩‍👧 ", T("shared")) : null) : h("span.chip", I18N.tr(T("by {0}")).replace("{0}", b.owner || "?")))))
         : h("p.muted", T("No bot yet – make one!")));
@@ -1071,7 +1521,7 @@ function changePin() {
 
 function slotName(s) {
   return { background: T("Background"), hat: T("Hats"), hairclip: T("Hair clips"), eyewear: T("Glasses"), face: T("Face"), teeth: T("Braces"),
-    ear: T("Ears"), neck: T("Neck"), pet: T("Pets") }[s] || s;
+    ear: T("Ears"), neck: T("Neck"), suit: T("Costumes"), figure: T("Figure"), back: T("On the back"), hand: T("In the hand"), pet: T("Pets") }[s] || s;
 }
 
 // ---------------------------------------------------------------- family view
@@ -1100,7 +1550,9 @@ async function familyView() {
 async function gamesView() {
   const cards = [canPlay("quiz") ? await quizCard() : null, canPlay("bingo") ? await bingoCard() : null, canPlay("song") ? await songFamilyCard() : null,
     canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
-    canPlay("domino") ? await dominoFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, arcadeCard()].filter(Boolean);
+    canPlay("domino") ? await dominoFamilyCard() : null, canPlay("paarjagd") ? await paarjagdFamilyCard() : null,
+    canPlay("werbinich") ? await werbinichFamilyCard() : null, canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null,
+    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
   screen("games", h("h1", "🎲 ", T("Games")), ...cards);
 }
 

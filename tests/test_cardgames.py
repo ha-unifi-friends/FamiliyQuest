@@ -88,8 +88,9 @@ def test_bots_play_a_whole_game():
         assert t.st["phase"] == "done" and len(t.st["ranking"]) == 3, kind
 
 
-def test_api_solo_and_family(client):
+def test_api_solo_and_family(client, monkeypatch):
     from test_api import setup_family
+    monkeypatch.setattr(cg, "bot_delay", lambda rules, default: 3600)   # the bots wait: the turn cannot move on by itself during the test
     ph, mia, leo = setup_family(client)
     hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
     hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
@@ -111,8 +112,14 @@ def test_api_solo_and_family(client):
         assert client.post("/api/community/cards/karussell/play", json=body, headers=me).status_code == 200
     else:
         assert client.post("/api/community/cards/karussell/draw", headers=me).status_code == 200
-    other = hm if me is hl else hl
-    assert client.post("/api/community/cards/karussell/play", json={"card": "violet:1"}, headers=other).status_code == 400
+    # a person who is not on turn cannot play – not even a card of their own hand that fits. (Before: Mia tried
+    # «violet:1» – but after Leo's card it is usually Mia's turn, and with violet:1 in her hand on a violet card the
+    # play was valid: a rare random failure.)
+    turn = client.get("/api/community/cards/karussell", headers=hl).json()["turn"]
+    other = hm if turn == str(leo) else hl
+    hand = client.get("/api/community/cards/karussell", headers=other).json()["hand"]
+    r = client.post("/api/community/cards/karussell/play", json={"card": hand[0]}, headers=other)
+    assert r.status_code == 400 and r.json()["detail"] == "It is not your turn"
 
 
 @pytest.mark.parametrize("n", [5, 6, 8])
@@ -124,3 +131,40 @@ def test_many_players_still_get_a_pile(n):
         t = cg.Shed(st, random.Random(seed), now=Clock())
         t.deal()
         assert len(t.st["deck"]) >= 7 and total(t) == 36
+
+
+def test_bot_reaction_time():
+    assert cg.bot_delay({}, 1.4) == 1.4 and cg.bot_delay({"bot_ms": 0}, 1.4) == 0 and cg.bot_delay({"bot_ms": 99999}, 1.4) == 5
+    assert cg.CardGames.clean_rules(None, "tschau", {"bot_ms": -5})["bot_ms"] == 0
+    for ms, moves_at_once in ((0, True), (3000, False)):
+        t, clock = table("tschau", n=0, bots=3, bot_ms=ms)
+        before = total(t) and t.st["turn"]
+        moved = t.tick()                                          # no time passed since the deal
+        assert moved is moves_at_once, ms
+        clock.t += 3
+        assert t.tick()
+
+
+def test_number_one_hat_for_the_winner_of_a_family_game(client):
+    from test_api import setup_family
+    ph, mia, leo = setup_family(client)
+    fq = client.app.state.fq
+    def hat(pid):
+        return (client.get("/api/parent/profiles", headers=ph).json() and
+                next(p for p in fq.db.q("SELECT * FROM profile WHERE id=?", pid)) and
+                fq.avatar_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid), {"items": {}})["items"].get("hat"))
+    fq.community.add_history(0, "__family__", {"people": [mia, leo], "winners": [mia]})
+    assert hat(mia) == "champion" and hat(leo) is None
+    fq.community.add_history(0, "__family__", {"people": [mia, leo], "winners": []})          # no winner: no change
+    assert hat(mia) == "champion"
+    fq.community.add_history(0, "__family__", {"people": [mia, leo], "winners": [leo]})       # 2nd place or worse: gone
+    assert hat(mia) is None and hat(leo) == "champion"
+    fq.community.add_history(0, "__family__", {"people": [leo], "winners": [leo]})            # alone: not a family game
+    assert hat(leo) == "champion"
+    # a card game at a family table gives the hat, alone against bots does not
+    st = {"kind": "tschau", "solo": True, "players": [{"id": str(mia)}, {"id": "bot1", "bot": True}], "ranking": [str(mia)]}
+    fq.cards._champion(st, [str(mia)])
+    assert hat(mia) is None
+    st = {"kind": "tschau", "players": [{"id": str(mia)}, {"id": str(leo)}], "ranking": [str(mia), str(leo)]}
+    fq.cards._champion(st, [str(mia)])
+    assert hat(mia) == "champion" and hat(leo) is None

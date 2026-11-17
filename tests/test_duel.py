@@ -31,3 +31,26 @@ def test_duel_flow(client):
     client.post("/api/community/duel/decline", headers=hl)
     assert client.get("/api/community/duel", headers=hm).json()["status"] == "declined"
     assert client.get("/api/me", headers=hl).json()["community"]["duel"] is None
+
+
+def test_ping_pong_on_two_devices(client):
+    ph, mia, leo = setup_family(client)
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    st = client.post("/api/community/duel", json={"opponent": leo, "kind": "pong"}, headers=hm).json()
+    assert st["kind"] == "pong" and st["pong"]["pads"] == {"X": 0.5, "O": 0.5}
+    assert client.get("/api/me", headers=hl).json()["community"]["duel"]["kind"] == "pong"
+    client.post("/api/community/duel/accept", headers=hl)
+    # X sends the ball and the points, O only its paddle
+    st = client.post("/api/community/duel/pong", json={"pad": 0.3, "ball": {"x": 0.5, "y": 0.4, "vx": 0.1, "vy": -0.3}, "points": {"X": 2, "O": 1}}, headers=hm).json()
+    assert st["pong"]["pads"]["X"] == 0.3 and st["pong"]["ball"]["vy"] == -0.3
+    st = client.post("/api/community/duel/pong", json={"pad": 7, "ball": {"x": 0, "y": 0, "vx": 0, "vy": 0}, "points": {"X": 0, "O": 9}}, headers=hl).json()
+    assert st["pong"]["pads"]["O"] == 1.0 and st["pong"]["ball"]["y"] == 0.4 and st["pong"]["points"] == {"X": 2, "O": 1}
+    st = client.post("/api/community/duel/pong", json={"pad": 0.5, "points": {"X": 7, "O": 1}, "over": "X"}, headers=hm).json()
+    assert st["status"] == "done" and st["result"] == "X" and st["score"]["X"] == 1
+    st = client.post("/api/community/duel/again", headers=hl).json()
+    assert st["status"] == "play" and st["pong"]["points"] == {"X": 0, "O": 0}
+    # switched off for the children: no ping-pong duel
+    client.post("/api/community/duel/leave", headers=hm)
+    client.put("/api/parent/settings", json={"games_access": {"pingpong": {"mode": "off", "profiles": []}}}, headers=ph)
+    assert client.post("/api/community/duel", json={"opponent": leo, "kind": "pong"}, headers=hm).status_code == 403

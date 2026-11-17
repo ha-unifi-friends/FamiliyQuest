@@ -18,6 +18,7 @@ MAX_BOTS = 12
 class Bots:
     def __init__(self, db):
         self.db = db
+        self.pets = None          # pets.Pets – the own living pets play along as bots ("pet:<id>")
 
     def visible(self, pid: int) -> list[dict]:
         """My bots and the ones others share – with the owner's name."""
@@ -57,12 +58,20 @@ class Bots:
         self._mine(prof, bot_id)
         self.db.x("DELETE FROM bot WHERE id=?", bot_id)
 
-    def pick(self, pid: int, ids: list[int] | None, count: int, level: str, builtin: list[tuple[str, str]]) -> list[dict]:
-        """The bots for a table: the chosen own / shared ones first, then animal bots up to `count`."""
-        mine = {b["id"]: b for b in self.visible(pid)}
+    def pick(self, pid: int, ids: list[int | str] | None, count: int, level: str, builtin: list[tuple[str, str]]) -> list[dict]:
+        """The bots for a table: the chosen own / shared ones (and own pets) first, then animal bots up to `count`."""
+        mine: dict = {b["id"]: b for b in self.visible(pid)}
+        if self.pets:
+            mine.update({b["id"]: dict(b, owner=None) for b in self.pets.bots(pid)})
         out = []
         for i in ids or []:
-            b = mine.get(int(i))
+            key = i if isinstance(i, str) and i.startswith("pet:") else None
+            if key is None:
+                try:
+                    key = int(i)
+                except (TypeError, ValueError):
+                    continue
+            b = mine.get(key)
             if b and len(out) < count:
                 out.append({"name": b["name"], "emoji": b["emoji"], "color": b["color"], "level": b["level"],
                             "owner": b["owner"] if b["owner_id"] != pid else None})

@@ -28,6 +28,8 @@ MAX_PROPOSALS = 5           # per person and topic
 GRACE = 0.6                 # seconds after the time is up in which an answer still counts (network)
 
 
+FAMILY_RESULT = "__family__"   # add_history(…, FAMILY_RESULT, {"people", "winners"}) from the games: the «No. 1» hat
+
 class CommunityError(ValueError):
     pass
 
@@ -267,6 +269,7 @@ class Community:
         played = int(self.db.val("SELECT COUNT(DISTINCT profile_id) FROM quiz_answer WHERE game_id=?", g["id"], default=0))
         if not played:
             return scores                            # stopped before anybody answered: nothing to remember
+        self.family_result([x["id"] for x in scores], [x["id"] for x in scores if x["place"] == 1 and x["points"] > 0])
         for x in scores:
             won = x["place"] == 1 and x["points"] > 0
             self.add_history(x["id"], "quiz", {"quiz": g["quiz"]["title"], "place": x["place"], "of": len(scores),
@@ -486,7 +489,28 @@ class Community:
 
     # ================================================================ history
     def add_history(self, pid: int, kind: str, data: dict) -> None:
+        if kind == FAMILY_RESULT:                       # not a history entry: who wears the «No. 1» hat (games call it so)
+            return self.family_result(data.get("people") or [], data.get("winners") or [])
         self.db.x("INSERT INTO history(profile_id, kind, data) VALUES(?,?,?)", pid, kind, json.dumps(data, ensure_ascii=False))
+
+    def family_result(self, people: list, winners: list) -> None:
+        """The end of a family game (at least two people of the family): the winners wear the «No. 1» hat until the
+        next family game they play in; everybody else of the family at the table takes it off. Guests and bots do not count."""
+        ids = {int(p) for p in people if str(p).isdigit()}
+        rows = [r for r in self.db.q("SELECT id, role, settings FROM profile WHERE archived=0") if r["id"] in ids and r["role"] in ("kid", "parent")]
+        if len(rows) < 2:
+            return
+        win = {int(w) for w in winners if str(w).isdigit()} & {r["id"] for r in rows}
+        if not win:                                     # nobody of the family won (a guest, a bot, or no points): no change
+            return
+        for r in rows:
+            st = json.loads(r["settings"] or "{}")
+            if bool(st.get("champion")) != (r["id"] in win):
+                if r["id"] in win:
+                    st["champion"] = True
+                else:
+                    st.pop("champion", None)
+                self.db.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(st), r["id"])
 
     def history(self, pid: int, limit: int = 50) -> list[dict]:
         rows = self.db.q("SELECT id, kind, data, at FROM history WHERE profile_id=? ORDER BY id DESC LIMIT ?", pid, limit)

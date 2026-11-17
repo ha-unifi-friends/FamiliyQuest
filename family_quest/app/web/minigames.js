@@ -7,7 +7,7 @@ const ARCADE = {
   sudoku: { icon: "🔢", title: T("Sudoku"), text: T("Every number once in each row, column and box. From 4×4 to 9×9.") },
   patience: { icon: "🃏", title: T("Patience"), text: T("Sort all cards by suit onto the four piles.") },
   pingpong: { icon: "🏓", title: T("Ping-Pong"), text: T("Bounce the ball back – against the app or face to face on one tablet.") },
-  pairs: { icon: "🧩", title: T("Pairs"), text: T("Turn over two cards – find the pairs. Alone, against the app or with up to four players.") },
+  slots: { icon: "🎰", title: T("One-armed bandit"), text: T("Buy it once, then pull the lever for 1 coin – three times a day. Three alike win, cherries too.") },
 };
 
 const arcadeStore = {
@@ -35,7 +35,7 @@ function arcadeView(kind) {
     h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => go("games") }, "✕"),
     h("div.quiz-head", h("h1", g.icon, " ", g.title), h("button.icon-btn", { title: T("Rules"), onclick: () => toast(I18N.tr(g.text)) }, "ℹ️")), box));
   document.body.classList.add("quiz-open");
-  ({ ttt: tttGame, sudoku: sudokuGame, patience: patienceGame, pingpong: pingpongGame, pairs: pairsGame })[kind](box);
+  ({ ttt: tttGame, sudoku: sudokuGame, patience: patienceGame, pingpong: pingpongGame, slots: slotsGame })[kind](box);
 }
 
 function segmented(options, value, onchange) {
@@ -65,10 +65,20 @@ function tttBest(b, me) {             // minimax: the best cell for «me»
   return cells[Math.floor(Math.random() * cells.length)];
 }
 
+// on the «Games» page with the family games: duels on two devices (only two players) – Tic-Tac-Toe and Ping-Pong
+function tttDuelCard() {
+  return h("section.card.game-card", h("h2", "⚔️ ", T("Duel for two")),
+    h("p.small.muted", T("Two players, two devices: challenge somebody of the family – they get the invitation on their device.")),
+    h("div.row.wrap",
+      canPlay("ttt") ? h("button.btn", { onclick: () => { S.tttOnline = true; go("arcade/ttt"); } }, "⭕ ", T("Tic-Tac-Toe")) : null,
+      canPlay("pingpong") ? h("button.btn", { onclick: () => { S.pongOnline = true; go("arcade/pingpong"); } }, "🏓 ", T("Ping-Pong")) : null,
+      canPlay("pingpong") ? h("button.btn", { onclick: () => { S.pong4Online = true; go("arcade/pingpong"); } }, "🏓 ", T("Doubles (2 against 2)")) : null));
+}
+
 async function tttGame(box) {
   let duel = null;
   try { duel = await api("community/duel"); } catch {}
-  if (duel) return tttOnline(box);
+  if ((duel && duel.kind !== "pong") || S.tttOnline) { S.tttOnline = false; return tttOnline(box); }
   const saved = arcadeStore.get().ttt || {};
   let mode = saved.mode || "easy", board, turn, starter = "X", done = null, score = { X: 0, O: 0, draw: 0 };
   const names = () => mode === "two" ? { X: T("Player 1"), O: T("Player 2") } : { X: T("You"), O: T("App") };
@@ -121,7 +131,7 @@ function tttOnline(box) {
   };
   const pickOpponent = async () => {
     let list = [];
-    try { list = await api("community/duel/opponents"); } catch (e) { toast(e.message, "bad"); }
+    try { list = await api("community/duel/opponents?kind=ttt"); } catch (e) { toast(e.message, "bad"); }
     body.replaceChildren(h("h2", T("Who do you want to play with?")),
       list.length ? h("div.arcade-grid", ...list.map(o => h("button.arcade-tile", { disabled: o.busy, onclick: async () => {
         try { st = await api("community/duel", { method: "POST", body: { opponent: o.id } }); draw(true); } catch (e) { toast(e.message, "bad"); }
@@ -387,7 +397,13 @@ function patienceGame(box) {
 }
 
 // ---------------------------------------------------------------- Ping-Pong
-function pingpongGame(box) {
+async function pingpongGame(box) {
+  let duel = null;
+  try { duel = await api("community/duel"); } catch {}
+  if ((duel && duel.kind === "pong") || S.pongOnline) { S.pongOnline = false; return pongOnline(box); }
+  let table = null;
+  try { table = await api("community/pong4"); } catch {}
+  if (table || S.pong4Online) { S.pong4Online = false; return pong4Online(box); }
   const saved = arcadeStore.get().pingpong || {};
   let mode = saved.mode || "medium", to = 7;
   const W = 400, H = 640, PW = 80, PH = 12, R = 9;
@@ -471,123 +487,380 @@ function pingpongGame(box) {
   const hint = h("p.small.muted.arcade-hint");
   const drawHint = () => hint.replaceChildren(mode === "two" ? T("Each player moves the paddle on their side with a finger (or the keys A/D and ←/→). First to 7 points wins.")
     : T("Move your paddle (bottom) with your finger or the arrow keys. First to 7 points wins."));
-  const modes = segmented([["easy", T("easy")], ["medium", T("medium")], ["hard", T("hard")], ["two", "👥 " + I18N.tr(T("Two players"))]], mode,
-    v => { mode = v; arcadeStore.set("pingpong", { mode }); reset(); drawHint(); });
+  const modes = segmented([["easy", T("easy")], ["medium", T("medium")], ["hard", T("hard")], ["two", "👥 " + I18N.tr(T("Two players"))],
+    ["online", "📱 " + I18N.tr(T("Two devices"))], ["four", "📱📱 " + I18N.tr(T("Doubles"))]], mode,
+    v => { if (v === "online") return pongOnline(box); if (v === "four") return pong4Online(box); mode = v; arcadeStore.set("pingpong", { mode }); reset(); drawHint(); });
   drawHint();
   box.replaceChildren(h("section.card.pp-card", modes, h("div.pp-wrap", canvas), hint));
   reset(); requestAnimationFrame(loop);
 }
 
-// ---------------------------------------------------------------- Pairs (memory) – emoji sets or the family's photo sets
-const PAIR_SETS = {
-  animals: [T("Animals"), "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🦉 🦄 🐝"],
-  fruit: [T("Fruit and vegetables"), "🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🥑 🥕 🌽 🥦"],
-  vehicles: [T("Vehicles"), "🚗 🚕 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🚚 🚜 🛵 🏍️ 🚲 🛴 🚂 ✈️ 🚀 🚁 ⛵"],
-  sea: [T("In the sea"), "🐳 🐬 🐟 🐠 🐡 🦈 🐙 🦑 🦀 🦞 🦐 🐚 🪼 🐢 🦭 🦦 🦩 🦢 ⚓ 🏝️"],
-};
-const PAIR_BOTS = { easy: 0.35, medium: 0.65, hard: 0.95 };       // how likely the app remembers a card it saw
+// ---------------------------------------------------------------- one-armed bandit (familyquest/slots.py: drawn on the server)
+async function slotsGame(box) {
+  let st;
+  try { st = await api("me/slots"); } catch (e) { return box.replaceChildren(h("p.bad", e.message)); }
+  const SYM = st.symbols, order = Object.keys(SYM);
+  const reels = [0, 1, 2].map((_, i) => h("div.ob-reel", h("div.ob-strip", h("div.ob-cell", SYM[order[[5, 4, 3][i]]]))));
+  const msg = h("div.ob-msg");
+  const info = h("div.ob-info");
+  const lever = h("button.ob-lever", { title: T("Pull") }, h("span.ob-knob"));
+  const play = h("button.btn.big.ob-play", "🎰 ", T("Pull the lever"), " · 1 🪙");
+  let busy = false;
+  const drawInfo = () => {
+    info.replaceChildren(h("span", "🪙 ", String(Math.round(st.coins))), h("span", I18N.tr(T("Spins left today: {0} of {1}")).replace("{0}", st.left).replace("{1}", st.max)));
+    play.disabled = lever.disabled = busy || !st.left || st.coins < st.bet;
+  };
+  const spinReel = (el, sym, ms) => new Promise(res => {
+    const strip = el.firstChild;
+    const seq = Array.from({ length: 14 }, () => SYM[order[Math.floor(Math.random() * order.length)]]).concat(SYM[sym]);
+    strip.replaceChildren(...seq.map(x => h("div.ob-cell", x)));
+    strip.style.transition = "none"; strip.style.transform = "translateY(0)";
+    void strip.offsetWidth;
+    strip.style.transition = `transform ${ms}ms cubic-bezier(.15,.7,.25,1)`;
+    strip.style.transform = `translateY(-${(seq.length - 1) * 100}%)`;
+    setTimeout(() => { strip.replaceChildren(h("div.ob-cell", SYM[sym])); strip.style.transition = "none"; strip.style.transform = "translateY(0)"; res(); }, ms + 30);
+  });
+  const go = async () => {
+    if (busy) return;
+    busy = true; drawInfo(); msg.textContent = ""; msg.className = "ob-msg";
+    lever.classList.add("pulled"); setTimeout(() => lever.classList.remove("pulled"), 450);
+    let r;
+    try { r = await api("me/slots/spin", { method: "POST" }); } catch (e) { busy = false; drawInfo(); return toast(e.message, "bad"); }
+    await Promise.all(r.reels.map((sym, i) => spinReel(reels[i], sym, 900 + i * 450)));
+    st = r; busy = false; drawInfo();
+    if (r.win) {
+      msg.className = "ob-msg win" + (r.jackpot ? " jackpot" : "");
+      msg.textContent = r.win === 1 ? I18N.tr(T("You get your coin back!")) : I18N.tr(r.jackpot ? T("JACKPOT! +{0} coins") : T("You win {0} coins!")).replace("{0}", r.win);
+      try { Sound.play("right"); } catch {}
+      if (r.jackpot || r.win >= 10) confetti();
+    } else {
+      msg.textContent = I18N.tr(T("No luck this time"));
+      try { Sound.play("wrong"); } catch {}
+    }
+  };
+  play.onclick = go; lever.onclick = go;
+  const table = h("div.ob-table", h("b", T("Pay table (1 coin)")),
+    ...Object.entries(st.three).map(([k, v]) => h("div.ob-row", h("span", SYM[k].repeat(3)), h("b", "+" + v))),
+    h("div.ob-row", h("span", SYM.cherry + SYM.cherry), h("b", "+" + st.cherries[2])),
+    h("div.ob-row", h("span", SYM.cherry), h("b", "+" + st.cherries[1])));
+  const machine = () => h("div.ob-machine",
+    h("div.ob-top", "★ ", T("Lucky Star"), " ★"),
+    h("div.ob-window", ...reels), lever, msg, info, play, table);
+  if (st.owned) { box.replaceChildren(machine()); drawInfo(); return; }
+  // not bought yet
+  const buy = h("button.btn.big", { disabled: st.coins < st.price, onclick: async () => {
+    try { st = await api("me/slots/buy", { method: "POST" }); Sound.play("right"); confetti(); box.replaceChildren(machine()); drawInfo(); }
+    catch (e) { toast(e.message, "bad"); }
+  } }, "🛒 ", I18N.tr(T("Buy it for {0} coins")).replace("{0}", st.price));
+  box.replaceChildren(h("div.ob-machine.locked", h("div.ob-top", "★ ", T("Lucky Star"), " ★"),
+    h("div.ob-window", ...reels), h("p.center", T("Your own one-armed bandit for the game corner. Buy it once – then you can play three times a day for 1 coin.")),
+    h("p.small.muted.center", "🪙 ", String(Math.round(st.coins))), buy, table));
+}
 
-async function pairsGame(box) {
-  let fam = { sets: [], crest: null };
-  try { fam = await api("community/memory"); } catch {}
-  const saved = { set: "animals", size: 8, mode: "solo", players: 2, back: fam.crest ? "crest" : "classic", ...(arcadeStore.get().pairs || {}) };
-  const sets = { ...Object.fromEntries(Object.entries(PAIR_SETS).map(([k, [n, list]]) => [k, { name: I18N.tr(n), items: list.split(" ").map(e => ({ emoji: e })) }])),
-    ...Object.fromEntries(fam.sets.map(st => ["photo:" + st.id, { name: "📷 " + st.name, items: st.photos.map(u => ({ img: u })) }])) };
-  if (!sets[saved.set]) saved.set = "animals";
-  if (saved.back === "crest" && !fam.crest) saved.back = "classic";
-  const opt = (label, el) => h("label.field", label, el);
-  const sel = (key, options, conv = String) => h("select", { onchange: e => { saved[key] = conv(e.target.value); arcadeStore.set("pairs", saved); setup(); } },
-    ...options.map(([v, n]) => h("option", { value: v, selected: saved[key] === v }, n)));
-  const backs = [...Object.entries(CARD_BACKS).map(([k, n]) => [k, I18N.tr(n)]), ...(fam.crest ? [["crest", I18N.tr(T("Family crest"))]] : [])];
-  const backEl = () => h("div.mm-back.back-" + saved.back, saved.back === "crest" ? crestSvg(fam.crest, { ribbon: false }) : null);
-
-  function setup() {
-    const max = sets[saved.set].items.length;
-    const sizes = [6, 8, 10, 12, 15, 18].filter(n => n <= max);
-    if (!sizes.includes(saved.size)) saved.size = sizes[sizes.length - 1] || max;
-    if (!sizes.length) sizes.push(max);
-    box.replaceChildren(h("section.card.form",
-      h("div.grid2", opt(T("Cards"), sel("set", Object.entries(sets).map(([k, st]) => [k, st.name]))),
-        opt(T("Pairs"), sel("size", sizes.map(n => [n, String(n)]), Number))),
-      h("div.grid2", opt(T("Who plays?"), sel("mode", [["solo", I18N.tr(T("Alone"))], ["easy", I18N.tr(T("Against the app – easy"))], ["medium", I18N.tr(T("Against the app – medium"))],
-          ["hard", I18N.tr(T("Against the app – hard"))], ["multi", I18N.tr(T("Several players on this device"))]])),
-        saved.mode === "multi" ? opt(T("Players"), sel("players", [2, 3, 4].map(n => [n, String(n)]), Number)) : opt(T("Back of the cards"), sel("back", backs))),
-      saved.mode === "multi" ? opt(T("Back of the cards"), sel("back", backs)) : null,
-      h("div.row.center", h("div.mm-card", { style: { width: "70px" } }, h("div.mm-in", backEl()))),
-      fam.sets.length ? null : h("p.small.muted", T("Parents can add photo sets and a family crest in the parent area (Settings).")),
-      h("button.btn.big", { onclick: play }, "▶ ", T("Start"))));
-  }
-
-  function play() {
-    const items = sets[saved.set].items.slice().sort(() => Math.random() - 0.5).slice(0, saved.size);
-    const deck = items.flatMap((it, k) => [{ k, it }, { k, it }]).sort(() => Math.random() - 0.5);
-    const n = deck.length, cols = n <= 12 ? 4 : n <= 20 ? 5 : 6;
-    const bot = PAIR_BOTS[saved.mode];
-    const names = saved.mode === "solo" ? [I18N.tr(T("You"))] : bot ? [I18N.tr(T("You")), I18N.tr(T("App"))]
-      : Array.from({ length: saved.players }, (_, i) => I18N.tr(T("Player {0}")).replace("{0}", i + 1));
-    const score = names.map(() => 0), done = new Set(), memory = new Map();
-    let turn = 0, open = [], moves = 0, busy = false, start = Date.now();
-    const grid = h("div.mm-grid", { style: { "--cols": cols, "--rows": Math.ceil(n / cols) } }), head = h("div.mm-players"), info = h("p.center.muted.small");
-    const cards = deck.map((c, i) => h("button.mm-card", { onclick: () => { if (!busy && !(bot && turn === 1)) flip(i); } },
-      h("div.mm-in", backEl(), h("div.mm-face", c.it.img ? h("img", { src: c.it.img, alt: "" }) : h("span", { translate: "no" }, c.it.emoji)))));
-    grid.replaceChildren(...cards);
-    const drawHead = () => {
-      head.replaceChildren(...names.map((nm, i) => h("span.chip" + (i === turn && names.length > 1 ? ".on" : ""), nm, ": ", String(score[i]))));
-      info.replaceChildren(I18N.tr(T("Moves")) + " " + moves);
-    };
-    const remember = i => { if (!bot || Math.random() < bot) memory.set(i, deck[i].k); };
-    const flip = i => {
-      if (done.has(i) || open.includes(i) || open.length >= 2) return;
-      open.push(i); cards[i].classList.add("open"); remember(i); try { Sound.play("tap"); } catch {}
-      if (open.length < 2) return;
-      moves++; busy = true;
-      const [a, b] = open;
-      if (deck[a].k === deck[b].k) {
-        setTimeout(() => {
-          done.add(a); done.add(b); cards[a].classList.add("done"); cards[b].classList.add("done"); memory.delete(a); memory.delete(b);
-          score[turn]++; open = []; busy = false; try { Sound.play("right"); } catch {}
-          drawHead(); if (done.size === n) return finish(); botTurn();
-        }, 450);
-      } else {
-        setTimeout(() => {
-          cards[a].classList.remove("open"); cards[b].classList.remove("open"); open = []; busy = false;
-          turn = (turn + 1) % names.length; drawHead(); botTurn();
-        }, 1100);
+// ---------------------------------------------------------------- Ping-Pong on two devices (familyquest/duel.py, kind «pong»)
+// The one who invited (X) moves the ball; both send their paddle about 20 times a second and see their own paddle at
+// the bottom (the guest sees the table turned round). The ball between two updates is moved on locally.
+function pongOnline(box) {
+  const W = 400, H = 640, PW = 80, PH = 12, R = 9, TO = 7, SPEED = 300;
+  let st = null, timer = null, sync = null, alive = true, cheered = -1, last = 0, recv = 0;
+  let myPad = 0.5, ball = null, points = { X: 0, O: 0 }, wait = 0, sending = false;
+  const body = h("div");
+  const canvas = h("canvas.pp-canvas", { width: W, height: H }), ctx = canvas.getContext("2d");
+  const stop = () => { alive = false; clearInterval(timer); clearInterval(sync); };
+  const back = async () => { stop(); try { await api("community/duel/leave", { method: "POST" }); } catch {} pingpongGame(box); };
+  const act = async (path, b) => { try { st = await api("community/duel/" + path, { method: "POST", body: b }); onState(true); } catch (e) { toast(e.message, "bad"); } };
+  const host = () => st && st.me === "X";
+  // the table as X sees it: X at the bottom (y = H − 30), O at the top (y = 30); the guest draws it turned round
+  const serve = dir => { const a = Math.random() * 0.8 - 0.4; ball = { x: 0.5, y: 0.5, vx: Math.sin(a) * SPEED / W, vy: dir * Math.cos(a) * SPEED / H }; wait = 0.9; };
+  const step = dt => {                                   // only on X
+    if (!ball || st.status !== "play") return;
+    if (wait > 0) { wait -= dt; return; }
+    ball.x += ball.vx * dt; ball.y += ball.vy * dt;
+    if (ball.x < R / W) { ball.x = R / W; ball.vx = Math.abs(ball.vx); } else if (ball.x > 1 - R / W) { ball.x = 1 - R / W; ball.vx = -Math.abs(ball.vx); }
+    const pads = st.pong.pads, hit = (px, py, dirOut) => {
+      const bx = ball.x * W, by = ball.y * H;
+      if (Math.abs(bx - px * W) <= PW / 2 + R && Math.abs(by - py) <= PH / 2 + R && Math.sign(ball.vy) === -dirOut) {
+        const off = (bx - px * W) / (PW / 2), sp = Math.min(Math.hypot(ball.vx * W, ball.vy * H) * 1.06, 900);
+        ball.vx = Math.sin(off) * sp / W; ball.vy = dirOut * Math.cos(off) * sp / H; ball.y = (py + dirOut * (PH / 2 + R)) / H;
+        try { Sound.play("tap"); } catch {}
       }
-      drawHead();
     };
-    const botTurn = () => {
-      if (!bot || turn !== 1 || done.size === n) return;
-      const hidden = deck.map((_, i) => i).filter(i => !done.has(i));
-      const unknown = hidden.filter(i => !memory.has(i));
-      const known = [...memory.entries()].filter(([i]) => !done.has(i));
-      const pair = known.find(([i, k]) => known.some(([j, l]) => j !== i && l === k));
-      const pick = l => l[Math.floor(Math.random() * l.length)];
-      let first = pair ? pair[0] : pick(unknown.length ? unknown : hidden);
-      setTimeout(() => {
-        flip(first);
-        const mate = [...memory.entries()].find(([j, k]) => j !== first && k === deck[first].k && !done.has(j));
-        const rest = hidden.filter(i => i !== first);
-        const second = mate ? mate[0] : pick(rest.filter(i => !memory.has(i)).length ? rest.filter(i => !memory.has(i)) : rest);
-        setTimeout(() => flip(second), 800);
-      }, 700);
+    hit(myPad, H - 30, -1); hit(pads.O, 30, 1);
+    if (ball.y * H > H + R) { points.O++; point(1); } else if (ball.y * H < -R) { points.X++; point(-1); }
+  };
+  let over = null;
+  const point = dir => { if (points.X >= TO || points.O >= TO) { over = points.X >= TO ? "X" : "O"; ball = null; } else serve(dir); };
+  const send = async () => {
+    if (!alive || sending || !st || st.status !== "play") return;
+    sending = true;
+    const b = { pad: host() ? myPad : 1 - myPad };      // the guest's paddle in X's view (turned round)
+    if (host()) Object.assign(b, { ball, points, over });
+    try { st = await api("community/duel/pong", { method: "POST", body: b }); recv = performance.now(); onState(); } catch {}
+    sending = false;
+  };
+  const view = (x, y) => host() ? [x * W, y * H] : [(1 - x) * W, (1 - y) * H];
+  const render = () => {
+    const p = st.pong, pts = host() ? points : p.points;
+    ctx.fillStyle = "#14532d"; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 3; ctx.strokeRect(6, 6, W - 12, H - 12);
+    ctx.setLineDash([10, 10]); ctx.beginPath(); ctx.moveTo(6, H / 2); ctx.lineTo(W - 6, H / 2); ctx.stroke(); ctx.setLineDash([]);
+    const mine = st.me, other = mine === "X" ? "O" : "X";
+    ctx.font = "bold 44px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.35)";
+    ctx.fillText(String(pts[other]), W / 2, H / 2 - 30); ctx.fillText(String(pts[mine]), W / 2, H / 2 + 70);
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim() || "#5b5bd6";
+    ctx.fillStyle = css("--ans-2"); ctx.fillRect(myPad * W - PW / 2, H - 30 - PH / 2, PW, PH);            // me: always at the bottom
+    const op = host() ? p.pads.O : 1 - p.pads.X;
+    ctx.fillStyle = css("--ans-4"); ctx.fillRect(op * W - PW / 2, 30 - PH / 2, PW, PH);
+    let b = host() ? ball : p.ball;
+    if (b && !host() && st.status === "play") {           // between two updates: move it on
+      const dt = Math.min(0.12, (performance.now() - recv) / 1000);
+      b = { x: b.x + b.vx * dt, y: b.y + b.vy * dt };
+    }
+    if (b) { const [bx, by] = view(b.x, b.y); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(bx, by, R, 0, Math.PI * 2); ctx.fill(); }
+    ctx.font = "bold 16px system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.8)";
+    ctx.fillText(st.names[other], W / 2, 60); ctx.fillText(st.names[mine], W / 2, H - 52);
+    if (st.status === "done") {
+      ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillRect(0, H / 2 - 60, W, 120); ctx.fillStyle = "#fff"; ctx.font = "bold 26px system-ui, sans-serif";
+      ctx.fillText(I18N.tr(T("Winner: {0}")).replace("{0}", st.names[st.result]), W / 2, H / 2 + 9);
+    }
+  };
+  const loop = t => {
+    if (!alive || !box.isConnected) return stop();
+    const dt = Math.min(0.033, (t - (last || t)) / 1000); last = t;
+    if (st && st.status === "play" && st.pong) { if (host()) step(dt); render(); }
+    requestAnimationFrame(loop);
+  };
+  const toPad = e => { const r = canvas.getBoundingClientRect(); myPad = Math.max(PW / 2 / W, Math.min(1 - PW / 2 / W, (e.clientX - r.left) / r.width)); };
+  canvas.addEventListener("pointerdown", toPad); canvas.addEventListener("pointermove", toPad);
+  const pickOpponent = async () => {
+    let list = [];
+    try { list = await api("community/duel/opponents?kind=pong"); } catch (e) { toast(e.message, "bad"); }
+    body.replaceChildren(h("h2", T("Who do you want to play with?")),
+      list.length ? h("div.arcade-grid", ...list.map(o => h("button.arcade-tile", { disabled: o.busy, onclick: async () => {
+        try { st = await api("community/duel", { method: "POST", body: { opponent: o.id, kind: "pong" } }); onState(true); } catch (e) { toast(e.message, "bad"); }
+      } }, avatarSvg(o.avatar, 56), C(o.name, "strong"), o.busy ? h("span.small.muted", T("is playing")) : null)))
+        : h("p.muted", T("Nobody else can play right now.")));
+  };
+  let shown = "";
+  const onState = (force = false) => {
+    if (!st) { if (shown !== "pick") { shown = "pick"; pickOpponent(); } return; }
+    const other = st.names[st.me === "X" ? "O" : "X"];
+    const key = st.status;
+    if (st.status === "play" && host() && !ball && !over && points.X + points.O === 0 && shown !== "play") serve(1);
+    if (st.status === "done") {
+      const round = st.score.X + st.score.O;
+      if (st.result === st.me && round !== cheered) { cheered = round; confetti(); try { Sound.play("done"); } catch {} }
+    }
+    if (!force && key === shown && key !== "done") return;
+    if (key === "done" && shown === "done" && !force) { render(); return; }
+    shown = key;
+    if (st.status === "invite") return body.replaceChildren(h("div.center",
+      h("p.ttt-status", st.host ? I18N.tr(T("Waiting for {0} …")).replace("{0}", other) : I18N.tr(T("{0} invites you to Ping-Pong")).replace("{0}", other)),
+      st.host ? h("button.btn.ghost", { onclick: back }, T("Cancel"))
+        : h("div.row.center", h("button.btn", { onclick: () => act("accept") }, "▶ ", T("Play")), h("button.btn.ghost", { onclick: back }, T("No thanks")))));
+    if (st.status === "declined" || st.status === "gone") return body.replaceChildren(h("div.center",
+      h("p.ttt-status", I18N.tr(st.status === "declined" ? T("{0} does not want to play right now.") : T("{0} has left the game.")).replace("{0}", other)),
+      h("button.btn", { onclick: back }, "← ", T("Back"))));
+    if (st.status === "done") { render(); }
+    body.replaceChildren(h("div.pp-wrap", canvas),
+      h("p.small.muted.arcade-hint", T("Move your paddle (bottom) with your finger. First to 7 points wins.")),
+      h("div.row.center", st.status === "done" ? h("button.btn", { onclick: () => { points = { X: 0, O: 0 }; over = null; ball = null; act("again"); } }, "🔄 ", T("New round")) : null,
+        h("button.btn.ghost", { onclick: back }, T("Leave"))));
+  };
+  box.replaceChildren(h("section.card.pp-card", h("div.row", h("h2.grow", "📱 ", T("Two devices")),
+    h("button.btn.ghost.small", { onclick: back }, "← ", T("Against the app"))), body));
+  (async () => { try { st = await api("community/duel"); } catch {} if (st && st.kind !== "pong") st = null; onState(true); })();
+  timer = setInterval(async () => {                      // invitation / lobby: slow; during the match the paddle sync carries the state
+    if (!alive || !box.isConnected) return stop();
+    if (st && st.status === "play") return;
+    try { st = await api("community/duel"); if (st && st.kind !== "pong") st = null; onState(); } catch {}
+  }, 1200);
+  sync = setInterval(send, 50);
+  requestAnimationFrame(loop);
+}
+
+// ---------------------------------------------------------------- Ping-Pong doubles on four devices (familyquest/pong4.py)
+// Two teams of two: a back paddle at the baseline and a short front paddle near the net. The host (seat A1) moves the
+// ball and the bots, like X in the duel; every device sends only its own paddle. Everybody sees the own team at the
+// bottom (team B sees the table turned round). Seats without a person are played by bots on the host's device.
+function pong4Online(box) {
+  const W = 400, H = 640, PW = 80, PH = 12, R = 9, SPEED = 300, MAXSP = 820;
+  const ROW = { A1: H - 30, A2: H / 2 + 90, B1: 30, B2: H / 2 - 90 };           // paddle rows as team A sees the table
+  const front = s => s[1] === "2", len = s => front(s) ? PW * 0.55 : PW, dirOf = s => s[0] === "A" ? -1 : 1;
+  const BOT = { easy: 150, normal: 230, hard: 340 }, AIM = { easy: 1.6, normal: 1.15, hard: 0.85 }, aim = {}, LVL = { easy: T("easy"), normal: T("normal"), hard: T("hard") };
+  let st = null, timer = null, sync = null, alive = true, cheered = -1, last = 0, recv = 0, prev = "";
+  let myPad = 0.5, ball = null, points = { A: 0, B: 0 }, wait = 0, over = null, sending = false, bots = {};
+  const token = {}; S.p4Open = token; box.p4 = token;   // no invitation popup while the table is open
+  const body = h("div");
+  const canvas = h("canvas.pp-canvas", { width: W, height: H }), ctx = canvas.getContext("2d");
+  const stop = () => { alive = false; if (S.p4Open === token) S.p4Open = null; clearInterval(timer); clearInterval(sync); };
+  const back = async () => { stop(); try { await api("community/pong4/leave", { method: "POST" }); } catch {} pingpongGame(box); };
+  const act = async (path, b) => { try { st = await api("community/pong4/" + path, { method: "POST", body: b }); onState(true); } catch (e) { toast(e.message, "bad"); } };
+  const host = () => st && st.host;
+  const flip = () => st && st.team === "B";
+  const seatName = s => { const x = st.seats[s]; return x.bot ? "🤖 " + I18N.tr(LVL[x.bot]) : x.name; };
+  const teamName = t => seatName(t + "1") + " + " + seatName(t + "2");
+  // ---- the match (only on the host): ball, bots, points
+  const serve = t => {                                   // the team that lost the point serves from its baseline
+    const a = Math.random() * 0.6 - 0.3, d = t === "A" ? -1 : 1;
+    ball = { x: 0.5, y: t === "A" ? (H - 70) / H : 70 / H, vx: Math.sin(a) * SPEED / W, vy: d * Math.cos(a) * SPEED / H }; wait = 0.9;
+  };
+  const padOf = s => s === st.me ? myPad : st.seats[s].state === "bot" ? (bots[s] ?? 0.5) : st.pong.pads[s];
+  const moveBots = dt => {
+    for (const s of ["A1", "A2", "B1", "B2"]) {
+      const x = st.seats[s];
+      if (x.state !== "bot") continue;
+      const coming = ball && Math.sign(ball.vy) === -dirOf(s);
+      // a bot aims with a part of its paddle (a new choice for every ball): returns get an angle, easy bots miss now and then
+      if (!coming) delete aim[s]; else if (aim[s] == null) aim[s] = (Math.random() * 2 - 1) * AIM[x.bot] * len(s) / 2 / W;
+      const target = coming ? ball.x - aim[s] : 0.5;
+      const p = bots[s] ?? 0.5, m = BOT[x.bot] * dt / W, half = len(s) / 2 / W;
+      bots[s] = Math.max(half, Math.min(1 - half, p + Math.max(-m, Math.min(m, target - p))));
+    }
+  };
+  const hit = s => {
+    const px = padOf(s) * W, py = ROW[s], dirOut = dirOf(s), half = len(s) / 2, bx = ball.x * W, by = ball.y * H;
+    if (Math.abs(bx - px) <= half + R && Math.abs(by - py) <= PH / 2 + R && Math.sign(ball.vy) === -dirOut) {
+      const off = Math.max(-1, Math.min(1, (bx - px) / half)), sp = Math.min(Math.hypot(ball.vx * W, ball.vy * H) * (front(s) ? 1.05 : 1.08), MAXSP);
+      ball.vx = Math.sin(off) * sp / W; ball.vy = dirOut * Math.cos(off) * sp / H; ball.y = (py + dirOut * (PH / 2 + R)) / H;
+      try { Sound.play("tap"); } catch {}
+    }
+  };
+  const step = dt => {
+    moveBots(dt);
+    if (!ball || st.status !== "play") return;
+    if (wait > 0) { wait -= dt; return; }
+    for (let i = 0; i < 2; i++) {                        // two small steps: the fast ball does not slip through a paddle
+      ball.x += ball.vx * dt / 2; ball.y += ball.vy * dt / 2;
+      if (ball.x < R / W) { ball.x = R / W; ball.vx = Math.abs(ball.vx); } else if (ball.x > 1 - R / W) { ball.x = 1 - R / W; ball.vx = -Math.abs(ball.vx); }
+      ["A1", "A2", "B1", "B2"].forEach(hit);
+    }
+    if (ball.y * H > H + R) { points.B++; point("A"); } else if (ball.y * H < -R) { points.A++; point("B"); }
+  };
+  const point = loser => { if (points.A >= st.to || points.B >= st.to) { over = points.A >= st.to ? "A" : "B"; ball = null; } else serve(loser); };
+  const send = async () => {
+    if (gone() || sending || !st || st.status !== "play") return;
+    sending = true;
+    const b = { pad: flip() ? 1 - myPad : myPad };       // always as team A sees the table
+    if (host()) Object.assign(b, { bots, ball, points, over });
+    try { st = await api("community/pong4/sync", { method: "POST", body: b }); recv = performance.now(); onState(); } catch {}
+    sending = false;
+  };
+  // ---- drawing: my team at the bottom
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim() || "#5b5bd6";
+  const render = () => {
+    const p = st.pong, pts = host() ? points : p.points, mine = st.team, other = mine === "A" ? "B" : "A";
+    const X = x => flip() ? (1 - x) * W : x * W, Y = y => flip() ? H - y : y;
+    ctx.fillStyle = "#14532d"; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 3; ctx.strokeRect(6, 6, W - 12, H - 12);
+    ctx.setLineDash([10, 10]); ctx.beginPath(); ctx.moveTo(6, H / 2); ctx.lineTo(W - 6, H / 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = "bold 44px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.3)";
+    ctx.fillText(String(pts[other]), W / 2, H / 4 - 20); ctx.fillText(String(pts[mine]), W / 2, H * 3 / 4 + 50);
+    for (const s of ["A1", "A2", "B1", "B2"]) {
+      const v = s === st.me ? (flip() ? 1 - myPad : myPad) : host() ? padOf(s) : p.pads[s];
+      const l = len(s), x = X(v), y = Y(ROW[s]);
+      ctx.fillStyle = css(s[0] === mine ? "--ans-2" : "--ans-4"); ctx.globalAlpha = front(s) ? 0.85 : 1;
+      ctx.fillRect(x - l / 2, y - PH / 2, l, PH); ctx.globalAlpha = 1;
+      if (s === st.me) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.strokeRect(x - l / 2 - 2, y - PH / 2 - 2, l + 4, PH + 4); }
+    }
+    let b = host() ? ball : p.ball;
+    if (b && !host() && st.status === "play") {           // between two updates: move it on
+      const dt = Math.min(0.12, (performance.now() - recv) / 1000);
+      b = { x: b.x + b.vx * dt, y: b.y + b.vy * dt };
+    }
+    if (b && st.status === "play") { ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(X(b.x), Y(b.y * H), R, 0, Math.PI * 2); ctx.fill(); }
+    ctx.font = "bold 15px system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.fillText(teamName(other), W / 2, H / 4 + 6); ctx.fillText(teamName(mine), W / 2, H * 3 / 4 + 76);
+    if (st.status === "done") {
+      ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillRect(0, H / 2 - 60, W, 120); ctx.fillStyle = "#fff"; ctx.font = "bold 22px system-ui, sans-serif";
+      ctx.fillText(I18N.tr(T("Winner: {0}")).replace("{0}", teamName(st.result)), W / 2, H / 2 + 8);
+    }
+  };
+  const gone = () => !alive || !box.isConnected || box.p4 !== token;     // a newer view in the same place takes over
+  const loop = t => {
+    if (gone()) return stop();
+    const dt = Math.min(0.033, (t - (last || t)) / 1000); last = t;
+    if (st && (st.status === "play" || st.status === "done") && st.pong) { if (host() && st.status === "play") step(dt); render(); }
+    requestAnimationFrame(loop);
+  };
+  const toPad = e => {
+    if (!st || !st.me) return;
+    const r = canvas.getBoundingClientRect(), half = len(st.me) / 2 / W;
+    myPad = Math.max(half, Math.min(1 - half, (e.clientX - r.left) / r.width));
+  };
+  canvas.addEventListener("pointerdown", toPad); canvas.addEventListener("pointermove", toPad);
+  // ---- setting up the table
+  const SEAT_LABEL = { A1: T("You – back"), A2: T("Partner – front"), B1: T("Opponent – back"), B2: T("Opponent – front") };
+  const choice = (list, cur, onchange) => h("select.p4-sel", { onchange: e => onchange(e.target.value) },
+    ...["easy", "normal", "hard"].map(l => h("option", { value: "bot:" + l, selected: cur === "bot:" + l }, "🤖 ", I18N.tr(T("Bot")), " · ", I18N.tr(LVL[l]))),
+    ...list.map(o => h("option", { value: "pid:" + o.id, disabled: o.busy, selected: cur === "pid:" + o.id }, o.name, o.busy ? " · " + I18N.tr(T("is playing")) : "")));
+  const spec = v => v.startsWith("bot:") ? { bot: v.slice(4) } : { pid: +v.slice(4) };
+  const setup = async () => {
+    let list = [];
+    try { list = await api("community/pong4/players"); } catch (e) { toast(e.message, "bad"); }
+    const free = list.filter(o => !o.busy);
+    const pick = { A2: free[0] ? "pid:" + free[0].id : "bot:normal", B1: free[1] ? "pid:" + free[1].id : "bot:normal", B2: free[2] ? "pid:" + free[2].id : "bot:normal" };
+    let to = 7;
+    body.replaceChildren(h("p.small.muted", T("Two against two: each team has a back paddle and a short front paddle near the net. Invite up to three family members – bots take the other seats.")),
+      h("div.p4-seats", ...["A2", "B1", "B2"].map(s => h("label.p4-seat", h("span.p4-lbl", s[0] === "A" ? "🟦 " : "🟥 ", SEAT_LABEL[s]), choice(list, pick[s], v => { pick[s] = v; })))),
+      h("div.row.p4-row", h("span.small", T("Points to win")), segmented([[5, "5"], [7, "7"], [11, "11"]], to, v => { to = v; })),
+      h("div.row.center", h("button.btn.big", { onclick: async () => {
+        try { st = await api("community/pong4", { method: "POST", body: { seats: { A2: spec(pick.A2), B1: spec(pick.B1), B2: spec(pick.B2) }, to } }); onState(true); }
+        catch (e) { toast(e.message, "bad"); }
+      } }, "🏓 ", T("Set up the table"))));
+  };
+  const lobby = async () => {
+    const ready = ["A1", "A2", "B1", "B2"].every(s => ["host", "in", "bot"].includes(st.seats[s].state));
+    const mine = st.seats[st.me];
+    let list = [];
+    if (host() && ["A2", "B1", "B2"].some(s => st.seats[s].state === "declined")) { try { list = await api("community/pong4/players"); } catch {} }
+    const ICON = { host: "⭐ ", in: "✅ ", bot: "", invite: "⏳ ", declined: "✖️ " };
+    const row = s => {
+      const x = st.seats[s];
+      const right = host() && x.state === "declined"
+        ? choice(list.filter(o => !Object.values(st.seats).some(y => y.pid === o.id && y.state !== "declined")), "", v => act("seat", { seat: s, ...spec(v) }))
+        : h("span.small.muted", x.state === "invite" ? T("waiting …") : x.state === "declined" ? T("No thanks") : "");
+      if (right.tagName === "SELECT") right.prepend(h("option", { value: "", selected: true, disabled: true }, I18N.tr(T("Choose …"))));
+      return h("div.p4-seat" + (s === st.me ? ".p4-me" : ""), h("span.p4-lbl", s[0] === "A" ? "🟦 " : "🟥 ", I18N.tr(front(s) ? T("front") : T("back")), ": ",
+        h("b", ICON[x.state], seatName(s) || x.name)), right);
     };
-    const finish = () => {
-      const secs = Math.round((Date.now() - start) / 1000), top = Math.max(...score);
-      const winners = names.filter((_, i) => score[i] === top);
-      let msg;
-      if (names.length === 1) {
-        const key = saved.set.startsWith("photo:") ? "photo" : "emoji", b = arcadeStore.get().pairs_best || {}, id = key + saved.size;
-        if (!b[id] || moves < b[id]) { b[id] = moves; arcadeStore.set("pairs_best", b); }
-        msg = I18N.tr(T("All pairs found – {0} moves in {1}.")).replace("{0}", moves).replace("{1}", mmss(secs)) + " 🏆 " + b[id];
-      } else msg = winners.length > 1 ? I18N.tr(T("Draw!")) : I18N.tr(T("Winner: {0}")).replace("{0}", winners[0]);
-      if (!(bot && winners.length === 1 && winners[0] === names[1])) { confetti(); try { Sound.play("done"); } catch {} }
-      box.append(h("section.card.center", h("h2", msg), h("div.row.center", h("button.btn", { onclick: play }, "🔄 ", T("Play again")),
-        h("button.btn.ghost", { onclick: setup }, "⚙️ ", T("Settings")))));
-      box.lastChild.scrollIntoView({ behavior: "smooth", block: "center" });
-    };
-    drawHead();
-    box.replaceChildren(h("section.card", head, info, grid, h("div.row.center", h("button.btn.ghost.small", { onclick: setup }, "⚙️ ", T("Settings")))));
-  }
-  setup();
+    body.replaceChildren(h("p.ttt-status.center", I18N.tr(T("First to {0} points")).replace("{0}", st.to)),
+      h("div.p4-seats", ...["A1", "A2", "B1", "B2"].map(row)),
+      mine.state === "invite"
+        ? h("div.row.center", h("button.btn.big", { onclick: () => act("accept") }, "▶ ", T("Play")), h("button.btn.ghost", { onclick: back }, T("No thanks")))
+        : h("div.row.center", host() ? h("button.btn.big", { disabled: !ready, onclick: () => act("start") }, "▶ ", T("Start")) : h("p.small.muted", T("The host starts the match.")),
+          h("button.btn.ghost", { onclick: back }, host() ? T("Cancel") : T("Leave"))));
+  };
+  let shown = "";
+  const onState = (force = false) => {
+    if (!st) { if (shown !== "pick") { shown = "pick"; setup(); } return; }
+    if (host() && st.status === "play" && (prev === "lobby" || prev === "done" || prev === "")) {   // a new round: the host serves
+      if (prev !== "" || (!ball && !over && points.A + points.B === 0)) { points = { A: 0, B: 0 }; over = null; bots = {}; serve("A"); }
+    }
+    prev = st.status;
+    if (st.status === "done") {
+      const round = st.score.A + st.score.B;
+      if (st.result === st.team && round !== cheered) { cheered = round; confetti(); try { Sound.play("done"); } catch {} }
+    }
+    const key = st.status === "lobby" ? "lobby:" + JSON.stringify(st.seats) : st.status;
+    if (!force && key === shown) return;
+    shown = key;
+    if (st.status === "lobby") return lobby();
+    if (st.status === "gone") return body.replaceChildren(h("div.center",
+      h("p.ttt-status", I18N.tr(T("{0} has left the game.")).replace("{0}", st.seats.A1.name)), h("button.btn", { onclick: back }, "← ", T("Back"))));
+    body.replaceChildren(h("div.pp-wrap", canvas),
+      h("p.small.muted.arcade-hint", I18N.tr(T("Move your paddle (white frame) with your finger. First to {0} points wins.")).replace("{0}", st.to)),
+      h("div.row.center", st.status === "done" ? h("button.btn", { onclick: () => act("again") }, "🔄 ", T("New round")) : null,
+        h("button.btn.ghost", { onclick: back }, T("Leave"))));
+  };
+  box.replaceChildren(h("section.card.pp-card", h("div.row", h("h2.grow", "🏓 ", T("Doubles")),
+    h("button.btn.ghost.small", { onclick: back }, "← ", T("Against the app"))), body));
+  (async () => { try { st = await api("community/pong4"); } catch {} onState(true); })();
+  timer = setInterval(async () => {                      // set-up and lobby: slow; during the match the paddle sync carries the state
+    if (gone()) return stop();
+    if (st && st.status === "play") return;
+    try { const n = await api("community/pong4"); if (n || shown !== "pick") { st = n; onState(); } } catch {}
+  }, 1200);
+  sync = setInterval(send, 66);
+  requestAnimationFrame(loop);
 }
