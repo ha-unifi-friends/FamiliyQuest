@@ -141,7 +141,12 @@ function showTableNote(t) {
   const box = h("div.table-note", { role: "status", "data-route": t.route },
     h("span.table-note-ic", t.icon),
     h("span.table-note-txt", "🔔 ", h("strong", I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)))),
-    h("button.btn.small", { onclick: () => { close(); go(t.route); } }, "▶ ", T("Join")),
+    // «Join» seats the child at once – the game opens already joined, without asking again
+    h("button.btn.small", { onclick: async () => {
+      close();
+      if (t.join) { try { await api(t.join, { method: "POST" }); } catch (e) { toast(e.message, "bad"); } }
+      go(t.route);
+    } }, "▶ ", T("Join")),
     h("button.icon-btn", { title: T("Close"), "aria-label": T("Close"), onclick: close }, "✕"));
   const top = document.querySelector(".top");
   box.style.top = Math.max(8, Math.round(top ? top.getBoundingClientRect().bottom : 0) + 6) + "px";

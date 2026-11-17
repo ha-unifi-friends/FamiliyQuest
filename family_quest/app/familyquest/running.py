@@ -77,6 +77,11 @@ def _ids(players) -> list[str]:
 ROUTES = {"quiz": "quiz", "bingo": "bingo", "song": "song", "poker": "poker", **{k: k for k in TITLES if k != "schach"}}
 
 
+def join_path(game: str) -> str:
+    """The API path (below /api/) that seats the caller at the family table of a game – «Join» in the note joins at once."""
+    return f"community/cards/{game}/join" if game in ("tschau", "karussell") else f"community/{game}/join"
+
+
 def _joinable(fq, t: dict) -> bool:
     """Whether somebody new can still sit down – as the game's own join allows it: the tables of the `card_game`
     table only in their lobby; poker also during the game (from the next hand) while a seat is free; bingo (a card
@@ -102,7 +107,7 @@ def open_tables(fq, prof: dict) -> list[dict]:
         if not _joinable(fq, t):
             continue
         out.append({"key": f"{t['key']}:{t.get('id') or ''}", "game": t["game"], "route": ROUTES[t["game"]], "icon": t["icon"],
-                    "title": t["title"], "host": t["host"]})
+                    "title": t["title"], "host": t["host"], "join": join_path(t["game"])})
     return out
 
 

@@ -38,3 +38,19 @@ def test_only_tables_that_can_still_be_joined(client):
     client.post("/api/community/poker/join", headers=hl)                                                     # full now
     st = json.loads(fq.db.val("SELECT state FROM poker_game WHERE status!='done'"))
     assert len(st["players"]) == 2 and client.get("/api/community/tables", headers=hb).json() == []
+
+
+def test_join_path_of_the_note(client):
+    """«Join» in the note seats the child at once through the path the note carries – one exists for every game."""
+    from familyquest import running
+    ph, mia, leo = setup_family(client)
+    hb = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    for game in running.ROUTES:                     # no table open: the endpoint exists and refuses (not 404/405)
+        assert client.post("/api/" + running.join_path(game), headers=hb).status_code not in (404, 405), game
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    client.post("/api/community/werwolf/start", json={}, headers=hm)
+    t = client.get("/api/community/tables", headers=hl).json()
+    assert t and t[0]["join"] == "community/werwolf/join"
+    assert client.post("/api/" + t[0]["join"], headers=hl).status_code == 200
+    assert client.get("/api/community/tables", headers=hl).json() == []

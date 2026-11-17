@@ -585,6 +585,9 @@ nav.bottom button.on { color: var(--accent); background: var(--hover); }
 .inst-item[open] > summary::before { transform: rotate(90deg); }
 .inst-item.closed > summary { opacity: .8; }
 .inst-body { padding: 0 12px 12px; }
+/* small phones: the title shrinks and wraps, the chips («🌐 3», «3 questions») stay small pills on one line */
+.inst-item > summary > .grow { min-width: 0; overflow-wrap: anywhere; }
+.inst-item > summary .chip { flex: none; white-space: nowrap; font-size: .85rem; padding: 2px 10px; box-shadow: none; }
 .inst-body .topic { border: 0; padding: 0; margin: 0; }
 .inst-empty { margin: 4px 0; }
 

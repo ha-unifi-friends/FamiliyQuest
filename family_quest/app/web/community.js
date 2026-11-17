@@ -757,8 +757,9 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
   const runningCard = running ? h("div.card.quiz-running",
     h("div.row.wrap", h("span.big-ic", "🎯"), h("div.grow", h("div.small.muted", T("Running quiz")), C("«" + quizTitle(running.title, running.langs) + "»", "strong")),
       h("span.small.muted", I18N.tr(T("{0} playing")).replace("{0}", (running.players || []).length))),
-    h("div.row.wrap", h("button.btn.small", { onclick: onStarted }, "▶ ", T("Open")),
-      me.role === "parent" || running.host === me.id ? h("button.btn.small.danger", { onclick: cancel }, "⏹ ", T("Cancel quiz")) : null)) : null;
+    h("div.row.wrap", h("button.btn", { onclick: onStarted }, "▶ ", T("Open")),
+      // «Cancel» far from «Open» (right edge) – a child should not hit it by mistake
+      me.role === "parent" || running.host === me.id ? h("button.btn.small.danger", { style: { marginLeft: "auto" }, onclick: cancel }, "⏹ ", T("Cancel quiz")) : null)) : null;
   box.replaceChildren(...[
     actions ? null : h("div.sec-head", h("span.grow"), h("div.head-actions", newBtn)),
     runningCard,
