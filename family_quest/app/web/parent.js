@@ -612,6 +612,8 @@ async function packsView(main) {
   const [d, profiles] = await Promise.all([call("parent/packs"), call("parent/profiles")]);
   const kids = profiles.filter(p => p.role === "kid");
   const drafts = d.packs.filter(p => p.status === "draft");
+  const imported = p => ["upload", "import", "ai"].includes(p.source);   // from a file, a table or the AI – shown on top
+  const importedPacks = d.packs.filter(p => p.status !== "draft" && imported(p));
   const bundles = d.packs.filter(p => p.kind === "bundle" && p.status !== "draft");
   const packs = d.packs.filter(p => p.kind === "pack" && p.status !== "draft");
   const actRow = p => h("div.act", ...kids.map(k => h("label.check", h("input", { type: "checkbox", checked: p.profiles.includes(k.id),
@@ -660,10 +662,12 @@ async function packsView(main) {
     h("button.btn", { onclick: () => { P.tab = "import"; render(); } }, "📥 ", T("Import"))));
   if (mode === "kids") return main.append(...byKid(),
     drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null);
+  const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
+    importedPacks.length ? section("📥 " + I18N.tr(T("Imported packs")), ...importedPacks.map(card)) : null,
     drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
-    bundles.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...bundles.map(card)) : null,
-    section("📚 " + I18N.tr(T("Packs")), ...packs.map(card)));
+    levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
+    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
   async function setStatus(id, status) { await call(`parent/packs/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } }); render(); }
   async function del(p) { if (!confirm(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
 }

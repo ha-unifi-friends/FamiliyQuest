@@ -588,6 +588,9 @@ def pack_raw(pack_id: str, request: Request, me: dict = Parent) -> dict:
             "summary": info.summary() if info else None}
 
 
+IMPORTED_SOURCES = ("upload", "import", "ai")
+
+
 @router.put("/packs/{pack_id}/raw")
 def pack_save(pack_id: str, body: RawIn, request: Request, me: dict = Parent) -> dict:
     """Save an edited pack (cards edited in the editor or YAML)."""
@@ -599,8 +602,9 @@ def pack_save(pack_id: str, body: RawIn, request: Request, me: dict = Parent) ->
         raise HTTPException(400, str(e)) from None
     if p.id != pack_id:
         raise HTTPException(400, "The id cannot be changed here")
-    row = fq.db.q1("SELECT status FROM pack WHERE id=?", pack_id)
-    fq.packs.upsert(p, "edited", status=row["status"] if row else "draft", force=True)
+    row = fq.db.q1("SELECT status, source FROM pack WHERE id=?", pack_id)
+    source = row["source"] if row and row["source"] in IMPORTED_SOURCES else "edited"   # an imported pack stays «imported»
+    fq.packs.upsert(p, source, status=row["status"] if row else "draft", force=True)
     # photos uploaded in the editor but no longer used by any card
     folder = fq.settings.media_dir / pack_id
     if folder.is_dir():

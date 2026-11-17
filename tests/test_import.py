@@ -145,3 +145,17 @@ def test_photo_import_through_the_ai_of_home_assistant(client, settings, tmp_pat
         assert not any((settings.ha_media_dir / "family_quest_import").iterdir())           # deleted right after the call
     finally:
         fq.ha = None
+
+
+def test_imported_packs_are_marked_and_stay_imported_after_editing(client):
+    h = ph(client)
+    pack = {"id": "mine-imp", "titel": "Import", "fach": "englisch", "sprache": "en",
+            "einheiten": [{"id": "a", "karten": [{"de": "Hund", "en": "dog"}]}]}
+    assert client.post("/api/parent/import/json", json=pack, headers=h).status_code == 200
+    src = lambda: next(p["source"] for p in client.get("/api/parent/packs", headers=h).json()["packs"] if p["id"] == "mine-imp")
+    assert src() == "upload"                      # the parent area shows it under «Imported packs»
+    r = client.put("/api/parent/packs/mine-imp/raw", json={"data": dict(pack, titel="Import edited")}, headers=h)
+    assert r.status_code == 200, r.text
+    assert src() == "upload"
+    builtin = next(p for p in client.get("/api/parent/packs", headers=h).json()["packs"] if p["source"] == "builtin" and p["kind"] == "pack")
+    assert builtin["source"] != "upload"
