@@ -794,6 +794,54 @@ played to the end at a family table with **at least two people of the family** �
 winners get the «No. 1» hat. Every person of the family gets a history entry (place, till, served customers, new
 personal best). In Games the parents can switch the game on, off or to «active without bots».
 
+### Traffic Cadet (Verkehrskadett)
+
+Games › **🚦 Traffic Cadet**: a live traffic game. Every player regulates the traffic lights of **their own map** on
+their own device – all maps get the **same streets and the same cars** (from the server). Alone (optionally with
+practice bots), at the family table (1–6 players, bots fill up, guests via QR code).
+
+- **Switching:** tap a traffic light on the map (or its big button below the map) – it switches its whole group (e.g.
+  «1 ↓↑» = north and south together): green → **amber** (1.5 s) → red, red → green at once. At the start of every
+  world all lights are red.
+- **The cars:** cars, buses (slower, longer), bikes (slow) and now and then an ambulance 🚑. They stop at red (and at
+  amber when they still can), go at green, keep their gap and turn as their route says. Cars queue outside the map when
+  there is no room («+3» at the edge).
+- **Accidents 💥:** two cars of crossing or merging routes in the junction at the same time crash; both block the way
+  for 4 seconds (the others wait), then they are towed away. So: switch one direction red, wait until the crossing is
+  empty, then the other green.
+- **Moods:** waiting makes drivers annoyed (😐 → 😠) and then angry 😡 (difficulty normal: after 10 / 20 seconds of
+  waiting; easy 12 / 24, hard 7 / 14). The ambulance is in a hurry: angry after 6 seconds. Angry drivers honk.
+- **Out:** too many accidents or angry drivers, counted over all worlds – easy 5 / 15, normal 3 / 10, hard 3 / 8. Who
+  is out watches the others' live stats.
+- **Worlds** (start dialog: 1–5), each 5 s intro («World 2: T-junction») + 90 s of traffic, the traffic grows during a
+  world: 1 **simple crossing** (only straight on, 2 groups) → 2 **T-junction** with a left-turn lane (3 groups) →
+  3 **crossing with turning lanes** (straight/right and left separately, 4 groups) → 4 **two connected crossings** (the
+  road between them can fill up and block the crossing behind) → 5 **roundabout** (the drivers yield to the ring by
+  themselves; you have a stop/go light at every entry to give the others a gap). Everybody still in moves on together.
+- **Difficulty** (easy / normal / hard): how many cars come, how patient the drivers are, how many accidents / angry
+  drivers put you out.
+- **Live bar:** at the top every other player's accidents 💥, annoyed 😠 and angry 😡 drivers and cars through 🚗
+  (updated about every second), below my own stats, the world and the time left in it.
+- **Points:** every car through 1 (bus 2, ambulance 3), minus 5 per accident and 2 per angry driver. **Places:** who is
+  still in after the last world by points; who is out after them (who lasted longer first). At a family table the
+  game ends when only **one is left standing**. Alone your best points are kept.
+- **Bots** (easy / normal / hard) run the same simulation on the server: they give green to the set of groups with the
+  most waiting cars, switch with a clearance pause (amber, then until the crossing is empty) – easier bots forget the
+  pause more often (crash risk) and leave a direction green too long.
+
+The map is simulated in the app (10 steps per second, integer arithmetic only) from the server's world (layout + the
+stream of cars from the game's seed) and the player's switches; the app reports only its switches (with their tick).
+The server runs **the same simulation** about 1.5 s behind (identical in Python and JavaScript – tested) and its result
+counts: accidents, angry drivers, cars through, out. A switch for a moment the server simulated already is refused and
+the app rebuilds its map from the server's snapshot. An app silent for 15 seconds is out. Who leads may **end** the
+game early: ranked as it stands, no coins. Parents › Games: active, active without bots (no practice bots, no bots at
+the table) or inactive.
+
+**Coins for places 1–3:** set by the parents in Games › Traffic Cadet (default 10 / 5 / 2), paid once, only for a game
+played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots;
+the winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, cars, accidents, angry
+drivers).
+
 ### Klatsch den Beat
 
 Games → **👏 Klatsch den Beat**: a live rhythm game – **everybody plays at the same time**, each on their own device.
@@ -1051,6 +1099,66 @@ the start: 1000 / 1500 / 2000. Who leads may **pause** the game (nothing moves, 
 **Coins for places 1–3:** set by the parents in Games › Dorfmarkt (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, worth).
+
+### Escape Room
+
+Games → **🗝️ Escape Room**: the live riddle game for the family – solve the riddles of every room to find the door
+code and get out. Everybody plays on their own device (the family and guests via QR code, **no bots**). Every room is
+a world of its own with its own look (the wizard's tower, the pirate cabin, the space station, the treehouse, the clock
+workshop, the ice castle, the jungle temple, the dragon's cave): its **objects hide riddles** – tap one to open its
+riddle – and a little animal has a tip. Who opens the **family table** chooses (remembered):
+
+- **rooms**: 1 to 5;
+- **difficulty**: easy (2 riddles per room), medium, hard (3 riddles per room) or **mixed** – the rooms get harder one
+  after the other (2 or 3 riddles);
+- **kinds of riddles** (several): logic & codes, words & letters, pictures & observation, patterns & sequences, maths,
+  memory, maps & directions, mechanical puzzles, knowledge – with the number of riddles not played yet per kind;
+- **play**: all together (one team, everybody sees the same room and may try) or **two teams** (every second seat;
+  who leads can mix the seats in the lobby);
+- **time limit**: none, 15, 30 or 45 minutes.
+
+**The combined lock:** every solved riddle reveals a part of the door code, shown to the whole team – a digit with a
+symbol (⭐ 3), a number, or a coloured gem with its position (🔴 #2). The door needs all parts together: the digits in
+the order of the symbols shown on the door, the sum of all numbers, or the gems in the order of their positions. Then
+the next room opens; after the last door the team is out.
+
+**Hints and time:** up to 3 hints per riddle (the whole team sees them); a hint costs **60 seconds**, a wrong answer
+(also at the door) **10 seconds**. The team's time is the real time plus these seconds. Memory riddles show their
+picture only for a moment after «Peek» (as often as you like). Mechanical puzzles (rune lamps, sliding tiles, turning
+rings, water pipes, lever board) are played on the device; the moves go to the server, which checks them.
+
+**Two teams** play the same rooms with the same riddles, each with its own progress; you see the other team only as a
+progress bar. The first team out wins – counting its hint and error seconds: the game ends as soon as the other team
+cannot be faster any more. With a time limit the game ends when the time is up (then nobody escaped). Who leads (or a
+parent, also in Games › running games) can end the game – then nobody escapes.
+
+**The riddles** are made new for every game by the server (random numbers, words, pictures) – the app never gets a
+solution, the server checks every answer. 56 riddle kinds (level in brackets: e easy, m medium, h hard):
+
+| Kind | Riddles |
+|---|---|
+| Logic & codes | The clue lock (m h) · Number detective (e m) · Three chests (m h) · The animal bench (m h) · The big scales (e m h) · The number square (m h) |
+| Words & letters | Mixed-up letters (e m h) · Secret writing (m h) · Rune alphabet (m h) · The worn-out sign (e m) · Mirror writing (e) · Hidden animal (m h) · Letters as numbers (m h) · The vowel thief (h) |
+| Pictures & observation | Count carefully (e m) · The odd one (e m) · Two pictures (m h) · The stopped clock (e m) · The book shelf (e m) · Coloured candles (m) · The magic mirror (m h) |
+| Patterns & sequences | Number row (e m h) · The bead necklace (e m) · The tile floor (m h) · Growing towers (e m) · Letter row (m h) · The cuckoo clock (m h) · Turning arrows (e m) |
+| Maths | Fruit sums (e m h) · The coin purse (e m) · The magic square (m h) · Story sums (e m) · Number pyramid (m h) · The dice tower (e m) · The number machine (m h) |
+| Memory | Glowing crystals (e m h) · The magic tray (m h) · Where was it? (e m) · Flashing numbers (m h) · Past the window (e m) |
+| Maps & directions | The treasure map (e m) · The compass (e m) · Bridges and paths (m h) · The robot program (m h) |
+| Mechanical puzzles | Rune lamps (e m h) · Sliding tiles (m h) · Turning rings (m h) · Water pipes (m h) · The lever board (e m) · Gear chain (e m h) |
+| Knowledge | Counting legs (e m) · Mixing paint (e m) · The planets (e m) · Eggs or not? (e m) · The calendar (e m) · Corners (e m) |
+
+The **word riddles** use 45 words in all 9 languages of the app (and English): every device shows the riddle in its
+own language, the answer counts in any of them (without accents).
+
+**Already played:** the family keeps a counter per riddle kind (setting `escape_played`). A new game takes the kinds
+played least – the fresh ones first – so every kind comes once before one comes again; the **round** (shown in the
+start dialog and in Games › Escape Room, e.g. «32 of 56 riddles not played yet – round 2») is the lowest counter + 1.
+With few chosen kinds (e.g. only memory, 5 rooms) a kind can come twice in one game – with other numbers.
+
+**Coins:** set by the parents in Games › Escape Room (default 10): every person of the family in the team that escaped
+and won gets them (together: everybody, when out; two teams: the winning team) – only at a table with **at least two
+people of the family**, never to guests, paid once. Every person of the family gets a history entry (out or not, rooms,
+time, hints, team); the winners get the «No. 1» hat.
 
 ### Game corner
 

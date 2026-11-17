@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0-beta.11
+
+- New game «Escape Room»: 56 riddles in 9 kinds (codes, secret writing, observation, patterns, maths, memory, maps, mechanical puzzles, knowledge), new numbers every game, combined door locks; together or two teams; rooms, difficulty, kinds and time limit in the settings; riddles not played yet come first; no bots
+- New game «Traffic Cadet» (Verkehrskadett): switch the traffic lights of your own map without accidents or angry drivers; 1–5 worlds from a simple crossing to a roundabout; live view of everybody's accidents and angry drivers; bots, guests, coins
+
 ## 1.1.0-beta.10
 
 - New game «Snack Rush» (Imbiss-Express): run your own snack stand – cook step by step on several stations at once, serve before customers get angry; ingredients cost money, angry customers leave without paying, leftovers go to the shelf or the bin; the till decides; live view of everybody's till and angry customers; bots, guests, coins
