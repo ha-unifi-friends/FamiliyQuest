@@ -5,7 +5,7 @@
 "use strict";
 
 const FW_ICON = "🎲";
-const fwName = () => I18N.tr(T("Fünf Würfel"));
+const fwName = () => I18N.tr(T("Five Dice"));
 const fwCoins = list => list.join(" / ") + " 🪙";
 const FW_UPPER = ["ones", "twos", "threes", "fours", "fives", "sixes"];
 const FW_CATS = {
@@ -67,6 +67,7 @@ async function wuerfelStartDialog(solo, onStarted) {
       const body = { solo, bots: +bots.value, level: level.value, extra: extra.checked, bot_ids: picker.ids(), bot_ms: picker.ms() };
       try { await api("community/wuerfel/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("wuerfel", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function wuerfelLive(box, me, back) {
@@ -152,7 +153,7 @@ function wuerfelLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", FW_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", FW_ICON), h("h2", T("No game right now")), noTableActions("wuerfel", back)));
     if (st.phase === "play") syncHeld();
     if (st.phase === "play" && st.round !== seenRound) {
       if (seenRound && st.round > seenRound) toast(I18N.tr(T("Round {0} of {1}")).replace("{0}", st.round).replace("{1}", st.rounds));
@@ -275,6 +276,6 @@ async function wuerfelFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("wuerfel") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Roll five dice, hold the good ones and fill your score sheet – everybody at the same time. Places 1 to 3 win coins at the family table!")),
-         h("div.row.wrap", h("button.btn", { onclick: () => wuerfelStartDialog(true, () => go("wuerfel")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("wuerfel") ? h("button.btn", { onclick: () => wuerfelStartDialog(true, () => go("wuerfel")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => wuerfelStartDialog(false, () => go("wuerfel")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

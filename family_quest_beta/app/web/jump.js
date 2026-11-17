@@ -1,18 +1,26 @@
 // «Jump» – a live jumping race (familyquest/jump.py): everybody has their own lane, the obstacles come from the left,
-// jump over them with the big button (or a tap on your lane, or the space bar). Same obstacles for everybody (a course
+// jump over them with the big button (or a tap on your lane, or the space bar). Crates carry you, cacti sting, and from
+// time to time comes a cloud parcours (crates on clouds over a cactus field). Same obstacles for everybody (a course
 // from the server's seed, made here with the same generator), 3 lives, it gets faster – the last one running wins.
 // jumpLive(box, me, back) runs a table (family or alone), jumpStartDialog(solo, onStarted) sets the rules.
-// The jump physics run here; the app reports its jumps and hits, the others' lanes are drawn from their reported jump
-// times a moment late (JU_DELAY), so they look smooth. Uses botPicker() from cards.js and guestInvite() from community.js.
+// The jump physics run here (JuRunner – step by step, the same as Runner in jump.py); the app reports its jumps and hits,
+// the others' lanes are drawn by their own runners from their reported jump times a moment late (JU_DELAY).
+// Uses botPicker() from cards.js and guestInvite() from community.js.
 "use strict";
 
 const JU_ICON = "🦘";
 const juName = () => "Jump";
 const juCoins = list => list.join(" / ") + " 🪙";
-// the course – the same numbers as in jump.py
-const JU = { V0: 5, VMAX: 12, ACC: 0.05, JT: 0.6, JH: 1.5, OH: 0.7, AW: 0.25, WIDTH: [0.6, 1.6, 2.6], FIRST: 2.5, INVULN: 1.2, VIEW: 12 };
+// the course – the same numbers as in jump.py. Kinds: 0 crate, 1 double crate (stand on them, their side costs a life),
+// 2 long hedge, 3 cactus (touching costs a life), 4 a crate on a cloud (a platform), 5 the cactus field under the clouds
+const JU = { V0: 5, VMAX: 12, ACC: 0.05, JT: 0.6, JH: 1.5, OH: 0.7, AW: 0.25, WIDTH: [0.6, 1.6, 2.6, 0.5], TALL: [0.7, 0.7, 0.7, 0.8],
+  FIELD_H: 0.5, FIRST: 2.5, CLOUD_T: 45, CLOUD_EVERY: 60, CLOUD_LEAD: 1.6, INVULN: 1.2, VIEW: 12,
+  HZ: 120, LG: 0.2, COYOTE: 0.1 };
 JU.T1 = (JU.VMAX - JU.V0) / JU.ACC;
 JU.D1 = JU.V0 * JU.T1 + JU.ACC * JU.T1 * JU.T1 / 2;
+JU.G = 8 * JU.JH / (JU.JT * JU.JT);
+JU.VJ = 4 * JU.JH / JU.JT;
+JU.VB = 0.6 * JU.VJ;
 const JU_DELAY = 0.45;                         // the others' lanes are drawn this much later (their jumps need to arrive)
 const JU_COLORS = ["#f2545b", "#2f8fdd", "#33a852", "#f2b705", "#8b5cf6", "#14b8a6"];
 
@@ -28,27 +36,104 @@ function juRand(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-// the obstacles up to this distance: [x of the front edge, kind 0 single / 1 double / 2 long, window start, window end]
+function juClouds(out, x, rnd) {               // a cloud parcours: crates on clouds, a dense cactus field below
+  const v = juSpeedAt(x), n = 4 + Math.floor(rnd() * 3), plats = [];
+  x = x + v * JU.CLOUD_LEAD;
+  let top = 1.1;
+  for (let k = 0; k < n; k++) {
+    const w = v * ((k === 0 ? 0.85 : 0.6) + 0.25 * rnd());
+    plats.push([x, w, top]);
+    x = x + w + v * (0.24 + 0.1 * rnd());
+    top = Math.min(1.4, Math.max(1.0, top + (rnd() - 0.5) * 0.8));
+  }
+  for (let k = 0; k < n; k++) {
+    const [px, w, tp] = plats[k];
+    out.push([px, 4, w, tp]);
+    const fs = k === 0 ? px + 0.4 : px, fe = k + 1 < n ? plats[k + 1][0] : px + w - 0.4;
+    out.push([fs, 5, fe - fs, JU.FIELD_H]);
+  }
+  return plats[n - 1][0] + plats[n - 1][1] + v * 1.4;
+}
+// the course up to this distance: [x of the front edge, kind, width, height of the top, window start, window end]
 function juCourse(seed, upto) {
   const rnd = juRand(seed), out = [];
-  let x = JU.V0 * JU.FIRST;
+  let x = JU.V0 * JU.FIRST, nc = juDist(JU.CLOUD_T);
   while (x <= upto) {
-    const v = juSpeedAt(x), r1 = rnd(), r2 = rnd(), prog = (v - JU.V0) / (JU.VMAX - JU.V0);
-    let kind = 0;
+    if (x >= nc) { x = juClouds(out, x, rnd); nc = juDist(juTimeAt(x) + JU.CLOUD_EVERY); continue; }
+    const v = juSpeedAt(x), r1 = rnd(), r2 = rnd(), r3 = rnd(), prog = (v - JU.V0) / (JU.VMAX - JU.V0);
+    let kind = r3 < 0.4 ? 3 : 0;
     if (v >= 10 && r1 < 0.2) kind = 2;
     else if (v >= 7 && r1 < 0.5) kind = 1;
-    out.push([x, kind, juTimeAt(x - JU.AW), juTimeAt(x + JU.WIDTH[kind] + JU.AW)]);
+    out.push([x, kind, JU.WIDTH[kind], JU.TALL[kind]]);
     x = x + JU.WIDTH[kind] + v * (0.95 + r2 * (1.3 - 0.4 * prog));
   }
+  for (const o of out) o.push(juTimeAt(o[0] - JU.AW), juTimeAt(o[0] + o[2] + JU.AW));
   return out;
 }
-function juHeight(jumps, t) {                   // the height of a runner at game time t (jumps: start times, sorted)
-  for (let k = jumps.length - 1; k >= 0; k--) {
-    const s = (t - jumps[k]) / JU.JT;
-    if (s < 0) continue;
-    return s <= 1 ? 4 * JU.JH * s * (1 - s) : 0;
+// the jump physics of one runner, step by step – the same as Runner in jump.py (the others' lanes come out exactly)
+class JuRunner {
+  constructor() { this.k = 0; this.y = 0; this.vy = 0; this.ground = true; this.walk = false; this.left = -99; this.jt = -99; this.last = -99; this.lo = 0; this.ids = new Set(); this.jumped = false; }
+  clone() { const c = Object.assign(new JuRunner(), this); c.ids = new Set(this.ids); return c; }
+  canJump() { return this.ground || (this.walk && (this.k + 1) / JU.HZ - this.left <= JU.COYOTE); }
+  near(obs, d) {
+    while (this.lo < obs.length && obs[this.lo][0] + obs[this.lo][2] < d - JU.AW) this.lo++;
+    const out = [];
+    for (let i = this.lo; i < obs.length && obs[i][0] <= d + JU.AW; i++) if (obs[i][0] + obs[i][2] >= d - JU.AW) out.push(i);
+    return out;
   }
-  return 0;
+  step(obs, jumps, ji) {                       // → [ji, hit [index, time] or null]
+    const k1 = this.k + 1, t1 = k1 / JU.HZ;
+    let want = false;
+    while (ji < jumps.length && jumps[ji] < t1) { want = true; this.jt = jumps[ji]; ji++; }
+    this.jumped = false;
+    if (want && this.canJump()) { this.vy = JU.VJ; this.ground = false; this.walk = false; this.jumped = true; }
+    const near = this.near(obs, juDist(t1)), y0 = this.y;
+    if (this.ground) {
+      let s = 0;
+      for (const i of near) { const o = obs[i]; if ((o[1] <= 1 || o[1] === 4) && s < o[3] && o[3] <= y0 + 1e-6) s = o[3]; }
+      if (s < y0 - 1e-6) { this.ground = false; this.walk = true; this.left = t1; this.vy = 0; }
+      else this.y = s;
+    }
+    if (!this.ground) {
+      const y1 = y0 + this.vy / JU.HZ - JU.G / (2 * JU.HZ * JU.HZ);
+      this.vy = this.vy - JU.G / JU.HZ;
+      let land = null;
+      if (this.vy <= 0) {
+        if (y1 <= 0) land = 0;
+        for (const i of near) {
+          const o = obs[i];
+          if ((o[1] <= 1 || o[1] === 4) && y1 <= o[3] && o[3] <= y0 + JU.LG && (land == null || o[3] > land)) land = o[3];
+        }
+      }
+      if (land != null) { this.y = land; this.vy = 0; this.ground = true; this.walk = false; }
+      else this.y = y1;
+    }
+    this.k = k1;
+    if (t1 >= this.last + JU.INVULN) {
+      for (const i of near) {
+        const o = obs[i];
+        if (o[1] === 4 || this.ids.has(i)) continue;
+        if (this.y < (o[1] <= 1 ? o[3] - JU.LG : o[3])) {
+          this.ids.add(i); this.last = t1; this.vy = JU.VB; this.ground = false; this.walk = false;
+          return [ji, [i, t1]];
+        }
+      }
+    }
+    return [ji, null];
+  }
+  run(obs, jumps, t, onHit) {                  // on to game time t (jumps: sorted start times)
+    let ji = jumps.length;
+    while (ji > 0 && jumps[ji - 1] > this.jt) ji--;
+    while ((this.k + 1) / JU.HZ <= t) {
+      const r = this.step(obs, jumps, ji);
+      ji = r[0];
+      if (r[1] && onHit) onHit(r[1]);
+    }
+  }
+}
+function juDark() {
+  const th = document.documentElement.getAttribute("data-theme");
+  return th === "dark" || (th !== "light" && !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches));
 }
 
 function jumpRulesView(r, rewards) {
@@ -56,6 +141,9 @@ function jumpRulesView(r, rewards) {
   const items = [
     T("Everybody has their own lane – your runner is on the right, the obstacles come from the left."),
     T("Tap the big button (or your lane, or press the space bar) to jump. Everybody gets the same obstacles."),
+    T("Crates are safe: land on top and run along – only running into their side costs a life."),
+    T("Cacti and hedges sting – touching one costs a life (you hop up and blink for a moment)."),
+    I18N.tr(T("After {0} seconds comes the cloud course (and later again): crates on clouds, dense cacti below. Jump from crate to crate – falling onto the cacti costs a life.")).replace("{0}", JU.CLOUD_T),
     T("It gets faster and faster – later come double and long obstacles."),
     I18N.tr(T("Every obstacle you hit costs a life (then you blink for a moment). You have {0} lives.")).replace("{0}", r.lives || 3),
     T("The last one still running wins. Alone: run as far as you can – your best distance is kept."),
@@ -91,14 +179,16 @@ async function jumpStartDialog(solo, onStarted) {
       const body = { solo, bots: +bots.value, level: level.value, lives: +lives.value, bot_ids: picker.ids() };
       try { await api("community/jump/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("jump", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function jumpLive(box, me, back) {
   let st = null, timer = null, alive = true, lastSig = "", cheered = false, busy = false, raf = 0, syncing = false, lastSync = 0;
   let canvas = null, ctx = null, wrap = null, livesEl = null, distEl = null, jumpBtn = null, cw = 0, ch = 0, dpr = 1;
   let offset = null, bestRtt = 1e9;               // server clock − performance clock (seconds)
-  let course = [], courseSeed = null, courseUpto = 0;
-  let myJumps = [], myHits = new Map(), myOut = null, checkT = null, nextIdx = 0, pendJ = [], pendH = [], gameKey = "";
+  let course = [], courseSeed = null, courseUpto = 0, cloudAt = [];
+  let myJumps = [], myHits = new Map(), myOut = null, myRun = null, silentT = -99, pendJ = [], pendH = [], gameKey = "";
+  let lanesRun = {};                               // the others' runners: {run, js (sorted), seen (Set), cps (checkpoints)}
   const imgs = {};
   const myId = String(me.id);
   box.classList.add("ju-live");
@@ -142,7 +232,7 @@ function jumpLive(box, me, back) {
       gameKey = key;
       const mine = st.players.find(p => p.id === myId);
       myJumps = mine ? [...mine.jumps] : []; myHits = new Map((mine ? mine.hits : []).map(([i, t]) => [i, t]));
-      myOut = mine ? mine.out : null; checkT = null; nextIdx = 0; pendJ = []; pendH = []; cheered = false;
+      myOut = mine ? mine.out : null; myRun = null; silentT = -99; lanesRun = {}; pendJ = []; pendH = []; cheered = false;
     }
   }
   async function poll() {
@@ -169,10 +259,13 @@ function jumpLive(box, me, back) {
     if (!playing() || !st.joined || myOut != null) return;
     const t = gameT();
     if (t < -0.2) return;
-    const last = myJumps.length ? myJumps[myJumps.length - 1] : -99;
-    if (t - last < JU.JT) return;                // still in the air
-    const j = Math.round(Math.max(t, 0) * 1000) / 1000;
-    myJumps.push(j); if (myJumps.length > 12) myJumps.shift();
+    ensureCourse(Math.max(0, t) + 2);
+    stepMine(t);
+    if (!myRun || myOut != null || !myRun.canJump()) return;     // only from the ground or a crate
+    const now = Math.max(t, myRun.k / JU.HZ, 0);
+    if (myJumps.length && myJumps[myJumps.length - 1] >= myRun.k / JU.HZ) return;   // one is waiting for the next step
+    const j = Math.ceil(now * 1000) / 1000;      // never before the step my runner is at (the others' runners agree)
+    myJumps.push(j); if (myJumps.length > 60) myJumps.shift();
     pendJ.push(j);
     try { Sound.play("tap"); } catch {}
     if (jumpBtn) { jumpBtn.classList.remove("hop"); void jumpBtn.offsetWidth; jumpBtn.classList.add("hop"); }
@@ -187,30 +280,47 @@ function jumpLive(box, me, back) {
   window.addEventListener("keydown", onKey);
   function ensureCourse(t) {
     const need = juDist(t) + 40;
-    if (courseSeed !== st.seed || courseUpto < need) { courseSeed = st.seed; courseUpto = need + 300; course = juCourse(st.seed, courseUpto); }
-  }
-  function checkHits(t) {                         // step through the time since the last frame: an obstacle under me, low?
-    if (myOut != null || t <= 0) { checkT = t; return; }
-    let c = checkT == null ? t : Math.max(checkT, 0);
-    if (t - c > 1.5) c = t - 1.5;
-    for (; ; c = Math.min(t, c + 1 / 120)) {
-      while (nextIdx < course.length && course[nextIdx][3] < c) nextIdx++;
-      for (let i = nextIdx; i < course.length && course[i][2] <= c; i++) {
-        if (myHits.has(i) || c > course[i][3]) continue;
-        const lastHit = Math.max(-99, ...myHits.values());
-        if (c < lastHit + JU.INVULN) continue;
-        if (juHeight(myJumps, c) < JU.OH) {
-          const th = Math.round(c * 1000) / 1000;
-          myHits.set(i, th); pendH.push([i, th]);
-          if (myLives() <= 0) myOut = th;
-          try { Sound.play("wrong"); } catch {}
-          if (navigator.vibrate) try { navigator.vibrate(myOut != null ? [80, 60, 160] : 60); } catch {}
-          sync();
-        }
-      }
-      if (c >= t || myOut != null) break;
+    if (courseSeed !== st.seed || courseUpto < need) {
+      courseSeed = st.seed; courseUpto = need + 300; course = juCourse(st.seed, courseUpto);
+      cloudAt = course.map((o, i) => o[1] === 4 && (i === 0 || course[i - 1][1] < 4) ? i : -1).filter(i => i >= 0);
     }
-    checkT = t;
+  }
+  function stepMine(t) {                          // my runner on to t: its hits cost my lives
+    if (myOut != null || !st || !st.joined) return;
+    if (!myRun) {                                  // (a reload in the middle: the past runs silently, the server's hits count)
+      myRun = new JuRunner();
+      for (const [i, th] of myHits) { myRun.ids.add(i); myRun.last = Math.max(myRun.last, th); }
+      silentT = t - 0.05;
+    }
+    if (t - myRun.k / JU.HZ > 1.5) silentT = Math.max(silentT, t - 1.5);   // the app was asleep: no hits for that time
+    myRun.run(course, myJumps, t, ([i, th]) => {
+      if (myOut != null || th <= silentT || myHits.has(i)) return;
+      const tr = Math.round(th * 1000) / 1000;
+      myHits.set(i, tr); pendH.push([i, tr]);
+      if (myLives() <= 0) myOut = tr;
+      try { Sound.play("wrong"); } catch {}
+      if (navigator.vibrate) try { navigator.vibrate(myOut != null ? [80, 60, 160] : 60); } catch {}
+      sync();
+    });
+  }
+  function laneY(p, t) {                          // another lane: its runner from the reported jumps (rewound when one comes late)
+    let c = lanesRun[p.id];
+    if (!c) c = lanesRun[p.id] = { run: new JuRunner(), js: [], seen: new Set(), cps: [] };
+    let early = Infinity;
+    for (const j of p.jumps || []) if (!c.seen.has(j)) { c.seen.add(j); c.js.push(j); early = Math.min(early, j); }
+    if (early < Infinity) {
+      c.js.sort((a, b) => a - b);
+      if (early < (c.run.k + 1) / JU.HZ) {
+        while (c.cps.length && c.cps[c.cps.length - 1].k / JU.HZ >= early - 1 / JU.HZ) c.cps.pop();
+        c.run = c.cps.length ? c.cps[c.cps.length - 1].clone() : new JuRunner();
+      }
+    }
+    const until = p.out != null ? Math.min(t, p.out) : t;
+    while ((c.run.k + 1) / JU.HZ <= until) {
+      c.run.run(course, c.js, Math.min(until, (Math.floor(c.run.k / JU.HZ) + 1)));
+      if (c.run.k % JU.HZ === 0) c.cps.push(c.run.clone());
+    }
+    return c.run.y;
   }
 
   // ---------- drawing the lanes
@@ -249,12 +359,60 @@ function jumpLive(box, me, back) {
     return out;
   }
   function rr(x, y, w, hh, r) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, hh, r) : ctx.rect(x, y, w, hh); }
+  // the course pieces – own drawings: wooden crates, round cacti with spikes, crates resting on clouds, the cactus field
+  function drawCrate(bx, by, bw, bh) {
+    ctx.fillStyle = "#c97a2b"; rr(bx + 0.5, by, bw - 1, bh, 3); ctx.fill();
+    ctx.fillStyle = "#e09a4f"; ctx.fillRect(bx + 1.5, by + 1, bw - 3, Math.max(2, bh * 0.12));
+    ctx.strokeStyle = "#8a4f14"; ctx.lineWidth = Math.max(1, bw * 0.06);
+    ctx.strokeRect(bx + bw * 0.18, by + bh * 0.18, bw * 0.64, bh * 0.64);
+    ctx.beginPath(); ctx.moveTo(bx + bw * 0.18, by + bh * 0.18); ctx.lineTo(bx + bw * 0.82, by + bh * 0.82); ctx.stroke();
+  }
+  function drawCactus(cx, base, cw0, chh, dark) {   // a round-topped column with two arms, little spikes and a flower
+    const body = dark ? "#2f8f4e" : "#3aa35c", rib = dark ? "#226b3a" : "#2b7d45", w = cw0 * 0.42;
+    ctx.fillStyle = body;
+    rr(cx - w / 2, base - chh, w, chh, w / 2); ctx.fill();
+    const arm = (side, y0, len) => {             // an L-shaped arm
+      const ax = cx + side * w / 2, aw = w * 0.62;
+      rr(side > 0 ? ax - 1 : ax - cw0 * 0.32 + 1, y0, cw0 * 0.32, aw, aw / 2); ctx.fill();
+      rr(side > 0 ? ax + cw0 * 0.32 - aw : ax - cw0 * 0.32, y0 - len, aw, len + aw, aw / 2); ctx.fill();
+    };
+    if (chh > 14) { arm(-1, base - chh * 0.5, chh * 0.25); arm(1, base - chh * 0.68, chh * 0.2); }
+    ctx.strokeStyle = rib; ctx.lineWidth = Math.max(1, w * 0.08);
+    ctx.beginPath(); ctx.moveTo(cx, base - chh + w * 0.4); ctx.lineTo(cx, base - 2); ctx.stroke();
+    ctx.strokeStyle = dark ? "#e6f5d0" : "#fdfde8"; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let yy = base - chh + w * 0.35; yy < base - 2; yy += Math.max(4, chh / 6)) {
+      ctx.moveTo(cx - w / 2, yy); ctx.lineTo(cx - w / 2 - 3, yy - 2);
+      ctx.moveTo(cx + w / 2, yy + 2); ctx.lineTo(cx + w / 2 + 3, yy);
+    }
+    ctx.stroke();
+    if (chh > 14) { ctx.fillStyle = "#ff7eb6"; ctx.beginPath(); ctx.arc(cx, base - chh, Math.max(2, w * 0.22), 0, 7); ctx.fill(); }
+  }
+  function drawCloud(cx, cy, w, r0, dark) {
+    ctx.fillStyle = dark ? "rgba(203,213,235,.9)" : "#ffffff";
+    const n = Math.max(2, Math.round(w / (r0 * 1.4)));
+    ctx.beginPath();
+    for (let k = 0; k < n; k++) { const px = cx - w / 2 + r0 + k * (w - 2 * r0) / Math.max(1, n - 1); ctx.moveTo(px + r0, cy); ctx.arc(px, cy - (k % 2) * r0 * 0.35, r0 * (k % 2 ? 1.1 : 0.95), 0, 7); }
+    ctx.fill();
+    ctx.fillStyle = dark ? "rgba(148,163,196,.5)" : "rgba(186,214,240,.75)";
+    rr(cx - w / 2 + r0 * 0.3, cy, w - r0 * 0.6, r0 * 0.7, r0 * 0.35); ctx.fill();
+  }
+  function drawSign(fx, ground, sx, sy, dark) {   // a little post before the cloud parcours: a cloud and an arrow up
+    const ph = 1.25 * sy, bw = 0.9 * sx, bh = 0.62 * sy;
+    ctx.fillStyle = "#8a5a2b"; ctx.fillRect(fx - 2, ground - ph, 4, ph);
+    ctx.fillStyle = dark ? "#f4d58d" : "#ffe9a8"; ctx.strokeStyle = "#8a5a2b"; ctx.lineWidth = 2;
+    rr(fx - bw / 2, ground - ph - bh * 0.6, bw, bh, 5); ctx.fill(); ctx.stroke();
+    drawCloud(fx - bw * 0.12, ground - ph - bh * 0.05, bw * 0.5, Math.max(3, bh * 0.2), false);
+    ctx.strokeStyle = "#d9480f"; ctx.lineWidth = Math.max(2, bw * 0.06);
+    const ax = fx + bw * 0.3, ay = ground - ph - bh * 0.45;
+    ctx.beginPath(); ctx.moveTo(ax, ay + bh * 0.62); ctx.lineTo(ax, ay); ctx.moveTo(ax - bw * 0.1, ay + bh * 0.14); ctx.lineTo(ax, ay); ctx.lineTo(ax + bw * 0.1, ay + bh * 0.14); ctx.stroke();
+  }
   function drawLane(L, t) {
     const { p, y, h: lh, own, color } = L;
+    const dark = juDark();
     const sx = cw / JU.VIEW, ground = y + lh - Math.max(8, Math.min(30, lh * 0.14)), top = y + Math.max(14, lh * 0.12);
-    const sy = Math.min((ground - top) / (JU.JH + 1.05), sx * 1.25), avX = cw - 1.6 * sx;
+    const sy = Math.min((ground - top) / (JU.JH + 2.2), sx * 1.25), avX = cw - 1.6 * sx;
     const d = juDist(t);
-    const jumps = own ? myJumps : p.jumps || [];
     const hits = own ? [...myHits.values()] : (p.hits || []).map(x => x[1]);
     const out = own ? myOut : p.out;
     const isOut = out != null && out <= t;
@@ -263,47 +421,55 @@ function jumpLive(box, me, back) {
     ctx.save();
     rr(0, y, cw, lh, 12); ctx.clip();
     const g = ctx.createLinearGradient(0, y, 0, y + lh);
-    g.addColorStop(0, own ? "#bfe3ff" : "#d9ecfb"); g.addColorStop(1, "#f4fbff");
+    if (dark) { g.addColorStop(0, own ? "#1e3a5f" : "#1b2c44"); g.addColorStop(1, "#2c3e5a"); }
+    else { g.addColorStop(0, own ? "#bfe3ff" : "#d9ecfb"); g.addColorStop(1, "#f4fbff"); }
     ctx.fillStyle = g; ctx.fillRect(0, y, cw, lh);
     ctx.fillStyle = color; ctx.globalAlpha = 0.16; ctx.fillRect(0, y, 6, lh); ctx.globalAlpha = 1;
     if (lh > 70) {                                 // slow clouds
-      ctx.fillStyle = "rgba(255,255,255,.85)";
+      ctx.fillStyle = dark ? "rgba(203,213,235,.18)" : "rgba(255,255,255,.85)";
       const span = cw + 120;
       for (let k = 0; k < 3; k++) {
         const cx = ((k * 157 + d * sx * 0.25) % span + span) % span - 60, cy = y + lh * (0.22 + 0.13 * (k % 2)), r0 = Math.min(16, lh * 0.08);
         ctx.beginPath(); ctx.arc(cx, cy, r0, 0, 7); ctx.arc(cx + r0, cy - r0 * 0.5, r0 * 1.15, 0, 7); ctx.arc(cx + r0 * 2.1, cy, r0 * 0.9, 0, 7); ctx.fill();
       }
     }
-    ctx.fillStyle = "#8bc34a"; ctx.fillRect(0, ground, cw, y + lh - ground);
-    ctx.fillStyle = "#6a9f2f";
+    ctx.fillStyle = dark ? "#4d7a2c" : "#8bc34a"; ctx.fillRect(0, ground, cw, y + lh - ground);
+    ctx.fillStyle = dark ? "#3a5f20" : "#6a9f2f";
     const step = 1.5 * sx, off = ((d * sx) % step + step) % step;
     for (let x = -step + off; x < cw; x += step) ctx.fillRect(x, ground + 3, sx * 0.5, 2);
-    // the obstacles (the same for everybody)
+    // the course (the same for everybody)
     const first = d - (JU.VIEW - 1.6) - 3, last = d + 3;
+    for (const ci of cloudAt) {                    // the signpost before a cloud parcours
+      const sxp = course[ci][0] - juSpeedAt(course[ci][0]) * 0.9, fx = avX + (d - sxp) * sx;
+      if (fx > -40 && fx < cw + 40) drawSign(fx, ground, sx, sy, dark);
+    }
     for (let i = 0; i < course.length; i++) {
-      const [x, kind] = course[i];
-      if (x + JU.WIDTH[kind] < first) continue;
+      const [x, kind, ww, hh] = course[i];
+      if (x + ww < first) continue;
       if (x > last + JU.VIEW) break;
-      const fx = avX + (d - x) * sx, w = JU.WIDTH[kind] * sx, oh = JU.OH * sy;
+      const fx = avX + (d - x) * sx, w = ww * sx, oh = hh * sy;   // fx: the front edge (right), the piece goes left
       if (fx < -2 || fx - w > cw + 2) continue;
       if (kind === 2) {                            // a long hedge
-        ctx.fillStyle = "#2f9e44"; rr(fx - w, ground - oh, w, oh, Math.min(10, oh / 2)); ctx.fill();
-        ctx.fillStyle = "#40c057";
+        ctx.fillStyle = dark ? "#237a36" : "#2f9e44"; rr(fx - w, ground - oh, w, oh, Math.min(10, oh / 2)); ctx.fill();
+        ctx.fillStyle = dark ? "#2f9e44" : "#40c057";
         for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(fx - w + (k + 0.5) * w / 4, ground - oh + 2, Math.min(w / 8, oh / 2.2), Math.PI, 0); ctx.fill(); }
+      } else if (kind === 3) {                     // a cactus
+        drawCactus(fx - w / 2, ground, Math.max(w * 1.6, 10), oh, dark);
+      } else if (kind === 5) {                     // the dense cactus field
+        const n = Math.max(1, Math.round(ww / 0.42)), cwid = w / n;
+        for (let k = 0; k < n; k++) drawCactus(fx - (k + 0.5) * cwid, ground, cwid * 1.5, oh * (k % 2 ? 0.85 : 1), dark);
+      } else if (kind === 4) {                     // crates resting on a cloud
+        const bh = 0.36 * sy, n = Math.max(1, Math.round(ww / 0.8)), bw = w / n;
+        drawCloud(fx - w / 2, ground - oh + bh + 0.1 * sy, w + 0.5 * sx, Math.max(5, 0.22 * sy), dark);
+        for (let k = 0; k < n; k++) drawCrate(fx - (k + 1) * bw, ground - oh, bw, bh);
       } else {
         const n = kind === 1 ? 2 : 1, bw = w / n;
-        for (let k = 0; k < n; k++) {             // crates
-          const bx = fx - (k + 1) * bw;
-          ctx.fillStyle = "#c97a2b"; rr(bx + 0.5, ground - oh, bw - 1, oh, 3); ctx.fill();
-          ctx.strokeStyle = "#8a4f14"; ctx.lineWidth = Math.max(1, sx * 0.05);
-          ctx.strokeRect(bx + bw * 0.18, ground - oh * 0.82, bw * 0.64, oh * 0.64);
-          ctx.beginPath(); ctx.moveTo(bx + bw * 0.18, ground - oh * 0.82); ctx.lineTo(bx + bw * 0.82, ground - oh * 0.18); ctx.stroke();
-        }
+        for (let k = 0; k < n; k++) drawCrate(fx - (k + 1) * bw, ground - oh, bw, oh);   // crates
       }
     }
     // the runner
     const size = Math.max(16, Math.min(1.05 * sy, 1.3 * sx));
-    const yy = ground - juHeight(jumps, t) * sy - size;
+    const yy = ground - (own ? (myRun ? myRun.y : 0) : laneY(p, t)) * sy - size;
     const blink = hits.some(x => t >= x && t < x + JU.INVULN) && Math.floor(t * 10) % 2 === 0;
     ctx.globalAlpha = isOut ? 0.35 : blink ? 0.25 : 1;
     ctx.fillStyle = "rgba(0,0,0,.18)";
@@ -342,7 +508,7 @@ function jumpLive(box, me, back) {
     fit();
     const t = gameT();
     ensureCourse(Math.max(0, t) + 2);
-    if (st.joined) checkHits(t);
+    if (st.joined) stepMine(t);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cw, ch);
     const ls = lanes();
@@ -351,6 +517,21 @@ function jumpLive(box, me, back) {
       ctx.fillStyle = "rgba(91,91,214,.22)"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.font = "900 " + Math.round(Math.min(cw * 0.22, ls[0].y * 0.45)) + "px system-ui, sans-serif";
       ctx.fillText(Math.floor(juDist(myOut != null ? myOut : Math.max(0, t))) + " m", cw / 2, ls[0].y / 2);
+    }
+    const warn = cloudAt.map(i => course[i][4] - t).find(dt => dt > -0.6 && dt < 3.2);
+    if (warn != null && t > 0) {                    // the cloud parcours is coming: a banner over my lane (or the bottom lane)
+      const L = ls.find(l => l.own) || ls[ls.length - 1], pulse = 0.85 + 0.15 * Math.sin(t * 9);
+      const fs = Math.max(13, Math.min(20, cw * 0.05)), bw = Math.min(cw - 24, fs * 17), bh = fs * 2.9;
+      const bx = (cw - bw) / 2, by = L.y + Math.max(fs * 1.9, L.h * 0.2);
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = juDark() ? "rgba(30,41,59,.92)" : "rgba(255,255,255,.93)"; ctx.strokeStyle = "#f59f00"; ctx.lineWidth = 3;
+      rr(bx, by, bw, bh, 12); ctx.fill(); ctx.stroke();
+      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = juDark() ? "#f8fafc" : "#1f2937";
+      ctx.font = "900 " + fs + "px system-ui, sans-serif";
+      ctx.fillText("☁️ " + I18N.tr(T("Cloud course ahead!")), cw / 2, by + bh * 0.33, bw - 12);
+      ctx.font = "700 " + Math.round(fs * 0.8) + "px system-ui, sans-serif";
+      ctx.fillText(I18N.tr(T("Jump from crate to crate!")), cw / 2, by + bh * 0.72, bw - 12);
+      ctx.globalAlpha = 1;
     }
     if (t < 0.7) {                                  // the countdown
       const txt = t < 0 ? String(Math.ceil(-t)) : I18N.tr(T("Go!"));

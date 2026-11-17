@@ -264,15 +264,15 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
   stricter – from which the parent area may be opened (e.g. only the parents' network). Empty = every network.
   A list that would lock out the device you are saving from is refused.
 
-## Community: family quiz and family council
+## Family (parent area, formerly «Community»): family quiz and family council
 
-- **Family quiz** (learning app › Family › Quizzes, or parent area › Community): everybody – children too – makes
+- **Family quiz** (learning app › Family › Quizzes, or parent area › Games): everybody – children too – makes
   quizzes (2–4 answers, one right, time per question) or copies a template (Swiss waters, geography of Europe,
   capitals of Europe and the world, flags, food of the world, Swiss specialities, cantons, animals, space,
   inventions, Switzerland). Whoever starts a game leads it (a parent may always step in); everybody joins on their
   own device. Quick right answers give more points (1000 down to 500). Places go into everybody's history; the
   reward events *Played the family quiz* and *Won the family quiz* can give coins (Rewards › Rules).
-- **Bingo** (learning app › Family, or parent area › Community): whoever starts sets the rules (speed, one line /
+- **Bingo** (learning app › Family, or parent area › Games): whoever starts sets the rules (speed, one line /
   two lines / full card – the rules used last are the default); everybody joins with a 5 × 5 card (B-I-N-G-O, 1–75,
   free star). A ball carousel spins, stops and shows the new ball for about 5 seconds. Players mark the numbers
   themselves and press «BINGO!» – the app checks it; a false «Bingo!» blocks the button for 10 seconds. Everybody can
@@ -286,6 +286,29 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
 Below the family council: **📊 Polls** – a question with 2 to 12 answers, one or several answers allowed,
 anonymous or with names, optionally with a closing time. Everybody sees the result after answering; who asked (or a
 parent) can close or remove the poll. A banner on the start page reminds who has not answered yet.
+
+### Bulletin boards (Schwarzes Brett)
+Under the polls: **📌 Bulletin boards** – endless pin boards, one per topic («Summer holidays», «Birthday party», …).
+Everybody of the family makes boards (title + emoji) and works on every board; guests (QR invitation) never see them.
+Who made a board, or a parent, renames, **archives** (still readable, no more changes) or removes it with **⋯**.
+
+A board opens full screen (✕ closes it):
+- **Pan** with one finger or the mouse on an empty spot, **zoom** with two fingers, the mouse wheel or **+ / −**
+  from 5 % to 400 %; **⤢** shows everything. The last view of each board is remembered on the device.
+- **🗒️ Sticky note** in 8 colours: choose a colour, tap the board, write. **🔤 Text** in 8 ink colours (A− / A+ for
+  the size). **✏️ Pen** with 8 colours and 3 widths, **🔷 shapes** (rectangle, ellipse, arrow, line), **🧽 eraser**
+  (wipe over lines and shapes).
+- **👆** moves items, a tap selects one (write, colour, bring to front, remove, the round handle resizes notes and
+  texts), a double tap writes. Every note shows who made it. **↶** undoes the own last steps (also Ctrl+Z; Delete
+  removes the selected item).
+- **Live:** changes of the others appear within about a second; the avatars at the top show who is on the board (tap
+  one to jump to what they see), their pointer appears with their name, and an item somebody is moving or writing has
+  an outline in their colour. Last change wins per item.
+- A badge «New: n» on the board list and a banner on the start page show what the others changed since you last
+  looked.
+
+Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
+to 600 points. Everything is in the database, so the backup contains the boards.
 
 ### Wichteln (secret gift giving)
 Under the polls, everybody can start a **Wichteln**: enter the occasion (e.g. «Christmas 2026»), choose who takes part
@@ -317,7 +340,7 @@ their cards and the pot odds; easy bots bluff and call more often. When you have
 
 ### Errate den Song
 
-Family › **🎵 Guess the song** (or parent area › Community): the game leader chooses a **speaker** of Home Assistant
+Family › **🎵 Guess the song** (or parent area › Games): the game leader chooses a **speaker** of Home Assistant
 (a media player that already has a playlist) and the rules – what who buzzes says (artist and title, artist or
 title, only one of them), the others judge by majority or unanimous, points to win (e.g. 10) and songs at most (e.g.
 40). The app switches shuffle on and only steers the speaker: play, pause, next song.
@@ -348,11 +371,25 @@ seats are filled with the animal bots.
 The button ☀️ / 🌙 (top right in the app, next to the language in the parent area) switches between light and dark and
 is remembered on the device; without a choice the system (or the Home Assistant theme) decides.
 
-### Games per game and person
+### Games per game and person (parent area › 🎲 Games)
 
-Settings › **Games**: every game on its own – *for everybody*, *only chosen children* (tick the children) or *off*:
-family quiz, bingo, Tschau Sepp, Kartenkarussell, Domino, Texas Hold'em and each game of the game corner. Parents can always
-play; the family council and polls stay open for everybody. Switched-off games disappear from the children's app.
+The parent area has two pages: **Family** (family council, polls, bulletin boards, Wichteln, history) and **🎲 Games** (every game:
+the family quiz, bingo, guess the song, all live games with their start buttons, coins and photo sets, the running
+games, and the game corner). A **search field** at the top filters the games by name; «⚙️ For all games» holds
+*All on / All off*, who begins a game and whether guests may join.
+
+Every game has a **status**: *active*, *active without bots* or *inactive* (= off), and while active *for everybody* or
+*only chosen children* (tick the children). Parents can always play – and are not bound by «without bots» either.
+Switched-off games disappear from the children's app.
+
+**Active without bots** is offered for the games that can be played with bots: Texas Hold'em, Tschau Sepp,
+Kartenkarussell, Domino, Paarjagd, Kartenlauf, Fünf Würfel, Heimwärts, Jump, Klatsch den Beat, Jass, Werwölfe, Chess,
+Dorfmarkt, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
+the games against the app, and the server refuses every start with bots («Playing with bots is switched off for this
+game»): family tables get no bots (Kartenlauf plays with the people there, Jass needs 4 people, Werwölfe needs 5), chess
+only against the family or two on one device, Ping-Pong doubles only with people. Jump and Klatsch den Beat can still be
+played alone, without practice bots. A table where a parent plays along may still be filled with bots.
+Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `PUT /api/parent/games`).
 
 ### Family council: new topic
 
@@ -404,7 +441,7 @@ one). On your turn you turn two cards: a **pair** is yours and you go again; **n
 for a moment, then they turn back and the next player goes. When all pairs are found the most pairs win – a tie
 shares the place. The board always fits the screen, also on a phone.
 
-**Coins for places 1–3:** the parents set them in Community › Paarjagd («🪙 Coins for place 1 / 2 / 3», default
+**Coins for places 1–3:** the parents set them in Games › Paarjagd («🪙 Coins for place 1 / 2 / 3», default
 10 / 5 / 2). They are paid once at the end of a game, and only at a **family table with at least two people of the
 family**: no coins alone against bots, none for guests and none for bots. The result shows «+10 🪙» next to the place.
 The existing Pairs game in the game corner (one device, take turns) stays as it is.
@@ -434,7 +471,7 @@ questions with their answers. The game ends when everybody is finished; who lead
 somebody left) or end the game at any time – then all characters are shown and only who found theirs has a place.
 The result shows every character, the places and the coins.
 
-**Coins for places 1–3:** set by the parents in Community › Wer bin ich? (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Wer bin ich? (default 10 / 5 / 2), paid once, only at a
 table with **at least two people of the family** – never to guests. Every person gets a history entry (place, players,
 their character).
 
@@ -468,7 +505,7 @@ along the ring» opens a small menu); the jack asks for the second marble; the 7
 (step counter, «−» per marble, then «Play»); the joker first asks which card it stands for. Moves are animated along
 the track; the last move, the played card and the dealer are shown.
 
-**Coins for places 1–3:** set by the parents in Community › Kartenlauf (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Kartenlauf (default 10 / 5 / 2), paid once, only at a
 family table with **at least two people of the family** – never alone against bots, to guests or to bots. With teams
 both winners get place 1, the other team place 2. Every person gets a history entry.
 
@@ -500,7 +537,7 @@ answers of the round); after the last round the result shows the ranking (a tie 
 the winner. Who leads can end the game any time: the rounds so far count (a round in its review is scored as it stands,
 a round still being written is dropped).
 
-**Coins for places 1–3:** set by the parents in Community › Stadt-Land-Fluss (default 10 / 5 / 2), paid once, only at
+**Coins for places 1–3:** set by the parents in Games › Stadt-Land-Fluss (default 10 / 5 / 2), paid once, only at
 a table with **at least two people of the family** and only when at least one round was played – never to guests.
 Every person of the family gets a history entry (place, points, rounds).
 
@@ -530,7 +567,7 @@ ends when everybody found it or the time is up; the word is shown to all for 3 s
 can **skip** a turn (the points so far stay) and **end** the game (a drawing in progress counts as it stands). After the
 last turn the result shows the ranking (a tie shares the place) with confetti for the winner and the list of words.
 
-**Coins for places 1–3:** set by the parents in Community › Zeichnen & Raten (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Zeichnen & Raten (default 10 / 5 / 2), paid once, only at a
 table with **at least two people of the family** and only when at least one turn was played and somebody scored – never to guests. Every
 person of the family gets a history entry (place, points, words drawn).
 
@@ -559,7 +596,7 @@ House rule (start dialog, on by default): **+50 for every further Fünfling** wh
 The highest total wins (a tie shares the place); the result shows the ranking with confetti and every sheet. Who
 leads may **end** the game early: the sheets count as they stand, but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Fünf Würfel (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Fünf Würfel (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. Every person of the family gets a history entry (place, points).
 
@@ -594,7 +631,7 @@ Bots: easy moves mostly at random, normal prefers hitting, coming out and the le
 fields and the danger from pieces up to 6 fields behind. Who leads may **end** the game early: ranked as it stands,
 but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Heimwärts (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Heimwärts (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. Every person of the family gets a history entry (place, pieces home).
 
@@ -609,23 +646,76 @@ or open a **family table** (1 to 6 players, optionally with bots; guests via QR 
 - **Same obstacles for everybody:** the server picks a seed, every app builds the same course from it, and all lanes
   run on the same game clock (a 3-second countdown after the start).
 - **It gets faster:** the speed grows steadily (the maximum after about 2 ½ minutes); from medium speed there are also
-  double obstacles, at high speed long hedges.
-- **Lives:** everybody starts with 3 (start dialog: 1 / 3 / 5). Hitting an obstacle costs a life, then you blink for a
-  moment (invulnerable). Without lives you are out – the lane shows how far you came.
+  double crates, at high speed long hedges.
+- **Crates are safe to land on:** come down on top of a crate and you stand on it and run along (you can jump on from
+  there, or just walk off its end). Only running into its **side** costs a life (a little landing grace: feet a bit
+  below the top still land on it).
+- **Cacti** (green, with spikes and a flower) and hedges sting: touching one – also landing on it – costs a life.
+- **Cloud parcours:** after about **45 seconds** (and then again about a minute after the end of the last one) a
+  signpost and a blinking banner «Cloud course ahead!» announce it (about 3 seconds of free ground before it). Then
+  come 4–6 crates floating on clouds (heights a little above a normal jump over a crate, never more than a small step
+  up or down from one to the next), a short jump apart, over a **dense cactus field**: jump from crate to crate.
+  Falling down onto the cacti costs a life (one per piece of the field, then you hop up and blink – you can jump back up
+  onto the next cloud crate from the ground). After the last crate there is free ground to land on, then the normal
+  course goes on. The jumps are fair for children: about half a second of good jump times for each crate.
+- **Jumping:** only from the ground or a crate (no double jumps in the air); a jump just after walking off an edge
+  still counts.
+- **Lives:** everybody starts with 3 (start dialog: 1 / 3 / 5). Every hit costs a life, then you hop up a little and
+  blink for a moment (invulnerable). Without lives you are out – the lane shows how far you came.
 - **The others:** their jumps and lives show in their lanes – drawn a moment late, from the jump times their apps report.
 - **The end:** at a family table the **last one still running wins** (the game ends when one is left or no person is
   left); alone you run until you are out. Places: who stayed in longest; the distance (m) is the score.
-- **Bots** (easy / normal / hard) jump with a small timing error and now and then forget to jump – the faster the game,
-  the more they miss.
+- **Bots** (easy / normal / hard) run the same physics: they look ahead for the jump times that get them past the next
+  danger (over a cactus, onto a crate, onto the next cloud crate) and aim for the middle with a small timing error, and
+  now and then forget to jump – the faster the game, the more they miss.
 
-The jump physics run in the app (no waiting for the network); the app reports its jumps and hits to the server, which
-keeps the lives and the state per player and checks only sane values (a time near the game clock, an obstacle that
-really passes then, one life per obstacle). An app that stays silent for 12 seconds is out (left the game). Who leads
+The jump physics run in the app (no waiting for the network), step by step 120 times a second – the same code in the
+app and on the server (for the bots), so every app draws the others' lanes exactly from their jump times. The app
+reports its jumps and hits to the server, which keeps the lives and the state per player and checks only sane values (a
+time near the game clock, an obstacle that really passes then – never a cloud crate –, one life per obstacle). An app that stays silent for 12 seconds is out (left the game). Who leads
 may **end** the game early: ranked as it stands (the ones still running by their lives), but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Jump (default 10 / 5 / 2), paid once, only for a game played
+**Coins for places 1–3:** set by the parents in Games › Jump (default 10 / 5 / 2), paid once, only for a game played
 to the end at a family table with **at least two people of the family** – never alone, to guests or to bots. Every
 person of the family gets a history entry (place, distance, new personal best).
+
+### Star Runner
+
+Games → **🌠 Star Runner** (Sternschnuppen-Lauf): a live endless runner with its own little story – at night the big
+lantern of the village went out; the children run as forest messengers along a forest path and catch the falling
+**star sparks ✨** to light it again. The path has **three lanes**; you run with **your own avatar** (face, hair,
+outfit and worn items on running legs), seen from the front, the village with its lantern on the horizon – the more
+sparks you catch, the brighter it glows.
+
+- **Controls:** swipe **left / right** to change the lane, **up** to jump, **down** to duck. On a computer the arrow
+  keys or W A S D (space jumps); four buttons ◀ ▲ ▼ ▶ below the path work everywhere.
+- **On the path:** fallen **logs** and **puddles** (jump), **low branches** with hanging vines (duck), **rocks** and
+  **tree stumps** that block a lane (change the lane), sparks on the ground and high above some logs (jump for them).
+  Every row of obstacles leaves at least one lane open; the speed grows (the maximum after about 2 minutes), the rows
+  come closer together.
+- **Everybody at the same time:** alone (high score, optionally with 1–7 practice bots) or at a **family table** (1 to
+  8 players, optionally with bots; guests via QR code). Everybody runs the **same course** (a seed of the server) on
+  their own device; the others run along as **translucent ghosts** with their avatars and name tags – the ones with
+  more sparks a little ahead, a player who is out stays behind. Ghosts never collide with you. Above the path a live
+  **mini ranking** (points, 💥 for who is out).
+- **Lives:** 3 (start dialog: 1 / 3 / 5); a hit costs one, then you blink for a moment. **Time:** 2 / 3 / 5 minutes
+  (default 3). The run ends when no person is running any more or the time is up.
+- **Points:** every metre 1, every spark 10. Places by points (the same points share the place). Personal best (points)
+  is kept.
+- **Bots** (easy / normal / hard) play by the same rules: they plan their swipes a moment ahead with a timing error and
+  now and then a mistake (forget to jump or duck, swerve too late) – the faster, the more mistakes.
+
+**What the server decides:** the app runs the game at 60 fps by itself, but reports only its **inputs** (each swipe with
+its game time). The server replays them on the course with the same rules and decides **itself** which obstacle hit
+and which spark was caught – an app cannot report a distance, sparks or "no hit". An input counts only when it arrives
+in time: not before the previous one, not ahead of the server's clock and not for a part of the course the server
+already settled (1.5 s behind the game clock), so nobody can dodge afterwards. An app that stays silent for 10 seconds
+is out. Who leads may **end** the game early: ranked as it stands, without coins.
+
+**Coins for places 1–3:** set by the parents in Games › Star Runner (default 10 / 5 / 2), paid once, only for a game
+played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots.
+The winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, metres, sparks, new
+personal best). In the parent area › Games the runner can be active, active without bots or inactive.
 
 ### Klatsch den Beat
 
@@ -655,7 +745,7 @@ practice bots) or open a **family table** (1 to 8 players, optionally with bots;
 Who leads may **end** the game early: the rounds already played count, ranked as it stands, but without coins. The
 accuracy of a game played to the end is your **personal best** (alone or at a table).
 
-**Coins for places 1–3:** set by the parents in Community › Klatsch den Beat (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Klatsch den Beat (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone, to guests or to
 bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, points, accuracy).
 
@@ -692,7 +782,7 @@ ready. Who leads can **skip** a turn (e.g. the explainer left) and **end** the g
 stands). The result shows the ranking (a team shares its place, a tie shares the place), confetti for the winners and
 every card of the game.
 
-**Coins for places 1–3:** set by the parents in Community › Verbotene Wörter (default 10 / 5 / 2), paid once, only at
+**Coins for places 1–3:** set by the parents in Games › Verbotene Wörter (default 10 / 5 / 2), paid once, only at
 a table with **at least two people of the family** and only when at least one turn was played and somebody scored –
 never to guests. Every person of the family gets a history entry (place, points, team, cards explained); the winners
 get the «No. 1» hat.
@@ -742,7 +832,7 @@ hard counts the cards, pulls trumps, gives points («schmieren») when the partn
 the strength of its hand and pushes a weak hand. Who leads may **end** the game early: ranked as it stands, but without
 coins.
 
-**Coins:** the members of the **winning team** get the coins for place 1 (set by the parents in Community › Jass,
+**Coins:** the members of the **winning team** get the coins for place 1 (set by the parents in Games › Jass,
 default 10), paid once, only for a game played to the end at a family table with **at least two people of the family**
 – never alone against bots, to guests or to bots. Every person of the family gets a history entry (won / lost, the
 points, the partner); the winners get the «No. 1» hat (not on a tie).
@@ -801,7 +891,7 @@ plays a sound at every step; it also reads it aloud with the voice of the device
 leads can **move on** when somebody is idle (every step has a default: no lovers, the most werewolf votes, no look,
 no potion, no shot, close the vote) and **end** the game (no winner, no coins).
 
-**Coins:** set by the parents in Community › Werwölfe (the amount of place 1, default 10): every person of the
+**Coins:** set by the parents in Games › Werwölfe (the amount of place 1, default 10): every person of the
 family on the **winning side** – only at a table with **at least two people of the family**, only for a game played
 to the end, paid once, never to guests or bots. The winners get the «No. 1» hat; every person of the family gets a
 history entry (won or lost, the role) – bots none.
@@ -835,10 +925,10 @@ clearly worse; on one device the draw is agreed at once), or time.
 **Pausing:** either player taps **⏸ Pause** – the clock stops, nobody can move, the game waits in the database
 (also over a restart) until a player taps **▶ Continue**. Several games per person at a time (up to 12 unfinished).
 A game alone (bot or one device) with a clock pauses by itself when you leave it. Who started a game or a parent
-can **delete** a paused game (🗑) or an open invitation. The parent area lists every chess game (Community › Chess)
+can **delete** a paused game (🗑) or an open invitation. The parent area lists every chess game (Games › Chess)
 and **Running games** lists them too (paused ones marked ⏸) – «End» there ends a game without a result, no coins.
 
-**Coins:** set by the parents in Community › Chess (three numbers, default 10 / 5 / 2): the winner of a game
+**Coins:** set by the parents in Games › Chess (three numbers, default 10 / 5 / 2): the winner of a game
 between **two people of the family** / a win against the **hard bot** / against the **normal bot**. Only the winner,
 only after at least **10 own moves**, paid once – never against the easy bot, never on one device, never against
 guests. The winner of a game between two people of the family gets the «No. 1» hat; everybody of the family who
@@ -881,7 +971,7 @@ price, mortgaged at half + buildings). The game is always over when only one pla
 the start: 1000 / 1500 / 2000. Who leads may **pause** the game (nothing moves, the time stops) and **end** it early
 (ranked as it stands, without coins). The whole game is stored in the database and survives a restart of the add-on.
 
-**Coins for places 1–3:** set by the parents in Community › Dorfmarkt (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Dorfmarkt (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, worth).
 
@@ -907,8 +997,25 @@ the server; best times stay in this browser), shown when family games are on for
 - **Pairs** – turn over two cards and find the pairs: animals, fruit, vehicles, sea animals or **your own photo
   sets**; alone (fewest moves), against the app (it remembers more or less well) or 2–4 players on one device.
   Card back: four patterns or the **family crest**.
+- **🧊 Cube solver** – helps to bring a mixed-up puzzle cube back to one colour per side. Choose **2×2** or **3×3**
+  (4×4 is shown as «coming later»), then paint the colours you see on a **3D cube**: drag it with a finger or the
+  mouse, or jump to a side with the six side buttons; pick a colour and tap a sticker. On small phones the flat
+  **net** (▦) is easier. The 3×3 centres are fixed – hold the cube with **yellow on top and green in front**. 🧽 clears
+  everything, ✨ fills in a solved cube, 🎲 mixes one to try it out. The colours stay in this browser, so a refresh
+  loses nothing. **Solve** first checks the colours and says in plain words what is wrong – a colour used too often,
+  stickers without colour, «This corner cannot exist: white-yellow-red», two colours of a corner swapped, a piece
+  that is there twice (the stickers blink), or «one corner is twisted / one edge is flipped / two pieces are
+  swapped» (a cube that cannot be solved like this – usually one sticker is painted wrong). Then a **step-by-step
+  guide**: the move in standard notation (U D L R F B, ' = anticlockwise, 2 = twice) plus a sentence and an arrow
+  («Turn the RIGHT side up ↑»), the 3D cube turns the layer and shows the result; ◀ Back, Next ▶, 🔁 show again,
+  «Step 12 of 110», the next moves, and confetti at the end. The 3×3 is solved **layer by layer** like in the
+  beginner's method, in seven phases with a short explanation each (white cross, white corners, middle layer,
+  yellow cross, yellow edges, yellow corners to their place, turn the yellow corners) – about 135 moves on average,
+  never more than about 200; the cube is never turned as a whole. The 2×2 is solved the **shortest way** (at most
+  11 moves); the corner at the back, bottom left never moves. Everything runs on the device (the search in a Web
+  Worker); nothing is sent to the server. Parents switch it on or off in Settings › Games like the other games.
 
-**Photo sets** (parent area › Community › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
+**Photo sets** (parent area › Games › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
 photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**
 (parent area › Settings): design the family crest – name, an emoji, two colours and a
 pattern (plain, split, quartered, diagonal band, chevron). Photos no set uses any more are deleted when you save.

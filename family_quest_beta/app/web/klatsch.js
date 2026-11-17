@@ -10,7 +10,7 @@
 "use strict";
 
 const KB_ICON = "👏";
-const kbName = () => T("Klatsch den Beat");
+const kbName = () => T("Clap the Beat");
 const kbCoins = list => list.join(" / ") + " 🪙";
 const KB_PERFECT = 0.06, KB_GOOD = 0.13;     // the same windows as klatsch.py (the server judges, the app shows)
 
@@ -189,6 +189,7 @@ async function klatschStartDialog(solo, onStarted) {
       const body = { solo, bots: +bots.value, level: level.value, rounds: +rounds.value, bot_ids: picker.ids() };
       try { await api("community/klatsch/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("klatsch", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function klatschLive(box, me, back) {
@@ -405,7 +406,7 @@ function klatschLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) { el = {}; return show(h("section.card.center", h("div.big-ic", KB_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back")))); }
+    if (!st) { el = {}; return show(h("section.card.center", h("div.big-ic", KB_ICON), h("h2", T("No game right now")), noTableActions("klatsch", back))); }
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     // ☰: rules, guests, calibrate, the beat's sound, End (whoever leads), language – only Start stays as a big button
     const menu = gameMenu({ rules: () => klatschRulesView(st.rules, st.coins_on ? st.rewards : null),

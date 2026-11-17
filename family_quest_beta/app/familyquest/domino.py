@@ -374,6 +374,8 @@ class Domino(CardGames):
             self.db.set_setting(f"game_rules.{KIND}", r)
             players = [self._person(host)]
             n_bots = r["bots"] if not solo else max(1, r["bots"])
+            if n_bots and self.bots_off(KIND, [host]):
+                raise CommunityError("Playing with bots is switched off for this game")
             if bots is None:
                 bots = [{"name": n, "emoji": e, "level": r["level"]} for n, e in random.sample(BOTS, len(BOTS))[:n_bots]]
             for i, b in enumerate(bots[:n_bots]):

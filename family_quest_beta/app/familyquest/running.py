@@ -10,18 +10,18 @@ from __future__ import annotations
 
 import json
 
-TITLES = {"tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "domino": "Domino", "paarjagd": "Paarjagd",
-          "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten",
-          "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "klatsch": "Klatsch den Beat", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe", "schach": "Chess", "dorfmarkt": "Dorfmarkt"}
+TITLES = {"tschau": "Tschau Sepp", "karussell": "Card Carousel", "domino": "Domino", "paarjagd": "Pair Hunt",
+          "werbinich": "Who am I?", "kartenlauf": "Card Race", "stadtland": "City, Country, River", "zeichnen": "Draw & Guess",
+          "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "sternlauf": "Star Runner", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market"}
 ICONS = {"quiz": "🎯", "bingo": "🎱", "song": "🎵", "poker": "🃏", "tschau": "🂡", "karussell": "🎠", "domino": "🁫",
-         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️"}
+         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "sternlauf": "🌠", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️"}
 
 
 def _games(fq) -> dict:
     """The object that leads the tables of a card_game kind."""
     return {"tschau": fq.cards, "karussell": fq.cards, "domino": fq.domino, "paarjagd": fq.paarjagd,
             "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf, "stadtland": fq.stadtland, "zeichnen": fq.zeichnen,
-            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf, "schach": fq.schach, "dorfmarkt": fq.dorfmarkt}
+            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf, "schach": fq.schach, "dorfmarkt": fq.dorfmarkt}
 
 
 def _name(fq, pid) -> str:
@@ -48,7 +48,7 @@ def running(fq) -> list[dict]:
     s = fq.songs._row()
     if s:
         st = json.loads(s["state"] or "{}")
-        out.append({"key": "song", "game": "song", "icon": ICONS["song"], "title": "Errate den Song", "status": s["status"], "solo": False,
+        out.append({"key": "song", "game": "song", "icon": ICONS["song"], "title": "Guess the song", "status": s["status"], "solo": False,
                     "host": _name(fq, s.get("host_id")), "players": _people(st.get("players")),
                     "host_id": s.get("host_id"), "members": _ids(st.get("players")), "id": s.get("id")})
     for r in fq.db.q("SELECT * FROM poker_game WHERE status!='done' ORDER BY id"):
@@ -77,6 +77,24 @@ def _ids(players) -> list[str]:
 ROUTES = {"quiz": "quiz", "bingo": "bingo", "song": "song", "poker": "poker", **{k: k for k in TITLES if k != "schach"}}
 
 
+def join_path(game: str) -> str:
+    """The API path (below /api/) that seats the caller at the family table of a game – «Join» in the note joins at once."""
+    return f"community/cards/{game}/join" if game in ("tschau", "karussell") else f"community/{game}/join"
+
+
+def _joinable(fq, t: dict) -> bool:
+    """Whether somebody new can still sit down – as the game's own join allows it: the tables of the `card_game`
+    table only in their lobby; poker also during the game (from the next hand) while a seat is free; bingo (a card
+    any time before the end), the family quiz and guess the song take players any time."""
+    if t["key"].startswith("card:"):
+        return t["status"] == "lobby"
+    if t["game"] == "poker":
+        r = fq.db.q1("SELECT state FROM poker_game WHERE id=?", int(t["key"][6:]))
+        st = json.loads((r or {}).get("state") or "{}")
+        return len(st.get("players") or []) < int((st.get("rules") or {}).get("max_players") or 0)
+    return True
+
+
 def open_tables(fq, prof: dict) -> list[dict]:
     """Family tables somebody else opened that this profile may join – for the note in the header of the app."""
     ok = set(fq.games_for(prof))
@@ -86,8 +104,10 @@ def open_tables(fq, prof: dict) -> list[dict]:
             continue
         if t.get("host_id") == prof["id"] or str(prof["id"]) in t.get("members", []):
             continue
+        if not _joinable(fq, t):
+            continue
         out.append({"key": f"{t['key']}:{t.get('id') or ''}", "game": t["game"], "route": ROUTES[t["game"]], "icon": t["icon"],
-                    "title": t["title"], "host": t["host"]})
+                    "title": t["title"], "host": t["host"], "join": join_path(t["game"])})
     return out
 
 

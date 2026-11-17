@@ -9,6 +9,15 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇩🇪"
 beschreibung: "Get around in everyday life: shopping, travelling, weather, health, hobbies and talking about the past."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  de: "Deutsch für den Alltag: einkaufen, reisen, Wetter, Gesundheit, Hobbys und von früher erzählen."
+  fr: "L'allemand au quotidien : faire les courses, voyager, la météo, la santé, les loisirs et parler du passé."
+  it: "Il tedesco di tutti i giorni: fare la spesa, viaggiare, tempo, salute, hobby e parlare del passato."
+  es: "Alemán para el día a día: compras, viajes, el tiempo, la salud, aficiones y hablar del pasado."
+  nl: "Duits voor elke dag: boodschappen doen, reizen, het weer, gezondheid, hobby's en vertellen over vroeger."
+  pl: "Niemiecki na co dzień: zakupy, podróże, pogoda, zdrowie, hobby i opowiadanie o przeszłości."
+  pt: "Alemão para o dia a dia: compras, viagens, tempo, saúde, hobbies e falar do passado."
+  sv: "Tyska i vardagen: handla, resa, väder, hälsa, fritid och berätta om det som har hänt."
 pfad: true
 standard: false
 selbst: true

@@ -117,7 +117,7 @@ async function schachPanel(me, open) {
         g.invite ? h("button.icon-btn.ch-del", { title: T("Decline"), onclick: () => del(g) }, "✕") : null))) : null,
       others.length ? h("details.ch-list", h("summary.small", T("All chess games of the family"), " (", others.length, ")"), ...others.map(g => row(g, false))) : null,
       me.guest ? null : h("div.row.wrap.ch-starts",
-        h("button.btn", { onclick: () => schachStartDialog("bot", open) }, "🤖 ", T("Against the bot")),
+        botsOn("schach") ? h("button.btn", { onclick: () => schachStartDialog("bot", open) }, "🤖 ", T("Against the bot")) : null,
         h("button.btn.ghost", { onclick: () => schachStartDialog("duel", open) }, "👥 ", T("Against the family")),
         h("button.btn.ghost", { onclick: () => schachStartDialog("local", open) }, "📱 ", T("Two on one device")))].filter(Boolean));
   };

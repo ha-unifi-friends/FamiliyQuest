@@ -9,6 +9,15 @@ version: 1
 quelle: "Family Quest (eigene Inhalte, CC0)"
 icon: "🇬🇧"
 beschreibung: "Erste Schritte auf Englisch: Begrüssungen, Zahlen, Familie, Essen und einfache Sätze für den Alltag."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "Your first steps in English: greetings, numbers, family, food and simple everyday sentences."
+  fr: "Tes premiers pas en anglais : salutations, nombres, famille, nourriture et phrases simples du quotidien."
+  it: "I primi passi in inglese: saluti, numeri, famiglia, cibo e frasi semplici di tutti i giorni."
+  es: "Tus primeros pasos en inglés: saludos, números, familia, comida y frases sencillas del día a día."
+  nl: "Je eerste stappen in het Engels: begroeten, getallen, familie, eten en eenvoudige zinnen voor elke dag."
+  pl: "Pierwsze kroki w angielskim: powitania, liczby, rodzina, jedzenie i proste codzienne zdania."
+  pt: "Seus primeiros passos em inglês: cumprimentos, números, família, comida e frases simples do dia a dia."
+  sv: "Dina första steg på engelska: hälsningar, siffror, familj, mat och enkla vardagsmeningar."
 pfad: true
 standard: false
 selbst: true

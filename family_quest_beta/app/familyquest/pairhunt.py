@@ -300,6 +300,8 @@ class Pairhunt(CardGames):
             self.db.set_setting(f"game_rules.{KIND}", r)
             players = [self._person(host)]
             n_bots = r["bots"] if not solo else max(1, r["bots"])
+            if n_bots and self.bots_off(KIND, [host]):
+                raise CommunityError("Playing with bots is switched off for this game")
             if bots is None:
                 bots = [{"name": n, "emoji": e} for n, e in random.sample(BOTS, len(BOTS))[:n_bots]]
             for i, b in enumerate(bots[:n_bots]):
@@ -325,7 +327,7 @@ class Pairhunt(CardGames):
                 raise CommunityError("The game has already started")
             if len(st["players"]) < 2:
                 raise CommunityError("Add a bot or wait for a second player")
-            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (Settings › Games)
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (parent area › Games)
             self._deal(st)
             self._save(row, st)
 

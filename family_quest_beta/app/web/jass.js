@@ -24,7 +24,8 @@ const jaCard = (code, opts = {}) => shedCard("tschau", code, opts);
 function jassRulesView(r, rewards) {
   r = r || {};
   const items = [
-    T("4 players in 2 teams – your partner sits opposite. Free seats are taken by bots."),
+    botsOn("jass") ? T("4 players in 2 teams – your partner sits opposite. Free seats are taken by bots.")
+      : T("4 players in 2 teams – your partner sits opposite. Without bots 4 people are needed."),
     T("Who is on turn chooses the game: a suit as trump, Obenabe (the Ass is highest) or Undeufe (the 6 is highest) – or pushes it to the partner, who must then choose."),
     T("Follow suit if you can. You may always trump in instead – but never play a lower trump than one already in the trick, unless you only have trumps."),
     T("Trump order: Buur (Under / J) 20 points, Nell (9) 14, then Ass, König, Ober, 10, 8, 7, 6. The Buur never has to follow trump."),
@@ -67,12 +68,13 @@ async function jassStartDialog(solo, onStarted) {
     h("p.small.muted", T("The Swiss card game Schieber: 2 against 2, choose the trump or push it to your partner – who gets more points?")),
     h("label.field", T("Cards"), deck),
     h("div.grid2", h("label.field", T("Game to"), goal), h("label.field", T("Bots play"), level)),
-    solo ? null : h("p.small.muted", T("4 seats: the family joins on their own devices, guests via QR code – bots take the free seats.")),
+    solo ? null : h("p.small.muted", botsOn("jass") ? T("4 seats: the family joins on their own devices, guests via QR code – bots take the free seats.")
+      : T("4 seats: the family joins on their own devices, guests via QR code – without bots 4 people are needed.")),
     h("div.cards-rules",
       h("label.check", weis, T("Weis (declared with the first card)")),
       h("label.check", stoeck, T("Stöck (König + Ober of trump: 20)")),
       h("label.check", mult, T("Multipliers: ×2 for Schilten / Eicheln (♠ ♣), ×3 for Obenabe / Undeufe")),
-      solo ? null : h("label.check", partners, T("Two people with two bots play together as partners"))),
+      solo || !botsOn("jass") ? null : h("label.check", partners, T("Two people with two bots play together as partners"))),
     picker.el,
     h("div.field", h("b", T("Card back")), backPrev),
     coins,
@@ -83,6 +85,7 @@ async function jassStartDialog(solo, onStarted) {
       if (g[0] === "r") body.rounds = +g.slice(1); else body.target = +g.slice(1);
       try { await api("community/jass/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("jass", null, level, picker.el);          // parent area › Games: without bots
 }
 
 function jassLive(box, me, back) {
@@ -146,7 +149,7 @@ function jassLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", JA_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", JA_ICON), h("h2", T("No game right now")), noTableActions("jass", back)));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     const playing = st.phase !== "lobby" && st.phase !== "done";
     // ☰: rules, guests, the actions of whoever leads (mix the seats, end), language
@@ -324,6 +327,6 @@ async function jassFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("jass") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("The Swiss card game Schieber: 2 against 2 with Trumpf, Obenabe and Undeufe, Weis and Stöck – with bots, the family and guests.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => jassStartDialog(true, () => go("jass")) }, "🤖 ", T("With 3 bots")),
+         h("div.row.wrap", botsOn("jass") ? h("button.btn", { onclick: () => jassStartDialog(true, () => go("jass")) }, "🤖 ", T("With 3 bots")) : null,
            h("button.btn.ghost", { onclick: () => jassStartDialog(false, () => go("jass")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

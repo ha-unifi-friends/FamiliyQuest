@@ -4,7 +4,7 @@
 "use strict";
 
 const WB_ICON = "🎭";
-const wbName = () => I18N.tr(T("Wer bin ich?"));
+const wbName = () => I18N.tr(T("Who am I?"));
 const wbCoins = list => list.join(" / ") + " 🪙";
 // the category titles in the language of the app (the characters themselves are content and stay as they are)
 const WB_CATS = { tiere: T("Animals"), berufe: T("Jobs"), essen: T("Food & fruit"), laender: T("Countries"), schweiz: T("Swiss places & mountains"),
@@ -134,7 +134,7 @@ function werbinichLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", WB_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", WB_ICON), h("h2", T("No game right now")), noTableActions("werbinich", back)));
     events();
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     const q = st.question;

@@ -4,7 +4,7 @@
 "use strict";
 
 const SL_ICON = "🏙️";
-const slName = () => I18N.tr(T("Stadt-Land-Fluss"));
+const slName = () => I18N.tr(T("City, Country, River"));
 const slCoins = list => list.join(" / ") + " 🪙";
 // the built-in categories in the language of the app (own categories are content and stay as typed)
 const SL_CATS = { stadt: T("City"), land: T("Country"), fluss: T("River"), tier: T("Animal"), name: T("First name"), beruf: T("Job"),
@@ -160,7 +160,7 @@ function stadtlandLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", SL_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", SL_ICON), h("h2", T("No game right now")), noTableActions("stadtland", back)));
     if (st.phase !== lastPhase) {
       if (lastPhase && st.phase === "scores") { const mine = (st.last && st.last.points || {})[myId]; try { Sound.play(mine ? "right" : "wrong"); } catch {} }
       lastPhase = st.phase;

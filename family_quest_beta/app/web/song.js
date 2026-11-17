@@ -69,7 +69,7 @@ function songLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!st); document.body.classList.toggle("quiz-open", !!st);
-    if (!st) return show(h("section.card.center", h("div.big-ic", "🎵"), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", "🎵"), h("h2", T("No game right now")), noTableActions("song", back)));
     const close = h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕");
     // ☰: rules, guests (everybody of the family), pause / «nobody knows it» / end for whoever leads, language
     const leads = isHost() && running;

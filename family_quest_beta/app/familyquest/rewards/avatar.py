@@ -154,11 +154,10 @@ def item_status(item_id: str, level: int, badges: set[str], bought: set[str], to
     name, slot, _base = ITEMS[item_id]
     rule = rule_of(item_id)
     t = today or date.today()
-    if rule.get("off"):
-        unlocked = False                       # locked by the parents: only who has it already keeps it
-    else:
-        unlocked = bool(rule.get("free")) or ("level" in rule and level >= rule["level"]) \
-            or ("badge" in rule and rule["badge"] in badges) or ("season" in rule and t.month in rule["season"])
+    # «off» (parent area › Shop) only takes the item out of the shop: it cannot be bought any more – free, level,
+    # badge and season items stay unlocked (a child never loses what it wears), bought ones are kept anyway
+    unlocked = bool(rule.get("free")) or ("level" in rule and level >= rule["level"]) \
+        or ("badge" in rule and rule["badge"] in badges) or ("season" in rule and t.month in rule["season"])
     if slot == "pet":
         # pets live in the table «pet» (pets.py): owned only while unlocked – a badge brings the pet once, a pet that
         # died is gone until it is bought again

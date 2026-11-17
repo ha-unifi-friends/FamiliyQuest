@@ -77,6 +77,10 @@ class Community:
             out.append(item)
         if not out:
             raise CommunityError("Add at least one question")
+        if len(out) > MAX_QUESTIONS:
+            raise CommunityError("A quiz can have at most 100 questions")
+        if sum(len((q.get("img") or {}).get("svg") or "") for q in out) > MAX_QUIZ_SVG:
+            raise CommunityError("The drawings of this quiz are too big together (max. 300 KB)")
         return out
 
     def quizzes(self) -> list[dict]:
@@ -656,7 +660,8 @@ class Community:
         open_votes = int(self.db.val("""SELECT COUNT(*) FROM council_topic t WHERE t.status='vote'
                                          AND NOT EXISTS(SELECT 1 FROM council_vote v WHERE v.topic_id=t.id AND v.profile_id=?)""", pid, default=0))
         collecting = int(self.db.val("SELECT COUNT(*) FROM council_topic WHERE status='collect'", default=0))
-        return {"quiz": ({"status": g["status"], "title": g["quiz"]["title"] if g["quiz"] else "", "joined": pid in g["players"]}
+        return {"quiz": ({"status": g["status"], "title": g["quiz"]["title"] if g["quiz"] else "", "joined": pid in g["players"],
+                          "langs": json.loads(g["quiz"]["langs"]) if g["quiz"] and g["quiz"].get("langs") else None}
                          if g else None),
                 "votes_open": open_votes, "topics_collecting": collecting,
                 "polls_open": int(self.db.val("""SELECT COUNT(*) FROM poll p WHERE p.status='open'
@@ -758,6 +763,8 @@ def clean_special(q: dict) -> dict:
 
 
 SVG_MAX = 30_000
+MAX_QUESTIONS = 100                 # per quiz – keeps the list of quizzes small for every device
+MAX_QUIZ_SVG = 300_000              # all own drawings of one quiz together
 
 
 def clean_image(img) -> dict | None:

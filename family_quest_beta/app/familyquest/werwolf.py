@@ -369,7 +369,12 @@ class Table:
         """Seconds a bot thinks in this night step – 4 … 10, not the same in every step."""
         step = self.st.get("step")
         k = STEPS.index(step) if step in STEPS else 0
-        return BOT_NIGHT + (int(self.st.get("night") or 0) * 5 + k * 3) % BOT_NIGHT_SPREAD
+        # random per table, night and step with a secret seed (never sent to the players): from the time a step
+        # takes nobody can tell whether a bot holds the role
+        if "bot_seed" not in self.st:
+            self.st["bot_seed"] = random.SystemRandom().randrange(1 << 30)
+        r = random.Random(f'{self.st["bot_seed"]}:{int(self.st.get("night") or 0)}:{k}')
+        return BOT_NIGHT + r.randrange(BOT_NIGHT_SPREAD)
 
     def _bots_move(self) -> bool:
         ph, step = self.st.get("phase"), self.st.get("step")
@@ -647,6 +652,8 @@ class Werwolf(CardGames):
     def seats(self, st: dict) -> int:
         """How many players the game will have: the people, filled up with bots to 5 (or to the rule `fill`)."""
         humans = sum(1 for p in st["players"] if not p.get("bot"))
+        if self.bots_off(KIND, st["players"]):                          # parent area › Games: without bots – no filling up
+            return humans
         return max(humans, min(MAX_PLAYERS, max(MIN_PLAYERS, int(st["rules"].get("fill") or MIN_PLAYERS))))
 
     def _bots(self, n: int) -> list[dict]:
@@ -660,6 +667,8 @@ class Werwolf(CardGames):
             humans = [p for p in st["players"] if not p.get("bot")]
             if len(humans) < MIN_HUMANS:
                 raise CommunityError("At least 2 players are needed")
+            if len(humans) < MIN_PLAYERS and self.bots_off(KIND, humans):
+                raise CommunityError("Without bots Werwölfe needs at least 5 players")
             st["players"] = humans + self._bots(self.seats(st) - len(humans))
             self.table(st).begin()
         self._lobby(viewer, go)
@@ -766,12 +775,13 @@ class Werwolf(CardGames):
         except CommunityError as e:
             deck, deck_error = None, str(e)
         now = self.now()
+        no_bots = ph == "lobby" and self.bots_off(KIND, st["players"])
         out = {"game": row["id"], "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph, "step": step,
                "night": st.get("night", 0), "host": row["host_id"], "rules": st["rules"], "players": players,
                "joined": joined, "me": me if joined else None, "my_role": my_role, "alive": alive, "spectator": spectator,
                "my_lover": my_lover, "lovers": list(lovers) if see_lovers else None,
                "my_turn": me in actors, "deck": deck, "deck_error": deck_error, "min": MIN_PLAYERS, "max": MAX_PLAYERS,
-               "min_humans": MIN_HUMANS, "bots": self.seats(st) - len(order) if ph == "lobby" else None,
+               "min_humans": MIN_PLAYERS if no_bots else MIN_HUMANS, "no_bots": no_bots, "bots": self.seats(st) - len(order) if ph == "lobby" else None,
                "step_ms": int((now - (st.get("step_at") or now)) * 1000) if playing else None,
                "left_ms": None, "time_ms": None, "deaths": None, "hunter": st.get("hunter") if ph == "hunter" else None,
                "voted": None, "my_vote": None, "votes": None, "lynch": None, "wolf_votes": None, "victim": None,
