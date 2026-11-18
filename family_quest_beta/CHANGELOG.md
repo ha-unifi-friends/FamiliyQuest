@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.8
+
+- Parent area › Family › Library: one box each for books, adventure books and adventure games, each with its own Import and New button – no type choice needed any more
+- Beta and Dev show the «Experimental» badge in the Home Assistant add-on store
+
 ## 1.1.1-beta.7
 
 - New in the Library: 🗝️ adventure games – point & click with rooms, doors, things to look at and take, characters with dialogues, an inventory with «use with» and combining, switches and endings; the server checks that a game can be won
