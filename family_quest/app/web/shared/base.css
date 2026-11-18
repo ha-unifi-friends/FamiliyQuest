@@ -2567,3 +2567,15 @@ svg.bb-erase .bb-hit { stroke: rgba(224, 49, 49, .45); }
 .time-left .big-ic { font-size: 1.8rem; }
 /* kid app › Games: the groups «for a game night» and «quick games for in between» */
 .games-group { margin: 14px 4px 0; font-size: 1.15rem; }
+.game-tiles { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.game-tile { position: relative; padding: 10px 4px; min-height: 84px; align-content: center; }
+.game-tile .big-ic { font-size: 1.7rem; line-height: 1; }
+.game-tile strong { font-size: .78rem; line-height: 1.15; text-align: center; overflow-wrap: anywhere; hyphens: auto; }
+.game-tile.live { border-color: var(--accent); }
+.live-dot { position: absolute; top: 7px; right: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--good);
+  animation: live-dot 1.4s ease-in-out infinite; }
+@keyframes live-dot { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--good) 30%, transparent); transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+.game-sheet { display: grid; gap: 10px; }
+.game-sheet .card.in-sheet { box-shadow: none; padding: 0; background: transparent; }
+.game-sheet > .btn { justify-self: end; }

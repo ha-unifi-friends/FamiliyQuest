@@ -39,6 +39,7 @@ async function route() {
   const as = hash.match(/^as\/([A-Za-z0-9_.\-]+)\/?(.*)$/);
   if (as) { Auth.kid = as[1]; history.replaceState(null, "", "#/" + as[2]); return route(); }
   const [view, arg] = hash.split("/");
+  if (S.sheet) S.sheet.close();                          // a game card opened from its tile (gamesView)
   if (tableNote.box) closeTableNote();                  // «somebody opened a table»: gone on every navigation (also into that table)
   document.body.classList.remove("quiz-open");          // a full-screen game left by the back button of the browser
   if (!Auth.kid) return profilesView();
@@ -1686,24 +1687,47 @@ async function familyView() {
 // ---------------------------------------------------------------- the games (own menu item)
 async function gamesView() {
   const quiz = canPlay("quiz") ? await quizCard() : null;
-  // longer table games for a game night, then short games for in between (only the games this child may play)
-  const night = [canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
-    canPlay("domino") ? await dominoFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null,
-    canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null,
-    canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null,
-    canPlay("escape") ? await escapeFamilyCard() : null, canPlay("werbinich") ? await werbinichFamilyCard() : null,
-    canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null,
-    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("song") ? await songFamilyCard() : null,
-    canPlay("bingo") ? await bingoCard() : null, canPlay("schach") ? await schachFamilyCard() : null].filter(Boolean);
-  const quick = [canPlay("paarjagd") ? await paarjagdFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null,
-    canPlay("jump") ? await jumpFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null,
-    canPlay("sternlauf") ? await sternlaufFamilyCard() : null, canPlay("snack") ? await snackFamilyCard() : null,
-    canPlay("verkehr") ? await verkehrFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null].filter(Boolean);
-  const group = (ic, title, list) => list.length ? [h("h2.games-group", ic, " ", title), ...list] : [];
+  // longer table games for a game night, then short games for in between (only the games this child may play) –
+  // each one a small tile; a tap opens its card (the same actions as before: family table, bots, join, rules)
+  const pick = async list => (await Promise.all(list.filter(([k]) => k === "duel" ? canPlay("ttt") || canPlay("pingpong") : canPlay(k))
+    .map(async ([k, make]) => [k, await make()]))).filter(([, card]) => card);
+  const night = await pick([["tschau", () => cardsFamilyCard("tschau")], ["karussell", () => cardsFamilyCard("karussell")], ["domino", dominoFamilyCard],
+    ["jass", jassFamilyCard], ["poker", pokerFamilyCard], ["dorfmarkt", dorfmarktFamilyCard], ["heimwaerts", heimwaertsFamilyCard],
+    ["kartenlauf", kartenlaufFamilyCard], ["werwolf", werwolfFamilyCard], ["escape", escapeFamilyCard], ["werbinich", werbinichFamilyCard],
+    ["verboten", verbotenFamilyCard], ["zeichnen", zeichnenFamilyCard], ["stadtland", stadtlandFamilyCard], ["song", songFamilyCard],
+    ["bingo", bingoCard], ["schach", schachFamilyCard]]);
+  const quick = await pick([["paarjagd", paarjagdFamilyCard], ["wuerfel", wuerfelFamilyCard], ["jump", jumpFamilyCard], ["klatsch", klatschFamilyCard],
+    ["sternlauf", sternlaufFamilyCard], ["snack", snackFamilyCard], ["verkehr", verkehrFamilyCard], ["duel", tttDuelCard]]);
   // the games running just now on top – the same pulsing banners as on the start page
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
   screen("games", h("h1", "🎲 ", T("Games")), timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
-    ...group("🎲", T("For a game night"), night), ...group("⚡", T("Quick games for in between"), quick), arcadeCard());
+    gameGroup("🎲", T("For a game night"), night), gameGroup("⚡", T("Quick games for in between"), quick), arcadeCard());
+}
+
+/** A group of family games as small tiles (icon + name, a pulsing dot while a table runs); a tap opens the game's card. */
+function gameGroup(ic, title, items) {
+  if (!items.length) return null;
+  const com = (S.me && S.me.community) || {};
+  return h("section.card.game-group", h("h2", ic, " ", title),
+    h("div.arcade-grid.game-tiles", ...items.map(([k, card]) => {
+      const head = card.querySelector("h2");
+      const text = (head ? head.textContent : k).trim(), sp = text.indexOf(" ");
+      const icon = sp > 0 ? text.slice(0, sp) : "🎲", name = sp > 0 ? text.slice(sp + 1) : text;
+      const running = k === "duel" ? com.duel || com.pong4 : com[k];
+      return h("button.arcade-tile.game-tile" + (running ? ".live" : ""), { onclick: () => openGameSheet(card) },
+        running ? h("i.live-dot", { title: T("running now") }) : null, h("span.big-ic", icon), h("strong", name));
+    })));
+}
+
+// the card of a game in a sheet: closes itself when the app goes to another page (a game opened, a table joined)
+function openGameSheet(card) {
+  if (S.sheet) S.sheet.close();
+  card.classList.add("in-sheet");
+  const m = modal(h("div.game-sheet", card, h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))),
+    { onClose: () => { window.removeEventListener("hashchange", off); if (S.sheet === m) S.sheet = null; } });
+  const off = () => m.close();
+  window.addEventListener("hashchange", off);
+  S.sheet = m;
 }
 
 // ---------------------------------------------------------------- my devices (Home Assistant)
