@@ -397,18 +397,18 @@ function storyImportDialog(done, fixedType = null, kinds = ["picture", "adventur
       done(r.ids[0], e.type);
     } catch (e) { toast(e.message, "bad"); }
   };
-  const tpls = h("div.row.wrap");
+  const tpls = h("div");
   const drawTpl = () => sbSet(tpls,
     fixedType ? null : h("div.sb-segs.sb-impsegs", ...kinds.map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", title: SB_TYPES()[k][1],
       onclick: () => { type = k; drawTpl(); } }, SB_TYPES()[k][0], h("span.sb-hide-s", " ", SB_TYPES()[k][1])))),
-    h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: tplUrl(), download: tplName() }, "⬇️ ", T("Template for the AI")),
-    h("button.btn.small.ghost", { onclick: async () => {
-      try { await navigator.clipboard.writeText(await (await fetch(tplUrl())).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
-      catch { toast(T("Copying did not work – use the download"), "bad"); } } }, "📋 ", T("Copy for the AI")));
+    aiPromptBox({ picture: T("Write a picture book for a child aged [5].\nStory idea: [e.g. a little fox who is afraid of the dark]\nAbout [8] pages, language: [English]."),
+      adventure: T("Write an adventure book with choices for children aged [8 to 10].\nStory idea: [e.g. a secret door in grandma's attic]\nAbout [15] pages with [3] different endings, language: [English]."),
+      game: T("Make an adventure game for children aged [8 to 12].\nStory idea: [e.g. the lost treasure in the old castle]\n[4] rooms with doors, objects and characters, a small puzzle in each room, language: [English].") }[type],
+      { template: tplUrl(), name: tplName() }));
   drawTpl();
   const impHead = fixedType ? { picture: T("Import a book"), adventure: T("Import an adventure book"), game: T("Import an adventure game") }[type] : T("Import a book");
   const m = modal(h("div.form.sb-imp", h("h2", "📥 ", impHead),
-    h("p.small", T("1. Copy the template for the AI and paste it into any AI chat. 2. Describe your story idea. 3. Paste the answer here – or choose a book file that was exported.")),
+    h("p.small", T("1. Copy the prompt (the template comes with it) and paste it into any AI chat. 2. Fill in the highlighted parts with your story idea. 3. Paste the answer here – or choose a book file that was exported.")),
     tpls, text, h("label.field", T("…or a file"), file),
     h("p.small.muted", "🔒 ", T("The book comes in as a private draft – the checker shows what is still missing. Own drawings and photos are not part of the file.")),
     h("div.row", h("button.btn", { onclick: go }, "📥 ", T("Import")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });

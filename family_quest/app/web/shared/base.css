@@ -2002,6 +2002,15 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .ai-fold { border-top: 1px solid var(--line); padding-top: 8px; }
 .ai-fold > summary { cursor: pointer; font-weight: 700; padding: 6px 0; min-height: 32px; }
 .ai-fold[open] > .ai-box { margin-top: 6px; }
+/* «Made with your AI»: the example prompt (ui.js aiPromptBox) – a code block, clearly apart from the text around it */
+.ai-prompt { margin: 10px 0 6px; display: grid; gap: 8px; min-width: 0; }
+.ai-prompt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ai-prompt-text { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px;
+  background: var(--hover); color: var(--fg); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .84rem; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; user-select: text; -webkit-user-select: text; cursor: text; }
+.ai-prompt-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ai-ph { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit; border: 1px dashed var(--accent); border-radius: 4px; padding: 0 3px; font-weight: 700; }
+.ai-prompt > p { margin: 0; }
 /* quiz pictures: a big flag, a big emoji, an own SVG drawing (community.js questionImage) */
 .q-img.q-flag img { height: min(26vh, 170px); width: auto; max-width: 100%; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 .q-img.q-emoji { font-size: min(18vh, 120px); line-height: 1.1; text-align: center; }
