@@ -370,7 +370,7 @@ def test_family_flow_no_leak_coins_once_history_champion(client):
     rowx = fq.db.q1("SELECT * FROM card_game WHERE id=?", gid)
     fq.escape._save(rowx, json.loads(rowx["state"]))                     # saving again pays nothing more
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"escape:{gid}:%") == 3
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"escape:{gid}:{mia}")["reason"] == "Escape Room – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"escape:{gid}:{mia}")["reason"] == "Escape Room – place 1"
     e = next(x for x in client.get("/api/community/history", headers=hm).json() if x["kind"] == "escape")
     assert e["data"]["out"] and e["data"]["won"] and e["data"]["rooms"] == 2 and e["data"]["of"] == 2 and e["data"]["coins"] == 12
     champs = {str(r["id"]) for r in fq.db.q("SELECT id, settings FROM profile") if json.loads(r["settings"] or "{}").get("champion")}

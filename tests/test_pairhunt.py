@@ -164,7 +164,7 @@ def test_family_table_coins_once(client):
     client.get("/api/community/paarjagd", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before[0] + 7
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"paarjagd:{gid}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"paarjagd:{gid}:{mia}")["reason"] == "Paarjagd – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"paarjagd:{gid}:{mia}")["reason"] == "Pair Hunt – place 1"
 
 
 def test_no_coins_alone_against_bots(client):
@@ -194,7 +194,7 @@ def test_guest_gets_no_coins(client):
     hm = login(client, mia, "1111")
     client.post("/api/community/paarjagd/start", json={"pairs": 6, "bots": 0}, headers=hm)
     inv = client.post("/api/community/guests", json={"game": "paarjagd"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Paarjagd"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Pair Hunt"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     gid = g["profile"]["id"]
     st = client.post("/api/community/paarjagd/begin", headers=hm).json()

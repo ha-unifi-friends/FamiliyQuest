@@ -46,7 +46,7 @@ function klBoardSvg(mySeat, seatsUsed) {
     parts.push(start ? `<circle cx="${x}" cy="${y}" r="9" class="kl-field start" style="fill:color-mix(in srgb, ${KL_COLORS[s]} 35%, #fff);stroke:${KL_COLORS[s]}"/>`
       : `<circle cx="${x}" cy="${y}" r="6.3" class="kl-field${f % 16 === 15 ? " entry" : ""}"${f % 16 === 15 ? ` style="stroke:${KL_COLORS[(s + 1) % 4]}"` : ""}/>`);
   }
-  parts.push(`<text x="200" y="196" class="kl-logo">🏁</text><text x="200" y="216" class="kl-logo-t">Kartenlauf</text>`);
+  parts.push(`<text x="200" y="196" class="kl-logo">🏁</text><text x="200" y="216" class="kl-logo-t">${I18N.tr(T("Card Race")).replace(/[<&]/g, "")}</text>`);
   return parts.join("");
 }
 

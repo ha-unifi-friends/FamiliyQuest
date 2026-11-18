@@ -2,7 +2,8 @@
 // cardsLive(box, me, back, kind) runs a table (family or alone against bots), cardsStartDialog(kind, solo, onStarted) sets the rules.
 "use strict";
 
-const SWISS_SUITS = { schellen: ["🔔", "Schellen"], schilten: ["🛡️", "Schilten"], rosen: ["🌹", "Rosen"], eicheln: ["🌰", "Eicheln"] };
+// Swiss suits: Schellen, Schilten, Rosen, Eicheln (German names come from the dictionaries)
+const SWISS_SUITS = { schellen: ["🔔", T("Bells")], schilten: ["🛡️", T("Shields")], rosen: ["🌹", T("Roses")], eicheln: ["🌰", T("Acorns")] };
 const FRENCH_SUITS = { s: ["♠︎", T("Spades")], h: ["♥︎", T("Hearts")], d: ["♦︎", T("Diamonds")], c: ["♣︎", T("Clubs")] };
 const KARUSSELL_COLORS = { violet: ["var(--ans-1)", T("Violet")], pink: ["var(--ans-2)", T("Raspberry")], orange: ["var(--ans-3)", T("Orange")], petrol: ["var(--ans-4)", T("Petrol")] };
 const KARUSSELL_SIGNS = { draw2: "+2", skip: "⊘", reverse: "⇄", wish: "✦", draw4: "+4" };
@@ -15,13 +16,14 @@ function shedCard(kind, code, opts = {}) {
   const cls = "div.sh-card" + (opts.small ? ".small" : "") + (opts.big ? ".big" : "") + (opts.on ? ".on" : "") + (opts.dim ? ".dim" : "");
   if (kind === "karussell") {
     const wild = suit === "wild";
-    return h(cls + ".ka" + (wild ? ".wild" : ""), { style: wild ? {} : { "--kc": KARUSSELL_COLORS[suit][0] }, translate: "no", onclick: opts.onclick, title: code },
+    return h(cls + ".ka" + (wild ? ".wild" : ""), { style: wild ? {} : { "--kc": KARUSSELL_COLORS[suit][0] }, translate: "no", onclick: opts.onclick,
+      title: wild ? (KARUSSELL_SIGNS[rank] || rank) + " · " + I18N.tr(T("wish a colour")) : I18N.tr(KARUSSELL_COLORS[suit][1]) + " " + (KARUSSELL_SIGNS[rank] || rank) },
       h("b", KARUSSELL_SIGNS[rank] || rank));
   }
   const swiss = !!SWISS_SUITS[suit];
   const sign = swiss ? SWISS_SUITS[suit][0] : FRENCH_SUITS[suit][0];
   const red = !swiss && (suit === "h" || suit === "d");
-  return h(cls + (red ? ".red" : "") + (swiss ? ".swiss" : ""), { translate: "no", onclick: opts.onclick, title: code },
+  return h(cls + (red ? ".red" : "") + (swiss ? ".swiss" : ""), { translate: "no", onclick: opts.onclick, title: rank + " " + I18N.tr(swiss ? SWISS_SUITS[suit][1] : FRENCH_SUITS[suit][1]) },
     h("b", rank), h("i", sign));
 }
 
@@ -48,7 +50,7 @@ function pairFace(it) {
 
 function suitName(kind, s) {
   if (kind === "karussell") return I18N.tr(KARUSSELL_COLORS[s][1]);
-  return SWISS_SUITS[s] ? SWISS_SUITS[s][1] : I18N.tr(FRENCH_SUITS[s][1]);
+  return I18N.tr(SWISS_SUITS[s] ? SWISS_SUITS[s][1] : FRENCH_SUITS[s][1]);
 }
 
 function suitsOf(kind, rules) {
@@ -85,11 +87,11 @@ async function cardsStartDialog(kind, solo, onStarted) {
     level: sel(r.level || "normal", [["easy", T("easy")], ["normal", T("normal")]]),
     penalty: sel(r.penalty ?? 2, [[0, T("none")], [1, "1"], [2, "2"], [3, "3"]]),
   };
-  if (kind === "tschau") f.deck = sel(r.deck || "swiss", [["swiss", T("Swiss cards (Schellen, Schilten, Rosen, Eicheln)")], ["french", T("French cards (♠ ♥ ♦ ♣)")]]);
+  if (kind === "tschau") f.deck = sel(r.deck || "swiss", [["swiss", T("Swiss cards (Bells, Shields, Roses, Acorns)")], ["french", T("French cards (♠ ♥ ♦ ♣)")]]);
   const special = kind === "tschau" ? [chk("draw2", T("7: the next one draws 2")), chk("skip", T("8: the next one is skipped")),
     chk("wish", T("Under / Jack: wish a suit")), chk("again", T("Ace: play once more")), chk("reverse", T("10: change the direction")),
     chk("stack", T("Draw cards add up (answer a 7 with a 7)"))] : [chk("stack", T("Draw cards add up (answer +2 with +2)"))];
-  const calls = kind === "tschau" ? "«Tschau» / «Sepp»" : "«Letzte!» / «Fertig!»";
+  const calls = kind === "tschau" ? "«Tschau» / «Sepp»" : "«" + I18N.tr(T("Last card!")) + "» / «" + I18N.tr(T("Done!")) + "»";
   // card back: tap one – the chosen one is marked
   let back = CARD_BACKS[r.back] ? r.back : "classic";
   const backPrev = h("div.row.back-pick");
@@ -118,7 +120,7 @@ async function cardsStartDialog(kind, solo, onStarted) {
 }
 
 function cardsRulesView(kind, r) {
-  const calls = kind === "tschau" ? ["Tschau", "Sepp"] : ["Letzte!", "Fertig!"];
+  const calls = kind === "tschau" ? ["Tschau", "Sepp"] : [I18N.tr(T("Last card!")), I18N.tr(T("Done!"))];
   const items = [T("Play a card with the same suit or the same value as the top card – or draw one."),
     I18N.tr(T("Going down to one card, tap «{0}» before you play; with your last card «{1}». Forgotten: penalty cards.")).replace("{0}", calls[0]).replace("{1}", calls[1]),
     T("Who has no cards first wins the round; the others count the points of their cards. After the last round, the fewest points win.")];
@@ -164,7 +166,7 @@ function cardsLive(box, me, back, kind) {
       actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
         onclick: () => act("end").then(() => { stop(); back(); }) }],
       onLeave: running ? () => { stop(); back(); } : null });
-    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", CARD_GAMES[kind].icon, " ", st.title)), h("div.row",
+    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", CARD_GAMES[kind].icon, " ", CARD_GAMES[kind].title)), h("div.row",
       st.round ? h("span.chip", I18N.tr(T("Round {0} of {1}")).replace("{0}", st.round).replace("{1}", st.rules.rounds)) : null));
     // only the main action stays as a big button – everything else is in ☰
     const host = isHost() && st.phase === "lobby" && st.status !== "done" ? h("div.row.center.host-bar",
@@ -250,7 +252,7 @@ async function cardsFamilyCard(kind) {
   return h("section.card.quiz-card", h("h2", CARD_GAMES[kind].icon, " ", CARD_GAMES[kind].title),
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go(kind) }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
-      : [h("p.muted", kind === "tschau" ? T("The Swiss card game: shed your cards, say «Tschau» and «Sepp»!") : T("Shed your cards – colours, numbers and special cards. Say «Letzte!» in time!")),
+      : [h("p.muted", kind === "tschau" ? T("The Swiss card game: shed your cards, say «Tschau» and «Sepp»!") : I18N.tr(T("Shed your cards – colours, numbers and special cards. Say «{0}» in time!")).replace("{0}", I18N.tr(T("Last card!")))),
          h("div.row.wrap", botsOn(kind) ? h("button.btn", { onclick: () => cardsStartDialog(kind, true, () => go(kind)) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => cardsStartDialog(kind, false, () => go(kind)) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

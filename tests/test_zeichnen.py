@@ -331,7 +331,7 @@ def test_family_flow_no_leak_coins_once_history(client):
     fq.zeichnen._save(row, json.loads(row["state"]))                      # saving again pays nothing more
     assert fq.rewards.balance(leo, "coins") == before[1] + 8
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"zeichnen:{gid}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"zeichnen:{gid}:{leo}")["reason"] == "Zeichnen & Raten – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"zeichnen:{gid}:{leo}")["reason"] == "Draw & Guess – place 1"
     e = next(x for x in client.get("/api/community/history", headers=hm).json() if x["kind"] == "zeichnen")
     assert e["data"]["place"] == 2 and e["data"]["points"] == 10 and e["data"]["drawn"] == [word] and e["data"]["coins"] == 4
     assert fq.db.val("SELECT COUNT(*) FROM history WHERE kind='zeichnen'") == 2
@@ -361,7 +361,7 @@ def test_guests_play_but_not_lead_no_coins_with_one_family_person(client):
     hm = login(client, mia, "1111")
     client.post("/api/community/zeichnen/start", json={"category": "essen"}, headers=hm)
     inv = client.post("/api/community/guests", json={"game": "zeichnen"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Zeichnen & Raten"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Draw & Guess"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     for path in ("start", "begin", "end", "skip"):

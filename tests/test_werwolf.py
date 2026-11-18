@@ -388,7 +388,7 @@ def test_family_flow_coins_once_history_hat_and_guests(client):
     assert r.status_code == 400 and r.json()["detail"] == "At least 2 players are needed"      # alone: not even with bots
     # a guest via the invitation
     inv = client.post("/api/community/guests", json={"game": "werwolf"}, headers=heads[str(ids[1])]).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Werwölfe"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Werewolves"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     gid = str(g["profile"]["id"])

@@ -250,7 +250,7 @@ def test_family_table_flow_coins_once_and_history(client):
     client.get("/api/community/werbinich", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before[0] + 8
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"werbinich:{gid}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"werbinich:{gid}:{mia}")["reason"] == "Wer bin ich? – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"werbinich:{gid}:{mia}")["reason"] == "Who am I? – place 1"
     h = client.get("/api/community/history", headers=hm).json()
     e = next(x for x in h if x["kind"] == "werbinich")
     assert e["data"]["place"] == 1 and e["data"]["players"] == 2 and e["data"]["found"] and e["data"]["questions"] == 1
@@ -287,7 +287,7 @@ def test_no_coins_with_one_family_person_and_guest(client):
     st = client.post("/api/community/werbinich/start", json={"category": "sport"}, headers=hm).json()
     assert client.post("/api/community/werbinich/begin", headers=hm).status_code == 400              # alone: wait
     inv = client.post("/api/community/guests", json={"game": "werbinich"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Wer bin ich?"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Who am I?"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     # guests may play but not start, begin or end

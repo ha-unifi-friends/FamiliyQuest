@@ -454,7 +454,7 @@ def test_family_table_same_course_lives_coins_once_and_history(client):
     client.get("/api/community/jump", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"jump:{st['game']}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"jump:{st['game']}:{mia}")["reason"] == "Jump – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"jump:{st['game']}:{mia}")["reason"] == "Jump – place 1"
     hist = fq.community.history(mia)
     assert hist[0]["kind"] == "jump" and hist[0]["data"]["place"] == 1 and hist[0]["data"]["coins"] == 8
     assert hist[0]["data"]["record"] and hist[0]["data"]["score"] > 0

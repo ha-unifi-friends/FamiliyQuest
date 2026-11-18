@@ -302,7 +302,7 @@ def test_family_table_same_course_only_own_inputs_coins_once_and_history(client)
     client.get("/api/community/sternlauf", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"sternlauf:{st['game']}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"sternlauf:{st['game']}:{mia}")["reason"] == "Sternschnuppen-Lauf – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"sternlauf:{st['game']}:{mia}")["reason"] == "Star Runner – place 1"
     hist = fq.community.history(mia)
     assert hist[0]["kind"] == "sternlauf" and hist[0]["data"]["place"] == 1 and hist[0]["data"]["coins"] == 8
     assert hist[0]["data"]["record"] and hist[0]["data"]["dist"] == int(sl.dist(120)) and hist[0]["data"]["sparks"] > 0

@@ -330,7 +330,7 @@ def test_family_table_same_customers_coins_once_history_and_hat(client):
     client.get("/api/community/snack", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"snack:{st['game']}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"snack:{st['game']}:{mia}")["reason"] == "Snack Rush – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"snack:{st['game']}:{mia}")["reason"] == "Snack Rush – place 1"
     hist = fq.community.history(mia)
     assert hist[0]["kind"] == "snack" and hist[0]["data"]["place"] == 1 and hist[0]["data"]["coins"] == 8
     assert hist[0]["data"]["served"] == 1 and hist[0]["data"]["record"] and hist[0]["data"]["score"] == me["till"]

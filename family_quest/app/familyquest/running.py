@@ -9,12 +9,41 @@ Chess games can be paused (status "paused" – listed as paused); ending one end
 from __future__ import annotations
 
 import json
+import re
+
+from .i18n import _t
 
 TITLES = {"tschau": "Tschau Sepp", "karussell": "Card Carousel", "domino": "Domino", "paarjagd": "Pair Hunt",
           "werbinich": "Who am I?", "kartenlauf": "Card Race", "stadtland": "City, Country, River", "zeichnen": "Draw & Guess",
           "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "verkehr": "Traffic Cadet", "langstrecke": "24h Endurance", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market", "escape": "Escape Room", "stempeljagd": "Beat the Bureaucracy"}
 ICONS = {"quiz": "🎯", "bingo": "🎱", "song": "🎵", "poker": "🃏", "tschau": "🂡", "karussell": "🎠", "domino": "🁫",
          "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "sternlauf": "🌠", "snack": "🍔", "verkehr": "🚦", "langstrecke": "🏎️", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️", "escape": "🗝️", "stempeljagd": "🏛️"}
+
+
+# ---------------------------------------------------------------- the coins of a game in the ledger
+# English source text, translated where the ledger is shown («Five Dice – place 1» → «Cinq dés – place 1»)
+REASON_KEYS = (_t("{0} – place {1}"), _t("{0} – victory"))
+# the German titles of older entries («Fünf Würfel – Platz 1»), mapped when the ledger is read
+_OLD_TITLES = {"Domino": "domino", "Dorfmarkt": "dorfmarkt", "Escape Room": "escape", "Heimwärts": "heimwaerts", "Jass": "jass",
+               "Jump": "jump", "Kartenlauf": "kartenlauf", "Klatsch den Beat": "klatsch", "Paarjagd": "paarjagd", "Schach": "schach",
+               "Snack Rush": "snack", "Stadt-Land-Fluss": "stadtland", "Sternschnuppen-Lauf": "sternlauf", "Verbotene Wörter": "verboten",
+               "Traffic Cadet": "verkehr", "Werwölfe": "werwolf", "Wer bin ich?": "werbinich", "Fünf Würfel": "wuerfel",
+               "Zeichnen & Raten": "zeichnen"}
+_OLD_REASON = re.compile(r"^(.+) – (?:Platz (\d+)|Sieg)$")
+
+
+def win_reason(kind: str, place: int | None = None) -> str:
+    """The ledger reason of the coins for a game: «Five Dice – place 2» / «Chess – victory»."""
+    title = TITLES.get(kind, kind)
+    return f"{title} – place {place}" if place else f"{title} – victory"
+
+
+def ledger_reason(reason: str) -> str:
+    """An older ledger entry in German («Fünf Würfel – Platz 1») in today's English form, so the app can translate it."""
+    m = _OLD_REASON.match(reason or "")
+    if not m or m.group(1) not in _OLD_TITLES:
+        return reason
+    return win_reason(_OLD_TITLES[m.group(1)], int(m.group(2)) if m.group(2) else None)
 
 
 def _games(fq) -> dict:

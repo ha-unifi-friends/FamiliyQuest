@@ -37,3 +37,21 @@ def test_own_language(client):
     client.delete(f"/api/parent/translations/languages/{l['code']}", headers=ph)
     assert client.get("/i18n/languages.json").json() == []
     assert client.get(f"/i18n/{l['code']}.json").status_code == 404
+
+
+def test_game_coins_reason_and_bot_names_are_translatable():
+    """The ledger stores the English «Five Dice – place 1» (older German entries are mapped when read); the bots'
+    names, the Swiss suits and the calls of the card carousel have translations in every language."""
+    import json
+    from pathlib import Path
+    from familyquest import running
+    from familyquest.cardgames import BOTS, GAMES
+    assert running.win_reason("wuerfel", 2) == "Five Dice – place 2" and running.win_reason("schach") == "Chess – victory"
+    assert running.ledger_reason("Fünf Würfel – Platz 1") == "Five Dice – place 1"
+    assert running.ledger_reason("Werwölfe – Sieg") == "Werewolves – victory"
+    assert running.ledger_reason("Ice cream") == "Ice cream"
+    i18n = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web" / "i18n"
+    fr = json.loads((i18n / "fr-FR.json").read_text(encoding="utf-8"))
+    assert fr["{0} – place {1}"] == "{0} – place {1}" and fr["Eule Olga"] == "Chouette Olga"
+    assert all(n in fr for n, _ in BOTS) and [fr[c] for c in GAMES["karussell"]["calls"]] == ["Dernière !", "Terminé !"]
+    assert [fr[s] for s in ("Bells", "Shields", "Roses", "Acorns")] == ["Grelots", "Écus", "Roses", "Glands"]

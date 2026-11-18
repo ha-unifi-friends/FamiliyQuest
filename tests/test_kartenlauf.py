@@ -497,7 +497,7 @@ def test_family_table_coins_once_and_history(client):
     client.get("/api/community/kartenlauf", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before[0] + 8
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"kartenlauf:{gid}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"kartenlauf:{gid}:{mia}")["reason"] == "Kartenlauf – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"kartenlauf:{gid}:{mia}")["reason"] == "Card Race – place 1"
     hist = fq.community.history(mia)
     assert hist[0]["kind"] == "kartenlauf" and hist[0]["data"]["place"] == 1 and hist[0]["data"]["coins"] == 8
 
@@ -535,7 +535,7 @@ def test_guests_play_but_cannot_lead(client):
     hm = login(client, mia, "1111")
     client.post("/api/community/kartenlauf/start", json={"seats": 2}, headers=hm)
     inv = client.post("/api/community/guests", json={"game": "kartenlauf"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Kartenlauf"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Card Race"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     v = client.get("/api/community/kartenlauf", headers=hg).json()

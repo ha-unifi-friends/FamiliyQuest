@@ -614,7 +614,7 @@ function pointsCard() {
     me.internet ? internetCard(me.internet) : null,      // start / pause the internet time right next to the minutes
     nr ? h("div.next-reward", h("div.row", h("span.big-ic", nr.icon), h("span.grow", T("Still {0} until {1}").replace("{0}", fmt(nr.missing)).replace("{1}", nr.name))),
       bar(nr.cost - nr.missing, nr.cost)) : null,
-    me.pending.length ? h("p.small.muted", "⏳ ", T("Waiting for approval:"), " ", me.pending.map(p => p.name).join(", ")) : null,
+    me.pending.length ? h("p.small.muted", "⏳ ", T("Waiting for approval:"), " ", me.pending.map(p => I18N.tr(p.name)).join(", ")) : null,
     h("button.btn.ghost", { onclick: () => go("shop") }, "🛍️ ", T("To the shop")));
 }
 
@@ -1302,6 +1302,13 @@ async function avatarView() {
   a.items = a.items || {};
   const preview = h("div.av-preview");
   const draw = () => preview.replaceChildren(avatarSvg(a, 200));
+  // names of the avatar options for screen readers (rewards/avatar.py FREE_PARTS)
+  const AV_LABELS = { "hair:short": T("Short hair"), "hair:long": T("Long hair"), "hair:curly": T("Curly hair"), "hair:bun": T("Hair bun"),
+    "hair:spiky": T("Spiky hair"), "hair:ponytail": T("Ponytail"), "hair:bald": T("Bald"), "eyes:round": T("Round eyes"), "eyes:happy": T("Happy eyes"),
+    "eyes:wink": T("Wink"), "eyes:big": T("Big eyes"), "eyes:sad": T("Sad eyes"), "eyes:sleepy": T("Sleepy eyes"), "eyes:dizzy": T("Dizzy eyes"),
+    "eyes:angry": T("Angry eyes"), "mouth:smile": T("Smile"), "mouth:grin": T("Grin"), "mouth:open": T("Open mouth"), "mouth:neutral": T("Neutral mouth"),
+    "mouth:sad": T("Sad mouth"), "mouth:wavy": T("Wavy mouth"), "outfit:tshirt": T("T-shirt"), "outfit:hoodie": T("Hoodie"), "outfit:dress": T("Dress"),
+    "outfit:sweater": T("Sweater"), "outfit:overall": T("Dungarees") };
   const TABS = [["skin", T("Skin")], ["hair", T("Hair")], ["hairColor", T("Hair colour")], ["eyes", T("Eyes")], ["mouth", T("Mouth")],
     ["outfit", T("Clothes")], ["outfitColor", T("Colour")], ["items", T("Items")]];
   let tab = "skin";
@@ -1329,7 +1336,7 @@ async function avatarView() {
     panel.replaceChildren(h("div.av-opts", ...opts.map(v => {
       const isColor = /^#/.test(v);
       const sample = isColor ? h("span.swatch", { style: { background: v } }) : avatarSvg(Object.assign({}, a, { [tab]: v }), 64);
-      return h("button.av-opt" + (a[tab] === v ? ".on" : ""), { onclick: () => { a[tab] = v; draw(); drawPanel(); }, "aria-label": v }, sample);
+      return h("button.av-opt" + (a[tab] === v ? ".on" : ""), { onclick: () => { a[tab] = v; draw(); drawPanel(); }, "aria-label": isColor ? v : I18N.tr(AV_LABELS[tab + ":" + v] || v) }, sample);
     })));
   };
   async function pickItem(i) {

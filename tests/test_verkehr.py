@@ -456,7 +456,7 @@ def test_family_table_same_worlds_switches_coins_once_and_history(client):
     client.get("/api/community/verkehr", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"verkehr:{st['game']}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"verkehr:{st['game']}:{mia}")["reason"] == "Traffic Cadet – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"verkehr:{st['game']}:{mia}")["reason"] == "Traffic Cadet – place 1"
     hist = fq.community.history(mia)
     assert hist[0]["kind"] == "verkehr" and hist[0]["data"]["place"] == 1 and hist[0]["data"]["coins"] == 8
     assert hist[0]["data"]["passed"] == me["pas"] and hist[0]["data"]["worlds"] == 1 and hist[0]["data"]["record"]
