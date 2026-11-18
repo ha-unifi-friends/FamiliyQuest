@@ -42,8 +42,8 @@ let MK_BOARD = null;                                    // from the server: [{t,
 const mkField = f => (MK_BOARD && MK_BOARD[f]) || {};
 const mkFieldName = f => I18N.tr((MK_FIELD[mkField(f).key] || ["", "?"])[1]);
 const mkFieldIcon = f => (MK_FIELD[mkField(f).key] || ["❔"])[0];
-const mkMoney = n => Number(n || 0).toLocaleString("de-CH") + " Taler";
-const mkTaler = n => h("span.mk-taler", { translate: "no" }, h("i", "T"), Number(n || 0).toLocaleString("de-CH"));
+const mkMoney = n => Number(n || 0).toLocaleString(I18N.locale) + " Taler";
+const mkTaler = n => h("span.mk-taler", { translate: "no" }, h("i", "T"), Number(n || 0).toLocaleString(I18N.locale));
 
 // ---------------------------------------------------------------- the board (viewBox 0 0 1120 1120)
 // 36 fields clockwise from the bottom left corner: corners 160 × 160, the other fields 100 × 160.

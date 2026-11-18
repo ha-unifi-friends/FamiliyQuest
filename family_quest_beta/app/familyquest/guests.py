@@ -80,7 +80,8 @@ class Guests:
         if not f or not self.enabled():
             raise GuestError("This invitation is not valid (any more)")
         game, _ = f
-        title = {"bingo": "Bingo", "poker": "Texas Hold'em", "tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "song": "Errate den Song", "domino": "Domino", "paarjagd": "Paarjagd", "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten", "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "verkehr": "Traffic Cadet", "langstrecke": "24h Endurance", "klatsch": "Klatsch den Beat", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe", "schach": "Schach", "dorfmarkt": "Dorfmarkt", "escape": "Escape Room", "stempeljagd": "Beat the Bureaucracy"}.get(game, "")
+        from .running import TITLES          # English source – the guest page translates it
+        title = {"bingo": "Bingo", "poker": "Texas Hold'em", "song": "Guess the song", **TITLES}.get(game, "")
         if game == "quiz":
             st = self.fq.community.state(0) or {}
             title = st.get("title") or "Quiz"

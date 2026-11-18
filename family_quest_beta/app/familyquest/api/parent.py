@@ -935,7 +935,9 @@ def book(body: BookIn, request: Request, me: dict = Parent) -> dict:
 
 @router.get("/ledger/{pid}")
 def ledger(pid: int, request: Request, me: dict = Parent) -> list[dict]:
-    return app_of(request).db.q("SELECT * FROM ledger WHERE profile_id=? ORDER BY id DESC LIMIT 100", pid)
+    from ..running import ledger_reason          # older German game entries in the English form the app translates
+    return [{**r, "reason": ledger_reason(r["reason"])} for r in
+            app_of(request).db.q("SELECT * FROM ledger WHERE profile_id=? ORDER BY id DESC LIMIT 100", pid)]
 
 
 # ---------------------------------------------------------------- chore plan (Ämtliplan)

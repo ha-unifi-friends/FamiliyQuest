@@ -21,7 +21,8 @@ window.I18N = (() => {
   function load(dict) {
     for (const [k, v] of Object.entries(dict)) {
       if (!v || v === k) continue;
-      if (!/\{\d+\}/.test(k)) { exact.set(k, v); continue; }
+      exact.set(k, v);                     // also a template itself: I18N.tr(T("{0} rooms")) → "{0} salles" (short keys have no pattern)
+      if (!/\{\d+\}/.test(k)) continue;
       const order = [], re = new RegExp("^" + k.split(/(\{\d+\})/).map(p => { const m = p.match(/^\{(\d+)\}$/); if (m) { order.push(+m[1]); return "(.*?)"; } return esc(p); }).join("") + "$", "s");
       const parts = k.split(/\{\d+\}/), pre = parts[0], ent = { re, order, v, statics: parts.filter(Boolean).sort((a, b) => b.length - a.length), weight: parts.join("").replace(/\s/g, "").length };
       if (pre.length >= 2) { const b = pre.slice(0, 2); (byPrefix.get(b) || byPrefix.set(b, []).get(b)).push(ent); }

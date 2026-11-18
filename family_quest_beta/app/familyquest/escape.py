@@ -39,6 +39,7 @@ from .cardgames import CardGames
 from .community import CommunityError
 from .i18n import _t
 from .pairhunt import rewards_of as _rewards_of
+from .running import win_reason
 
 KIND = "escape"
 TITLE = "Escape Room"
@@ -424,7 +425,7 @@ class Escape(CardGames):
             ref = f"{KIND}:{row['id']}:{pid}"
             if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
                 try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Platz 1", ref=ref)
+                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND, 1), ref=ref)
                 except Exception:  # noqa: BLE001
                     pass
         winners = [p for p in (st.get("team_of") or {}) if (st.get("team_of") or {}).get(p) in (st.get("winners") or [])]
