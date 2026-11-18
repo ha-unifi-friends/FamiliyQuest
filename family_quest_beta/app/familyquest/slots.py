@@ -1,7 +1,8 @@
 """Game corner: the one-armed bandit (slot machine).
 
 A child gets the machine like every game with a price (gamepasses.py: DEFAULT_PRICE 250 coins to buy it once – the
-parents can change the price, set 0 or add a rent), then plays for 1 coin, at most PLAYS_PER_DAY times a day.
+parents can change the price, set 0 or change the rent – default 20 coins a day), then plays for 1 coin, at most
+PLAYS_PER_DAY times a day. Before that a free try (gamepasses.py `preview`, default 1) is one spin.
 Whoever bought it before (unlock `slot_machine`, 150 coins) keeps it (db migration 35).
 
 The reels are drawn here on the server (secrets) – the app only shows them. Three reels with weighted symbols and a
@@ -150,6 +151,8 @@ class Slots:
         self.spin_reels = spin_reels                   # the tests set fixed reels
         self.settings = lambda: {"price": 250, "rent": 0, "period": "week", "luck": DEFAULT_LUCK}   # services: games_access()["slots"]
         self.unlocked = lambda pid: False              # services: bought / rented (gamepasses.py), parents always
+        self.tries = lambda pid: 0                     # services: free tries left before buying / renting
+        self.try_play = lambda pid: False              # services: use one free try (True: there was one)
 
     def owned(self, pid: int) -> bool:
         return bool(self.unlocked(pid))
@@ -160,7 +163,9 @@ class Slots:
 
     def state(self, pid: int) -> dict:
         a = self.settings()
-        return {"owned": self.owned(pid), "price": int(a.get("price") or 0), "rent": int(a.get("rent") or 0),
+        owned = self.owned(pid)
+        return {"owned": owned, "tries_left": 0 if owned else self.tries(pid),
+                "price": int(a.get("price") or 0), "rent": int(a.get("rent") or 0),
                 "period": a.get("period") or "week", "bet": BET, "max": PLAYS_PER_DAY,
                 "left": max(0, PLAYS_PER_DAY - self.plays_today(pid)),
                 "coins": self.rewards.balance(pid, "coins"),
@@ -168,12 +173,15 @@ class Slots:
 
     def spin(self, pid: int) -> dict:
         with self.db.tx():                      # check and book in one step – a double tap cannot play twice
-            if not self.owned(pid):
+            owned = self.owned(pid)
+            if not owned and not self.tries(pid):
                 raise SlotError("Buy the slot machine first")
             if self.plays_today(pid) >= PLAYS_PER_DAY:
                 raise SlotError("That was all for today – come back tomorrow")
             if self.rewards.balance(pid, "coins") < BET:
                 raise SlotError("Not enough coins")
+            if not owned and not self.try_play(pid):       # a free try: one spin (counted in this transaction)
+                raise SlotError("Buy the slot machine first")
             reels = list(self.spin_reels(int(self.settings().get("luck") or DEFAULT_LUCK)))
             win = payout(reels)
             self.rewards.book(pid, "coins", -float(BET), "slots_bet", _t("One-armed bandit"), "slots")

@@ -2,7 +2,7 @@
 
 The integration keeps everything in /config/.storage/family_planer.<entry id> (Home Assistant Store format:
 {"version", "key", "data": {...}}) and the persons' photos in /config/family_planer/. The app sees the Home Assistant
-configuration read-only under /homeassistant (map homeassistant_config). A parent can also upload the file.
+configuration under /homeassistant (map homeassistant_config; read-only except custom_components/familyquest). A parent can also upload the file.
 
 Import = the planner data replaces the built-in planner (the previous state is kept in the kv document
 fq.planer_before_import), photos are copied, then the bridge links the persons to the Family Quest profiles

@@ -37,7 +37,13 @@ class _PlayRoute(APIRoute):
         handler = super().get_route_handler()
 
         async def run(request: Request):
-            response = await handler(request)
+            try:
+                response = await handler(request)
+            except BaseException:
+                _give_back(request)
+                raise
+            if response.status_code >= 400:
+                _give_back(request)
             pid = request.scope.get("fq_play")
             if pid and response.status_code < 400 and getattr(response, "body", b"null") not in (b"null", b""):
                 try:
@@ -46,6 +52,16 @@ class _PlayRoute(APIRoute):
                     log.exception("counting game time failed")
             return response
         return run
+
+
+def _give_back(request: Request) -> None:
+    """A start that used a free try failed (gamepasses.py): the try is back."""
+    used = request.scope.get("fq_try")
+    if used:
+        try:
+            app_of(request).passes.give_back(*used)
+        except Exception:  # noqa: BLE001
+            log.exception("giving back a free try failed")
 
 
 router = APIRouter(prefix="/api/community", route_class=_PlayRoute)
@@ -69,14 +85,23 @@ def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 �
     """A learner who may play this game (parent area › Games, per game and person)."""
     fq = app_of(request)
     game = game_of(request.url.path)
+    trial = None
     if not fq.games_allowed(prof, game, time=False) and not _parent_table(fq, prof, game, request):
-        if game:
-            raise HTTPException(403, "This game is switched off for you")
-        raise HTTPException(403, "Games are switched off for you")
+        trial = _trial(fq, prof, game, request)              # a game with a price: a free try (gamepasses.py)
+        if not trial:
+            if game:
+                raise HTTPException(403, "This game is switched off for you")
+            raise HTTPException(403, "Games are switched off for you")
     if prof.get("role") == "kid":
         part = request.url.path.split("/api/community/", 1)[-1].split("/")
         if request.method == "POST" and part[-1] in STARTS and timelimits.used_up(fq.db, prof, "game"):
             raise HTTPException(403, "Game time for today is used up – see you tomorrow!")
+        if trial == "start":                                 # a new table (or a rematch) on a free try: count it
+            used = fq.use_game_try(prof, game)
+            if not used:
+                raise HTTPException(403, "No free tries left – buy or rent the game")
+            if used == "new":
+                request.scope["fq_try"] = (prof["id"], game)
         if (game or part[0] == "duel") and part[0] not in NOT_PLAYING:
             request.scope["fq_play"] = prof["id"]
     return prof
@@ -101,6 +126,42 @@ def _parent_table(fq, prof: dict, game: str | None, request: Request) -> bool:
     if request.method == "GET" or t["member"]:
         return True
     return part[-1] == "join" and t["joinable"]
+
+
+# a locked game with a price that the child may try (gamepasses.py `preview`): starting or joining a table uses a free try
+TRY_STARTS = (OWN_TABLE - {"delete"}) | {"join"}
+
+
+def _trial(fq, prof: dict, game: str | None, request: Request) -> str | None:
+    """«start»: this request starts / joins a table on a free try (counted in Player); «ok»: the child plays on a try –
+    seated at the table, or a try began a short while ago (leave, the result); a look (GET) while tries are left."""
+    if prof.get("role") != "kid":
+        return None
+    part = request.url.path.split("/api/community/", 1)[-1].strip("/").split("/")
+    if not game:              # the duels of the game corner: opened on a free try (POST /api/me/games/try)
+        return "ok" if part[0] == "duel" and _corner_try(fq, prof) else None
+    if part[0] in NOT_PLAYING:
+        return None
+    t = fq.game_trial(prof, game)
+    if not t:
+        return None
+    from ..gamepasses import ARCADE
+    if game in ARCADE:        # Ping-Pong doubles: the game corner was opened on a try
+        return "ok" if t["active"] else None
+    if request.method == "POST" and part[-1] in TRY_STARTS:
+        return "ok" if part[-1] == "join" and t["member"] else "start"
+    if t["member"] or t["active"]:
+        return "ok"
+    return "ok" if request.method == "GET" and t["left"] > 0 else None
+
+
+def _corner_try(fq, prof: dict, game: str | None = None) -> bool:
+    """Tic-Tac-Toe / Ping-Pong of the game corner opened on a free try a short while ago."""
+    for g in ([game] if game else ["ttt", "pingpong"]):
+        t = fq.game_trial(prof, g)
+        if t and t["active"]:
+            return True
+    return False
 
 
 def PlayerOrGuest(request: Request, x_fq_token: str | None = Header(default=None),        # noqa: N802
@@ -2734,7 +2795,7 @@ def duel_state(request: Request, me: dict = Gamer) -> dict | None:
 def duel_invite(body: DuelIn, request: Request, me: dict = Gamer) -> dict:
     fq = app_of(request)
     game = "pingpong" if body.kind == "pong" else "ttt"
-    if not fq.games_allowed(me, game):
+    if not fq.games_allowed(me, game) and not _corner_try(fq, me, game):
         raise HTTPException(403, "This game is switched off")
     opp = fq.db.q1("SELECT * FROM profile WHERE id=? AND archived=0", body.opponent)
     if not opp or not fq.games_allowed(opp, game):

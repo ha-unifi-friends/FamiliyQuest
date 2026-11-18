@@ -624,6 +624,12 @@ MIGRATIONS: list[str] = [
     INSERT OR IGNORE INTO game_pass(profile_id, game, bought, bought_at)
         SELECT profile_id, 'slots', 1, datetime('now','localtime') FROM unlock WHERE item='slot_machine';
     """,
+    # 36 – free tries of a game with a price before buying / renting (gamepasses.py: `preview`): how many a child used,
+    # and when the last one began (a second start right after it is the same try). Everybody starts with 0 used.
+    """
+    ALTER TABLE game_pass ADD COLUMN previews_used INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE game_pass ADD COLUMN preview_at TEXT;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [

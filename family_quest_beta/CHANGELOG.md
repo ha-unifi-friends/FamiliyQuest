@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0-beta.14
+
+- Quick games now rent for 100 coins per week and game-corner games for 20 coins per day by default (parents can change every value)
+- Free tries: every priced game can be played for free a set number of times before buying or renting (default 1)
+- New Family Quest HA integration (off by default): sensors per child and for the family, an internet switch and actions to book points and approve chores and rewards
+
 ## 1.1.0-beta.13
 
 - Game prices: parents can set a buy price and a rent price (per day, week or month) per game; children unlock games in the shop

@@ -1,0 +1,63 @@
+add_points:
+  fields:
+    child:
+      required: true
+      example: "Mia"
+      selector:
+        text:
+    account:
+      default: coins
+      example: coins
+      selector:
+        text:
+    amount:
+      required: true
+      example: 10
+      selector:
+        number:
+          min: -10000
+          max: 10000
+          step: 1
+          mode: box
+    reason:
+      example: "Helped in the garden"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: familyquest
+approve_chore:
+  fields:
+    task_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 999999999
+          mode: box
+    approve:
+      default: true
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: familyquest
+approve_reward:
+  fields:
+    redemption_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 999999999
+          mode: box
+    approve:
+      default: true
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: familyquest

@@ -1022,7 +1022,13 @@ def delete_goal(gid: int, request: Request, me: dict = Parent) -> dict:
 # ---------------------------------------------------------------- settings
 @router.get("/settings")
 def settings(request: Request, me: dict = Parent) -> dict:
-    return app_of(request).db.all_settings()
+    return _public_settings(app_of(request))
+
+
+def _public_settings(fq) -> dict:
+    s = fq.db.all_settings()
+    s.pop("ha_integration", None)        # token hash: only through /api/parent/integration
+    return s
 
 
 @router.put("/settings")
@@ -1066,7 +1072,7 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
     for k, v in body.items():
         if k in DEFAULT_SETTINGS:
             fq.db.set_setting(k, v)
-    return fq.db.all_settings()
+    return _public_settings(fq)
 
 
 # ---------------------------------------------------------------- behaviour weather
@@ -1333,17 +1339,18 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
             profiles = sorted({int(x) for x in a.get("profiles") or []})
         except (TypeError, ValueError):
             raise HTTPException(400, "Unknown setting") from None
-        from ..gamepasses import PERIODS, PassError, clean_price
+        from ..gamepasses import PERIODS, PassError, clean_preview, clean_price
         from ..slots import clean_luck
-        try:            # what a child pays for the game (gamepasses.py): kept when not sent
+        try:            # what a child pays for the game and the free tries (gamepasses.py): kept when not sent – stored
             price, rent = clean_price(a.get("price"), acc[g]["price"]), clean_price(a.get("rent"), acc[g]["rent"])
+            preview = clean_preview(a.get("preview"), acc[g]["preview"])      # as shown, so a 0 stays 0 (no default)
         except PassError as e:
             raise HTTPException(400, str(e)) from None
         period = a.get("period") or acc[g]["period"]
         if period not in PERIODS:
             raise HTTPException(400, "Unknown setting")
         luck = acc[g].get("luck")
-        acc[g] = {"mode": a["mode"], "profiles": profiles, "bots": bots, "price": price, "rent": rent, "period": period}
+        acc[g] = {"mode": a["mode"], "profiles": profiles, "bots": bots, "price": price, "rent": rent, "period": period, "preview": preview}
         if g == "slots":
             try:
                 acc[g]["luck"] = clean_luck(a.get("luck", luck))
