@@ -88,6 +88,7 @@ async function route() {
   if (view === "arcade") return arcadeView(arg);
   if (view === "deck") return arg ? deckView(+arg) : decksView();
   if (view === "stories") return storiesView();
+  if (view === "advgames") return canPlay("adventuregame") && S.me.stories !== false ? adventureGamesView() : go("games");   // stories.js
   return dashboardView();
 }
 
@@ -1791,6 +1792,7 @@ const GAME_INFO = { quiz: ["🎯", T("Family quiz")], bingo: ["🎱", "Bingo"], 
   dorfmarkt: ["🏘️", T("Village Market")], escape: ["🗝️", T("Escape Room")], stempeljagd: ["🏛️", T("Beat the Bureaucracy")], ttt: ["⭕", T("Tic-Tac-Toe")], sudoku: ["🔢", T("Sudoku")], patience: ["🃏", T("Patience")],
   pingpong: ["🏓", T("Ping-Pong")], slots: ["🎰", T("One-armed bandit")], cube: ["🧊", T("Cube solver")] };
 GAME_INFO.langstrecke = ["🏎️", T("24h Endurance")];
+GAME_INFO.adventuregame = ["🗝️", T("Adventure games")];
 const gameInfo = k => GAME_INFO[k] || ["🎮", k];
 const rentText = o => I18N.tr({ day: T("Rent: {0} 🪙 per day"), week: T("Rent: {0} 🪙 per week"), month: T("Rent: {0} 🪙 per month") }[o.period] || T("Rent: {0} 🪙 per week")).replace("{0}", o.rent);
 const buyText = o => I18N.tr(T("Buy: {0} 🪙")).replace("{0}", o.price);
@@ -1885,6 +1887,8 @@ async function gamesView() {
   screen("games", h("div.row.games-head", h("h1.grow", "🎲 ", T("Games")), batteryShown() ? h("button.bat-chip", { onclick: () => battery().free || battery().charge >= battery().cap ? null : rechargeBattery(),
       title: T("Game battery") }, batteryIcon(battery())) : null),
     partyBanner(), batteryShown() ? h("section.card.bat-card", batteryBar()) : null, timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
+    // the adventure games of the family (stories.js): switched on for this child and the library open for it
+    canPlay("adventuregame") && S.me.stories !== false ? adventureGamesCard() : null,
     gameGroup("🎲", T("For a game night"), night), gameGroup("⚡", T("Quick games for in between"), quick), arcadeCard());
 }
 

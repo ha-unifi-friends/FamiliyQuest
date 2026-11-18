@@ -514,6 +514,16 @@ class Stories:
         self.db = db
         self.rewards = rewards
         self.folder = Path(media_dir) / FOLDER
+        # may this person play and write adventure games (parent area › Games: «Adventure games» active for the child)?
+        self.games_ok = lambda prof: True
+
+    def _types(self, prof: dict) -> tuple:
+        """The book types this person sees and writes – adventure games only while that game is open to them."""
+        return TYPES if self.games_ok(prof) else tuple(t for t in TYPES if t != "game")
+
+    def _need_type(self, prof: dict, kind: str) -> None:
+        if kind == "game" and not self.games_ok(prof):
+            raise CommunityError("Adventure games are switched off for you")
 
     # ---------------------------------------------------------------- settings
     @staticmethod
@@ -598,6 +608,7 @@ class Stories:
     def _edit(self, prof: dict, sid: int) -> dict:
         self._need(prof)
         b = self._book(sid)
+        self._need_type(prof, b["type"])
         if b.get("sample"):
             raise CommunityError("The sample book cannot be changed")
         if self._private(prof, b):
@@ -653,6 +664,7 @@ class Stories:
         people = self._people()
         samples = self._samples()
         hidden = self.settings()["samples_off"]
+        types = self._types(prof)
         reads = {r["story_id"]: r for r in self.db.q("SELECT * FROM story_read WHERE profile_id=?", pid)}
         stats = {r["story_id"]: r for r in self.db.q(
             """SELECT story_id, COUNT(*) AS readers, AVG(rating) AS avg, COUNT(rating) AS votes FROM story_read
@@ -661,6 +673,8 @@ class Stories:
         for b in self.db.q("SELECT * FROM story ORDER BY COALESCE(published_at, updated_at) DESC, id DESC"):
             mine = b["author_id"] == pid and not b["sample"]
             a = people.get(b["author_id"]) or {"id": None, "name": "?", "avatar": {}}
+            if b["type"] not in types:                         # adventure games switched off for this child
+                continue
             if b["sample"]:
                 if b["sample"] not in samples:
                     continue
@@ -723,8 +737,8 @@ class Stories:
             books.append(book)
         s = self.settings()
         return {"books": books, "samples": sample_list, "private": privates, "approval": s["approval"],
-                "rewards": {k: s[k] for k in ("write_coins", "write_xp", "read_coins", "read_xp")}, "types": list(TYPES),
-                "creatable": list(CREATABLE), "pending": sum(1 for b in books if b["pending"]) if oversee else 0,
+                "rewards": {k: s[k] for k in ("write_coins", "write_xp", "read_coins", "read_xp")}, "types": list(types),
+                "creatable": [t for t in CREATABLE if t in types], "pending": sum(1 for b in books if b["pending"]) if oversee else 0,
                 "parent": parent, "oversee": oversee}
 
     def pending_count(self) -> int:
@@ -739,6 +753,7 @@ class Stories:
         self._need(prof)
         if kind not in CREATABLE:
             raise CommunityError("Unknown book type")
+        self._need_type(prof, kind)
         if self._count() >= MAX_BOOKS:
             raise CommunityError("The bookshelf is full – remove an old book first")
         if tpl and kind == "adventure":
@@ -763,6 +778,8 @@ class Stories:
         """Import books (file or AI answer) as private drafts of this person – the checker tells what is missing."""
         self._need(prof)
         books = import_books(text)
+        for b in books:
+            self._need_type(prof, b["type"])
         if self._count() + len(books) > MAX_BOOKS:
             raise CommunityError("The bookshelf is full – remove an old book first")
         return [self.db.x("INSERT INTO story(title, emoji, color, lang, author_id, data, visibility, type) VALUES(?,?,?,?,?,?,'me',?)",
@@ -945,6 +962,7 @@ class Stories:
     def _live(self, prof: dict, sid: int, oversee: bool = False, lang: str | None = None) -> tuple[dict, dict]:
         self._need(prof)
         b = self._book(sid)
+        self._need_type(prof, b["type"])
         if not b["live"] or not self.visible(prof, b, oversee):
             raise CommunityError("This book is not published")
         if b["sample"]:

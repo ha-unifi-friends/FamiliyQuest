@@ -128,6 +128,9 @@ class FamilyQuest:
         self.boards = Boards(self.db)
         from .stories import Stories
         self.stories = Stories(self.db, self.rewards, settings.media_dir)
+        # the adventure games of the library are a game of their own (parent area › Games): switched off for a child,
+        # it can neither play nor write them – parents always
+        self.stories.games_ok = lambda prof: prof.get("role") == "parent" or "adventuregame" in self.games_for(prof)
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
         from .pong4 import Doubles
@@ -185,7 +188,13 @@ class FamilyQuest:
     # against the computer, Werwölfe filled up with bots) – the parents can switch the bots off per game
     # games still in development (channel.DEV_GAMES) are left out outside the dev channel
     BOT_GAMES = ChannelGames(("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "stempeljagd", "ttt", "pingpong"))
-    GAMES = ChannelGames(("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd", "ttt", "sudoku", "patience", "pingpong", "slots", "cube"))
+    GAMES = ChannelGames(("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd", "ttt", "sudoku", "patience", "pingpong", "slots", "cube",
+                          "adventuregame"))
+    # games that were open before they became a game of their own (the adventure games of the library): open when the
+    # parents never decided on them – not switched off like a really new game after an update
+    OPEN_WHEN_NEW = frozenset({"adventuregame"})
+    # games without coins: no price, no rent (the adventure games – content of the family, like the library)
+    FREE_GAMES = frozenset({"adventuregame"})
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -224,6 +233,8 @@ class FamilyQuest:
                    "preview": num(a.get("preview", gp.DEFAULT_PREVIEW), gp.DEFAULT_PREVIEW, 0, gp.MAX_PREVIEW)}
             if g == "slots":
                 out["luck"] = num(a.get("luck", DEFAULT_LUCK), DEFAULT_LUCK, 1, 10)
+            if g in self.FREE_GAMES:
+                out.update(price=0, rent=0)
             return out
         if not acc:
             mode = self.db.get_setting("games") or "all"
@@ -233,7 +244,7 @@ class FamilyQuest:
         # open – if they restricted any game, a new one starts switched off until they decide
         stored = [(acc.get(g) or {}).get("mode", "all") for g in self.GAMES if g in acc]
         new_mode = "all" if all(m == "all" for m in stored) else "off"
-        return {g: {"mode": (acc.get(g) or {}).get("mode", "all") if g in acc else new_mode,
+        return {g: {"mode": (acc.get(g) or {}).get("mode", "all") if g in acc else "all" if g in self.OPEN_WHEN_NEW else new_mode,
                     "profiles": list((acc.get(g) or {}).get("profiles") or []),
                     "bots": (acc.get(g) or {}).get("bots") is not False or g not in self.BOT_GAMES,
                     **money(g, acc.get(g) or {})} for g in self.GAMES}

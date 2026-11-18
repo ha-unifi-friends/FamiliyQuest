@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1-beta.9
+
+- Parent area › Games: every game starts collapsed; new «Custom games» group under the running games with Family quiz, Pair Hunt and Adventure games – each with Import and New (New starts with templates)
+- Pair Hunt: photo sets with presets, import of several photos or a ZIP, export as ZIP
+- Adventure games moved from the Library to the Games (parents and kids) and can be switched on or off per child
+
 ## 1.1.1-beta.8
 
 - Parent area › Family › Library: one box each for books, adventure books and adventure games, each with its own Import and New button – no type choice needed any more

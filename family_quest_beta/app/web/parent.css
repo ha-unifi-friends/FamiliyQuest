@@ -267,6 +267,22 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .gp-luck { width: 100%; }
 .game-settings .game-status { margin: 0; }
 .game-sec:has(.game-status.off) > .game-play { opacity: .55; }
+/* Games page › 🛠️ Custom games (quiz, Pair Hunt, adventure games): the same structure – head with what it is and how
+   many, 📥 Import / + New, the own content, the settings */
+.cg-group { margin: 0 0 18px; padding: 12px 12px 2px; border: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.cg-group > .cg-title { margin: 2px 4px 2px; }
+.cg-group > p { margin: 0 4px 10px; }
+.cg-group > div > .card { margin-bottom: 10px; }
+.cg-sec > summary.sec-head { flex-wrap: wrap; }
+.cg-sec .cg-desc { flex: 1 1 100%; margin: 2px 0 0; }
+.cg-count { font-size: .75rem; padding: 2px 8px; margin-left: 4px; vertical-align: middle; }
+.cg-actions { gap: 8px; margin: 0 0 12px; }
+.cg-actions:empty { display: none; }
+.cg-actions .cg-app { order: 9; margin-left: auto; }
+.cg-list { display: grid; gap: 8px; margin-bottom: 14px; }
+.cg-list .cg-sub { font-size: 1rem; margin: 8px 0 0; }
+.cg-sec:has(.game-status.off) > .cg-list, .cg-sec:has(.game-status.off) > .cg-actions { opacity: .55; }
 .games-general summary { cursor: pointer; }
 .games-general[open] summary { margin-bottom: 10px; }
 
@@ -337,3 +353,9 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .switch-wrap input:checked + .switch-ui::after { transform: translateX(26px); }
 .switch-wrap input:focus-visible + .switch-ui { outline: 3px solid var(--accent); outline-offset: 2px; }
 .party-dialog h3 { margin-top: 6px; }
+/* Pair Hunt › + New photo set: the presets */
+.mm-presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.mm-preset { display: grid; justify-items: center; gap: 4px; padding: 12px 6px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--card); color: var(--fg); font: inherit; cursor: pointer; }
+.mm-preset:hover { background: var(--hover); }
+.mm-preset .big-ic { font-size: 1.8rem; }
