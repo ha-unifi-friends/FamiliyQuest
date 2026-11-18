@@ -2505,3 +2505,49 @@ svg.bb-busy .bb-hit { stroke: color-mix(in srgb, var(--who) 35%, transparent); }
   80% { opacity: 1; transform: translate(-30%, -10%) scale(.95); }
   100% { opacity: 0; transform: translate(-30%, -10%) scale(1.15); }
 }
+
+/* time sliders (parent area › profile): minutes … hours … ∞; the weekday sliders are docked to the master slider */
+.lim-box { gap: 12px; }
+.lim { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); min-width: 0; }
+.lim-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lim-head .grow { min-width: 0; }
+.lim-ic { font-size: 1.3rem; }
+.lim-val { font-weight: 800; min-width: 4.4em; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lim-head select.lim-period { width: auto; height: 36px; min-height: 36px; padding: 4px 30px 4px 10px; font-size: .9rem; background-position: right 8px center; }
+.lim-days { gap: 4px; }
+.lim-days.on { border-color: var(--accent); color: var(--accent); }
+.lim-badge { background: var(--accent); color: var(--accent-fg); border-radius: 999px; font-size: .72rem; padding: 0 6px; min-width: 18px; line-height: 18px; }
+.lim-master { position: relative; padding-bottom: 14px; }
+.lim-scale { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; font-size: .7rem; color: var(--muted); pointer-events: none; }
+.lim-scale span { position: absolute; left: calc(14px + var(--p) * (100% - 28px)); transform: translateX(-50%); white-space: nowrap; line-height: 14px; }
+.lim-scale span:first-child { transform: translateX(-30%); } .lim-scale span:last-child { transform: translateX(-70%); font-size: .9rem; }
+.lim-range { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 44px; margin: 0; padding: 0; background: transparent;
+  cursor: pointer; touch-action: pan-y; --fill: var(--accent); }
+.lim-range.inf, .lim-day:not(.own) .lim-range.inf { --fill: var(--good); }
+.lim-range::-webkit-slider-runnable-track { height: 8px; border-radius: 999px;
+  background: linear-gradient(to right, var(--fill) var(--p, 0%), var(--ring-bg) var(--p, 0%)); }
+.lim-range::-moz-range-track { height: 8px; border-radius: 999px; background: var(--ring-bg); }
+.lim-range::-moz-range-progress { height: 8px; border-radius: 999px; background: var(--fill); }
+.lim-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%;
+  background: var(--card); border: 3px solid var(--fill); box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+.lim-range::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--card); border: 3px solid var(--fill); box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+.lim-range:focus, .lim-range:focus-visible { outline: none; }
+.lim-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
+.lim-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
+.lim-week { display: grid; gap: 0; margin: 2px 0 0 12px; padding-left: 10px; border-left: 3px dashed var(--line); }
+.lim-day { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) 4.4em 34px; align-items: center; gap: 6px; }
+.lim-dname { font-weight: 700; font-size: .85rem; color: var(--muted); }
+.lim-day .lim-val { font-size: .85rem; font-weight: 700; color: var(--muted); min-width: 0; }
+.lim-day:not(.own) .lim-range { --fill: color-mix(in srgb, var(--accent) 35%, var(--ring-bg)); }
+.lim-day:not(.own) .lim-range.inf { --fill: color-mix(in srgb, var(--good) 35%, var(--ring-bg)); }
+.lim-day:not(.own) .lim-range::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -7px; border-width: 2px; box-shadow: none; }
+.lim-day:not(.own) .lim-range::-moz-range-thumb { width: 18px; height: 18px; border-width: 2px; box-shadow: none; }
+.lim-day.own .lim-dname, .lim-day.own .lim-val { color: var(--accent); }
+.lim-day.own .lim-range.inf ~ .lim-val { color: var(--good); }
+.lim-pin { border: 0; background: transparent; width: 34px; height: 34px; border-radius: 8px; font-size: 1rem; padding: 0; opacity: .5; }
+.lim-day.own .lim-pin { opacity: 1; background: var(--hover); }
+.lim-pin:disabled { cursor: default; }
+/* kid app: minutes left today (games, learning) */
+.time-left { display: flex; align-items: center; gap: 10px; }
+.time-left.up { background: var(--bad-bg); }
+.time-left .big-ic { font-size: 1.8rem; }

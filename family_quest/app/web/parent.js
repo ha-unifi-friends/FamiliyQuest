@@ -419,7 +419,7 @@ function limitSlider({ icon, label, value, steps = LIMIT_STEPS, extra = null }) 
   const masterOut = h("output.lim-val");
   const masterIn = h("input.lim-range", { type: "range", min: 0, step: 1, "aria-label": label });
   const scale = h("div.lim-scale", { "aria-hidden": "true" });
-  const drawScale = () => scale.replaceChildren(...[0, steps.indexOf(60), steps.indexOf(180), steps.length - 1, INF()].filter(i => i >= 0)
+  const drawScale = () => scale.replaceChildren(...[0, Math.round(INF() * .37), Math.round(INF() * .63), INF()]
     .map(i => h("span", { style: { "--p": i / INF() } }, i === INF() ? "∞" : fmtMinutes(steps[i]))));
   const dayRows = WEEKDAYS.map((d, i) => {
     const k = String(i);
@@ -445,7 +445,7 @@ function limitSlider({ icon, label, value, steps = LIMIT_STEPS, extra = null }) 
     const n = Object.keys(own).length;
     daysBtn.setAttribute("aria-expanded", String(!week.hidden));
     daysBtn.classList.toggle("on", !week.hidden);
-    daysBtn.replaceChildren("📅 ", I18N.tr(T("Days")), n ? h("span.lim-badge", String(n)) : null);
+    daysBtn.replaceChildren(...["📅 ", I18N.tr(T("Days")), n ? h("span.lim-badge", String(n)) : ""].filter(Boolean));
     for (const r of dayRows) {
       const docked = !(r.k in own), m = docked ? master : own[r.k];
       paint(r.inp, m);

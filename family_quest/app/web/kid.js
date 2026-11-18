@@ -384,7 +384,7 @@ function dashboardView() {
     h("div.today-text",
       h("h2", met ? T("Daily goal reached! 🎉") : T("Today's goal")),
       h("p.muted", met ? T("Everything extra counts for your level.") : I18N.tr(T("Collect {0} XP today – every lesson and every right answer counts.")).replace("{0}", fmt(goal))),
-      h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Daily lesson"))));
+      learnUp() ? null : h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Daily lesson"))));
 
   const subjects = h("section",
     h("div.row", h("h2.grow", T("Subjects")), h("button.btn.small.ghost", { onclick: () => go("courses") }, "🌍 ", T("Language courses & more"))),
@@ -395,7 +395,7 @@ function dashboardView() {
     ...(me.weather_alarm && me.weather_alarm.hints.length ? [h("section.card.banner.alarm-banner",
       h("span.big-ic", me.weather_alarm.now ? me.weather_alarm.now.icon : "🌂"),
       h("div.grow", ...me.weather_alarm.hints.map(x => h("div", x.icon, " ", C(I18N.tr(x.text), "strong")))))] : []),
-    ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today];
+    ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today, timeLeftCard("learn")].filter(Boolean);
   if (me.profile && me.has_devices) sections.push(devicesCard());
   if (me.chores) sections.push(choresCard(me.chores));
   sections.push(subjects, deckHomeCard(), pointsCard());
@@ -434,7 +434,8 @@ function internetCard(st) {
   const clock = h("b.net-clock");
   const fmtClock = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   let left = st.seconds_left || 0;
-  const draw = () => { clock.textContent = st.running ? fmtClock(Math.max(0, left)) : fmt(st.minutes) + " min"; };
+  const unlimited = !!(st.budget && st.budget.unlimited);       // the parents set the internet budget to ∞
+  const draw = () => { clock.textContent = st.running ? (unlimited ? "∞" : fmtClock(Math.max(0, left))) : unlimited ? "∞" : fmt(st.minutes) + " min"; };
   draw();
   if (st.running) {
     netTimer = setInterval(() => {
@@ -454,7 +455,7 @@ function internetCard(st) {
     h("div.grow", h("h2", T("Internet time")), clock,
       h("div.small.muted", st.block ? T("Block time – the internet is off until {0}.").replace("{0}", fmtTime(st.block.until))
         : st.running ? T("Internet is on – the time runs.") : st.minutes >= 1 ? T("Start when you want to go online.") : T("No minutes left – earn some in the shop.")),
-      st.budget ? h("div.small.muted", "📅 ", I18N.tr(T("Budget: {0} of {1} min left")).replace("{0}", fmt(st.budget.left)).replace("{1}", fmt(st.budget.total)),
+      st.budget && !unlimited ? h("div.small.muted", "📅 ", I18N.tr(T("Budget: {0} of {1} min left")).replace("{0}", fmt(st.budget.left)).replace("{1}", fmt(st.budget.total)),
         st.extra ? " · ➕ " + fmt(st.extra) + " min" : "", " · ", I18N.tr(T("new from {0}")).replace("{0}", fmtDate(st.budget.reset_at, { weekday: "short" }) + " " + fmtTime(st.budget.reset_at))) : null),
     st.running ? h("button.btn.big.bad", { onclick: () => act("stop") }, "⏸ ", T("Pause"))
       : h("button.btn.big.good", { disabled: !st.can_start, onclick: () => act("start") }, "▶ ", T("Start")));
@@ -471,6 +472,8 @@ function meSummary() {
     h("div.me-tiles",
       tile("⭐", "Level " + me.level.level, fmt(me.xp_today) + " / " + fmt(me.daily_goal) + " XP " + I18N.tr(T("today"))),
       tile("🔥", String(me.streak), T("Days in a row")),
+      ...[["games", "🎮", T("Games left today")], ["learn", "📚", T("Learning left today")]]
+        .filter(([k]) => me.time_left && me.time_left[k] != null).map(([k, ic, label]) => tile(ic, fmtMinutes(me.time_left[k]), label)),
       ...accs.map(a => tile(a.icon || "🪙", fmt(me.balances[a.key], 1), I18N.tr(a.name))),
       tile(open.length ? "🧹" : "✅", String(open.length), open.length ? T("open tasks") : T("All done!"))),
     me.internet ? internetCard(me.internet) : null);
@@ -574,15 +577,29 @@ async function packView(packId) {
   screen("home", { back: () => go("") },
     h("section.pack-head", { style: { "--c": p.color } },
       h("span.pack-ic", p.icon), h("div", C(p.title, "h1"), STATUS_BADGE[p.status] ? h("span.small.status-badge", STATUS_BADGE[p.status]()) : null, " ", h("span.small", prog.percent + " % · " + prog.stars + " / " + prog.max_stars + " ★"))),
-    h("div.row.pack-actions",
+    timeLeftCard("learn"),
+    h("div.row.pack-actions", { hidden: learnUp() },
       h("button.btn", { onclick: () => startLesson({ mode: "path", pack: p.id, unit: prog.next || undefined }), disabled: !prog.next }, "▶ ", T("Continue")),
       h("button.btn.ghost", { onclick: () => startLesson({ mode: "quiz", pack: p.id }), disabled: !learned }, "⚡ ", T("Quiz round")),
       p.units.some(u => u.kind === "cards") ? h("button.btn.ghost", { onclick: () => startLesson({ mode: "cards", pack: p.id }) }, "🃏 ", T("Flash cards")) : null),
     cardBox, path);
 }
 
+// ---------------------------------------------------------------- daily time (parent area › profile, timelimits.py)
+const learnUp = () => !!(S.me && S.me.time_left && S.me.time_left.learn === 0);
+/** «🎮 25 min left today» – at 0 a friendly stop. kind: games | learn; nothing without a limit. */
+function timeLeftCard(kind) {
+  const m = S.me && S.me.time_left ? S.me.time_left[kind] : null;
+  if (m == null) return null;
+  const up = m <= 0, ic = kind === "games" ? "🎮" : "📚";
+  return h("section.card.time-left" + (up ? ".up" : ""), h("span.big-ic", up ? "🌙" : ic),
+    h("strong.grow", up ? (kind === "games" ? T("Game time for today is used up – see you tomorrow!") : T("Learning time for today is used up – see you tomorrow!"))
+      : I18N.tr(T("{0} left today")).replace("{0}", fmtMinutes(m))));
+}
+
 // ---------------------------------------------------------------- lesson player
 async function startLesson(opts) {
+  if (learnUp()) return toast(T("Learning time for today is used up – see you tomorrow!"), "bad");
   let s;
   try { s = await api("me/session", { method: "POST", body: opts }); }
   catch (e) { return toast(e.message, "bad"); }
@@ -1675,7 +1692,7 @@ async function gamesView() {
     canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("sternlauf") ? await sternlaufFamilyCard() : null, canPlay("snack") ? await snackFamilyCard() : null, canPlay("verkehr") ? await verkehrFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("escape") ? await escapeFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
   // the games running just now on top – the same pulsing banners as on the start page
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
-  screen("games", h("h1", "🎲 ", T("Games")), ...(live.length ? [h("div.live-banners", ...live)] : []), ...cards);
+  screen("games", h("h1", "🎲 ", T("Games")), timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), ...cards);
 }
 
 // ---------------------------------------------------------------- my devices (Home Assistant)

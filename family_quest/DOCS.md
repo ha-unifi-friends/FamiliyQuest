@@ -224,12 +224,35 @@ set to «blocked»; running sessions continue. Sensor: `sensor.family_quest_<nam
 **Budget entity (optional):** minutes bought in the shop can also be written to an `input_number` in Home Assistant,
 e.g. for your own automations.
 
+### Time per day: games, learning, internet
+
+In the profile of a child (parent area › ✏️ › **⏱️ Time per day**) three sliders stand on top of each other:
+🎮 **Games per day**, 📚 **Learning per day** and 🌐 **Internet**. A slider starts in minutes (0, 5, 10 … 45 min)
+and goes on in hours (1 h … 12 h); far right is **∞ = not limited** – the default for games and learning.
+
+- **📅 Days** next to a slider opens the 7 weekdays (Mon – Sun) below it, each with its own slider. A weekday is
+  *docked* (🔗, pale): it moves with the slider above. Move a weekday slider yourself and it is *undocked* (🔓, in
+  colour) with its own time; move it back to the value of the slider above and it docks again (or tap 🔓). The number
+  on the Days button counts the undocked days; the days open by themselves when one has its own time.
+- **Games:** every minute in which a child uses a family game (any game request, also waiting in a running game) or
+  the game corner (a heartbeat every minute) counts once – several games at the same time do not count twice. When the
+  time is used up the child can start or join no new game, the game corner closes and the Games page says «Game time
+  for today is used up – see you tomorrow!». A game already running may be played to the end.
+- **Learning:** the learning time of today (finished lessons) counts. When it is used up no new lesson starts; a
+  lesson already running can be finished.
+- The kid app shows the minutes left today («🎮 25 min left today») on the Games page, the start page / the subject
+  page (learning) and in the tiles of «Me». Parents are never limited. A new day starts at midnight.
+- **Internet:** the slider is the free budget of the internet time (needs the UniFi rule above); with **per week**
+  it is the weekly budget (other steps, no weekdays). **0** = no free budget, only minutes from the shop or rewards
+  (the behaviour without a plan); **∞** = the internet may run the whole period (block times and OfflineTime still
+  apply).
+
 ### Internet budget and block times
 
-In the profile of a child (parent area › ✏️ › Internet minutes) **Internet budget and block times**:
+Below the internet settings of the child (parent area › ✏️ › Internet minutes) **Internet budget and block times**:
 
-- **Default budget:** minutes per day or per week and when it starts again (time; for a week also the weekday).
-- **Other budget on these days:** e.g. 120 minutes on Saturday and Sunday (empty = default budget).
+- **Reset:** when the budget starts again (time; for a week also the weekday). The budget itself is the 🌐 slider
+  under *Time per day*.
 - **Block times:** days and a time from – to (also over midnight, e.g. Mon–Fri 20:00–07:00). The internet stays off
   and you choose what Family Quest still allows: *works normally*, *without games*, or *only a message: OfflineTime*
   (the app shows a full-screen message with a countdown until the block time ends).
