@@ -980,7 +980,8 @@ async function importView(main) {
         h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section("🤖 " + I18N.tr(T("Made with your AI")),
       h("p", T("Learning material that fits your child's school year and textbook: the template – and every JSON export of a pack – is a JSON file that explains itself to an AI (instructions and every field). Give it to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3», «the words on this photo» or «add 10 cards». Save the answer as a .json file and upload it above. Then check the draft, publish it and assign it to your children.")),
-      aiTemplateButtons("pack")));
+      aiPromptBox(T("Make me a learning pack for Family Quest.\nSubject: [e.g. French vocabulary]\nSchool year: [e.g. 5th grade]\nTopic or textbook unit: [e.g. unit 3 – at school]\nAbout [20] cards, my child speaks [English]."),
+        { template: "api/ai-template/pack", name: "family-quest-pack-template.json" })));
   async function upload(f) {
     const fd = new FormData(); fd.append("file", f);
     out.replaceChildren(h("p", "⏳ ", T("Reading…")));

@@ -5,13 +5,15 @@ module holds the content of a game (`clean`), the checker with a solvability sea
 `view` – it runs on the server, so readers never get the solution and cannot cheat), the templates and the file format.
 
 A game (the working copy `data` of a book with type «game»):
-- rooms: a background (a library scene, an own drawing, a photo or a cleaned SVG), a description and up to 30 hotspots –
+- rooms: a background (a library scene, an own drawing of the drawing editor – cleaned SVG, 800×600 – or a photo), a description and up to 30 hotspots –
   rectangles in percent of the picture (so they scale with the screen). Up to 3 variants change the description and the
   picture while a condition holds («the light is on»).
 - hotspots: 🚪 door (to a room or straight to an ending; can be locked by a condition), 📦 object (a look text; can be
   taken into the inventory – it disappears, or with `keep` it stays and only gives its item once: a chest with a key),
   🧙 person (starts a dialogue). Every hotspot can be hidden until a condition holds and
-  can show a picture (one of the shipped assets in web/img/adventure, an emoji, an own drawing or SVG).
+  can show a picture (one of the shipped assets in web/img/adventure, an emoji or an own drawing: SVG, 200×200, transparent).
+Own drawings are SVG text inside the game (svgsafe.py: rooms max. BG_MAX, things max. ART_MAX); older painted PNG drawings
+and photos are files (stories.py).
 - items 🎒, flags 🚩 (switches like «dragon sleeps»), endings (🏆 win / 💀 lose), dialogue lines (text + answers – an
   answer can have a condition, actions and the next line), rules: «use item X on hotspot Y» (also without an item:
   «pull the lever») and «combine item A with item B».
@@ -48,7 +50,7 @@ LINE = 400
 ANSWER = 120
 SAY = 300
 END_TEXT = 800
-MAX_BYTES = 900_000          # JSON of one game (inline SVG pictures included)
+MAX_BYTES = 2_000_000        # JSON of one game (inline SVG pictures included)
 SEARCH_STATES = 6000         # the solvability search stops after so many game states …
 SEARCH_SECONDS = 1.5         # … or after this time («too big to test every way»)
 MAX_ID = 99_999
@@ -140,13 +142,13 @@ def _num(v, lo: float, hi: float, default: float) -> float:
 def clean_bg(p, folder: Path | None) -> dict | None:
     """The picture of a room: a scene of the library, an own drawing / photo (stories.py upload) or a cleaned SVG."""
     from .stories import BACKGROUNDS, clean_pic
-    from .svgsafe import safe_svg
+    from .svgsafe import BG_MAX, safe_svg
     if not isinstance(p, dict):
         return None
     if p.get("k") == "lib":
         return {"k": "lib", "v": p["v"]} if p.get("v") in BACKGROUNDS or p.get("v") in ROOMS else None
     if p.get("k") == "svg":
-        svg = safe_svg(p.get("v"))
+        svg = safe_svg(p.get("v"), BG_MAX)
         return {"k": "svg", "v": svg} if svg else None
     if p.get("k") == "img":
         return clean_pic(p, folder)
@@ -156,7 +158,7 @@ def clean_bg(p, folder: Path | None) -> dict | None:
 def clean_art(p, folder: Path | None) -> dict | None:
     """The picture of a hotspot or an item: an asset, an emoji, an own drawing or a cleaned SVG."""
     from .stories import EMOJI, clean_pic
-    from .svgsafe import safe_svg
+    from .svgsafe import ART_MAX, safe_svg
     if not isinstance(p, dict):
         return None
     if p.get("k") == "asset":
@@ -165,7 +167,7 @@ def clean_art(p, folder: Path | None) -> dict | None:
         v = _text(p.get("v"), EMOJI)
         return {"k": "emoji", "v": v} if v else None
     if p.get("k") == "svg":
-        svg = safe_svg(p.get("v"))
+        svg = safe_svg(p.get("v"), ART_MAX)
         return {"k": "svg", "v": svg} if svg else None
     if p.get("k") == "img":
         return clean_pic(p, folder)
@@ -978,7 +980,8 @@ AI_INSTRUCTIONS = [
     "Hotspots: 'door' (leads to a room or straight to an ending with 'goes_to'; can be locked with 'needs' – a list of "
     "conditions), 'object' (can be looked at; with 'takeable': true and 'item' it goes into the inventory) and "
     "'character' (talks: 'dialogue' = the id of the first dialogue line). Every hotspot can show a 'picture' "
-    "('asset:<id>' of '_assets', or one emoji) and be hidden until conditions hold ('visible_if').",
+    "('asset:<id>' of '_assets', one emoji or an own drawing {'svg': '<svg …>'} – square, transparent, see '_svg_rules') "
+    "and be hidden until conditions hold ('visible_if').",
     "Conditions are strings: 'item:<id>' (the player has it), '!item:<id>' (has it not), 'flag:<id>' (the switch is on), "
     "'!flag:<id>'. A list of conditions means: all must hold. Actions ('do') are a list of objects: {'say': 'text'}, "
     "{'give': '<item id>'}, {'take': '<item id>'} (removes it), {'set': '<flag id>'}, {'clear': '<flag id>'}, "
@@ -1006,7 +1009,7 @@ AI_GUIDE = {
         "emoji": "One emoji for the shelf.",
         "language": "Language of the texts (see the instructions).",
         "start": "The id of the room where the player starts.",
-        "rooms": "The rooms (max. 40).", "items": "The items (max. 60): {'id', 'name', 'icon': 'asset:<id>' or one emoji}.",
+        "rooms": "The rooms (max. 40).", "items": "The items (max. 60): {'id', 'name', 'icon': 'asset:<id>', one emoji or {'svg': …}}.",
         "flags": "The switches (max. 100): {'id', 'name'} – e.g. 'light_on', 'dragon_sleeps'.",
         "endings": "{'id', 'type': 'win' | 'lose', 'text'} – what the player reads at the end.",
         "dialogue": "The dialogue lines (max. 200).", "rules": "Use and combine rules (max. 200).",
@@ -1020,7 +1023,7 @@ AI_GUIDE = {
     },
     "hotspots[]": {
         "id": "Unique in the whole game.", "kind": "'door', 'object' or 'character'.", "name": "Short name, e.g. 'Old chest'.",
-        "box": "[x, y, width, height] in percent of the picture.", "picture": "Optional: 'asset:<id>' or one emoji.",
+        "box": "[x, y, width, height] in percent of the picture.", "picture": "Optional: 'asset:<id>', one emoji or {'svg': '<svg …>'} (see '_svg_rules').",
         "look": "Text when the player looks at it.", "visible_if": "Optional conditions.",
         "goes_to": "Doors: a room id or an ending id.", "needs": "Doors, optional: conditions to open it.",
         "locked_text": "Doors, optional: what the player reads when it is locked.",
@@ -1030,9 +1033,6 @@ AI_GUIDE = {
         "dialogue": "Characters: the id of the first dialogue line.",
     },
 }
-SVG_NOTE = ["An own background is ONE <svg> string with viewBox='0 0 400 300' (landscape 4:3) and single quotes inside, max. "
-            "12 KB, only simple shapes (path, circle, ellipse, rect, polygon, g, gradients). No script, style, image, links or "
-            "external files – they are removed. Paint the whole background; hotspots lie on top of it."]
 
 
 def _cond_out(cond: list[dict], ids: dict) -> list[str]:
@@ -1048,7 +1048,7 @@ def _art_out(p: dict | None) -> str | dict | None:
         return p["v"]
     if p["k"] == "svg":
         return {"svg": p["v"]}
-    return None                                          # own drawings and photos are files of this family
+    return None                                          # photos (and old painted PNG drawings) are files of this family
 
 
 def _bg_out(p: dict | None):
@@ -1062,7 +1062,7 @@ def _bg_out(p: dict | None):
 
 
 def export_game(title: str, emoji: str, lang: str, data: dict) -> dict:
-    """A game in the file format – readable ids; own drawings and photos stay out."""
+    """A game in the file format – readable ids; own drawings (SVG) go along, photos stay out."""
     ids = {"room": {r["id"]: f"room{i + 1}" for i, r in enumerate(data["rooms"])},
            "item": {x["id"]: f"item{i + 1}" for i, x in enumerate(data["items"])},
            "flag": {x["id"]: f"flag{i + 1}" for i, x in enumerate(data["flags"])},
@@ -1116,13 +1116,18 @@ def export_game(title: str, emoji: str, lang: str, data: dict) -> dict:
 
 
 def document(games: list[dict], example: bool = False) -> dict:
-    from .stories import BACKGROUNDS
+    from .stories import BACKGROUNDS, SVG_EXAMPLE_SCENE, SVG_EXAMPLE_THING, svg_rules
     if example:
         t = template("tower", "en")
         games = [export_game(t["title"], t["emoji"], t["lang"], t["data"])]
-    return {"_format": FORMAT, "_ai_instructions": AI_INSTRUCTIONS, "_field_guide": AI_GUIDE, "_svg_rules": SVG_NOTE,
+        g = games[0]
+        if len(g["rooms"]) > 1:                          # an own scene as the background of the second room
+            g["rooms"][1]["background"] = {"svg": SVG_EXAMPLE_SCENE}
+        if g["items"]:                                   # an own drawing as the picture of an item (transparent)
+            g["items"][-1]["icon"] = {"svg": SVG_EXAMPLE_THING}
+    return {"_format": FORMAT, "_ai_instructions": AI_INSTRUCTIONS, "_field_guide": AI_GUIDE, "_svg_rules": svg_rules("game"),
             "_backgrounds": {**BACKGROUNDS, **ROOMS}, "_assets": ASSETS,
-            "_note": "Own drawings and photos are not part of the file – library scenes, SVG, assets and emoji are.", "games": games}
+            "_note": "Own drawings (SVG), library scenes, assets and emoji are part of the file, photos are not.", "games": games}
 
 
 def is_game(doc_format, b: dict) -> bool:
