@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1-beta.11
+
+- «24h Endurance» is back as a short, fast race: short laps with two chicanes (brake before them!), automatic pit stop and driver change after every lap; the pit crew lays out slicks or rain tyres, fills the fuel can and prepares a spare engine after an overheat; day, night and sudden rain; team colour, car number and country; cheering stands, campers with signs and trackside banners
+- Interactive books: adventure books now read like a book with Back and Next – most pages simply go on, a few pages offer choices, one or several (happy) endings; editor with «goes on» / «choice» switch and «+ next page»; two new templates «The princess who didn't want to marry» and «The little fox's birthday»
+- Books and interactive books optimised for phones in portrait (reader and editor)
+
 ## 1.1.1-beta.10
 
 - Own drawings as SVG in books, adventure books and adventure games: a new vector painter (pen, lines, shapes, fill, stamps, gradient backgrounds, move/rotate/scale, layers, undo) for page pictures, backgrounds, rooms, hotspots and items – saved in the book and included in the AI import/export
