@@ -1,0 +1,142 @@
+# Geografie Kanton Thurgau – neun Stationen von leicht bis schwierig (Teil von NMG), jede direkt wählbar.
+# Fakten bitte vor dem Freigeben durch ein Elternteil prüfen. Die Karte zum Antippen folgt in Etappe 5;
+# bis dahin wird mit Drag & Drop (Gemeinde → Bezirk) und Auswahl gelernt.
+id: geo-tg
+titel: Geografie Kanton Thurgau
+fach: nmg
+stufe: 5. Klasse
+version: 2
+quelle: Family Quest (CC0) – Bezirkszuteilung gemäss Gebietsreform 2011, bitte prüfen
+einheiten:
+  - id: bezirke
+    titel: "1 · Die fünf Bezirke"
+    icon: "🗺️"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wie viele Bezirke hat der Kanton Thurgau?", antwort: "5", optionen: ["3", "8", "12"]}
+      - {frage: "In welchem Bezirk liegt der Kantonshauptort Frauenfeld?", antwort: Bezirk Frauenfeld, optionen: [Bezirk Weinfelden, Bezirk Arbon, Bezirk Kreuzlingen]}
+      - {frage: "Welcher Bezirk liegt ganz im Osten am Bodensee?", antwort: Bezirk Arbon, optionen: [Bezirk Frauenfeld, Bezirk Münchwilen, Bezirk Weinfelden]}
+      - {frage: "Welcher Bezirk grenzt an die deutsche Stadt Konstanz?", antwort: Bezirk Kreuzlingen, optionen: [Bezirk Arbon, Bezirk Münchwilen, Bezirk Frauenfeld]}
+      - {frage: "Welcher Bezirk liegt im Süden, im Hinterthurgau?", antwort: Bezirk Münchwilen, optionen: [Bezirk Kreuzlingen, Bezirk Arbon, Bezirk Weinfelden]}
+      - {frage: "Welcher Bezirk liegt in der Mitte des Kantons?", antwort: Bezirk Weinfelden, optionen: [Bezirk Arbon, Bezirk Kreuzlingen, Bezirk Münchwilen]}
+      - {frage: "Welcher Bezirk ist der grösste und liegt im Westen?", antwort: Bezirk Frauenfeld, optionen: [Bezirk Arbon, Bezirk Kreuzlingen, Bezirk Weinfelden]}
+      - {frage: "Wie heisst der Hauptort des Bezirks Weinfelden?", antwort: Weinfelden, optionen: [Bürglen, Bischofszell, Sulgen]}
+  - id: nachbarkantone
+    titel: "2 · Nachbarkantone"
+    icon: "🧭"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Welcher Kanton grenzt im Süden und Osten an den Thurgau?", antwort: St. Gallen, optionen: [Zürich, Schaffhausen, Appenzell]}
+      - {frage: "Welcher Kanton grenzt im Westen an den Thurgau?", antwort: Zürich, optionen: [St. Gallen, Aargau, Schaffhausen]}
+      - {frage: "Welcher Kanton grenzt im Nordwesten an den Thurgau?", antwort: Schaffhausen, optionen: [Zürich, St. Gallen, Basel]}
+      - {frage: "Wie heisst der Hauptort des Kantons Thurgau?", antwort: Frauenfeld, optionen: [Weinfelden, Kreuzlingen, Arbon]}
+  - id: flaggen
+    titel: "3 · Flaggen der Nachbarländer"
+    icon: "🏳️"
+    uebungen: [auswahl, paare, karteikarte]
+    karten:
+      - {frage: "🇨🇭", antwort: Schweiz}
+      - {frage: "🇩🇪", antwort: Deutschland}
+      - {frage: "🇦🇹", antwort: Österreich}
+      - {frage: "🇱🇮", antwort: Liechtenstein}
+      - {frage: "🇫🇷", antwort: Frankreich}
+      - {frage: "🇮🇹", antwort: Italien}
+  - id: nachbarlaender
+    titel: "4 · Nachbarländer und Bodensee"
+    icon: "⛵"
+    uebungen: [auswahl, paare, karteikarte]
+    karten:
+      - {frage: "Land nördlich des Rheins und des Bodensees", antwort: Deutschland, optionen: [Österreich, Frankreich, Liechtenstein]}
+      - {frage: "Land am Ostufer des Bodensees", antwort: Österreich, optionen: [Deutschland, Italien, Liechtenstein]}
+      - {frage: "Deutsche Stadt direkt neben Kreuzlingen", antwort: Konstanz, optionen: [Lindau, Friedrichshafen, Singen]}
+      - {frage: "Österreichische Stadt am Bodensee", antwort: Bregenz, optionen: [Lindau, Konstanz, Innsbruck]}
+      - {frage: "Deutsche Gemüse-Insel im Untersee", antwort: Reichenau, optionen: [Mainau, Lindau, Ufenau]}
+      - {frage: "Deutsches Bundesland an der Grenze zum Thurgau", antwort: Baden-Württemberg, optionen: [Bayern, Hessen, Sachsen]}
+  - id: gewaesser
+    titel: "5 · Gewässer"
+    icon: "🌊"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Welcher Fluss gibt dem Kanton seinen Namen?", antwort: Thur, optionen: [Murg, Sitter, Rhein]}
+      - {frage: "Welcher Fluss fliesst durch Frauenfeld?", antwort: Murg, optionen: [Thur, Sitter, Rhein]}
+      - {frage: "Welcher Fluss bildet bei Diessenhofen die Grenze zu Deutschland?", antwort: Rhein, optionen: [Thur, Murg, Aare]}
+      - {frage: "Welcher grosse See liegt im Norden des Kantons?", antwort: Bodensee, optionen: [Zürichsee, Walensee, Greifensee]}
+      - {frage: "Wie heisst der westliche Teil des Bodensees bei Steckborn?", antwort: Untersee, optionen: [Obersee, Überlinger See, Zellersee]}
+      - {frage: "Welcher Fluss mündet bei Bischofszell in die Thur?", antwort: Sitter, optionen: [Murg, Lauche, Rhein]}
+      - {frage: "In welchen Fluss mündet die Thur?", antwort: Rhein, optionen: [Aare, Limmat, Murg]}
+  - id: wappen
+    titel: "6 · Wappen und Fahne des Thurgaus"
+    icon: "🦁"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Welche Tiere sind im Thurgauer Wappen?", antwort: zwei Löwen, optionen: [ein Bär, zwei Steinböcke, ein Adler]}
+      - {frage: "Welche Farben hat die Thurgauer Fahne?", antwort: Grün und Weiss, optionen: [Rot und Weiss, Blau und Weiss, Gelb und Schwarz]}
+      - {frage: "Welche Farbe haben die Löwen im Thurgauer Wappen?", antwort: Gelb, optionen: [Rot, Schwarz, Weiss]}
+      - {frage: "Seit wann ist der Thurgau ein eigener Kanton?", antwort: "1803", optionen: ["1291", "1848", "1798"]}
+  - id: schloesser
+    titel: "7 · Schlösser"
+    icon: "🏰"
+    uebungen: [auswahl, paare, karteikarte]
+    karten:
+      - {frage: Schloss Arenenberg, antwort: Salenstein, hinweis: "Napoleonmuseum"}
+      - {frage: Schloss Frauenfeld, antwort: Frauenfeld}
+      - {frage: Schloss Arbon, antwort: Arbon}
+      - {frage: Wasserschloss Hagenwil, antwort: Amriswil}
+      - {frage: Schloss Sonnenberg, antwort: Stettfurt}
+      - {frage: Schloss Weinfelden, antwort: Weinfelden}
+      - {frage: Schloss Bürglen, antwort: Bürglen}
+      - {frage: Schloss Gottlieben, antwort: Gottlieben}
+  - id: orte
+    titel: "8 · Grosse Orte den Bezirken zuordnen"
+    icon: "🏘️"
+    uebungen: [zuordnen]
+    karten:
+      - {frage: Arbon, antwort: Bezirk Arbon}
+      - {frage: Romanshorn, antwort: Bezirk Arbon}
+      - {frage: Amriswil, antwort: Bezirk Arbon}
+      - {frage: Frauenfeld, antwort: Bezirk Frauenfeld}
+      - {frage: Diessenhofen, antwort: Bezirk Frauenfeld}
+      - {frage: Steckborn, antwort: Bezirk Frauenfeld}
+      - {frage: Kreuzlingen, antwort: Bezirk Kreuzlingen}
+      - {frage: Ermatingen, antwort: Bezirk Kreuzlingen}
+      - {frage: Münchwilen, antwort: Bezirk Münchwilen}
+      - {frage: Sirnach, antwort: Bezirk Münchwilen}
+      - {frage: Aadorf, antwort: Bezirk Münchwilen}
+      - {frage: Weinfelden, antwort: Bezirk Weinfelden}
+      - {frage: Bischofszell, antwort: Bezirk Weinfelden}
+      - {frage: Sulgen, antwort: Bezirk Weinfelden}
+  - id: gemeinden
+    titel: "9 · Alle Gemeinden zuordnen (schwierig)"
+    icon: "🏆"
+    uebungen: [zuordnen]
+    karten:
+      - {frage: Arbon, antwort: Bezirk Arbon}
+      - {frage: Romanshorn, antwort: Bezirk Arbon}
+      - {frage: Amriswil, antwort: Bezirk Arbon}
+      - {frage: Egnach, antwort: Bezirk Arbon}
+      - {frage: Horn, antwort: Bezirk Arbon}
+      - {frage: Uttwil, antwort: Bezirk Arbon}
+      - {frage: Frauenfeld, antwort: Bezirk Frauenfeld}
+      - {frage: Diessenhofen, antwort: Bezirk Frauenfeld}
+      - {frage: Steckborn, antwort: Bezirk Frauenfeld}
+      - {frage: Eschenz, antwort: Bezirk Frauenfeld}
+      - {frage: Matzingen, antwort: Bezirk Frauenfeld}
+      - {frage: Pfyn, antwort: Bezirk Frauenfeld}
+      - {frage: Kreuzlingen, antwort: Bezirk Kreuzlingen}
+      - {frage: Tägerwilen, antwort: Bezirk Kreuzlingen}
+      - {frage: Ermatingen, antwort: Bezirk Kreuzlingen}
+      - {frage: Gottlieben, antwort: Bezirk Kreuzlingen}
+      - {frage: Münsterlingen, antwort: Bezirk Kreuzlingen}
+      - {frage: Altnau, antwort: Bezirk Kreuzlingen}
+      - {frage: Münchwilen, antwort: Bezirk Münchwilen}
+      - {frage: Sirnach, antwort: Bezirk Münchwilen}
+      - {frage: Aadorf, antwort: Bezirk Münchwilen}
+      - {frage: Eschlikon, antwort: Bezirk Münchwilen}
+      - {frage: Fischingen, antwort: Bezirk Münchwilen}
+      - {frage: Wängi, antwort: Bezirk Münchwilen}
+      - {frage: Weinfelden, antwort: Bezirk Weinfelden}
+      - {frage: Bischofszell, antwort: Bezirk Weinfelden}
+      - {frage: Bürglen, antwort: Bezirk Weinfelden}
+      - {frage: Sulgen, antwort: Bezirk Weinfelden}
+      - {frage: Berg, antwort: Bezirk Weinfelden}
+      - {frage: Märstetten, antwort: Bezirk Weinfelden}

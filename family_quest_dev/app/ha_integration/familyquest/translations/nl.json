@@ -1,0 +1,185 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Family Quest",
+        "description": "Verbind de Family Quest-app. In Family Quest: Oudergedeelte › Instellingen › «Family Quest HA-integratie» – inschakelen en het token kopiëren.",
+        "data": {
+          "url": "Adres van de Family Quest-app",
+          "token": "Integratietoken"
+        },
+        "data_description": {
+          "url": "In Home Assistant OS: http://<hostnaam van de add-on>:8099 (voorgesteld).",
+          "token": "Wordt één keer getoond in het oudergedeelte van Family Quest (begint met fqi_)."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Nieuw integratietoken",
+        "description": "Het token is geweigerd. Maak een nieuw token in Family Quest (Oudergedeelte › Instellingen › «Family Quest HA-integratie») en plak het hier.",
+        "data": {
+          "token": "Integratietoken"
+        },
+        "data_description": {
+          "token": "Wordt één keer getoond in het oudergedeelte van Family Quest (begint met fqi_)."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Verkeerd token, of de integratie is uitgeschakeld in Family Quest.",
+      "cannot_connect": "Family Quest is op dit adres niet bereikbaar."
+    },
+    "abort": {
+      "already_configured": "Deze Family Quest is al ingesteld.",
+      "reauth_successful": "Het nieuwe token werkt."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "xp_today": {
+        "name": "XP vandaag"
+      },
+      "total_xp": {
+        "name": "Totaal XP"
+      },
+      "level": {
+        "name": "Level"
+      },
+      "streak": {
+        "name": "Reeks"
+      },
+      "goal_progress": {
+        "name": "Voortgang dagdoel"
+      },
+      "chores_open": {
+        "name": "Open klusjes"
+      },
+      "lessons_today": {
+        "name": "Lessen vandaag"
+      },
+      "internet_minutes": {
+        "name": "Resterende internetminuten"
+      },
+      "game_time_left": {
+        "name": "Resterende speeltijd vandaag"
+      },
+      "learn_time_left": {
+        "name": "Resterende leertijd vandaag"
+      },
+      "family_total_xp": {
+        "name": "Totaal XP van het gezin"
+      },
+      "family_xp_today": {
+        "name": "XP van het gezin vandaag"
+      },
+      "running_games": {
+        "name": "Lopende spellen"
+      },
+      "open_votes": {
+        "name": "Open stemmingen en peilingen"
+      },
+      "pending_approvals": {
+        "name": "Wacht op goedkeuring"
+      },
+      "balance": {
+        "name": "{account}"
+      },
+      "balance_coins": {
+        "name": "Munten"
+      },
+      "balance_internet": {
+        "name": "Internetminuten"
+      }
+    },
+    "binary_sensor": {
+      "goal_met": {
+        "name": "Dagdoel gehaald"
+      },
+      "internet_blocked": {
+        "name": "Internet geblokkeerd"
+      },
+      "game_time_used_up": {
+        "name": "Speeltijd op"
+      },
+      "offline_time": {
+        "name": "OfflineTime"
+      }
+    },
+    "switch": {
+      "internet": {
+        "name": "Internet"
+      }
+    }
+  },
+  "services": {
+    "add_points": {
+      "name": "Punten toevoegen",
+      "description": "Punten (of een correctie) boeken voor een kind, zoals «Punten boeken» in het oudergedeelte.",
+      "fields": {
+        "child": {
+          "name": "Kind",
+          "description": "Naam of id van het kind."
+        },
+        "account": {
+          "name": "Rekening",
+          "description": "Sleutel van de rekening, bijv. coins of internet."
+        },
+        "amount": {
+          "name": "Aantal",
+          "description": "Toe te voegen punten (negatief om er af te halen)."
+        },
+        "reason": {
+          "name": "Reden",
+          "description": "Wordt getoond in de geschiedenis van het kind."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Alleen nodig als er meer dan één Family Quest is ingesteld."
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Klusje goedkeuren",
+      "description": "Een klusje dat op goedkeuring wacht bevestigen (of terugsturen met approve: false).",
+      "fields": {
+        "task_id": {
+          "name": "Taak-id",
+          "description": "task_id uit het attribuut `chores` van «Wacht op goedkeuring»."
+        },
+        "approve": {
+          "name": "Goedkeuren",
+          "description": "true = klaar, false = opnieuw doen."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Alleen nodig als er meer dan één Family Quest is ingesteld."
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Beloning goedkeuren",
+      "description": "Een beloning die een kind wil inwisselen goedkeuren of weigeren.",
+      "fields": {
+        "redemption_id": {
+          "name": "Inwissel-id",
+          "description": "redemption_id uit het attribuut `rewards` van «Wacht op goedkeuring»."
+        },
+        "approve": {
+          "name": "Goedkeuren",
+          "description": "true = klaar, false = opnieuw doen."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Alleen nodig als er meer dan één Family Quest is ingesteld."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "Family Quest is niet ingesteld of niet geladen."
+    },
+    "several_entries": {
+      "message": "Er is meer dan één Family Quest ingesteld – kies er een met config_entry_id."
+    }
+  }
+}

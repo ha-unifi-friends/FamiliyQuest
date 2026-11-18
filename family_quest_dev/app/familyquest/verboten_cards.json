@@ -1,0 +1,3729 @@
+{
+ "_about": "Verbotene Wörter (verboten.py): the built-in word cards – a word to explain and 5 words that must not be said. English source texts: the word and its forbidden words joined with ' · ' are keys of web/i18n/<lang>.json (tools/i18n_extract.py reads this file), so every language has its own obvious associations. Levels: easy (younger children), normal. The order must stay: running tables keep cards by their index.",
+ "levels": {
+  "easy": [
+   {
+    "word": "Dog",
+    "taboo": [
+     "bark",
+     "cat",
+     "pet",
+     "leash",
+     "bone"
+    ]
+   },
+   {
+    "word": "Cat",
+    "taboo": [
+     "meow",
+     "mouse",
+     "pet",
+     "dog",
+     "whiskers"
+    ]
+   },
+   {
+    "word": "Elephant",
+    "taboo": [
+     "trunk",
+     "big",
+     "grey",
+     "Africa",
+     "zoo"
+    ]
+   },
+   {
+    "word": "Giraffe",
+    "taboo": [
+     "neck",
+     "long",
+     "spots",
+     "Africa",
+     "zoo"
+    ]
+   },
+   {
+    "word": "Lion",
+    "taboo": [
+     "king",
+     "mane",
+     "big cat",
+     "roar",
+     "Africa"
+    ]
+   },
+   {
+    "word": "Penguin",
+    "taboo": [
+     "ice",
+     "bird",
+     "black",
+     "white",
+     "waddle"
+    ]
+   },
+   {
+    "word": "Frog",
+    "taboo": [
+     "croak",
+     "green",
+     "pond",
+     "jump",
+     "prince"
+    ]
+   },
+   {
+    "word": "Bee",
+    "taboo": [
+     "honey",
+     "buzz",
+     "sting",
+     "yellow",
+     "flower"
+    ]
+   },
+   {
+    "word": "Butterfly",
+    "taboo": [
+     "wings",
+     "colourful",
+     "caterpillar",
+     "fly",
+     "flower"
+    ]
+   },
+   {
+    "word": "Snail",
+    "taboo": [
+     "slow",
+     "shell",
+     "slimy",
+     "lettuce",
+     "crawl"
+    ]
+   },
+   {
+    "word": "Fish",
+    "taboo": [
+     "water",
+     "swim",
+     "fin",
+     "aquarium",
+     "sea"
+    ]
+   },
+   {
+    "word": "Horse",
+    "taboo": [
+     "ride",
+     "saddle",
+     "neigh",
+     "stable",
+     "hooves"
+    ]
+   },
+   {
+    "word": "Cow",
+    "taboo": [
+     "milk",
+     "moo",
+     "farm",
+     "pasture",
+     "calf"
+    ]
+   },
+   {
+    "word": "Pig",
+    "taboo": [
+     "pink",
+     "oink",
+     "curly tail",
+     "farm",
+     "mud"
+    ]
+   },
+   {
+    "word": "Rabbit",
+    "taboo": [
+     "ears",
+     "Easter",
+     "carrot",
+     "hop",
+     "hare"
+    ]
+   },
+   {
+    "word": "Mouse",
+    "taboo": [
+     "cheese",
+     "small",
+     "cat",
+     "squeak",
+     "computer"
+    ]
+   },
+   {
+    "word": "Owl",
+    "taboo": [
+     "night",
+     "bird",
+     "eagle owl",
+     "eyes",
+     "feathers"
+    ]
+   },
+   {
+    "word": "Monkey",
+    "taboo": [
+     "banana",
+     "climb",
+     "tree",
+     "zoo",
+     "jungle"
+    ]
+   },
+   {
+    "word": "Crocodile",
+    "taboo": [
+     "teeth",
+     "river",
+     "green",
+     "reptile",
+     "dangerous"
+    ]
+   },
+   {
+    "word": "Snake",
+    "taboo": [
+     "hiss",
+     "long",
+     "poisonous",
+     "slither",
+     "reptile"
+    ]
+   },
+   {
+    "word": "Shark",
+    "taboo": [
+     "sea",
+     "teeth",
+     "fin",
+     "dangerous",
+     "fish"
+    ]
+   },
+   {
+    "word": "Hedgehog",
+    "taboo": [
+     "spines",
+     "autumn",
+     "leaves",
+     "roll up",
+     "small"
+    ]
+   },
+   {
+    "word": "Bear",
+    "taboo": [
+     "honey",
+     "teddy",
+     "brown",
+     "forest",
+     "cave"
+    ]
+   },
+   {
+    "word": "Rooster",
+    "taboo": [
+     "cock-a-doodle-doo",
+     "hen",
+     "morning",
+     "farm",
+     "comb"
+    ]
+   },
+   {
+    "word": "Duck",
+    "taboo": [
+     "quack",
+     "pond",
+     "beak",
+     "bird",
+     "swim"
+    ]
+   },
+   {
+    "word": "Ladybird",
+    "taboo": [
+     "dots",
+     "red",
+     "luck",
+     "beetle",
+     "crawl"
+    ]
+   },
+   {
+    "word": "Spider",
+    "taboo": [
+     "web",
+     "eight",
+     "legs",
+     "crawl",
+     "fear"
+    ]
+   },
+   {
+    "word": "Hamster",
+    "taboo": [
+     "cage",
+     "wheel",
+     "rodent",
+     "small",
+     "pet"
+    ]
+   },
+   {
+    "word": "Parrot",
+    "taboo": [
+     "bird",
+     "colourful",
+     "talk",
+     "repeat",
+     "feathers"
+    ]
+   },
+   {
+    "word": "Camel",
+    "taboo": [
+     "desert",
+     "hump",
+     "thirst",
+     "dromedary",
+     "ride"
+    ]
+   },
+   {
+    "word": "Zebra",
+    "taboo": [
+     "stripes",
+     "black",
+     "white",
+     "horse",
+     "Africa"
+    ]
+   },
+   {
+    "word": "Ant",
+    "taboo": [
+     "small",
+     "anthill",
+     "crawl",
+     "insect",
+     "hard-working"
+    ]
+   },
+   {
+    "word": "Apple",
+    "taboo": [
+     "tree",
+     "red",
+     "fruit",
+     "pear",
+     "core"
+    ]
+   },
+   {
+    "word": "Banana",
+    "taboo": [
+     "yellow",
+     "curved",
+     "monkey",
+     "fruit",
+     "peel"
+    ]
+   },
+   {
+    "word": "Strawberry",
+    "taboo": [
+     "red",
+     "summer",
+     "fruit",
+     "berry",
+     "jam"
+    ]
+   },
+   {
+    "word": "Pizza",
+    "taboo": [
+     "Italy",
+     "dough",
+     "cheese",
+     "tomato",
+     "oven"
+    ]
+   },
+   {
+    "word": "Spaghetti",
+    "taboo": [
+     "noodles",
+     "tomato sauce",
+     "Italy",
+     "long",
+     "fork"
+    ]
+   },
+   {
+    "word": "Ice cream",
+    "taboo": [
+     "summer",
+     "cold",
+     "cone",
+     "scoop",
+     "lick"
+    ]
+   },
+   {
+    "word": "Chocolate",
+    "taboo": [
+     "brown",
+     "sweet",
+     "cocoa",
+     "bar",
+     "treat"
+    ]
+   },
+   {
+    "word": "Cake",
+    "taboo": [
+     "birthday",
+     "bake",
+     "icing",
+     "sweet",
+     "slice"
+    ]
+   },
+   {
+    "word": "Bread",
+    "taboo": [
+     "baker",
+     "bake",
+     "slice",
+     "butter",
+     "flour"
+    ]
+   },
+   {
+    "word": "Cheese",
+    "taboo": [
+     "holes",
+     "milk",
+     "yellow",
+     "mouse",
+     "fondue"
+    ]
+   },
+   {
+    "word": "Egg",
+    "taboo": [
+     "hen",
+     "Easter",
+     "shell",
+     "yolk",
+     "boil"
+    ]
+   },
+   {
+    "word": "Carrot",
+    "taboo": [
+     "orange",
+     "vegetable",
+     "rabbit",
+     "root",
+     "healthy"
+    ]
+   },
+   {
+    "word": "Milk",
+    "taboo": [
+     "cow",
+     "white",
+     "drink",
+     "glass",
+     "cocoa"
+    ]
+   },
+   {
+    "word": "Popcorn",
+    "taboo": [
+     "cinema",
+     "corn",
+     "pop",
+     "salty",
+     "sweet"
+    ]
+   },
+   {
+    "word": "Honey",
+    "taboo": [
+     "bee",
+     "sweet",
+     "yellow",
+     "sticky",
+     "bread"
+    ]
+   },
+   {
+    "word": "Tomato",
+    "taboo": [
+     "red",
+     "vegetable",
+     "salad",
+     "ketchup",
+     "sauce"
+    ]
+   },
+   {
+    "word": "Lemon",
+    "taboo": [
+     "sour",
+     "yellow",
+     "fruit",
+     "juice",
+     "lemonade"
+    ]
+   },
+   {
+    "word": "Watermelon",
+    "taboo": [
+     "green",
+     "red",
+     "seeds",
+     "summer",
+     "big"
+    ]
+   },
+   {
+    "word": "Ball",
+    "taboo": [
+     "round",
+     "play",
+     "football",
+     "throw",
+     "kick"
+    ]
+   },
+   {
+    "word": "Doll",
+    "taboo": [
+     "play",
+     "toy",
+     "hair",
+     "dresses",
+     "baby"
+    ]
+   },
+   {
+    "word": "Teddy bear",
+    "taboo": [
+     "cuddle",
+     "soft toy",
+     "bear",
+     "bed",
+     "soft"
+    ]
+   },
+   {
+    "word": "Bed",
+    "taboo": [
+     "sleep",
+     "pillow",
+     "blanket",
+     "night",
+     "lie"
+    ]
+   },
+   {
+    "word": "Chair",
+    "taboo": [
+     "sit",
+     "table",
+     "legs",
+     "backrest",
+     "furniture"
+    ]
+   },
+   {
+    "word": "Table (furniture)",
+    "taboo": [
+     "eat",
+     "chair",
+     "legs",
+     "top",
+     "furniture"
+    ]
+   },
+   {
+    "word": "Lamp",
+    "taboo": [
+     "light",
+     "bright",
+     "light bulb",
+     "electricity",
+     "switch"
+    ]
+   },
+   {
+    "word": "Television",
+    "taboo": [
+     "watch",
+     "film",
+     "screen",
+     "programme",
+     "remote control"
+    ]
+   },
+   {
+    "word": "Telephone",
+    "taboo": [
+     "call",
+     "mobile phone",
+     "talk",
+     "ring",
+     "number"
+    ]
+   },
+   {
+    "word": "Clock",
+    "taboo": [
+     "time",
+     "hands",
+     "tick",
+     "hour",
+     "wristband"
+    ]
+   },
+   {
+    "word": "Key",
+    "taboo": [
+     "lock",
+     "door",
+     "unlock",
+     "bunch",
+     "lose"
+    ]
+   },
+   {
+    "word": "Door",
+    "taboo": [
+     "open",
+     "close",
+     "house",
+     "handle",
+     "key"
+    ]
+   },
+   {
+    "word": "Window",
+    "taboo": [
+     "glass",
+     "view",
+     "open",
+     "house",
+     "curtain"
+    ]
+   },
+   {
+    "word": "Toothbrush",
+    "taboo": [
+     "teeth",
+     "brush",
+     "toothpaste",
+     "bathroom",
+     "morning"
+    ]
+   },
+   {
+    "word": "Soap",
+    "taboo": [
+     "wash",
+     "hands",
+     "foam",
+     "clean",
+     "bathroom"
+    ]
+   },
+   {
+    "word": "Towel",
+    "taboo": [
+     "dry",
+     "bathroom",
+     "wet",
+     "shower",
+     "fabric"
+    ]
+   },
+   {
+    "word": "Umbrella",
+    "taboo": [
+     "rain",
+     "wet",
+     "open up",
+     "weather",
+     "carry"
+    ]
+   },
+   {
+    "word": "Shoe",
+    "taboo": [
+     "foot",
+     "walk",
+     "shoelace",
+     "pair",
+     "sock"
+    ]
+   },
+   {
+    "word": "Woolly hat",
+    "taboo": [
+     "head",
+     "winter",
+     "warm",
+     "wool",
+     "hat"
+    ]
+   },
+   {
+    "word": "Glasses",
+    "taboo": [
+     "eyes",
+     "see",
+     "lenses",
+     "nose",
+     "optician"
+    ]
+   },
+   {
+    "word": "Backpack",
+    "taboo": [
+     "school",
+     "carry",
+     "back",
+     "bag",
+     "pack"
+    ]
+   },
+   {
+    "word": "Scissors",
+    "taboo": [
+     "cut",
+     "paper",
+     "craft",
+     "sharp",
+     "blade"
+    ]
+   },
+   {
+    "word": "Pencil",
+    "taboo": [
+     "write",
+     "draw",
+     "sharpener",
+     "eraser",
+     "wood"
+    ]
+   },
+   {
+    "word": "Book (to read)",
+    "taboo": [
+     "read",
+     "pages",
+     "story",
+     "library",
+     "author"
+    ]
+   },
+   {
+    "word": "Car",
+    "taboo": [
+     "drive",
+     "wheels",
+     "road",
+     "engine",
+     "steering wheel"
+    ]
+   },
+   {
+    "word": "Bicycle",
+    "taboo": [
+     "bike",
+     "ride",
+     "pedals",
+     "helmet",
+     "handlebars"
+    ]
+   },
+   {
+    "word": "Train",
+    "taboo": [
+     "station",
+     "tracks",
+     "locomotive",
+     "carriage",
+     "ride"
+    ]
+   },
+   {
+    "word": "Airplane",
+    "taboo": [
+     "fly",
+     "pilot",
+     "airport",
+     "wings",
+     "sky"
+    ]
+   },
+   {
+    "word": "Ship",
+    "taboo": [
+     "sea",
+     "water",
+     "captain",
+     "harbour",
+     "boat"
+    ]
+   },
+   {
+    "word": "Bus",
+    "taboo": [
+     "drive",
+     "bus stop",
+     "school",
+     "driver",
+     "line"
+    ]
+   },
+   {
+    "word": "Fire brigade",
+    "taboo": [
+     "fire",
+     "put out",
+     "water",
+     "red",
+     "ladder"
+    ]
+   },
+   {
+    "word": "Police",
+    "taboo": [
+     "criminal",
+     "blue light",
+     "uniform",
+     "thief",
+     "siren"
+    ]
+   },
+   {
+    "word": "Rocket",
+    "taboo": [
+     "space",
+     "fly",
+     "moon",
+     "astronaut",
+     "launch"
+    ]
+   },
+   {
+    "word": "Sun (in the sky)",
+    "taboo": [
+     "bright",
+     "yellow",
+     "warm",
+     "sky",
+     "shine"
+    ]
+   },
+   {
+    "word": "Moon",
+    "taboo": [
+     "night",
+     "sky",
+     "stars",
+     "round",
+     "crescent"
+    ]
+   },
+   {
+    "word": "Star",
+    "taboo": [
+     "sky",
+     "night",
+     "glow",
+     "points",
+     "twinkle"
+    ]
+   },
+   {
+    "word": "Rainbow",
+    "taboo": [
+     "colours",
+     "shower",
+     "sun",
+     "colourful",
+     "sky"
+    ]
+   },
+   {
+    "word": "Snow",
+    "taboo": [
+     "winter",
+     "white",
+     "cold",
+     "flakes",
+     "sledge"
+    ]
+   },
+   {
+    "word": "Rain",
+    "taboo": [
+     "wet",
+     "clouds",
+     "drops",
+     "umbrella",
+     "weather"
+    ]
+   },
+   {
+    "word": "Thunderstorm",
+    "taboo": [
+     "lightning",
+     "thunder",
+     "rain",
+     "loud",
+     "clouds"
+    ]
+   },
+   {
+    "word": "Cloud",
+    "taboo": [
+     "sky",
+     "white",
+     "rain",
+     "grey",
+     "float"
+    ]
+   },
+   {
+    "word": "Tree",
+    "taboo": [
+     "leaves",
+     "forest",
+     "trunk",
+     "branches",
+     "wood"
+    ]
+   },
+   {
+    "word": "Flower",
+    "taboo": [
+     "blossom",
+     "garden",
+     "smell",
+     "rose",
+     "water"
+    ]
+   },
+   {
+    "word": "Forest",
+    "taboo": [
+     "trees",
+     "animals",
+     "forester",
+     "walk",
+     "green"
+    ]
+   },
+   {
+    "word": "Sea",
+    "taboo": [
+     "water",
+     "salty",
+     "beach",
+     "waves",
+     "ocean"
+    ]
+   },
+   {
+    "word": "Beach",
+    "taboo": [
+     "sand",
+     "sea",
+     "holidays",
+     "shells",
+     "swim"
+    ]
+   },
+   {
+    "word": "Mountain",
+    "taboo": [
+     "high",
+     "hike",
+     "summit",
+     "Alps",
+     "climb"
+    ]
+   },
+   {
+    "word": "Island",
+    "taboo": [
+     "water",
+     "sea",
+     "palm tree",
+     "surrounded",
+     "treasure"
+    ]
+   },
+   {
+    "word": "School",
+    "taboo": [
+     "learn",
+     "teacher",
+     "class",
+     "homework",
+     "break"
+    ]
+   },
+   {
+    "word": "Birthday",
+    "taboo": [
+     "cake",
+     "presents",
+     "party",
+     "candles",
+     "older"
+    ]
+   },
+   {
+    "word": "Christmas",
+    "taboo": [
+     "tree",
+     "presents",
+     "December",
+     "Santa",
+     "Advent"
+    ]
+   },
+   {
+    "word": "Easter",
+    "taboo": [
+     "bunny",
+     "eggs",
+     "spring",
+     "search",
+     "chocolate"
+    ]
+   },
+   {
+    "word": "Present (gift)",
+    "taboo": [
+     "birthday",
+     "unwrap",
+     "paper",
+     "bow",
+     "surprise"
+    ]
+   },
+   {
+    "word": "Holidays",
+    "taboo": [
+     "school",
+     "free",
+     "vacation",
+     "trip",
+     "summer"
+    ]
+   },
+   {
+    "word": "Zoo",
+    "taboo": [
+     "animals",
+     "enclosure",
+     "keeper",
+     "monkeys",
+     "visit"
+    ]
+   },
+   {
+    "word": "Playground",
+    "taboo": [
+     "slide",
+     "swing",
+     "sandpit",
+     "children",
+     "play"
+    ]
+   },
+   {
+    "word": "Swing",
+    "taboo": [
+     "back",
+     "forth",
+     "playground",
+     "sit",
+     "high"
+    ]
+   },
+   {
+    "word": "Slide (playground)",
+    "taboo": [
+     "glide",
+     "playground",
+     "down",
+     "ladder",
+     "water"
+    ]
+   },
+   {
+    "word": "Dentist",
+    "taboo": [
+     "teeth",
+     "drill",
+     "hole",
+     "practice",
+     "tooth decay"
+    ]
+   },
+   {
+    "word": "Doctor",
+    "taboo": [
+     "sick",
+     "surgery",
+     "medicine",
+     "nurse",
+     "injection"
+    ]
+   },
+   {
+    "word": "Teacher",
+    "taboo": [
+     "school",
+     "teach",
+     "class",
+     "blackboard",
+     "pupils"
+    ]
+   },
+   {
+    "word": "Cook",
+    "taboo": [
+     "kitchen",
+     "stove",
+     "food",
+     "hat",
+     "restaurant"
+    ]
+   },
+   {
+    "word": "Farmer",
+    "taboo": [
+     "farm",
+     "tractor",
+     "field",
+     "cows",
+     "harvest"
+    ]
+   },
+   {
+    "word": "Pirate",
+    "taboo": [
+     "ship",
+     "treasure",
+     "eye patch",
+     "sea",
+     "sabre"
+    ]
+   },
+   {
+    "word": "Princess",
+    "taboo": [
+     "crown",
+     "castle",
+     "king",
+     "prince",
+     "dress"
+    ]
+   },
+   {
+    "word": "Witch",
+    "taboo": [
+     "broom",
+     "magic",
+     "hat",
+     "fairy tale",
+     "evil"
+    ]
+   },
+   {
+    "word": "Magician",
+    "taboo": [
+     "wand",
+     "hat",
+     "trick",
+     "rabbit",
+     "abracadabra"
+    ]
+   },
+   {
+    "word": "Knight",
+    "taboo": [
+     "armour",
+     "castle",
+     "sword",
+     "horse",
+     "Middle Ages"
+    ]
+   },
+   {
+    "word": "Dragon",
+    "taboo": [
+     "fire",
+     "fly",
+     "fairy tale",
+     "scales",
+     "knight"
+    ]
+   },
+   {
+    "word": "Ghost",
+    "taboo": [
+     "spirit",
+     "haunt",
+     "white",
+     "sheet",
+     "scary"
+    ]
+   },
+   {
+    "word": "Snowman",
+    "taboo": [
+     "snow",
+     "carrot",
+     "winter",
+     "balls",
+     "build"
+    ]
+   },
+   {
+    "word": "Sandcastle",
+    "taboo": [
+     "beach",
+     "build",
+     "spade",
+     "bucket",
+     "sea"
+    ]
+   },
+   {
+    "word": "Kitchen",
+    "taboo": [
+     "cook",
+     "stove",
+     "room",
+     "food",
+     "fridge"
+    ]
+   },
+   {
+    "word": "Fridge",
+    "taboo": [
+     "cold",
+     "kitchen",
+     "food",
+     "cool",
+     "door"
+    ]
+   },
+   {
+    "word": "Bathtub",
+    "taboo": [
+     "bath",
+     "water",
+     "foam",
+     "soap",
+     "duck"
+    ]
+   },
+   {
+    "word": "Football",
+    "taboo": [
+     "goal",
+     "ball",
+     "kick",
+     "team",
+     "referee"
+    ]
+   },
+   {
+    "word": "Public pool",
+    "taboo": [
+     "water",
+     "swim",
+     "swimsuit",
+     "diving board",
+     "lanes"
+    ]
+   },
+   {
+    "word": "Candle",
+    "taboo": [
+     "light",
+     "wax",
+     "flame",
+     "light up",
+     "wick"
+    ]
+   },
+   {
+    "word": "Balloon",
+    "taboo": [
+     "air",
+     "blow up",
+     "burst",
+     "party",
+     "gas"
+    ]
+   },
+   {
+    "word": "Crown",
+    "taboo": [
+     "king",
+     "head",
+     "gold",
+     "queen",
+     "gems"
+    ]
+   },
+   {
+    "word": "Tent",
+    "taboo": [
+     "camping",
+     "sleep",
+     "outside",
+     "tent pegs",
+     "sleeping bag"
+    ]
+   },
+   {
+    "word": "Fire",
+    "taboo": [
+     "hot",
+     "burn",
+     "flame",
+     "wood",
+     "smoke"
+    ]
+   },
+   {
+    "word": "Cinema",
+    "taboo": [
+     "film",
+     "popcorn",
+     "screen",
+     "seat",
+     "ticket"
+    ]
+   },
+   {
+    "word": "Computer",
+    "taboo": [
+     "keyboard",
+     "mouse",
+     "screen",
+     "internet",
+     "laptop"
+    ]
+   },
+   {
+    "word": "Dice",
+    "taboo": [
+     "dots",
+     "six",
+     "throw",
+     "game",
+     "number"
+    ]
+   },
+   {
+    "word": "Pillow",
+    "taboo": [
+     "head",
+     "bed",
+     "soft",
+     "sleep",
+     "feathers"
+    ]
+   },
+   {
+    "word": "Tooth",
+    "taboo": [
+     "mouth",
+     "bite",
+     "dentist",
+     "wobbly",
+     "brush"
+    ]
+   },
+   {
+    "word": "Nose",
+    "taboo": [
+     "smell",
+     "face",
+     "cold",
+     "blow",
+     "nostril"
+    ]
+   },
+   {
+    "word": "Ear",
+    "taboo": [
+     "hear",
+     "head",
+     "two",
+     "earring",
+     "music"
+    ]
+   },
+   {
+    "word": "Hand",
+    "taboo": [
+     "finger",
+     "five",
+     "grab",
+     "arm",
+     "wave"
+    ]
+   },
+   {
+    "word": "Castle (fortress)",
+    "taboo": [
+     "knight",
+     "walls",
+     "tower",
+     "Middle Ages",
+     "palace"
+    ]
+   },
+   {
+    "word": "Trampoline",
+    "taboo": [
+     "jump",
+     "bounce",
+     "high",
+     "net",
+     "garden"
+    ]
+   },
+   {
+    "word": "Hat",
+    "taboo": [
+     "head",
+     "wear",
+     "woolly hat",
+     "sun",
+     "magician"
+    ]
+   },
+   {
+    "word": "Sunglasses",
+    "taboo": [
+     "eyes",
+     "dark",
+     "summer",
+     "beach",
+     "bright"
+    ]
+   },
+   {
+    "word": "Hot dog",
+    "taboo": [
+     "sausage",
+     "bun",
+     "mustard",
+     "ketchup",
+     "America"
+    ]
+   },
+   {
+    "word": "Lollipop",
+    "taboo": [
+     "stick",
+     "sweet",
+     "lick",
+     "sugar",
+     "candy"
+    ]
+   },
+   {
+    "word": "Hot chocolate",
+    "taboo": [
+     "cocoa",
+     "milk",
+     "drink",
+     "mug",
+     "winter"
+    ]
+   },
+   {
+    "word": "Torch",
+    "taboo": [
+     "light",
+     "dark",
+     "battery",
+     "shine",
+     "night"
+    ]
+   },
+   {
+    "word": "Plaster (for a cut)",
+    "taboo": [
+     "wound",
+     "stick",
+     "injury",
+     "knee",
+     "blood"
+    ]
+   },
+   {
+    "word": "Laughing",
+    "taboo": [
+     "funny",
+     "joke",
+     "joy",
+     "giggle",
+     "fun"
+    ]
+   },
+   {
+    "word": "Yawning",
+    "taboo": [
+     "tired",
+     "mouth",
+     "sleep",
+     "open",
+     "boring"
+    ]
+   },
+   {
+    "word": "Tickling",
+    "taboo": [
+     "laugh",
+     "feet",
+     "fingers",
+     "giggle",
+     "tummy"
+    ]
+   }
+  ],
+  "normal": [
+   {
+    "word": "Library",
+    "taboo": [
+     "books",
+     "borrow",
+     "read",
+     "quiet",
+     "shelf"
+    ]
+   },
+   {
+    "word": "Museum",
+    "taboo": [
+     "exhibition",
+     "pictures",
+     "old",
+     "visit",
+     "art"
+    ]
+   },
+   {
+    "word": "Hospital",
+    "taboo": [
+     "sick",
+     "doctor",
+     "care",
+     "operation",
+     "clinic"
+    ]
+   },
+   {
+    "word": "Airport",
+    "taboo": [
+     "plane",
+     "suitcase",
+     "take off",
+     "trip",
+     "pilot"
+    ]
+   },
+   {
+    "word": "Train station",
+    "taboo": [
+     "train",
+     "platform",
+     "wait",
+     "ticket",
+     "railway"
+    ]
+   },
+   {
+    "word": "Lighthouse",
+    "taboo": [
+     "light",
+     "sea",
+     "ships",
+     "coast",
+     "tower"
+    ]
+   },
+   {
+    "word": "Volcano",
+    "taboo": [
+     "lava",
+     "eruption",
+     "mountain",
+     "hot",
+     "fire"
+    ]
+   },
+   {
+    "word": "Desert",
+    "taboo": [
+     "sand",
+     "hot",
+     "dry",
+     "camel",
+     "oasis"
+    ]
+   },
+   {
+    "word": "Jungle",
+    "taboo": [
+     "rainforest",
+     "monkeys",
+     "vines",
+     "humid",
+     "tropical"
+    ]
+   },
+   {
+    "word": "Glacier",
+    "taboo": [
+     "ice",
+     "mountain",
+     "melt",
+     "Alps",
+     "cold"
+    ]
+   },
+   {
+    "word": "Waterfall",
+    "taboo": [
+     "water",
+     "fall",
+     "river",
+     "rocks",
+     "high"
+    ]
+   },
+   {
+    "word": "Cave",
+    "taboo": [
+     "dark",
+     "mountain",
+     "bat",
+     "stone",
+     "entrance"
+    ]
+   },
+   {
+    "word": "Earthquake",
+    "taboo": [
+     "shake",
+     "ground",
+     "disaster",
+     "houses",
+     "tremor"
+    ]
+   },
+   {
+    "word": "Tornado",
+    "taboo": [
+     "whirl",
+     "storm",
+     "wind",
+     "spin",
+     "weather"
+    ]
+   },
+   {
+    "word": "Fog",
+    "taboo": [
+     "grey",
+     "see",
+     "weather",
+     "thick",
+     "morning"
+    ]
+   },
+   {
+    "word": "Hail",
+    "taboo": [
+     "ice",
+     "grains",
+     "weather",
+     "thunderstorm",
+     "rain"
+    ]
+   },
+   {
+    "word": "Astronaut",
+    "taboo": [
+     "space",
+     "rocket",
+     "moon",
+     "suit",
+     "float"
+    ]
+   },
+   {
+    "word": "Planet",
+    "taboo": [
+     "sun",
+     "earth",
+     "space",
+     "Mars",
+     "orbit"
+    ]
+   },
+   {
+    "word": "Dinosaur",
+    "taboo": [
+     "extinct",
+     "big",
+     "prehistoric",
+     "bones",
+     "lizard"
+    ]
+   },
+   {
+    "word": "Fossil",
+    "taboo": [
+     "stone",
+     "petrified",
+     "old",
+     "bones",
+     "imprint"
+    ]
+   },
+   {
+    "word": "Robot",
+    "taboo": [
+     "machine",
+     "metal",
+     "program",
+     "human",
+     "computer"
+    ]
+   },
+   {
+    "word": "Magnet",
+    "taboo": [
+     "attract",
+     "metal",
+     "pole",
+     "fridge",
+     "iron"
+    ]
+   },
+   {
+    "word": "Compass",
+    "taboo": [
+     "north",
+     "direction",
+     "needle",
+     "map",
+     "south"
+    ]
+   },
+   {
+    "word": "Map (paper)",
+    "taboo": [
+     "way",
+     "countries",
+     "roads",
+     "find",
+     "atlas"
+    ]
+   },
+   {
+    "word": "Spyglass",
+    "taboo": [
+     "stars",
+     "far",
+     "see",
+     "telescope",
+     "lens"
+    ]
+   },
+   {
+    "word": "Microscope",
+    "taboo": [
+     "small",
+     "magnify",
+     "lab",
+     "cells",
+     "lens"
+    ]
+   },
+   {
+    "word": "Thermometer",
+    "taboo": [
+     "temperature",
+     "degrees",
+     "fever",
+     "measure",
+     "warm"
+    ]
+   },
+   {
+    "word": "Battery (power cell)",
+    "taboo": [
+     "electricity",
+     "energy",
+     "charge",
+     "empty",
+     "rechargeable"
+    ]
+   },
+   {
+    "word": "Light bulb",
+    "taboo": [
+     "light",
+     "lamp",
+     "electricity",
+     "bright",
+     "socket"
+    ]
+   },
+   {
+    "word": "Stairs",
+    "taboo": [
+     "steps",
+     "up",
+     "down",
+     "floor",
+     "banister"
+    ]
+   },
+   {
+    "word": "Elevator",
+    "taboo": [
+     "lift",
+     "up",
+     "floor",
+     "button",
+     "ride"
+    ]
+   },
+   {
+    "word": "Mailbox",
+    "taboo": [
+     "post",
+     "letters",
+     "newspaper",
+     "house",
+     "drop in"
+    ]
+   },
+   {
+    "word": "Stamp (for letters)",
+    "taboo": [
+     "letter",
+     "post",
+     "stick",
+     "collect",
+     "postage"
+    ]
+   },
+   {
+    "word": "Newspaper",
+    "taboo": [
+     "read",
+     "news",
+     "paper",
+     "daily",
+     "article"
+    ]
+   },
+   {
+    "word": "Calendar",
+    "taboo": [
+     "days",
+     "month",
+     "year",
+     "date",
+     "appointment"
+    ]
+   },
+   {
+    "word": "Alarm clock",
+    "taboo": [
+     "wake up",
+     "clock",
+     "ring",
+     "morning",
+     "time"
+    ]
+   },
+   {
+    "word": "Mirror",
+    "taboo": [
+     "image",
+     "see",
+     "glass",
+     "bathroom",
+     "face"
+    ]
+   },
+   {
+    "word": "Vacuum cleaner",
+    "taboo": [
+     "dust",
+     "suck",
+     "floor",
+     "clean",
+     "loud"
+    ]
+   },
+   {
+    "word": "Washing machine",
+    "taboo": [
+     "laundry",
+     "wash",
+     "clothes",
+     "drum",
+     "spin"
+    ]
+   },
+   {
+    "word": "Iron (for clothes)",
+    "taboo": [
+     "laundry",
+     "smooth",
+     "hot",
+     "creases",
+     "steam"
+    ]
+   },
+   {
+    "word": "Microwave",
+    "taboo": [
+     "heat up",
+     "kitchen",
+     "food",
+     "warm",
+     "appliance"
+    ]
+   },
+   {
+    "word": "Toaster",
+    "taboo": [
+     "bread",
+     "breakfast",
+     "crispy",
+     "slice",
+     "butter"
+    ]
+   },
+   {
+    "word": "Frying pan",
+    "taboo": [
+     "fry",
+     "kitchen",
+     "stove",
+     "oil",
+     "fried egg"
+    ]
+   },
+   {
+    "word": "Fork",
+    "taboo": [
+     "eat",
+     "knife",
+     "spoon",
+     "prongs",
+     "cutlery"
+    ]
+   },
+   {
+    "word": "Soup",
+    "taboo": [
+     "spoon",
+     "hot",
+     "plate",
+     "vegetables",
+     "liquid"
+    ]
+   },
+   {
+    "word": "Salad",
+    "taboo": [
+     "green",
+     "leaves",
+     "dressing",
+     "healthy",
+     "cucumber"
+    ]
+   },
+   {
+    "word": "Pancake",
+    "taboo": [
+     "pan",
+     "batter",
+     "flat",
+     "crêpe",
+     "syrup"
+    ]
+   },
+   {
+    "word": "Pretzel",
+    "taboo": [
+     "bakery",
+     "salt",
+     "twisted",
+     "Germany",
+     "dough"
+    ]
+   },
+   {
+    "word": "Muesli",
+    "taboo": [
+     "breakfast",
+     "oat flakes",
+     "milk",
+     "bowl",
+     "fruit"
+    ]
+   },
+   {
+    "word": "Fries",
+    "taboo": [
+     "potatoes",
+     "deep-fried",
+     "ketchup",
+     "mayonnaise",
+     "fryer"
+    ]
+   },
+   {
+    "word": "Sushi",
+    "taboo": [
+     "Japan",
+     "rice",
+     "fish",
+     "raw",
+     "chopsticks"
+    ]
+   },
+   {
+    "word": "Fondue",
+    "taboo": [
+     "cheese",
+     "Switzerland",
+     "bread",
+     "fork",
+     "caquelon"
+    ]
+   },
+   {
+    "word": "Raclette",
+    "taboo": [
+     "cheese",
+     "Switzerland",
+     "potatoes",
+     "melt",
+     "little pan"
+    ]
+   },
+   {
+    "word": "Tooth fairy",
+    "taboo": [
+     "pillow",
+     "money",
+     "wobbly",
+     "night",
+     "coin"
+    ]
+   },
+   {
+    "word": "Santa Claus",
+    "taboo": [
+     "beard",
+     "presents",
+     "red",
+     "reindeer",
+     "sleigh"
+    ]
+   },
+   {
+    "word": "Easter bunny",
+    "taboo": [
+     "eggs",
+     "spring",
+     "hide",
+     "basket",
+     "chocolate"
+    ]
+   },
+   {
+    "word": "Carnival",
+    "taboo": [
+     "costume",
+     "masks",
+     "parade",
+     "confetti",
+     "dress up"
+    ]
+   },
+   {
+    "word": "Halloween",
+    "taboo": [
+     "pumpkin",
+     "costume",
+     "trick",
+     "treat",
+     "spooky"
+    ]
+   },
+   {
+    "word": "Wedding",
+    "taboo": [
+     "marry",
+     "bride",
+     "ring",
+     "church",
+     "party"
+    ]
+   },
+   {
+    "word": "Circus",
+    "taboo": [
+     "clown",
+     "tent",
+     "acrobat",
+     "ring",
+     "animals"
+    ]
+   },
+   {
+    "word": "Roller coaster",
+    "taboo": [
+     "amusement park",
+     "fast",
+     "loop",
+     "ride",
+     "scream"
+    ]
+   },
+   {
+    "word": "Carousel",
+    "taboo": [
+     "spin",
+     "fair",
+     "horses",
+     "round",
+     "ride"
+    ]
+   },
+   {
+    "word": "Fireworks",
+    "taboo": [
+     "New Year's Eve",
+     "rockets",
+     "bang",
+     "sky",
+     "colourful"
+    ]
+   },
+   {
+    "word": "New Year's Eve",
+    "taboo": [
+     "midnight",
+     "fireworks",
+     "December",
+     "celebrate",
+     "countdown"
+    ]
+   },
+   {
+    "word": "Picnic",
+    "taboo": [
+     "blanket",
+     "basket",
+     "outside",
+     "eat",
+     "meadow"
+    ]
+   },
+   {
+    "word": "Camping",
+    "taboo": [
+     "tent",
+     "caravan",
+     "outside",
+     "holidays",
+     "sleeping bag"
+    ]
+   },
+   {
+    "word": "Treasure hunt",
+    "taboo": [
+     "map",
+     "gold",
+     "find",
+     "clues",
+     "pirate"
+    ]
+   },
+   {
+    "word": "Hide and seek",
+    "taboo": [
+     "seek",
+     "count",
+     "find",
+     "game",
+     "hiding place"
+    ]
+   },
+   {
+    "word": "Chess",
+    "taboo": [
+     "king",
+     "queen",
+     "board",
+     "pieces",
+     "checkmate"
+    ]
+   },
+   {
+    "word": "Puzzle",
+    "taboo": [
+     "pieces",
+     "put together",
+     "picture",
+     "assemble",
+     "edge"
+    ]
+   },
+   {
+    "word": "Camera (photo)",
+    "taboo": [
+     "photo",
+     "snap",
+     "picture",
+     "lens",
+     "flash"
+    ]
+   },
+   {
+    "word": "Guitar",
+    "taboo": [
+     "strings",
+     "music",
+     "play",
+     "instrument",
+     "pluck"
+    ]
+   },
+   {
+    "word": "Piano",
+    "taboo": [
+     "keys",
+     "black",
+     "white",
+     "music",
+     "instrument"
+    ]
+   },
+   {
+    "word": "Drums",
+    "taboo": [
+     "drum",
+     "music",
+     "cymbal",
+     "sticks",
+     "loud"
+    ]
+   },
+   {
+    "word": "Trumpet",
+    "taboo": [
+     "blow",
+     "music",
+     "instrument",
+     "brass",
+     "loud"
+    ]
+   },
+   {
+    "word": "Recorder (flute)",
+    "taboo": [
+     "blow",
+     "music",
+     "instrument",
+     "wood",
+     "holes"
+    ]
+   },
+   {
+    "word": "Orchestra",
+    "taboo": [
+     "music",
+     "conductor",
+     "instruments",
+     "concert",
+     "violin"
+    ]
+   },
+   {
+    "word": "Theatre",
+    "taboo": [
+     "stage",
+     "actor",
+     "curtain",
+     "play",
+     "audience"
+    ]
+   },
+   {
+    "word": "Puzzle cube",
+    "taboo": [
+     "colours",
+     "twist",
+     "solve",
+     "sides",
+     "squares"
+    ]
+   },
+   {
+    "word": "Skateboard",
+    "taboo": [
+     "wheels",
+     "board",
+     "ride",
+     "tricks",
+     "ramp"
+    ]
+   },
+   {
+    "word": "Skiing",
+    "taboo": [
+     "snow",
+     "slope",
+     "mountain",
+     "poles",
+     "winter"
+    ]
+   },
+   {
+    "word": "Ice skate",
+    "taboo": [
+     "ice",
+     "blades",
+     "glide",
+     "winter",
+     "rink"
+    ]
+   },
+   {
+    "word": "Tennis",
+    "taboo": [
+     "racket",
+     "ball",
+     "net",
+     "court",
+     "serve"
+    ]
+   },
+   {
+    "word": "Basketball",
+    "taboo": [
+     "basket",
+     "ball",
+     "throw",
+     "dribble",
+     "team"
+    ]
+   },
+   {
+    "word": "Gymnastics",
+    "taboo": [
+     "gym",
+     "high bar",
+     "parallel bars",
+     "somersault",
+     "sport"
+    ]
+   },
+   {
+    "word": "Diving",
+    "taboo": [
+     "water",
+     "sea",
+     "oxygen",
+     "fish",
+     "underwater"
+    ]
+   },
+   {
+    "word": "Fishing",
+    "taboo": [
+     "rod",
+     "hook",
+     "worm",
+     "lake",
+     "catch"
+    ]
+   },
+   {
+    "word": "Medal (prize)",
+    "taboo": [
+     "gold",
+     "silver",
+     "bronze",
+     "win",
+     "winner"
+    ]
+   },
+   {
+    "word": "Referee",
+    "taboo": [
+     "whistle",
+     "football",
+     "rules",
+     "card",
+     "game"
+    ]
+   },
+   {
+    "word": "Trophy",
+    "taboo": [
+     "win",
+     "winner",
+     "gold",
+     "tournament",
+     "prize"
+    ]
+   },
+   {
+    "word": "Detective",
+    "taboo": [
+     "case",
+     "magnifying glass",
+     "solve",
+     "clues",
+     "culprit"
+    ]
+   },
+   {
+    "word": "Magnifying glass",
+    "taboo": [
+     "bigger",
+     "lens",
+     "detective",
+     "small",
+     "see"
+    ]
+   },
+   {
+    "word": "Ambulance",
+    "taboo": [
+     "emergency",
+     "siren",
+     "hospital",
+     "blue light",
+     "paramedic"
+    ]
+   },
+   {
+    "word": "Excavator",
+    "taboo": [
+     "construction site",
+     "dig",
+     "bucket",
+     "earth",
+     "machine"
+    ]
+   },
+   {
+    "word": "Tractor",
+    "taboo": [
+     "farmer",
+     "field",
+     "trailer",
+     "machine",
+     "pull"
+    ]
+   },
+   {
+    "word": "Helicopter",
+    "taboo": [
+     "fly",
+     "rotor",
+     "chopper",
+     "rescue",
+     "land"
+    ]
+   },
+   {
+    "word": "Submarine",
+    "taboo": [
+     "water",
+     "dive",
+     "sea",
+     "deep",
+     "ship"
+    ]
+   },
+   {
+    "word": "Hot-air balloon",
+    "taboo": [
+     "basket",
+     "fly",
+     "float",
+     "fire",
+     "sky"
+    ]
+   },
+   {
+    "word": "Cable car",
+    "taboo": [
+     "mountain",
+     "cabin",
+     "cable",
+     "up",
+     "gondola"
+    ]
+   },
+   {
+    "word": "Bridge",
+    "taboo": [
+     "river",
+     "over",
+     "side",
+     "build",
+     "water"
+    ]
+   },
+   {
+    "word": "Tunnel",
+    "taboo": [
+     "mountain",
+     "through",
+     "dark",
+     "train",
+     "tube"
+    ]
+   },
+   {
+    "word": "Traffic light",
+    "taboo": [
+     "red",
+     "green",
+     "yellow",
+     "street",
+     "wait"
+    ]
+   },
+   {
+    "word": "Petrol station",
+    "taboo": [
+     "fuel",
+     "car",
+     "fill up",
+     "diesel",
+     "pump"
+    ]
+   },
+   {
+    "word": "Construction site",
+    "taboo": [
+     "build",
+     "crane",
+     "excavator",
+     "helmet",
+     "workers"
+    ]
+   },
+   {
+    "word": "Crane (machine)",
+    "taboo": [
+     "high",
+     "lift",
+     "construction site",
+     "hook",
+     "load"
+    ]
+   },
+   {
+    "word": "Traffic jam",
+    "taboo": [
+     "cars",
+     "wait",
+     "road",
+     "motorway",
+     "slow"
+    ]
+   },
+   {
+    "word": "City hall",
+    "taboo": [
+     "mayor",
+     "town",
+     "council",
+     "office",
+     "building"
+    ]
+   },
+   {
+    "word": "Farm",
+    "taboo": [
+     "animals",
+     "farmer",
+     "stable",
+     "tractor",
+     "countryside"
+    ]
+   },
+   {
+    "word": "Mill",
+    "taboo": [
+     "grind",
+     "flour",
+     "wind",
+     "water",
+     "wheel"
+    ]
+   },
+   {
+    "word": "Castle",
+    "taboo": [
+     "king",
+     "princess",
+     "towers",
+     "fairy tale",
+     "ball"
+    ]
+   },
+   {
+    "word": "Church",
+    "taboo": [
+     "bells",
+     "tower",
+     "pray",
+     "priest",
+     "Sunday"
+    ]
+   },
+   {
+    "word": "Greenhouse",
+    "taboo": [
+     "glass",
+     "plants",
+     "warm",
+     "tomatoes",
+     "garden"
+    ]
+   },
+   {
+    "word": "Cactus",
+    "taboo": [
+     "spines",
+     "desert",
+     "plant",
+     "green",
+     "water"
+    ]
+   },
+   {
+    "word": "Sunflower",
+    "taboo": [
+     "yellow",
+     "tall",
+     "seeds",
+     "sun",
+     "flower"
+    ]
+   },
+   {
+    "word": "Mushroom",
+    "taboo": [
+     "forest",
+     "poisonous",
+     "cap",
+     "pick",
+     "fly agaric"
+    ]
+   },
+   {
+    "word": "Pumpkin",
+    "taboo": [
+     "orange",
+     "Halloween",
+     "autumn",
+     "big",
+     "soup"
+    ]
+   },
+   {
+    "word": "Autumn",
+    "taboo": [
+     "leaves",
+     "colourful",
+     "fall",
+     "season",
+     "October"
+    ]
+   },
+   {
+    "word": "Spring",
+    "taboo": [
+     "season",
+     "flowers",
+     "March",
+     "warm",
+     "bloom"
+    ]
+   },
+   {
+    "word": "Summer",
+    "taboo": [
+     "hot",
+     "season",
+     "holidays",
+     "sun",
+     "swim"
+    ]
+   },
+   {
+    "word": "Winter",
+    "taboo": [
+     "snow",
+     "cold",
+     "season",
+     "December",
+     "Christmas"
+    ]
+   },
+   {
+    "word": "Dream",
+    "taboo": [
+     "sleep",
+     "night",
+     "bed",
+     "nightmare",
+     "imagination"
+    ]
+   },
+   {
+    "word": "Time machine",
+    "taboo": [
+     "travel",
+     "past",
+     "future",
+     "dinosaurs",
+     "clock"
+    ]
+   },
+   {
+    "word": "Superhero",
+    "taboo": [
+     "powers",
+     "save",
+     "cape",
+     "fly",
+     "villain"
+    ]
+   },
+   {
+    "word": "Unicorn",
+    "taboo": [
+     "horse",
+     "rainbow",
+     "magical creature",
+     "white",
+     "glitter"
+    ]
+   },
+   {
+    "word": "Mermaid",
+    "taboo": [
+     "sea",
+     "fish tail",
+     "nymph",
+     "fairy tale",
+     "swim"
+    ]
+   },
+   {
+    "word": "Dwarf",
+    "taboo": [
+     "small",
+     "hat",
+     "Snow White",
+     "garden",
+     "fairy tale"
+    ]
+   },
+   {
+    "word": "Vampire",
+    "taboo": [
+     "blood",
+     "teeth",
+     "night",
+     "bat",
+     "count"
+    ]
+   },
+   {
+    "word": "Mummy (Egypt)",
+    "taboo": [
+     "Egypt",
+     "pyramid",
+     "bandages",
+     "wrapped",
+     "tomb"
+    ]
+   },
+   {
+    "word": "Pyramid",
+    "taboo": [
+     "Egypt",
+     "triangle",
+     "pharaoh",
+     "stone",
+     "desert"
+    ]
+   },
+   {
+    "word": "Bat (animal)",
+    "taboo": [
+     "night",
+     "fly",
+     "cave",
+     "upside down",
+     "vampire"
+    ]
+   },
+   {
+    "word": "Octopus",
+    "taboo": [
+     "arms",
+     "eight",
+     "squid",
+     "sea",
+     "ink"
+    ]
+   },
+   {
+    "word": "Jellyfish",
+    "taboo": [
+     "sea",
+     "transparent",
+     "sting",
+     "jelly-like",
+     "swim"
+    ]
+   },
+   {
+    "word": "Starfish",
+    "taboo": [
+     "sea",
+     "arms",
+     "five",
+     "beach",
+     "points"
+    ]
+   },
+   {
+    "word": "Seashell",
+    "taboo": [
+     "sea",
+     "beach",
+     "shell",
+     "pearl",
+     "collect"
+    ]
+   },
+   {
+    "word": "Whale",
+    "taboo": [
+     "sea",
+     "big",
+     "mammal",
+     "spout",
+     "fish"
+    ]
+   },
+   {
+    "word": "Polar bear",
+    "taboo": [
+     "white",
+     "North Pole",
+     "ice",
+     "cold",
+     "seal"
+    ]
+   },
+   {
+    "word": "Kangaroo",
+    "taboo": [
+     "pouch",
+     "jump",
+     "Australia",
+     "baby",
+     "hop"
+    ]
+   },
+   {
+    "word": "Koala",
+    "taboo": [
+     "Australia",
+     "tree",
+     "eucalyptus",
+     "sleep",
+     "bear"
+    ]
+   },
+   {
+    "word": "Sloth",
+    "taboo": [
+     "slow",
+     "hang",
+     "tree",
+     "sleep",
+     "lazy"
+    ]
+   },
+   {
+    "word": "Chameleon",
+    "taboo": [
+     "colour",
+     "change",
+     "lizard",
+     "tongue",
+     "camouflage"
+    ]
+   },
+   {
+    "word": "Woodpecker",
+    "taboo": [
+     "bird",
+     "knock",
+     "tree",
+     "beak",
+     "hole"
+    ]
+   },
+   {
+    "word": "Stork",
+    "taboo": [
+     "bird",
+     "babies",
+     "legs",
+     "nest",
+     "clatter"
+    ]
+   },
+   {
+    "word": "Flamingo",
+    "taboo": [
+     "pink",
+     "leg",
+     "bird",
+     "stand",
+     "water"
+    ]
+   },
+   {
+    "word": "Peacock",
+    "taboo": [
+     "feathers",
+     "fan",
+     "colourful",
+     "bird",
+     "proud"
+    ]
+   },
+   {
+    "word": "Rhino",
+    "taboo": [
+     "horn",
+     "grey",
+     "Africa",
+     "big",
+     "skin"
+    ]
+   },
+   {
+    "word": "Hippo",
+    "taboo": [
+     "river",
+     "Africa",
+     "big",
+     "water",
+     "jaws"
+    ]
+   },
+   {
+    "word": "Wolf",
+    "taboo": [
+     "howl",
+     "pack",
+     "moon",
+     "dog",
+     "Little Red Riding Hood"
+    ]
+   },
+   {
+    "word": "Fox",
+    "taboo": [
+     "red",
+     "clever",
+     "tail",
+     "forest",
+     "chicken"
+    ]
+   },
+   {
+    "word": "Squirrel",
+    "taboo": [
+     "nuts",
+     "tree",
+     "tail",
+     "climb",
+     "red"
+    ]
+   },
+   {
+    "word": "Beaver",
+    "taboo": [
+     "dam",
+     "teeth",
+     "wood",
+     "river",
+     "rodent"
+    ]
+   },
+   {
+    "word": "Mole (animal)",
+    "taboo": [
+     "dig",
+     "earth",
+     "blind",
+     "molehill",
+     "garden"
+    ]
+   },
+   {
+    "word": "Earthworm",
+    "taboo": [
+     "soil",
+     "rain",
+     "long",
+     "slimy",
+     "wriggle"
+    ]
+   },
+   {
+    "word": "Dragonfly",
+    "taboo": [
+     "wings",
+     "pond",
+     "insect",
+     "fly",
+     "water"
+    ]
+   },
+   {
+    "word": "Firefly",
+    "taboo": [
+     "glow",
+     "night",
+     "beetle",
+     "light",
+     "summer"
+    ]
+   },
+   {
+    "word": "Braces",
+    "taboo": [
+     "teeth",
+     "straight",
+     "wire",
+     "dentist",
+     "mouth"
+    ]
+   },
+   {
+    "word": "Fever",
+    "taboo": [
+     "sick",
+     "temperature",
+     "hot",
+     "thermometer",
+     "degrees"
+    ]
+   },
+   {
+    "word": "Hiccups",
+    "taboo": [
+     "hic",
+     "breath",
+     "diaphragm",
+     "scare",
+     "water"
+    ]
+   },
+   {
+    "word": "Sneezing",
+    "taboo": [
+     "nose",
+     "cold",
+     "atchoo",
+     "bless you",
+     "tickle"
+    ]
+   },
+   {
+    "word": "Joke",
+    "taboo": [
+     "funny",
+     "laugh",
+     "tell",
+     "punchline",
+     "humour"
+    ]
+   },
+   {
+    "word": "Secret",
+    "taboo": [
+     "give away",
+     "whisper",
+     "nobody",
+     "know",
+     "tell"
+    ]
+   },
+   {
+    "word": "Homesickness",
+    "taboo": [
+     "family",
+     "miss",
+     "holidays",
+     "sad",
+     "parents"
+    ]
+   },
+   {
+    "word": "Boredom",
+    "taboo": [
+     "nothing",
+     "do",
+     "yawn",
+     "dull",
+     "time"
+    ]
+   },
+   {
+    "word": "Sore muscles",
+    "taboo": [
+     "legs",
+     "sport",
+     "pain",
+     "next day",
+     "training"
+    ]
+   },
+   {
+    "word": "Homework",
+    "taboo": [
+     "school",
+     "teacher",
+     "learn",
+     "exercise book",
+     "evening"
+    ]
+   },
+   {
+    "word": "School report",
+    "taboo": [
+     "grades",
+     "school",
+     "end",
+     "school year",
+     "term"
+    ]
+   },
+   {
+    "word": "Recess",
+    "taboo": [
+     "school",
+     "bell",
+     "schoolyard",
+     "play",
+     "snack"
+    ]
+   },
+   {
+    "word": "Blackboard",
+    "taboo": [
+     "chalk",
+     "school",
+     "write",
+     "green",
+     "teacher"
+    ]
+   },
+   {
+    "word": "Calculator",
+    "taboo": [
+     "add",
+     "numbers",
+     "maths",
+     "keys",
+     "plus"
+    ]
+   },
+   {
+    "word": "Ruler (for lines)",
+    "taboo": [
+     "measure",
+     "centimetre",
+     "straight",
+     "line",
+     "school"
+    ]
+   },
+   {
+    "word": "Eraser",
+    "taboo": [
+     "rub out",
+     "pencil",
+     "mistake",
+     "away",
+     "rubber"
+    ]
+   },
+   {
+    "word": "Globe",
+    "taboo": [
+     "earth",
+     "ball",
+     "countries",
+     "spin",
+     "map"
+    ]
+   },
+   {
+    "word": "Dictionary",
+    "taboo": [
+     "words",
+     "look up",
+     "language",
+     "book",
+     "meaning"
+    ]
+   },
+   {
+    "word": "Postcard",
+    "taboo": [
+     "holidays",
+     "greetings",
+     "write",
+     "picture",
+     "stamp"
+    ]
+   },
+   {
+    "word": "Suitcase",
+    "taboo": [
+     "trip",
+     "pack",
+     "holidays",
+     "clothes",
+     "airport"
+    ]
+   },
+   {
+    "word": "Passport",
+    "taboo": [
+     "ID",
+     "border",
+     "trip",
+     "photo",
+     "country"
+    ]
+   },
+   {
+    "word": "Password",
+    "taboo": [
+     "secret",
+     "computer",
+     "type",
+     "letters",
+     "access"
+    ]
+   },
+   {
+    "word": "Internet",
+    "taboo": [
+     "online",
+     "computer",
+     "surf",
+     "Wi-Fi",
+     "website"
+    ]
+   },
+   {
+    "word": "Remote control",
+    "taboo": [
+     "television",
+     "buttons",
+     "sofa",
+     "switch channel",
+     "battery"
+    ]
+   },
+   {
+    "word": "Sofa",
+    "taboo": [
+     "sit",
+     "living room",
+     "couch",
+     "comfortable",
+     "lie"
+    ]
+   },
+   {
+    "word": "Cellar",
+    "taboo": [
+     "down",
+     "dark",
+     "stairs",
+     "house",
+     "supplies"
+    ]
+   },
+   {
+    "word": "Attic",
+    "taboo": [
+     "up",
+     "loft",
+     "house",
+     "junk",
+     "roof"
+    ]
+   },
+   {
+    "word": "Garage",
+    "taboo": [
+     "car",
+     "park",
+     "door",
+     "house",
+     "tools"
+    ]
+   },
+   {
+    "word": "Tools (workshop)",
+    "taboo": [
+     "hammer",
+     "screwdriver",
+     "repair",
+     "box",
+     "nail"
+    ]
+   },
+   {
+    "word": "Hammer",
+    "taboo": [
+     "nail",
+     "hit",
+     "tool",
+     "wood",
+     "handle"
+    ]
+   },
+   {
+    "word": "Screw",
+    "taboo": [
+     "turn",
+     "screwdriver",
+     "thread",
+     "nut",
+     "metal"
+    ]
+   },
+   {
+    "word": "Ladder",
+    "taboo": [
+     "rungs",
+     "up",
+     "climb",
+     "step",
+     "fire brigade"
+    ]
+   },
+   {
+    "word": "Wheelbarrow",
+    "taboo": [
+     "wheel",
+     "garden",
+     "push",
+     "earth",
+     "transport"
+    ]
+   },
+   {
+    "word": "Watering can",
+    "taboo": [
+     "water",
+     "flowers",
+     "pour",
+     "garden",
+     "spout"
+    ]
+   },
+   {
+    "word": "Lawn mower",
+    "taboo": [
+     "grass",
+     "mow",
+     "garden",
+     "loud",
+     "short"
+    ]
+   },
+   {
+    "word": "Broom",
+    "taboo": [
+     "sweep",
+     "wipe",
+     "witch",
+     "dust",
+     "floor"
+    ]
+   },
+   {
+    "word": "Rubbish bin",
+    "taboo": [
+     "waste",
+     "litter",
+     "throw away",
+     "lid",
+     "bag"
+    ]
+   },
+   {
+    "word": "Recycling",
+    "taboo": [
+     "reuse",
+     "plastic",
+     "glass",
+     "sort",
+     "environment"
+    ]
+   },
+   {
+    "word": "Piggy bank",
+    "taboo": [
+     "money",
+     "save",
+     "coins",
+     "pig",
+     "bank"
+    ]
+   },
+   {
+    "word": "Wallet",
+    "taboo": [
+     "money",
+     "purse",
+     "coins",
+     "pocket",
+     "pay"
+    ]
+   },
+   {
+    "word": "Supermarket",
+    "taboo": [
+     "shop",
+     "checkout",
+     "shelves",
+     "trolley",
+     "groceries"
+    ]
+   },
+   {
+    "word": "Shopping list",
+    "taboo": [
+     "shop",
+     "note",
+     "write",
+     "supermarket",
+     "forget"
+    ]
+   },
+   {
+    "word": "Bakery",
+    "taboo": [
+     "bread",
+     "baker",
+     "croissant",
+     "roll",
+     "buy"
+    ]
+   },
+   {
+    "word": "Restaurant",
+    "taboo": [
+     "eat",
+     "waiter",
+     "order",
+     "menu",
+     "cook"
+    ]
+   },
+   {
+    "word": "Waiter",
+    "taboo": [
+     "serve",
+     "restaurant",
+     "order",
+     "plate",
+     "tip"
+    ]
+   },
+   {
+    "word": "Tip (money)",
+    "taboo": [
+     "waiter",
+     "money",
+     "restaurant",
+     "extra",
+     "thanks"
+    ]
+   },
+   {
+    "word": "Hairdresser (job)",
+    "taboo": [
+     "hair",
+     "cut",
+     "barber",
+     "scissors",
+     "salon"
+    ]
+   },
+   {
+    "word": "Mail carrier",
+    "taboo": [
+     "letters",
+     "post",
+     "deliver",
+     "postbox",
+     "parcel"
+    ]
+   },
+   {
+    "word": "Gardener",
+    "taboo": [
+     "flowerbed",
+     "plants",
+     "flowers",
+     "lawn",
+     "water"
+    ]
+   },
+   {
+    "word": "Captain",
+    "taboo": [
+     "ship",
+     "sea",
+     "helm",
+     "cap",
+     "crew"
+    ]
+   },
+   {
+    "word": "Pilot",
+    "taboo": [
+     "plane",
+     "fly",
+     "cockpit",
+     "airport",
+     "uniform"
+    ]
+   },
+   {
+    "word": "Vet",
+    "taboo": [
+     "animals",
+     "sick",
+     "doctor",
+     "dog",
+     "practice"
+    ]
+   },
+   {
+    "word": "Chimney sweep",
+    "taboo": [
+     "chimney",
+     "black",
+     "soot",
+     "luck",
+     "roof"
+    ]
+   },
+   {
+    "word": "Singer",
+    "taboo": [
+     "sing",
+     "song",
+     "stage",
+     "voice",
+     "microphone"
+    ]
+   },
+   {
+    "word": "Microphone",
+    "taboo": [
+     "loud",
+     "speak",
+     "sing",
+     "stage",
+     "voice"
+    ]
+   },
+   {
+    "word": "Headphones",
+    "taboo": [
+     "music",
+     "listen",
+     "ears",
+     "quiet",
+     "cable"
+    ]
+   },
+   {
+    "word": "Game console",
+    "taboo": [
+     "video game",
+     "controller",
+     "play",
+     "TV",
+     "gaming"
+    ]
+   },
+   {
+    "word": "Selfie",
+    "taboo": [
+     "photo",
+     "mobile",
+     "self",
+     "camera",
+     "smile"
+    ]
+   },
+   {
+    "word": "Sleeping bag",
+    "taboo": [
+     "camping",
+     "sleep",
+     "tent",
+     "zip",
+     "warm"
+    ]
+   },
+   {
+    "word": "Campfire",
+    "taboo": [
+     "flames",
+     "wood",
+     "sausage",
+     "camping",
+     "marshmallows"
+    ]
+   },
+   {
+    "word": "Chewing gum",
+    "taboo": [
+     "chew",
+     "bubble",
+     "sticky",
+     "peppermint",
+     "mouth"
+    ]
+   },
+   {
+    "word": "Candyfloss",
+    "taboo": [
+     "fair",
+     "pink",
+     "sweet",
+     "stick",
+     "fluffy"
+    ]
+   },
+   {
+    "word": "Lemonade",
+    "taboo": [
+     "drink",
+     "sweet",
+     "lemon",
+     "fizzy",
+     "beverage"
+    ]
+   },
+   {
+    "word": "Waffle",
+    "taboo": [
+     "batter",
+     "iron",
+     "icing sugar",
+     "grid",
+     "bake"
+    ]
+   },
+   {
+    "word": "Gingerbread",
+    "taboo": [
+     "Christmas",
+     "spices",
+     "heart",
+     "witch's house",
+     "brown"
+    ]
+   },
+   {
+    "word": "Fried egg",
+    "taboo": [
+     "frying pan",
+     "fry",
+     "yolk",
+     "breakfast",
+     "white"
+    ]
+   }
+  ]
+ }
+}

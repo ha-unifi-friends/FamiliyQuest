@@ -1,0 +1,8 @@
+configuration:
+  log_level:
+    name: Nivel de registro
+  direct_access:
+    name: Acceso directo en la red doméstica
+    description: Ofrecer también la app en el puerto 8099 (indícalo en Red). Los niños eligen su perfil, con PIN opcional, en lugar de iniciar sesión en Home Assistant.
+network:
+  8099/tcp: Acceso directo (solo con la opción acceso directo)

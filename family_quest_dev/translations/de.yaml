@@ -1,0 +1,8 @@
+configuration:
+  log_level:
+    name: Protokollstufe
+  direct_access:
+    name: Direktzugang im Heimnetz
+    description: Die App zusätzlich auf Port 8099 anbieten (Port unter Netzwerk eintragen). Kinder wählen dann ihr Profil, optional mit PIN, statt sich bei Home Assistant anzumelden.
+network:
+  8099/tcp: Direktzugang (nur mit der Option Direktzugang)

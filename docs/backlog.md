@@ -6,6 +6,37 @@ Ideas and planned work for Family Quest, roughly in order. Done items move to th
 
 1. **Detailed canton coats of arms** – the quiz uses simplified pixel symbols; detailed drawings would need a source that allows it
 
+## Only in «Family Quest Dev» – rework before the beta
+
+These games are in the code (with their tests), but only the dev app has them (`family_quest/app/familyquest/channel.py`,
+`DEV_GAMES`; the dev app is written by `tools/publish_dev.py` with the marker `app/CHANNEL` = `dev`). Stable and beta
+leave them out everywhere (games lists, access settings, FamilyTime, Facts, guests, API 404); old history entries
+still show. Once reworked, take the game out of `DEV_GAMES` and it is in the next beta.
+
+- **🏎️ 24h Endurance** (`langstrecke`) – too complex to play: rework before beta (simpler controls and pit stops,
+  shorter races, clearer team roles).
+- **🏛️ Beat the Bureaucracy** (`stempeljagd`) – too complex to play: rework before beta (fewer counters, rules and
+  special cards; a game that explains itself while playing).
+
+### «Fischen» – multiplayer fishing (simple)
+
+User wishes (2026-11-18): keep casting / reeling **simple**; **many rarity levels**; **several fish per rarity**;
+**no** two-person team catch. Open question to the user: variant A (tournament, everything resets) or B (persistent
+gear and islands, with a «same gear for all» option at family tables) – proposed: **B**.
+
+- **Simple controls:** one tap «Cast» (automatic throw), wait, one tap when the float dips (generous window, about
+  1.5 s, Junior even longer), then hold a single «Reel» button until the fish is in (no tension balancing). Missed =
+  the fish is gone, cast again.
+- **Rarity levels (8):** Common ⚪, Uncommon 🟢, Rare 🔵, Very rare 🔷, Epic 🟣, Legendary 🟡, Mythic 🔴, Secret 🌈 –
+  6–10 fish per level and island (plus funny junk catches: boot, rubber duck, message in a bottle).
+- **Luck** = rod + bait + boat + island + time of day + weather: shifts the rarity chances up, never guarantees. Higher
+  rarity = more money.
+- **Shop** (in-game money): rods, baits, boat, islands (village pond, mountain lake, coral reef, ice hole, volcano
+  lagoon, fog island).
+- **Events:** day / night, weather, golden swarm. Fish encyclopedia, collection badges, records (Facts quiz).
+- **Multiplayer:** everybody fishes at the same time on their own phone, avatars on the pier, a banner for rare
+  catches. Coins for places 1–3, game battery, bots.
+
 ## Ideas
 
 - **Ping-Pong on two devices** – needs a live connection (WebSocket) instead of polling; one tablet works already.

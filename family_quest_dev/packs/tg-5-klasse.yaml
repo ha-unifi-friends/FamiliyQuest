@@ -1,0 +1,16 @@
+# Stufenpaket «5. Klasse Thurgau» – Stundentafel Primarschule TG ab 1.8.2024:
+# Deutsch 5, Englisch 2, Französisch 2, Mathematik 5, NMG 5 Lektionen pro Woche.
+stufenpaket: tg-5-klasse
+titel: 5. Klasse Thurgau
+stufe: 5. Klasse
+kanton: TG
+lehrplan: Lehrplan Volksschule Thurgau (Lehrplan 21)
+version: 1
+faecher: [deutsch, mathematik, nmg, englisch, franzoesisch]
+semester:
+  - id: s1
+    titel: 1. Semester
+    pakete: [mathe-5kl, franz-5kl-la-maison, engl-5kl-unit-1, geo-tg, deutsch-5kl]
+  - id: s2
+    titel: 2. Semester
+    pakete: []

@@ -109,7 +109,7 @@ def test_picture_book_crud_and_checker(client):
     ph, hm, hl, mia, leo = _logins(client)
     sid = client.post("/api/stories", json={"title": "Bear", "type": "picture", "lang": "fr-FR"}, headers=hm).json()["id"]
     ed = client.get(f"/api/stories/{sid}", headers=hm).json()
-    assert ed["type"] == "picture" and ed["emoji"] == "📕" and ed["lang"] == "fr-FR" and ed["visibility"] == "me"
+    assert ed["type"] == "picture" and ed["emoji"] == "📕" and ed["lang"] == "fr-FR" and ed["visibility"] == "family"
     assert ed["data"]["pages"] == [{"id": 1, "layout": "top", "text": "", "pic": None}]
     assert {i["code"] for i in ed["issues"]} == {"no_text", "no_pic"}
     assert client.post(f"/api/stories/{sid}/publish", headers=hm).status_code == 400
@@ -197,7 +197,7 @@ def test_private_books_of_every_type(client):
     ph, hm, hl, mia, leo = _logins(client)
     papa_app = {"X-FQ-Token": client.post("/api/login", json={"profile_id": 1, "pin": "1234"}).json()["token"]}
     psid, _ = _pbook(client, hm, title="Secret pictures", visibility="me")
-    asid = client.post("/api/stories", json={"title": "Secret adventure", "lang": "en"}, headers=hm).json()["id"]
+    asid = client.post("/api/stories", json={"title": "Secret adventure", "lang": "en", "visibility": "me"}, headers=hm).json()["id"]
     client.put(f"/api/stories/{asid}", json={"data": BOOK}, headers=hm)
     for sid in (psid, asid):
         assert client.post(f"/api/stories/{sid}/publish", headers=hm).json()["status"] == "live"

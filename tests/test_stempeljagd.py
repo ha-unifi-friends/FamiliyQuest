@@ -11,6 +11,8 @@ import pytest
 from familyquest import stempeljagd as sj
 from familyquest.community import CommunityError
 
+pytestmark = pytest.mark.dev_channel        # a dev game (channel.py DEV_GAMES): only in «Family Quest Dev»
+
 
 class Clock:
     def __init__(self, t=1000.0):

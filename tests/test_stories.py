@@ -317,8 +317,8 @@ def test_visibility_private_kids_family(client):
     ph, hm, hl, mia, leo = _logins(client)
     papa_app = {"X-FQ-Token": client.post("/api/login", json={"profile_id": 1, "pin": "1234"}).json()["token"]}
     shelf = lambda h: client.get("/api/stories", headers=h).json()      # noqa: E731
-    # a new book is private: only Mia – the parents neither (no title, no content, not in the app, not in the parent area)
-    sid = client.post("/api/stories", json={"title": "Secret diary", "lang": "en"}, headers=hm).json()["id"]
+    # a private book: only Mia – the parents neither (no title, no content, not in the app, not in the parent area)
+    sid = client.post("/api/stories", json={"title": "Secret diary", "lang": "en", "visibility": "me"}, headers=hm).json()["id"]
     client.put(f"/api/stories/{sid}", json={"data": BOOK}, headers=hm)
     assert client.get(f"/api/stories/{sid}", headers=hm).json()["visibility"] == "me"
     c0 = coins(fq, mia)
@@ -365,6 +365,24 @@ def test_visibility_private_kids_family(client):
     client.post(f"/api/stories/{psid}/publish", headers=ph)
     assert client.get(f"/api/stories/{psid}/read", headers=hm).status_code == 400
     assert client.get(f"/api/stories/{psid}/read", headers=ph).status_code == 200
+
+
+def test_new_books_are_for_the_whole_family_approval_unchanged(client):
+    ph, hm, hl, mia, leo = _logins(client)
+    for kind in ("adventure", "picture"):
+        sid = client.post("/api/stories", json={"title": "New " + kind, "lang": "en", "type": kind}, headers=hm).json()["id"]
+        assert client.get(f"/api/stories/{sid}", headers=hm).json()["visibility"] == "family"
+    # with approval on, sharing still waits for a parent
+    client.put("/api/stories/settings", json={"approval": True}, headers=ph)
+    sid = client.post("/api/stories", json={"title": "Lion", "lang": "en"}, headers=hm).json()["id"]
+    client.put(f"/api/stories/{sid}", json={"data": BOOK}, headers=hm)
+    assert client.post(f"/api/stories/{sid}/publish", headers=hm).json()["status"] == "pending"
+    assert client.get(f"/api/stories/{sid}/read", headers=hl).status_code == 400
+    assert client.post(f"/api/stories/{sid}/approve", headers=ph).status_code == 200
+    assert client.get(f"/api/stories/{sid}/read", headers=hl).status_code == 200
+    from familyquest.stories import Stories
+    import inspect
+    assert inspect.signature(Stories.create).parameters["visibility"].default == "family"
 
 
 def test_visibility_and_approval(client):

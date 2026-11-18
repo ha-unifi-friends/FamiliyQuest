@@ -11,6 +11,8 @@ import pytest
 from familyquest import langstrecke as ls
 from familyquest.community import CommunityError
 
+pytestmark = pytest.mark.dev_channel        # a dev game (channel.py DEV_GAMES): only in «Family Quest Dev»
+
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
 
 

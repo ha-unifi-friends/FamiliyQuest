@@ -22,7 +22,7 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 
 | Option | Meaning |
 | --- | --- |
-| `direct_access` | Also serve the app in the home network on port 8099 (Family Quest Beta: 8098; can be changed under *Network*). Without it only Home Assistant ingress can reach the app. Parent area › Settings shows the link as a QR code. |
+| `direct_access` | Also serve the app in the home network on port 8099 (Family Quest Beta: 8098, Family Quest Dev: 8097; can be changed under *Network*). Without it only Home Assistant ingress can reach the app. Parent area › Settings shows the link as a QR code. |
 | `log_level` | Log detail. |
 
 ## Data
@@ -30,6 +30,14 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 Everything lives in `/data/family_quest.db` (SQLite) and `/data/media/` – both part of Home Assistant backups.
 Additional packs can be placed in `/share/family_quest/packs` (YAML files, folders with YAML + pictures, or ZIP files);
 they are read at start. Packs changed in the parent area are not overwritten by the folder copy.
+
+## Channels: Family Quest, Beta and Dev
+
+Three apps of this repository can run side by side, each with its own data and entities: **Family Quest** (stable,
+`family_quest_…`, port 8099), **Family Quest Beta** (the next version for testing, `family_quest_beta_…`, port 8098,
+orange «BETA» icon) and **Family Quest Dev** (development builds, `family_quest_dev_…`, port 8097, purple «DEV» icon).
+Only the dev app has games that are still being reworked (now: 🏎️ 24h Endurance and 🏛️ Beat the Bureaucracy) –
+stable and beta do not show them; history entries of earlier games stay.
 
 ## The app: menu and season designs
 
@@ -477,18 +485,19 @@ A board opens full screen (✕ closes it):
 Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
 to 600 points. Everything is in the database, so the backup contains the boards.
 
-### My books: the family bookshelf (picture books, adventure books)
-In the app menu **📚 My books** (also a card on the Family page) and in the parent area under **Family**: children and
+### 📚 Library: the family bookshelf (books, adventure books, adventure games)
+In the app menu **📚 Library** (formerly «My books»; also a card on the Family page) and in the parent area under **Family**: children and
 parents write books, the whole family reads them. Guests never see them. The shelf holds three **book types**, shown as
-a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Picture books · 📖 Adventure books ·
+a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Books · 📖 Adventure books ·
 🗝️ Adventure games):
-- **📕 Picture book** – pages with a picture and a text, read page by page (below).
+- **📕 Book** (picture book) – pages with a picture and a text, read page by page (below).
 - **📖 Adventure book** – choose-your-path stories with choices, good and bad endings and items (below).
 - **🗝️ Adventure game** – reserved for later: the shelf and the data know the type, it cannot be made yet («soon»).
 Visibility (🔒 / 🧒 / 👨‍👩‍👧), approval, rewards, ⭐ ratings, reading progress, the parent area and the privacy rules are
-the same for every type. **+ New book** first asks for the type.
+the same for every type. **+ New book** first asks for the type; a new book of any type is for the **👨‍👩‍👧 whole family**
+(changeable right there and in the editor – with approval on it still waits for a parent once published).
 
-#### 📕 Picture books
+#### 📕 Books (picture books)
 - A **cover** (picture, title, author – the title and the colour are set in ⚙️) and up to **60 pages**. Every page has a
   **layout**: 🖼️ *picture on top* (text below), 🌄 *full-page picture* (the whole picture edge to edge, the text lies on
   its lower edge – on tablets on the picture) or 📝 *text only* – and a text (max. 600 characters).
@@ -515,7 +524,9 @@ the same for every type. **+ New book** first asks for the type.
 🚀 space, 🏰 haunted castle, 🐠 underwater, each a small finished story in all app languages):
 - A book is a list of **pages**: 📄 **scene** (text, a picture and 2–4 choices A–D, each pointing to another page),
   🏆 **good ending** (confetti) or 💀 **bad ending** («Try again»). Paths may merge or go back to an earlier page.
-  In the target list of a choice «＋ New scene / good ending / bad ending» makes the page right away.
+  In the target list of a choice «＋ New scene / good ending / bad ending» makes the page right away. Every page carries
+  its **number in a purple circle** (page cards and map), and next to the target list of a choice the same purple
+  circle shows the number of the page it leads to.
 - **Picture** per page: an emoji, an **own drawing** (painter for finger and stylus: pen in 4 sizes with stylus pressure,
   14 colours, rubber, fill bucket, undo) or a **photo** (made smaller in the browser, max. 2 MB per picture).
 - **🏞️ Background** per page: 24 own scenes (jungle, beach, deep sea, space, haunted castle, enchanted forest, snowy
@@ -536,7 +547,8 @@ the same for every type. **+ New book** first asks for the type.
 backpack. Every reader collects their own endings («2 of 5 endings found» on the cover) and gives ⭐ 1–5 after reaching
 an ending (not for the own book).
 
-**Who can read it** (chosen by the author when the book is made and in the editor at any time; new books: 🔒):
+**Who can read it** (chosen by the author when the book is made and in the editor at any time; new books: 👨‍👩‍👧, imported
+books: 🔒):
 - **🔒 Only me** – only the author can read it, parents neither. Nobody else gets its title, text or pictures from the
   app; in the parent area parents only see that a private book exists (author, page count, date) and cannot open,
   change or remove it. Never needs approval.
@@ -561,7 +573,7 @@ books per file.
 **Single-language books:** a book is written in one language (a language tag, chosen when it is made, changeable in ⚙️)
 – there are no translations inside a book. The templates come in every app language.
 
-**Parents** (Family › My books › ⚙️): the bookshelf on/off per child (off: no menu entry, no reading or
+**Parents** (Family › Library › ⚙️): the bookshelf on/off per child (off: no menu entry, no reading or
 writing), **approval** before the others see a child's book (default off – then a book for 🧒 / 👨‍👩‍👧 waits under
 «Waiting for approval»: 👀 read, ✓ approve, ✗ back to a draft; a new version waits again while the readers keep the
 approved one), rewards for writing: coins / XP per book (default 20 coins, paid once per book when the others can first
@@ -1189,6 +1201,8 @@ drivers).
 
 ### 24h Endurance (24-Stunden-Rennen)
 
+*Only in the app «Family Quest Dev» for now – it is being reworked before it comes to the beta.*
+
 Games › For a game night › **🏎️ 24h Endurance**: a live **team endurance race** on the fictional **Circuit des Tannes**.
 Every team is a racing stable (colour, name, start number) with **one car**; the family splits into 1–4 teams at the
 table (2–5 people per team, guests via QR code join a team too), **bot teams** bring traffic. Alone you race against
@@ -1557,6 +1571,8 @@ people of the family**, never to guests, paid once. Every person of the family g
 time, hints, team); the winners get the «No. 1» hat.
 
 ### Beat the Bureaucracy
+
+*Only in the app «Family Quest Dev» for now – it is being reworked before it comes to the beta.*
 
 Games → **🏛️ Beat the Bureaucracy** (de «Besiege die Bürokratie», de-CH «Bsieg d Bürokratie», fr «Vaincre la
 bureaucratie» …): a light-hearted family party game in the wonderfully complicated town hall of an invented town

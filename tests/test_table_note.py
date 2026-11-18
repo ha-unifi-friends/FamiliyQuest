@@ -45,7 +45,11 @@ def test_join_path_of_the_note(client):
     from familyquest import running
     ph, mia, leo = setup_family(client)
     hb = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    from familyquest.channel import hidden_games
     for game in running.ROUTES:                     # no table open: the endpoint exists and refuses (not 404/405)
+        if game in hidden_games():                  # dev games (channel.py): no API outside «Family Quest Dev»
+            assert client.post("/api/" + running.join_path(game), headers=hb).status_code == 404, game
+            continue
         assert client.post("/api/" + running.join_path(game), headers=hb).status_code not in (404, 405), game
     hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
     hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}

@@ -1,0 +1,8 @@
+configuration:
+  log_level:
+    name: Loggnivå
+  direct_access:
+    name: Direkt åtkomst i hemnätverket
+    description: Erbjud appen även på port 8099 (ange porten under Nätverk). Barnen väljer då sin profil, med valfri PIN-kod, i stället för att logga in i Home Assistant.
+network:
+  8099/tcp: Direkt åtkomst (endast med alternativet direkt åtkomst)

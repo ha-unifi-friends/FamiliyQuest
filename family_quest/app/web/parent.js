@@ -366,7 +366,7 @@ function bookDialog(profile) {
     h("div.row", h("button.btn", { onclick: async () => {
       await call("parent/book", { method: "POST", body: { profile_id: profile.id, account: acc.value, amount: Number(amount.value), reason: reason.value } });
       m.close(); toast(T("Booked"), "good"); render();
-    } }, T("Book")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+    } }, T("Book points")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
 }
 
 // ---------------------------------------------------------------- profiles
@@ -1684,7 +1684,7 @@ function gameAccess(kids, data) {
   };
   return {
     bar: k => { if (!bars[k]) { bars[k] = h("div.game-status"); setTimeout(() => draw(k)); } return bars[k]; },
-    allTo: mode => { for (const [k] of GAME_LIST) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; return save(null); },
+    allTo: mode => { for (const [k] of GAME_LIST) if (k in acc) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; return save(null); },
   };
 }
 
@@ -2443,6 +2443,8 @@ async function gamesView(main) {
   const blocks = { quiz, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
     langstrecke,
     heimwaerts, jump, sternlauf, snack, verkehr, klatsch, verboten, jass, werwolf, schach, dorfmarkt, escape, stempeljagd, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
+  // only the games of this app's channel: the server leaves out games still in development (channel.py DEV_GAMES)
+  for (const k of Object.keys(blocks)) if (!(k in data.access)) delete blocks[k];
   for (const [k, el] of Object.entries(blocks)) {
     const g = GAME_LIST.find(x => x[0] === k);
     el.classList.add("game-block");
@@ -2477,7 +2479,8 @@ async function gamesView(main) {
     search, general, batterySettingsCard(), runningGamesBox(), none, ...Object.values(blocks));
   filter();
   showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
-  showLangstrecke(); showStempeljagd();
+  if (blocks.langstrecke) showLangstrecke();
+  if (blocks.stempeljagd) showStempeljagd();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
 }
 

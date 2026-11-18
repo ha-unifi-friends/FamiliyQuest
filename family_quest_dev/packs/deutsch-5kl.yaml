@@ -1,0 +1,48 @@
+# Deutsch: der/die/das und Wortarten.
+id: deutsch-5kl
+titel: Deutsch 5. Klasse – Artikel und Wortarten
+fach: deutsch
+stufe: 5. Klasse
+version: 1
+quelle: Family Quest (CC0)
+einheiten:
+  - id: artikel
+    titel: der, die oder das?
+    icon: "📖"
+    uebungen: [auswahl]
+    karten:
+      - {frage: Haus, antwort: das, optionen: [der, die, das]}
+      - {frage: Baum, antwort: der, optionen: [der, die, das]}
+      - {frage: Blume, antwort: die, optionen: [der, die, das]}
+      - {frage: Fenster, antwort: das, optionen: [der, die, das]}
+      - {frage: Löffel, antwort: der, optionen: [der, die, das]}
+      - {frage: Gabel, antwort: die, optionen: [der, die, das]}
+      - {frage: Messer, antwort: das, optionen: [der, die, das]}
+      - {frage: Käse, antwort: der, optionen: [der, die, das]}
+      - {frage: Butter, antwort: die, optionen: [der, die, das]}
+      - {frage: Brot, antwort: das, optionen: [der, die, das]}
+      - {frage: Mond, antwort: der, optionen: [der, die, das]}
+      - {frage: Sonne, antwort: die, optionen: [der, die, das]}
+      - {frage: Mädchen, antwort: das, optionen: [der, die, das]}
+      - {frage: Schmetterling, antwort: der, optionen: [der, die, das]}
+      - {frage: Brücke, antwort: die, optionen: [der, die, das]}
+      - {frage: Velo, antwort: das, optionen: [der, die, das]}
+      - {frage: Rucksack, antwort: der, optionen: [der, die, das]}
+      - {frage: Zeitung, antwort: die, optionen: [der, die, das]}
+  - id: wortarten
+    titel: Wortarten sortieren
+    icon: "🧩"
+    uebungen: [zuordnen]
+    karten:
+      - {frage: Hund, antwort: Nomen}
+      - {frage: Schule, antwort: Nomen}
+      - {frage: Freude, antwort: Nomen}
+      - {frage: Wasser, antwort: Nomen}
+      - {frage: rennen, antwort: Verb}
+      - {frage: lesen, antwort: Verb}
+      - {frage: schwimmen, antwort: Verb}
+      - {frage: lachen, antwort: Verb}
+      - {frage: gross, antwort: Adjektiv}
+      - {frage: leise, antwort: Adjektiv}
+      - {frage: grün, antwort: Adjektiv}
+      - {frage: schnell, antwort: Adjektiv}

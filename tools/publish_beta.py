@@ -25,7 +25,13 @@ BETA_PORT = 8098
 
 
 def main(version: str, notes: list[str]) -> None:
-    dst = ROOT / SLUG
+    publish(SLUG, "Family Quest Beta", "BETA", BETA_PORT, ROOT / "tools" / "beta", version, notes)
+
+
+def publish(slug: str, name: str, tag: str, port: int, icons: Path, version: str, notes: list[str], channel: str = "") -> None:
+    """Write the app `slug` (a copy of family_quest/ with its own name, slug, port, icon and changelog) – also used by
+    tools/publish_dev.py. `channel`: written to app/CHANNEL (familyquest/channel.py), e.g. «dev»."""
+    dst = ROOT / slug
     old_log = (dst / "CHANGELOG.md").read_text(encoding="utf-8") if (dst / "CHANGELOG.md").is_file() else ""
     if dst.exists():
         shutil.rmtree(dst)
@@ -36,33 +42,35 @@ def main(version: str, notes: list[str]) -> None:
         out = dst / Path(rel).relative_to("family_quest")
         out.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, out)
-    for name in ("icon.png", "logo.png"):
-        shutil.copy2(ROOT / "tools" / "beta" / name, dst / name)
+    for icon in ("icon.png", "logo.png"):
+        shutil.copy2(icons / icon, dst / icon)
+    if channel:
+        (dst / "app" / "CHANNEL").write_text(channel + "\n", encoding="utf-8")
 
     cfg = dst / "config.yaml"
     text = cfg.read_text(encoding="utf-8")
-    for key, value in (("name", '"Family Quest Beta"'), ("version", f'"{version}"'), ("slug", SLUG),
-                       ("url", URL), ("panel_title", '"Family Quest Beta"')):
+    for key, value in (("name", f'"{name}"'), ("version", f'"{version}"'), ("slug", slug),
+                       ("url", URL), ("panel_title", f'"{name}"')):
         text, n = re.subn(rf"^{key}:.*$", f"{key}: {value}", text, count=1, flags=re.M)
         assert n, f"config.yaml has no '{key}'"
-    text = re.sub(r'^description: "(.*)"$', r'description: "BETA – \1"', text, count=1, flags=re.M)
-    # own host port for direct access, so both apps can run with direct access at the same time
-    text, n = re.subn(r"^  8099/tcp: .*$", f"  8099/tcp: {BETA_PORT}", text, count=1, flags=re.M)
+    text = re.sub(r'^description: "(.*)"$', rf'description: "{tag} – \1"', text, count=1, flags=re.M)
+    # own host port for direct access, so the apps can run with direct access at the same time
+    text, n = re.subn(r"^  8099/tcp: .*$", f"  8099/tcp: {port}", text, count=1, flags=re.M)
     assert n, "config.yaml has no port 8099/tcp"
     cfg.write_text(text, encoding="utf-8")
-    # AppArmor profile named after the beta slug (the Supervisor loads it under the add-on's slug)
+    # AppArmor profile named after the app's slug (the Supervisor loads it under the add-on's slug)
     aa = dst / "apparmor.txt"
     if aa.is_file():
-        aa.write_text(aa.read_text(encoding="utf-8").replace("profile family_quest ", f"profile {SLUG} ", 1), encoding="utf-8")
+        aa.write_text(aa.read_text(encoding="utf-8").replace("profile family_quest ", f"profile {slug} ", 1), encoding="utf-8")
 
-    # the beta keeps its own changelog: new entry on top of the previous beta changelog
+    # the app keeps its own changelog: new entry on top of its previous changelog
     head = "# Changelog\n\n"
     body = old_log[len(head):] if old_log.startswith(head) else (dst / "CHANGELOG.md").read_text(encoding="utf-8")[len(head):]
     if f"## {version}\n" not in body:
         entry = f"## {version}\n\n" + "".join(f"- {n}\n" for n in notes or ["Development state of the next version."]) + "\n"
         body = entry + body
     (dst / "CHANGELOG.md").write_text(head + body, encoding="utf-8")
-    print(f"beta {version} written to {dst}")
+    print(f"{name} {version} written to {dst}")
 
 
 if __name__ == "__main__":

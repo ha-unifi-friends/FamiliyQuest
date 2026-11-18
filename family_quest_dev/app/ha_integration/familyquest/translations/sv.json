@@ -1,0 +1,185 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Family Quest",
+        "description": "Anslut Family Quest-appen. I Family Quest: Föräldradel › Inställningar › «Family Quest HA-integration» – slå på den och kopiera token.",
+        "data": {
+          "url": "Adress till Family Quest-appen",
+          "token": "Integrationstoken"
+        },
+        "data_description": {
+          "url": "I Home Assistant OS: http://<tilläggets värdnamn>:8099 (föreslaget).",
+          "token": "Visas en gång i föräldradelen av Family Quest (börjar med fqi_)."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Ny integrationstoken",
+        "description": "Token avvisades. Skapa en ny token i Family Quest (Föräldradel › Inställningar › «Family Quest HA-integration») och klistra in den här.",
+        "data": {
+          "token": "Integrationstoken"
+        },
+        "data_description": {
+          "token": "Visas en gång i föräldradelen av Family Quest (börjar med fqi_)."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Fel token, eller så är integrationen avstängd i Family Quest.",
+      "cannot_connect": "Family Quest kan inte nås på den här adressen."
+    },
+    "abort": {
+      "already_configured": "Den här Family Quest är redan konfigurerad.",
+      "reauth_successful": "Den nya token fungerar."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "xp_today": {
+        "name": "XP i dag"
+      },
+      "total_xp": {
+        "name": "XP totalt"
+      },
+      "level": {
+        "name": "Nivå"
+      },
+      "streak": {
+        "name": "Svit"
+      },
+      "goal_progress": {
+        "name": "Framsteg mot dagens mål"
+      },
+      "chores_open": {
+        "name": "Öppna sysslor"
+      },
+      "lessons_today": {
+        "name": "Lektioner i dag"
+      },
+      "internet_minutes": {
+        "name": "Internetminuter kvar"
+      },
+      "game_time_left": {
+        "name": "Speltid kvar i dag"
+      },
+      "learn_time_left": {
+        "name": "Lärtid kvar i dag"
+      },
+      "family_total_xp": {
+        "name": "Familjens XP totalt"
+      },
+      "family_xp_today": {
+        "name": "Familjens XP i dag"
+      },
+      "running_games": {
+        "name": "Pågående spel"
+      },
+      "open_votes": {
+        "name": "Öppna omröstningar"
+      },
+      "pending_approvals": {
+        "name": "Väntar på godkännande"
+      },
+      "balance": {
+        "name": "{account}"
+      },
+      "balance_coins": {
+        "name": "Mynt"
+      },
+      "balance_internet": {
+        "name": "Internetminuter"
+      }
+    },
+    "binary_sensor": {
+      "goal_met": {
+        "name": "Dagens mål nått"
+      },
+      "internet_blocked": {
+        "name": "Internet blockerat"
+      },
+      "game_time_used_up": {
+        "name": "Speltiden slut"
+      },
+      "offline_time": {
+        "name": "OfflineTime"
+      }
+    },
+    "switch": {
+      "internet": {
+        "name": "Internet"
+      }
+    }
+  },
+  "services": {
+    "add_points": {
+      "name": "Lägg till poäng",
+      "description": "Bokför poäng (eller en rättelse) för ett barn, som «Bokför poäng» i föräldradelen.",
+      "fields": {
+        "child": {
+          "name": "Barn",
+          "description": "Barnets namn eller id."
+        },
+        "account": {
+          "name": "Konto",
+          "description": "Kontots nyckel, t.ex. coins eller internet."
+        },
+        "amount": {
+          "name": "Belopp",
+          "description": "Poäng att lägga till (negativt för att dra av)."
+        },
+        "reason": {
+          "name": "Anledning",
+          "description": "Visas i barnets historik."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Behövs bara om mer än en Family Quest är konfigurerad."
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Godkänn syssla",
+      "description": "Bekräfta (eller skicka tillbaka med approve: false) en syssla som väntar på godkännande.",
+      "fields": {
+        "task_id": {
+          "name": "Uppgifts-id",
+          "description": "task_id från attributet `chores` i «Väntar på godkännande»."
+        },
+        "approve": {
+          "name": "Godkänn",
+          "description": "true = klart, false = gör om."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Behövs bara om mer än en Family Quest är konfigurerad."
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Godkänn belöning",
+      "description": "Godkänn eller avslå en belöning som ett barn vill lösa in.",
+      "fields": {
+        "redemption_id": {
+          "name": "Inlösen-id",
+          "description": "redemption_id från attributet `rewards` i «Väntar på godkännande»."
+        },
+        "approve": {
+          "name": "Godkänn",
+          "description": "true = klart, false = gör om."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Behövs bara om mer än en Family Quest är konfigurerad."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "Family Quest är inte konfigurerad eller inte laddad."
+    },
+    "several_entries": {
+      "message": "Mer än en Family Quest är konfigurerad – välj en med config_entry_id."
+    }
+  }
+}

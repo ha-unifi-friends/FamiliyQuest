@@ -1,0 +1,208 @@
+# Allgemeinwissen – eigene Fragen (Family Quest, CC0)
+id: allgemeinwissen
+titel: "Allgemeinwissen"
+fach: allgemeinwissen
+stufe: "für alle"
+version: 1
+quelle: Family Quest (eigene Inhalte, CC0)
+icon: "🧠"
+beschreibung: "Quizfragen für die ganze Familie: Erfindungen, Bauwerke, Geschichte, Natur, Weltall, Kultur, Sport und Länder."
+standard: false
+selbst: true
+einheiten:
+  - id: erfindungen
+    titel: Erfindungen & Entdeckungen
+    icon: "💡"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wer meldete 1876 ein Patent auf das Telefon an?", antwort: "Alexander Graham Bell", optionen: ["Thomas Edison", "Guglielmo Marconi", "Werner von Siemens"]}
+      - {frage: "Wer brachte 1879/1880 eine langlebige Glühbirne zur Marktreife?", antwort: "Thomas Edison", optionen: ["Nikola Tesla", "Alexander Graham Bell", "Gottlieb Daimler"]}
+      - {frage: "Wer erfand um 1450 in Mainz den Buchdruck mit beweglichen Lettern?", antwort: "Johannes Gutenberg", optionen: ["Martin Luther", "Leonardo da Vinci", "Albrecht Dürer"]}
+      - {frage: "Wer entdeckte 1928 das Penicillin?", antwort: "Alexander Fleming", optionen: ["Louis Pasteur", "Robert Koch", "Marie Curie"]}
+      - {frage: "Wem gelang 1903 der erste gesteuerte Motorflug?", antwort: "den Brüdern Wright", optionen: ["Otto Lilienthal", "Ferdinand von Zeppelin", "Louis Blériot"]}
+      - {frage: "Wer meldete 1886 den «Patent-Motorwagen» an, das erste Auto mit Benzinmotor?", antwort: "Carl Benz", optionen: ["Henry Ford", "Rudolf Diesel", "Ferdinand Porsche"]}
+      - {frage: "Welche Forscherin entdeckte zusammen mit ihrem Mann die Elemente Radium und Polonium?", antwort: "Marie Curie", optionen: ["Lise Meitner", "Ada Lovelace", "Rosalind Franklin"]}
+      - {frage: "Wer veröffentlichte 1905 die spezielle Relativitätstheorie?", antwort: "Albert Einstein", optionen: ["Isaac Newton", "Max Planck", "Niels Bohr"]}
+      - {frage: "Wo arbeitete Albert Einstein, als er 1905 die spezielle Relativitätstheorie veröffentlichte?", antwort: "am Patentamt in Bern", optionen: ["an der Universität Basel", "am CERN in Genf", "an der Universität Oxford"]}
+      - {frage: "Wer beschrieb im 17. Jahrhundert das Gravitationsgesetz?", antwort: "Isaac Newton", optionen: ["Galileo Galilei", "Johannes Kepler", "Nikolaus Kopernikus"]}
+      - {frage: "Wer verbesserte ab 1769 die Dampfmaschine entscheidend?", antwort: "James Watt", optionen: ["George Stephenson", "Robert Fulton", "Isambard Kingdom Brunel"]}
+      - {frage: "Wer erfand 1989 am CERN das World Wide Web?", antwort: "Tim Berners-Lee", optionen: ["Bill Gates", "Steve Jobs", "Mark Zuckerberg"]}
+      - {frage: "Welcher Schweizer Ingenieur erfand den Klettverschluss?", antwort: "George de Mestral", optionen: ["Henri Dunant", "Henri Nestlé", "Rudolf Lindt"]}
+      - {frage: "Wer erfand 1867 das Dynamit?", antwort: "Alfred Nobel", optionen: ["Werner von Siemens", "Robert Bosch", "Rudolf Diesel"]}
+      - {frage: "Wer entwickelte 1796 die erste Impfung gegen die Pocken?", antwort: "Edward Jenner", optionen: ["Louis Pasteur", "Robert Koch", "Alexander Fleming"]}
+  - id: bauwerke
+    titel: Bauwerke & Rekorde
+    icon: "🗼"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wie hoch war der Eiffelturm bei der Eröffnung 1889?", antwort: "rund 300 Meter", optionen: ["rund 150 Meter", "rund 200 Meter", "rund 450 Meter"]}
+      - {frage: "Wie hoch ist der Eiffelturm heute mit Antennen?", antwort: "rund 330 Meter", optionen: ["rund 250 Meter", "rund 420 Meter", "rund 510 Meter"]}
+      - {frage: "Wessen Unternehmen baute den Eiffelturm?", antwort: "Gustave Eiffel", optionen: ["Le Corbusier", "Georges-Eugène Haussmann", "Auguste Rodin"]}
+      - {frage: "In welcher Stadt steht der über 800 Meter hohe Burj Khalifa?", antwort: "Dubai", optionen: ["Abu Dhabi", "Doha", "Riad"]}
+      - {frage: "Wo steht die Cheops-Pyramide?", antwort: "in Gizeh bei Kairo", optionen: ["in Luxor", "in Alexandria", "in Assuan"]}
+      - {frage: "Wie lang ist der Gotthard-Basistunnel?", antwort: "rund 57 Kilometer", optionen: ["rund 15 Kilometer", "rund 34 Kilometer", "rund 100 Kilometer"]}
+      - {frage: "In welchem Jahr wurde der Gotthard-Basistunnel eröffnet?", antwort: "2016", optionen: ["1882", "1980", "2007"]}
+      - {frage: "In welcher Stadt steht das Kolosseum?", antwort: "Rom", optionen: ["Athen", "Neapel", "Istanbul"]}
+      - {frage: "In welchem Land steht der Taj Mahal?", antwort: "Indien", optionen: ["Pakistan", "Iran", "Bangladesch"]}
+      - {frage: "Welches Land schenkte den USA die Freiheitsstatue?", antwort: "Frankreich", optionen: ["Grossbritannien", "Spanien", "Deutschland"]}
+      - {frage: "In welcher Stadt steht der berühmte Schiefe Turm?", antwort: "Pisa", optionen: ["Florenz", "Venedig", "Mailand"]}
+      - {frage: "In welcher Stadt baut man seit 1882 an der Kirche Sagrada Família?", antwort: "Barcelona", optionen: ["Madrid", "Sevilla", "Lissabon"]}
+      - {frage: "In welcher Stadt hängt die Glocke «Big Ben»?", antwort: "London", optionen: ["Dublin", "Edinburgh", "Manchester"]}
+      - {frage: "In welcher Stadt steht die Golden Gate Bridge?", antwort: "San Francisco", optionen: ["New York", "Los Angeles", "Seattle"]}
+      - {frage: "In welchem Land liegt die Inka-Stadt Machu Picchu?", antwort: "Peru", optionen: ["Mexiko", "Bolivien", "Chile"]}
+  - id: ereignisse
+    titel: Weltausstellungen & grosse Ereignisse
+    icon: "🎡"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Für welche Weltausstellung wurde der Eiffelturm gebaut?", antwort: "Paris 1889", optionen: ["Paris 1900", "London 1851", "Wien 1873"]}
+      - {frage: "Wo fand 1851 die erste Weltausstellung statt?", antwort: "London", optionen: ["Paris", "Wien", "New York"]}
+      - {frage: "Wie hiess das riesige Glasgebäude der Weltausstellung 1851?", antwort: "Kristallpalast (Crystal Palace)", optionen: ["Glaspyramide", "Atomium", "Grand Palais"]}
+      - {frage: "Für die Weltausstellung 1958 entstand das Atomium. In welcher Stadt steht es?", antwort: "Brüssel", optionen: ["Antwerpen", "Amsterdam", "Paris"]}
+      - {frage: "Welches Verkehrsmittel nahm in Paris während der Weltausstellung 1900 den Betrieb auf?", antwort: "die Métro", optionen: ["der TGV", "eine Seilbahn über die Seine", "der erste Flughafen"]}
+      - {frage: "In welcher deutschen Stadt fand die Weltausstellung 2000 statt?", antwort: "Hannover", optionen: ["München", "Hamburg", "Frankfurt"]}
+      - {frage: "Welche Stadt war 2015 Gastgeberin der Weltausstellung?", antwort: "Mailand", optionen: ["Shanghai", "Dubai", "Hannover"]}
+      - {frage: "In welcher Region fand die Schweizer Landesausstellung Expo.02 statt?", antwort: "im Drei-Seen-Land (Biel, Neuenburg, Yverdon, Murten)", optionen: ["rund um den Genfersee", "am Vierwaldstättersee", "in Zürich und Winterthur"]}
+      - {frage: "In welcher Stadt fand die Landesausstellung Expo 64 statt?", antwort: "Lausanne", optionen: ["Genf", "Bern", "Zürich"]}
+      - {frage: "Wo fand 1939 die Landesausstellung «Landi» statt?", antwort: "Zürich", optionen: ["Bern", "Basel", "Lausanne"]}
+      - {frage: "In welchem Jahr landeten zum ersten Mal Menschen auf dem Mond?", antwort: "1969", optionen: ["1957", "1961", "1975"]}
+      - {frage: "Wer betrat 1969 als erster Mensch den Mond?", antwort: "Neil Armstrong", optionen: ["Buzz Aldrin", "Juri Gagarin", "John Glenn"]}
+      - {frage: "In welchem Jahr fiel die Berliner Mauer?", antwort: "1989", optionen: ["1961", "1975", "1991"]}
+      - {frage: "In welchem Jahr sank die Titanic?", antwort: "1912", optionen: ["1898", "1923", "1937"]}
+  - id: weltgeschichte
+    titel: Weltgeschichte
+    icon: "🏛️"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wer erreichte 1492 im Auftrag Spaniens Amerika?", antwort: "Christoph Kolumbus", optionen: ["Vasco da Gama", "Ferdinand Magellan", "Amerigo Vespucci"]}
+      - {frage: "Von wann bis wann dauerte der Erste Weltkrieg?", antwort: "1914–1918", optionen: ["1912–1916", "1939–1945", "1918–1922"]}
+      - {frage: "In welchem Jahr endete der Zweite Weltkrieg in Europa?", antwort: "1945", optionen: ["1918", "1943", "1949"]}
+      - {frage: "In welchem Jahr begann die Französische Revolution?", antwort: "1789", optionen: ["1689", "1815", "1848"]}
+      - {frage: "Wer war der erste Kaiser des Römischen Reiches?", antwort: "Augustus", optionen: ["Julius Caesar", "Nero", "Konstantin"]}
+      - {frage: "Wer entdeckte 1922 das Grab des Pharaos Tutanchamun?", antwort: "Howard Carter", optionen: ["Heinrich Schliemann", "Jean-François Champollion", "Thor Heyerdahl"]}
+      - {frage: "Wer war der erste Präsident der USA?", antwort: "George Washington", optionen: ["Abraham Lincoln", "Thomas Jefferson", "Benjamin Franklin"]}
+      - {frage: "In welchem Jahr erklärten die USA ihre Unabhängigkeit?", antwort: "1776", optionen: ["1492", "1789", "1865"]}
+      - {frage: "Welches Land führte Nelson Mandela ab 1994 als Präsident?", antwort: "Südafrika", optionen: ["Kenia", "Nigeria", "Simbabwe"]}
+      - {frage: "In welchem Jahr wurde die UNO gegründet?", antwort: "1945", optionen: ["1919", "1950", "1964"]}
+      - {frage: "Wer veröffentlichte 1517 seine 95 Thesen und löste damit die Reformation aus?", antwort: "Martin Luther", optionen: ["Huldrych Zwingli", "Johannes Calvin", "Jan Hus"]}
+      - {frage: "In welcher Schlacht wurde Napoleon 1815 endgültig besiegt?", antwort: "Waterloo", optionen: ["Austerlitz", "Leipzig", "Trafalgar"]}
+      - {frage: "Welcher Vulkan verschüttete im Jahr 79 n. Chr. die Stadt Pompeji?", antwort: "der Vesuv", optionen: ["der Ätna", "der Stromboli", "der Vulcano"]}
+      - {frage: "Welche britische Königin oder welcher König regierte am längsten?", antwort: "Elisabeth II.", optionen: ["Victoria", "Georg III.", "Heinrich VIII."]}
+      - {frage: "Aus welchem Königreich stammte Alexander der Grosse?", antwort: "Makedonien", optionen: ["Sparta", "Persien", "Ägypten"]}
+  - id: schweiz
+    titel: Schweizer Geschichte
+    icon: "🇨🇭"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Auf welches Jahr ist der Bundesbrief der Eidgenossen datiert?", antwort: "1291", optionen: ["1315", "1415", "1848"]}
+      - {frage: "Welche drei Orte schlossen den Bundesbrief von 1291?", antwort: "Uri, Schwyz und Unterwalden", optionen: ["Zürich, Bern und Luzern", "Uri, Glarus und Zug", "Schwyz, Luzern und Bern"]}
+      - {frage: "In welchem Jahr wurde der moderne Schweizer Bundesstaat gegründet?", antwort: "1848", optionen: ["1291", "1798", "1815"]}
+      - {frage: "Welcher kurze Bürgerkrieg ging 1847 der Gründung des Bundesstaates voraus?", antwort: "der Sonderbundskrieg", optionen: ["der Bauernkrieg", "der Schwabenkrieg", "der Burgunderkrieg"]}
+      - {frage: "Welche Stadt ist seit 1848 Sitz von Bundesrat und Parlament?", antwort: "Bern", optionen: ["Zürich", "Luzern", "Genf"]}
+      - {frage: "Auf wessen Idee geht die Gründung des Roten Kreuzes 1863 in Genf zurück?", antwort: "Henri Dunant", optionen: ["Alfred Escher", "Johann Heinrich Pestalozzi", "Gottfried Keller"]}
+      - {frage: "Seit welchem Jahr dürfen Frauen in der Schweiz auf Bundesebene abstimmen und wählen?", antwort: "1971", optionen: ["1919", "1959", "1990"]}
+      - {frage: "Wo soll Wilhelm Tell laut Sage den Apfel vom Kopf seines Sohnes geschossen haben?", antwort: "in Altdorf", optionen: ["in Schwyz", "in Luzern", "in Brunnen"]}
+      - {frage: "In welchem Jahr fand die Schlacht am Morgarten statt?", antwort: "1315", optionen: ["1291", "1386", "1515"]}
+      - {frage: "Nach welcher Niederlage 1515 in Italien endete die Grossmachtpolitik der Eidgenossen?", antwort: "Schlacht bei Marignano", optionen: ["Schlacht bei Sempach", "Schlacht am Morgarten", "Schlacht bei Murten"]}
+      - {frage: "Welcher Kanton ist der jüngste der Schweiz (seit 1979)?", antwort: "Jura", optionen: ["Basel-Landschaft", "Appenzell Innerrhoden", "Tessin"]}
+      - {frage: "Wie viele Kantone hat die Schweiz?", antwort: "26", optionen: ["23", "24", "25"]}
+      - {frage: "Wer war im Zweiten Weltkrieg General der Schweizer Armee?", antwort: "Henri Guisan", optionen: ["Guillaume-Henri Dufour", "Ulrich Wille", "Hans Herzog"]}
+      - {frage: "Wer leitete den Bau des ersten Gotthard-Eisenbahntunnels (eröffnet 1882)?", antwort: "Louis Favre", optionen: ["Gustave Eiffel", "Guillaume-Henri Dufour", "Henri Dunant"]}
+  - id: koerper
+    titel: Naturwissenschaft & Körper
+    icon: "🔬"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wie viele Knochen hat ein erwachsener Mensch?", antwort: "rund 206", optionen: ["rund 106", "rund 300", "rund 512"]}
+      - {frage: "Welches ist das grösste Organ des menschlichen Körpers?", antwort: "die Haut", optionen: ["das Herz", "das Gehirn", "der Magen"]}
+      - {frage: "Welche Blutzellen transportieren den Sauerstoff?", antwort: "die roten Blutkörperchen", optionen: ["die weissen Blutkörperchen", "die Blutplättchen", "die Nervenzellen"]}
+      - {frage: "Wie viele Zähne hat ein vollständiges Erwachsenengebiss mit Weisheitszähnen?", antwort: "32", optionen: ["20", "26", "40"]}
+      - {frage: "Wie lautet die chemische Formel von Wasser?", antwort: "H₂O", optionen: ["CO₂", "O₂", "NaCl"]}
+      - {frage: "Bei wie vielen Grad Celsius siedet Wasser auf Meereshöhe?", antwort: "100 °C", optionen: ["80 °C", "90 °C", "120 °C"]}
+      - {frage: "Welches Gas geben Pflanzen bei der Fotosynthese ab?", antwort: "Sauerstoff", optionen: ["Stickstoff", "Kohlendioxid", "Helium"]}
+      - {frage: "Für welches Element steht das chemische Symbol «Au»?", antwort: "Gold", optionen: ["Silber", "Aluminium", "Kupfer"]}
+      - {frage: "Wie schnell ist das Licht ungefähr?", antwort: "rund 300 000 Kilometer pro Sekunde", optionen: ["rund 300 Kilometer pro Sekunde", "rund 30 000 Kilometer pro Sekunde", "rund 3 Millionen Kilometer pro Sekunde"]}
+      - {frage: "Welches Metall ist bei Raumtemperatur flüssig?", antwort: "Quecksilber", optionen: ["Blei", "Zinn", "Aluminium"]}
+      - {frage: "Zu welcher Tiergruppe gehört der Blauwal?", antwort: "zu den Säugetieren", optionen: ["zu den Fischen", "zu den Reptilien", "zu den Amphibien"]}
+      - {frage: "Welches ist das grösste heute lebende Tier?", antwort: "der Blauwal", optionen: ["der Pottwal", "der Walhai", "der Afrikanische Elefant"]}
+      - {frage: "Wie viele Beine haben Insekten?", antwort: "sechs", optionen: ["vier", "acht", "zehn"]}
+      - {frage: "Wie nennt man Tiere, die nur Pflanzen fressen?", antwort: "Pflanzenfresser", optionen: ["Fleischfresser", "Allesfresser", "Aasfresser"]}
+  - id: erde_weltall
+    titel: Erde & Weltall
+    icon: "🪐"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wie viele Planeten hat unser Sonnensystem?", antwort: "acht", optionen: ["sieben", "neun", "zehn"]}
+      - {frage: "Welches ist der grösste Planet unseres Sonnensystems?", antwort: "Jupiter", optionen: ["Saturn", "Neptun", "Erde"]}
+      - {frage: "Welcher Planet ist der Sonne am nächsten?", antwort: "Merkur", optionen: ["Venus", "Mars", "Erde"]}
+      - {frage: "Welcher Planet wird «der Rote Planet» genannt?", antwort: "Mars", optionen: ["Venus", "Jupiter", "Merkur"]}
+      - {frage: "Welcher Planet ist für seine auffälligen Ringe bekannt?", antwort: "Saturn", optionen: ["Mars", "Venus", "Merkur"]}
+      - {frage: "Wer flog 1961 als erster Mensch ins Weltall?", antwort: "Juri Gagarin", optionen: ["Neil Armstrong", "Alan Shepard", "Valentina Tereschkowa"]}
+      - {frage: "Welcher Stern ist der Erde am nächsten?", antwort: "die Sonne", optionen: ["Proxima Centauri", "Sirius", "der Polarstern"]}
+      - {frage: "Wie weit ist der Mond im Durchschnitt von der Erde entfernt?", antwort: "rund 384 000 Kilometer", optionen: ["rund 38 000 Kilometer", "rund 3,8 Millionen Kilometer", "rund 150 Millionen Kilometer"]}
+      - {frage: "Wie weit ist die Sonne ungefähr von der Erde entfernt?", antwort: "rund 150 Millionen Kilometer", optionen: ["rund 15 Millionen Kilometer", "rund 1,5 Milliarden Kilometer", "rund 384 000 Kilometer"]}
+      - {frage: "Wie lange braucht die Erde für eine Runde um die Sonne?", antwort: "rund 365 Tage", optionen: ["24 Stunden", "rund 30 Tage", "rund 1000 Tage"]}
+      - {frage: "Wie hoch ist der Mount Everest ungefähr?", antwort: "rund 8850 Meter", optionen: ["rund 6900 Meter", "rund 7500 Meter", "rund 9800 Meter"]}
+      - {frage: "Welches ist der höchste Berg der Schweiz?", antwort: "die Dufourspitze", optionen: ["das Matterhorn", "die Jungfrau", "der Eiger"]}
+      - {frage: "Welches ist der grösste Ozean der Erde?", antwort: "der Pazifik", optionen: ["der Atlantik", "der Indische Ozean", "der Arktische Ozean"]}
+      - {frage: "Welches Land ist flächenmässig das grösste der Welt?", antwort: "Russland", optionen: ["Kanada", "China", "die USA"]}
+      - {frage: "Wie heisst die äusserste Schicht der Erde?", antwort: "die Erdkruste", optionen: ["der Erdmantel", "der Erdkern", "die Ozonschicht"]}
+  - id: kultur
+    titel: Kunst, Musik & Literatur
+    icon: "🎨"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wer malte die «Mona Lisa»?", antwort: "Leonardo da Vinci", optionen: ["Michelangelo", "Raffael", "Sandro Botticelli"]}
+      - {frage: "In welchem Museum hängt die «Mona Lisa»?", antwort: "im Louvre in Paris", optionen: ["in den Uffizien in Florenz", "im Prado in Madrid", "im British Museum in London"]}
+      - {frage: "Wer malte die Decke der Sixtinischen Kapelle?", antwort: "Michelangelo", optionen: ["Leonardo da Vinci", "Raffael", "Tizian"]}
+      - {frage: "Wer malte «Die Sternennacht»?", antwort: "Vincent van Gogh", optionen: ["Claude Monet", "Paul Cézanne", "Pablo Picasso"]}
+      - {frage: "In welcher Stadt wurde Wolfgang Amadeus Mozart geboren?", antwort: "Salzburg", optionen: ["Wien", "Linz", "Innsbruck"]}
+      - {frage: "Wer vertonte in seiner 9. Sinfonie die «Ode an die Freude»?", antwort: "Ludwig van Beethoven", optionen: ["Wolfgang Amadeus Mozart", "Johann Sebastian Bach", "Joseph Haydn"]}
+      - {frage: "Wer komponierte «Die vier Jahreszeiten»?", antwort: "Antonio Vivaldi", optionen: ["Johann Sebastian Bach", "Georg Friedrich Händel", "Giuseppe Verdi"]}
+      - {frage: "Wer schrieb die Geschichten von «Heidi»?", antwort: "Johanna Spyri", optionen: ["Jeremias Gotthelf", "Gottfried Keller", "Astrid Lindgren"]}
+      - {frage: "Wer schrieb das Theaterstück «Wilhelm Tell» (1804)?", antwort: "Friedrich Schiller", optionen: ["Johann Wolfgang von Goethe", "Gotthold Ephraim Lessing", "Gottfried Keller"]}
+      - {frage: "Wer schrieb «Romeo und Julia»?", antwort: "William Shakespeare", optionen: ["Charles Dickens", "Molière", "Johann Wolfgang von Goethe"]}
+      - {frage: "Wer schrieb «Faust»?", antwort: "Johann Wolfgang von Goethe", optionen: ["Friedrich Schiller", "Heinrich Heine", "Thomas Mann"]}
+      - {frage: "Wer schrieb die «Harry Potter»-Bücher?", antwort: "J. K. Rowling", optionen: ["Cornelia Funke", "J. R. R. Tolkien", "Roald Dahl"]}
+      - {frage: "Wer erfand die Figur «Pippi Langstrumpf»?", antwort: "Astrid Lindgren", optionen: ["Selma Lagerlöf", "Michael Ende", "Erich Kästner"]}
+      - {frage: "Aus welchem Material wird ein traditionelles Alphorn gebaut?", antwort: "aus Holz", optionen: ["aus Messing", "aus Kupfer", "aus Kunststoff"]}
+      - {frage: "Welcher Schweizer Künstler wurde mit sehr schlanken, langen Bronzefiguren berühmt?", antwort: "Alberto Giacometti", optionen: ["Jean Tinguely", "Paul Klee", "Ferdinand Hodler"]}
+  - id: sport
+    titel: Sport
+    icon: "🏅"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wo fanden 1896 die ersten Olympischen Spiele der Neuzeit statt?", antwort: "Athen", optionen: ["Paris", "London", "Rom"]}
+      - {frage: "Wer gilt als Begründer der modernen Olympischen Spiele?", antwort: "Pierre de Coubertin", optionen: ["Juan Antonio Samaranch", "Avery Brundage", "Jacques Rogge"]}
+      - {frage: "In welcher Stadt hat das Internationale Olympische Komitee (IOC) seinen Sitz?", antwort: "Lausanne", optionen: ["Genf", "Zürich", "Paris"]}
+      - {frage: "Wie viele Ringe zeigt die olympische Flagge?", antwort: "fünf", optionen: ["vier", "sechs", "sieben"]}
+      - {frage: "In welchem Schweizer Ort fanden 1928 und 1948 Olympische Winterspiele statt?", antwort: "St. Moritz", optionen: ["Davos", "Zermatt", "Crans-Montana"]}
+      - {frage: "In welcher Stadt hat der Fussball-Weltverband FIFA seinen Hauptsitz?", antwort: "Zürich", optionen: ["Genf", "Lausanne", "Paris"]}
+      - {frage: "Welches Land war 1930 Gastgeber und Sieger der ersten Fussball-WM?", antwort: "Uruguay", optionen: ["Brasilien", "Italien", "England"]}
+      - {frage: "In welchem Jahr fand die Fussball-WM in der Schweiz statt?", antwort: "1954", optionen: ["1934", "1966", "1974"]}
+      - {frage: "Welches Team gewann 1954 den WM-Final in Bern («Wunder von Bern»)?", antwort: "Deutschland", optionen: ["Ungarn", "Brasilien", "Uruguay"]}
+      - {frage: "Wie viele Spieler pro Team stehen beim Fussball auf dem Feld?", antwort: "elf", optionen: ["neun", "zehn", "zwölf"]}
+      - {frage: "Wie lang ist ein Marathon?", antwort: "rund 42,2 Kilometer", optionen: ["rund 21,1 Kilometer", "genau 40 Kilometer", "rund 50 Kilometer"]}
+      - {frage: "Wie oft gewann Roger Federer das Einzel in Wimbledon?", antwort: "achtmal", optionen: ["fünfmal", "sechsmal", "zehnmal"]}
+      - {frage: "Wie hoch hängt ein Basketballkorb?", antwort: "3,05 Meter", optionen: ["2,50 Meter", "3,50 Meter", "4,00 Meter"]}
+      - {frage: "Wie nennt man den Sieger eines Eidgenössischen Schwing- und Älplerfests?", antwort: "Schwingerkönig", optionen: ["Sägemehlkönig", "Hosenlupf-Meister", "Alpenkaiser"]}
+  - id: sprachen_laender
+    titel: Sprachen & Länder
+    icon: "🌍"
+    uebungen: [auswahl, karteikarte]
+    karten:
+      - {frage: "Wie viele Landessprachen hat die Schweiz?", antwort: "vier", optionen: ["zwei", "drei", "fünf"]}
+      - {frage: "In welchem Kanton spricht man Rätoromanisch?", antwort: "Graubünden", optionen: ["Tessin", "Wallis", "Uri"]}
+      - {frage: "Wie viele Nachbarländer hat die Schweiz?", antwort: "fünf", optionen: ["drei", "vier", "sechs"]}
+      - {frage: "Wie heisst die Hauptstadt von Australien?", antwort: "Canberra", optionen: ["Sydney", "Melbourne", "Perth"]}
+      - {frage: "Wie heisst die Hauptstadt von Kanada?", antwort: "Ottawa", optionen: ["Toronto", "Montreal", "Vancouver"]}
+      - {frage: "Wie heisst die Hauptstadt der Türkei?", antwort: "Ankara", optionen: ["Istanbul", "Izmir", "Antalya"]}
+      - {frage: "Wie heisst die Hauptstadt von Japan?", antwort: "Tokio", optionen: ["Kyoto", "Osaka", "Seoul"]}
+      - {frage: "Wie heisst die Hauptstadt von Ägypten?", antwort: "Kairo", optionen: ["Alexandria", "Luxor", "Assuan"]}
+      - {frage: "Welche Sprache spricht man in Brasilien hauptsächlich?", antwort: "Portugiesisch", optionen: ["Spanisch", "Französisch", "Englisch"]}
+      - {frage: "Welche Sprache spricht man in Argentinien hauptsächlich?", antwort: "Spanisch", optionen: ["Portugiesisch", "Italienisch", "Englisch"]}
+      - {frage: "Welche Sprache hat weltweit die meisten Muttersprachler?", antwort: "Chinesisch (Mandarin)", optionen: ["Englisch", "Spanisch", "Hindi"]}
+      - {frage: "Wie heisst die Währung von Japan?", antwort: "Yen", optionen: ["Yuan", "Won", "Ringgit"]}
+      - {frage: "Welches ist der kleinste Staat der Welt?", antwort: "die Vatikanstadt", optionen: ["Monaco", "San Marino", "Liechtenstein"]}
+      - {frage: "Welches Land hat auf der Landkarte die Form eines Stiefels?", antwort: "Italien", optionen: ["Griechenland", "Spanien", "Portugal"]}
+      - {frage: "Wie sagt man «danke» auf Italienisch?", antwort: "grazie", optionen: ["merci", "gracias", "obrigado"]}

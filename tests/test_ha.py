@@ -169,6 +169,21 @@ def test_beta_app_config():
     assert "-beta." in str(b["version"])
     # direct access works out of the box once switched on – each app on its own host port
     assert s["ports"]["8099/tcp"] == 8099 and b["ports"]["8099/tcp"] == 8098
+    assert not (ROOT / "family_quest_beta" / "app" / "CHANNEL").exists()        # no dev games in the beta
+
+
+def test_dev_app_config():
+    """Dev app next to stable and beta: own slug, name and port, same options, the channel marker (channel.py)."""
+    dev = ROOT / "family_quest_dev" / "config.yaml"
+    if not dev.is_file():
+        return
+    d, s = yaml.safe_load(dev.read_text()), yaml.safe_load((ROOT / "family_quest/config.yaml").read_text())
+    assert d["slug"] == "family_quest_dev" and d["name"] == "Family Quest Dev" and d["url"] == s["url"]
+    assert set(d["options"]) == set(s["options"]) and (ROOT / "family_quest_dev" / "icon.png").is_file()
+    assert "-dev." in str(d["version"]) and d["ports"]["8099/tcp"] == 8097
+    assert (ROOT / "family_quest_dev" / "app" / "CHANNEL").read_text().strip() == "dev"
+    assert "profile family_quest_dev " in (ROOT / "family_quest_dev" / "apparmor.txt").read_text()
+    assert not (ROOT / "family_quest" / "app" / "CHANNEL").exists()             # the stable app is no dev app
 
 
 def test_chore_push_and_sensor(fq, kid, ha):

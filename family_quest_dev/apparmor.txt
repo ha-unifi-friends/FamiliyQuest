@@ -1,0 +1,42 @@
+#include <tunables/global>
+
+# Family Quest: reads its program, writes only its data (/data, /share/family_quest), talks to the network.
+# Program files (/app, /usr, /etc …) stay read-only; mounting, ptrace and raw kernel access are not allowed.
+profile family_quest_dev flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  capability,
+  network,
+  signal,
+  deny mount,
+  deny umount,
+  deny pivot_root,
+  deny ptrace,
+
+  # read the container, run the programs of the image (s6-overlay start, shell, python)
+  /** r,
+  /init ix,
+  /run.sh ix,
+  /{bin,sbin,usr,lib,command,package}/** ix,
+  /etc/s6-overlay/** ix,
+  /run/** rwlkix,
+
+  # write only where Family Quest keeps data
+  /data/ rw,
+  /data/** rwlk,
+  /share/ rw,
+  /share/** rwlk,
+  # Family Quest HA integration: only its own folder in Home Assistant's configuration (the rest stays read-only)
+  /homeassistant/custom_components/ rw,
+  /homeassistant/custom_components/familyquest/ rw,
+  /homeassistant/custom_components/familyquest/** rwlk,
+  /homeassistant/custom_components/.familyquest.new/ rw,
+  /homeassistant/custom_components/.familyquest.new/** rwlk,
+  /tmp/ rw,
+  /tmp/** rwlk,
+  /var/tmp/** rwlk,
+  /app/**/__pycache__/ rw,
+  /app/**/__pycache__/** rw,
+  /dev/** rw,
+  /proc/** rw,
+}

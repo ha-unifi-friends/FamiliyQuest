@@ -3177,7 +3177,9 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 @keyframes sb-flash { 0% { box-shadow: 0 0 0 4px var(--accent); } 100% { box-shadow: var(--shadow); } }
 .sb-phead { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sb-pnum { flex: none; display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 15px; background: var(--accent); color: var(--accent-fg); font-weight: 900; }
-.sb-pcard.bad .sb-pnum { background: var(--warn); }
+.sb-pcard.bad .sb-phead .sb-pnum { box-shadow: 0 0 0 3px var(--warn); }   /* stays purple: the page number is always the same circle */
+.sb-tnum { min-width: 34px; height: 34px; border-radius: 17px; font-size: .95rem; }
+.sb-tnum.none { background: transparent; color: var(--muted); border: 2px dashed var(--line); }
 .sb-kinds { display: inline-flex; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; }
 .sb-kind { border: 0; background: var(--card); padding: 4px 8px; min-height: 34px; font-size: .85rem; }
 .sb-kind.on { background: var(--hover); font-weight: 800; color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
@@ -3223,6 +3225,10 @@ textarea.sb-ptext { min-height: 92px; resize: vertical; font-family: Georgia, "I
 .sb-node.lost { opacity: .7; } .sb-node.lost rect { stroke-dasharray: 7 5; stroke: var(--muted); }
 .sb-node text { fill: var(--fg); font-family: var(--font); }
 .sb-nnum { font-weight: 900; font-size: 14px; }
+.sb-node text.sb-nnum { fill: var(--accent-fg); }
+.sb-nnumc { fill: var(--accent); }
+.sb-node.bad .sb-nnumc { stroke: var(--warn); stroke-width: 3; }
+.sb-nstar { font-size: 14px; }
 .sb-npic { font-size: 20px; }
 .sb-ntext { font-size: 12px; }
 .sb-nkind { font-size: 11px; fill: var(--muted) !important; }

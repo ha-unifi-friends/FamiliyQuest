@@ -15,6 +15,12 @@ class Clock:
         return self.t
 
 
+def _channel_games(d: dict) -> dict:
+    """The full game_rewards dict as this channel shows it (the dev games of channel.py only in «Family Quest Dev»)."""
+    from familyquest.channel import hidden_games
+    return {k: v for k, v in d.items() if k not in hidden_games()}
+
+
 def table(n=2, bots=0, pairs=6, seed=3, level="normal"):
     players = [{"id": str(i), "name": f"P{i}"} for i in range(1, n + 1)]
     players += [{"id": f"bot{i}", "name": f"B{i}", "bot": True, "level": level} for i in range(1, bots + 1)]
@@ -140,7 +146,7 @@ def test_family_table_coins_once(client):
     from test_api import setup_family
     phd, mia, leo = setup_family(client)
     fq = client.app.state.fq
-    assert client.get("/api/parent/game-rewards", headers=phd).json() == {"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "sternlauf": [10, 5, 2], "snack": [10, 5, 2], "verkehr": [10, 5, 2], "langstrecke": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2], "escape": [10, 5, 2], "stempeljagd": [10, 5, 2]}
+    assert client.get("/api/parent/game-rewards", headers=phd).json() == _channel_games({"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "sternlauf": [10, 5, 2], "snack": [10, 5, 2], "verkehr": [10, 5, 2], "langstrecke": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2], "escape": [10, 5, 2], "stempeljagd": [10, 5, 2]})
     assert client.put("/api/parent/game-rewards", json={"paarjagd": [7, 3, 1]}, headers=phd).status_code == 200
     hm, hl = login(client, mia, "1111"), login(client, leo)
     assert client.get("/api/community/paarjagd/rules", headers=hm).json()["rewards"] == [7, 3, 1]
@@ -214,7 +220,7 @@ def test_game_rewards_validated(client):
     for bad in ({"paarjagd": [1, 2]}, {"paarjagd": [1, 2, 3, 4]}, {"paarjagd": [1, -1, 0]}, {"paarjagd": [1001, 0, 0]},
                 {"paarjagd": [1.5, 0, 0]}, {"paarjagd": ["5", 0, 0]}, {"domino": [1, 2, 3]}, {"werbinich": [1, 2]}):
         assert client.put("/api/parent/game-rewards", json=bad, headers=phd).status_code == 400, bad
-    assert client.put("/api/parent/game-rewards", json={"paarjagd": [0, 0, 1000]}, headers=phd).json() == {"paarjagd": [0, 0, 1000], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "sternlauf": [10, 5, 2], "snack": [10, 5, 2], "verkehr": [10, 5, 2], "langstrecke": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2], "escape": [10, 5, 2], "stempeljagd": [10, 5, 2]}
+    assert client.put("/api/parent/game-rewards", json={"paarjagd": [0, 0, 1000]}, headers=phd).json() == _channel_games({"paarjagd": [0, 0, 1000], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "sternlauf": [10, 5, 2], "snack": [10, 5, 2], "verkehr": [10, 5, 2], "langstrecke": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2], "escape": [10, 5, 2], "stempeljagd": [10, 5, 2]})
     assert client.put("/api/parent/game-rewards", json={"paarjagd": [1, 2, 3]}, headers=login(client, mia, "1111")).status_code in (401, 403)
 
 
