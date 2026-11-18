@@ -2419,7 +2419,7 @@ async function gamesView(main) {
       } }, T("Save"))));
     langstrecke.replaceChildren(gsec("langstrecke", "🏎️ " + I18N.tr(T("24h Endurance")), appBtn("langstrecke"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("Racing stables, one car each: drive, change tyres, refuel and repair as a team – 24 race hours, day and night.")),
+      : [h("p.muted", T("Short laps and a pit stop after every lap: one drives, the others get tyres and fuel ready – then the next one drives.")),
          h("div.row.wrap", h("button.btn", { onclick: () => langstreckeStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => langstreckeStartDialog(true, open) }, LE_ICON, " ", T("Alone")))],
       defaults, await gameRewardsRow("langstrecke")));

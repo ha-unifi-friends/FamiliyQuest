@@ -417,7 +417,7 @@ class Facts:
 
     # «24h Endurance»: the fastest pit stop (setting langstrecke_pit, tenths of a second – lower is better)
     def pit_records(self) -> list[dict]:
-        if "langstrecke" in hidden_games():             # dev game (channel.py): only in the dev channel
+        if "langstrecke" in hidden_games():             # not in this channel (channel.py DEV_GAMES)
             return []
         best = {int(k): int(v or 0) for k, v in (self.db.get_setting("langstrecke_pit") or {}).items()
                 if str(k).isdigit() and int(k) in self.name and int(v or 0) > 0}
