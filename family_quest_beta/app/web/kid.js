@@ -128,8 +128,12 @@ function specialBanners(list) {
   });
 }
 
-// which games this child may play (parent area › Games – per game and person)
+// which games this child may play (parent area › Games – per game and person; a game with a price once bought / rented)
 const canPlay = game => !!(S.me && (S.me.games_list || []).includes(game));
+// locked for this child, but a parent opened a family table of it – that table can be joined (familyquest/services.parent_tables)
+const tableOnly = game => !!(S.me && (S.me.games_tables || []).includes(game));
+// a game with a price this child has not bought / rented (yet): {game, price, rent, period, …} (familyquest/gamepasses.py)
+const lockedGame = game => ((S.me && S.me.games_locked) || []).find(g => g.game === game) || null;
 
 // somebody opened a family table: a note slides into the header (not while a game or a lesson fills the screen)
 const tableNote = { seen: null, box: null, timer: null };
@@ -1028,6 +1032,7 @@ async function shopView() {
       o.approval ? h("span.small.muted", "👪 ", T("Parents confirm")) : null,
       o.can ? h("button.btn", { onclick: () => redeem(o) }, T("Redeem")) : h("div.small.muted.reason", o.reason),
       !o.can && o.missing > 0 ? barCount(o.cost - o.missing, o.cost, accIcon(o.account)) : null))) : h("p.muted", T("The shop is still empty.")),
+    await unlockGamesSection(),
     await avatarSpecials(),
     await xpBackgrounds(),
     await pranksCard(),
@@ -1684,17 +1689,86 @@ async function familyView() {
     await familyTimeSection(), await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
 }
 
+// ---------------------------------------------------------------- games with a price: buy or rent (familyquest/gamepasses.py)
+const GAME_INFO = { quiz: ["🎯", T("Family quiz")], bingo: ["🎱", "Bingo"], song: ["🎵", T("Guess the song")], poker: ["🃏", "Texas Hold'em"],
+  tschau: ["🂡", "Tschau Sepp"], karussell: ["🎠", T("Card Carousel")], domino: ["🁫", "Domino"], paarjagd: ["🧠", T("Pair Hunt")], werbinich: ["🎭", T("Who am I?")],
+  kartenlauf: ["🏁", T("Card Race")], stadtland: ["🏙️", T("City, Country, River")], zeichnen: ["🎨", T("Draw & Guess")], wuerfel: ["🎲", T("Five Dice")],
+  heimwaerts: ["🏠", T("Homeward")], jump: ["🦘", "Jump"], sternlauf: ["🌠", T("Star Runner")], snack: ["🍔", T("Snack Rush")], verkehr: ["🚦", T("Traffic Cadet")],
+  klatsch: ["👏", T("Clap the Beat")], verboten: ["🚫", T("Forbidden Words")], jass: ["♣️", T("Jass")], werwolf: ["🐺", T("Werewolves")], schach: ["♟️", T("Chess")],
+  dorfmarkt: ["🏘️", T("Village Market")], escape: ["🗝️", T("Escape Room")], ttt: ["⭕", T("Tic-Tac-Toe")], sudoku: ["🔢", T("Sudoku")], patience: ["🃏", T("Patience")],
+  pingpong: ["🏓", T("Ping-Pong")], slots: ["🎰", T("One-armed bandit")], cube: ["🧊", T("Cube solver")] };
+const gameInfo = k => GAME_INFO[k] || ["🎮", k];
+const rentText = o => I18N.tr({ day: T("Rent: {0} 🪙 per day"), week: T("Rent: {0} 🪙 per week"), month: T("Rent: {0} 🪙 per month") }[o.period] || T("Rent: {0} 🪙 per week")).replace("{0}", o.rent);
+const buyText = o => I18N.tr(T("Buy: {0} 🪙")).replace("{0}", o.price);
+function passStatus(o) {
+  if (o.bought) return I18N.tr(T("bought ✓"));
+  if (!o.rent_until) return "";
+  const d = Math.ceil(o.left_s / 86400), hr = Math.ceil(o.left_s / 3600);
+  return o.left_s <= 23 * 3600 ? I18N.tr(hr === 1 ? T("rented – 1 hour left") : T("rented – {0} hours left")).replace("{0}", hr)
+    : I18N.tr(d === 1 ? T("rented – 1 day left") : T("rented – {0} days left")).replace("{0}", d);
+}
+// buy or rent after a confirmation – the coins are booked on the server (once: a second tap books nothing)
+async function gamePass(o, kind, after) {
+  const name = I18N.tr(gameInfo(o.game)[1]);
+  const q = kind === "buy" ? I18N.tr(T("Buy {0} for {1} coins? It stays yours for good.")).replace("{0}", name).replace("{1}", o.price)
+    : I18N.tr(o.rent_until ? T("Rent {0} for {1} coins more? The time is added to the end.") : T("Rent {0} for {1} coins?")).replace("{0}", name).replace("{1}", o.rent);
+  if (!confirm(q)) return;
+  try {
+    await api("me/games/buy", { method: "POST", body: { game: o.game, kind, until: kind === "rent" ? (o.rent_until || "") : null } });
+    Sound.play("done"); confetti(); toast(kind === "buy" ? T("Game unlocked – have fun!") : T("Game rented – have fun!"), "good");
+  } catch (e) { toast(e.message, "bad"); }
+  try { S.me = await api("me"); } catch {}
+  if (after) after();
+}
+function gamePassButtons(o, coins, after) {
+  const btn = (kind, cost, text) => coins >= cost ? h("button.btn.small", { onclick: () => gamePass(o, kind, after) }, text)
+    : h("button.btn.small.ghost", { disabled: true, title: T("Not enough coins") }, text);
+  return h("div.row.wrap.gp-buttons", o.price > 0 && !o.bought ? btn("buy", o.price, buyText(o)) : null,
+    o.rent > 0 && !o.bought ? btn("rent", o.rent, rentText(o)) : null);
+}
+const cheapest = o => Math.min(...[o.price, o.rent].filter(x => x > 0));
+// a locked tile (games page, game corner): what it costs and the buttons in a sheet
+async function gamePassDialog(o) {
+  let coins = 0;
+  try { const d = await api("me/games/shop"); coins = d.coins; o = d.games.find(g => g.game === o.game) || o; } catch {}
+  const [ic, name] = gameInfo(o.game);
+  if (S.sheet) S.sheet.close();
+  const m = modal(h("div.game-sheet.gp-sheet", h("section.card", h("h2", ic, " ", I18N.tr(name), " 🔒"),
+      h("p", T("Your parents put a price on this game. Buy it once and it stays yours – or rent it for a while.")),
+      h("p.small.muted", "🪙 ", I18N.tr(T("You have {0} coins")).replace("{0}", Math.floor(coins))),
+      gamePassButtons(o, coins, () => { m.close(); route(); }), coins < cheapest(o) ? barCount(coins, cheapest(o), "🪙") : null),
+    h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))), { onClose: () => { if (S.sheet === m) S.sheet = null; } });
+  S.sheet = m;
+}
+// kid shop: «🎮 Unlock games» – every game with a price this child may play
+async function unlockGamesSection() {
+  let d;
+  try { d = await api("me/games/shop"); } catch { return null; }
+  if (!d.games.length) return null;
+  return h("section.card.gp-shop", h("h2", "🎮 ", T("Unlock games")),
+    h("p.small.muted", T("Buy a game once and it stays yours – or rent it for a while.")),
+    h("div.gp-list", ...d.games.map(o => {
+      const [ic, name] = gameInfo(o.game);
+      return h("div.gp-item" + (o.open ? ".open" : ""), h("span.big-ic", ic),
+        h("div.grow", h("strong", I18N.tr(name)), o.open ? h("div.small.gp-status", passStatus(o)) : null),
+        o.bought ? null : gamePassButtons(o, d.coins, () => shopView()));
+    })));
+}
+
 // ---------------------------------------------------------------- the games (own menu item)
 async function gamesView() {
-  const quiz = canPlay("quiz") ? await quizCard() : null;
+  const quiz = canPlay("quiz") || tableOnly("quiz") ? await quizCard() : null;
   // longer table games for a game night, then short games for in between (only the games this child may play) –
-  // each one a small tile; a tap opens its card (the same actions as before: family table, bots, join, rules)
-  const pick = async list => (await Promise.all(list.filter(([, ok]) => ok).map(async ([k, , make]) => [k, await make()]))).filter(([, card]) => card);
+  // each one a small tile; a tap opens its card (the same actions as before: family table, bots, join, rules);
+  // a game with a price not bought yet: a 🔒 tile that opens buying / renting; locked, but a parent's table is open: its card
+  const pick = async list => (await Promise.all(list.map(async ([k, ok, make]) => ok || tableOnly(k) ? [k, await make()]
+    : lockedGame(k) ? [k, null, lockedGame(k)] : null))).filter(x => x && (x[1] || x[2]));
   const night = await pick([["tschau", canPlay("tschau"), () => cardsFamilyCard("tschau")], ["karussell", canPlay("karussell"), () => cardsFamilyCard("karussell")], ["domino", canPlay("domino"), dominoFamilyCard],
     ["jass", canPlay("jass"), jassFamilyCard], ["poker", canPlay("poker"), pokerFamilyCard], ["dorfmarkt", canPlay("dorfmarkt"), dorfmarktFamilyCard], ["heimwaerts", canPlay("heimwaerts"), heimwaertsFamilyCard],
     ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
     ["verboten", canPlay("verboten"), verbotenFamilyCard], ["zeichnen", canPlay("zeichnen"), zeichnenFamilyCard], ["stadtland", canPlay("stadtland"), stadtlandFamilyCard], ["song", canPlay("song"), songFamilyCard],
     ["bingo", canPlay("bingo"), bingoCard], ["schach", canPlay("schach"), schachFamilyCard]]);
+  if (!quiz && lockedGame("quiz")) night.unshift(["quiz", null, lockedGame("quiz")]);
   const quick = await pick([["paarjagd", canPlay("paarjagd"), paarjagdFamilyCard], ["wuerfel", canPlay("wuerfel"), wuerfelFamilyCard], ["jump", canPlay("jump"), jumpFamilyCard], ["klatsch", canPlay("klatsch"), klatschFamilyCard],
     ["sternlauf", canPlay("sternlauf"), sternlaufFamilyCard], ["snack", canPlay("snack"), snackFamilyCard], ["verkehr", canPlay("verkehr"), verkehrFamilyCard], ["duel", canPlay("ttt") || canPlay("pingpong"), tttDuelCard]]);
   // the games running just now on top – the same pulsing banners as on the start page
@@ -1708,7 +1782,8 @@ function gameGroup(ic, title, items) {
   if (!items.length) return null;
   const com = (S.me && S.me.community) || {};
   return h("section.card.game-group", h("h2", ic, " ", title),
-    h("div.arcade-grid.game-tiles", ...items.map(([k, card]) => {
+    h("div.arcade-grid.game-tiles", ...items.map(([k, card, lock]) => {
+      if (lock) return lockedTile(k, lock);
       const head = card.querySelector("h2");
       const text = (head ? head.textContent : k).trim(), sp = text.indexOf(" ");
       const icon = sp > 0 ? text.slice(0, sp) : "🎲", name = sp > 0 ? text.slice(sp + 1) : text;
@@ -1716,6 +1791,14 @@ function gameGroup(ic, title, items) {
       return h("button.arcade-tile.game-tile" + (running ? ".live" : ""), { onclick: () => openGameSheet(card) },
         running ? h("i.live-dot", { title: T("running now") }) : null, h("span.big-ic", icon), h("strong", name));
     })));
+}
+
+/** A tile of a game with a price not bought yet: 🔒 and the price – a tap opens buying / renting. */
+function lockedTile(k, o) {
+  const [ic, name] = gameInfo(k);
+  return h("button.arcade-tile.game-tile.gp-locked", { onclick: () => gamePassDialog(o), title: T("Unlock games") },
+    h("span.big-ic", ic), h("strong", I18N.tr(name)),
+    h("span.gp-price", "🔒 ", o.price > 0 ? o.price + " 🪙" : o.rent + " 🪙/" + I18N.tr({ day: T("Day"), week: T("Week"), month: T("Month") }[o.period] || T("Week"))));
 }
 
 // the card of a game in a sheet: closes itself when the app goes to another page (a game opened, a table joined)

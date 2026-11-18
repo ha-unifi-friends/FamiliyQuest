@@ -98,9 +98,13 @@ def _joinable(fq, t: dict) -> bool:
 def open_tables(fq, prof: dict) -> list[dict]:
     """Family tables somebody else opened that this profile may join – for the note in the header of the app."""
     ok = set(fq.games_for(prof))
+    locked = set(fq.parent_tables(prof)) if prof.get("role") == "kid" else set()   # locked games: only parents' tables
+    parents = {r["id"] for r in fq.db.q("SELECT id FROM profile WHERE role='parent'")} if locked else set()
     out = []
     for t in running(fq):
-        if t["solo"] or t["game"] not in ROUTES or t["status"] in ("done", "paused") or t["game"] not in ok:
+        if t["solo"] or t["game"] not in ROUTES or t["status"] in ("done", "paused"):
+            continue
+        if t["game"] not in ok and not (t["game"] in locked and t.get("host_id") in parents):
             continue
         if t.get("host_id") == prof["id"] or str(prof["id"]) in t.get("members", []):
             continue

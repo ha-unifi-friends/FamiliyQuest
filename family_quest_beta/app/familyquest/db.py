@@ -610,6 +610,20 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(profile_id, day, minute)
     );
     """,
+    # 35 – games with a price for children (gamepasses.py): bought for good or rented until a time. The one-armed
+    # bandit joins this model – whoever bought it before (unlock «slot_machine») has it bought.
+    """
+    CREATE TABLE game_pass(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        game TEXT NOT NULL,
+        bought INTEGER NOT NULL DEFAULT 0,
+        bought_at TEXT,
+        rent_until TEXT,                         -- 'YYYY-MM-DD HH:MM:SS' local time; renting again extends from here
+        PRIMARY KEY(profile_id, game)
+    );
+    INSERT OR IGNORE INTO game_pass(profile_id, game, bought, bought_at)
+        SELECT profile_id, 'slots', 1, datetime('now','localtime') FROM unlock WHERE item='slot_machine';
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -652,6 +666,7 @@ DEFAULT_SETTINGS = {
     "planer_points_factor": 1.0,
     "games": "all",                      # family games (quiz, bingo, card games): all | some (chosen children) | off – parents always
     "games_guests": True,                # guests may join family games with a QR code
+    "quiz_facts": True,                  # family quiz: the special quiz «Family Quest Facts» (facts.py) – questions from the family's data
     "game_starter": "dice",              # who begins a turn-based game: dice (random) | leader | choose (cardgames.apply_starter)
     "games_profiles": [],                # with "some": the children who may play
     "games_access": None,                # per game {"mode", "profiles"} (services.games_access) – replaces the two above

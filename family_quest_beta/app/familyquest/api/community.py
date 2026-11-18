@@ -69,7 +69,7 @@ def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 �
     """A learner who may play this game (parent area › Games, per game and person)."""
     fq = app_of(request)
     game = game_of(request.url.path)
-    if not fq.games_allowed(prof, game, time=False):
+    if not fq.games_allowed(prof, game, time=False) and not _parent_table(fq, prof, game, request):
         if game:
             raise HTTPException(403, "This game is switched off for you")
         raise HTTPException(403, "Games are switched off for you")
@@ -83,6 +83,24 @@ def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 �
 
 
 Gamer = Depends(Player)
+
+# a locked game (switched off, not bought / rented) at a family table a PARENT opened: the child may look, join and
+# play that table – but nothing that opens an own table (alone, a new family table, a rematch)
+OWN_TABLE = {"start", "again", "rematch", "solo", "duel", "accept", "seat", "delete", "resume"}
+
+
+def _parent_table(fq, prof: dict, game: str | None, request: Request) -> bool:
+    if not game or prof.get("role") != "kid":
+        return False
+    part = request.url.path.split("/api/community/", 1)[-1].strip("/").split("/")
+    if part[0] in NOT_PLAYING or part[-1] in OWN_TABLE:
+        return False
+    t = fq.parent_tables(prof, time=False).get(game)
+    if not t:
+        return False
+    if request.method == "GET" or t["member"]:
+        return True
+    return part[-1] == "join" and t["joinable"]
 
 
 def PlayerOrGuest(request: Request, x_fq_token: str | None = Header(default=None),        # noqa: N802
@@ -281,6 +299,32 @@ def quiz_delete(quiz_id: int, request: Request, prof: dict = Gamer) -> dict:
 def quiz_start(body: StartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _run(fq.community.start, body.quiz_id, prof["id"], body.count, body.shuffle)
+    return fq.community.state(prof["id"])
+
+
+class FactsIn(BaseModel):
+    count: int = 10                  # number of questions
+    focus: str = "mixed"            # week | all | mixed
+    lang: str | None = None         # the starter's app language (de-CH / de-DE … – the base language of the questions)
+
+
+@router.get("/quizzes/facts")
+def quiz_facts_info(request: Request, prof: dict = Gamer) -> dict:
+    """The special quiz «Family Quest Facts» (facts.py): on or off, the choices of the start dialog."""
+    from .. import facts
+    return facts.info(app_of(request))
+
+
+@router.post("/quiz/facts/start")
+def quiz_facts_start(body: FactsIn, request: Request, prof: dict = Gamer) -> dict | None:
+    """Start «Family Quest Facts»: questions made now from the family's data (fresh every game)."""
+    from .. import facts
+    fq = app_of(request)
+    if prof.get("role") not in ("kid", "parent"):
+        raise HTTPException(403, "Only the family can start this quiz")
+    if not facts.enabled(fq.db):
+        raise HTTPException(403, "The quiz «Family Quest Facts» is switched off")
+    _run(facts.start, fq, prof["id"], body.count, body.focus, body.lang)
     return fq.community.state(prof["id"])
 
 

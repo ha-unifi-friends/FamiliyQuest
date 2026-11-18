@@ -1304,7 +1304,13 @@ class GamesIn(BaseModel):
 @router.get("/games")
 def games_get(request: Request, me: dict = Parent) -> dict:
     fq = app_of(request)
-    return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES)}
+    return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
+
+
+def _slots_returns() -> dict:
+    """One-armed bandit: luck 1–10 → coins back per coin bet on average (the hint at the slider)."""
+    from ..slots import target_return
+    return {i: round(target_return(i) * 100) for i in range(1, 11)}
 
 
 @router.put("/games")
@@ -1327,9 +1333,24 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
             profiles = sorted({int(x) for x in a.get("profiles") or []})
         except (TypeError, ValueError):
             raise HTTPException(400, "Unknown setting") from None
-        acc[g] = {"mode": a["mode"], "profiles": profiles, "bots": bots}
+        from ..gamepasses import PERIODS, PassError, clean_price
+        from ..slots import clean_luck
+        try:            # what a child pays for the game (gamepasses.py): kept when not sent
+            price, rent = clean_price(a.get("price"), acc[g]["price"]), clean_price(a.get("rent"), acc[g]["rent"])
+        except PassError as e:
+            raise HTTPException(400, str(e)) from None
+        period = a.get("period") or acc[g]["period"]
+        if period not in PERIODS:
+            raise HTTPException(400, "Unknown setting")
+        luck = acc[g].get("luck")
+        acc[g] = {"mode": a["mode"], "profiles": profiles, "bots": bots, "price": price, "rent": rent, "period": period}
+        if g == "slots":
+            try:
+                acc[g]["luck"] = clean_luck(a.get("luck", luck))
+            except ValueError:
+                raise HTTPException(400, "Win chance: 1 to 10") from None
     fq.db.set_setting("games_access", acc)
-    return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES)}
+    return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
 
 
 REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verkehr", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape")       # live games with coins for places 1–3 (game_rewards)

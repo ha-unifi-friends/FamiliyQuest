@@ -259,6 +259,12 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .game-play { display: grid; gap: 8px; margin-bottom: 14px; }
 .game-settings { display: grid; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .game-settings-h { font-weight: 700; }
+/* game price for children (parent.js gamePriceBox) */
+.gp-box { display: grid; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.gp-box .field { margin: 0; }
+.gp-box input[type=number] { max-width: 140px; }
+.gp-periods button:disabled { opacity: .45; cursor: not-allowed; }
+.gp-luck { width: 100%; }
 .game-settings .game-status { margin: 0; }
 .game-sec:has(.game-status.off) > .game-play { opacity: .55; }
 .games-general summary { cursor: pointer; }

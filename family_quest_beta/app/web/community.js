@@ -857,8 +857,9 @@ async function quizzesView() {
 // list of quizzes with start / edit / delete, templates, editor – for profile `me`
 // `actions`: the head row of the section the «+ New quiz» button goes into
 async function quizzesPanel(box, me, onStarted, { actions } = {}) {
-  let quizzes = [], templates = [], live = null;
-  try { [quizzes, templates, live] = await Promise.all([api("community/quizzes"), api("community/templates"), api("community/quiz").catch(() => null)]); }
+  let quizzes = [], templates = [], live = null, facts = null;
+  try { [quizzes, templates, live, facts] = await Promise.all([api("community/quizzes"), api("community/templates"), api("community/quiz").catch(() => null),
+    api("community/quizzes/facts").catch(() => null)]); }
   catch (e) { return box.replaceChildren(h("p.bad", e.message)); }
   const mine = q => me.role === "parent" || q.created_by === me.id;
   const start = async q => {
@@ -871,6 +872,22 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
       } }, "▶ ", T("Start")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   };
   const reload = () => quizzesPanel(box, me, onStarted, { actions });
+  // «Family Quest Facts»: a special quiz – the server makes new questions from the family's own data at every start
+  const factsStart = () => {
+    const count = h("select", ...(facts.counts || [5, 10, 15, 20]).map(n => h("option", { value: n, selected: n === 10 }, String(n))));
+    const focus = h("select", ...[["mixed", T("Mixed")], ["week", T("This week")], ["all", T("All time")]].map(([k, n]) => h("option", { value: k }, I18N.tr(n))));
+    const m = modal(h("div.form", h("h2", "📊 ", T("Family Quest Facts")),
+      h("p.small.muted", T("Questions about our own family – chores, games, records, shop, pets … made from the Family Quest data, new and different every time.")),
+      h("label.field", T("How many questions?"), count), h("label.field", T("Focus"), focus),
+      h("p.small.muted", T("Questions and answers come in a mixed order. You lead the game: you show the next question.")),
+      h("div.row", h("button.btn.big", { onclick: async () => {
+        try { await api("community/quiz/facts/start", { method: "POST", body: { count: +count.value, focus: focus.value, lang: I18N.lang } }); m.close(); onStarted(); }
+        catch (e) { toast(e.message, "bad"); }
+      } }, "▶ ", T("Start")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  };
+  const factsCard = close => facts && facts.enabled ? h("button.card.tpl.tpl-facts", { onclick: () => { close(); factsStart(); } },
+    h("span.big-ic", "📊"), h("strong", T("Family Quest Facts")), h("span.small.chip", T("Special quiz")),
+    h("span.small.muted", T("Questions from our own data: chores, games, records, shop, pets … new every time"))) : null;
   let region = "all";
   try { region = localStorage.getItem("fq.tplRegion") || "all"; } catch {}
   // «New quiz»: an own quiz or one of the templates – the templates only show up here, the list stays short
@@ -905,6 +922,7 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     // templates first (one tap), the own quiz next to it; AI and import folded away – rarely needed
     m = modal(h("div.form", h("div.row.wrap", h("h2.grow", "🎯 ", T("New quiz")),
         h("button.btn", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz"))),
+      factsCard(() => m.close()),
       h("div.row.wrap", h("h3.grow", T("Take a template")), h("label.row.small", { style: { flexWrap: "nowrap" } }, T("Show:"), regionSel)),
       tplGrid,
       h("details.ai-fold", h("summary", "🤖 ", T("With an AI or from a file")), aiBox),
