@@ -322,6 +322,27 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
   inventions, Switzerland). Whoever starts a game leads it (a parent may always step in); everybody joins on their
   own device. Quick right answers give more points (1000 down to 500). Places go into everybody's history; the
   reward events *Played the family quiz* and *Won the family quiz* can give coins (Rewards › Rules).
+- **Family Quest Facts** (special quiz – «New quiz» › 📊 at the top, for children and parents): the questions come
+  from the family's own Family Quest data and are made new at every start – a random choice in a random order, at most
+  one question per kind. Before the start: the number of questions (5 / 10 / 15 / 20) and the focus (this week, all
+  time or mixed). It is played like every family quiz (multiple choice and estimates, the same points and rewards)
+  and is multilingual: the questions come in the starter's language (German: Swiss German with «Ämtli» or Standard
+  German with «Aufgaben», like the app) and everybody can switch to another language in the game.
+  About 60 kinds of questions: chores today / this week / last week / of all time (who of the children, how many),
+  XP, levels, streaks, coins earned this week, badges, learning time and lessons, games played this week / last week /
+  in the last 7 days / in all, the most popular game, who wins the most games (also «a guest»), family quiz and chess
+  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice), the
+  slot machine, the shop (things bought, coins spent, the shopping queen or king, the favourite reward, avatar
+  items, pranks), pets (how many, who has the most, who lost the most, the oldest, the most common kind, babies, coins
+  of the hamsters, whose pets are cared for best – the average of the care bars of the pets at home), bulletin board
+  notes, polls, family council, quizzes, Wichteln, FamilyTime, the next birthday in the calendar, guests, own flash
+  cards. A question is only asked when its data is there and the answer is clear: «who of the children» needs at
+  least two children, a tie is never asked. Wrong answers are the other family members (or nearby numbers);
+  estimates go from 0 to a round number above the answer.
+  Privacy: only things the family sees of each other anyway – nothing from the parent area (no internet times or
+  logs, no mood or behaviour weather, no login log). XP, levels, coins and learning time only when the family view
+  shows «Everything» (Settings › Family view). Parents switch the special quiz off in parent area › Games › Family
+  quiz › Settings (on by default).
 - **Bingo** (learning app › Family, or parent area › Games): whoever starts sets the rules (speed, one line /
   two lines / full card – the rules used last are the default); everybody joins with a 5 × 5 card (B-I-N-G-O, 1–75,
   free star). A ball carousel spins, stops and shows the new ball for about 5 seconds. Players mark the numbers
@@ -440,6 +461,30 @@ game»): family tables get no bots (Kartenlauf plays with the people there, Jass
 only against the family or two on one device, Ping-Pong doubles only with people. Jump, Snack Rush and Klatsch den Beat can still be
 played alone, without practice bots. A table where a parent plays along may still be filled with bots.
 Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `PUT /api/parent/games`).
+
+**Price for children** (each game's «⚙️ Settings» block, below the status): a game can cost coins for the children –
+parents always play for free.
+
+- **Price for children (coins)** – default 0. With a price, a child buys the game once in the shop and keeps it for
+  good, also when the parents change the price later. Back to 0 (and no rent price): free again for everybody.
+- **Rent price (coins)** with **Day / Week / Month** (the three are greyed out while the rent price is 0): renting opens
+  the game for that child for 1 day, 7 days or 1 calendar month from the moment it pays (31 January + 1 month = end of
+  February). Renting again before the end **adds** the period after the current end. Buying makes a rent unnecessary –
+  a bought game stays, a running rent is no longer shown. A rent price alone (price 0) means: rent only.
+- **The kid shop** has a section **🎮 Unlock games** with every game that has a price and that the parents switched on
+  for this child: «Buy: 300 🪙», «Rent: 20 🪙 per week», «bought ✓» or «rented – 3 days left». A confirmation comes
+  first; the coins are booked in the ledger (events `game_buy` / `game_rent`) in the same database transaction as
+  the unlock – a second tap books nothing (a rent sends the end the app showed; when it changed meanwhile nothing is
+  booked). On the **Games page** and in the **game corner** a locked game is a tile with 🔒 and its price; a tap opens
+  buying / renting.
+- **Tables a parent opened**: when a **parent** opens a family table (not alone) of a game that is locked for a child –
+  switched off, not bought, rent run out – the child may still **join and play that table**: it shows in the running
+  banners, the note «somebody opened a table» and the game's tile («Join»). Starting an own table, alone, a rematch
+  stay locked. The daily game time, OfflineTime and block times still count.
+
+Stored in `games_access` per game (`price`, `rent`, `period`; `luck` for the one-armed bandit) and per child and game
+in the table `game_pass` (`bought`, `rent_until`). API: `GET /api/me/games/shop`, `POST /api/me/games/buy`
+(`{"game", "kind": "buy" | "rent", "until"}`).
 
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
 (icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,
@@ -1229,6 +1274,15 @@ the server; best times stay in this browser), shown when family games are on for
   never more than about 200; the cube is never turned as a whole. The 2×2 is solved the **shortest way** (at most
   11 moves); the corner at the back, bottom left never moves. Everything runs on the device (the search in a Web
   Worker); nothing is sent to the server. Parents switch it on or off in Settings › Games like the other games.
+
+- **🎰 One-armed bandit** – a slot machine with three reels: pull the lever for 1 coin, three times a day; three alike
+  win (7️⃣ 100, ⭐ 40, 🔔 20, 🍊 10, 🍋 8, 🍒 5 coins), two cherries anywhere 2, one cherry gives the coin back. The
+  reels are drawn on the server. It uses the **standard game price**: by default a child buys it once for **250
+  coins**; the parents can change the price, set 0 (free) or add a rent. Whoever bought it before (for 150 coins) keeps
+  it. **Win chance** (slider 1–10 in its settings, default 5) sets what comes back on average: 5 ≈ 92 % like a typical
+  casino machine, 10 ≈ 120 %, 1 ≈ 60 % (straight steps in between; the hint under the slider shows the value). The pay
+  table stays; the server draws the outcome first with the win chances of the reels scaled to that return, then shows
+  reels that fit it.
 
 **Photo sets** (parent area › Games › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
 photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**

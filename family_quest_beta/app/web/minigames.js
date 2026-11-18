@@ -8,7 +8,7 @@ const ARCADE = {
   patience: { icon: "🃏", title: T("Patience"), text: T("Sort all cards by suit onto the four piles.") },
   pingpong: { icon: "🏓", title: T("Ping-Pong"), text: T("Bounce the ball back – against the app or face to face on one tablet.") },
   cube: { icon: "🧊", title: T("Cube solver"), text: T("Paint the colours of your puzzle cube and get the moves to solve it, step by step.") },
-  slots: { icon: "🎰", title: T("One-armed bandit"), text: T("Buy it once, then pull the lever for 1 coin – three times a day. Three alike win, cherries too.") },
+  slots: { icon: "🎰", title: T("One-armed bandit"), text: T("Pull the lever for 1 coin – three times a day. Three alike win, cherries too.") },
 };
 
 const arcadeStore = {
@@ -20,11 +20,12 @@ const mmss = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart
 
 function arcadeCard() {
   const open = Object.keys(ARCADE).filter(k => canPlay(k));
-  if (!open.length) return null;
+  const locked = Object.keys(ARCADE).filter(k => !canPlay(k) && lockedGame(k));      // a price not paid yet: 🔒 tile (kid.js)
+  if (!open.length && !locked.length) return null;
   return h("section.card", h("h2", "🕹️ ", T("Game corner")),
     h("p.small.muted", T("Small games for in between.")),
-    h("div.arcade-grid", ...Object.entries(ARCADE).filter(([k]) => open.includes(k)).map(([k, g]) => h("button.arcade-tile", { onclick: () => go("arcade/" + k) },
-      h("span.big-ic", g.icon), h("strong", g.title)))));
+    h("div.arcade-grid", ...Object.entries(ARCADE).filter(([k]) => open.includes(k) || locked.includes(k)).map(([k, g]) => locked.includes(k) ? lockedTile(k, lockedGame(k))
+      : h("button.arcade-tile", { onclick: () => go("arcade/" + k) }, h("span.big-ic", g.icon), h("strong", g.title)))));
 }
 
 function arcadeView(kind) {
@@ -570,14 +571,11 @@ async function slotsGame(box) {
     h("div.ob-top", "★ ", T("Lucky Star"), " ★"),
     h("div.ob-window", ...reels), lever, msg, info, play, table);
   if (st.owned) { box.replaceChildren(machine()); drawInfo(); return; }
-  // not bought yet
-  const buy = h("button.btn.big", { disabled: st.coins < st.price, onclick: async () => {
-    try { st = await api("me/slots/buy", { method: "POST" }); Sound.play("right"); confetti(); box.replaceChildren(machine()); drawInfo(); }
-    catch (e) { toast(e.message, "bad"); }
-  } }, "🛒 ", I18N.tr(T("Buy it for {0} coins")).replace("{0}", st.price));
+  // not bought / rented yet: the standard price of a game (kid.js gamePassButtons, familyquest/gamepasses.py)
+  const o = { game: "slots", price: st.price, rent: st.rent, period: st.period, bought: false, rent_until: null, left_s: 0 };
   box.replaceChildren(h("div.ob-machine.locked", h("div.ob-top", "★ ", T("Lucky Star"), " ★"),
-    h("div.ob-window", ...reels), h("p.center", T("Your own one-armed bandit for the game corner. Buy it once – then you can play three times a day for 1 coin.")),
-    h("p.small.muted.center", "🪙 ", String(Math.round(st.coins))), buy, table));
+    h("div.ob-window", ...reels), h("p.center", T("Your own one-armed bandit for the game corner: play three times a day for 1 coin.")),
+    h("p.small.muted.center", "🪙 ", String(Math.round(st.coins))), gamePassButtons(o, st.coins, () => slotsGame(box)), table));
 }
 
 // ---------------------------------------------------------------- Ping-Pong on two devices (familyquest/duel.py, kind «pong»)

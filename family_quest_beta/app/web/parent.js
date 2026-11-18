@@ -1529,14 +1529,14 @@ const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"
 // the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
 const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
   sudoku: T("Every number once in each row, column and box. From 4×4 to 9×9."), patience: T("Sort all cards by suit onto the four piles."),
-  slots: T("Buy it once, then pull the lever for 1 coin – three times a day. Three alike win, cherries too.") };
+  slots: T("Pull the lever for 1 coin – three times a day. Three alike win, cherries too.") };
 
 // per game: active / active without bots (only games with bots) / inactive – and for whom (everybody or chosen children)
 function gameAccess(kids, data) {
-  let acc = data.access;
+  let acc = data.access, returns = data.slots_returns || {};
   const botGames = new Set(data.bot_games || []), bars = {};
   const save = async k => {
-    try { acc = (await call("parent/games", { method: "PUT", body: { access: k ? { [k]: acc[k] } : acc } })).access; toast(T("Saved"), "good"); } catch {}
+    try { const r = await call("parent/games", { method: "PUT", body: { access: k ? { [k]: acc[k] } : acc } }); acc = r.access; returns = r.slots_returns || returns; toast(T("Saved"), "good"); } catch {}
     Object.keys(bars).forEach(draw);
   };
   const draw = k => {
@@ -1551,12 +1551,45 @@ function gameAccess(kids, data) {
         h("button.btn.small" + (a.mode === m ? "" : ".ghost"), { onclick: () => { acc[k] = { ...a, mode: m }; save(k); } }, n))),
       state !== "off" && a.mode === "some" ? h("div.row.game-kids", ...kids.map(kid => h("label.check", h("input", { type: "checkbox", checked: a.profiles.includes(kid.id),
         onchange: e => { const ids = new Set(a.profiles); e.target.checked ? ids.add(kid.id) : ids.delete(kid.id); acc[k] = { ...a, profiles: [...ids] }; save(k); } }), C(kid.name)))) : null,
-      state === "nobots" ? h("p.small.muted", T("No «alone against bots», no bots at the table, no games against the app – only people play. Parents are not bound.")) : null].filter(Boolean));
+      state === "nobots" ? h("p.small.muted", T("No «alone against bots», no bots at the table, no games against the app – only people play. Parents are not bound.")) : null,
+      state === "off" ? null : gamePriceBox(k, a, v => { acc[k] = { ...a, ...v }; save(k); }, returns)].filter(Boolean));
   };
   return {
     bar: k => { if (!bars[k]) { bars[k] = h("div.game-status"); setTimeout(() => draw(k)); } return bars[k]; },
     allTo: mode => { for (const [k] of GAME_LIST) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; return save(null); },
   };
+}
+
+// what a child pays for a game (familyquest/gamepasses.py): buy once, or rent per day / week / month – 0 and 0 = free;
+// the one-armed bandit also gets its luck (1–10, what comes back on average). Parents always play for free.
+function gamePriceBox(k, a, set, returns) {
+  const num = (v, max = 100000) => Math.max(0, Math.min(max, Math.round(+v || 0)));
+  const price = h("input", { type: "number", min: 0, max: 100000, step: 1, inputmode: "numeric", value: a.price || 0,
+    onchange: () => set({ price: num(price.value) }) });
+  const rent = h("input", { type: "number", min: 0, max: 100000, step: 1, inputmode: "numeric", value: a.rent || 0,
+    oninput: () => periods.querySelectorAll("button").forEach(b => { b.disabled = !num(rent.value); }),
+    onchange: () => set({ rent: num(rent.value) }) });
+  const periods = h("div.pin-kind.gp-periods", ...[["day", T("Day")], ["week", T("Week")], ["month", T("Month")]].map(([v, n]) =>
+    h("button.btn.small" + ((a.period || "week") === v ? "" : ".ghost"), { disabled: !(a.rent > 0), "aria-pressed": String((a.period || "week") === v),
+      onclick: () => set({ period: v }) }, n)));
+  let luck = null;
+  if (k === "slots") {
+    const pct = v => I18N.tr(T("≈ {0} % comes back on average")).replace("{0}", returns[v] ?? "?");
+    const hint = h("span.hint", pct(a.luck || 5));
+    const range = h("input.gp-luck", { type: "range", min: 1, max: 10, step: 1, value: a.luck || 5,
+      oninput: () => { hint.textContent = pct(range.value); val.textContent = range.value; }, onchange: () => set({ luck: +range.value }) });
+    const val = h("b", String(a.luck || 5));
+    luck = h("label.field", h("span", "🍀 ", T("Win chance"), " ", val, " / 10"), range, hint,
+      h("span.hint", T("5 = like a typical casino machine. Higher: better odds for the children, lower: worse.")));
+  }
+  return h("div.gp-box",
+    h("label.field", h("span", "🪙 ", T("Price for children (coins)")), price,
+      h("span.hint", T("0 = free. Bought once, the game stays the child's for good – also when you change the price."))),
+    h("label.field", h("span", "🔁 ", T("Rent price (coins)")), rent,
+      h("span.hint", T("0 = no renting. Renting opens the game for one day, week or month; renting again adds the time."))),
+    periods,
+    h("p.small.muted", T("With a price the children buy or rent the game in the shop. Parents always play for free.")),
+    luck);
 }
 
 // ---------------------------------------------------------------- pairs game: own photo sets and the family crest
@@ -2182,7 +2215,11 @@ async function gamesView(main) {
     const [, ic, name] = GAME_LIST.find(g => g[0] === k);
     return h("div", gsec(k, ic + " " + I18N.tr(name), appBtn("arcade/" + k), h("p.muted", ARCADE_TEXTS[k])));
   });
-  const quiz = h("div", live, (quizHead = gsec("quiz", "🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)));
+  // the special quiz «Family Quest Facts» (questions from the family's data) – on by default
+  const factsOn = h("input", { type: "checkbox", checked: s.quiz_facts !== false, onchange: async () => {
+    await call("parent/settings", { method: "PUT", body: { quiz_facts: factsOn.checked } }); toast(T("Saved"), "good"); } });
+  const factsSet = h("div.pj-rewards", h("label.check", factsOn, h("span", "📊 ", T("Special quiz «Family Quest Facts»: questions from our own data (chores, games, records, shop, pets) – nothing from the parent area"))));
+  const quiz = h("div", live, (quizHead = gsec("quiz", "🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes, factsSet)));
   const blocks = { quiz, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
     heimwaerts, jump, sternlauf, snack, verkehr, klatsch, verboten, jass, werwolf, schach, dorfmarkt, escape, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
   for (const [k, el] of Object.entries(blocks)) {

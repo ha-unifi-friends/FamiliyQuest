@@ -539,11 +539,55 @@ def playtime(request: Request, prof: dict = Learner) -> dict:
     return {"ok": ok, "time_left": fq.time_left(prof)}
 
 
+# ---------------------------------------------------------------- games with a price (gamepasses.py): kid shop «Unlock games»
+GAME_TITLES = {"quiz": "Family quiz", "bingo": "Bingo", "song": "Guess the song", "poker": "Texas Hold'em", "ttt": "Tic-Tac-Toe",
+               "sudoku": "Sudoku", "patience": "Patience", "pingpong": "Ping-Pong", "slots": "One-armed bandit", "cube": "Cube solver"}
+
+
+def _game_title(game: str) -> str:
+    from ..running import TITLES
+    return GAME_TITLES.get(game) or TITLES.get(game) or game
+
+
+class GamePassIn(BaseModel):
+    game: str
+    kind: Literal["buy", "rent"]
+    until: str | None = None          # rent: the end the app showed («» = none) – a second tap does not book twice
+
+
+@router.get("/me/games/shop")
+def games_shop(request: Request, prof: dict = Learner) -> dict:
+    """The priced games this child may play once bought or rented – with what it has (bought, rented until)."""
+    fq = app_of(request)
+    return {"games": fq.game_offers(prof), "coins": fq.rewards.balance(prof["id"], "coins")}
+
+
+@router.post("/me/games/buy")
+def games_buy(body: GamePassIn, request: Request, prof: dict = Learner) -> dict:
+    from ..gamepasses import PassError
+    fq = app_of(request)
+    if prof.get("role") != "kid":
+        raise HTTPException(400, "Parents always play for free")
+    if body.game not in fq.GAMES or body.game not in fq.games_open_to(prof):
+        raise HTTPException(403, "This game is switched off for you")
+    a = fq.games_access()[body.game]
+    try:
+        if body.kind == "buy":
+            fq.passes.buy(prof["id"], body.game, a, _game_title(body.game))
+        else:
+            fq.passes.rent(prof["id"], body.game, a, _game_title(body.game), body.until if body.until is not None else None)
+    except PassError as e:
+        raise HTTPException(400, str(e)) from None
+    return games_shop(request, prof)
+
+
 # ---------------------------------------------------------------- game corner: one-armed bandit (slots.py)
-def _slots(request: Request, prof: dict, fn, *args):
+def _slots(request: Request, prof: dict, fn, *args, paid: bool = True):
     from ..slots import SlotError
     fq = app_of(request)
-    if not fq.games_allowed(prof, "slots"):
+    # not paid: the machine before buying it – switched on for the child, no block time, game time not used up
+    unpaid_ok = "slots" in fq.games_open_to(prof) and (prof.get("role") == "parent" or not fq._games_blocked(prof))
+    if not (fq.games_allowed(prof, "slots") if paid else unpaid_ok):
         raise HTTPException(403, "This game is switched off")
     try:
         return fn(*args)
@@ -553,17 +597,19 @@ def _slots(request: Request, prof: dict, fn, *args):
 
 @router.get("/me/slots")
 def slots_state(request: Request, prof: dict = Learner) -> dict:
-    return _slots(request, prof, app_of(request).slots.state, prof["id"])
+    return _slots(request, prof, app_of(request).slots.state, prof["id"], paid=False)
 
 
 @router.post("/me/slots/buy")
 def slots_buy(request: Request, prof: dict = Learner) -> dict:
-    return _slots(request, prof, app_of(request).slots.buy, prof["id"])
+    """Older apps: buying the machine – now the standard purchase (gamepasses.py)."""
+    games_buy(GamePassIn(game="slots", kind="buy"), request, prof)
+    return app_of(request).slots.state(prof["id"])
 
 
 @router.post("/me/slots/spin")
 def slots_spin(request: Request, prof: dict = Learner) -> dict:
-    return _slots(request, prof, app_of(request).slots.spin, prof["id"])
+    return _slots(request, prof, app_of(request).slots.spin, prof["id"], paid=False)     # not bought: 400 «buy first»
 
 
 class PetMoreIn(BaseModel):

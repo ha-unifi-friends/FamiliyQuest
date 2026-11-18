@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0-beta.13
+
+- Game prices: parents can set a buy price and a rent price (per day, week or month) per game; children unlock games in the shop
+- Locked games show a lock tile with buy and rent buttons
+- Children can join family tables a parent opened, even for locked or switched-off games
+- One-armed bandit uses the standard price model (default 250 coins) and has a win chance slider from 1 to 10
+- New special quiz «Family Quest Facts»: questions made fresh from the family's own data (chores, XP, games, records, shop, pets and more), in all quiz languages; parents can switch it off
+
 ## 1.1.0-beta.12
 
 - Time per day for each child (parent area › edit profile): three sliders – games, learning and internet – from minutes to hours up to ∞ (unlimited, the default); «Days» opens a slider per weekday that moves with the main one until you set a day on its own (and docks again when you move it back)
