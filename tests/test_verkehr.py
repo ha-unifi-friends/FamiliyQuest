@@ -409,8 +409,10 @@ def play_api(client, clock, st, plans, step=1):
     return v
 
 
-def test_family_table_same_worlds_switches_coins_once_and_history(client):
+def test_family_table_same_worlds_switches_coins_once_and_history(client, monkeypatch):
     from test_api import setup_family
+    init = vk.Table.__init__                    # a fixed table seed: the passes counted below don't depend on luck
+    monkeypatch.setattr(vk.Table, "__init__", lambda self, st, rng=None, *a, **kw: init(self, st, rng or random.Random(4), *a, **kw))
     phd, mia, leo = setup_family(client)
     fq = client.app.state.fq
     clock = _clock(fq)
