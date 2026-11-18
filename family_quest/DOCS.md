@@ -492,7 +492,7 @@ a badge on every cover and row and as a filter above the shelf (📚 All · 📕
 🗝️ Adventure games):
 - **📕 Book** (picture book) – pages with a picture and a text, read page by page (below).
 - **📖 Adventure book** – choose-your-path stories with choices, good and bad endings and items (below).
-- **🗝️ Adventure game** – reserved for later: the shelf and the data know the type, it cannot be made yet («soon»).
+- **🗝️ Adventure game** – point & click games: rooms, hotspots, items, switches, dialogues and endings (below).
 Visibility (🔒 / 🧒 / 👨‍👩‍👧), approval, rewards, ⭐ ratings, reading progress, the parent area and the privacy rules are
 the same for every type. **+ New book** first asks for the type; a new book of any type is for the **👨‍👩‍👧 whole family**
 (changeable right there and in the editor – with approval on it still waits for a parent once published).
@@ -517,6 +517,67 @@ the same for every type. **+ New book** first asks for the type; a new book of a
   «Family Quest») is on the shelf for the whole family, in the language of the app (all 10 languages, Swiss German in
   Zürich dialect). Nobody can change it; parents hide it (parent area › ✨ Sample books, or ⚙️) and show it again –
   progress and ratings stay.
+
+#### 🗝️ Adventure games
+Point & click games that the family builds and plays (`adventuregame.py`, `web/adventure.js`). **+ New book** › 🗝️:
+an empty game or a template – 🧙 «Escape from the wizard tower», 📦 «The secret of the attic», 🚀 «Lost in the
+spaceship» (4–5 rooms each, small and solvable, with items, a dialogue, a combination and a funny 💀 ending; in all
+app languages, Swiss German in Zürich dialect).
+
+**Building** (the editor, phone and tablet; tabs 🗺️ Map · 🚪 Rooms · 🎒 Things · 💬 Dialogues · ⚙️ Rules):
+- **Rooms:** a picture – one of 10 own room scenes (tower room, library, stone hall, hallway, dark room, spaceship cabin /
+  corridor / bridge, engine room, storage room) or the 24 scenes of the books, an own drawing (painter), a photo or SVG
+  code (cleaned like the picture books) – and a description. ⭐ marks the start room; ▶ tests from any room.
+  **🔀 Changes when …**: up to 3 variants with another text / picture while a condition holds («the light is on»).
+- **Hotspots** (max. 30 per room): ✏️ *Draw hotspot*, choose the kind and drag a rectangle over the thing on the
+  picture (finger or mouse; a tap makes a standard box). Tap to select, drag to move, the round handle resizes –
+  positions are percent of the picture, so they fit every screen. The sheet below: kind, name, a picture on the
+  hotspot (39 own SVG things and characters – doors, keys, chest, lever, lamp, candle, book, potion, rope, stick,
+  ladder, crystal, magnet, battery, cable, key card, button, screen, cauldron, bookshelf, table, bed, box, plant, well,
+  magic wand; wizard, robot, cat, dragon, ghost, knight, pirate, alien, owl – an emoji, an own drawing with see-through
+  white, or invisible over the room picture), the look text, «Visible only when» (conditions) and the use rules.
+  - 🚪 **Door:** leads to a room or straight to an ending; optionally «Opens only when» (an item, a switch) with a
+    locked text. «＋ New room» makes the room with a door back.
+  - 📦 **Object:** can be taken (becomes an item; it disappears – or 📦 *stays in the room* and gives its item once,
+    e.g. a chest with a key).
+  - 🧙 **Character:** talks – the first dialogue line.
+- **🎒 Things:** items (name, picture; max. 60), 🚩 switches (things the game remembers; max. 100), 🏁 endings
+  (🏆 win / 💀 lose with their text; max. 20). Removing one removes every reference to it.
+- **💬 Dialogues** (max. 200 lines): a line is what the character says; up to 6 answers, each with an optional
+  condition, actions and the next line (or the end of the talk). 👋 Leave always works.
+- **⚙️ Rules** (max. 200): 🔧 *use* an item on a hotspot («key → chest») or just use a hotspot («pull the lever»),
+  🧪 *combine* two items («stick + rope = fishing rod») – with conditions and actions. The first rule whose
+  condition holds wins. A key on a locked door needs no rule (the door opens when its condition holds).
+- **Conditions** (max. 4, all must hold): has / has not an item, a switch is on / off. **Actions** (max. 8): show a
+  text, give / take away an item, switch on / off, go to a room, end the game.
+- **🗺️ Map:** rooms as boxes (rows by distance from the start room), doors as arrows, 🔒 dashed arrows for locked
+  doors, 🏆/💀 for doors to an ending; tap a room to edit it.
+- **The checker** (on the server, after every automatic save): rooms without name or description, doors leading
+  nowhere, hotspots without name, objects without item, characters without dialogue, a door whose key can never be
+  obtained, items nobody gives, switches that are needed but never switched on, things that do not exist any more
+  (deleted item / switch / room), dialogue dead ends (no answer that always works), incomplete rules, no way to a 🏆
+  ending, rooms no door reaches. Then it **plays every way through the game** (a breadth-first search over room,
+  backpack, switches, taken things and dialogue line; max. 6000 states / 1.5 s): «the game cannot be won» stops
+  publishing; hints (💡, do not stop publishing): rooms that are never reached in play, dialogue lines never said,
+  «players can get stuck in …» (a state from which no way leads to a win any more – they can start again), «too big to
+  test every way». Drafts are saved incomplete; 🚀 needs a game without errors.
+
+**Playing:** the room picture with the hotspots on top (🔍 shows everything you can tap), below the verbs of the
+tapped thing (👁️ Look at, ✋ Take, 💬 Talk, 🚪 Go through, 🔧 Use – only the ones that make sense), the messages and
+the room description; at the bottom the 🎒 backpack: tap an item, then a thing in the room («use with») or another
+item (combine). Dialogues show the character, the line and the answers. Endings: 🏆 / 💀 with their text, «2 of 3 endings
+found», ⭐ rating (not for the own game), ↺ play again. The game runs **on the server** (the player never gets the
+hidden hotspots, rules or the solution, moves are checked), every player's game is saved (▶ Continue on the shelf,
+↺ start again). ▶ in the editor and 👀 for a game waiting for approval play the working copy without saving.
+Phone 390×740 without scrolling, tablets with a larger picture.
+
+**Import / export:** `family-quest-adventuregame/1` (instructions and a field guide for an AI, the background and asset
+ids, rules for SVG backgrounds and the wizard tower as a full example). Readable ids in the file (`room1`, `spot3`,
+`item2` …), conditions as `item:key` / `!flag:light`, actions as `{"give": "key"}`. The import is tolerant (code
+fences and sentences around the JSON, comments, trailing commas, items and switches only named in a hotspot, other
+spellings of actions) and checks everything again; games come in as private drafts, own drawings and photos stay out
+of the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200 dialogue lines, 6 answers, 200 rules,
+20 endings, 900 KB per game.
 
 #### 📖 Adventure books
 
@@ -581,7 +642,7 @@ read it – not for private books) and per reader who is somebody else and reach
 (default 0, once per reader). Parents edit, unpublish and remove every book that is not private; children edit their
 own.
 
-Limits: 300 books (sample books not counted), 200 pages per adventure book, 60 per picture book (600 characters per
+Limits: 300 books (sample books not counted), 200 pages per adventure book, 60 per picture book, 40 rooms per game (600 characters per
 page, SVG pictures 12 KB each); adventure books: 1500 characters per page, 120 per choice, 40 per item, 80 per title, pictures
 max. 2 MB each and 300 MB together (in `media/_stories`, part of the backup; pictures no book uses are removed).
 

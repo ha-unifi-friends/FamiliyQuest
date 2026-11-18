@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------- My adventure books (familyquest/stories.py)
 // Children and parents write branching stories (scenes with 2–4 choices, good and bad endings, items), the family reads
 // them on the shelf. storyShelf(box) draws the family bookshelf with every book type (📕 picture books: picturebook.js,
-// 📖 adventure books, 🗝️ adventure games – reserved) and the sample books (kid app #/stories, parent area › Family),
+// 📖 adventure books, 🗝️ adventure games: adventure.js) and the sample books (kid app #/stories, parent area › Family),
 // storyReader() reads a book (on the server – or a try-out of the working copy right here), storyEditor() writes one.
 "use strict";
 
@@ -152,10 +152,12 @@ async function storiesSettings(box) {
 const SB_TYPES = () => ({
   picture: ["📕", T("Book"), T("Books"), T("Pages with a picture and a text, read page by page.")],
   adventure: ["📖", T("Adventure book"), T("Adventure books"), T("Choose-your-path: choices, good and bad endings.")],
-  game: ["🗝️", T("Adventure game"), T("Adventure games"), T("Coming soon")] });
+  game: ["🗝️", T("Adventure game"), T("Adventure games"), T("Point & click: rooms, things to find, riddles and characters.")] });
 const sbType = b => SB_TYPES()[b.type] || SB_TYPES().adventure;
-const sbOpen = (b, onClose) => b.type === "picture" ? pictureReader(pbServerEngine(b.id), { onClose }) : storyReader(sbServerEngine(b.id), { onClose });
-const sbEdit = (id, type, onClose) => type === "picture" ? pictureEditor(id, onClose) : storyEditor(id, onClose);
+const sbOpen = (b, onClose) => b.type === "picture" ? pictureReader(pbServerEngine(b.id), { onClose })
+  : b.type === "game" ? gamePlayer(agServerEngine(b.id), { onClose }) : storyReader(sbServerEngine(b.id), { onClose });
+const sbEdit = (id, type, onClose) => type === "picture" ? pictureEditor(id, onClose) : type === "game" ? gameEditor(id, onClose) : storyEditor(id, onClose);
+const sbSize = b => sbFmt(b.type === "game" ? T("Rooms: {0}") : T("Pages: {0}"), b.pages);
 
 async function storyShelf(box) {
   let filter = "all";
@@ -177,11 +179,11 @@ async function storyShelf(box) {
     const progress = b => b.type === "picture"
       ? h("span.sb-found" + (b.finished ? ".all" : ""), b.finished ? ["✅ ", T("Read")] : b.at ? ["📄 ", sbFmt(T("Page {0} of {1}"), b.at, b.pages)] : ["📄 ", sbFmt(T("Pages: {0}"), b.pages)])
       : h("span.sb-found" + (b.found && b.found === b.endings ? ".all" : ""), "🏁 ", sbFmt(T("{0} of {1} endings found"), b.found, b.endings));
-    const coverArt = b => b.type === "picture"
+    const coverArt = b => b.type === "picture" || b.type === "game"
       ? (b.cover ? pbPic(b.cover, ".pb-cimg") : h("span.sb-cemo", { translate: "no" }, b.emoji))
       : (b.cover ? sbPic(b.cover) : h("span.sb-cemo", { translate: "no" }, b.emoji));
     const cover = b => h("button.sb-book.t-" + b.type, { onclick: () => read(b), style: { "--sb-c": SB_COVERS[b.color] || SB_COVERS[0] } },
-      h("span.sb-cover", { style: b.cover_bg && !b.cover ? { backgroundImage: `url(${sbBgUrl(b.cover_bg)})` } : null },
+      h("span.sb-cover", { style: b.cover_bg && !b.cover ? { backgroundImage: `url(${b.type === "game" ? agBgUrl(b.cover_bg) : sbBgUrl(b.cover_bg)})` } : null },
         coverArt(b), b.reading ? h("span.sb-cont", "▶ ", T("Continue")) : null, typeBadge(b), b.sample ? null : visBadge(b)),
       h("span.sb-binfo", C(b.title, "strong.sb-btitle"), author(b), progress(b),
         b.rating ? h("span.sb-rate", { title: sbFmt(T("Ratings: {0}"), b.votes) }, stars(Math.round(b.rating)), " ", fmt(b.rating, 1)) : null));
@@ -194,16 +196,17 @@ async function storyShelf(box) {
     const row = b => h("div.sb-row",
       rowIcon(b),
       h("div.grow.sb-rowtt", C(b.title, "strong"), h("div.sb-chips", ...status(b),
-        h("span.small.muted", sbType(b)[1], " · ", sbFmt(T("Pages: {0}"), b.pages), b.mine ? "" : [" · ", C(b.author.name)]))),
+        h("span.small.muted", sbType(b)[1], " · ", sbSize(b), b.mine ? "" : [" · ", C(b.author.name)]))),
       h("div.sb-rowbtn", b.live ? h("button.btn.small.ghost", { title: T("Read"), onclick: () => read(b) }, sbType(b)[0]) : null,
         b.edit ? h("button.btn.small", { onclick: () => sbEdit(b.id, b.type, draw) }, "✏️ ", T("Edit")) : null));
     // a private book of somebody else (parent area only): that it exists – no title, no content
     const privRow = b => h("div.sb-row.sb-priv",
       h("span.sb-rowic", "🔒", h("span.sb-rowtype", (SB_TYPES()[b.type] || SB_TYPES().adventure)[0])),
-      h("div.grow.sb-rowtt", h("strong", b.type === "picture" ? T("Private book") : T("Private adventure book")), h("div.sb-chips",
+      h("div.grow.sb-rowtt", h("strong", b.type === "picture" ? T("Private book") : b.type === "game" ? T("Private adventure game") : T("Private adventure book")), h("div.sb-chips",
         h("span.sb-by", avatarSvg(b.author.avatar, 22), C(b.author.name)),
-        h("span.small.muted", sbFmt(T("Pages: {0}"), b.pages), " · ", fmtDate(b.updated_at)))));
+        h("span.small.muted", sbSize(b), " · ", fmtDate(b.updated_at)))));
     const preview = async b => {
+      if (b.type === "game") return gamePlayer(agTryEngine(b.id, { pending: true }), { preview: true });
       try {
         const e = await api("stories/" + b.id), book = { ...e, data: e.pending || e.data };
         if (e.type === "picture") pictureReader(pbLocalEngine(book), { preview: true }); else storyReader(sbLocalEngine(book), { preview: true });
@@ -233,8 +236,7 @@ async function storyShelf(box) {
     const T_ = SB_TYPES();
     const filters = h("div.sb-tfilter", { role: "group", "aria-label": T("Book types") },
       chip("all", "📚", T("All"), count("all")),
-      ...["picture", "adventure"].map(k => chip(k, T_[k][0], T_[k][2], count(k))),
-      chip("game", T_.game[0], T_.game[2], 0, !(d.creatable || []).includes("game")));
+      ...["picture", "adventure", "game"].map(k => chip(k, T_[k][0], T_[k][2], count(k), !(d.creatable || []).includes(k))));
     sbSet(box,
       pend.length ? h("section.sb-sec.sb-wait", h("h2", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
       h("section.sb-sec", h("div.sec-head", h("h2", "📚 ", T("Family bookshelf")),
@@ -270,9 +272,10 @@ function sbVisPicker(value, onPick) {
   return box;
 }
 
-function storyNewDialog(done, creatable = ["picture", "adventure"]) {
+function storyNewDialog(done, creatable = ["picture", "adventure", "game"]) {
   let type = "picture", tpl = null, emoji = "📖", color = 0, visibility = "family";   // new books: the whole family
-  try { type = localStorage.getItem("fq.sb.newtype") === "adventure" ? "adventure" : "picture"; } catch {}
+  try { type = ["adventure", "game"].includes(localStorage.getItem("fq.sb.newtype")) ? localStorage.getItem("fq.sb.newtype") : "picture"; } catch {}
+  if (!creatable.includes(type)) type = "picture";
   const title = h("input", { type: "text", maxlength: 80 });
   const lang = h("select", ...I18N.LANGS.filter(([k]) => k !== "auto").map(([k, n]) => h("option", { value: k, translate: "no", selected: k === sbAppLang() }, n)));
   const types = h("div.sb-newtypes"), tiles = h("div.sb-tpls"), tplField = h("div.field", h("b", T("Start with")), tiles);
@@ -284,24 +287,24 @@ function storyNewDialog(done, creatable = ["picture", "adventure"]) {
         onclick: () => { type = k; tpl = null; try { localStorage.setItem("fq.sb.newtype", k); } catch {} drawTypes(); drawTiles(); } },
         h("span.sb-newic", { translate: "no" }, ic), h("span.sb-newtx", h("b", n), h("span.small.muted", what)));
     }));
-    tplField.hidden = type !== "adventure"; titleHint.hidden = type !== "adventure";
-    title.placeholder = I18N.tr(type === "picture" ? T("e.g. The bear who could not sleep") : T("e.g. The secret cave"));
+    tplField.hidden = type === "picture"; titleHint.hidden = type === "picture";
+    title.placeholder = I18N.tr(type === "picture" ? T("e.g. The bear who could not sleep") : type === "game" ? T("e.g. Escape from the haunted castle") : T("e.g. The secret cave"));
   };
   const drawTiles = async () => {
-    if (type !== "adventure") return;
+    if (type === "picture") return;
     let list = [];
-    try { list = await api("stories/templates?lang=" + encodeURIComponent(lang.value)); } catch {}
+    try { list = await api("stories/templates?type=" + type + "&lang=" + encodeURIComponent(lang.value)); } catch {}
     const tile = (key, ic, name, c) => h("button.sb-tpl" + (tpl === key ? ".on" : ""), { type: "button", style: { "--sb-c": SB_COVERS[c] },
       onclick: () => { tpl = key; drawTiles(); } }, h("span.sb-tplic", ic), key ? C(name, "span") : h("span", name));
-    sbSet(tiles, tile(null, "📄", T("Empty book"), 0), ...list.map(t => tile(t.key, t.emoji, t.title, t.color)));
+    sbSet(tiles, tile(null, "📄", type === "game" ? T("Empty game") : T("Empty book"), 0), ...list.map(t => tile(t.key, t.emoji, t.title, t.color)));
   };
   lang.onchange = drawTiles;
   drawTypes(); drawTiles();
   const create = async () => {
-    if (!(type === "adventure" && tpl) && !title.value.trim()) return title.focus();
+    if (!(type !== "picture" && tpl) && !title.value.trim()) return title.focus();
     try {
-      const r = await api("stories", { method: "POST", body: { title: title.value.trim(), lang: lang.value, template: type === "adventure" ? tpl : null,
-        emoji: type === "picture" ? "📕" : emoji, color, visibility, type } });
+      const r = await api("stories", { method: "POST", body: { title: title.value.trim(), lang: lang.value, template: type !== "picture" ? tpl : null,
+        emoji: type === "picture" ? "📕" : type === "game" ? "🗝️" : emoji, color, visibility, type } });
       m.close(); done(r.id, type);
     } catch (e) { toast(e.message, "bad"); }
   };
@@ -317,12 +320,12 @@ function storyNewDialog(done, creatable = ["picture", "adventure"]) {
 // import: a file or the answer of an AI (paste) – becomes a private draft (picture books and adventure books)
 function storyImportDialog(done) {
   let type = "picture";
-  try { type = localStorage.getItem("fq.sb.newtype") === "adventure" ? "adventure" : "picture"; } catch {}
+  try { type = ["adventure", "game"].includes(localStorage.getItem("fq.sb.newtype")) ? localStorage.getItem("fq.sb.newtype") : "picture"; } catch {}
   const text = h("textarea.sb-imptext", { rows: 8, placeholder: I18N.tr(T("Paste the answer of the AI here …")) });
   const file = h("input", { type: "file", accept: ".json,.txt,application/json,text/plain" });
   file.onchange = async () => { const f = file.files[0]; if (!f) return; if (f.size > 1e6) return toast(I18N.tr(T("The file is too large")), "bad"); text.value = await f.text(); };
-  const tplUrl = () => "api/stories/ai-template" + (type === "picture" ? "?type=picture" : "");
-  const tplName = () => type === "picture" ? "family-quest-picturebook-template.json" : "family-quest-story-template.json";
+  const tplUrl = () => "api/stories/ai-template" + (type === "adventure" ? "" : "?type=" + type);
+  const tplName = () => type === "picture" ? "family-quest-picturebook-template.json" : type === "game" ? "family-quest-adventuregame-template.json" : "family-quest-story-template.json";
   const go = async () => {
     try {
       const r = await api("stories/import", { method: "POST", body: { text: text.value } });
@@ -333,8 +336,8 @@ function storyImportDialog(done) {
   };
   const tpls = h("div.row.wrap");
   const drawTpl = () => sbSet(tpls,
-    h("div.sb-segs", ...["picture", "adventure"].map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", onclick: () => { type = k; drawTpl(); } },
-      SB_TYPES()[k][0], " ", SB_TYPES()[k][1]))),
+    h("div.sb-segs.sb-impsegs", ...["picture", "adventure", "game"].map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", title: SB_TYPES()[k][1],
+      onclick: () => { type = k; drawTpl(); } }, SB_TYPES()[k][0], h("span.sb-hide-s", " ", SB_TYPES()[k][1])))),
     h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: tplUrl(), download: tplName() }, "⬇️ ", T("Template for the AI")),
     h("button.btn.small.ghost", { onclick: async () => {
       try { await navigator.clipboard.writeText(await (await fetch(tplUrl())).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }

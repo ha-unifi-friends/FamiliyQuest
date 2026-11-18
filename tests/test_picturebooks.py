@@ -1,4 +1,4 @@
-"""Picture books and book types on the shelf (picturebooks.py, stories.py, svgsafe.py): types and the reserved game type,
+"""Picture books and book types on the shelf (picturebooks.py, stories.py, svgsafe.py): types (the game type: test_adventuregame.py),
 writing and checking, page-turn progress and ratings, SVG cleaning, file format and AI answers, privacy for every type,
 the sample book in every language (shown, hidden by parents, never changed)."""
 import json
@@ -91,14 +91,14 @@ def test_types_on_the_shelf(client):
     client.put(f"/api/stories/{asid}", json={"data": BOOK}, headers=hm)
     client.post(f"/api/stories/{asid}/publish", headers=hm)
     sh = shelf(client, hl)
-    assert sh["types"] == ["picture", "adventure", "game"] and sh["creatable"] == ["picture", "adventure"]
+    assert sh["types"] == ["picture", "adventure", "game"] and sh["creatable"] == ["picture", "adventure", "game"]
     types = {b["id"]: b["type"] for b in sh["books"]}
     assert types == {psid: "picture", asid: "adventure"}
     pb = next(b for b in sh["books"] if b["id"] == psid)
     assert pb["pages"] == 3 and pb["at"] == 0 and not pb["reading"] and pb["cover"]["k"] == "svg"
-    # 🗝️ adventure games are reserved: known to the shelf, cannot be made yet
+    # 🗝️ adventure games (tests/test_adventuregame.py) can be made too
     r = client.post("/api/stories", json={"title": "Escape", "type": "game"}, headers=hm)
-    assert r.status_code == 400 and "later" in r.json()["detail"]
+    assert r.status_code == 200 and client.get(f"/api/stories/{r.json()['id']}", headers=hm).json()["type"] == "game"
     assert client.post("/api/stories", json={"title": "X", "type": "comic"}, headers=hm).status_code == 400
     # an old book without a type is an adventure book (the default of the migration)
     assert client.app.state.fq.db.val("SELECT type FROM story WHERE id=?", asid) == "adventure"
