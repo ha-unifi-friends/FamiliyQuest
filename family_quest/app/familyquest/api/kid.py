@@ -526,6 +526,19 @@ def pet_home(pet_id: int, body: PetHomeIn, request: Request, prof: dict = Learne
     return {"pet": _pet(fq.pets.home, prof["id"], pet_id, body.house, body.furniture), "shop": fq.pets.shop(prof["id"])}
 
 
+# ---------------------------------------------------------------- daily game time (timelimits.py)
+@router.post("/me/playtime")
+def playtime(request: Request, prof: dict = Learner) -> dict:
+    """Heartbeat of the game corner (games on this device only) every minute: counts the minute as game time.
+    ok False: no game may be played now (switched off, OfflineTime, game time of today used up) – the corner closes."""
+    from .. import timelimits
+    fq = app_of(request)
+    ok = fq.games_allowed(prof)
+    if ok and prof.get("role") == "kid":
+        timelimits.touch(fq.db, prof["id"])
+    return {"ok": ok, "time_left": fq.time_left(prof)}
+
+
 # ---------------------------------------------------------------- game corner: one-armed bandit (slots.py)
 def _slots(request: Request, prof: dict, fn, *args):
     from ..slots import SlotError

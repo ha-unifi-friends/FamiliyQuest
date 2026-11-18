@@ -339,6 +339,13 @@ def _check_profile(body: ProfileIn) -> None:
             body.settings["internet_plan"] = clean_plan(body.settings["internet_plan"])
         except InternetError as e:
             raise HTTPException(400, str(e)) from None
+    from ..timelimits import KINDS, LimitError, clean_limit
+    for key in KINDS.values():                         # daily time for games / learning (None = unlimited)
+        if key in body.settings:
+            try:
+                body.settings[key] = clean_limit(body.settings[key])
+            except LimitError as e:
+                raise HTTPException(400, str(e)) from None
     svc = str(body.settings.get("notify_service") or "").strip()
     if svc and not re.fullmatch(r"notify\.[a-z0-9_]+", svc):
         raise HTTPException(400, "Notify service: e.g. notify.mobile_app_phone")
