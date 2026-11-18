@@ -14,7 +14,7 @@ from pathlib import Path
 
 CHANNEL_FILE = Path(__file__).resolve().parent.parent / "CHANNEL"
 # too complex to play yet – reworked before they go to the beta (docs/BACKLOG.md)
-DEV_GAMES = frozenset({"langstrecke", "stempeljagd"})
+DEV_GAMES = frozenset({"stempeljagd"})
 
 _channel: str | None = None         # read once; tests set it with monkeypatch (tests/test_channel.py)
 

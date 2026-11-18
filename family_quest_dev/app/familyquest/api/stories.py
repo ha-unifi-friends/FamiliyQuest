@@ -231,6 +231,18 @@ def choose(sid: int, body: ChoiceIn, request: Request, prof: dict = Learner) -> 
     return _run(app_of(request).stories.choose, prof, sid, body.i, _oversee(request, prof))
 
 
+@router.post("/{sid}/read/next")
+def forward(sid: int, request: Request, prof: dict = Learner) -> dict:
+    """An interactive book: «Next ▶» on a page that simply goes on."""
+    return _run(app_of(request).stories.forward, prof, sid, _oversee(request, prof))
+
+
+@router.post("/{sid}/read/back")
+def back(sid: int, request: Request, prof: dict = Learner) -> dict:
+    """An interactive book: ◀ back to the page read before."""
+    return _run(app_of(request).stories.back, prof, sid, _oversee(request, prof))
+
+
 @router.post("/{sid}/read/act")
 def act(sid: int, body: MoveIn, request: Request, prof: dict = Learner) -> dict:
     """An adventure game: one move – the server plays it and saves the state of this player."""
