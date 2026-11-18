@@ -532,8 +532,9 @@ def playtime(request: Request, prof: dict = Learner) -> dict:
     """Heartbeat of the game corner (games on this device only) every minute: counts the minute as game time.
     ok False: no game may be played now (switched off, OfflineTime, game time of today used up) – the corner closes."""
     from .. import timelimits
+    from ..gamepasses import ARCADE
     fq = app_of(request)
-    ok = fq.games_allowed(prof)
+    ok = fq.games_allowed(prof) or any((fq.game_trial(prof, g, time=True) or {}).get("active") for g in ARCADE)  # a free try
     if ok and prof.get("role") == "kid":
         timelimits.touch(fq.db, prof["id"])
     return {"ok": ok, "time_left": fq.time_left(prof)}
@@ -579,6 +580,29 @@ def games_buy(body: GamePassIn, request: Request, prof: dict = Learner) -> dict:
     except PassError as e:
         raise HTTPException(400, str(e)) from None
     return games_shop(request, prof)
+
+
+class GameTryIn(BaseModel):
+    game: str
+
+
+@router.post("/me/games/try")
+def games_try(body: GameTryIn, request: Request, prof: dict = Learner) -> dict:
+    """A free try of a locked game of the game corner (gamepasses.py `preview`): the app opens the game once. A second
+    call right after (double tap, another device) is the same try. The one-armed bandit counts each spin instead
+    (nothing used here); family games use a try when the child starts or joins a table."""
+    from ..gamepasses import ARCADE
+    fq = app_of(request)
+    if body.game not in ARCADE:
+        raise HTTPException(400, "Start or join a table to use a free try")
+    t = fq.game_trial(prof, body.game, time=True)
+    if not t:
+        if fq.games_allowed(prof, body.game):
+            return {"ok": True, "tries_left": 0, "open": True}
+        raise HTTPException(403, "This game is switched off for you")
+    if (t["left"] <= 0 if body.game == "slots" else not fq.use_game_try(prof, body.game)):
+        raise HTTPException(403, "No free tries left – buy or rent the game")
+    return {"ok": True, "tries_left": fq.passes.tries_left(prof["id"], body.game, fq.games_access()[body.game]), "open": False}
 
 
 # ---------------------------------------------------------------- game corner: one-armed bandit (slots.py)

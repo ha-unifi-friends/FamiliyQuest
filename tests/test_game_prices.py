@@ -40,14 +40,14 @@ def test_price_zero_is_free_and_buying_once(client):
     fq = client.app.state.fq
     a = client.get("/api/parent/games", headers=ph).json()["access"]["jump"]
     assert a["price"] == 0 and a["rent"] == 0 and a["period"] == "week"
-    assert "jump" in me(client, hm)["games_list"]                                    # free by default
+    assert "jump" in me(client, hm)["games_list"]                                    # free (conftest: no default rent)
     assert put_game(client, ph, "jump", price=300)["price"] == 300
     d = me(client, hm)
     assert "jump" not in d["games_list"] and [g["game"] for g in d["games_locked"]] == ["jump"]
     assert client.get("/api/community/jump", headers=hm).status_code == 403
     assert client.post("/api/community/jump/start", json={"solo": True}, headers=hm).status_code == 403
     assert client.get("/api/community/jump", headers=ph).status_code == 200          # parents always, for free
-    assert shop(client, hm) == [{"game": "jump", "price": 300, "rent": 0, "period": "week", "bought": False, "rent_until": None, "left_s": 0, "open": False}]
+    assert shop(client, hm) == [{"game": "jump", "price": 300, "rent": 0, "period": "week", "bought": False, "rent_until": None, "left_s": 0, "open": False, "preview": 0, "tries_left": 0}]
     r = client.post("/api/me/games/buy", json={"game": "jump", "kind": "buy"}, headers=hm)
     assert r.status_code == 400 and r.json()["detail"] == "Not enough coins"
     assert client.post("/api/me/games/buy", json={"game": "jump", "kind": "rent"}, headers=hm).status_code == 400   # no rent price

@@ -10,6 +10,21 @@ sys.path.insert(0, str(ROOT / "family_quest" / "app"))
 from familyquest.settings import BUILTIN_PACKS, Settings  # noqa: E402
 
 
+def pytest_configure(config):
+    config.addinivalue_line("markers", "game_prices: the real default game prices, rents and free tries (gamepasses.py)")
+
+
+@pytest.fixture(autouse=True)
+def _free_games_by_default(request, monkeypatch):
+    """The game tests play the quick games and the game corner as before game prices came: no default rent and no free
+    tries (an explicit price is still locked at once). Tests marked `game_prices` use the real defaults."""
+    if request.node.get_closest_marker("game_prices"):
+        return
+    from familyquest import gamepasses
+    monkeypatch.setattr(gamepasses, "DEFAULT_RENT", {})
+    monkeypatch.setattr(gamepasses, "DEFAULT_PREVIEW", 0)
+
+
 @pytest.fixture
 def settings(tmp_path):
     return Settings(data_dir=tmp_path, packs_dirs=[BUILTIN_PACKS], ha_enabled=False, ha_url="", ha_token=None,

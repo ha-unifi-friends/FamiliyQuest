@@ -104,6 +104,9 @@ class FamilyQuest:
         self.slots = Slots(self.db, self.rewards)
         self.slots.settings = lambda: self.games_access()["slots"]       # price, rent, luck (parent area › Games)
         self.slots.unlocked = lambda pid: self.game_unlocked(pid, "slots")
+        # free tries (gamepasses.py `preview`): one spin each before buying / renting
+        self.slots.tries = lambda pid: self.passes.tries_left(pid, "slots", self.games_access()["slots"])
+        self.slots.try_play = lambda pid: self.passes.use_try(pid, "slots", self.games_access()["slots"], same=False) == "new"
         from .pranks import Pranks
         self.pranks = Pranks(self.db, self.rewards, lambda: self.ha,
                              lambda name: f"{self.lan_base}/sounds/{name}.mp3" if self.lan_base else None)
@@ -179,8 +182,11 @@ class FamilyQuest:
     def games_access(self) -> dict:
         """Per game: {"mode": all | some | off, "profiles": [...], "bots": bool, "price": coins, "rent": coins,
         "period": day | week | month} (+ "luck" 1–10 for the one-armed bandit) – from the older single switch when not
-        set yet. Price and rent: what a child pays to buy / rent the game (gamepasses.py) – 0 and 0 = free."""
-        from .gamepasses import DEFAULT_PERIOD, DEFAULT_PRICE
+        set yet. Price and rent: what a child pays to buy / rent the game (gamepasses.py) – 0 and 0 = free; "preview":
+        free tries before buying / renting. A value the parents never set (key missing) takes the default of
+        gamepasses.py (DEFAULT_PRICE, DEFAULT_RENT, DEFAULT_PREVIEW) – an explicit 0 stays 0."""
+        from . import gamepasses as gp
+        DEFAULT_PERIOD, DEFAULT_PRICE = gp.DEFAULT_PERIOD, gp.DEFAULT_PRICE   # noqa: N806 – read at call time (tests)
         from .slots import DEFAULT_LUCK
         acc = self.db.get_setting("games_access")
 
@@ -192,8 +198,12 @@ class FamilyQuest:
 
         def money(g: str, a: dict) -> dict:
             period = a.get("period")
-            out = {"price": num(a.get("price", DEFAULT_PRICE.get(g, 0)), DEFAULT_PRICE.get(g, 0)), "rent": num(a.get("rent", 0), 0),
-                   "period": period if period in ("day", "week", "month") else DEFAULT_PERIOD}
+            rent, rent_period = gp.DEFAULT_RENT.get(g, (0, DEFAULT_PERIOD))
+            if "rent" not in a and "period" not in a:
+                period = rent_period
+            out = {"price": num(a.get("price", DEFAULT_PRICE.get(g, 0)), DEFAULT_PRICE.get(g, 0)), "rent": num(a.get("rent", rent), rent),
+                   "period": period if period in ("day", "week", "month") else rent_period,
+                   "preview": num(a.get("preview", gp.DEFAULT_PREVIEW), gp.DEFAULT_PREVIEW, 0, gp.MAX_PREVIEW)}
             if g == "slots":
                 out["luck"] = num(a.get("luck", DEFAULT_LUCK), DEFAULT_LUCK, 1, 10)
             return out
@@ -269,6 +279,42 @@ class FamilyQuest:
             return []
         return self.passes.offers(prof["id"], self.games_access(), self.games_open_to(prof))
 
+    def game_trial(self, prof: dict, game: str, time: bool = False) -> dict | None:
+        """A game with a price this child has not bought / rented, but may try (gamepasses.py `preview`):
+        {"left": free tries left, "member": seated at a running table of it, "active": a try began a short while ago}
+        – None for parents, games switched off for the child, free or unlocked games and while games are blocked."""
+        if prof.get("role") != "kid" or game not in self.GAMES or self._games_blocked(prof, time):
+            return None
+        if game not in self.games_open_to(prof):
+            return None
+        a = self.games_access()[game]
+        from .gamepasses import priced
+        if not priced(a) or game in self.passes.unlocked_set(prof["id"], {game: a}):
+            return None
+        return {"left": self.passes.tries_left(prof["id"], game, a), "member": self._seated(prof["id"], game),
+                "active": self.passes.trying(prof["id"], game)}
+
+    def _seated(self, pid: int, game: str) -> bool:
+        """Sits at a running table of this game (alone or with the family)."""
+        from . import running
+        return any(t["game"] == game and t["status"] != "done" and str(pid) in (t.get("members") or []) for t in running.running(self))
+
+    def trial_games(self, prof: dict) -> dict[str, dict]:
+        """The locked games with a price this child may try now or plays on a try: {game: {"left", "member"}}."""
+        if prof.get("role") != "kid" or self._games_blocked(prof, False):
+            return {}
+        offers = [o for o in self.game_offers(prof) if not o["open"]]
+        if not offers:
+            return {}
+        from . import running
+        seated = {t["game"] for t in running.running(self) if t["status"] != "done" and str(prof["id"]) in (t.get("members") or [])}
+        return {o["game"]: {"left": o["tries_left"], "member": o["game"] in seated} for o in offers
+                if o["tries_left"] > 0 or o["game"] in seated}
+
+    def use_game_try(self, prof: dict, game: str, same: bool = True) -> str | None:
+        """Use a free try of a locked game (gamepasses.use_try): "new", "same" or None."""
+        return self.passes.use_try(prof["id"], game, self.games_access()[game], same)
+
     def parent_tables(self, prof: dict, time: bool = True) -> dict[str, dict]:
         """Family tables a PARENT opened that this child may sit at although the game is locked for it (switched off,
         not bought, not rented): {game: {"member": bool, "joinable": bool}}. Starting own tables stays locked.
@@ -297,6 +343,7 @@ class FamilyQuest:
     def _community_summary(self, prof: dict) -> dict:
         """Running games and open votes for the start page – only the games this profile may play."""
         pid, ok = prof["id"], set(self.games_for(prof)) | set(self.parent_tables(prof))   # + tables a parent opened
+        ok |= set(self.trial_games(prof))                    # + locked games with a free try left or played on a try
         out = self.community.summary(pid)
         if "quiz" not in ok:
             out["quiz"] = None
@@ -388,6 +435,7 @@ class FamilyQuest:
             "games_nobots": self.games_without_bots(prof),        # these only without bots (no «alone against bots»)
             "games_locked": [o for o in self.game_offers(prof) if not o["open"]],   # to buy / rent first (🔒 tiles)
             "games_tables": sorted(self.parent_tables(prof)),     # locked, but a parent opened a table to join
+            "games_trial": self.trial_games(prof),                # locked: free tries left / playing on a try
             "community": self._community_summary(prof),
             "has_devices": bool(profile_settings(prof).get("devices")) and bool(self.ha and self.ha.connected),
             "internet": self.internet.state(prof),
