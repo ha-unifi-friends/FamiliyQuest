@@ -144,6 +144,8 @@ function confetti(root = document.body) {
 }
 
 const fmt = (n, d = 0) => Number(n || 0).toLocaleString(I18N.locale, { maximumFractionDigits: d });
+// a time span in minutes: «45 min», «2 h», «2 h 30» – null = unlimited «∞»
+const fmtMinutes = m => m == null ? "∞" : m < 60 ? fmt(m) + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + String(m % 60).padStart(2, "0") : "");
 /** Dates and times always in the format of the chosen language. Accepts "2026-12-24", "2026-12-24 18:30" or ISO. */
 const _when = v => v instanceof Date ? v : new Date(/^\d{4}-\d\d-\d\d$/.test(String(v)) ? v + "T12:00" : String(v).replace(" ", "T"));
 const fmtDate = (v, o = { day: "numeric", month: "numeric", year: "numeric" }) => v ? _when(v).toLocaleDateString(I18N.locale, o) : "";

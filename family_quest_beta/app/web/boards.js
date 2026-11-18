@@ -7,7 +7,7 @@
 const BB_NOTE = ["#fff1a8", "#ffd8a8", "#ffc9c9", "#fcc2d7", "#d0bfff", "#a5d8ff", "#99e9f2", "#c3fae8"];
 const BB_INK = ["var(--fg)", "#e03131", "#f08c00", "#2f9e44", "#1c7ed6", "#7048e8", "#d6336c", "#868e96"];
 const BB_EMOJI = ["📌", "💡", "🏖️", "🎄", "🎂", "🍝", "🧳", "🏡", "🎨", "📚", "⚽", "🎉", "🛒", "🌱", "🐾", "❤️"];
-const BB_MIN = 0.05, BB_MAX = 4, BB_SYNC_MS = 1000, BB_PTR_MS = 300, BB_UNDO = 50;
+const BB_MIN = 0.05, BB_MAX = 4, BB_SYNC_MS = 1000, BB_PTR_MS = 300, BB_UNDO = 50, BB_ERASE_PX = 14;
 
 // ---------------------------------------------------------------- the list on the Family page
 async function boardsSection(me = S.profile, open = id => go("board/" + id)) {
@@ -67,6 +67,19 @@ async function boardView(id) {
 }
 
 // ---------------------------------------------------------------- one board, full screen
+// buttons of the board react on the finger, not on «click» (no waiting for a double tap, no lost taps when the finger
+// moves a little); the keyboard still works through click (detail 0)
+const bbPress = fn => ({ onpointerdown: e => { if (e.button > 0) return; e.preventDefault(); fn(e); }, onclick: e => { if (e.detail === 0) fn(e); } });
+function bbTap(fn) {
+  let d = null;
+  return { onpointerdown: e => { d = e.button > 0 ? null : { id: e.pointerId, x: e.clientX, y: e.clientY }; if (d) e.preventDefault(); },
+    onpointerup: e => { const g = d; d = null; if (g && g.id === e.pointerId && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 14) { e.preventDefault(); fn(e); } },
+    onpointercancel: () => { d = null; }, onclick: e => { if (e.detail === 0) fn(e); } };
+}
+const BB_ERASER = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g transform="rotate(-45 12 11)" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">'
+  + '<rect x="3" y="7" width="18" height="8" rx="2" fill="#a5d8ff"/><path d="M5 7h5v8H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" fill="#f783ac"/></g>'
+  + '<path d="M13 21.5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
 function boardLive(box, me, boardId, back) {
   const items = new Map();                 // key (String id, or "t…" before the server gave one) → {id, k, d, z, by, ub}
   const els = new Map();                   // key → element
@@ -74,6 +87,7 @@ function boardLive(box, me, boardId, back) {
   const people = {};
   let others = [], board = null, since = 0, alive = true, timer = null, inflight = false, lastSend = 0, ptrDirty = false;
   let queue = [], pend = new Map(), undo = [], tmpN = 0;
+  let busyKeys = new Map(), er = null, peopleSig = "", titleSig = "";
   let tool = "select", noteC = 0, inkC = 0, penW = 4, shapeF = "rect", sel = null, editing = null, readOnly = false;
   const view = { s: 1, x: 0, y: 0 };      // screen = world * s + (x, y)
   let ptr = null;                          // own pointer (world) for the others
@@ -88,15 +102,27 @@ function boardLive(box, me, boardId, back) {
   const bar = h("div.bb-people");
   const opts = h("div.bb-opts");
   const tools = h("div.bb-tools");
-  const zoomPct = h("button.bb-zbtn.bb-pct", { title: T("100 %"), onclick: () => zoomTo(1) }, "100 %");
+  const zoomPct = h("button.bb-zbtn.bb-pct", { title: T("100 %"), ...bbTap(() => zoomTo(1)) }, "100 %");
   const zoom = h("div.bb-zoom",
-    h("button.bb-zbtn", { title: T("Zoom in"), onclick: () => zoomTo(view.s * 1.5) }, "+"), zoomPct,
-    h("button.bb-zbtn", { title: T("Zoom out"), onclick: () => zoomTo(view.s / 1.5) }, "−"),
-    h("button.bb-zbtn", { title: T("Show everything"), onclick: () => fitAll() }, "⤢"));
-  const top = h("div.bb-top", h("button.icon-btn.bb-close", { title: T("Close"), onclick: () => close() }, "✕"), titleEl, bar);
+    h("button.bb-zbtn", { title: T("Zoom out"), "aria-label": T("Zoom out"), ...bbTap(() => zoomTo(view.s / 1.5)) }, "−"), zoomPct,
+    h("button.bb-zbtn", { title: T("Zoom in"), "aria-label": T("Zoom in"), ...bbTap(() => zoomTo(view.s * 1.5)) }, "+"),
+    h("button.bb-zbtn", { title: T("Show everything"), "aria-label": T("Show everything"), ...bbTap(() => fitAll()) }, "⤢"));
+  const top = h("div.bb-top", h("button.bb-back", { title: T("Back"), "aria-label": T("Back"), ...bbTap(() => close()) }, h("span", { "aria-hidden": "true" }, "⌫")),
+    titleEl, zoom, bar);
+  // header, tools and their options: one fixed block at the top – the canvas below it is the only thing that pans and zooms
+  const head = h("div.bb-head", top, tools, opts);
   box.classList.add("bb-full", "quiz-full");
   document.body.classList.add("quiz-open");
-  box.replaceChildren(top, vp, zoom, h("div.bb-bottom", opts, tools));
+  box.replaceChildren(head, vp);
+  // no page zoom while on the board: the canvas zooms itself (touch-action alone is not enough on every phone)
+  const meta = document.querySelector('meta[name="viewport"]'), metaWas = meta && meta.getAttribute("content");
+  if (meta) meta.setAttribute("content", metaWas.replace(/,\s*(maximum-scale|user-scalable)=[^,]*/g, "") + ", maximum-scale=1, user-scalable=no");
+  const noPageZoom = e => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
+  const noGesture = e => e.preventDefault();
+  document.addEventListener("touchstart", noPageZoom, { passive: false });
+  document.addEventListener("touchmove", noPageZoom, { passive: false });
+  for (const g of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(g, noGesture, { passive: false });
+  vp.addEventListener("touchmove", e => { if (!e.target.closest(".bb-edit")) e.preventDefault(); }, { passive: false });
 
   function close() { stop(); back(); }
   function stop() {
@@ -107,6 +133,9 @@ function boardLive(box, me, boardId, back) {
     api(`community/boards/${boardId}/leave`, { method: "POST" }).catch(() => {});
     try { localStorage.setItem("fq.board." + boardId, JSON.stringify(view)); } catch {}
     window.removeEventListener("hashchange", onHash); window.removeEventListener("keydown", onKey); window.removeEventListener("resize", onResize);
+    document.removeEventListener("touchstart", noPageZoom); document.removeEventListener("touchmove", noPageZoom);
+    for (const g of ["gesturestart", "gesturechange", "gestureend"]) document.removeEventListener(g, noGesture);
+    if (meta && metaWas != null) meta.setAttribute("content", metaWas);
     box.classList.remove("bb-full", "quiz-full"); document.body.classList.remove("quiz-open");
   }
   const onHash = () => { stop(); if (box.parentNode === document.body) box.remove(); };
@@ -132,9 +161,9 @@ function boardLive(box, me, boardId, back) {
   }
   function zoomTo(s) { const r = rect(); zoomAt(s, r.width / 2, r.height / 2); }
   function showRect(b, maxS = 1.5) {                // world box → fits into the view
-    const r = rect(), pad = 30, t = top.offsetHeight, hh = Math.max(100, r.height - t - box.querySelector(".bb-bottom").offsetHeight);
-    const s = Math.min(maxS, Math.max(BB_MIN, Math.min((r.width - 2 * pad - 50) / Math.max(1, b.w), (hh - 2 * pad) / Math.max(1, b.h))));
-    view.s = s; view.x = (r.width - 50) / 2 - (b.x + b.w / 2) * s; view.y = t + hh / 2 - (b.y + b.h / 2) * s;
+    const r = rect(), pad = 30, hh = Math.max(100, r.height);
+    const s = Math.min(maxS, Math.max(BB_MIN, Math.min((r.width - 2 * pad) / Math.max(1, b.w), (hh - 2 * pad) / Math.max(1, b.h))));
+    view.s = s; view.x = r.width / 2 - (b.x + b.w / 2) * s; view.y = hh / 2 - (b.y + b.h / 2) * s;
     applyView();
   }
   function bbox(it) {
@@ -200,8 +229,9 @@ function boardLive(box, me, boardId, back) {
     el.dataset.id = k; el.dataset.k = it.k;
     if (old) old.replaceWith(el); else world.append(el);
     els.set(k, el);
-    markBusy();
+    paintBusy(k, el);
     if (sel === k) el.classList.add("bb-sel");
+    if (er && er.marked.has(k)) el.classList.add("bb-erase");
   }
   function unrender(k) { const el = els.get(k); if (el) el.remove(); els.delete(k); if (sel === k) select(null); }
 
@@ -295,54 +325,75 @@ function boardLive(box, me, boardId, back) {
     for (const x of r.items) {
       const k = String(x.id);
       if (busy(k)) continue;
-      if (x.del) { items.delete(k); unrender(k); continue; }
-      const it = { id: x.id, k: x.k, d: x.d, z: x.z, by: x.by, ub: x.ub };
+      if (x.del) { if (items.has(k) || els.has(k)) { items.delete(k); unrender(k); } continue; }
+      const old = items.get(k);
+      if (old && old.v === x.v) continue;                                     // nothing new: keep the element
+      if (old && old.z === x.z && JSON.stringify(old.d) === JSON.stringify(x.d)) { old.v = x.v; old.ub = x.ub; continue; }  // own change coming back
+      const it = { id: x.id, k: x.k, d: x.d, z: x.z, by: x.by, ub: x.ub, v: x.v };
       items.set(k, it); render(it);
     }
     since = r.version;
     board = r.board;
-    if (board) {
+    const tsig = board ? [board.emoji, board.title, board.archived].join("\n") : "";
+    if (board && tsig !== titleSig) {
+      titleSig = tsig;
       titleEl.replaceChildren(h("span.bb-emoji", board.emoji), C(board.title, "strong"), board.archived ? h("span.chip.closed", T("archived")) : "");
-      if (readOnly !== board.archived) { readOnly = board.archived; if (readOnly) { tool = "select"; select(null); } drawTools(); }
     }
+    if (board && readOnly !== board.archived) { readOnly = board.archived; if (readOnly) { tool = "select"; select(null); } drawTools(); }
     others = r.presence || [];
     drawPeople(); drawCursors(); markBusy();
   }
 
   // ---------- the others: avatars, pointers, what they edit
-  function drawPeople() {
+  function drawPeople() {                    // rebuilt only when somebody comes or goes – not on every poll
     const list = [{ id: me.id }, ...others];
+    const sig = list.map(o => { const p = people[o.id]; return o.id + ":" + (p ? p.name + p.color + JSON.stringify(p.avatar) : "?"); }).join("|");
+    if (sig === peopleSig) return;
+    peopleSig = sig;
     bar.replaceChildren(...list.slice(0, 6).map(o => {
       const p = people[o.id] || { name: "?", color: "#888" };
       return h("button.bb-av" + (o.id === me.id ? ".me" : ""), { title: p.name, style: { "--who": p.color },
-        onclick: () => { if (o.view) showRect({ x: o.view[0], y: o.view[1], w: o.view[2], h: o.view[3] }, BB_MAX); } }, avatarSvg(p.avatar, 30));
+        ...bbTap(() => { const v = (others.find(x => x.id === o.id) || {}).view; if (v) showRect({ x: v[0], y: v[1], w: v[2], h: v[3] }, BB_MAX); }) }, avatarSvg(p.avatar, 30));
     }), list.length > 6 ? h("span.small.bb-more-n", "+" + (list.length - 6)) : "");
   }
+  const cursorEls = new Map();              // person → element: moved, not rebuilt (this runs on every frame of a pinch)
   function drawCursors() {
-    const r = { w: vp.clientWidth, h: vp.clientHeight };
-    cursors.replaceChildren(...others.filter(o => o.x != null).map(o => {
-      const p = people[o.id] || { name: "?", color: "#888" };
+    const r = { w: vp.clientWidth, h: vp.clientHeight }, seen = new Set();
+    for (const o of others) {
+      if (o.x == null) continue;
       const sx = o.x * view.s + view.x, sy = o.y * view.s + view.y;
-      if (sx < -20 || sy < -20 || sx > r.w + 20 || sy > r.h + 20) return null;
-      return h("div.bb-cursor", { style: { transform: `translate(${sx}px, ${sy}px)`, "--who": p.color } },
-        h("i.bb-arrow"), h("span", p.name));
-    }).filter(Boolean));
+      if (sx < -20 || sy < -20 || sx > r.w + 20 || sy > r.h + 20) continue;
+      const p = people[o.id] || { name: "?", color: "#888" };
+      let el = cursorEls.get(o.id);
+      if (!el || el.dataset.sig !== p.name + p.color) {
+        if (el) el.remove();
+        el = h("div.bb-cursor", { style: { "--who": p.color } }, h("i.bb-arrow"), h("span", p.name));
+        el.dataset.sig = p.name + p.color; cursorEls.set(o.id, el); cursors.append(el);
+      }
+      el.style.transform = `translate(${sx}px, ${sy}px)`;
+      seen.add(o.id);
+    }
+    for (const [id, el] of cursorEls) if (!seen.has(id)) { el.remove(); cursorEls.delete(id); }
   }
   function markBusy() {
-    for (const el of world.querySelectorAll(".bb-busy")) { el.classList.remove("bb-busy"); el.removeAttribute("data-who"); }
-    for (const o of others) {
-      if (o.edit == null) continue;
-      const el = els.get(String(o.edit)), p = people[o.id];
-      if (el && p) { el.classList.add("bb-busy"); el.style.setProperty("--who", p.color); el.setAttribute("data-who", p.name); }
-    }
+    const now = new Map();
+    for (const o of others) if (o.edit != null && people[o.id]) now.set(String(o.edit), people[o.id]);
+    for (const k of busyKeys.keys()) if (!now.has(k)) { const el = els.get(k); if (el) { el.classList.remove("bb-busy"); el.removeAttribute("data-who"); } }
+    busyKeys = now;
+    for (const k of now.keys()) paintBusy(k, els.get(k));
+  }
+  function paintBusy(k, el) {
+    const p = busyKeys.get(k);
+    if (!el || !p) return;
+    el.classList.add("bb-busy"); el.style.setProperty("--who", p.color); el.setAttribute("data-who", p.name);
   }
 
   // ---------- selection and writing
-  function select(k) {
+  function select(k, opts = true) {
     if (sel && els.get(sel)) els.get(sel).classList.remove("bb-sel");
     sel = k && items.has(k) ? k : null;
     if (sel && els.get(sel)) els.get(sel).classList.add("bb-sel");
-    drawOpts();
+    if (opts) drawOpts();
   }
   function edit(k) {
     const it = items.get(k), el = els.get(k);
@@ -376,37 +427,49 @@ function boardLive(box, me, boardId, back) {
 
   // ---------- tools
   const TOOLS = [["select", "👆", T("Move and choose")], ["note", "🗒️", T("Sticky note")], ["text", "🔤", T("Text")],
-    ["pen", "✏️", T("Pen")], ["eraser", "🧽", T("Eraser")], ["shape", "🔷", T("Shapes")]];
+    ["pen", "✏️", T("Pen")], ["eraser", null, T("Eraser")], ["shape", "🔷", T("Shapes")]];
+  // the tool buttons are made once; switching a tool only moves the «on» mark (instant, on the finger going down)
+  const toolBtns = new Map();
+  const noteSwatch = h("span.bb-swatch", "🗒️");
+  for (const [k, ic, n] of TOOLS)
+    toolBtns.set(k, h("button.bb-tool", { type: "button", title: n, "aria-label": n, "aria-pressed": "false", ...bbPress(() => setTool(k)) },
+      k === "note" ? noteSwatch : k === "eraser" ? h("span.bb-ic", { html: BB_ERASER }) : ic));
+  const undoBtn = h("button.bb-tool", { type: "button", title: T("Undo"), "aria-label": T("Undo"), ...bbPress(() => doUndo()) }, "↶");
+  tools.append(...toolBtns.values(), undoBtn);
+  function setTool(k) {
+    if (readOnly && k !== "select") return;
+    commitEdit(); cancelGesture();
+    tool = k; select(null, false); drawTools();
+  }
   function drawTools() {
-    tools.replaceChildren(...(readOnly ? TOOLS.slice(0, 1) : TOOLS).map(([k, ic, n]) =>
-      h("button.bb-tool" + (tool === k ? ".on" : ""), { title: n, "aria-label": n, onclick: () => { commitEdit(); tool = k; select(null); drawTools(); } },
-        k === "note" ? h("span.bb-swatch", { style: { background: BB_NOTE[noteC] } }, ic) : ic)),
-      readOnly ? null : h("button.bb-tool", { title: T("Undo"), "aria-label": T("Undo"), disabled: !undo.length, onclick: doUndo }, "↶"));
+    for (const [k, b] of toolBtns) { b.classList.toggle("on", tool === k); b.setAttribute("aria-pressed", String(tool === k)); b.hidden = readOnly && k !== "select"; }
+    undoBtn.hidden = readOnly; undoBtn.disabled = !undo.length;
+    noteSwatch.style.background = BB_NOTE[noteC];
     vp.dataset.tool = tool;
     drawOpts();
   }
   function swatches(list, cur, set, note) {
-    return list.map((c, i) => h("button.bb-col" + (i === cur ? ".on" : ""), { style: { "--c": note ? c : (i === 0 ? "var(--fg)" : c) }, "aria-label": T("Colour"), onclick: () => set(i) }));
+    return list.map((c, i) => h("button.bb-col" + (i === cur ? ".on" : ""), { style: { "--c": note ? c : (i === 0 ? "var(--fg)" : c) }, "aria-label": T("Colour"), ...bbTap(() => set(i)) }));
   }
   function drawOpts() {
     let row = [];
     if (sel && items.has(sel) && !readOnly) {
       const it = items.get(sel), by = people[it.by];
       row = [by ? h("span.bb-who.small", { style: { "--who": by.color } }, C(by.name)) : null,
-        it.k === "note" || it.k === "text" ? h("button.bb-opt", { title: T("Write"), onclick: () => edit(sel) }, "✏️") : null,
-        h("button.bb-opt", { title: T("Remove"), onclick: () => removeItem(sel) }, "🗑️"),
-        h("button.bb-opt", { title: T("Bring to front"), onclick: () => front(sel) }, "⬆️"),
-        it.k === "text" ? [h("button.bb-opt", { title: T("Smaller"), onclick: () => setItem(sel, { s: Math.max(10, Math.round(it.d.s / 1.25)) }) }, "A−"),
-          h("button.bb-opt", { title: T("Bigger"), onclick: () => setItem(sel, { s: Math.min(400, Math.round(it.d.s * 1.25)) }) }, "A+")] : null,
+        it.k === "note" || it.k === "text" ? h("button.bb-opt", { title: T("Write"), ...bbTap(() => edit(sel)) }, "✏️") : null,
+        h("button.bb-opt", { title: T("Remove"), ...bbTap(() => removeItem(sel)) }, "🗑️"),
+        h("button.bb-opt", { title: T("Bring to front"), ...bbTap(() => front(sel)) }, "⬆️"),
+        it.k === "text" ? [h("button.bb-opt", { title: T("Smaller"), ...bbTap(() => setItem(sel, { s: Math.max(10, Math.round(it.d.s / 1.25)) })) }, "A−"),
+          h("button.bb-opt", { title: T("Bigger"), ...bbTap(() => setItem(sel, { s: Math.min(400, Math.round(it.d.s * 1.25)) })) }, "A+")] : null,
         ...swatches(it.k === "note" ? BB_NOTE : BB_INK, it.d.c, i => setItem(sel, { c: i }), it.k === "note")];
     } else if (tool === "note") row = swatches(BB_NOTE, noteC, i => { noteC = i; drawTools(); }, true);
     else if (tool === "pen" || tool === "text" || tool === "shape") {
       row = [...(tool === "shape" ? [["rect", "⬜"], ["ellipse", "⚪"], ["arrow", "↗"], ["line", "╱"]].map(([f, ic]) =>
-        h("button.bb-opt" + (shapeF === f ? ".on" : ""), { onclick: () => { shapeF = f; drawOpts(); } }, ic)) : []),
+        h("button.bb-opt" + (shapeF === f ? ".on" : ""), { ...bbTap(() => { shapeF = f; drawOpts(); }) }, ic)) : []),
         ...swatches(BB_INK, inkC, i => { inkC = i; drawOpts(); }),
-        ...(tool === "pen" ? [2, 4, 10].map(w => h("button.bb-opt.bb-w" + (penW === w ? ".on" : ""), { title: T("Line width"), onclick: () => { penW = w; drawOpts(); } },
+        ...(tool === "pen" ? [2, 4, 10].map(w => h("button.bb-opt.bb-w" + (penW === w ? ".on" : ""), { title: T("Line width"), ...bbTap(() => { penW = w; drawOpts(); }) },
           h("i", { style: { height: w + "px", width: w + "px" } }))) : [])];
-    } else if (tool === "eraser") row = [h("span.small.muted.bb-hint", T("Wipe over lines and shapes to remove them"))];
+    } else if (tool === "eraser") row = [h("span.small.muted.bb-hint", T("Tap or wipe over something to remove it"))];
     else if (readOnly) row = [h("span.small.muted.bb-hint", T("This board is archived – it can only be looked at"))];
     else row = [h("span.small.muted.bb-hint", T("Drag to move · two fingers to zoom · double tap to write"))];
     opts.replaceChildren(...row.flat().filter(Boolean));
@@ -426,6 +489,7 @@ function boardLive(box, me, boardId, back) {
     if (shape) { shape.el.remove(); shape = null; }
     if (drag && drag.moved) { const it = items.get(key(drag.id)); if (it) render(it); }
     drag = null;
+    if (er) { for (const k of er.marked) { const el = els.get(k); if (el) el.classList.remove("bb-erase"); } er = null; }
   }
   vp.addEventListener("pointerdown", e => {
     if (e.target.closest(".bb-edit")) return;
@@ -453,7 +517,7 @@ function boardLive(box, me, boardId, back) {
       shape.el.style.zIndex = 2 ** 30; world.append(shape.el);
       return;
     }
-    if (!panning && !readOnly && tool === "eraser") { erase(e); drag = { erase: true }; return; }
+    if (!panning && !readOnly && tool === "eraser") { er = { marked: new Set(), last: w, lines: null }; eraseAt(w); return; }
     if (!panning && tool === "select" && k && items.has(k) && !readOnly) {
       const it = items.get(k);
       drag = { id: it.id, sx: p.x, sy: p.y, ox: it.d.x, oy: it.d.y, moved: false, el: els.get(k), resize: !!e.target.closest(".bb-handle") };
@@ -485,8 +549,13 @@ function boardLive(box, me, boardId, back) {
       shape.el.style.left = d.x + "px"; shape.el.style.top = d.y + "px";
       return;
     }
+    if (er) {                                             // sample the way of the finger: fast wipes skip nothing
+      const tol = BB_ERASE_PX / view.s, dx = w.x - er.last.x, dy = w.y - er.last.y, n = Math.min(200, Math.ceil(Math.hypot(dx, dy) / (tol / 2)));
+      for (let i = 1; i <= n; i++) eraseAt({ x: er.last.x + dx * i / n, y: er.last.y + dy * i / n });
+      er.last = w;
+      return;
+    }
     if (!drag) return;
-    if (drag.erase) return erase(e);
     const dx = p.x - drag.sx, dy = p.y - drag.sy;
     if (!drag.moved && Math.hypot(dx, dy) < 6) return;
     drag.moved = true;
@@ -511,6 +580,13 @@ function boardLive(box, me, boardId, back) {
     if (pinch) { if (pts.size < 2) pinch = null; if (pts.size === 1) { const [q] = [...pts.values()]; drag = { pan: true, sx: q.x, sy: q.y, vx: view.x, vy: view.y, moved: true }; } return; }
     if (e.type === "pointercancel") return cancelGesture();
     const w = toWorld(e.clientX, e.clientY);
+    if (er) {                                               // what was marked goes – one step to undo
+      const g = er; er = null;
+      const gone = [...g.marked].map(k => items.get(k)).filter(Boolean);
+      for (const it of gone) removeItem(key(it.id), false);
+      if (gone.length) remember({ undo: () => { for (const it of gone) { items.set(key(it.id), it); render(it); send({ op: "restore", id: it.id }); } } });
+      return;
+    }
     if (line) {
       const l = line; line = null; l.el.remove();
       const pts2 = simplify(l.pts, 0.8 / view.s);
@@ -527,7 +603,7 @@ function boardLive(box, me, boardId, back) {
       return;
     }
     const g = drag; drag = null;
-    if (!g || g.erase) return;
+    if (!g) return;
     if (g.pan) {
       if (g.moved) return;
       if (!readOnly && (tool === "note" || tool === "text")) {               // place a note / a text where tapped
@@ -569,11 +645,41 @@ function boardLive(box, me, boardId, back) {
     if (e.ctrlKey || (Math.abs(e.deltaY) >= 40 && !e.deltaX)) zoomAt(view.s * Math.exp(-Math.max(-300, Math.min(300, e.deltaY)) * (e.ctrlKey ? 0.01 : 0.0015)), p.x, p.y);
     else { view.x -= e.deltaX; view.y -= e.deltaY; applyView(); }
   }, { passive: false });
-  function erase(e) {
-    for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
-      const t = el.closest && el.closest("[data-id]");
-      if (t && (t.dataset.k === "stroke" || t.dataset.k === "shape") && items.has(t.dataset.id)) { removeItem(t.dataset.id); break; }
+  // ---------- eraser: hit-testing in world coordinates (a few screen pixels of tolerance, at every zoom)
+  function segDist(px, py, ax, ay, bx, by) {
+    const vx = bx - ax, vy = by - ay, l = vx * vx + vy * vy;
+    const t = l ? Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / l)) : 0;
+    return Math.hypot(px - ax - t * vx, py - ay - t * vy);
+  }
+  function hits(it, x, y, tol) {
+    const d = it.d;
+    if (it.k === "stroke") {
+      const r = tol + d.w / 2, p = d.p, px = x - d.x, py = y - d.y;
+      if (p.length === 2) return Math.hypot(px - p[0], py - p[1]) <= r;
+      for (let i = 2; i < p.length; i += 2) if (segDist(px, py, p[i - 2], p[i - 1], p[i], p[i + 1]) <= r) return true;
+      return false;
     }
+    if (it.k === "shape" && (d.f === "line" || d.f === "arrow")) return segDist(x, y, d.x, d.y, d.x + d.w, d.y + d.h) <= tol + d.sw / 2;
+    const b = bbox(it), m = it.k === "shape" ? tol + d.sw / 2 : tol;
+    return x >= b.x - m && x <= b.x + b.w + m && y >= b.y - m && y <= b.y + b.h + m;
+  }
+  // the topmost item under the eraser is marked (shown faded) and goes when the finger lifts; a wipe that started on a
+  // line or shape only takes lines and shapes – so wiping a scribble off a note leaves the note
+  function eraseAt(w) {
+    const tol = BB_ERASE_PX / view.s;
+    let top = null, topLine = null;
+    for (const it of items.values()) {
+      if (!hits(it, w.x, w.y, tol)) continue;
+      if (!top || it.z > top.z) top = it;
+      if ((it.k === "stroke" || it.k === "shape") && (!topLine || it.z > topLine.z)) topLine = it;
+    }
+    if (er.lines === null && top) er.lines = top.k === "stroke" || top.k === "shape";
+    const it = er.lines ? topLine : top;
+    if (!it) return;
+    const k = key(it.id);
+    if (er.marked.has(k)) return;
+    er.marked.add(k);
+    const el = els.get(k); if (el) el.classList.add("bb-erase");
   }
   function shapeData(x0, y0, x1, y1) {
     const base = { c: inkC, sw: Math.max(1, Math.min(60, Math.round(4 / view.s))), f: shapeF };

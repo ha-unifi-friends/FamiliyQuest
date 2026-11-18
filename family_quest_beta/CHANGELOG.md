@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0-beta.12
+
+- Time per day for each child (parent area › edit profile): three sliders – games, learning and internet – from minutes to hours up to ∞ (unlimited, the default); «Days» opens a slider per weekday that moves with the main one until you set a day on its own (and docks again when you move it back)
+- Limits are kept: game minutes and learning time are counted; when the time is up no new game or lesson starts (a running one can be finished); the app shows the time left
+- App › Games: running games on top, the family quest, then tiles «For a game night», «Quick games for in between» and the game corner; a tap opens the game's buttons
+- Bulletin board: an eraser that works (tap or wipe), toolbar and zoom fixed at the top, no page zoom with two fingers, instant tool switching
+- Cube solver: a finger shows how to turn the cube; every step turns slowly by itself after a moment; Star Runner: the other players are drawn smaller
+
 ## 1.1.0-beta.11
 
 - New game «Escape Room»: 56 riddles in 9 kinds (codes, secret writing, observation, patterns, maths, memory, maps, mechanical puzzles, knowledge), new numbers every game, combined door locks; together or two teams; rooms, difficulty, kinds and time limit in the settings; riddles not played yet come first; no bots

@@ -39,6 +39,7 @@ async function route() {
   const as = hash.match(/^as\/([A-Za-z0-9_.\-]+)\/?(.*)$/);
   if (as) { Auth.kid = as[1]; history.replaceState(null, "", "#/" + as[2]); return route(); }
   const [view, arg] = hash.split("/");
+  if (S.sheet) S.sheet.close();                          // a game card opened from its tile (gamesView)
   if (tableNote.box) closeTableNote();                  // «somebody opened a table»: gone on every navigation (also into that table)
   document.body.classList.remove("quiz-open");          // a full-screen game left by the back button of the browser
   if (!Auth.kid) return profilesView();
@@ -384,7 +385,7 @@ function dashboardView() {
     h("div.today-text",
       h("h2", met ? T("Daily goal reached! 🎉") : T("Today's goal")),
       h("p.muted", met ? T("Everything extra counts for your level.") : I18N.tr(T("Collect {0} XP today – every lesson and every right answer counts.")).replace("{0}", fmt(goal))),
-      h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Daily lesson"))));
+      learnUp() ? null : h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Daily lesson"))));
 
   const subjects = h("section",
     h("div.row", h("h2.grow", T("Subjects")), h("button.btn.small.ghost", { onclick: () => go("courses") }, "🌍 ", T("Language courses & more"))),
@@ -395,7 +396,7 @@ function dashboardView() {
     ...(me.weather_alarm && me.weather_alarm.hints.length ? [h("section.card.banner.alarm-banner",
       h("span.big-ic", me.weather_alarm.now ? me.weather_alarm.now.icon : "🌂"),
       h("div.grow", ...me.weather_alarm.hints.map(x => h("div", x.icon, " ", C(I18N.tr(x.text), "strong")))))] : []),
-    ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today];
+    ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today, timeLeftCard("learn")].filter(Boolean);
   if (me.profile && me.has_devices) sections.push(devicesCard());
   if (me.chores) sections.push(choresCard(me.chores));
   sections.push(subjects, deckHomeCard(), pointsCard());
@@ -434,7 +435,8 @@ function internetCard(st) {
   const clock = h("b.net-clock");
   const fmtClock = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   let left = st.seconds_left || 0;
-  const draw = () => { clock.textContent = st.running ? fmtClock(Math.max(0, left)) : fmt(st.minutes) + " min"; };
+  const unlimited = !!(st.budget && st.budget.unlimited);       // the parents set the internet budget to ∞
+  const draw = () => { clock.textContent = st.running ? (unlimited ? "∞" : fmtClock(Math.max(0, left))) : unlimited ? "∞" : fmt(st.minutes) + " min"; };
   draw();
   if (st.running) {
     netTimer = setInterval(() => {
@@ -454,7 +456,7 @@ function internetCard(st) {
     h("div.grow", h("h2", T("Internet time")), clock,
       h("div.small.muted", st.block ? T("Block time – the internet is off until {0}.").replace("{0}", fmtTime(st.block.until))
         : st.running ? T("Internet is on – the time runs.") : st.minutes >= 1 ? T("Start when you want to go online.") : T("No minutes left – earn some in the shop.")),
-      st.budget ? h("div.small.muted", "📅 ", I18N.tr(T("Budget: {0} of {1} min left")).replace("{0}", fmt(st.budget.left)).replace("{1}", fmt(st.budget.total)),
+      st.budget && !unlimited ? h("div.small.muted", "📅 ", I18N.tr(T("Budget: {0} of {1} min left")).replace("{0}", fmt(st.budget.left)).replace("{1}", fmt(st.budget.total)),
         st.extra ? " · ➕ " + fmt(st.extra) + " min" : "", " · ", I18N.tr(T("new from {0}")).replace("{0}", fmtDate(st.budget.reset_at, { weekday: "short" }) + " " + fmtTime(st.budget.reset_at))) : null),
     st.running ? h("button.btn.big.bad", { onclick: () => act("stop") }, "⏸ ", T("Pause"))
       : h("button.btn.big.good", { disabled: !st.can_start, onclick: () => act("start") }, "▶ ", T("Start")));
@@ -471,6 +473,8 @@ function meSummary() {
     h("div.me-tiles",
       tile("⭐", "Level " + me.level.level, fmt(me.xp_today) + " / " + fmt(me.daily_goal) + " XP " + I18N.tr(T("today"))),
       tile("🔥", String(me.streak), T("Days in a row")),
+      ...[["games", "🎮", T("Games left today")], ["learn", "📚", T("Learning left today")]]
+        .filter(([k]) => me.time_left && me.time_left[k] != null).map(([k, ic, label]) => tile(ic, fmtMinutes(me.time_left[k]), label)),
       ...accs.map(a => tile(a.icon || "🪙", fmt(me.balances[a.key], 1), I18N.tr(a.name))),
       tile(open.length ? "🧹" : "✅", String(open.length), open.length ? T("open tasks") : T("All done!"))),
     me.internet ? internetCard(me.internet) : null);
@@ -574,15 +578,29 @@ async function packView(packId) {
   screen("home", { back: () => go("") },
     h("section.pack-head", { style: { "--c": p.color } },
       h("span.pack-ic", p.icon), h("div", C(p.title, "h1"), STATUS_BADGE[p.status] ? h("span.small.status-badge", STATUS_BADGE[p.status]()) : null, " ", h("span.small", prog.percent + " % · " + prog.stars + " / " + prog.max_stars + " ★"))),
-    h("div.row.pack-actions",
+    timeLeftCard("learn"),
+    h("div.row.pack-actions", { hidden: learnUp() },
       h("button.btn", { onclick: () => startLesson({ mode: "path", pack: p.id, unit: prog.next || undefined }), disabled: !prog.next }, "▶ ", T("Continue")),
       h("button.btn.ghost", { onclick: () => startLesson({ mode: "quiz", pack: p.id }), disabled: !learned }, "⚡ ", T("Quiz round")),
       p.units.some(u => u.kind === "cards") ? h("button.btn.ghost", { onclick: () => startLesson({ mode: "cards", pack: p.id }) }, "🃏 ", T("Flash cards")) : null),
     cardBox, path);
 }
 
+// ---------------------------------------------------------------- daily time (parent area › profile, timelimits.py)
+const learnUp = () => !!(S.me && S.me.time_left && S.me.time_left.learn === 0);
+/** «🎮 25 min left today» – at 0 a friendly stop. kind: games | learn; nothing without a limit. */
+function timeLeftCard(kind) {
+  const m = S.me && S.me.time_left ? S.me.time_left[kind] : null;
+  if (m == null) return null;
+  const up = m <= 0, ic = kind === "games" ? "🎮" : "📚";
+  return h("section.card.time-left" + (up ? ".up" : ""), h("span.big-ic", up ? "🌙" : ic),
+    h("strong.grow", up ? (kind === "games" ? T("Game time for today is used up – see you tomorrow!") : T("Learning time for today is used up – see you tomorrow!"))
+      : I18N.tr(T("{0} left today")).replace("{0}", fmtMinutes(m))));
+}
+
 // ---------------------------------------------------------------- lesson player
 async function startLesson(opts) {
+  if (learnUp()) return toast(T("Learning time for today is used up – see you tomorrow!"), "bad");
   let s;
   try { s = await api("me/session", { method: "POST", body: opts }); }
   catch (e) { return toast(e.message, "bad"); }
@@ -1668,14 +1686,47 @@ async function familyView() {
 
 // ---------------------------------------------------------------- the games (own menu item)
 async function gamesView() {
-  const cards = [canPlay("quiz") ? await quizCard() : null, canPlay("bingo") ? await bingoCard() : null, canPlay("song") ? await songFamilyCard() : null,
-    canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
-    canPlay("domino") ? await dominoFamilyCard() : null, canPlay("paarjagd") ? await paarjagdFamilyCard() : null,
-    canPlay("werbinich") ? await werbinichFamilyCard() : null, canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null,
-    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("sternlauf") ? await sternlaufFamilyCard() : null, canPlay("snack") ? await snackFamilyCard() : null, canPlay("verkehr") ? await verkehrFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("escape") ? await escapeFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
+  const quiz = canPlay("quiz") ? await quizCard() : null;
+  // longer table games for a game night, then short games for in between (only the games this child may play) –
+  // each one a small tile; a tap opens its card (the same actions as before: family table, bots, join, rules)
+  const pick = async list => (await Promise.all(list.filter(([, ok]) => ok).map(async ([k, , make]) => [k, await make()]))).filter(([, card]) => card);
+  const night = await pick([["tschau", canPlay("tschau"), () => cardsFamilyCard("tschau")], ["karussell", canPlay("karussell"), () => cardsFamilyCard("karussell")], ["domino", canPlay("domino"), dominoFamilyCard],
+    ["jass", canPlay("jass"), jassFamilyCard], ["poker", canPlay("poker"), pokerFamilyCard], ["dorfmarkt", canPlay("dorfmarkt"), dorfmarktFamilyCard], ["heimwaerts", canPlay("heimwaerts"), heimwaertsFamilyCard],
+    ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
+    ["verboten", canPlay("verboten"), verbotenFamilyCard], ["zeichnen", canPlay("zeichnen"), zeichnenFamilyCard], ["stadtland", canPlay("stadtland"), stadtlandFamilyCard], ["song", canPlay("song"), songFamilyCard],
+    ["bingo", canPlay("bingo"), bingoCard], ["schach", canPlay("schach"), schachFamilyCard]]);
+  const quick = await pick([["paarjagd", canPlay("paarjagd"), paarjagdFamilyCard], ["wuerfel", canPlay("wuerfel"), wuerfelFamilyCard], ["jump", canPlay("jump"), jumpFamilyCard], ["klatsch", canPlay("klatsch"), klatschFamilyCard],
+    ["sternlauf", canPlay("sternlauf"), sternlaufFamilyCard], ["snack", canPlay("snack"), snackFamilyCard], ["verkehr", canPlay("verkehr"), verkehrFamilyCard], ["duel", canPlay("ttt") || canPlay("pingpong"), tttDuelCard]]);
   // the games running just now on top – the same pulsing banners as on the start page
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
-  screen("games", h("h1", "🎲 ", T("Games")), ...(live.length ? [h("div.live-banners", ...live)] : []), ...cards);
+  screen("games", h("h1", "🎲 ", T("Games")), timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
+    gameGroup("🎲", T("For a game night"), night), gameGroup("⚡", T("Quick games for in between"), quick), arcadeCard());
+}
+
+/** A group of family games as small tiles (icon + name, a pulsing dot while a table runs); a tap opens the game's card. */
+function gameGroup(ic, title, items) {
+  if (!items.length) return null;
+  const com = (S.me && S.me.community) || {};
+  return h("section.card.game-group", h("h2", ic, " ", title),
+    h("div.arcade-grid.game-tiles", ...items.map(([k, card]) => {
+      const head = card.querySelector("h2");
+      const text = (head ? head.textContent : k).trim(), sp = text.indexOf(" ");
+      const icon = sp > 0 ? text.slice(0, sp) : "🎲", name = sp > 0 ? text.slice(sp + 1) : text;
+      const running = k === "duel" ? com.duel || com.pong4 : com[k];
+      return h("button.arcade-tile.game-tile" + (running ? ".live" : ""), { onclick: () => openGameSheet(card) },
+        running ? h("i.live-dot", { title: T("running now") }) : null, h("span.big-ic", icon), h("strong", name));
+    })));
+}
+
+// the card of a game in a sheet: closes itself when the app goes to another page (a game opened, a table joined)
+function openGameSheet(card) {
+  if (S.sheet) S.sheet.close();
+  card.classList.add("in-sheet");
+  const m = modal(h("div.game-sheet", card, h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))),
+    { onClose: () => { window.removeEventListener("hashchange", off); if (S.sheet === m) S.sheet = null; } });
+  const off = () => m.close();
+  window.addEventListener("hashchange", off);
+  S.sheet = m;
 }
 
 // ---------------------------------------------------------------- my devices (Home Assistant)

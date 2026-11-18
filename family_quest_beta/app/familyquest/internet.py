@@ -39,8 +39,9 @@ def _hm(v, default: str) -> str:
 
 
 def clean_plan(p) -> dict | None:
-    """{"budget": minutes, "period": "day"|"week", "reset": "HH:MM", "reset_day": 0–6 (Monday = 0),
-    "days": {"5": minutes, …} (other budget on these weekdays, period «day»),
+    """{"budget": minutes | None, "period": "day"|"week", "reset": "HH:MM", "reset_day": 0–6 (Monday = 0),
+    "days": {"5": minutes | None, …} (other budget on these weekdays, period «day»),
+    None as budget = unlimited (∞ in the parent area: the internet may run the whole period),
     "blocks": [{"days": [0…6], "from": "HH:MM", "to": "HH:MM", "mode": internet|games|app}]} – or None (no plan)."""
     if not isinstance(p, dict):
         return None
@@ -54,8 +55,8 @@ def clean_plan(p) -> dict | None:
     days = {}
     if period == "day":
         for k, v in (p.get("days") or {}).items() if isinstance(p.get("days"), dict) else []:
-            if str(k) in {str(i) for i in range(7)} and v not in (None, ""):
-                days[str(k)] = mins(v, 1440)
+            if str(k) in {str(i) for i in range(7)} and v != "":
+                days[str(k)] = None if v is None else mins(v, 1440)
     blocks = []
     for b in (p.get("blocks") or [])[:20] if isinstance(p.get("blocks"), list) else []:
         if not isinstance(b, dict):
@@ -65,12 +66,12 @@ def clean_plan(p) -> dict | None:
         if not d or not f or not t or f == t:
             raise InternetError("Block time: choose days and a time from – to")
         blocks.append({"days": d, "from": f, "to": t, "mode": b.get("mode") if b.get("mode") in BLOCK_MODES else "internet"})
-    return {"budget": mins(p.get("budget"), hi), "period": period, "reset": _hm(p.get("reset"), "00:00"),
+    return {"budget": None if p.get("budget") is None and "budget" in p else mins(p.get("budget"), hi), "period": period, "reset": _hm(p.get("reset"), "00:00"),
             "reset_day": mins(p.get("reset_day"), 6), "days": days, "blocks": blocks}
 
 
 def period_of(plan: dict, now: datetime) -> tuple[datetime, datetime, int]:
-    """(start, end, budget) of the budget period around `now`."""
+    """(start, end, budget) of the budget period around `now` – budget None = unlimited."""
     hh, mm = map(int, plan["reset"].split(":"))
     start = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
     if plan["period"] == "week":
@@ -133,12 +134,17 @@ class InternetTime:
     def allowance(self, profile: dict, now: datetime | None = None) -> dict | None:
         """The budget of the current period: {"total", "used", "left", "reset_at"} – None without a plan."""
         plan = self.plan_of(profile)
-        if not plan or not plan["budget"] and not plan["days"]:
+        if not plan or plan["budget"] == 0 and not plan["days"]:
             return None
-        start, end, total = period_of(plan, now or datetime.now())
+        now = now or datetime.now()
+        start, end, total = period_of(plan, now)
         key = start.isoformat(timespec="minutes")
         row = self.db.q1("SELECT * FROM internet_allowance WHERE profile_id=?", profile["id"])
         used = row["used"] if row and row["period"] == key else 0
+        if total is None:           # unlimited (∞): the rest of the period – block times and OfflineTime still apply
+            left = max(0, math.ceil((end - now).total_seconds() / 60))
+            return {"total": None, "unlimited": True, "used": used, "left": left,
+                    "reset_at": end.isoformat(timespec="minutes"), "period": key}
         return {"total": total, "used": used, "left": max(0, total - used), "reset_at": end.isoformat(timespec="minutes"), "period": key}
 
     def _use_allowance(self, profile: dict, minutes: int) -> None:

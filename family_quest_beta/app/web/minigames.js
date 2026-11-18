@@ -37,6 +37,14 @@ function arcadeView(kind) {
     // ☰: the rules, language, theme, sound – also for the duels on two devices and the doubles (they draw into box)
     h("div.quiz-head", h("div.row.head-title", gameMenu({ rules: () => arcadeRulesView(kind), onLeave: () => go("games") }), h("h1", g.icon, " ", g.title))), box));
   document.body.classList.add("quiz-open");
+  // daily game time (parent area › profile): every minute here counts – once it is used up the game corner closes
+  const beat = async () => {
+    if (!box.isConnected) return clearInterval(beatT);
+    let r; try { r = await api("me/playtime", { method: "POST" }); } catch { return; }
+    if (S.me) S.me.time_left = r.time_left;
+    if (!r.ok && box.isConnected) { clearInterval(beatT); toast(T("Game time for today is used up – see you tomorrow!"), "bad"); go("games"); }
+  };
+  const beatT = setInterval(beat, 60000); beat();
   ({ ttt: tttGame, sudoku: sudokuGame, patience: patienceGame, pingpong: pingpongGame, slots: slotsGame, cube: cubeGame })[kind](box);
 }
 

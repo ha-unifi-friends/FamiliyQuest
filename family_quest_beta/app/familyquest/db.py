@@ -601,6 +601,15 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(event_id, profile_id)
     );
     """,
+    # 34 – daily time limits (timelimits.py): the minutes in which a child used a family game, one row per minute
+    """
+    CREATE TABLE play_minute(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        day TEXT NOT NULL,
+        minute INTEGER NOT NULL,
+        PRIMARY KEY(profile_id, day, minute)
+    );
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -678,6 +687,8 @@ DEFAULT_PROFILE_SETTINGS = {
     "internet_rule": "",          # switch of a UniFi firewall/traffic rule – the app manages budget and start/stop
     "internet_rule_blocks": True, # True = the rule blocks the internet while the switch is on
     "internet_plan": None,        # budget per day/week, other weekdays, block times (internet.clean_plan)
+    "game_limit": {"all": None, "days": {}},    # family games: minutes per day, own minutes on weekdays – None = unlimited (timelimits.py)
+    "learn_limit": {"all": None, "days": {}},   # learning: minutes per day, own minutes on weekdays – None = unlimited
     "auto_logout_min": 0,         # 0 = never
     "notify_service": "",         # parents: notify.mobile_app_xyz – approvals as push message to this phone
     "pin_kind": "",               # "symbols" = picture PIN (children), "digits" or "" = number PIN

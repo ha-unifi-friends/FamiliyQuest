@@ -10,15 +10,45 @@ from contextlib import contextmanager
 
 from typing import Any
 
+import logging
+
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request
 from fastapi.responses import Response
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, Field
 
+from .. import timelimits
 from ..community import CommunityError
 from ..guests import GUEST, GUEST_HOURS, GuestError
 from .auth import Learner, app_of, learner
 
-router = APIRouter(prefix="/api/community")
+log = logging.getLogger("familyquest.api.community")
+
+# daily game time (timelimits.py): these requests start or join a game – refused once a child's game time is used up;
+# everything else (state, moves) stays open, so a game the child is already in can be played to the end
+STARTS = {"start", "join", "again", "duel", "pong4", "accept", "seat"}
+NOT_PLAYING = {"quizzes", "templates", "memory"}      # making quizzes and photo sets is no playing time
+
+
+class _PlayRoute(APIRoute):
+    """Counts a minute of game time for a child whose request answered with a game (not «null»: not in a game)."""
+
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+
+        async def run(request: Request):
+            response = await handler(request)
+            pid = request.scope.get("fq_play")
+            if pid and response.status_code < 400 and getattr(response, "body", b"null") not in (b"null", b""):
+                try:
+                    timelimits.touch(app_of(request).db, pid)
+                except Exception:  # noqa: BLE001
+                    log.exception("counting game time failed")
+            return response
+        return run
+
+
+router = APIRouter(prefix="/api/community", route_class=_PlayRoute)
 
 
 def game_of(path: str) -> str | None:
@@ -39,10 +69,16 @@ def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 �
     """A learner who may play this game (parent area › Games, per game and person)."""
     fq = app_of(request)
     game = game_of(request.url.path)
-    if not fq.games_allowed(prof, game):
+    if not fq.games_allowed(prof, game, time=False):
         if game:
             raise HTTPException(403, "This game is switched off for you")
         raise HTTPException(403, "Games are switched off for you")
+    if prof.get("role") == "kid":
+        part = request.url.path.split("/api/community/", 1)[-1].split("/")
+        if request.method == "POST" and part[-1] in STARTS and timelimits.used_up(fq.db, prof, "game"):
+            raise HTTPException(403, "Game time for today is used up – see you tomorrow!")
+        if (game or part[0] == "duel") and part[0] not in NOT_PLAYING:
+            request.scope["fq_play"] = prof["id"]
     return prof
 
 
