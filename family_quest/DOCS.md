@@ -36,7 +36,7 @@ they are read at start. Packs changed in the parent area are not overwritten by 
 Three apps of this repository can run side by side, each with its own data and entities: **Family Quest** (stable,
 `family_quest_…`, port 8099), **Family Quest Beta** (the next version for testing, `family_quest_beta_…`, port 8098,
 orange «BETA» icon) and **Family Quest Dev** (development builds, `family_quest_dev_…`, port 8097, purple «DEV» icon).
-Only the dev app has games that are still being reworked (now: 🏎️ 24h Endurance and 🏛️ Beat the Bureaucracy) –
+Only the dev app has games that are still being reworked (now: 🏛️ Beat the Bureaucracy) –
 stable and beta do not show them; history entries of earlier games stay.
 
 ## The app: menu and season designs
@@ -1322,55 +1322,57 @@ drivers).
 
 ### 24h Endurance (24-Stunden-Rennen)
 
-*Only in the app «Family Quest Dev» for now – it is being reworked before it comes to the beta.*
+Games › For a game night › **🏎️ 24h Endurance**: a **short, fast team race** on the fictional **Circuit des Tannes**.
+Every team is a racing stable with **one car**; the family splits into 1–4 teams at the table (1–5 people per team,
+guests via QR code join a team too), **bot teams** race along. Alone you race against bot teams. A family table needs
+at least two cars (without bots: two teams of people).
 
-Games › For a game night › **🏎️ 24h Endurance**: a live **team endurance race** on the fictional **Circuit des Tannes**.
-Every team is a racing stable (colour, name, start number) with **one car**; the family splits into 1–4 teams at the
-table (2–5 people per team, guests via QR code join a team too), **bot teams** bring traffic. Alone you race against
-bot teams. A family table needs at least two cars (without bots: two teams of people).
+- **Team look in the lobby:** every team chooses its **colour** (palette of 8, each colour once), its **country** (66
+  countries in four groups – Europe, Americas, Asia & Middle East, Africa & Oceania – alphabetical in the viewer's
+  language, or «no country»; the suggestion is the family's own country from the app's language, e.g. de-CH → 🇨🇭) and
+  its **car number** (1–99, each number once). The flag is shown on the car, in the standings and on the podium (emoji
+  flags; where the device has none, e.g. Windows, the country code as a small chip).
+- **24 race hours in 5 / 8 / 12 minutes** (default 8). The race clock starts at 15:00 and runs through **dusk, night
+  (headlights, a shorter view) and dawn** into the next afternoon. **Rain showers** (on by default): sudden showers of
+  30–55 s every 1–2 minutes; everybody sees the forecast («Rain in ~20 s»). **Winner: the most laps** (then distance, then who reached the line first).
+- **Intro:** the drivers run to their cars, doors close, engines roar, five red lights → **GO!** (about 6 s).
+- **One short lap (about 20–30 s), then the car drives into the pits by itself – after every lap.** At every stop the
+  **driver changes**: the next person of the team drives (in turn), the driver joins the crew. Two people take turns;
+  alone (or when the whole crew is offline) the **garage** prepares: every stop takes a fixed **5 s** (+4 s after an
+  overheat), tyres by the forecast.
+- **Driver:** three lanes – swipe or ◀ ▶ (←/→) to dodge oil, cones and slow cars; **hold 🚀 Gas** (↑ / Space) for full
+  speed, **🛑 Brake** (↓) to brake, neither = lifted off. Full throttle heats the engine; in the **red it overheats**:
+  the car limps to the pits and the engine is swapped there (no retirement). **Two chicanes** per lap: **braking zones**
+  with boards at 150 / 100 / 50 m – too fast into a chicane (by day and dry over 23, in the rain or at night over 18
+  «m/s») and the car goes **off into the gravel** (3 s very slow); then change the lane past the **kerbs** (touching one
+  slows a little; in the rain or at night the kerbs reach the middle lane). Juniors – and everybody in the first two
+  laps – get a big «🛑 Brake!» hint. **Slicks in the rain** and **rain tyres in the dry** are slower (and slicks slide).
+  Other cars never block you: a car close to yours in your lane is drawn moving over to a free lane while overtaking.
+- **Pit crew** (everybody else of the team) – during the lap on their phones: **🛞 lay out 4 tyres** (choose ☀️ slicks or
+  🌧️ rain tyres, tap the 4 spots), **⛽ fill the canister** (hold, let go in the green zone 80–100 %; too much spills
+  and the canister starts empty again) and, only after an overheat, **🔧 prepare the spare engine** (hold 2 s). Each
+  finished job shows ✓ (also for the driver). A bar shows when the car comes in.
+- **The stop** – a big stopwatch, the car in its pit box, the crew at work and cheering stands for the whole team:
+  **3 s** (stop and driver change) **+4 s for tyres not ready, +4 s for fuel not ready, engine swap +6 s (+2 s if
+  prepared)**. A job only counts if it was finished before the car arrived. A super fast stop (≤ 4 s) gets a cheer.
+- Trackside banners now and then (own, invented: Family Quest, Home Assistant with an own house icon, «Snowman Tyres»).
+- Now and then **fans camp beside the track** (tents, a camper van, a campfire at night) waving a sign «I ❤️ #7 🇨🇭» –
+  mostly with the viewer's own car number and flag, sometimes for another team.
+- **Difficulty:** junior (fewer things on the track, the engine heats slower, the braking hint always) or normal.
+  **Bots** (easy / normal / hard) dodge, manage the temperature, brake for the chicanes and prepare their stops (easier
+  bots miss more jobs or pick the wrong tyres). A driver whose app is silent for 6 s gets the **autopilot**.
 
-- **24 race hours in 10 / 15 / 20 minutes** (default 15). The race clock starts at 15:00 and runs through the **night**
-  (dusk around 21:00, headlights, a shorter view, fog banks) into the next afternoon. Optional **rain** (1–2 showers).
-  The **final two race hours** get a fanfare and the gaps pulse. **Winner: the most laps** (then the longer distance).
-- **Intro:** the drivers (their avatars) stand beside the track opposite their cars, run across, jump in, the doors
-  close, the engines roar and five red lights go out → **GO!** (about 8 s; a tap skips to the lights; with «reduce
-  motion» a still picture with the countdown).
-- **Roles** on their own phones, rotating at **every pit stop**: alone you drive and do the pit jobs yourself one after
-  the other; 2–3 people: driver + pit crew; 4–5: also a **race engineer**. A driver may drive at most **2 stints in a
-  row** (at the box: «Driver change» or once «Stay in»), so everybody gets to drive.
-- **Driver:** the car from behind on three lanes – swipe or ←/→ to change the lane, the **throttle lever** on the right
-  (0–10, ↑/↓ or a vertical swipe). On the track: gravel and oil (slow, tyres), debris (tyres, the wing at speed) and
-  **slow cars** (a fast hit breaks the wing). **Engine temperature:** pushing heats it – yellow = hot, **red = lift off**
-  within 3 s of pushing (junior 6 s), else **engine damage** (limp to the pits); ignoring the red a second time and
-  the **team retires** (keeps its laps). Pushing also costs **fuel** (an empty tank crawls to the pits) and **tyres**
-  (less grip). Slicks slide in the rain, rain tyres wear twice as fast in the dry.
-- **📦 Box:** the car stops at the line. The stopwatch runs while the crew plays the jobs **at the same time**:
-  **tyres** (choose slicks / rain tyres, tap the glowing wheel nut and **hold until tight** – 4 in the shown order; a
-  loose nut costs that wheel half a lap later), **fuel** (hold the nozzle, let go in the **green zone**; too little may
-  run dry, an overflow costs +3 s) and after damage a **repair** (connect the cables by colour – a wrong try +2 s – or
-  turn the screws straight). A driver change takes at least 2 s. A job nobody does is done by the garage after 30 s.
-- **Race engineer / crew** (pit wall): the team's car on a TV, telemetry (engine, fuel, tyres, damage, best lap, stops),
-  the **rain radar** (the next 2 race hours) and the live gaps; **radio calls** shown big on the driver's screen:
-  «Box this lap!», «Save the engine», «Push!», «Rain tyres?», «Slicks?».
-- **Safety car** after an engine failure, a retirement or a fast crash into a slow car: 20 s at a limited speed for
-  everybody, the track is cleared, no overtaking – a cheap moment for a pit stop (at most 2–3 per race, 60 s apart).
-- **Difficulty:** junior (fewer things on the track, slower overheating, more time in the red) or normal. **Bots**
-  (easy / normal / hard) dodge what they see (easier ones miss more), manage the temperature and box for fuel, tyres,
-  damage, the weather and under the safety car. A driver whose app is silent for 6 s gets the **autopilot** until the
-  app is back.
-
-The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for
-a smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane,
-throttle, box) with their game time; a late input is applied at the next step, never in the past. Pit jobs are
-checked on the server (the order of the nuts, hold times that must fit into the time since the stop began, the repair
-answer); a job counts at the server's time. Who leads may end the race early: ranked as it stands, no coins. Parents ›
-Games › 24h Endurance: the defaults (race length, weather, difficulty, people per team), active / without bots /
-inactive, the coins.
+The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for a
+smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane, gas /
+brake); the crew's jobs are actions timed by the server (a tyre on a spot, start / stop holding). Who leads may end the
+race early: ranked as it stands, no coins. Parents › Games › 24h Endurance: the defaults (race length, weather,
+difficulty, people per team), active / without bots / inactive, the coins.
 
 **Coins for places 1–3:** default 10 / 5 / 2 for every person of the family in that team, paid once, only for a race
 run to the end at a family table with **at least two people of the family** – not alone, not for guests or bots; the
-winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (also questions in
-«Family Quest Facts»). Every person of the family gets a history entry (place, laps, team, best pit stop, stints).
+winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (garage stops do not
+count; also questions in «Family Quest Facts»). Every person of the family gets a history entry (place, laps, team,
+best pit stop, drives, stops).
 
 ### Klatsch den Beat
 

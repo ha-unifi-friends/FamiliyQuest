@@ -13,8 +13,9 @@ These games are in the code (with their tests), but only the dev app has them (`
 leave them out everywhere (games lists, access settings, FamilyTime, Facts, guests, API 404); old history entries
 still show. Once reworked, take the game out of `DEV_GAMES` and it is in the next beta.
 
-- **🏎️ 24h Endurance** (`langstrecke`) – too complex to play: rework before beta (simpler controls and pit stops,
-  shorter races, clearer team roles).
+- ~~**🏎️ 24h Endurance** (`langstrecke`)~~ – done: reworked into the short version (a pit stop after every lap,
+  automatic driver change, the crew prepares tyres / fuel / spare engine during the lap, rain and tyre choice, two
+  chicanes with braking zones, team colour / country / number) and back in the beta.
 - **🏛️ Beat the Bureaucracy** (`stempeljagd`) – too complex to play: rework before beta (fewer counters, rules and
   special cards; a game that explains itself while playing).
 

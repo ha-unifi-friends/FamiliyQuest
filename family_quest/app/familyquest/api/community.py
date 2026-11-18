@@ -1734,29 +1734,32 @@ class LangstreckeStartIn(BaseModel):
     solo: bool = False                   # alone (private) against bot teams
     bots: int | None = None              # 0–5 bot cars
     level: str | None = None             # the bots: easy | normal | hard
-    minutes: int | None = None           # 10 | 15 | 20 real minutes for 24 race hours
-    weather: int | None = None           # 1: rain may come
+    minutes: int | None = None           # 5 | 8 | 12 real minutes for 24 race hours
+    weather: int | None = None           # 1: sudden rain showers (default)
     difficulty: str | None = None        # junior | normal
     team_size: int | None = None         # 1–5 people per team
     teams: int | None = None             # 1–4 teams of people at a family table
+    country: str | None = Field(default=None, max_length=2)    # the family's own country (from the app's language) as the suggestion
     bot_ids: list[int | str] = []
 
 
 class LangstreckeSyncIn(BaseModel):
-    inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "l"|"r"|"u"|"b", value]
+    inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "l"|"r"|"u", value]
 
 
 class LangstreckeTeamIn(BaseModel):
     team: int
 
 
-class LangstreckeRadioIn(BaseModel):
-    msg: str = Field(max_length=10)
+class LangstreckePrepIn(BaseModel):
+    action: str = Field(max_length=10)   # tyre | slicks | rain | fuel_on | fuel_off | eng_on | eng_off
+    spot: int | None = None              # tyre: the spot 0–3
 
 
-class LangstreckePitIn(BaseModel):
-    task: str = Field(max_length=10)     # tyres | fuel | repair
-    data: dict = Field(default_factory=dict)
+class LangstreckeLookIn(BaseModel):
+    color: str | None = Field(default=None, max_length=10)     # one of the palette (langstrecke.TEAM_STYLES)
+    country: str | None = Field(default=None, max_length=2)    # langstrecke.COUNTRIES, "" = no country
+    num: int | None = None                                     # the car number 1–99
 
 
 class LangstreckeRulesIn(BaseModel):
@@ -1803,7 +1806,7 @@ def langstrecke_start(body: LangstreckeStartIn, request: Request, prof: dict = G
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
     with _bots_not_remembered(fq, "langstrecke", forced):
-        _run(fq.langstrecke.start, "langstrecke", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+        _run(fq.langstrecke.start, "langstrecke", prof["id"], body.model_dump(exclude={"solo", "bot_ids", "country"}), body.solo, bots, body.country)
     return fq.langstrecke.state("langstrecke", prof["id"])
 
 
@@ -1819,6 +1822,14 @@ def langstrecke_team(body: LangstreckeTeamIn, request: Request, prof: dict = Pla
     """In the lobby: sit down in another team."""
     fq = app_of(request)
     _run(fq.langstrecke.choose_team, prof["id"], body.team)
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/look")
+def langstrecke_look(body: LangstreckeLookIn, request: Request, prof: dict = Playing) -> dict | None:
+    """In the lobby: the colour, the country and the car number of my team."""
+    fq = app_of(request)
+    _run(fq.langstrecke.choose_look, prof["id"], body.color, body.country, body.num)
     return fq.langstrecke.state("langstrecke", prof["id"])
 
 
@@ -1845,18 +1856,11 @@ def langstrecke_sync(body: LangstreckeSyncIn, request: Request, prof: dict = Pla
     return _run(fq.langstrecke.report, prof["id"], body.inputs)
 
 
-@router.post("/langstrecke/radio")
-def langstrecke_radio(body: LangstreckeRadioIn, request: Request, prof: dict = Playing) -> dict | None:
+@router.post("/langstrecke/prep")
+def langstrecke_prep(body: LangstreckePrepIn, request: Request, prof: dict = Playing) -> dict:
+    """A job of the pit crew during the lap (tyres, canister, spare engine) – checked and timed by the server."""
     fq = app_of(request)
-    _run(fq.langstrecke.radio, prof["id"], body.msg)
-    return fq.langstrecke.state("langstrecke", prof["id"])
-
-
-@router.post("/langstrecke/pit")
-def langstrecke_pit(body: LangstreckePitIn, request: Request, prof: dict = Playing) -> dict:
-    """A pit-stop job done on this phone (tyres, fuel, repair) – checked by the server."""
-    fq = app_of(request)
-    out = _run(fq.langstrecke.pit_job, prof["id"], body.task, body.data)
+    out = _run(fq.langstrecke.prep, prof["id"], body.action, body.spot)
     return {**(out or {}), "state": fq.langstrecke.state("langstrecke", prof["id"])}
 
 
