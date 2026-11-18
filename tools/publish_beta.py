@@ -54,6 +54,9 @@ def publish(slug: str, name: str, tag: str, port: int, icons: Path, version: str
         text, n = re.subn(rf"^{key}:.*$", f"{key}: {value}", text, count=1, flags=re.M)
         assert n, f"config.yaml has no '{key}'"
     text = re.sub(r'^description: "(.*)"$', rf'description: "{tag} – \1"', text, count=1, flags=re.M)
+    # Home Assistant shows the orange «🧪 Experimental» badge in the add-on store for beta and dev
+    text = re.sub(r"^stage:.*\n", "", text, flags=re.M)
+    text = re.sub(r"^(version: .*)$", r"\1\nstage: experimental", text, count=1, flags=re.M)
     # own host port for direct access, so the apps can run with direct access at the same time
     text, n = re.subn(r"^  8099/tcp: .*$", f"  8099/tcp: {port}", text, count=1, flags=re.M)
     assert n, "config.yaml has no port 8099/tcp"
