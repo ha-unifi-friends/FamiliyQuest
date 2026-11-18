@@ -42,6 +42,8 @@ class Shop:
 
     def offers(self, pid: int) -> list[dict]:
         bal = self.rewards.balances(pid)
+        if "coins" in bal:
+            bal["coins"] -= self.rewards.reserved(pid)        # coins promised in a deal (deals.py) cannot be spent
         prof = self.db.q1("SELECT * FROM profile WHERE id=?", pid) or {}
         ps = profile_settings(prof)
         active_accounts = {a["key"] for a in self.rewards.accounts()}

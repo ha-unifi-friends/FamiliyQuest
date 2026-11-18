@@ -517,6 +517,10 @@ class HAService:
                     await asyncio.to_thread(self.fq.pets.tick)
                 except Exception:  # noqa: BLE001
                     log.exception("pet tick failed")
+                try:
+                    await asyncio.to_thread(self.fq.deals.tick)     # deals: missed taken-over chores, council results
+                except Exception:  # noqa: BLE001
+                    log.exception("deal tick failed")
 
     def _remind(self) -> None:
         if not self.connected:

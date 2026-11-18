@@ -425,7 +425,8 @@ function crestSvg(c, { ribbon = true } = {}) {
 
 // ---------------------------------------------------------------- ☰ the menu of the app (also on the planner page)
 const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learning")], ["deck", "📇", T("My card box")], ["shop", "🛍️", T("Shop")],
-  ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]];
+  ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["deals", "🤝", T("Deals")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]]
+  .filter(([k]) => k !== "deals" || !window.FQ_DEALS_OFF);      // deals (deals.js): hidden when trading is off for this profile
 
 // ---------------------------------------------------------------- ☰ in a running game: rules, guests, actions, language
 // gameMenu({ rules, invite, actions, onLeave }) → the ☰ button for the header of a live game.
@@ -545,7 +546,8 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   const parentItem = h("a.foot-item.parent-item", { href: "eltern" }, h("span.foot-ic", "🔐"), h("span", T("Parent area")));
   const drawer = h("nav.drawer", { role: "dialog", "aria-label": T("Menu") },
     h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", "Family Quest")),
-    ...APP_NAV().map(([k, ic, n]) => h("button.drawer-item" + (k === active ? ".on" : ""), { onclick: () => { close(); onGo(k); } }, h("span.foot-ic", ic), h("span", n))),
+    ...APP_NAV().map(([k, ic, n]) => h("button.drawer-item" + (k === active ? ".on" : ""), { onclick: () => { close(); onGo(k); } }, h("span.foot-ic", ic), h("span", n),
+      (window.FQ_NAV_BADGES || {})[k] ? h("span.deal-badge", String(window.FQ_NAV_BADGES[k])) : null)),
     h("hr"),
     footLang(), footTheme(), soundItem, seasonItem,
     h("button.foot-item", { onclick: () => { close(); onLogout(); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),

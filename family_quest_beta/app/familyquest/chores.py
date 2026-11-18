@@ -45,6 +45,7 @@ class Chores:
         self.rewards = rewards
         self.on_pending: list[Callable[[dict], None]] = []     # push to parents
         self.on_change: list[Callable[[int], None]] = []       # sensors
+        self.deals = None        # deals.Deals: a chore taken over in a deal (its coins, the transfer when it is approved)
 
     # ---------------------------------------------------------------- definitions
     def list(self, active_only: bool = False) -> list[dict]:
@@ -78,7 +79,7 @@ class Chores:
             self.db.x("""UPDATE chore SET name=?,icon=?,points=?,account=?,frequency=?,weekdays=?,date=?,assign=?,rotate_every=?,
                          profiles=?,kind=?,confirm=?,active=?,sort=?,energy=? WHERE id=?""", *vals, chore_id)
             # open tasks of today and later follow the new plan
-            self.db.x("DELETE FROM chore_task WHERE chore_id=? AND status='open' AND period>=?", chore_id,
+            self.db.x("DELETE FROM chore_task WHERE chore_id=? AND status='open' AND period>=? AND deal_id IS NULL", chore_id,
                       monday(today()).isoformat() if freq == "weekly" else today().isoformat())
             return chore_id
         return self.db.x("""INSERT INTO chore(name,icon,points,account,frequency,weekdays,date,assign,rotate_every,profiles,kind,
@@ -124,14 +125,18 @@ class Chores:
             if not period:
                 continue
             for pid in self.assignees(ch, d, kids):
-                self.db.x("INSERT OR IGNORE INTO chore_task(chore_id, profile_id, period) VALUES(?,?,?)", ch["id"], pid, period)
+                # not when somebody took this one over in a deal (deals.py: the row moved to the doer, from_id = pid)
+                self.db.x("""INSERT OR IGNORE INTO chore_task(chore_id, profile_id, period) SELECT ?,?,? WHERE NOT EXISTS(
+                             SELECT 1 FROM chore_task WHERE chore_id=? AND period=? AND from_id=?)""",
+                          ch["id"], pid, period, ch["id"], period, pid)
 
     def tasks(self, d: date | None = None, pid: int | None = None) -> list[dict]:
         d = d or today()
         self.ensure(d)
         periods = [d.isoformat(), monday(d).isoformat()]
-        sql = """SELECT t.*, c.name, c.icon, c.points, c.account, c.kind, c.confirm, c.frequency, c.energy, p.name AS profile_name
-                 FROM chore_task t JOIN chore c ON c.id=t.chore_id JOIN profile p ON p.id=t.profile_id
+        sql = """SELECT t.*, c.name, c.icon, c.points, c.account, c.kind, c.confirm, c.frequency, c.energy, p.name AS profile_name,
+                 f.name AS from_name FROM chore_task t JOIN chore c ON c.id=t.chore_id JOIN profile p ON p.id=t.profile_id
+                 LEFT JOIN profile f ON f.id=t.from_id
                  WHERE c.active=1 AND ((c.frequency='weekly' AND t.period=?) OR (c.frequency!='weekly' AND t.period=?))"""
         args: list = [periods[1], periods[0]]
         if pid:
@@ -143,7 +148,8 @@ class Chores:
         """Today's chores of a child in the shape the dashboard uses (same as Family Planer chores)."""
         return [{"uid": f"fq:{t['id']}", "summary": t["name"], "icon": t["icon"], "done": t["status"] == "done",
                  "pending": t["status"] == "pending", "redo": bool(t["redo"]), "points": t["points"], "account": t["account"],
-                 "kind": t["kind"], "weekly": t["frequency"] == "weekly", "source": "fq", "energy": t["energy"] or 0} for t in self.tasks(pid=pid)]
+                 "kind": t["kind"], "weekly": t["frequency"] == "weekly", "source": "fq", "energy": t["energy"] or 0,
+                 "from": t["from_name"] if t["deal_id"] else None, "deal": t["deal_id"]} for t in self.tasks(pid=pid)]
 
     def week(self, start: date | None = None) -> dict:
         """Who does what on each day of a week (for the parent plan view)."""
@@ -200,6 +206,8 @@ class Chores:
             self._complete(t)
         else:   # «Nochmals»: back to open
             self.db.x("UPDATE chore_task SET status='open', redo=1, done_at=NULL WHERE id=?", task_id)
+            if t.get("deal_id") and self.deals:          # a chore taken over in a deal: the deal fails (deals.py)
+                self.deals.chore_rejected(t)
         self._changed(t["profile_id"])
         return self._task(task_id)
 
@@ -208,9 +216,13 @@ class Chores:
             n = self.db.x("UPDATE chore_task SET status='done', confirmed_at=datetime('now','localtime') WHERE id=? AND status!='done'", t["id"])
             if not n:
                 return
+            # a chore taken over in a deal: its coins go to whom the deal says (XP always to who did it – deals.py)
+            to = self.deals.reward_to(t) if t.get("deal_id") and self.deals and t["account"] != "xp" else t["profile_id"]
             if t["points"] and self.db.q1("SELECT 1 FROM account WHERE key=? AND active=1", t["account"]):
-                self.rewards.book(t["profile_id"], t["account"], float(t["points"]), "chore_done", t["name"], f"chore:{t['id']}")
+                self.rewards.book(to, t["account"], float(t["points"]), "chore_done", t["name"], f"chore:{t['id']}")
             self._week_bonus(t["profile_id"])
+            if t.get("deal_id") and self.deals:
+                self.deals.chore_done(t)                  # the share of the deal for this chore (same transaction)
         self.rewards.check_badges(t["profile_id"])
         self.rewards._notify("chore", t["profile_id"], {"chore": t["name"], "task": t["id"]})
 
@@ -221,7 +233,8 @@ class Chores:
             self.ensure(start + timedelta(days=i))
         end = (start + timedelta(days=6)).isoformat()
         rows = self.db.q("""SELECT t.status FROM chore_task t JOIN chore c ON c.id=t.chore_id
-                            WHERE c.active=1 AND t.profile_id=? AND t.period>=? AND t.period<=?""", pid, start.isoformat(), end)
+                            WHERE c.active=1 AND t.profile_id=? AND t.period>=? AND t.period<=?
+                            AND t.deal_id IS NULL""", pid, start.isoformat(), end)       # chores taken over in a deal do not count
         if rows and all(r["status"] == "done" for r in rows):
             ref = f"chores-week:{start.isoformat()}"
             if not self.db.q1("SELECT 1 FROM ledger WHERE profile_id=? AND ref=?", pid, ref):

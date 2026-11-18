@@ -179,6 +179,46 @@ chores the full points. With *Parents confirm* a ticked-off chore waits for *OK*
 queue) and fires `family_quest_aemtli_erinnerung`. Chores from the Family Planer appear on the dashboard next to them.
 A chore can also carry an **⚡ Energy bonus** – segments of the child's game battery (see Game battery).
 
+## 🤝 Deals (trading between children and with parents)
+
+App menu › **🤝 Deals** (de-CH *Händel*, fr *Échanges*): children trade with each other and with their parents. Each
+side of a deal («I give» / «I get») combines any of these building blocks:
+
+- **🪙 Coins** – only coins. **XP can never be traded.**
+- **🧹 Chores** of the own chore plan: «I do your chore X» – once, or the next N times of a recurring chore (dates are
+  shown). The chore moves to the doer's list («🤝 taken over from Mia») and is no longer the owner's that day. Chores
+  of the built-in planner cannot be traded as a chore – use a free deal for them.
+- **➕ New task** (deals between a parent and a child): «mow the lawn today» – a one-off chore for the child.
+- **🎁 Things**: pets (not in the pet hotel, at a sitter, while pet care is paused, earned with a badge or XP),
+  avatar items bought with coins, games **bought** for good. Rented games cannot be traded (they run out).
+- **✍️ Free deals** without automation («I help you with your homework»): both confirm «Done ✓» at the end.
+
+**Flow:** A sends an offer, B accepts, rejects or makes a counter-offer with the same building blocks – back and forth
+as a chat thread with every version. The deal **stands when both accepted the same version**. Notes below the header
+(«New offer from Leo», «Deal stands!» …) and a badge on ☰ show what waits for an answer.
+
+**Execution:** coins and things of a side are the payment for the services (chores, free text) of the other side.
+Without services on the other side they change hands as soon as the deal stands. Otherwise they are **reserved**:
+reserved coins cannot be spent anywhere (shop, avatar items, game prices, battery recharge, pets, pranks, FamilyTime –
+the app uses one «available balance»), reserved things cannot go into another deal or to the pet hotel / a sitter.
+When a taken-over chore is approved by a parent (or ticked off, for chores without confirmation), its share is paid
+**pro rata** (3 chores for 10 coins: 3 + 3 + 4), the things come with the last one. The chore's own coins go to whoever
+does it – or to the original owner when the deal says so; its **XP always go to who did it**. Chores taken over do not
+count for the «all chores of the week» bonus. **The deal fails** when a taken-over chore is not done by the end of its
+day (week for weekly chores), a parent rejects it («Once more») or it is removed: reservations are released, the open
+taken-over chores go back to their owner (the missed one stays with who missed it), both see why. Free deals: if one
+says «not done», a parent decides – or either of the two sends it to the **family council** (a vote «done / not done»).
+Every transfer has a unique reference and is booked once only.
+
+**Parents** (parent area › **🤝 Deals**): their own deals (they trade too – also from the app), deals waiting for
+their OK, all running and finished deals (open, cancel any deal – reservations are released, chores go back), decide
+disputed free deals, and the **settings**: trading on/off and per child, which building blocks, max coins per deal,
+*big deals need a parent's approval* from a coin threshold (default off, 100 coins), *deals with pets always need
+approval*. A deal with a parent never needs approval. Coins a parent gives are **paid by the parents** (booked to the
+child like a manual booking – no parent account is charged); coins a child gives to a parent leave the child's account.
+Guests cannot trade; nobody can trade with themselves, give what they do not own or put one chore / thing in two
+deals at once.
+
 ## Shopping list (Bring!)
 
 Parent area › Settings › **Shopping list (Bring!)**: the to-do lists of Home Assistant are listed – Bring! lists

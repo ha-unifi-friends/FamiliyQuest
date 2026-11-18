@@ -218,7 +218,7 @@ class FamilyTimeGames:
             return {**st, "events": [], "games": []}
         self.tick(now)
         members = self.members()
-        return {**st, "coins": self.fq.rewards.balance(prof["id"], "coins"),
+        return {**st, "coins": self.fq.rewards.available(prof["id"]),
                 "games": [{"key": g, "icon": GAMES[g][0], "title": GAMES[g][1]} for g in self.allowed_games(prof)],
                 "events": [self._view(e, prof, now, members) for e in self.upcoming(now)]}
 
@@ -436,11 +436,11 @@ class FamilyTimeGames:
             r = self._row(eid)
             if r["status"] == "set":
                 raise CommunityError("This FamilyTime has a game already")
-            if self.fq.rewards.balance(prof["id"], "coins") < st["price"]:
+            if self.fq.rewards.available(prof["id"]) < st["price"]:
                 raise CommunityError("Not enough coins")
             self.fq.rewards.book(prof["id"], "coins", -float(st["price"]), "familytime_game", "FamilyTime: " + t, f"familytime:{eid}")
             self._set(eid, key, t, "bought", prof["id"], st["price"])
-        return {"price": st["price"], "coins": self.fq.rewards.balance(prof["id"], "coins")}
+        return {"price": st["price"], "coins": self.fq.rewards.available(prof["id"])}
 
     def event_gone(self, eid: int) -> None:
         """The event is deleted or no longer a FamilyTime: a bought game gives the coins back, the rest goes."""

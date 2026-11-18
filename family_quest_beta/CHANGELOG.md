@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.3
+
+- New: Deals – children trade with each other and with parents: coins, chores (once or several times, chore swaps), bought avatar items, pets and games, or any free deal; offer, counter-offer and accept like a chat; promised coins and things are reserved; taken-over chores pay out on parent approval (XP always to the one who did it)
+- Parents trade as full partners and can require approval for big deals or pets; overview of all deals, cancel and settle disputes (also via the family council)
+
 ## 1.1.1-beta.2
 
 - French pass of the kids' app: card game calls and Swiss suit names, bot names, coin reasons in the history (also older entries), guest pages, game titles, short templates and many server error messages are now translated

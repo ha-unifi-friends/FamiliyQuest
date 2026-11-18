@@ -176,7 +176,7 @@ class GamePasses:
                 raise PassError("This game cannot be bought")
             if self.status(pid, game)["bought"]:
                 raise PassError("You have this game already")
-            if self.rewards.balance(pid, "coins") < price:
+            if self.rewards.available(pid) < price:
                 raise PassError("Not enough coins")
             self.rewards.book(pid, "coins", -float(price), "game_buy", _t("Game bought") + f": {title}", f"game:buy:{game}:{pid}")
             self.db.x("""INSERT INTO game_pass(profile_id, game, bought, bought_at) VALUES(?,?,1,?)
@@ -197,7 +197,7 @@ class GamePasses:
                 raise PassError("You have this game already")
             if seen_until is not None and (seen_until or None) != st["rent_until"]:
                 raise PassError("The rent was just extended – look again")
-            if self.rewards.balance(pid, "coins") < cost:
+            if self.rewards.available(pid) < cost:
                 raise PassError("Not enough coins")
             start = datetime.strptime(st["rent_until"], FMT) if st["rent_until"] else now.replace(microsecond=0)
             until = add_period(start, period).strftime(FMT)
