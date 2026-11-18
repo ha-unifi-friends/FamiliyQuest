@@ -27,6 +27,9 @@ progress counts as it stands).
 Coins (setting `game_rewards["verboten"]`): places 1–3 (a team shares its place, a tie shares the place) – only
 people of the family, only with at least two of them, only when at least one turn was played and somebody scored;
 paid once (flag `paid`, a unique ledger `ref`).
+Languages (gamewords.py): the cards are English keys – the word, and its five forbidden words as one text – so every
+language has its own obvious forbidden words. The state keeps the number of the card; every view shows it in the
+viewer's language (the explainer reads it in theirs; the other team checks in theirs).
 """
 from __future__ import annotations
 
@@ -37,6 +40,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from .cardgames import CardGames, apply_starter, starter_mode
+from .gamewords import Words
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
 from .running import win_reason
@@ -278,9 +282,10 @@ class Table:
             self._finish()
 
 
-def card_view(key: str | None) -> dict | None:
+def card_view(key: str | None, lang: str = "en", words: Words | None = None) -> dict | None:
+    """A card in `lang`: the word and its five forbidden words."""
     c = card(key) if key else None
-    return {"word": c["word"], "taboo": list(c["taboo"])} if c else None
+    return (words or Words()).card(c["word"], c["taboo"], lang) if c else None
 
 
 # ================================================================ the games in the database (table card_game, kind "verboten")
@@ -292,6 +297,7 @@ class Verboten(CardGames):
         self.rewards = rewards
         self.now = now
         self.rng = rng
+        self.words = Words(db)
 
     def table(self, st: dict) -> Table:
         return Table(st, self.rng, now=lambda: self.now())
@@ -452,7 +458,8 @@ class Verboten(CardGames):
             else:
                 self.db.x("UPDATE card_game SET status='done', finished_at=datetime('now','localtime') WHERE id=?", row["id"])
 
-    def state(self, kind: str, viewer: int) -> dict | None:
+    def state(self, kind: str, viewer: int, lang: str | None = None) -> dict | None:
+        """The view of one player in their language."""
         with self.lock:
             row = self._row(KIND, viewer)
             if row:
@@ -468,11 +475,17 @@ class Verboten(CardGames):
                 st = json.loads(row["state"])
                 if not any(p["id"] == str(viewer) for p in st["players"]):
                     return None
-        return self._view(row, st, str(viewer))
+        return self._view(row, st, str(viewer), lang or "en")
 
-    def _view(self, row, st: dict, me: str) -> dict:
-        """What one player sees – the card only when they explain or (teams) belong to the other team."""
+    def _view(self, row, st: dict, me: str, lang: str = "en") -> dict:
+        """What one player sees, in their language – the card only when they explain or (teams) belong to the other team."""
         t = self.table(st)
+        tr = self.words.translator(lang)
+
+        def word(key):
+            c = card(key)
+            return tr(c["word"]) if c else "?"
+
         ph = st["phase"]
         if (ph == "done" or row["status"] == "done") and ph != "lobby":
             ph = "done"
@@ -496,8 +509,8 @@ class Verboten(CardGames):
 
         def log_entry(e):
             return {"n": e["n"], "explainer": e["explainer"], "side": e.get("side"), "points": e["points"], "skipped": e.get("skipped", False),
-                    "cards": [{"word": (card(c["key"]) or {}).get("word", "?"), "res": c["res"], "pts": c["pts"], "by": c.get("by")} for c in e["cards"]],
-                    "open": (card(e["open"]) or {}).get("word") if e.get("open") else None}
+                    "cards": [{"word": word(c["key"]), "res": c["res"], "pts": c["pts"], "by": c.get("by")} for c in e["cards"]],
+                    "open": word(e["open"]) if e.get("open") else None}
         out = {"game": row["id"], "starter": st.get("starter"), "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph, "solo": False,
                "host": row["host_id"], "rules": st["rules"], "players": players, "joined": joined,
                "teams": bool(team_of), "scores": dict(st.get("scores") or {}) if ph != "lobby" else {},
@@ -506,7 +519,7 @@ class Verboten(CardGames):
                "explainer": ex, "me_explainer": bool(ex) and ex == me,
                "next": st["schedule"][st["turn"] + 1] if playing and st["turn"] + 1 < t.n_turns() else None,
                "n": st.get("n") if ph == "explain" else None,
-               "card": card_view(st.get("card")) if sees else None, "can_buzz": sees and me != ex,
+               "card": card_view(st.get("card"), lang, self.words) if sees else None, "can_buzz": sees and me != ex,
                "turn_cards": None, "count": None, "left_ms": None, "time_ms": None,
                "last": log_entry(st["log"][-1]) if ph in ("ready", "done") and st.get("log") else None,
                "log": [log_entry(e) for e in st.get("log") or []] if ph == "done" else None,
@@ -516,7 +529,7 @@ class Verboten(CardGames):
             out["time_ms"] = int((st["deadline"] - st["started"]) * 1000)
             out["count"] = {r: sum(1 for c in cs if c["res"] == r) for r in RESULTS}
             if sees:          # who sees the card also sees the cards of this turn (the others only count them)
-                out["turn_cards"] = [{"word": (card(c["key"]) or {}).get("word", "?"), "res": c["res"], "pts": c["pts"], "by": c.get("by")} for c in cs]
+                out["turn_cards"] = [{"word": word(c["key"]), "res": c["res"], "pts": c["pts"], "by": c.get("by")} for c in cs]
         return out
 
     def summary(self, kind: str, pid: int) -> dict | None:

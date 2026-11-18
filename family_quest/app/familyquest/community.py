@@ -567,10 +567,23 @@ class Community:
                     st.pop("champion", None)
                 self.db.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(st), r["id"])
 
-    def history(self, pid: int, limit: int = 50) -> list[dict]:
+    def history(self, pid: int, limit: int = 50, lang: str | None = None) -> list[dict]:
+        """The entries; the words of the word games (stored as English keys – older entries in German) in `lang`."""
         rows = self.db.q("SELECT id, kind, data, at FROM history WHERE profile_id=? ORDER BY id DESC LIMIT ?", pid, limit)
+        tr = None
         for r in rows:
             r["data"] = json.loads(r["data"])
+            d = r["data"]
+            if r["kind"] in ("werbinich", "zeichnen") and isinstance(d, dict):
+                if tr is None:
+                    from .gamewords import Words
+                    tr = Words(self.db).translator(lang or "en")
+                if r["kind"] == "werbinich" and isinstance(d.get("char"), str):
+                    from .whoami_data import legacy
+                    d["char"] = tr(legacy(d["char"]))
+                elif r["kind"] == "zeichnen" and isinstance(d.get("drawn"), list):
+                    from .zeichnen_data import legacy as zlegacy
+                    d["drawn"] = [tr(zlegacy(w)) if isinstance(w, str) else w for w in d["drawn"]]
         return rows
 
     # ================================================================ polls

@@ -6,6 +6,9 @@
 
 Sources: T("…") in the web app, _t("…") in Python, and error messages passed to
 HTTPException / LearnError / ShopError / PackError (they end up in toasts).
+Word content kept as data: the cards of «Verbotene Wörter» (familyquest/verboten_cards.json) – every card's word and
+its five forbidden words joined with " · " (familyquest/gamewords.py). The word lists of «Zeichnen & Raten» and
+«Wer bin ich?» are _t("…") in zeichnen_data.py / whoami_data.py.
 """
 from __future__ import annotations
 
@@ -32,8 +35,19 @@ def unescape(s: str) -> str:
     return json.loads('"' + s + '"')
 
 
+def card_keys() -> set[str]:
+    """The keys of the forbidden-words cards: the word and its forbidden words as one text."""
+    data = json.loads((PY / "verboten_cards.json").read_text(encoding="utf-8"))
+    out: set[str] = set()
+    for cards in data["levels"].values():
+        for c in cards:
+            out.add(c["word"])
+            out.add(" · ".join(c["taboo"]))
+    return out
+
+
 def keys() -> list[str]:
-    found: set[str] = set(EXTRA)
+    found: set[str] = set(EXTRA) | card_keys()
     for f in list(WEB.glob("*.js")) + list((WEB / "shared").glob("*.js")):
         text = f.read_text(encoding="utf-8")
         for p in JS_PATTERNS:

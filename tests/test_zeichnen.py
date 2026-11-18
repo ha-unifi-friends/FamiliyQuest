@@ -78,29 +78,33 @@ def test_word_choice_and_timeout_pick():
 def test_mask_and_hints():
     c = Clock()
     t = table(2, clock=c)
-    pick(t, "Schildkröte")
-    assert t.mask() == ["_"] * 11 and t.revealed() == []
+    pick(t, "Turtle")                                          # the key; every viewer gets the mask of their language
+    assert t.mask("de-DE") == ["_"] * 11 and t.revealed("de-DE") == [] and t.mask() == ["_"] * 6
+    assert t.mask("fr-FR") == ["_"] * 6 and t.mask("sv-SE") == ["_"] * 10          # Tortue, Sköldpadda
     c.t += 40                                                  # 50 %
-    r1 = t.revealed()
+    r1 = t.revealed("de-DE")
     assert len(r1) == 2                                        # 11 // 3 = 3 → 2 at 50 %, 3 at 75 %
-    m = t.mask()
+    m = t.mask("de-DE")
     assert sum(1 for x in m if x != "_") == 2 and all(m[i] == "Schildkröte"[i] for i in r1)
+    mf = t.mask("fr-FR")
+    assert sum(1 for x in mf if x != "_") == 1 and all(x == "_" or x == "Tortue"[i] for i, x in enumerate(mf))
     c.t += 20
-    r2 = t.revealed()
+    r2 = t.revealed("de-DE")
     assert len(r2) == 3 and set(r1) <= set(r2)
     t2 = table(2, clock=Clock(), hints=False)
-    pick(t2, "Schildkröte")
+    pick(t2, "Turtle")
     t2.now.t += 79
-    assert t2.revealed() == [] and t2.mask() == ["_"] * 11
+    assert t2.revealed("de-DE") == [] and t2.mask("de-DE") == ["_"] * 11
     t3 = table(2, clock=Clock())
-    pick(t3, "Pommes frites")
-    assert t3.mask()[6] == " " and t3.mask().count("_") == 12
+    pick(t3, "Polar bear")
+    assert t3.mask()[5] == " " and t3.mask().count("_") == 9
+    assert t3.mask("fr-FR")[4] == " " and t3.mask("fr-FR").count("_") == 11      # Ours polaire
     t3.now.t += 70
-    assert len(t3.revealed()) == 4 and all(t3.st["word"][i].isalpha() for i in t3.revealed())
+    assert len(t3.revealed()) == 3 and all("Polar bear"[i].isalpha() for i in t3.revealed())
     t4 = table(2, clock=Clock())
-    pick(t4, "Ei")
+    pick(t4, "Egg")
     t4.now.t += 79
-    assert t4.revealed() == []                                 # never more than a third
+    assert t4.revealed("de-DE") == []                          # never more than a third (Ei)
 
 
 def test_guess_normalisation_typos_close():

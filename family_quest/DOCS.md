@@ -783,7 +783,8 @@ The existing Pairs game in the game corner (one device, take turns) stays as it 
 
 Games → **🎭 Wer bin ich?**: the guessing game live – everybody on their own device. Who opens the **family table**
 chooses a category (animals, jobs, food & fruit, countries, Swiss places & mountains, fairy tales & legends, things at
-home, sports, famous people – the characters are German names, fixed in this version). Only people play: the family
+home, sports, famous people – every device shows the characters in its own language, and «I am …» counts in every
+language of the players at the table). Only people play: the family
 and guests via QR code – no bots, and at least two players. At the start everybody gets a different character at
 random. Each device shows the characters of **all the others**; your own stays «❓» until you found it or gave up
 (the server never sends it to you before).
@@ -880,7 +881,8 @@ Games → **🎨 Zeichnen & Raten**: one draws, the others guess – live, every
 (the family and guests via QR code, no bots), 2 to 8 players. Who opens the **family table** chooses (remembered):
 
 - **the words**: Animals, Jobs, Food & fruit, Things at home, Sports or **Mixed** (the default) – about 40 simple,
-  drawable German words each (`zeichnen_data.py`);
+  drawable words each (`zeichnen_data.py`), in the language of each device (the word, the letter mask and the hints);
+  a guess counts in the guesser's language and in the drawer's, so a mixed table plays together;
 - **how often everybody draws**: 1, 2 or 3 times (in seat order); **time to draw** 60 / 80 / 120 seconds;
 - **hints** on / off: some letters of the word appear at 50 % and 75 % of the time (at most a third of the letters).
 
@@ -1236,8 +1238,9 @@ Games → **🚫 Verbotene Wörter**: the explaining game – one explains a wor
 others guess aloud. Everybody has the app on their own device; the talking happens at the table. Only people play (the
 family and guests via QR code, no bots), 2 to 8 players. Who opens the **family table** chooses (remembered):
 
-- **the cards**: Easy (younger children), Normal or Mixed – about 370 built-in German cards, each with a word and
-  5 forbidden words (`verboten_cards.json`);
+- **the cards**: Easy (younger children), Normal or Mixed – about 370 built-in cards, each with a word and
+  5 forbidden words (`verboten_cards.json`), shown in the language of each device – the forbidden words are the obvious
+  ones of that language;
 - **time per turn**: 30 / 45 / 60 / 90 / 120 seconds (default 60); **how often everybody explains**: 1–4 times;
 - **«Skip» costs** nothing or 1 point; **two teams with 4 or more players** on / off.
 

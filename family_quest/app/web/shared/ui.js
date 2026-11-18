@@ -63,6 +63,8 @@ async function apiOnce(path, { method = "GET", body, form, parent = false } = {}
   // the parent area acts as the parent – a child still logged in on this device must not be used there
   if (Auth.kid && !window.FQ_PARENT_AREA) headers["X-FQ-Token"] = Auth.kid;
   if (Auth.parent) headers["X-FQ-Parent"] = Auth.parent;
+  // the language of the app: the word games show their words in it (familyquest/gamewords.py)
+  if (window.I18N && I18N.lang) headers["X-FQ-Lang"] = I18N.lang;
   let payload;
   if (form) payload = form;
   else if (body !== undefined) { headers["Content-Type"] = "application/json"; payload = JSON.stringify(body); }

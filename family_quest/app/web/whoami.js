@@ -6,7 +6,7 @@
 const WB_ICON = "🎭";
 const wbName = () => I18N.tr(T("Who am I?"));
 const wbCoins = list => list.join(" / ") + " 🪙";
-// the category titles in the language of the app (the characters themselves are content and stay as they are)
+// the category titles in the language of the app (the server sends the characters in it too – familyquest/gamewords.py)
 const WB_CATS = { tiere: T("Animals"), berufe: T("Jobs"), essen: T("Food & fruit"), laender: T("Countries"), schweiz: T("Swiss places & mountains"),
   maerchen: T("Fairy tales & legends"), gegenstaende: T("Things at home"), sport: T("Sports"), personen: T("Famous people") };
 const wbCat = c => c ? (WB_CATS[c.key] ? I18N.tr(WB_CATS[c.key]) : c.title) : "";
@@ -17,6 +17,7 @@ function werbinichRulesView(rewards) {
     T("On your turn ask a yes/no question (type it or say it aloud). The others answer yes, no or don't know."),
     T("Most say yes? Ask again. Otherwise it is the next player's turn."),
     T("Think you know? Guess «I am …». Right: you are finished and get the next place. Wrong: the next player goes."),
+    T("Everybody sees the characters in their own language – «I am …» counts in every language at the table."),
     T("Stuck? Give up to see your character – you are finished without a place."),
     rewards ? I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", wbCoins(rewards)) : null,
     T("Coins only at a table with at least two people of the family – not for guests.")].filter(Boolean);
