@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-dev.2
+
+- Everything from 1.1.1-beta.7 (adventure games) plus the dev-only games
+
 ## 1.1.1-dev.1
 
 - First build of the dev channel: «24h Endurance» and «Beat the Bureaucracy» are only here while they are reworked
