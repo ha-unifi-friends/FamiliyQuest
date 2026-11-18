@@ -10,6 +10,7 @@ from .api.auth import Throttle, Tokens
 from .bingo import Bingo
 from .poker import Poker
 from .cardgames import CardGames
+from .channel import ChannelGames
 from .community import Community
 from .chores import Chores
 from .internet import InternetTime
@@ -182,8 +183,9 @@ class FamilyQuest:
 
     # the games that can be played with bots (alone against bots, bots at the table, chess / Tic-Tac-Toe / Ping-Pong
     # against the computer, Werwölfe filled up with bots) – the parents can switch the bots off per game
-    BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "stempeljagd", "ttt", "pingpong")
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
+    # games still in development (channel.DEV_GAMES) are left out outside the dev channel
+    BOT_GAMES = ChannelGames(("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "stempeljagd", "ttt", "pingpong"))
+    GAMES = ChannelGames(("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd", "ttt", "sudoku", "patience", "pingpong", "slots", "cube"))
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 
+from .channel import hidden_games
 from .i18n import _t
 
 TITLES = {"tschau": "Tschau Sepp", "karussell": "Card Carousel", "domino": "Domino", "paarjagd": "Pair Hunt",
@@ -86,7 +87,7 @@ def running(fq) -> list[dict]:
                     "solo": bool(st.get("solo")), "host": _name(fq, r["host_id"]), "players": _people(st.get("players")),
                     "host_id": r["host_id"], "members": _ids(st.get("players"))})
     for r in fq.db.q("SELECT * FROM card_game WHERE status!='done' ORDER BY id"):
-        if r["kind"] not in TITLES:
+        if r["kind"] not in TITLES or r["kind"] in hidden_games():    # dev games (channel.py): only in the dev channel
             continue
         st = json.loads(r["state"] or "{}")
         players = st.get("players")

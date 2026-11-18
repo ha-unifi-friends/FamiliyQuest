@@ -55,7 +55,7 @@ def clean(data, folder: Path | None = None) -> dict:
         data = {}
     raw = data.get("pages") if isinstance(data.get("pages"), list) else []
     if len(raw) > MAX_PAGES:
-        raise CommunityError("A picture book can have at most 60 pages")
+        raise CommunityError("A book can have at most 60 pages")
     pages, seen = [], set()
     for p in raw:
         if not isinstance(p, dict):
@@ -225,7 +225,7 @@ def import_book(b: dict) -> dict:
     from .stories import EMOJI, LANGS, TITLE, template_lang
     raw = b.get("pages") if isinstance(b.get("pages"), list) else []
     if len(raw) > MAX_PAGES:
-        raise CommunityError("A picture book can have at most 60 pages")
+        raise CommunityError("A book can have at most 60 pages")
     pages = []
     for p in raw:
         if isinstance(p, str):

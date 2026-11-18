@@ -189,14 +189,14 @@ async function pictureEditor(id, onClose = null) {
         C(meta.title || "…", "strong"), h("span.sb-pen", "⚙️")),
       stateEl),
     h("div.sb-erow.sb-tools",
-      h("span.sb-st", "📕 ", T("Picture book")),
+      h("span.sb-st", "📕 ", T("Book")),
       h("span.grow"),
       h("button.btn.small.ghost", { onclick: tryOut, title: T("Try it out") }, "▶ ", h("span.sb-hide-s", T("Read"))),
       h("button.btn.small", { onclick: publish }, "🚀 ", ed.live && !ed.changed ? T("On the shelf") : ed.pending ? T("Waiting") : T("Publish"))));
   sbSet(infoEl,                                       // below the sticky head: it scrolls away while writing
     ed.mine ? h("div.sb-erow.sb-visrow", h("b.small", T("Who can read it?")), sbVisPicker(visSent, v => { visSent = v; changed(); save(); }))
       : h("p.sb-note", SB_VIS()[ed.visibility][0], " ", SB_VIS()[ed.visibility][1], " · ", C(ed.author)),
-    ed.pending ? h("p.sb-note", "⏳ ", ed.parent ? T("This book waits for a parent's approval (Family › My books).") : T("Your book waits for a parent's approval.")) : null,
+    ed.pending ? h("p.sb-note", "⏳ ", ed.parent ? T("This book waits for a parent's approval (Family › Library).") : T("Your book waits for a parent's approval.")) : null,
     ed.reward && (ed.reward.write_coins || ed.reward.write_xp) && !ed.shared ? h("p.sb-note", "🎁 ", sbFmt(T("When the others can read it you get {0}"),
       [ed.reward.write_coins ? ed.reward.write_coins + " 🪙" : "", ed.reward.write_xp ? ed.reward.write_xp + " XP" : ""].filter(Boolean).join(" + "))) : null); };
 
@@ -252,7 +252,7 @@ async function pictureEditor(id, onClose = null) {
       h("ul.sb-pissues"));
   };
   const addPage = layout => {
-    if (data.pages.length >= PB_MAX_PAGES) return toast(I18N.tr(T("A picture book can have at most 60 pages")), "bad");
+    if (data.pages.length >= PB_MAX_PAGES) return toast(I18N.tr(T("A book can have at most 60 pages")), "bad");
     const pid = Math.max(0, ...data.pages.map(p => p.id)) + 1;
     data.pages.push({ id: pid, layout, text: "", pic: null }); changed(true); setTimeout(() => goPage(pid), 50);
   };

@@ -22,6 +22,7 @@ import json
 import random
 from datetime import date, datetime, timedelta
 
+from .channel import hidden_games
 from .community import CommunityError, QUIZ_LANGS, shuffle_answers
 from .i18n import _t
 from .rewards.engine import SPEND_EVENTS, today
@@ -374,6 +375,8 @@ class Facts:
                 if d.get("won") and d.get("complete") and d.get("seconds") is not None and not d.get("admin"):
                     fast[r["profile_id"]] = max(fast.get(r["profile_id"], 0), 100000 - int(d["seconds"]))
         title = self.game_title("stempeljagd")
+        if "stempeljagd" in hidden_games():             # dev game (channel.py): only in the dev channel
+            refs, fast = {}, {}
         out += self.who("stempeljagd_referrals", "all", (_t("Who was sent to another counter the most times in one game of {0}?"), title), refs)
         out += self.who("stempeljagd_fastest", "all", (_t("Who got the building permit the fastest in {0}?"), title), fast)
         dice = {}
@@ -392,6 +395,8 @@ class Facts:
     def records(self) -> list[dict]:
         out = []
         for key, kind, unit in BESTS:
+            if kind in hidden_games():                  # dev games (channel.py): only in the dev channel
+                continue
             best = {int(k): int(v or 0) for k, v in (self.db.get_setting(key) or {}).items() if str(k).isdigit() and int(k) in self.name}
             if not best or not max(best.values()):
                 continue
@@ -412,6 +417,8 @@ class Facts:
 
     # «24h Endurance»: the fastest pit stop (setting langstrecke_pit, tenths of a second – lower is better)
     def pit_records(self) -> list[dict]:
+        if "langstrecke" in hidden_games():             # dev game (channel.py): only in the dev channel
+            return []
         best = {int(k): int(v or 0) for k, v in (self.db.get_setting("langstrecke_pit") or {}).items()
                 if str(k).isdigit() and int(k) in self.name and int(v or 0) > 0}
         if not best:

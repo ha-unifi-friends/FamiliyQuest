@@ -20,6 +20,7 @@ import json
 import secrets
 from datetime import datetime, timedelta
 
+from .channel import hidden_games, visible
 from .community import CommunityError
 from .i18n import _t
 
@@ -45,7 +46,7 @@ def _norm(s: str) -> str:
 def choice_of(game: str | None, title: str | None) -> tuple[str, str, bool]:
     """A wish → (key, title, app game?). Key «g:tschau» or «t:monopoly» – the same game wished twice is one option."""
     if game:
-        if game not in GAMES:
+        if game not in GAMES or game in hidden_games():
             raise CommunityError("Unknown game")
         return "g:" + game, GAMES[game][1], True
     t = " ".join(str(title or "").split())[:MAX_TITLE]
@@ -94,7 +95,7 @@ class FamilyTimeGames:
         """The family games this person may wish: parents all, children those switched on for them (parent area ›
         Games) – an OfflineTime just now does not matter, the wish is for later."""
         if prof.get("role") == "parent":
-            return list(GAMES)
+            return list(visible(GAMES))                 # dev games (channel.py): only in the dev channel
         acc = self.fq.games_access()
         return [g for g in GAMES if g in acc and (acc[g]["mode"] == "all" or (acc[g]["mode"] == "some" and prof["id"] in acc[g]["profiles"]))]
 

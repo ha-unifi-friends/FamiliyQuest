@@ -15,6 +15,7 @@ from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
 from .api import stories as stories_api
 from . import loginlog, netfilter
+from .channel import hidden_games
 from .api import deals as deals_api
 from .api.auth import INGRESS_IP
 from .services import FamilyQuest
@@ -76,6 +77,9 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
 
     @app.middleware("http")
     async def access(request: Request, call_next):
+        # games still in development (channel.py): outside the dev channel their API does not exist
+        if request.url.path.startswith("/api/community/") and community.game_of(request.url.path) in hidden_games():
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
         # Family Quest HA integration (custom component): inside the add-on only Home Assistant Core on the Supervisor
         # network may call it – the integration token is checked by the API itself (api/integration.py)
         if request.url.path.startswith("/api/integration/") and settings.ha_enabled:

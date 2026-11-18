@@ -13,6 +13,7 @@ import random
 import secrets
 import time
 
+from .channel import hidden_games
 from .rewards import avatar as av
 
 GUEST = 2
@@ -39,7 +40,7 @@ class Guests:
 
     def invite(self, game: str, on: bool = True, gid: int | None = None) -> dict | None:
         """Open (or close) the invitation for the running game of this kind (chess: this open game)."""
-        if game not in GAMES:
+        if game not in GAMES or game in hidden_games():         # dev games (channel.py): only in the dev channel
             raise GuestError("Unknown game")
         if on and not self.enabled():
             raise GuestError("Guests are switched off in the parent area")
@@ -71,6 +72,8 @@ class Guests:
 
     def find(self, code: str) -> tuple[str, dict] | None:
         for game, inv in self._invites().items():
+            if game in hidden_games():
+                continue
             if code and secrets.compare_digest(str(code), inv.get("code", "")) and self._game_id(game, inv.get("game_id")) == inv.get("game_id"):
                 return game, inv
         return None
