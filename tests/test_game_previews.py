@@ -161,6 +161,7 @@ def test_game_corner_try_and_duel(client):
     now = clock(fq)
     assert client.post("/api/me/games/try", json={"game": "jump"}, headers=hm).status_code == 400   # family game: at a table
     r = client.post("/api/me/games/try", json={"game": "sudoku"}, headers=hm).json()
+    r.pop("battery")                       # the game battery (battery.py, tests/test_energy.py)
     assert r == {"ok": True, "tries_left": 0, "open": False} and used(fq, mia, "sudoku") == 1
     assert client.post("/api/me/games/try", json={"game": "sudoku"}, headers=hm).status_code == 200   # double tap
     assert used(fq, mia, "sudoku") == 1

@@ -72,6 +72,8 @@ async function apiOnce(path, { method = "GET", body, form, parent = false } = {}
   if (ct.includes("json")) data = await r.json().catch(() => null);
   if (!r.ok) {
     const msg = data && (typeof data.detail === "string" ? data.detail : Array.isArray(data.detail) ? data.detail.map(d => d.msg).join(", ") : "") || ("HTTP " + r.status);
+    // the game battery is empty (familyquest/battery.py): the kid app offers to recharge it (kid.js)
+    if (r.status === 403 && window.FQ_BATTERY_EMPTY && /^Your game battery is empty/.test(msg)) setTimeout(window.FQ_BATTERY_EMPTY, 300);
     throw new ApiError(r.status, msg);
   }
   return data;
@@ -151,6 +153,25 @@ const _when = v => v instanceof Date ? v : new Date(/^\d{4}-\d\d-\d\d$/.test(Str
 const fmtDate = (v, o = { day: "numeric", month: "numeric", year: "numeric" }) => v ? _when(v).toLocaleDateString(I18N.locale, o) : "";
 const fmtTime = v => v ? _when(v).toLocaleTimeString(I18N.locale, { hour: "2-digit", minute: "2-digit" }) : "";
 const fmtDateTime = v => v ? fmtDate(v) + " " + fmtTime(v) : "";
+
+// «until 21:00» today, else «until Tue, 21:00» / a date further away (party mode, unlimited game battery)
+function untilWhen(v) {
+  if (!v) return "";
+  const d = _when(v), now = new Date(), days = (d - now) / 864e5;
+  const when = d.toDateString() === now.toDateString() ? fmtTime(d)
+    : days < 6 ? d.toLocaleDateString(I18N.locale, { weekday: "short" }) + ", " + fmtTime(d) : fmtDate(d) + " " + fmtTime(d);
+  return I18N.tr(T("until {0}")).replace("{0}", when);
+}
+
+/** The game battery (familyquest/battery.py) as a small battery with charge segments: green → orange → red, empty
+ * dashed red, ∞ while unlimited. b: {charge, cap, free} */
+function batteryIcon(b, big = false) {
+  const cap = Math.max(1, Math.min(20, b.cap || 5)), n = Math.max(0, Math.min(cap, b.charge || 0)), r = n / cap;
+  const lvl = b.free ? "inf" : n <= 0 ? "empty" : r <= .25 ? "low" : r <= .5 ? "mid" : "full";
+  const label = b.free ? "∞" : n + " / " + cap;
+  return h("span.bat." + lvl + (big ? ".big" : ""), { role: "img", "aria-label": I18N.tr(T("Game battery")) + " " + label, title: I18N.tr(T("Game battery")) + " " + label },
+    h("span.bat-body", b.free ? h("b.bat-inf", "∞") : Array.from({ length: cap }, (_, i) => h("i" + (i < n ? ".on" : "")))), h("span.bat-tip"));
+}
 
 // SVG progress ring
 function ring(value, max, { size = 120, stroke = 12, color = "var(--accent)", label = "" } = {}) {

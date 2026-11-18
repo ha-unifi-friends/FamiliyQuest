@@ -41,7 +41,8 @@ header shows the clock and the buttons of the page you are on (e.g. «+ New deck
 scheduled every year: spring, summer, autumn, winter, **Halloween** (20.10.–1.11.) and **Christmas** (1.12.–26.12.);
 events win over the seasons. In the parent area under **Settings › 🎨 Season designs** you switch them on or off,
 move their dates and add **own designs** (name, icon, colour, scene, from – to; e.g. a birthday week) – own designs
-come first. Children can switch the scene off on their device in the ☰ menu.
+come first. Children can switch the scene off on their device in the ☰ menu. During a **🎉 party** the children's app
+shows the **🪩 Disco** design (see Party mode).
 
 ## Points and rewards
 
@@ -176,6 +177,7 @@ chores the full points. With *Parents confirm* a ticked-off chore waits for *OK*
 (back to open). The week plan shows who does what on each day; the rule *All chores of the week done* gives a bonus
 (20 coins by default). In *Settings* a chore reminder time announces open chores (via the Family Planer announcement
 queue) and fires `family_quest_aemtli_erinnerung`. Chores from the Family Planer appear on the dashboard next to them.
+A chore can also carry an **⚡ Energy bonus** – segments of the child's game battery (see Game battery).
 
 ## Shopping list (Bring!)
 
@@ -552,6 +554,68 @@ parents always play for free.
 Stored in `games_access` per game (`price`, `rent`, `period`, `preview`; `luck` for the one-armed bandit) and per child
 and game in the table `game_pass` (`bought`, `rent_until`, `previews_used`, `preview_at`). API: `GET /api/me/games/shop`, `POST /api/me/games/buy`
 (`{"game", "kind": "buy" | "rent", "until"}`).
+
+### 🔋 Game battery
+
+Every child has a **game battery** with charge segments – rechargeable, not a tank. Defaults: **5 segments**, every
+child (also the existing ones) starts **full**, recharging costs **50 coins**. Parents have no battery and never see it.
+
+- **Starting a game costs one segment**: an own table of a family game (`…/start` – a family table, alone against bots,
+  a new round / rematch, a chess game against the family or the bot) and **opening a game of the game corner**
+  (Tic-Tac-Toe, Sudoku, Patience, Ping-Pong, cube solver, the one-armed bandit – one segment per opening, not per spin;
+  `POST /api/me/games/try`). A duel or a doubles table started inside an opened Tic-Tac-Toe / Ping-Pong costs nothing
+  more; **answering an invitation** (a duel, a doubles table) is free.
+- **Joining a table somebody else opened is free** – also with an empty battery – and a started game can always be
+  played to the end. The family quiz a parent starts costs the children nothing.
+- A second start of the same game within 10 seconds (double tap, a second device) is the same start; the charge is
+  checked and used in one database transaction, so parallel requests never use more than there is; a start that fails
+  (no table opened) gives the segment back.
+- **Empty** 🪫: own starts are refused («Your game battery is empty – recharge it or join a table of somebody else»).
+  The kid app shows the battery empty and offers **⚡ Recharge · 50 🪙** (a confirmation first): the battery is full
+  again, the coins are booked in the same transaction (ledger event `energy_recharge`); not enough coins → an error;
+  a second tap finds it full and books nothing.
+- **Kid app**: the battery (segments green → orange → red, empty dashed) sits in the header of the Games page with a
+  strip «3 of 5 charged · Starting a game costs 🔋1 – joining a table is free», in the game corner and on top of every
+  game's card. Unlimited shows «∞ until …». Chores with an energy bonus show «🔋+2».
+- **Parent area › Games › 🔋 Game battery** (family default): on/off, capacity (1–20), cost of a recharge (0–10000 coins,
+  0 = free), **unlimited energy**: off / permanent / for 1 day / 1 week / 1 month (stored as an until time, shown as
+  «∞ until …», **End** stops it), what **reaching the daily goal** does: nothing / battery full / **+N segments**
+  (default **+1**), and every child's charge now with **🎁 Recharge** (a free gift of the parents).
+- **Per child** (profile dialog › 🔋 Game battery): the same values; an empty field / «as family» uses the family
+  default. A child's own unlimited period wins while it lasts (then the family value counts again); «Off» there means
+  «not unlimited» even when the family is.
+- **⚡ Energy bonus per chore** (chore editor, 0–20 segments, default 0): charged when the chore is done (or approved by
+  the parents) – the same moment as its coins –, once per chore task and never above the capacity. The chores of the
+  built-in Family Planer have their own model (points only) and no energy bonus.
+- Daily goal and chore bonus never go above the capacity; each goal day and each chore task charges once (unique refs
+  in `battery_log`).
+
+Stored: setting `battery` (`on`, `cap`, `cost`, `unlimited`, `goal`, `goal_plus`), per child `battery` in the profile
+settings (only the values set), the charge in the table `battery` (`charge` NULL = full) and every change in
+`battery_log`; `chore.energy`. API: `GET /api/me` → `battery` {`on`, `charge`, `cap`, `cost`, `unlimited`, `forever`,
+`until`, `party`, `free`}, `GET /api/me/battery`, `POST /api/me/battery/recharge`; parents `GET/PUT /api/parent/battery`,
+`PUT /api/parent/battery/{id}` (`null` / `"family"` = as the family), `POST /api/parent/battery/{id}/recharge`.
+
+### 🎉 Party mode
+
+A switch on top of the parent area's **Games** page and the **overview**. Switching it on opens a chooser:
+
+- **For whom**: all children or chosen children;
+- **What**: **🔓 Unlock all games** (every game playable – price, rent and «inactive» do not count, no free try is
+  used), **🔋 Unlimited battery** (starting costs nothing) and **⏱️ Also lift limits** (on by default): the daily game
+  time, the **game** block times of the internet plan and the game lock of OfflineTime do not apply to games for these
+  children (no game minutes are counted meanwhile). The internet itself, learning limits and a block time of the whole
+  app stay as they are. Without «also lift limits» every limit stays.
+- **How long**: until switched off, 1 h, 3 h, until midnight or 1 day – stored as an until time; it **ends by itself**.
+
+Nothing is bought, rented or charged during a party – when it ends (by itself or with the switch) everything is as
+before. The children see a festive banner «🎉 Party mode until 21:00» on the start page and the Games page, the tiles
+are unlocked and the battery shows ∞. **🪩 Disco design**: while the party runs for a child, its app switches to the
+Disco design – dark background, neon accents, a disco ball in the header and slow, soft coloured light spots (no
+flashing; static with «reduce motion»); afterwards the chosen / season design is back by itself. Parents can also
+pick the «disco» scene for an own season design. Stored in the setting `party`; API `GET/POST/DELETE /api/parent/party`
+(`{"kids": "all" | [ids], "unlock", "battery", "limits", "for": "forever" | "1h" | "3h" | "midnight" | "day"}`); the kid
+app gets `party` in `GET /api/me`.
 
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
 (icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,

@@ -21,8 +21,11 @@ BUILTIN = [
     {"id": "halloween", "name": _t("Halloween"), "icon": "🎃", "vis": "halloween", "from": "10-20", "to": "11-01", "kind": "event"},
     {"id": "christmas", "name": _t("Christmas"), "icon": "🎄", "vis": "weihnachten", "from": "12-01", "to": "12-26", "kind": "event"},
 ]
+# party mode (battery.py): the kid app switches to this design while the party runs for the child – not scheduled by date,
+# it wins over every other design and ends with the party. Parents can also pick its look («disco») for an own design.
+DISCO = {"id": "disco", "name": _t("Disco"), "icon": "🪩", "vis": "disco", "jz": "sommer", "accent": "#ff3cac", "builtin": True}
 VISUALS = ("alltag", "fruehling", "sommer", "herbst", "winter", "halloween", "weihnachten", "silvester", "fasnacht", "ostern",
-           "liebe", "pfingsten", "august", "schule", "geburtstag", "sport")
+           "liebe", "pfingsten", "august", "schule", "geburtstag", "sport", "disco")
 JZ = {"spring": "fruehling", "summer": "sommer", "autumn": "herbst", "winter": "winter"}
 _MD = re.compile(r"^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$")
 

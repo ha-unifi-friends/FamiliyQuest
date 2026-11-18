@@ -276,7 +276,7 @@ async function overviewView(main) {
   main.append(pageHead(T("Overview"),
       P.meta.planer ? h("button.btn.ghost", { onclick: importPersons }, "📅 ", T("Take over from Family Planer")) : null,
       h("button.btn.ghost", { onclick: () => profileDialog(null, persons, "parent") }, "+ ", T("Add parent")),
-      h("button.btn", { onclick: () => profileDialog(null, persons, "kid") }, "+ ", T("Add child"))), pend || (chorePend ? null : h("p.muted", "✓ ", T("No open approvals."))), chorePend, failBox, weatherBox("set"),
+      h("button.btn", { onclick: () => profileDialog(null, persons, "kid") }, "+ ", T("Add child"))), d.kids.length ? partyCard() : null, pend || (chorePend ? null : h("p.muted", "✓ ", T("No open approvals."))), chorePend, failBox, weatherBox("set"),
     d.family_goal ? section("🤝 " + I18N.tr(T("Family goal")), h("div.row", C(d.family_goal.title, "strong.grow"), h("b", fmt(d.family_goal.value) + " / " + fmt(d.family_goal.target))),
       bar(d.family_goal.value, d.family_goal.target, "var(--good)")) : null,
     ...(kids.length ? kids : [h("div.card", h("p", T("No child profile yet.")))]),
@@ -551,6 +551,7 @@ async function profileDialog(p, persons, role = "kid") {
     h("p.small.muted", T("Far right ∞ = not limited. 📅 Days: own times per weekday – a weekday moves with the slider above until you move it yourself.")),
     gameLimit.el, learnLimit.el, plan.slider.el,
     h("p.small.muted", T("Games: family games and the game corner – a game already running may be finished. Internet: the free minutes of the internet budget (needs the UniFi firewall rule below); 0 = only minutes from the shop.")));
+  const batteryPart = !isNew && p.role === "kid" ? kidBatteryBox(p.id) : null;
   const kidPart = h("div.form", h("h3", T("Internet minutes")),
     h("p.small.muted", T("Optional. Family Quest manages the internet time itself with the UniFi firewall rule; an input_number can also receive the minutes.")),
     h("div.grid2", h("label.field", T("UniFi firewall rule (switch)"), f.internet_rule, ruleList,
@@ -647,7 +648,7 @@ async function profileDialog(p, persons, role = "kid") {
         : T("Children: 4 digits, optional. Parents: 4–8 digits, required."))));
     } else pinArea.replaceChildren(h("p.small.muted", kid ? T("The child logs in without a PIN.") : T("No login in the app – the parent area opens with the Home Assistant user.")));
   };
-  const syncRole = () => { kidPart.hidden = timePart.hidden = f.role.value !== "kid"; parentPart.hidden = f.role.value !== "parent"; haPart.hidden = f.role.value !== "parent" || !P.meta.ha; drawPin(); };
+  const syncRole = () => { kidPart.hidden = timePart.hidden = f.role.value !== "kid"; if (batteryPart) batteryPart.hidden = f.role.value !== "kid"; parentPart.hidden = f.role.value !== "parent"; haPart.hidden = f.role.value !== "parent" || !P.meta.ha; drawPin(); };
   f.role.addEventListener("change", syncRole); syncRole();
   const m = modal(h("div.form",
     h("h2", isNew ? (p.role === "parent" ? T("New parent") : T("New child")) : T("Edit profile")),
@@ -660,7 +661,7 @@ async function profileDialog(p, persons, role = "kid") {
       h("label.field", T("New cards per lesson"), f.new_per_lesson),
       h("label.field", T("Learning hours"), f.learning_hours, h("span.hint", T("Empty = always. Example: 07:00-20:00"))),
       h("label.field", T("Log out after minutes without touch"), f.auto_logout_min, h("span.hint", T("0 = never")))),
-    timePart,
+    timePart, batteryPart,
     P.meta.ha ? h("h3", "🏠 ", T("Devices")) : null, P.meta.ha ? devBox : null,
     kidPart, parentPart,
     persons.length ? h("label.field", T("Person in the Family Planer"), f.planer, h("span.hint", T("Shows the chores of this person and counts them."))) : null,
@@ -1250,7 +1251,7 @@ async function choresView(main) {
           c.frequency === "weekdays" ? " (" + c.weekdays.map(i => I18N.tr(WEEKDAYS[i])).join(", ") + ")" : "",
           c.frequency === "once" ? " " + fmtDate(c.date) : "", " · ",
           c.assign === "rotate" ? I18N.tr(T("rotating")) : I18N.tr(T("fixed")), ": ", C(c.profiles.map(kidName).join(", ")), " · ",
-          c.kind === "duty" ? I18N.tr(T("duty")) : I18N.tr(T("bonus")), " · +" + fmt(c.points),
+          c.kind === "duty" ? I18N.tr(T("duty")) : I18N.tr(T("bonus")), " · +" + fmt(c.points), c.energy ? " · 🔋+" + c.energy : "",
           c.confirm ? " · 👪 " + I18N.tr(T("parents confirm")) : "", c.active ? "" : " · " + I18N.tr(T("switched off")))),
       h("button.btn.small.ghost", { onclick: () => choreDialog(c, kids) }, "✏️ ", T("Edit")))))));
 }
@@ -1272,6 +1273,7 @@ function choreDialog(c, kids) {
     kind: h("select", h("option", { value: "bonus", selected: c.kind === "bonus" }, T("Bonus chore (full points)")),
       h("option", { value: "duty", selected: c.kind === "duty" }, T("Duty (few or no points)"))),
     confirm: h("input", { type: "checkbox", checked: !!c.confirm }), active: h("input", { type: "checkbox", checked: !!c.active }),
+    energy: h("input", { type: "number", min: 0, max: 20, step: 1, inputmode: "numeric", value: c.energy || 0 }),
   };
   const days = WEEKDAYS.map((n, i) => h("label.check", h("input", { type: "checkbox", value: i, checked: c.weekdays.includes(i) }), n));
   const who = kids.map(k => h("label.check", h("input", { type: "checkbox", value: k.id, checked: c.profiles.includes(k.id) }), C(k.name)));
@@ -1282,6 +1284,7 @@ function choreDialog(c, kids) {
     h("h2", isNew ? T("New chore") : T("Edit chore")),
     h("div.row", f.icon, h("label.field.grow", T("Name"), f.name)),
     h("div.grid3", h("label.field", T("Points"), f.points), h("label.field", T("Account"), f.account), h("label.field", T("Type"), f.kind)),
+    h("label.field", h("span", "⚡ ", T("Energy bonus")), f.energy, h("span.hint", T("Segments of the game battery the child gets when the chore is done (0 = none). Never more than the battery holds."))),
     h("div.grid3", h("label.field", T("How often"), f.frequency), dateRow, h("label.field", T("Assignment"), f.assign), rotRow), dayRow,
     h("div", h("strong", T("Who")), h("div.row", ...who)),
     h("label.check", f.confirm, T("Parents confirm before points are booked")), h("label.check", f.active, T("Active")),
@@ -1291,7 +1294,7 @@ function choreDialog(c, kids) {
     const body = { name: f.name.value, icon: f.icon.value || "🧹", points: +f.points.value, account: f.account.value, frequency: f.frequency.value,
       weekdays: days.map(l => l.querySelector("input")).filter(x => x.checked).map(x => +x.value), date: f.date.value || null,
       assign: f.assign.value, rotate_every: f.rotate_every.value, profiles: who.map(l => l.querySelector("input")).filter(x => x.checked).map(x => +x.value),
-      kind: f.kind.value, confirm: f.confirm.checked, active: f.active.checked, sort: c.sort || 0 };
+      kind: f.kind.value, confirm: f.confirm.checked, active: f.active.checked, sort: c.sort || 0, energy: Math.max(0, Math.min(20, Math.round(+f.energy.value || 0))) };
     await call(isNew ? "parent/chores" : `parent/chores/${c.id}`, { method: isNew ? "POST" : "PUT", body });
     m.close(); toast(T("Saved"), "good"); render();
   }
@@ -1532,6 +1535,128 @@ const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second pl
   slots: T("Pull the lever for 1 coin – three times a day. Three alike win, cherries too.") };
 
 // per game: active / active without bots (only games with bots) / inactive – and for whom (everybody or chosen children)
+// ---------------------------------------------------------------- game battery and party mode (familyquest/battery.py)
+const UNL_CHOICES = () => [["off", T("Off")], ["forever", T("Permanent")], ["day", T("For 1 day")], ["week", T("For 1 week")], ["month", T("For 1 month")]];
+const unlRunning = v => v && v !== "forever" && new Date(v.replace(" ", "T")) > new Date();
+
+/** The values of the game battery – the family default (`own` null) or one child's own values («as the family»). */
+function batteryForm(values, own, onSave) {
+  const fam = values, kid = own != null;
+  const has = k => kid && Object.prototype.hasOwnProperty.call(own, k);
+  const num = (k, min, max, hint) => {
+    const inp = h("input", { type: "number", min, max, step: 1, inputmode: "numeric", value: kid ? (has(k) ? own[k] : "") : fam[k],
+      placeholder: kid ? I18N.tr(T("as family")) + " (" + fam[k] + ")" : "",
+      onchange: () => onSave({ [k]: inp.value === "" ? (kid ? null : fam[k]) : Math.max(min, Math.min(max, Math.round(+inp.value || 0))) }) });
+    return [inp, hint ? h("span.hint", hint) : null];
+  };
+  const on = kid ? h("select", { onchange: () => onSave({ on: on.value === "" ? null : on.value === "1" }) },
+      h("option", { value: "", selected: !has("on") }, I18N.tr(T("as family")) + " (" + I18N.tr(fam.on ? T("On") : T("Off")) + ")"),
+      h("option", { value: "1", selected: has("on") && own.on }, T("On")), h("option", { value: "0", selected: has("on") && !own.on }, T("Off")))
+    : h("input", { type: "checkbox", checked: fam.on, onchange: () => onSave({ on: on.checked }) });
+  const cur = kid ? (has("unlimited") ? own.unlimited : null) : fam.unlimited;
+  const running = unlRunning(cur);
+  const unl = h("select", { onchange: () => onSave({ unlimited: unl.value }) },
+    kid ? h("option", { value: "family", selected: !has("unlimited") }, T("as family")) : null,
+    running ? h("option", { value: "keep", selected: true }, "∞ " + untilWhen(cur)) : null,
+    ...UNL_CHOICES().map(([v, n]) => h("option", { value: v, selected: !running && (v === "forever" ? cur === "forever" : v === "off" && (kid ? has("unlimited") && cur === "" : !cur)) }, n)));
+  return h("div.form.bat-form",
+    kid ? h("label.field", h("span", "🔋 ", T("Game battery")), on) : h("label.check", on, h("span", "🔋 ", T("Game battery on – starting a game costs a segment"))),
+    h("div.grid2", h("label.field", h("span", T("Capacity (segments)")), ...num("cap", 1, 20, T("1 to 20 – starts full."))),
+      h("label.field", h("span", "⚡ ", T("Recharging costs (coins)")), ...num("cost", 0, 10000, T("0 = recharging is free.")))),
+    h("label.field", h("span", "∞ ", T("Unlimited energy")), unl,
+      running || cur === "forever" ? h("button.btn.small.ghost", { type: "button", onclick: () => onSave({ unlimited: kid ? "family" : "off" }) }, "⏹ ", T("End")) : null));
+}
+
+/** Parent area › Games: the family default of the game battery, the daily goal, every child's charge now. */
+function batterySettingsCard() {
+  const box = h("details.card.sec.bat-settings", h("summary", h("b", "🔋 ", T("Game battery"))));
+  const draw = d => {
+    const save = async v => { try { draw(await call("parent/battery", { method: "PUT", body: v })); toast(T("Saved"), "good"); } catch {} };
+    const fam = d.family;
+    const goal = h("select", { onchange: () => save({ goal: goal.value }) }, ...[["off", T("Nothing")], ["full", T("Battery full")], ["plus", T("Extra segments")]]
+      .map(([v, n]) => h("option", { value: v, selected: fam.goal === v }, n)));
+    const plus = h("input", { type: "number", min: 1, max: 20, step: 1, value: fam.goal_plus, inputmode: "numeric", onchange: () => save({ goal_plus: +plus.value }) });
+    box.replaceChildren(box.firstChild,
+      h("p.small.muted", T("Every child has a game battery. Starting a game (an own table, alone against bots, a game of the game corner) costs one segment – joining a table of somebody else is free and a started game can be finished. Empty: the child recharges for coins. Parents play without a battery.")),
+      batteryForm(fam, null, save),
+      h("div.grid2", h("label.field", h("span", "🎯 ", T("Daily goal reached")), goal), fam.goal === "plus" ? h("label.field", h("span", T("Extra segments")), plus) : h("span")),
+      h("p.small.muted", T("Chores can give an energy bonus too (chore plan › ⚡ Energy bonus). Each child's own values: profile › Game battery.")),
+      h("ul.list.bat-kids", ...d.kids.map(k => h("li.row", k.state ? batteryIcon(k.state) : null, C(k.name, "strong.grow"),
+        h("span.small.muted", k.state && k.state.free ? (k.state.party ? "🎉 " : "∞ ") + (k.state.until ? untilWhen(k.state.until) : "") : k.state ? k.state.charge + " / " + k.state.cap : ""),
+        k.state && !k.state.free && k.state.charge < k.state.cap ? h("button.btn.small.ghost", { onclick: async () => { draw(await call(`parent/battery/${k.id}/recharge`, { method: "POST" })); toast(T("Battery recharged"), "good"); } }, "🎁 ", T("Recharge")) : null))));
+  };
+  call("parent/battery").then(draw).catch(() => {});
+  return box;
+}
+
+/** Profile dialog of a child: its own battery values (empty = as the family). */
+function kidBatteryBox(pid) {
+  const box = h("div.form.lim-box", h("h3", "🔋 ", T("Game battery")), h("p.small.muted", "…"));
+  const draw = d => {
+    const k = d.kids.find(x => x.id === pid);
+    if (!k) return box.replaceChildren();
+    const save = async v => { try { draw(await call(`parent/battery/${pid}`, { method: "PUT", body: v })); toast(T("Saved"), "good"); } catch {} };
+    box.replaceChildren(box.firstChild,
+      k.state ? h("div.row", batteryIcon(k.state, true), h("span.grow", k.state.party ? "🎉 " + I18N.tr(T("Party mode")) : k.state.free ? "∞" + (k.state.until ? " " + untilWhen(k.state.until) : "") : k.state.charge + " / " + k.state.cap),
+        !k.state.free && k.state.charge < k.state.cap ? h("button.btn.small.ghost", { type: "button", onclick: async () => { draw(await call(`parent/battery/${pid}/recharge`, { method: "POST" })); } }, "🎁 ", T("Recharge")) : null) : null,
+      h("p.small.muted", T("Empty fields: as the family (parent area › Games › Game battery).")),
+      batteryForm(d.family, k.own, save));
+  };
+  call("parent/battery").then(draw).catch(() => box.replaceChildren());
+  return box;
+}
+
+/** 🎉 Party mode: a switch with a chooser – for whom, what, how long (Games page and overview). */
+function partyCard() {
+  const box = h("section.card.sec.party-card");
+  const draw = async () => {
+    let p = null, kids = [];
+    try { [p, kids] = await Promise.all([call("parent/party"), call("parent/profiles").then(l => l.filter(x => x.role === "kid"))]); } catch { return; }
+    const sw = h("input.party-switch", { type: "checkbox", role: "switch", checked: !!p, "aria-label": T("Party mode"),
+      onchange: async () => {
+        if (sw.checked) { sw.checked = false; return partyDialog(kids, draw); }
+        if (!confirm(I18N.tr(T("End the party mode?")))) { sw.checked = true; return; }
+        await call("parent/party", { method: "DELETE" }); toast(T("Party mode ended"), "good"); draw();
+      } });
+    const who = p ? (p.kids === "all" ? I18N.tr(T("all children")) : p.kids.map(id => (kids.find(k => k.id === id) || {}).name || "?").join(", ")) : "";
+    const what = p ? [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean).map(t => I18N.tr(t)).join(" · ") : "";
+    box.classList.toggle("on", !!p);
+    box.replaceChildren(h("div.row", h("span.big-ic", "🎉"), h("div.grow", h("h2", T("Party mode")),
+        p ? h("div.small", h("b", p.until ? untilWhen(p.until) : I18N.tr(T("until switched off"))), " · ", C(who), what ? h("div.small.muted", what) : null)
+          : h("div.small.muted", T("Every game open, no battery, no time limit – for a party or a game night."))),
+      h("label.switch-wrap", sw, h("span.switch-ui"))));
+  };
+  draw();
+  return box;
+}
+
+function partyDialog(kids, after) {
+  const all = h("input", { type: "radio", name: "pk", checked: true }), some = h("input", { type: "radio", name: "pk" });
+  const picks = kids.map(k => h("label.check", h("input", { type: "checkbox", value: k.id, checked: true }), C(k.name)));
+  const pickRow = h("div.row", { hidden: true }, ...picks);
+  all.onchange = some.onchange = () => { pickRow.hidden = !some.checked; };
+  const chk = (label, hint) => { const i = h("input", { type: "checkbox", checked: true }); return [i, h("label.check", i, h("span", label, hint ? h("span.small.muted", " – ", hint) : null))]; };
+  const [unlock, unlockL] = chk("🔓 " + I18N.tr(T("Unlock all games")), T("price, rent and «inactive» do not count"));
+  const [batt, battL] = chk("🔋 " + I18N.tr(T("Unlimited battery")), null);
+  const [lim, limL] = chk("⏱️ " + I18N.tr(T("Also lift limits")), T("daily game time, game block times and the OfflineTime game lock – internet and learning stay as they are"));
+  let dur = "forever";
+  const durs = h("div.pin-kind.party-durs");
+  const drawDur = () => durs.replaceChildren(...[["forever", T("Until switched off")], ["1h", "1 h"], ["3h", "3 h"], ["midnight", T("Until midnight")], ["day", T("1 day")]]
+    .map(([v, n]) => h("button.btn.small" + (dur === v ? "" : ".ghost"), { type: "button", "aria-pressed": String(dur === v), onclick: () => { dur = v; drawDur(); } }, n)));
+  drawDur();
+  const m = modal(h("div.form.party-dialog", h("h2", "🎉 ", T("Party mode")),
+    h("h3", T("For whom")), h("div.row", h("label.check", all, T("All children")), h("label.check", some, T("Chosen children"))), pickRow,
+    h("h3", T("What")), unlockL, battL, limL,
+    h("h3", T("How long")), durs,
+    h("p.small.muted", T("Nothing is bought or used during the party – when it ends, everything is as before. The children's app turns to the 🪩 Disco design.")),
+    h("div.row", h("button.btn", { onclick: async () => {
+      const body = { kids: all.checked ? "all" : picks.map(l => l.querySelector("input")).filter(i => i.checked).map(i => +i.value),
+        unlock: unlock.checked, battery: batt.checked, limits: lim.checked, for: dur };
+      try { await call("parent/party", { method: "POST", body }); } catch { return; }
+      m.close(); confetti(); toast(T("Party mode on – have fun!"), "good"); after();
+    } }, "🎉 ", T("Start the party")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+}
+
 function gameAccess(kids, data) {
   let acc = data.access, returns = data.slots_returns || {};
   const botGames = new Set(data.bot_games || []), bars = {};
@@ -2313,9 +2438,9 @@ async function gamesView(main) {
       h("button.btn.small.ghost", { onclick: async () => { await access.allTo("off"); render(); } }, "✕ ", T("All off"))),
     h("label.field", T("Who begins a game (card and board games)"), starter),
     h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
-  main.append(h("h1", T("Games")),
+  main.append(h("h1", T("Games")), partyCard(),
     h("p.muted", T("Every game on its own: active, active without bots (only people play) or inactive – for everybody or only for chosen children. Parents can always play.")),
-    search, general, runningGamesBox(), none, ...Object.values(blocks));
+    search, general, batterySettingsCard(), runningGamesBox(), none, ...Object.values(blocks));
   filter();
   showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });

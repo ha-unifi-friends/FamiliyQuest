@@ -55,7 +55,13 @@ class _PlayRoute(APIRoute):
 
 
 def _give_back(request: Request) -> None:
-    """A start that used a free try failed (gamepasses.py): the try is back."""
+    """A start that used a free try (gamepasses.py) or a battery segment (battery.py) failed: it is back."""
+    charge = request.scope.pop("fq_charge", None)
+    if charge:
+        try:
+            app_of(request).battery.give_back(*charge)
+        except Exception:  # noqa: BLE001
+            log.exception("giving back a battery segment failed")
     used = request.scope.get("fq_try")
     if used:
         try:
@@ -94,17 +100,31 @@ def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 �
             raise HTTPException(403, "Games are switched off for you")
     if prof.get("role") == "kid":
         part = request.url.path.split("/api/community/", 1)[-1].split("/")
-        if request.method == "POST" and part[-1] in STARTS and timelimits.used_up(fq.db, prof, "game"):
+        if request.method == "POST" and part[-1] in STARTS and fq.game_used_up(prof):
             raise HTTPException(403, "Game time for today is used up – see you tomorrow!")
+        if request.method == "POST" and _charges(game, part):  # an own start costs a segment of the game battery
+            used, lid = fq.use_charge(prof, game)
+            if not used:
+                raise HTTPException(403, "Your game battery is empty – recharge it or join a table of somebody else")
+            if used == "new":
+                request.scope["fq_charge"] = (prof["id"], lid)
         if trial == "start":                                 # a new table (or a rematch) on a free try: count it
             used = fq.use_game_try(prof, game)
             if not used:
                 raise HTTPException(403, "No free tries left – buy or rent the game")
             if used == "new":
                 request.scope["fq_try"] = (prof["id"], game)
-        if (game or part[0] == "duel") and part[0] not in NOT_PLAYING:
-            request.scope["fq_play"] = prof["id"]
+        if (game or part[0] == "duel") and part[0] not in NOT_PLAYING and not fq.party_lifts(prof):
+            request.scope["fq_play"] = prof["id"]          # a party that lifts the limits: no game time counted
     return prof
+
+
+def _charges(game: str | None, part: list[str]) -> bool:
+    """Does this request start an own game (battery.py)? A new table or round of a family game («start»: also alone
+    against bots, a rematch, a duel of chess). The game corner (Tic-Tac-Toe, Ping-Pong duels and doubles) is charged
+    when it opens (POST /api/me/games/try); joining, moves and the rest are free."""
+    from ..gamepasses import ARCADE
+    return bool(game) and game not in ARCADE and part[0] not in NOT_PLAYING and part[-1] == "start"
 
 
 Gamer = Depends(Player)

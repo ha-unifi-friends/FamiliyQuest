@@ -24,13 +24,23 @@ function arcadeCard() {
   if (!open.length && !locked.length) return null;
   return h("section.card", h("h2", "🕹️ ", T("Game corner")),
     h("p.small.muted", T("Small games for in between.")),
+    batteryShown() ? batteryBar(true) : null,                                          // game battery (kid.js)
     h("div.arcade-grid", ...Object.entries(ARCADE).filter(([k]) => open.includes(k) || locked.includes(k)).map(([k, g]) => locked.includes(k) ? lockedTile(k, lockedGame(k))
       : h("button.arcade-tile", { onclick: () => go("arcade/" + k) }, h("span.big-ic", g.icon), h("strong", g.title)))));
 }
 
-function arcadeView(kind) {
+async function arcadeView(kind) {
   const g = ARCADE[kind];
   if (!g || !(canPlay(kind) || S.trial === kind)) return go("games");      // S.trial: opened on a free try (kid.js)
+  // opening a game costs a battery segment (familyquest/battery.py) – and uses the free try of a locked game;
+  // answering a duel / doubles invitation is free (S.arcadeJoin)
+  if (Auth.kid) {
+    const join = S.arcadeJoin === kind; S.arcadeJoin = null;
+    try {
+      const r = await api("me/games/try", { method: "POST", body: { game: kind, join } });
+      if (S.me && r.battery) S.me.battery = r.battery;
+    } catch (e) { toast(e.message, "bad"); return go("games"); }
+  }
   // full screen like the family quiz: no menus, the game uses the whole height
   const box = h("div.arcade-box");
   screen("games", h("div.quiz-full.arcade-full",

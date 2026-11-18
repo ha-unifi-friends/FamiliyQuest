@@ -12,6 +12,17 @@ from familyquest.settings import BUILTIN_PACKS, Settings  # noqa: E402
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "game_prices: the real default game prices, rents and free tries (gamepasses.py)")
+    config.addinivalue_line("markers", "battery: the game battery switched on as by default (battery.py)")
+
+
+@pytest.fixture(autouse=True)
+def _no_battery_by_default(request, monkeypatch):
+    """The game tests start many games in a row: the game battery (battery.py, on by default with 5 segments) is off
+    for them. Tests marked `battery` use the real default."""
+    if request.node.get_closest_marker("battery"):
+        return
+    from familyquest import battery
+    monkeypatch.setitem(battery.DEFAULT, "on", False)
 
 
 @pytest.fixture(autouse=True)
