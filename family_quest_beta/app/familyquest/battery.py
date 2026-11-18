@@ -282,7 +282,7 @@ class Battery:
             if st["charge"] >= st["cap"]:
                 raise BatteryError("Your game battery is full")
             cost = st["cost"]
-            if cost and self.rewards.balance(prof["id"], "coins") < cost:
+            if cost and self.rewards.available(prof["id"]) < cost:
                 raise BatteryError("Not enough coins")
             now = self.now().strftime(FMT)
             lid = self.db.x("INSERT INTO battery_log(profile_id, delta, kind, ref) VALUES(?,?,?,?)",

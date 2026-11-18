@@ -135,6 +135,10 @@ class FamilyQuest:
         self.guests = Guests(self)
         self.calendar = FamilyCalendar(self)
         self.familytime = FamilyTimeGames(self)
+        from .deals import Deals
+        self.deals = Deals(self)                                    # children trade with each other and with parents (deals.py)
+        self.chores.deals = self.deals
+        self.pets.locked = lambda pet_id: self.deals.locked("pet", pet_id)
         self.internet.offline = lambda pid: self.calendar.blocks(pid, "internet")
         self.shop.internet = self.internet
         self.tokens = Tokens(settings.secret)
@@ -489,6 +493,8 @@ class FamilyQuest:
             "pets": self.pets.summary(pid),
             "battery": self.battery.state(prof),              # game battery (battery.py) – None for parents
             "party": self.party_public(prof),                 # party mode for this child (banner, disco theme)
+            "deals": self.deals.summary(prof),                # deals waiting for an answer, news (deals.py)
+            "coins_reserved": self.rewards.reserved(pid),     # promised in a deal that stands – cannot be spent
         }
 
     def party_public(self, prof: dict) -> dict | None:

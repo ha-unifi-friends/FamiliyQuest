@@ -54,6 +54,7 @@ async function route() {
   if (view === "shop") return shopView();
   if (view === "avatar") return avatarView();
   if (view === "family") return familyView();
+  if (view === "deals") return dealsView(arg);                 // deals (deals.js)
   if (view === "board" && arg) return boardView(+arg);
   if (view === "games") return gamesView();
   if (view === "quiz") return quizView();
@@ -94,6 +95,9 @@ const go = path => { if (location.hash === "#/" + path) route(); else location.h
 async function loadMe() {
   S.me = await api("me");
   S.profile = S.me.profile;
+  // deals (deals.js): the menu entry only when this profile may trade, a badge for offers waiting for an answer
+  window.FQ_DEALS_OFF = !(S.me.deals && S.me.deals.on);
+  window.FQ_NAV_BADGES = { deals: S.me.deals ? S.me.deals.turn || 0 : 0 };
   if (S.me.prank) setTimeout(() => inkOverlay(S.me.prank), 400);     // somebody threw an ink bomb meanwhile
   idleReset();
 }
@@ -331,7 +335,8 @@ function topBar(active, opts = {}) {
   const head = h("header.top.fq-head" + (se && (seasonOn() || discoTheme()) ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
     seasonScene(),
     h("div.head-row" + (opts.back ? ".has-back" : ""),
-      h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰"),
+      h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰",
+        (window.FQ_NAV_BADGES || {}).deals ? h("span.deal-badge", String(window.FQ_NAV_BADGES.deals)) : null),
       // load everything anew (e.g. a pet just bought, a game somebody opened)
       h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: () => location.reload() }, "⟳"),
       opts.back ? h("button.icon-btn.back-btn", { title: T("Back"), "aria-label": T("Back"), onclick: opts.back }, "←") : null,
@@ -485,6 +490,7 @@ function dashboardView() {
   if (me.badges.length) sections.push(badgesCard(me.badges));
   screen("home", ...sections);
   petDiedNote(me.pets);
+  dealNote(me.deals);                                   // a new offer, the deal stands … (deals.js)
 }
 
 /** Block time «only a message»: the app shows that it is OfflineTime until it ends. */
@@ -599,7 +605,8 @@ function choresCard(chores) {
       h("span.grow", C(c.summary),
         c.pending ? h("span.chore-note", T("waiting for confirmation")) : null,
         c.redo && !c.done && !c.pending ? h("span.chore-note.redo", T("Please do it once more")) : null,
-        c.weekly ? h("span.chore-note", T("this week")) : null),
+        c.weekly ? h("span.chore-note", T("this week")) : null,
+        c.from ? h("span.chore-note.deal-note", "🤝 ", I18N.tr(T("taken over from {0}")).replace("{0}", c.from)) : null),
       c.points ? h("span.chore-pts", accIcon(c.account) + " " + fmt(c.points)) : null,
       c.energy && batteryShown() ? h("span.chore-pts.chore-energy", { title: T("Energy bonus") }, "🔋+" + c.energy) : null))) : h("p.muted", T("No chores today.")),
     open.length === 0 && chores.length ? h("p.good-text", T("All chores done – thank you!")) : null);
@@ -611,6 +618,7 @@ function pointsCard() {
   const nr = me.next_reward;
   return h("section.card.points", h("h2", "🪙 ", T("Points and goodies")),
     h("div.balances", ...accs.map(a => h("div.balance", h("span.bal-ic", a.icon || "🪙"), h("b", fmt(me.balances[a.key], 1)), h("span.small.muted", a.name)))),
+    me.coins_reserved > 0 ? h("p.small.muted.deal-reserved", "🔒 ", I18N.tr(T("{0} coins reserved in deals")).replace("{0}", fmt(me.coins_reserved))) : null,
     me.internet ? internetCard(me.internet) : null,      // start / pause the internet time right next to the minutes
     nr ? h("div.next-reward", h("div.row", h("span.big-ic", nr.icon), h("span.grow", T("Still {0} until {1}").replace("{0}", fmt(nr.missing)).replace("{1}", nr.name))),
       bar(nr.cost - nr.missing, nr.cost)) : null,

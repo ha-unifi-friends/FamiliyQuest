@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
 from . import loginlog, netfilter
+from .api import deals as deals_api
 from .api.auth import INGRESS_IP
 from .services import FamilyQuest
 from .settings import WEB_DIR, Settings, load_settings
@@ -115,6 +116,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     app.include_router(decks.router)
     app.include_router(integration_api.router)
     app.include_router(integration_api.parent_router)
+    app.include_router(deals_api.router)               # deals (deals.py)
+    app.include_router(deals_api.parent_router)
 
     def page(name: str) -> HTMLResponse:
         html = (WEB_DIR / name).read_text(encoding="utf-8").replace("__VERSION__", settings.version)

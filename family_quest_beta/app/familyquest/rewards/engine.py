@@ -83,6 +83,18 @@ class Rewards:
     def balance(self, pid: int, account: str) -> float:
         return float(self.db.val("SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account=?", pid, account, default=0))
 
+    def reserved(self, pid: int, account: str = "coins") -> float:
+        """Coins promised in a deal that stands (deals.py) and not paid yet – they cannot be spent meanwhile."""
+        if account != "coins":
+            return 0.0
+        return float(self.db.val("SELECT SUM(amount-paid) FROM deal_hold WHERE profile_id=? AND kind='coins' AND active=1",
+                                 pid, default=0) or 0)
+
+    def available(self, pid: int, account: str = "coins") -> float:
+        """The balance that can be spent: coins reserved in deals (deals.py) are not – every shop, game price, battery
+        recharge, pet cost … checks this one."""
+        return self.balance(pid, account) - self.reserved(pid, account)
+
     def balances(self, pid: int) -> dict[str, float]:
         out = {a["key"]: 0.0 for a in self.accounts()}
         for r in self.db.q("SELECT account, SUM(amount) s FROM ledger WHERE profile_id=? GROUP BY account", pid):

@@ -652,6 +652,59 @@ MIGRATIONS: list[str] = [
     );
     ALTER TABLE chore ADD COLUMN energy INTEGER NOT NULL DEFAULT 0;
     """,
+    # 38 – deals (deals.py): children trade with each other and with parents – coins, chores, avatar items, pets, bought
+    # games, free text. Every offer / counter-offer is a version; the deal stands when both accepted the same one. What
+    # will be given is reserved (deal_hold); chores taken over move to the doer (chore_task.from_id / deal_id). Every
+    # transfer has a unique ref in deal_pay – booked once only.
+    """
+    CREATE TABLE deal(
+        id INTEGER PRIMARY KEY,
+        a_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,     -- who made the first offer
+        b_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'open',     -- open | approval | running | done | rejected | withdrawn | declined | failed | cancelled
+        version INTEGER NOT NULL DEFAULT 1,
+        terms TEXT NOT NULL,                     -- {"a": [items a gives], "b": [items b gives]} of the current version
+        by_id INTEGER,                           -- who made the current version
+        accepted TEXT NOT NULL DEFAULT '[]',     -- profiles that accepted the current version
+        progress TEXT NOT NULL DEFAULT '{}',     -- execution: chore tasks per side, what is done and paid, free text confirmations
+        reason TEXT,                             -- why it failed / was cancelled
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        stood_at TEXT,
+        ended_at TEXT
+    );
+    CREATE INDEX deal_a ON deal(a_id, status);
+    CREATE INDEX deal_b ON deal(b_id, status);
+    CREATE TABLE deal_msg(
+        id INTEGER PRIMARY KEY,
+        deal_id INTEGER NOT NULL REFERENCES deal(id) ON DELETE CASCADE,
+        profile_id INTEGER,                      -- NULL = the app (deal stands, chore done, failed …)
+        kind TEXT NOT NULL,
+        data TEXT NOT NULL DEFAULT '{}',
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE INDEX deal_msg_deal ON deal_msg(deal_id, id);
+    CREATE TABLE deal_seen(
+        deal_id INTEGER NOT NULL REFERENCES deal(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        msg_id INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY(deal_id, profile_id)
+    );
+    CREATE TABLE deal_hold(
+        id INTEGER PRIMARY KEY,
+        deal_id INTEGER NOT NULL REFERENCES deal(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL,             -- who gives it
+        kind TEXT NOT NULL,                      -- coins | pet | avatar | game
+        ref TEXT NOT NULL DEFAULT '',            -- pet id / avatar item / game
+        amount REAL NOT NULL DEFAULT 0,          -- coins reserved …
+        paid REAL NOT NULL DEFAULT 0,            -- … and already paid (reserved = amount - paid)
+        active INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE INDEX deal_hold_profile ON deal_hold(profile_id, active);
+    CREATE TABLE deal_pay(ref TEXT PRIMARY KEY, at TEXT NOT NULL DEFAULT (datetime('now','localtime')));
+    ALTER TABLE chore_task ADD COLUMN from_id INTEGER;     -- taken over in a deal from this profile
+    ALTER TABLE chore_task ADD COLUMN deal_id INTEGER;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -720,6 +773,7 @@ DEFAULT_SETTINGS = {
     "familytime_game_price": 150,        # coins a child pays to set the game of a FamilyTime firmly (0 = buying off)
     "familytime_vote_hours": 24,         # the wishes close (and the vote starts) this many hours before the FamilyTime
     "planer_points_account": "coins",    # built-in planner: its points and this account are one balance ("" = separate)
+    "deals": None,                       # deals between children and with parents (deals.py) – None = defaults (deals.DEFAULT)
 }
 
 DEFAULT_PROFILE_SETTINGS = {
