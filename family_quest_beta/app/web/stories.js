@@ -89,18 +89,21 @@ function sbReach(data) {
   return seen;
 }
 const sbIssueText = i => sbFmt(i.msg, ...i.args);
+// the number of the page a choice leads to, in the purple circle of the page cards («?»: no target yet)
+const sbTargetNum = n => h("span.sb-pnum.sb-tnum" + (n ? "" : ".none"), { title: n ? sbFmt(T("Goes to page {0}"), n) : T("No page chosen yet"),
+  "aria-label": n ? sbFmt(T("Goes to page {0}"), n) : T("No page chosen yet") }, n ? String(n) : "?");
 
 // ---------------------------------------------------------------- kid app: #/stories
 async function storiesView() {
   const box = h("div.sb-wrap");
-  screen("stories", { back: () => go("") }, h("h1", "📚 ", T("My books")), box);
+  screen("stories", { back: () => go("") }, h("h1", "📚 ", T("Library")), box);
   await storyShelf(box);
 }
 
 // the card on the Family page of the kid app
 function storiesCard() {
   return h("section.card.sb-famcard", h("div.row", h("span.sb-famic", "📚"),
-    h("div.grow", h("strong", T("My books")), h("div.small.muted", T("Picture books and adventure books: write your own and read the books of the family."))),
+    h("div.grow", h("strong", T("Library")), h("div.small.muted", T("Books, adventure books and adventure games: write your own and read the books of the family."))),
     h("button.btn", { onclick: () => go("stories") }, T("Open"))));
 }
 
@@ -110,8 +113,8 @@ async function storiesSection() {
   const box = h("div.sb-wrap");
   const set = h("details.sb-settings", h("summary", "⚙️ ", T("Settings for the bookshelf")));
   set.addEventListener("toggle", () => { if (set.open && !set.dataset.done) { set.dataset.done = "1"; storiesSettings(set); } });
-  sec.append(h("h2", "📚 ", T("My books")),
-    h("p.small.muted", T("Children and parents write picture books and choose-your-path stories, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones.")),
+  sec.append(h("h2", "📚 ", T("Library")),
+    h("p.small.muted", T("Children and parents write books, choose-your-path stories and adventure games, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones.")),
     box, set);
   await storyShelf(box);
   return sec;
@@ -136,7 +139,7 @@ async function storiesSettings(box) {
   sbSet(body,
     h("div.field", h("b", T("Bookshelf for")), kids.length ? h("div.row.wrap", ...on.map(([id, c]) => h("label.check", c, " ", C(kids.find(k => k.id === id).name)))) : h("span.small.muted", T("No child profile yet"))),
     h("label.check", appr, " ", T("Books need a parent's approval before the family sees them")),
-    h("label.check", sample, " ", T("Show the sample picture book of Family Quest on the shelf")),
+    h("label.check", sample, " ", T("Show the sample book of Family Quest on the shelf")),
     h("div.sb-rew", h("b", T("Reward for every published book")),
       h("label.field", h("span", "🪙 ", T("Coins")), f.write_coins), h("label.field", h("span", "⭐ XP"), f.write_xp)),
     h("div.sb-rew", h("b", T("Reward when somebody else reads it to an end (once per reader)")),
@@ -147,7 +150,7 @@ async function storiesSettings(box) {
 // ---------------------------------------------------------------- the shelf: 📕 picture books, 📖 adventure books, 🗝️ adventure games (later)
 // book types (stories.py TYPES): icon, name, plural, what it is
 const SB_TYPES = () => ({
-  picture: ["📕", T("Picture book"), T("Picture books"), T("Pages with a picture and a text, read page by page.")],
+  picture: ["📕", T("Book"), T("Books"), T("Pages with a picture and a text, read page by page.")],
   adventure: ["📖", T("Adventure book"), T("Adventure books"), T("Choose-your-path: choices, good and bad endings.")],
   game: ["🗝️", T("Adventure game"), T("Adventure games"), T("Coming soon")] });
 const sbType = b => SB_TYPES()[b.type] || SB_TYPES().adventure;
@@ -197,7 +200,7 @@ async function storyShelf(box) {
     // a private book of somebody else (parent area only): that it exists – no title, no content
     const privRow = b => h("div.sb-row.sb-priv",
       h("span.sb-rowic", "🔒", h("span.sb-rowtype", (SB_TYPES()[b.type] || SB_TYPES().adventure)[0])),
-      h("div.grow.sb-rowtt", h("strong", b.type === "picture" ? T("Private picture book") : T("Private adventure book")), h("div.sb-chips",
+      h("div.grow.sb-rowtt", h("strong", b.type === "picture" ? T("Private book") : T("Private adventure book")), h("div.sb-chips",
         h("span.sb-by", avatarSvg(b.author.avatar, 22), C(b.author.name)),
         h("span.small.muted", sbFmt(T("Pages: {0}"), b.pages), " · ", fmtDate(b.updated_at)))));
     const preview = async b => {
@@ -242,7 +245,7 @@ async function storyShelf(box) {
           : h("p.muted", filter === "all" ? T("No books on the shelf yet – write the first one!") : T("No books of this type on the shelf yet."))),
       h("section.sb-sec", h("h2", "✏️ ", T("My books")),
         mine.length ? h("div.sb-rows", ...mine.map(row))
-          : h("p.small.muted", T("Write your own picture book or adventure – or start with a template.")),
+          : h("p.small.muted", T("Write your own book or adventure – or start with a template.")),
         d.rewards.write_coins || d.rewards.write_xp ? h("p.small.muted.sb-rewhint", "🎁 ", sbFmt(T("Every book the others can read: {0}"),
           [d.rewards.write_coins ? d.rewards.write_coins + " 🪙" : "", d.rewards.write_xp ? d.rewards.write_xp + " XP" : ""].filter(Boolean).join(" + "))) : null),
       others.length ? h("section.sb-sec", h("h2", "📝 ", T("Drafts of the family")), h("div.sb-rows", ...others.map(row))) : null,
@@ -268,7 +271,7 @@ function sbVisPicker(value, onPick) {
 }
 
 function storyNewDialog(done, creatable = ["picture", "adventure"]) {
-  let type = "picture", tpl = null, emoji = "📖", color = 0, visibility = "me";
+  let type = "picture", tpl = null, emoji = "📖", color = 0, visibility = "family";   // new books: the whole family
   try { type = localStorage.getItem("fq.sb.newtype") === "adventure" ? "adventure" : "picture"; } catch {}
   const title = h("input", { type: "text", maxlength: 80 });
   const lang = h("select", ...I18N.LANGS.filter(([k]) => k !== "auto").map(([k, n]) => h("option", { value: k, translate: "no", selected: k === sbAppLang() }, n)));
@@ -529,7 +532,7 @@ async function storyEditor(id, onClose = null) {
           "🚀 ", ed.live && !ed.changed ? T("On the shelf") : ed.pending ? T("Waiting") : T("Publish"))),
       ed.mine ? h("div.sb-erow.sb-visrow", h("b.small", T("Who can read it?")), sbVisPicker(visSent, v => { visSent = v; changed(); save(); }))
         : h("p.sb-note", SB_VIS()[ed.visibility][0], " ", SB_VIS()[ed.visibility][1], " · ", C(ed.author)),
-      ed.pending ? h("p.sb-note", "⏳ ", ed.parent ? T("This book waits for a parent's approval (Family › My adventure books).") : T("Your book waits for a parent's approval.")) : null,
+      ed.pending ? h("p.sb-note", "⏳ ", ed.parent ? T("This book waits for a parent's approval (Family › Library).") : T("Your book waits for a parent's approval.")) : null,
       ed.reward && (ed.reward.write_coins || ed.reward.write_xp) && !ed.shared ? h("p.sb-note", "🎁 ", sbFmt(T("When the others can read it you get {0}"),
         [ed.reward.write_coins ? ed.reward.write_coins + " 🪙" : "", ed.reward.write_xp ? ed.reward.write_xp + " XP" : ""].filter(Boolean).join(" + "))) : null);
   };
@@ -625,7 +628,7 @@ async function storyEditor(id, onClose = null) {
       t.oninput = () => { c.t = t.value; changed(); };
       return h("div.sb-crow",
         h("span.sb-letter.l" + i, SB_LETTERS[i]),
-        h("div.sb-cfields", t, h("div.sb-csel", targetSelect(p, c),
+        h("div.sb-cfields", t, h("div.sb-csel", sbTargetNum(c.to && byId(c.to) ? num(c.to) : null), targetSelect(p, c),
           c.to && byId(c.to) ? h("button.icon-btn.sb-go", { title: T("Go to this page"), "aria-label": T("Go to this page"), onclick: () => goPage(c.to) }, "↘") : null,
           needSelect(c, its))),
         h("button.icon-btn.sb-cdel", { title: T("Remove choice"), "aria-label": T("Remove choice"), onclick: () => { p.choices.splice(i, 1); changed(true); } }, "✕"));
@@ -694,12 +697,14 @@ async function storyEditor(id, onClose = null) {
           S_("text", { x: lx, y: ly, class: "sb-elabel" }, SB_LETTERS[i] + (c.need ? "🎒" : "")));
       });
       const cls = "sb-node k-" + p.kind + (bad.has(p.id) ? " bad" : "") + (!depth.has(p.id) ? " lost" : "") + (p.id === data.start ? " start" : "");
-      const g = S_("g", { class: cls, transform: `translate(${a.x} ${a.y})`, tabindex: 0, role: "button" });
+      const g = S_("g", { class: cls, transform: `translate(${a.x} ${a.y})`, tabindex: 0, role: "button", "aria-label": sbFmt(T("Page {0}"), num(p.id)) });
       g.addEventListener("click", () => goPage(p.id));
       g.addEventListener("keydown", e => { if (e.key === "Enter") goPage(p.id); });
       const pic = p.pic && p.pic.k === "emoji" ? p.pic.v : p.pic ? "🖼️" : SB_KIND()[p.kind][0];
       g.append(S_("rect", { width: W, height: H, rx: 12 }),
-        S_("text", { x: 10, y: 22, class: "sb-nnum" }, (p.id === data.start ? "⭐ " : "") + num(p.id)),
+        S_("circle", { cx: 22, cy: 20, r: 13, class: "sb-nnumc" }),          // the page number in the purple circle (like the cards)
+        S_("text", { x: 22, y: 20, class: "sb-nnum", "text-anchor": "middle", "dominant-baseline": "central" }, String(num(p.id))),
+        S_("text", { x: 40, y: 25, class: "sb-nstar" }, p.id === data.start ? "⭐" : ""),
         S_("text", { x: W - 10, y: 24, class: "sb-npic", "text-anchor": "end" }, pic),
         S_("text", { x: 10, y: 46, class: "sb-ntext" }, excerpt(p, 17)),
         S_("text", { x: 10, y: 64, class: "sb-nkind" }, (p.kind !== "scene" ? SB_KIND()[p.kind][0] + " " : "") + (p.give ? "🎒 " + p.give.slice(0, 12) : "")));

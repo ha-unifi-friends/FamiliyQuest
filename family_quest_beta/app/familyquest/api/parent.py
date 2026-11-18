@@ -1452,12 +1452,17 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
 REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verkehr", "langstrecke", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd")       # live games with coins for places 1–3 (game_rewards)
 
 
+def _reward_games() -> tuple:
+    from ..channel import visible
+    return visible(REWARD_GAMES)                 # dev games (channel.py) only in the dev channel
+
+
 @router.get("/game-rewards")
 def game_rewards_get(request: Request, me: dict = Parent) -> dict:
     """Coins for places 1, 2, 3 of the live games (Paarjagd, «Wer bin ich?», Kartenlauf, Stadt-Land-Fluss, «Zeichnen & Raten», «Fünf Würfel», «Heimwärts», «Verbotene Wörter», «Jass», «Werwölfe», «Schach», «Dorfmarkt») – only family tables with at least two people."""
     from ..pairhunt import rewards_of
     db = app_of(request).db
-    return {k: rewards_of(db, k) for k in REWARD_GAMES}
+    return {k: rewards_of(db, k) for k in _reward_games()}
 
 
 @router.put("/game-rewards")
@@ -1466,13 +1471,13 @@ def game_rewards_put(request: Request, body: dict = Body(...), me: dict = Parent
     fq = app_of(request)
     out = dict(fq.db.get_setting("game_rewards") or {})
     for k, v in body.items():
-        if k not in REWARD_GAMES:
+        if k not in _reward_games():
             raise HTTPException(400, "Unknown game")
         if not isinstance(v, list) or len(v) != 3 or not all(type(x) is int and 0 <= x <= 1000 for x in v):
             raise HTTPException(400, "Three numbers of coins (0 to 1000) are needed")
         out[k] = v
     fq.db.set_setting("game_rewards", out)
-    return {k: rewards_of(fq.db, k) for k in REWARD_GAMES}
+    return {k: rewards_of(fq.db, k) for k in _reward_games()}
 
 
 # ---------------------------------------------------------------- failed logins, network filter

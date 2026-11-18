@@ -9,7 +9,7 @@ Every book is in one language (`lang`, a tag – no translations inside a book).
 least 2 choices with a target and one that needs no item, there is a good ending, every page can be reached from the
 start.
 
-Who reads it is the author's choice (`visibility`, «me» for new books):
+Who reads it is the author's choice (`visibility`, «family» for new books, «me» for imported drafts):
 - «me»: only the author – parents neither. Nobody else gets its title, text or pictures from any endpoint; in the
   parent area parents only see that a private book exists (author, page count, date) and cannot open, change or remove
   it. Never needs approval.
@@ -693,7 +693,7 @@ class Stories:
 
     # ---------------------------------------------------------------- writing
     def create(self, prof: dict, title: str = "", emoji: str = "📖", color: int = 0, lang: str = "en", tpl: str | None = None,
-               visibility: str = "me", kind: str = "adventure") -> int:
+               visibility: str = "family", kind: str = "adventure") -> int:
         self._need(prof)
         if kind == "game":
             raise CommunityError("Adventure games are coming later")
@@ -712,7 +712,7 @@ class Stories:
             raise CommunityError("Give the book a title")
         return self.db.x("INSERT INTO story(title, emoji, color, lang, author_id, data, visibility, type) VALUES(?,?,?,?,?,?,?,?)",
                          m["title"], m["emoji"], m["color"], m["lang"], prof["id"], json.dumps(data, ensure_ascii=False),
-                         visibility if visibility in VISIBILITY else "me", kind)
+                         visibility if visibility in VISIBILITY else "family", kind)
 
     def import_(self, prof: dict, text: str) -> list[int]:
         """Import books (file or AI answer) as private drafts of this person – the checker tells what is missing."""

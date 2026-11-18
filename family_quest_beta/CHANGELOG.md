@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1-beta.6
+
+- «24h Endurance» and «Beat the Bureaucracy» moved to the new Family Quest Dev add-on (too complex – they will be reworked)
+- «My books» is now the «Library» with Book, Adventure book and (soon) Adventure game
+- New books are visible to the whole family by default; the adventure-book editor shows page numbers in purple circles, also at every choice
+
 ## 1.1.1-beta.5
 
 - Word games in every language: the words of Draw & Guess (259), Who am I? (327 characters) and Forbidden Words (372 cards) are in the translation registry; everybody sees them in their own language and guesses count in the languages at the table

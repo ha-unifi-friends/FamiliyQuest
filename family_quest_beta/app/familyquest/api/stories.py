@@ -30,7 +30,7 @@ def _oversee(request: Request, prof: dict) -> bool:
 
 
 class BookIn(BaseModel):
-    visibility: str = Field(default="me", max_length=16)
+    visibility: str = Field(default="family", max_length=16)     # new books: the whole family (approval still applies)
     title: str = Field(default="", max_length=400)
     emoji: str = Field(default="📖", max_length=64)
     color: int = 0
