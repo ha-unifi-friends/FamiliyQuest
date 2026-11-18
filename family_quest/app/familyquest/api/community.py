@@ -302,6 +302,32 @@ def quiz_start(body: StartIn, request: Request, prof: dict = Gamer) -> dict | No
     return fq.community.state(prof["id"])
 
 
+class FactsIn(BaseModel):
+    count: int = 10                  # number of questions
+    focus: str = "mixed"            # week | all | mixed
+    lang: str | None = None         # the starter's app language (de-CH / de-DE … – the base language of the questions)
+
+
+@router.get("/quizzes/facts")
+def quiz_facts_info(request: Request, prof: dict = Gamer) -> dict:
+    """The special quiz «Family Quest Facts» (facts.py): on or off, the choices of the start dialog."""
+    from .. import facts
+    return facts.info(app_of(request))
+
+
+@router.post("/quiz/facts/start")
+def quiz_facts_start(body: FactsIn, request: Request, prof: dict = Gamer) -> dict | None:
+    """Start «Family Quest Facts»: questions made now from the family's data (fresh every game)."""
+    from .. import facts
+    fq = app_of(request)
+    if prof.get("role") not in ("kid", "parent"):
+        raise HTTPException(403, "Only the family can start this quiz")
+    if not facts.enabled(fq.db):
+        raise HTTPException(403, "The quiz «Family Quest Facts» is switched off")
+    _run(facts.start, fq, prof["id"], body.count, body.focus, body.lang)
+    return fq.community.state(prof["id"])
+
+
 def _lead(fq, prof: dict) -> None:
     if not fq.community.may_lead(prof):
         raise HTTPException(403, "Only who started the quiz (or a parent) leads it")

@@ -322,6 +322,27 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
   inventions, Switzerland). Whoever starts a game leads it (a parent may always step in); everybody joins on their
   own device. Quick right answers give more points (1000 down to 500). Places go into everybody's history; the
   reward events *Played the family quiz* and *Won the family quiz* can give coins (Rewards › Rules).
+- **Family Quest Facts** (special quiz – «New quiz» › 📊 at the top, for children and parents): the questions come
+  from the family's own Family Quest data and are made new at every start – a random choice in a random order, at most
+  one question per kind. Before the start: the number of questions (5 / 10 / 15 / 20) and the focus (this week, all
+  time or mixed). It is played like every family quiz (multiple choice and estimates, the same points and rewards)
+  and is multilingual: the questions come in the starter's language (German: Swiss German with «Ämtli» or Standard
+  German with «Aufgaben», like the app) and everybody can switch to another language in the game.
+  About 60 kinds of questions: chores today / this week / last week / of all time (who of the children, how many),
+  XP, levels, streaks, coins earned this week, badges, learning time and lessons, games played this week / last week /
+  in the last 7 days / in all, the most popular game, who wins the most games (also «a guest»), family quiz and chess
+  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice), the
+  slot machine, the shop (things bought, coins spent, the shopping queen or king, the favourite reward, avatar
+  items, pranks), pets (how many, who has the most, who lost the most, the oldest, the most common kind, babies, coins
+  of the hamsters, whose pets are cared for best – the average of the care bars of the pets at home), bulletin board
+  notes, polls, family council, quizzes, Wichteln, FamilyTime, the next birthday in the calendar, guests, own flash
+  cards. A question is only asked when its data is there and the answer is clear: «who of the children» needs at
+  least two children, a tie is never asked. Wrong answers are the other family members (or nearby numbers);
+  estimates go from 0 to a round number above the answer.
+  Privacy: only things the family sees of each other anyway – nothing from the parent area (no internet times or
+  logs, no mood or behaviour weather, no login log). XP, levels, coins and learning time only when the family view
+  shows «Everything» (Settings › Family view). Parents switch the special quiz off in parent area › Games › Family
+  quiz › Settings (on by default).
 - **Bingo** (learning app › Family, or parent area › Games): whoever starts sets the rules (speed, one line /
   two lines / full card – the rules used last are the default); everybody joins with a 5 × 5 card (B-I-N-G-O, 1–75,
   free star). A ball carousel spins, stops and shows the new ball for about 5 seconds. Players mark the numbers

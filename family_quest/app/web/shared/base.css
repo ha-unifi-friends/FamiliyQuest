@@ -185,6 +185,11 @@ label.field .hint { font-weight: 400; color: var(--muted); font-size: .82rem; }
 .tpl { display: grid; gap: 4px; text-align: left; cursor: pointer; border: 2px solid var(--line); color: var(--fg); }
 .tpl:hover { border-color: var(--accent); }
 .tpl-ex { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* «Family Quest Facts»: the special quiz above the templates */
+.tpl-facts { width: 100%; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 10px; border-color: var(--accent); background: var(--hover); }
+.tpl-facts .big-ic { grid-row: span 2; }
+.tpl-facts .small.muted { grid-column: 2 / 4; }
+.tpl-facts .chip { font-size: .75rem; padding: 2px 8px; justify-self: end; }
 .qe { margin: 10px 0; }
 .qe-a .shape { color: var(--c); font-size: 1.2rem; }
 .qe .row { gap: 8px; align-items: center; }

@@ -666,6 +666,7 @@ DEFAULT_SETTINGS = {
     "planer_points_factor": 1.0,
     "games": "all",                      # family games (quiz, bingo, card games): all | some (chosen children) | off – parents always
     "games_guests": True,                # guests may join family games with a QR code
+    "quiz_facts": True,                  # family quiz: the special quiz «Family Quest Facts» (facts.py) – questions from the family's data
     "game_starter": "dice",              # who begins a turn-based game: dice (random) | leader | choose (cardgames.apply_starter)
     "games_profiles": [],                # with "some": the children who may play
     "games_access": None,                # per game {"mode", "profiles"} (services.games_access) – replaces the two above
