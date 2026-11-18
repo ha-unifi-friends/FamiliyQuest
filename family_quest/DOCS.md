@@ -441,6 +441,30 @@ only against the family or two on one device, Ping-Pong doubles only with people
 played alone, without practice bots. A table where a parent plays along may still be filled with bots.
 Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `PUT /api/parent/games`).
 
+**Price for children** (each game's «⚙️ Settings» block, below the status): a game can cost coins for the children –
+parents always play for free.
+
+- **Price for children (coins)** – default 0. With a price, a child buys the game once in the shop and keeps it for
+  good, also when the parents change the price later. Back to 0 (and no rent price): free again for everybody.
+- **Rent price (coins)** with **Day / Week / Month** (the three are greyed out while the rent price is 0): renting opens
+  the game for that child for 1 day, 7 days or 1 calendar month from the moment it pays (31 January + 1 month = end of
+  February). Renting again before the end **adds** the period after the current end. Buying makes a rent unnecessary –
+  a bought game stays, a running rent is no longer shown. A rent price alone (price 0) means: rent only.
+- **The kid shop** has a section **🎮 Unlock games** with every game that has a price and that the parents switched on
+  for this child: «Buy: 300 🪙», «Rent: 20 🪙 per week», «bought ✓» or «rented – 3 days left». A confirmation comes
+  first; the coins are booked in the ledger (events `game_buy` / `game_rent`) in the same database transaction as
+  the unlock – a second tap books nothing (a rent sends the end the app showed; when it changed meanwhile nothing is
+  booked). On the **Games page** and in the **game corner** a locked game is a tile with 🔒 and its price; a tap opens
+  buying / renting.
+- **Tables a parent opened**: when a **parent** opens a family table (not alone) of a game that is locked for a child –
+  switched off, not bought, rent run out – the child may still **join and play that table**: it shows in the running
+  banners, the note «somebody opened a table» and the game's tile («Join»). Starting an own table, alone, a rematch
+  stay locked. The daily game time, OfflineTime and block times still count.
+
+Stored in `games_access` per game (`price`, `rent`, `period`; `luck` for the one-armed bandit) and per child and game
+in the table `game_pass` (`bought`, `rent_until`). API: `GET /api/me/games/shop`, `POST /api/me/games/buy`
+(`{"game", "kind": "buy" | "rent", "until"}`).
+
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
 (icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,
 Kartenlauf, Werwölfe, Escape Room, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
@@ -1229,6 +1253,15 @@ the server; best times stay in this browser), shown when family games are on for
   never more than about 200; the cube is never turned as a whole. The 2×2 is solved the **shortest way** (at most
   11 moves); the corner at the back, bottom left never moves. Everything runs on the device (the search in a Web
   Worker); nothing is sent to the server. Parents switch it on or off in Settings › Games like the other games.
+
+- **🎰 One-armed bandit** – a slot machine with three reels: pull the lever for 1 coin, three times a day; three alike
+  win (7️⃣ 100, ⭐ 40, 🔔 20, 🍊 10, 🍋 8, 🍒 5 coins), two cherries anywhere 2, one cherry gives the coin back. The
+  reels are drawn on the server. It uses the **standard game price**: by default a child buys it once for **250
+  coins**; the parents can change the price, set 0 (free) or add a rent. Whoever bought it before (for 150 coins) keeps
+  it. **Win chance** (slider 1–10 in its settings, default 5) sets what comes back on average: 5 ≈ 92 % like a typical
+  casino machine, 10 ≈ 120 %, 1 ≈ 60 % (straight steps in between; the hint under the slider shows the value). The pay
+  table stays; the server draws the outcome first with the win chances of the reels scaled to that return, then shows
+  reels that fit it.
 
 **Photo sets** (parent area › Games › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
 photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**
