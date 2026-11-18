@@ -7,6 +7,7 @@ may_lead from cardgames.CardGames, like «Jump»).
 A round («call and response», fixed on the shared game clock – game time 0 = `t0`, a short countdown after the start):
   1. count-in – one bar of four hi-hat clicks at the round's tempo,
   2. listen   – the app plays the pattern (claps over a kick / hi-hat groove); the dots appear on the bar as they sound,
+     then a «ready» bar of four clicks (a run-up to the clap bar),
   3. clap     – the next bar: the same dots stay on the bar, a playhead sweeps over them – clap when it reaches a dot,
   4. results  – a short pause with the points of the round and the live ranking, then the next round.
 The server makes the patterns (random with `secrets`): a bar of 4/4 on a 16th grid (positions 0–15), at least an
@@ -134,10 +135,11 @@ class Table:
 
     @staticmethod
     def times(rd: dict) -> tuple[float, float, float, float]:
-        """count-in, listen, clap, end of the clap bar (game times)."""
+        """count-in, listen, clap, end of the clap bar (game times). Between the listen and the clap bar a second
+        count-in bar («ready»: four clicks) – a run-up, so the first note of the clap bar can be hit."""
         bar = 4 * 60.0 / rd["bpm"]
         s = rd["start"]
-        return s, s + bar, s + 2 * bar, s + 3 * bar
+        return s, s + bar, s + 3 * bar, s + 4 * bar
 
     @staticmethod
     def note_times(rd: dict) -> list[float]:

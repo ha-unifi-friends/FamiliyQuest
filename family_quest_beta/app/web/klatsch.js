@@ -212,7 +212,8 @@ function klatschLive(box, me, back) {
   const perfOf = g => g + st.t0 - offset;
   const playing = () => st && st.phase === "play" && st.status !== "done";
   const rounds = () => (st && st.rounds) || [];
-  const times = rd => { const bar = 240 / rd.bpm; return [rd.start, rd.start + bar, rd.start + 2 * bar, rd.start + 3 * bar, bar]; };
+  // count-in, listen, (ready – a run-up bar of four clicks), clap, end
+  const times = rd => { const bar = 240 / rd.bpm; return [rd.start, rd.start + bar, rd.start + 3 * bar, rd.start + 4 * bar, bar]; };
   const notesAt = (rd, from) => rd.notes.map(x => from + x * 60 / rd.bpm / 4);
 
   function clock(s, t1, t2) {                    // the server's clock: the answer with the shortest way counts
@@ -264,6 +265,7 @@ function klatschLive(box, me, back) {
   function events(rd) {                          // [game time, sound, volume] of a round
     const [s, listen, clap, , bar] = times(rd), beat = bar / 4, out = [];
     for (let k = 0; k < 4; k++) out.push([s + k * beat, "click", k === 0 ? 2 : 1]);
+    for (let k = 0; k < 4; k++) out.push([clap - bar + k * beat, "click", k === 0 ? 2 : 1]);   // the run-up to the clap bar
     for (const from of [listen, clap]) {
       for (let k = 0; k < 4; k++) { if (k % 2 === 0) out.push([from + k * beat, "kick", 0.9]); out.push([from + k * beat, "hat", from === clap ? 0.6 : 0.8]); }
       if (from === listen) for (let k = 0; k < 4; k++) out.push([from + (k + 0.5) * beat, "hat", 0.45]);
@@ -330,7 +332,8 @@ function klatschLive(box, me, back) {
       const [s, listen, clap, end] = times(rd);
       if (t < s) return { ph: "results", i: rd.i - 1, rd: rs.find(r => r.i === rd.i - 1), next: rd };
       if (t < listen) return { ph: "count", i: rd.i, rd };
-      if (t < clap) return { ph: "listen", i: rd.i, rd };
+      if (t < listen + (clap - listen) / 2) return { ph: "listen", i: rd.i, rd };
+      if (t < clap) return { ph: "runup", i: rd.i, rd };
       if (t < end) return { ph: "clap", i: rd.i, rd };
     }
     const last = rs[rs.length - 1];
@@ -348,6 +351,7 @@ function klatschLive(box, me, back) {
       const [s, listen, clap, end, bar] = times(rd);
       if (P.ph === "count") { const k = Math.floor((t - s) / (bar / 4)); label = String(k + 1); sub = T("Count-in"); beatPos = (t - s) / (bar / 4); }
       if (P.ph === "listen") { label = "👂"; sub = T("Listen!"); head = (t - listen) / bar; beatPos = (t - listen) / (bar / 4); }
+      if (P.ph === "runup") { const k = Math.floor((t - (clap - bar)) / (bar / 4)); label = String(k + 1); sub = T("Get ready – clap next!"); beatPos = (t - (clap - bar)) / (bar / 4); }
       if (P.ph === "clap") { label = KB_ICON; sub = st.joined ? T("Your turn – clap!") : T("Clap!"); head = (t - clap) / bar; beatPos = (t - clap) / (bar / 4); }
       // the dots: in the listen bar they appear as they sound, in the clap bar they stay
       const sig = rd.i + ":" + rd.notes.join(",");
@@ -359,7 +363,7 @@ function klatschLive(box, me, back) {
       const cl = claimed[rd.i] || {}, res = P.ph === "results" ? myResult(rd.i) : null;
       el.dots.forEach((d, k) => {
         const tn = listen + rd.notes[k] * bar / 16;
-        const on = P.ph === "clap" || P.ph === "results" || (P.ph === "listen" && t >= tn - 0.02);
+        const on = P.ph === "clap" || P.ph === "runup" || P.ph === "results" || (P.ph === "listen" && t >= tn - 0.02);
         let mark = "";
         if (res && res.d) mark = res.d[k] == null ? "miss" : Math.abs(res.d[k]) <= KB_PERFECT * 1000 ? "perfect" : "good";
         else if (cl[k]) mark = cl[k];
