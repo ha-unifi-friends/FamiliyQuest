@@ -3570,3 +3570,12 @@ textarea.pb-svgcode { min-height: 150px; }
   .ag-item { width: 64px; height: 58px; }
   .ag-iicon { width: 28px; height: 28px; }
 }
+
+/* parent area › Library: a box per book type (stories.js storyShelf byType) */
+.sb-typebox { border: 1px solid var(--line, rgba(127,127,127,.25)); border-radius: 14px; padding: 12px 14px; margin: 12px 0; }
+.sb-typebox .sec-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+.sb-typebox .sec-head h2 { margin: 0; }
+.sb-typebox .head-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.sb-typebox > p.small { margin: 4px 0 10px; }
+.sb-typebox .sb-sub { font-size: 1rem; margin: 14px 0 6px; }
+.sb-typebox .sb-empty { font-style: italic; }
