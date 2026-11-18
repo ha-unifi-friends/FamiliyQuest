@@ -1,0 +1,8 @@
+configuration:
+  log_level:
+    name: Logniveau
+  direct_access:
+    name: Directe toegang in het thuisnetwerk
+    description: De app ook op poort 8099 aanbieden (poort instellen onder Netwerk). Kinderen kiezen dan hun profiel, met optionele pincode, in plaats van in te loggen bij Home Assistant.
+network:
+  8099/tcp: Directe toegang (alleen met de optie directe toegang)

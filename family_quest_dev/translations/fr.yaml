@@ -1,0 +1,8 @@
+configuration:
+  log_level:
+    name: Niveau de journalisation
+  direct_access:
+    name: Accès direct dans le réseau domestique
+    description: Proposer aussi l'app sur le port 8099 (à saisir sous Réseau). Les enfants choisissent alors leur profil, avec un code PIN optionnel, au lieu de se connecter à Home Assistant.
+network:
+  8099/tcp: Accès direct (seulement avec l'option accès direct)

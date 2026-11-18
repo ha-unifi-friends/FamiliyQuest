@@ -1,0 +1,4588 @@
+{
+ "schweizer-gewaesser": {
+  "title": "Schweiziska sjöar och floder",
+  "items": [
+   {
+    "q": "Vilken är den största sjön som ligger helt i Schweiz?",
+    "a": [
+     "Neuchâtelsjön",
+     "Vierwaldstättersjön",
+     "Zürichsjön",
+     "Thunsjön"
+    ]
+   },
+   {
+    "q": "Vilken flod rinner genom Basel?",
+    "a": [
+     "Rhen",
+     "Aare",
+     "Reuss",
+     "Limmat"
+    ]
+   },
+   {
+    "q": "Genom vilken sjö rinner Rhône innan den lämnar Schweiz?",
+    "a": [
+     "Genèvesjön",
+     "Bodensjön",
+     "Neuchâtelsjön",
+     "Lago Maggiore"
+    ]
+   },
+   {
+    "q": "Vilken är den längsta floden som rinner helt i Schweiz?",
+    "a": [
+     "Aare",
+     "Reuss",
+     "Limmat",
+     "Thur"
+    ]
+   },
+   {
+    "q": "Genom vilken stad rinner Limmat?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Luzern",
+     "Basel"
+    ]
+   },
+   {
+    "q": "Runt vilken stad slingrar sig Aare i en stor båge?",
+    "a": [
+     "Bern",
+     "Zürich",
+     "Genève",
+     "St. Gallen"
+    ]
+   },
+   {
+    "q": "Vid vilken sjö ligger Luzern?",
+    "a": [
+     "Vierwaldstättersjön",
+     "Zugsjön",
+     "Zürichsjön",
+     "Sempachsjön"
+    ]
+   },
+   {
+    "q": "Vilken sjö gränsar till Tyskland, Österrike och Schweiz?",
+    "a": [
+     "Bodensjön",
+     "Genèvesjön",
+     "Lago Maggiore",
+     "Walensee"
+    ]
+   },
+   {
+    "q": "I vilken kanton har Rhen sin källa?",
+    "a": [
+     "Graubünden",
+     "Valais",
+     "Uri",
+     "Ticino"
+    ]
+   },
+   {
+    "q": "I vilken kanton har Rhône sin källa?",
+    "a": [
+     "Valais",
+     "Graubünden",
+     "Bern",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vilken flod rinner genom Luzern?",
+    "a": [
+     "Reuss",
+     "Aare",
+     "Emme",
+     "Limmat"
+    ]
+   },
+   {
+    "q": "I vilken kanton ligger Luganosjön och en del av Lago Maggiore?",
+    "a": [
+     "Ticino",
+     "Graubünden",
+     "Valais",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vad heter det stora vattenfallet vid Schaffhausen?",
+    "a": [
+     "Rhenfallet",
+     "Staubbachfallet",
+     "Giessbachfallen",
+     "Reichenbachfallet"
+    ]
+   },
+   {
+    "q": "Till vilket hav rinner vattnet från Rhen?",
+    "a": [
+     "Nordsjön",
+     "Medelhavet",
+     "Svarta havet",
+     "Östersjön"
+    ]
+   },
+   {
+    "q": "Till vilket hav rinner vattnet från Inn (via Donau)?",
+    "a": [
+     "Svarta havet",
+     "Nordsjön",
+     "Medelhavet",
+     "Östersjön"
+    ]
+   },
+   {
+    "q": "Vilken stad ligger mellan Thunsjön och Brienzsjön?",
+    "a": [
+     "Interlaken",
+     "Spiez",
+     "Brienz",
+     "Thun"
+    ]
+   },
+   {
+    "q": "Vilken flod har gett kantonen Thurgau dess namn?",
+    "a": [
+     "Thur",
+     "Murg",
+     "Sitter",
+     "Töss"
+    ]
+   },
+   {
+    "q": "Vilken flod lämnar Genèvesjön i Genève?",
+    "a": [
+     "Rhône",
+     "Aare",
+     "Reuss",
+     "Saane"
+    ]
+   }
+  ]
+ },
+ "europa-geografie": {
+  "title": "Europas geografi",
+  "items": [
+   {
+    "q": "Vad heter det högsta berget i Alperna?",
+    "a": [
+     "Mont Blanc",
+     "Matterhorn",
+     "Dufourspitze",
+     "Eiger"
+    ]
+   },
+   {
+    "q": "Vilken är Europas längsta flod?",
+    "a": [
+     "Volga",
+     "Donau",
+     "Rhen",
+     "Dnepr"
+    ]
+   },
+   {
+    "q": "Vilket är det största landet som ligger helt i Europa?",
+    "a": [
+     "Ukraina",
+     "Frankrike",
+     "Spanien",
+     "Tyskland"
+    ]
+   },
+   {
+    "q": "Vilket är världens minsta land?",
+    "a": [
+     "Vatikanstaten",
+     "Monaco",
+     "San Marino",
+     "Liechtenstein"
+    ]
+   },
+   {
+    "q": "Vilka berg ligger mellan Spanien och Frankrike?",
+    "a": [
+     "Pyrenéerna",
+     "Alperna",
+     "Apenninerna",
+     "Karpaterna"
+    ]
+   },
+   {
+    "q": "Vilket hav ligger mellan Italien och Kroatien?",
+    "a": [
+     "Adriatiska havet",
+     "Egeiska havet",
+     "Östersjön",
+     "Nordsjön"
+    ]
+   },
+   {
+    "q": "Genom hur många huvudstäder rinner Donau?",
+    "a": [
+     "4",
+     "2",
+     "3",
+     "6"
+    ]
+   },
+   {
+    "q": "Vilken är den största ön i Medelhavet?",
+    "a": [
+     "Sicilien",
+     "Sardinien",
+     "Korsika",
+     "Cypern"
+    ]
+   },
+   {
+    "q": "Vilket land har formen av en stövel?",
+    "a": [
+     "Italien",
+     "Grekland",
+     "Portugal",
+     "Kroatien"
+    ]
+   },
+   {
+    "q": "Vilket sund skiljer Europa från Afrika?",
+    "a": [
+     "Gibraltarsundet",
+     "Bosporen",
+     "Engelska kanalen",
+     "Dardanellerna"
+    ]
+   },
+   {
+    "q": "Vilken vulkan på Sicilien är Europas högsta aktiva vulkan?",
+    "a": [
+     "Etna",
+     "Vesuvius",
+     "Stromboli",
+     "Hekla"
+    ]
+   },
+   {
+    "q": "Vid vilken flod ligger Paris?",
+    "a": [
+     "Seine",
+     "Loire",
+     "Rhône",
+     "Garonne"
+    ]
+   },
+   {
+    "q": "Vilket EU-land har flest invånare?",
+    "a": [
+     "Tyskland",
+     "Frankrike",
+     "Italien",
+     "Spanien"
+    ]
+   },
+   {
+    "q": "Vilket land kallas «de tusen sjöarnas land»?",
+    "a": [
+     "Finland",
+     "Sverige",
+     "Norge",
+     "Estland"
+    ]
+   },
+   {
+    "q": "Vilket land är känt för sina fjordar?",
+    "a": [
+     "Norge",
+     "Danmark",
+     "Irland",
+     "Polen"
+    ]
+   },
+   {
+    "q": "Vilken kanal skiljer England från Frankrike?",
+    "a": [
+     "Engelska kanalen",
+     "Suezkanalen",
+     "Panamakanalen",
+     "Kielkanalen"
+    ]
+   },
+   {
+    "q": "På vilken ö ligger gejsern «Strokkur»?",
+    "a": [
+     "Island",
+     "Irland",
+     "Sicilien",
+     "Kreta"
+    ]
+   }
+  ]
+ },
+ "hauptstaedte-europa": {
+  "title": "Europas huvudstäder",
+  "items": [
+   {
+    "q": "Vad är huvudstaden i Schweiz?",
+    "a": [
+     "Bern",
+     "Zürich",
+     "Genève",
+     "Basel"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Tyskland?",
+    "a": [
+     "Berlin",
+     "München",
+     "Hamburg",
+     "Frankfurt"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Österrike?",
+    "a": [
+     "Wien",
+     "Salzburg",
+     "Graz",
+     "Innsbruck"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Frankrike?",
+    "a": [
+     "Paris",
+     "Lyon",
+     "Marseille",
+     "Nice"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Italien?",
+    "a": [
+     "Rom",
+     "Milano",
+     "Neapel",
+     "Venedig"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Spanien?",
+    "a": [
+     "Madrid",
+     "Barcelona",
+     "Sevilla",
+     "Valencia"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Portugal?",
+    "a": [
+     "Lissabon",
+     "Porto",
+     "Faro",
+     "Braga"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Nederländerna?",
+    "a": [
+     "Amsterdam",
+     "Rotterdam",
+     "Utrecht",
+     "Eindhoven"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Belgien?",
+    "a": [
+     "Bryssel",
+     "Antwerpen",
+     "Gent",
+     "Brygge"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Storbritannien?",
+    "a": [
+     "London",
+     "Manchester",
+     "Edinburgh",
+     "Liverpool"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Irland?",
+    "a": [
+     "Dublin",
+     "Cork",
+     "Belfast",
+     "Galway"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Norge?",
+    "a": [
+     "Oslo",
+     "Bergen",
+     "Stavanger",
+     "Trondheim"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Sverige?",
+    "a": [
+     "Stockholm",
+     "Göteborg",
+     "Malmö",
+     "Uppsala"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Finland?",
+    "a": [
+     "Helsingfors",
+     "Åbo",
+     "Tammerfors",
+     "Uleåborg"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Danmark?",
+    "a": [
+     "Köpenhamn",
+     "Århus",
+     "Odense",
+     "Aalborg"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Polen?",
+    "a": [
+     "Warszawa",
+     "Kraków",
+     "Gdańsk",
+     "Wrocław"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Tjeckien?",
+    "a": [
+     "Prag",
+     "Brno",
+     "Plzeň",
+     "Ostrava"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Ungern?",
+    "a": [
+     "Budapest",
+     "Debrecen",
+     "Szeged",
+     "Pécs"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Grekland?",
+    "a": [
+     "Aten",
+     "Thessaloniki",
+     "Patras",
+     "Heraklion"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Kroatien?",
+    "a": [
+     "Zagreb",
+     "Split",
+     "Dubrovnik",
+     "Rijeka"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Rumänien?",
+    "a": [
+     "Bukarest",
+     "Cluj-Napoca",
+     "Timișoara",
+     "Iași"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Bulgarien?",
+    "a": [
+     "Sofia",
+     "Plovdiv",
+     "Varna",
+     "Burgas"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Slovakien?",
+    "a": [
+     "Bratislava",
+     "Košice",
+     "Žilina",
+     "Nitra"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Slovenien?",
+    "a": [
+     "Ljubljana",
+     "Maribor",
+     "Koper",
+     "Celje"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Island?",
+    "a": [
+     "Reykjavik",
+     "Akureyri",
+     "Keflavík",
+     "Selfoss"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Ukraina?",
+    "a": [
+     "Kyiv",
+     "Lviv",
+     "Odessa",
+     "Charkiv"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Liechtenstein?",
+    "a": [
+     "Vaduz",
+     "Schaan",
+     "Balzers",
+     "Triesen"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Luxemburg?",
+    "a": [
+     "Luxemburg",
+     "Esch-sur-Alzette",
+     "Differdange",
+     "Dudelange"
+    ]
+   }
+  ]
+ },
+ "hauptstaedte-welt": {
+  "title": "Världens huvudstäder",
+  "items": [
+   {
+    "q": "Vad är huvudstaden i USA?",
+    "a": [
+     "Washington, D.C.",
+     "New York",
+     "Los Angeles",
+     "Chicago"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Kanada?",
+    "a": [
+     "Ottawa",
+     "Toronto",
+     "Montréal",
+     "Vancouver"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Australien?",
+    "a": [
+     "Canberra",
+     "Sydney",
+     "Melbourne",
+     "Brisbane"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Brasilien?",
+    "a": [
+     "Brasília",
+     "Rio de Janeiro",
+     "São Paulo",
+     "Salvador"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Argentina?",
+    "a": [
+     "Buenos Aires",
+     "Córdoba",
+     "Rosario",
+     "Mendoza"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Mexiko?",
+    "a": [
+     "Mexico City",
+     "Guadalajara",
+     "Cancún",
+     "Monterrey"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Japan?",
+    "a": [
+     "Tokyo",
+     "Osaka",
+     "Kyoto",
+     "Yokohama"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Kina?",
+    "a": [
+     "Peking",
+     "Shanghai",
+     "Hongkong",
+     "Guangzhou"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Indien?",
+    "a": [
+     "New Delhi",
+     "Mumbai",
+     "Kolkata",
+     "Bangalore"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Egypten?",
+    "a": [
+     "Kairo",
+     "Alexandria",
+     "Luxor",
+     "Giza"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Kenya?",
+    "a": [
+     "Nairobi",
+     "Mombasa",
+     "Kisumu",
+     "Nakuru"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Nigeria?",
+    "a": [
+     "Abuja",
+     "Lagos",
+     "Kano",
+     "Ibadan"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Marocko?",
+    "a": [
+     "Rabat",
+     "Casablanca",
+     "Marrakech",
+     "Fès"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Ryssland?",
+    "a": [
+     "Moskva",
+     "Sankt Petersburg",
+     "Novosibirsk",
+     "Kazan"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Turkiet?",
+    "a": [
+     "Ankara",
+     "Istanbul",
+     "Izmir",
+     "Antalya"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Thailand?",
+    "a": [
+     "Bangkok",
+     "Chiang Mai",
+     "Phuket",
+     "Pattaya"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Sydkorea?",
+    "a": [
+     "Seoul",
+     "Busan",
+     "Incheon",
+     "Daegu"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Nya Zeeland?",
+    "a": [
+     "Wellington",
+     "Auckland",
+     "Christchurch",
+     "Queenstown"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Peru?",
+    "a": [
+     "Lima",
+     "Cusco",
+     "Arequipa",
+     "Trujillo"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Chile?",
+    "a": [
+     "Santiago de Chile",
+     "Valparaíso",
+     "Concepción",
+     "Antofagasta"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Colombia?",
+    "a": [
+     "Bogotá",
+     "Medellín",
+     "Cali",
+     "Cartagena"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Vietnam?",
+    "a": [
+     "Hanoi",
+     "Ho Chi Minh-staden",
+     "Da Nang",
+     "Hue"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Saudiarabien?",
+    "a": [
+     "Riyadh",
+     "Jeddah",
+     "Mecka",
+     "Medina"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Pakistan?",
+    "a": [
+     "Islamabad",
+     "Karachi",
+     "Lahore",
+     "Peshawar"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i Kuba?",
+    "a": [
+     "Havanna",
+     "Santiago de Cuba",
+     "Varadero",
+     "Trinidad"
+    ]
+   }
+  ]
+ },
+ "laenderflaggen": {
+  "title": "Länders flaggor",
+  "items": [
+   {
+    "q": "Vilket land har den här flaggan? 🇨🇭",
+    "a": [
+     "Schweiz",
+     "Danmark",
+     "Österrike",
+     "Japan"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇮🇹",
+    "a": [
+     "Italien",
+     "Irland",
+     "Mexiko",
+     "Ungern"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇫🇷",
+    "a": [
+     "Frankrike",
+     "Nederländerna",
+     "Ryssland",
+     "Italien"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇩🇪",
+    "a": [
+     "Tyskland",
+     "Belgien",
+     "Spanien",
+     "Österrike"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇯🇵",
+    "a": [
+     "Japan",
+     "Kina",
+     "Sydkorea",
+     "Bangladesh"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇧🇷",
+    "a": [
+     "Brasilien",
+     "Portugal",
+     "Argentina",
+     "Colombia"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇨🇦",
+    "a": [
+     "Kanada",
+     "USA",
+     "Schweiz",
+     "Peru"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇸🇪",
+    "a": [
+     "Sverige",
+     "Finland",
+     "Norge",
+     "Danmark"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇳🇴",
+    "a": [
+     "Norge",
+     "Island",
+     "Danmark",
+     "Sverige"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇬🇷",
+    "a": [
+     "Grekland",
+     "Israel",
+     "Finland",
+     "Argentina"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇪🇸",
+    "a": [
+     "Spanien",
+     "Portugal",
+     "Colombia",
+     "Belgien"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇳🇱",
+    "a": [
+     "Nederländerna",
+     "Luxemburg",
+     "Frankrike",
+     "Ryssland"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇦🇹",
+    "a": [
+     "Österrike",
+     "Lettland",
+     "Polen",
+     "Kanada"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇮🇳",
+    "a": [
+     "Indien",
+     "Irland",
+     "Niger",
+     "Elfenbenskusten"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇲🇽",
+    "a": [
+     "Mexiko",
+     "Italien",
+     "Irland",
+     "Ungern"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇰🇷",
+    "a": [
+     "Sydkorea",
+     "Japan",
+     "Kina",
+     "Nordkorea"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇦🇺",
+    "a": [
+     "Australien",
+     "Nya Zeeland",
+     "Storbritannien",
+     "Fiji"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇹🇷",
+    "a": [
+     "Turkiet",
+     "Tunisien",
+     "Marocko",
+     "Kina"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇿🇦",
+    "a": [
+     "Sydafrika",
+     "Jamaica",
+     "Kenya",
+     "Nigeria"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇦🇷",
+    "a": [
+     "Argentina",
+     "Uruguay",
+     "Grekland",
+     "Guatemala"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇬🇧",
+    "a": [
+     "Storbritannien",
+     "Australien",
+     "USA",
+     "Island"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇺🇸",
+    "a": [
+     "USA",
+     "Liberia",
+     "Malaysia",
+     "Storbritannien"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇱🇮",
+    "a": [
+     "Liechtenstein",
+     "Haiti",
+     "Andorra",
+     "Monaco"
+    ]
+   },
+   {
+    "q": "Vilket land har den här flaggan? 🇵🇹",
+    "a": [
+     "Portugal",
+     "Spanien",
+     "Brasilien",
+     "Marocko"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Schweiz?",
+    "a": [
+     "🇨🇭",
+     "🇩🇰",
+     "🇦🇹",
+     "🇯🇵"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Italien?",
+    "a": [
+     "🇮🇹",
+     "🇮🇪",
+     "🇲🇽",
+     "🇭🇺"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Frankrike?",
+    "a": [
+     "🇫🇷",
+     "🇳🇱",
+     "🇷🇺",
+     "🇮🇹"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Tyskland?",
+    "a": [
+     "🇩🇪",
+     "🇧🇪",
+     "🇪🇸",
+     "🇦🇹"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Japan?",
+    "a": [
+     "🇯🇵",
+     "🇨🇳",
+     "🇰🇷",
+     "🇧🇩"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Brasilien?",
+    "a": [
+     "🇧🇷",
+     "🇵🇹",
+     "🇦🇷",
+     "🇨🇴"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Kanada?",
+    "a": [
+     "🇨🇦",
+     "🇺🇸",
+     "🇨🇭",
+     "🇵🇪"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Sverige?",
+    "a": [
+     "🇸🇪",
+     "🇫🇮",
+     "🇳🇴",
+     "🇩🇰"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Norge?",
+    "a": [
+     "🇳🇴",
+     "🇮🇸",
+     "🇩🇰",
+     "🇸🇪"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Grekland?",
+    "a": [
+     "🇬🇷",
+     "🇮🇱",
+     "🇫🇮",
+     "🇦🇷"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Spanien?",
+    "a": [
+     "🇪🇸",
+     "🇵🇹",
+     "🇨🇴",
+     "🇧🇪"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Nederländerna?",
+    "a": [
+     "🇳🇱",
+     "🇱🇺",
+     "🇫🇷",
+     "🇷🇺"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Österrike?",
+    "a": [
+     "🇦🇹",
+     "🇱🇻",
+     "🇵🇱",
+     "🇨🇦"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Indien?",
+    "a": [
+     "🇮🇳",
+     "🇮🇪",
+     "🇳🇪",
+     "🇨🇮"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Mexiko?",
+    "a": [
+     "🇲🇽",
+     "🇮🇹",
+     "🇮🇪",
+     "🇭🇺"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Sydkorea?",
+    "a": [
+     "🇰🇷",
+     "🇯🇵",
+     "🇨🇳",
+     "🇰🇵"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Australien?",
+    "a": [
+     "🇦🇺",
+     "🇳🇿",
+     "🇬🇧",
+     "🇫🇯"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Turkiet?",
+    "a": [
+     "🇹🇷",
+     "🇹🇳",
+     "🇲🇦",
+     "🇨🇳"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Sydafrika?",
+    "a": [
+     "🇿🇦",
+     "🇯🇲",
+     "🇰🇪",
+     "🇳🇬"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Argentina?",
+    "a": [
+     "🇦🇷",
+     "🇺🇾",
+     "🇬🇷",
+     "🇬🇹"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Storbritannien?",
+    "a": [
+     "🇬🇧",
+     "🇦🇺",
+     "🇺🇸",
+     "🇮🇸"
+    ]
+   },
+   {
+    "q": "Vilken flagga har USA?",
+    "a": [
+     "🇺🇸",
+     "🇱🇷",
+     "🇲🇾",
+     "🇬🇧"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Liechtenstein?",
+    "a": [
+     "🇱🇮",
+     "🇭🇹",
+     "🇦🇩",
+     "🇲🇨"
+    ]
+   },
+   {
+    "q": "Vilken flagga har Portugal?",
+    "a": [
+     "🇵🇹",
+     "🇪🇸",
+     "🇧🇷",
+     "🇲🇦"
+    ]
+   }
+  ]
+ },
+ "kulinarik-welt": {
+  "title": "Maträtter från hela världen",
+  "items": [
+   {
+    "q": "Från vilket land kommer rösti?",
+    "a": [
+     "Schweiz",
+     "Österrike",
+     "Tyskland",
+     "Frankrike"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer pizza?",
+    "a": [
+     "Italien",
+     "Grekland",
+     "Spanien",
+     "USA"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer paella?",
+    "a": [
+     "Spanien",
+     "Portugal",
+     "Italien",
+     "Mexiko"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer sushi?",
+    "a": [
+     "Japan",
+     "Kina",
+     "Thailand",
+     "Sydkorea"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer wienerschnitzel?",
+    "a": [
+     "Österrike",
+     "Tyskland",
+     "Schweiz",
+     "Ungern"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer tacos?",
+    "a": [
+     "Mexiko",
+     "Spanien",
+     "Brasilien",
+     "USA"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer moussaka?",
+    "a": [
+     "Grekland",
+     "Turkiet",
+     "Italien",
+     "Frankrike"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer pad thai?",
+    "a": [
+     "Thailand",
+     "Vietnam",
+     "Japan",
+     "Indien"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer «fish and chips»?",
+    "a": [
+     "Storbritannien",
+     "Irland",
+     "USA",
+     "Australien"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer gulasch?",
+    "a": [
+     "Ungern",
+     "Österrike",
+     "Polen",
+     "Tjeckien"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer pierogi?",
+    "a": [
+     "Polen",
+     "Ryssland",
+     "Italien",
+     "Grekland"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer kimchi?",
+    "a": [
+     "Sydkorea",
+     "Japan",
+     "Kina",
+     "Thailand"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer «pastéis de nata»?",
+    "a": [
+     "Portugal",
+     "Spanien",
+     "Brasilien",
+     "Frankrike"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer poutine (pommes frites med ost och sås)?",
+    "a": [
+     "Kanada",
+     "USA",
+     "Belgien",
+     "Frankrike"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer feijoada (bönor i gryta)?",
+    "a": [
+     "Brasilien",
+     "Mexiko",
+     "Spanien",
+     "Italien"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer smørrebrød?",
+    "a": [
+     "Danmark",
+     "Sverige",
+     "Norge",
+     "Nederländerna"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer tiramisu?",
+    "a": [
+     "Italien",
+     "Frankrike",
+     "Österrike",
+     "Spanien"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer baguetten?",
+    "a": [
+     "Frankrike",
+     "Italien",
+     "Belgien",
+     "Tyskland"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer currywursten?",
+    "a": [
+     "Tyskland",
+     "Indien",
+     "Österrike",
+     "Storbritannien"
+    ]
+   },
+   {
+    "q": "Från vilket land kommer haggis?",
+    "a": [
+     "Skottland",
+     "Irland",
+     "Wales",
+     "Island"
+    ]
+   }
+  ]
+ },
+ "schweizer-spezialitaeten": {
+  "title": "Schweiziska specialiteter",
+  "items": [
+   {
+    "q": "Från vilken kanton kommer Engadiner Nusstorte (nötpaj från Engadin)?",
+    "a": [
+     "Graubünden",
+     "Valais",
+     "Bern",
+     "Ticino"
+    ]
+   },
+   {
+    "q": "Från vilken stad kommer kakorna Läckerli?",
+    "a": [
+     "Basel",
+     "Bern",
+     "Zürich",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Från vilken kanton kommer körsbärstårtan som bär kantonens namn?",
+    "a": [
+     "Zug",
+     "Schwyz",
+     "Luzern",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Från vilken kanton kommer Rüeblitorte (morotskaka)?",
+    "a": [
+     "Aargau",
+     "Thurgau",
+     "Solothurn",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Från vilken kanton kommer Bündnerfleisch (lufttorkat kött)?",
+    "a": [
+     "Graubünden",
+     "Valais",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Från vilken kanton kommer Chügelipastete (pastej med köttbullar)?",
+    "a": [
+     "Luzern",
+     "Bern",
+     "Zug",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Vilken kanton kallas «Mostindien» för sina många äppelträd?",
+    "a": [
+     "Thurgau",
+     "Aargau",
+     "St. Gallen",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Från vilken stad kommer den kända kalvkorven som bär stadens namn?",
+    "a": [
+     "St. Gallen",
+     "Bern",
+     "Luzern",
+     "Chur"
+    ]
+   },
+   {
+    "q": "Från vilken kanton kommer raclette-osten med skyddat ursprung (AOP)?",
+    "a": [
+     "Valais",
+     "Fribourg",
+     "Vaud",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Efter vilken ort i kantonen Fribourg har en känd hårdost fått sitt namn?",
+    "a": [
+     "Gruyères",
+     "Emmental",
+     "Tilsit",
+     "Sbrinz"
+    ]
+   },
+   {
+    "q": "Från vilken stad kommer strimlat kött i gräddsås som bär stadens namn?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Basel",
+     "Genève"
+    ]
+   },
+   {
+    "q": "Vad är en «Berner Platte»?",
+    "a": [
+     "Kött och korv med surkål och bönor",
+     "En ostkaka",
+     "Ett fiskfat",
+     "En efterrätt med maräng"
+    ]
+   },
+   {
+    "q": "Från vilken kanton kommer Glarner Pastete (pastej från Glarus)?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "Appenzell Innerrhoden"
+    ]
+   },
+   {
+    "q": "Vad var birchermüsli från början?",
+    "a": [
+     "En maträtt av en schweizisk läkare",
+     "En bergsost från Graubünden",
+     "Ett vin från Ticino",
+     "Ett bakverk från Basel"
+    ]
+   }
+  ]
+ },
+ "kantone-hauptorte": {
+  "title": "Schweiz kantoner",
+  "items": [
+   {
+    "q": "Vilken kanton gränsar INTE till Thurgau?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "St. Gallen",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Vilken kanton är Genèves enda schweiziska granne?",
+    "a": [
+     "Vaud",
+     "Valais",
+     "Neuchâtel",
+     "Fribourg"
+    ]
+   },
+   {
+    "q": "Vilken kanton är Basel-Stadts enda schweiziska granne?",
+    "a": [
+     "Basel-Landschaft",
+     "Aargau",
+     "Solothurn",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Vilken kanton gränsar till Appenzell Innerrhoden?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Thurgau",
+     "Glarus",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Vilken kanton gränsar till Uri?",
+    "a": [
+     "Schwyz",
+     "Zürich",
+     "Luzern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton gränsar till Zug?",
+    "a": [
+     "Zürich",
+     "Bern",
+     "Uri",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Vilken kanton gränsar till Schaffhausen?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "St. Gallen",
+     "Basel-Landschaft"
+    ]
+   },
+   {
+    "q": "Vilken kanton gränsar till Jura?",
+    "a": [
+     "Bern",
+     "Fribourg",
+     "Vaud",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Vilken kanton gränsar till Glarus?",
+    "a": [
+     "St. Gallen",
+     "Zürich",
+     "Luzern",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Vilken flod utgör en del av gränsen mellan Thurgau och Tyskland?",
+    "a": [
+     "Rhen",
+     "Thur",
+     "Aare",
+     "Inn"
+    ]
+   },
+   {
+    "q": "Vilken sjö ligger vid kantonerna Zürich, Schwyz och St. Gallen?",
+    "a": [
+     "Zürichsjön",
+     "Walensee",
+     "Bodensjön",
+     "Greifensee"
+    ]
+   },
+   {
+    "q": "I vilken kanton ligger Silsersjön?",
+    "a": [
+     "Graubünden",
+     "Ticino",
+     "Valais",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vid vilken sjö ligger byn Brienz i kantonen Bern?",
+    "a": [
+     "Brienzsjön",
+     "Thunsjön",
+     "Bielsjön",
+     "Sarnersjön"
+    ]
+   },
+   {
+    "q": "I vilken kanton ligger Sarnersjön?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Luzern",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vid vilken sjö ligger staden Lugano?",
+    "a": [
+     "Luganosjön",
+     "Lago Maggiore",
+     "Comosjön",
+     "Gardasjön"
+    ]
+   },
+   {
+    "q": "Vid vilken sjö ligger staden Zug?",
+    "a": [
+     "Zugsjön",
+     "Ägerisee",
+     "Vierwaldstättersjön",
+     "Zürichsjön"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Thurgau?",
+    "a": [
+     "Frauenfeld",
+     "Weinfelden",
+     "Kreuzlingen",
+     "Arbon"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Graubünden?",
+    "a": [
+     "Chur",
+     "Davos",
+     "St. Moritz",
+     "Ilanz"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Valais?",
+    "a": [
+     "Sion",
+     "Brig",
+     "Martigny",
+     "Visp"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Ticino?",
+    "a": [
+     "Bellinzona",
+     "Lugano",
+     "Locarno",
+     "Mendrisio"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Vaud?",
+    "a": [
+     "Lausanne",
+     "Montreux",
+     "Yverdon-les-Bains",
+     "Vevey"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Aargau?",
+    "a": [
+     "Aarau",
+     "Baden",
+     "Wettingen",
+     "Brugg"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Basel-Landschaft?",
+    "a": [
+     "Liestal",
+     "Allschwil",
+     "Reinach",
+     "Pratteln"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Appenzell Ausserrhoden?",
+    "a": [
+     "Herisau",
+     "Appenzell",
+     "Teufen",
+     "Heiden"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Nidwalden?",
+    "a": [
+     "Stans",
+     "Hergiswil",
+     "Buochs",
+     "Beckenried"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Obwalden?",
+    "a": [
+     "Sarnen",
+     "Engelberg",
+     "Alpnach",
+     "Kerns"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Uri?",
+    "a": [
+     "Altdorf",
+     "Andermatt",
+     "Erstfeld",
+     "Flüelen"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Schwyz?",
+    "a": [
+     "Schwyz",
+     "Einsiedeln",
+     "Küssnacht",
+     "Lachen"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Jura?",
+    "a": [
+     "Delémont",
+     "Porrentruy",
+     "Saignelégier",
+     "Moutier"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Neuchâtel?",
+    "a": [
+     "Neuchâtel",
+     "La Chaux-de-Fonds",
+     "Le Locle",
+     "Boudry"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Solothurn?",
+    "a": [
+     "Solothurn",
+     "Olten",
+     "Grenchen",
+     "Biberist"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Glarus?",
+    "a": [
+     "Glarus",
+     "Näfels",
+     "Netstal",
+     "Linthal"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Schaffhausen?",
+    "a": [
+     "Schaffhausen",
+     "Neuhausen am Rheinfall",
+     "Stein am Rhein",
+     "Thayngen"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen St. Gallen?",
+    "a": [
+     "St. Gallen",
+     "Rapperswil-Jona",
+     "Wil",
+     "Gossau"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Zug?",
+    "a": [
+     "Zug",
+     "Baar",
+     "Cham",
+     "Steinhausen"
+    ]
+   },
+   {
+    "q": "Vad är huvudorten i kantonen Bern?",
+    "a": [
+     "Bern",
+     "Biel",
+     "Thun",
+     "Köniz"
+    ]
+   }
+  ]
+ },
+ "tiere": {
+  "title": "Djurens värld",
+  "items": [
+   {
+    "q": "Vilket är det snabbaste landdjuret?",
+    "a": [
+     "Gepard",
+     "Lejon",
+     "Häst",
+     "Antilop"
+    ]
+   },
+   {
+    "q": "Vilket är världens största djur?",
+    "a": [
+     "Blåval",
+     "Elefant",
+     "Giraff",
+     "Valhaj"
+    ]
+   },
+   {
+    "q": "Hur många ben har en spindel?",
+    "a": [
+     "8",
+     "6",
+     "10",
+     "12"
+    ]
+   },
+   {
+    "q": "Vilken fågel kan också flyga baklänges?",
+    "a": [
+     "Kolibri",
+     "Örn",
+     "Sparv",
+     "Mås"
+    ]
+   },
+   {
+    "q": "Vilket däggdjur kan flyga på riktigt?",
+    "a": [
+     "Fladdermus",
+     "Pingvin",
+     "Struts",
+     "Mullvad"
+    ]
+   },
+   {
+    "q": "Vad kallas en kängaruunge?",
+    "a": [
+     "Joey",
+     "Kid",
+     "Föl",
+     "Valp"
+    ]
+   },
+   {
+    "q": "Hur många hjärtan har en bläckfisk?",
+    "a": [
+     "3",
+     "1",
+     "2",
+     "8"
+    ]
+   },
+   {
+    "q": "Vilket djur lever i Arktis vid Nordpolen?",
+    "a": [
+     "Isbjörn",
+     "Pingvin",
+     "Kamel",
+     "Känguru"
+    ]
+   },
+   {
+    "q": "Vilket av de här djuren är ett däggdjur?",
+    "a": [
+     "Delfin",
+     "Haj",
+     "Tonfisk",
+     "Lax"
+    ]
+   },
+   {
+    "q": "Vad äter en jättepanda nästan bara?",
+    "a": [
+     "Bambu",
+     "Fisk",
+     "Honung",
+     "Gräs"
+    ]
+   },
+   {
+    "q": "Vilket djur kan byta färg på huden?",
+    "a": [
+     "Kameleont",
+     "Groda",
+     "Sköldpadda",
+     "Igelkott"
+    ]
+   },
+   {
+    "q": "Hur många ben har en insekt?",
+    "a": [
+     "6",
+     "4",
+     "8",
+     "10"
+    ]
+   },
+   {
+    "q": "Vilken är världens största fågel?",
+    "a": [
+     "Struts",
+     "Örn",
+     "Albatross",
+     "Emu"
+    ]
+   },
+   {
+    "q": "Vilket djur har längst hals?",
+    "a": [
+     "Giraff",
+     "Kamel",
+     "Struts",
+     "Lama"
+    ]
+   },
+   {
+    "q": "Ungefär hur länge är en elefanthona dräktig?",
+    "a": [
+     "22 månader",
+     "9 månader",
+     "12 månader",
+     "36 månader"
+    ]
+   },
+   {
+    "q": "Vilket djur bygger dammar av trä?",
+    "a": [
+     "Bäver",
+     "Utter",
+     "Grävling",
+     "Murmeldjur"
+    ]
+   }
+  ]
+ },
+ "weltall": {
+  "title": "Rymden",
+  "items": [
+   {
+    "q": "Vilken planet ligger närmast solen?",
+    "a": [
+     "Merkurius",
+     "Venus",
+     "Mars",
+     "Jorden"
+    ]
+   },
+   {
+    "q": "Vilken är den största planeten i vårt solsystem?",
+    "a": [
+     "Jupiter",
+     "Saturnus",
+     "Neptunus",
+     "Jorden"
+    ]
+   },
+   {
+    "q": "Vilken planet kallas «den röda planeten»?",
+    "a": [
+     "Mars",
+     "Venus",
+     "Jupiter",
+     "Merkurius"
+    ]
+   },
+   {
+    "q": "Hur många planeter finns det i vårt solsystem?",
+    "a": [
+     "8",
+     "7",
+     "9",
+     "10"
+    ]
+   },
+   {
+    "q": "Vem var den första människan som gick på månen?",
+    "a": [
+     "Neil Armstrong",
+     "Jurij Gagarin",
+     "Buzz Aldrin",
+     "Michael Collins"
+    ]
+   },
+   {
+    "q": "Vilket år landade människor på månen för första gången?",
+    "a": [
+     "1969",
+     "1959",
+     "1979",
+     "1989"
+    ]
+   },
+   {
+    "q": "Vem var den första människan i rymden?",
+    "a": [
+     "Jurij Gagarin",
+     "Neil Armstrong",
+     "Alan Shepard",
+     "John Glenn"
+    ]
+   },
+   {
+    "q": "Vad heter vår galax?",
+    "a": [
+     "Vintergatan",
+     "Andromeda",
+     "Sombrero",
+     "Whirlpool"
+    ]
+   },
+   {
+    "q": "Ungefär hur lång tid tar det för ljuset från solen att nå jorden?",
+    "a": [
+     "8 minuter",
+     "8 sekunder",
+     "8 timmar",
+     "8 dagar"
+    ]
+   },
+   {
+    "q": "Vad är solen?",
+    "a": [
+     "En stjärna",
+     "En planet",
+     "En måne",
+     "En komet"
+    ]
+   },
+   {
+    "q": "Vilken planet är varmast?",
+    "a": [
+     "Venus",
+     "Merkurius",
+     "Mars",
+     "Jupiter"
+    ]
+   },
+   {
+    "q": "Vilken planet är känd för sina stora, ljusa ringar?",
+    "a": [
+     "Saturnus",
+     "Mars",
+     "Venus",
+     "Merkurius"
+    ]
+   },
+   {
+    "q": "Vem var den första schweizaren i rymden?",
+    "a": [
+     "Claude Nicollier",
+     "Bertrand Piccard",
+     "Auguste Piccard",
+     "Marco Sieber"
+    ]
+   },
+   {
+    "q": "Vad heter jordens naturliga följeslagare?",
+    "a": [
+     "Månen",
+     "Phobos",
+     "Titan",
+     "Europa"
+    ]
+   }
+  ]
+ },
+ "erfindungen": {
+  "title": "Uppfinningar och upptäckter",
+  "items": [
+   {
+    "q": "Vem uppfann boktryckarkonsten med lösa typer i Europa?",
+    "a": [
+     "Johannes Gutenberg",
+     "Leonardo da Vinci",
+     "Martin Luther",
+     "Isaac Newton"
+    ]
+   },
+   {
+    "q": "Vilken schweizare uppfann kardborrebandet?",
+    "a": [
+     "George de Mestral",
+     "Karl Elsener",
+     "Henri Nestlé",
+     "Daniel Peter"
+    ]
+   },
+   {
+    "q": "Vem grundade företaget som gjorde den schweiziska armékniven känd?",
+    "a": [
+     "Karl Elsener",
+     "George de Mestral",
+     "Henry Dunant",
+     "Rudolf Lindt"
+    ]
+   },
+   {
+    "q": "Vem upptäckte penicillinet?",
+    "a": [
+     "Alexander Fleming",
+     "Louis Pasteur",
+     "Marie Curie",
+     "Robert Koch"
+    ]
+   },
+   {
+    "q": "Vilka var först med att flyga ett motorflygplan år 1903?",
+    "a": [
+     "Bröderna Wright",
+     "Otto Lilienthal",
+     "Greve Zeppelin",
+     "Louis Blériot"
+    ]
+   },
+   {
+    "q": "Var uppfann Tim Berners-Lee World Wide Web?",
+    "a": [
+     "På CERN i Genève",
+     "I Silicon Valley",
+     "På ETH i Zürich",
+     "I London"
+    ]
+   },
+   {
+    "q": "Vem byggde 1885 en av de första bilarna med bensinmotor?",
+    "a": [
+     "Carl Benz",
+     "Henry Ford",
+     "Ferdinand Porsche",
+     "Enzo Ferrari"
+    ]
+   },
+   {
+    "q": "Vilken schweizare uppfann mjölkchokladen 1875?",
+    "a": [
+     "Daniel Peter",
+     "Rodolphe Lindt",
+     "Philippe Suchard",
+     "Theodor Tobler"
+    ]
+   },
+   {
+    "q": "Vem tog fram relativitetsteorin?",
+    "a": [
+     "Albert Einstein",
+     "Isaac Newton",
+     "Galileo Galilei",
+     "Niels Bohr"
+    ]
+   },
+   {
+    "q": "Vem grundade Röda korset?",
+    "a": [
+     "Henry Dunant",
+     "Florence Nightingale",
+     "Albert Schweitzer",
+     "Guillaume Henri Dufour"
+    ]
+   },
+   {
+    "q": "Vem förbättrade ångmaskinen så att den kunde användas överallt?",
+    "a": [
+     "James Watt",
+     "Thomas Edison",
+     "Nikola Tesla",
+     "George Stephenson"
+    ]
+   },
+   {
+    "q": "Vem fick patent på telefonen 1876?",
+    "a": [
+     "Alexander Graham Bell",
+     "Thomas Edison",
+     "Guglielmo Marconi",
+     "Werner von Siemens"
+    ]
+   }
+  ]
+ },
+ "schweiz": {
+  "title": "Allmänt om Schweiz",
+  "items": [
+   {
+    "q": "Hur många kantoner har Schweiz?",
+    "a": [
+     "26",
+     "23",
+     "24",
+     "28"
+    ]
+   },
+   {
+    "q": "Hur många nationella språk har Schweiz?",
+    "a": [
+     "4",
+     "3",
+     "2",
+     "5"
+    ]
+   },
+   {
+    "q": "Vad heter Schweiz högsta berg?",
+    "a": [
+     "Dufourspitze",
+     "Matterhorn",
+     "Jungfrau",
+     "Eiger"
+    ]
+   },
+   {
+    "q": "Hur många ledamöter har förbundsrådet (Schweiz regering)?",
+    "a": [
+     "7",
+     "5",
+     "9",
+     "12"
+    ]
+   },
+   {
+    "q": "När firar Schweiz sin nationaldag?",
+    "a": [
+     "1 augusti",
+     "1 maj",
+     "12 september",
+     "6 januari"
+    ]
+   },
+   {
+    "q": "Vilket år räknas som året då Edsförbundet grundades?",
+    "a": [
+     "1291",
+     "1315",
+     "1499",
+     "1848"
+    ]
+   },
+   {
+    "q": "Var ska Wilhelm Tell ha skjutit äpplet från sin sons huvud?",
+    "a": [
+     "Altdorf",
+     "Luzern",
+     "Schwyz",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Vad heter världens längsta järnvägstunnel?",
+    "a": [
+     "Gotthard-bastunneln",
+     "Lötschberg-bastunneln",
+     "Simplontunneln",
+     "Kanaltunneln"
+    ]
+   },
+   {
+    "q": "I vilken stad har FN sitt europeiska säte?",
+    "a": [
+     "Genève",
+     "Bern",
+     "Zürich",
+     "Basel"
+    ]
+   },
+   {
+    "q": "Vid vilken by ligger Matterhorn?",
+    "a": [
+     "Zermatt",
+     "Grindelwald",
+     "Saas-Fee",
+     "St. Moritz"
+    ]
+   },
+   {
+    "q": "Vad heter Schweiz valuta?",
+    "a": [
+     "Franc",
+     "Euro",
+     "Taler",
+     "Krona"
+    ]
+   },
+   {
+    "q": "Vilken är den största sjön som delvis ligger i Schweiz?",
+    "a": [
+     "Genèvesjön",
+     "Bodensjön",
+     "Neuchâtelsjön",
+     "Lago Maggiore"
+    ]
+   }
+  ]
+ },
+ "kantone-umrisse": {
+  "title": "Känn igen kantonerna (konturer)",
+  "items": [
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "Thurgau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Bern",
+     "Fribourg",
+     "Vaud",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Luzern",
+     "Aargau",
+     "Bern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Uri",
+     "Glarus",
+     "Schwyz",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Schwyz",
+     "Zug",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Uri",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Zug",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "St. Gallen"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Zug",
+     "Nidwalden",
+     "Obwalden",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Fribourg",
+     "Vaud",
+     "Bern",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Solothurn",
+     "Basel-Landschaft",
+     "Aargau",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Basel-Stadt",
+     "Genève",
+     "Basel-Landschaft",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Basel-Landschaft",
+     "Solothurn",
+     "Basel-Stadt",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Schaffhausen",
+     "Thurgau",
+     "Zürich",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "St. Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Glarus",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "St. Gallen",
+     "Thurgau",
+     "Graubünden",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Graubünden",
+     "Valais",
+     "Ticino",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "Solothurn",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Thurgau",
+     "Schaffhausen",
+     "St. Gallen",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Ticino",
+     "Graubünden",
+     "Valais",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Vaud",
+     "Fribourg",
+     "Neuchâtel",
+     "Genève"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Valais",
+     "Graubünden",
+     "Ticino",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Neuchâtel",
+     "Jura",
+     "Vaud",
+     "Fribourg"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Genève",
+     "Basel-Stadt",
+     "Vaud",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Vilken kanton har den här formen?",
+    "a": [
+     "Jura",
+     "Neuchâtel",
+     "Solothurn",
+     "Basel-Landschaft"
+    ]
+   }
+  ]
+ },
+ "kantone-karte": {
+  "title": "Kantonerna på kartan",
+  "items": [
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Zürich",
+     "Aargau",
+     "Thurgau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Bern",
+     "Fribourg",
+     "Vaud",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Luzern",
+     "Aargau",
+     "Bern",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Uri",
+     "Glarus",
+     "Schwyz",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Schwyz",
+     "Zug",
+     "Uri",
+     "Glarus"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Uri",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Zug",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Glarus",
+     "Uri",
+     "Schwyz",
+     "St. Gallen"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Zug",
+     "Nidwalden",
+     "Obwalden",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Fribourg",
+     "Vaud",
+     "Bern",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Solothurn",
+     "Basel-Landschaft",
+     "Aargau",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Basel-Stadt",
+     "Genève",
+     "Basel-Landschaft",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Basel-Landschaft",
+     "Solothurn",
+     "Basel-Stadt",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Schaffhausen",
+     "Thurgau",
+     "Zürich",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "St. Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Glarus",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "St. Gallen",
+     "Thurgau",
+     "Graubünden",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Graubünden",
+     "Valais",
+     "Ticino",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Aargau",
+     "Zürich",
+     "Solothurn",
+     "Luzern"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Thurgau",
+     "Schaffhausen",
+     "St. Gallen",
+     "Zürich"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Ticino",
+     "Graubünden",
+     "Valais",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Vaud",
+     "Fribourg",
+     "Neuchâtel",
+     "Genève"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Valais",
+     "Graubünden",
+     "Ticino",
+     "Bern"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Neuchâtel",
+     "Jura",
+     "Vaud",
+     "Fribourg"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Genève",
+     "Basel-Stadt",
+     "Vaud",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Vilken kanton är markerad på kartan?",
+    "a": [
+     "Jura",
+     "Neuchâtel",
+     "Solothurn",
+     "Basel-Landschaft"
+    ]
+   }
+  ]
+ },
+ "kantone-wappen": {
+  "title": "Känn igen kantonernas vapen",
+  "items": [
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Zürich",
+     "Luzern",
+     "Zug",
+     "Ticino"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Bern",
+     "Schaffhausen",
+     "Uri",
+     "Appenzell Innerrhoden"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Luzern",
+     "Zürich",
+     "Zug",
+     "Ticino"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Uri",
+     "Bern",
+     "Schaffhausen",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Schwyz",
+     "Solothurn",
+     "Fribourg",
+     "Neuchâtel"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Obwalden",
+     "Nidwalden",
+     "Schwyz",
+     "Basel-Landschaft"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Nidwalden",
+     "Obwalden",
+     "Basel-Landschaft",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Glarus",
+     "Graubünden",
+     "Genève",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Zug",
+     "Luzern",
+     "Zürich",
+     "Fribourg"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Fribourg",
+     "Solothurn",
+     "Zug",
+     "Valais"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Solothurn",
+     "Fribourg",
+     "Schwyz",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Basel-Stadt",
+     "Basel-Landschaft",
+     "Appenzell Innerrhoden",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Basel-Landschaft",
+     "Basel-Stadt",
+     "Jura",
+     "Obwalden"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Schaffhausen",
+     "Bern",
+     "Uri",
+     "Appenzell Ausserrhoden"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Appenzell Ausserrhoden",
+     "Appenzell Innerrhoden",
+     "Bern",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Appenzell Innerrhoden",
+     "Appenzell Ausserrhoden",
+     "Bern",
+     "Basel-Stadt"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "St. Gallen",
+     "Thurgau",
+     "Vaud",
+     "Aargau"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Graubünden",
+     "Glarus",
+     "Valais",
+     "Genève"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Aargau",
+     "Thurgau",
+     "St. Gallen",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Thurgau",
+     "St. Gallen",
+     "Aargau",
+     "Schaffhausen"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Ticino",
+     "Luzern",
+     "Zürich",
+     "Zug"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Vaud",
+     "Neuchâtel",
+     "St. Gallen",
+     "Thurgau"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Valais",
+     "Graubünden",
+     "Solothurn",
+     "Jura"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Neuchâtel",
+     "Vaud",
+     "Ticino",
+     "Schwyz"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Genève",
+     "Graubünden",
+     "Glarus",
+     "Uri"
+    ]
+   },
+   {
+    "q": "Vilken kanton har det här vapnet?",
+    "a": [
+     "Jura",
+     "Basel-Landschaft",
+     "Basel-Stadt",
+     "Valais"
+    ]
+   }
+  ]
+ },
+ "schaetzfragen": {
+  "title": "Gissa ungefär",
+  "items": [
+   {
+    "q": "Hur högt är Matterhorn?",
+    "unit": "m"
+   },
+   {
+    "q": "Hur hög är Dufourspitze, Schweiz högsta berg?",
+    "unit": "m"
+   },
+   {
+    "q": "Hur högt är Mount Everest?",
+    "unit": "m"
+   },
+   {
+    "q": "Hur många kantoner har Schweiz?",
+    "unit": ""
+   },
+   {
+    "q": "Vilket år skrevs förbundsbrevet (då Edsförbundet grundades)?",
+    "unit": ""
+   },
+   {
+    "q": "Vilket år grundades den schweiziska förbundsstaten?",
+    "unit": ""
+   },
+   {
+    "q": "Hur lång är Gotthard-bastunneln?",
+    "unit": "km"
+   },
+   {
+    "q": "Hur stort är Schweiz?",
+    "unit": "km²"
+   },
+   {
+    "q": "Hur lång är Rhen?",
+    "unit": "km"
+   },
+   {
+    "q": "Hur många ben har en vuxen människa i kroppen?",
+    "unit": ""
+   },
+   {
+    "q": "Hur många tänder har en vuxen med visdomständer?",
+    "unit": ""
+   },
+   {
+    "q": "Vilket år landade människor på månen för första gången?",
+    "unit": ""
+   },
+   {
+    "q": "Hur långt bort är månen från jorden i genomsnitt (i tusen km)?",
+    "unit": "tusen km"
+   },
+   {
+    "q": "Hur snabbt färdas ljudet i luft (vid 20 °C)?",
+    "unit": "m/s"
+   },
+   {
+    "q": "Hur många dagar har ett skottår?",
+    "unit": ""
+   },
+   {
+    "q": "Vilket år hölls olympiska vinterspel i St. Moritz för första gången?",
+    "unit": ""
+   },
+   {
+    "q": "Vid hur många grader Celsius kokar vatten vid havsytan?",
+    "unit": "°C"
+   },
+   {
+    "q": "Hur många ben har en spindel?",
+    "unit": ""
+   }
+  ]
+ },
+ "wo-liegt-schweiz": {
+  "title": "Var ligger det? (Schweiz)",
+  "items": [
+   {
+    "q": "Var ligger Bern?",
+    "label": "Bern"
+   },
+   {
+    "q": "Var ligger Zürich?",
+    "label": "Zürich"
+   },
+   {
+    "q": "Var ligger Genève?",
+    "label": "Genève"
+   },
+   {
+    "q": "Var ligger Basel?",
+    "label": "Basel"
+   },
+   {
+    "q": "Var ligger Lugano?",
+    "label": "Lugano"
+   },
+   {
+    "q": "Var ligger Luzern?",
+    "label": "Luzern"
+   },
+   {
+    "q": "Var ligger St. Gallen?",
+    "label": "St. Gallen"
+   },
+   {
+    "q": "Var ligger Chur?",
+    "label": "Chur"
+   },
+   {
+    "q": "Var ligger Sion?",
+    "label": "Sion"
+   },
+   {
+    "q": "Var ligger Lausanne?",
+    "label": "Lausanne"
+   },
+   {
+    "q": "Var ligger Schaffhausen?",
+    "label": "Schaffhausen"
+   },
+   {
+    "q": "Var ligger Frauenfeld?",
+    "label": "Frauenfeld"
+   },
+   {
+    "q": "Var ligger Altdorf?",
+    "label": "Altdorf"
+   },
+   {
+    "q": "Var ligger Bellinzona?",
+    "label": "Bellinzona"
+   },
+   {
+    "q": "Var ligger Delémont?",
+    "label": "Delémont"
+   },
+   {
+    "q": "Var ligger Appenzell?",
+    "label": "Appenzell"
+   },
+   {
+    "q": "Var ligger Matterhorn?",
+    "label": "Matterhorn"
+   },
+   {
+    "q": "Var ligger Rhenfallet?",
+    "label": "Rhenfallet"
+   },
+   {
+    "q": "Var ligger Säntis?",
+    "label": "Säntis"
+   },
+   {
+    "q": "Var ligger St. Moritz?",
+    "label": "St. Moritz"
+   },
+   {
+    "q": "Var ligger Interlaken?",
+    "label": "Interlaken"
+   },
+   {
+    "q": "Var ligger Einsiedeln?",
+    "label": "Einsiedeln"
+   },
+   {
+    "q": "Var ligger Biel/Bienne?",
+    "label": "Biel/Bienne"
+   },
+   {
+    "q": "Var ligger Thun?",
+    "label": "Thun"
+   }
+  ]
+ },
+ "wo-liegt-europa": {
+  "title": "Var ligger det? (Europa)",
+  "items": [
+   {
+    "q": "Var ligger Berlin?",
+    "label": "Berlin"
+   },
+   {
+    "q": "Var ligger Paris?",
+    "label": "Paris"
+   },
+   {
+    "q": "Var ligger Rom?",
+    "label": "Rom"
+   },
+   {
+    "q": "Var ligger Madrid?",
+    "label": "Madrid"
+   },
+   {
+    "q": "Var ligger London?",
+    "label": "London"
+   },
+   {
+    "q": "Var ligger Wien?",
+    "label": "Wien"
+   },
+   {
+    "q": "Var ligger Amsterdam?",
+    "label": "Amsterdam"
+   },
+   {
+    "q": "Var ligger Bryssel?",
+    "label": "Bryssel"
+   },
+   {
+    "q": "Var ligger Lissabon?",
+    "label": "Lissabon"
+   },
+   {
+    "q": "Var ligger Stockholm?",
+    "label": "Stockholm"
+   },
+   {
+    "q": "Var ligger Oslo?",
+    "label": "Oslo"
+   },
+   {
+    "q": "Var ligger Köpenhamn?",
+    "label": "Köpenhamn"
+   },
+   {
+    "q": "Var ligger Helsingfors?",
+    "label": "Helsingfors"
+   },
+   {
+    "q": "Var ligger Warszawa?",
+    "label": "Warszawa"
+   },
+   {
+    "q": "Var ligger Prag?",
+    "label": "Prag"
+   },
+   {
+    "q": "Var ligger Budapest?",
+    "label": "Budapest"
+   },
+   {
+    "q": "Var ligger Aten?",
+    "label": "Aten"
+   },
+   {
+    "q": "Var ligger Dublin?",
+    "label": "Dublin"
+   },
+   {
+    "q": "Var ligger Reykjavik?",
+    "label": "Reykjavik"
+   },
+   {
+    "q": "Var ligger Bukarest?",
+    "label": "Bukarest"
+   },
+   {
+    "q": "Var ligger Venedig?",
+    "label": "Venedig"
+   },
+   {
+    "q": "Var ligger Barcelona?",
+    "label": "Barcelona"
+   },
+   {
+    "q": "Var ligger Istanbul?",
+    "label": "Istanbul"
+   },
+   {
+    "q": "Var ligger Bern?",
+    "label": "Bern"
+   }
+  ]
+ },
+ "deutschland-bundeslaender": {
+  "title": "Tyskland: delstater",
+  "items": [
+   {
+    "q": "Hur många delstater har Tyskland?",
+    "a": [
+     "16",
+     "12",
+     "15",
+     "20"
+    ]
+   },
+   {
+    "q": "Vilka tre delstater är stadsstater?",
+    "a": [
+     "Berlin, Hamburg, Bremen",
+     "Berlin, Hamburg, München",
+     "Berlin, Bremen, Köln",
+     "Hamburg, Bremen, Frankfurt"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Baden-Württemberg?",
+    "a": [
+     "Stuttgart",
+     "Karlsruhe",
+     "Mannheim",
+     "Freiburg"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Bayern?",
+    "a": [
+     "München",
+     "Nürnberg",
+     "Augsburg",
+     "Regensburg"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Brandenburg?",
+    "a": [
+     "Potsdam",
+     "Cottbus",
+     "Frankfurt an der Oder",
+     "Brandenburg an der Havel"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Hessen?",
+    "a": [
+     "Wiesbaden",
+     "Frankfurt am Main",
+     "Kassel",
+     "Darmstadt"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Mecklenburg-Vorpommern?",
+    "a": [
+     "Schwerin",
+     "Rostock",
+     "Greifswald",
+     "Stralsund"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Niedersachsen?",
+    "a": [
+     "Hannover",
+     "Braunschweig",
+     "Osnabrück",
+     "Oldenburg"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Nordrhein-Westfalen?",
+    "a": [
+     "Düsseldorf",
+     "Köln",
+     "Dortmund",
+     "Essen"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Rheinland-Pfalz?",
+    "a": [
+     "Mainz",
+     "Koblenz",
+     "Trier",
+     "Ludwigshafen"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Saarland?",
+    "a": [
+     "Saarbrücken",
+     "Neunkirchen",
+     "Homburg",
+     "Saarlouis"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Sachsen?",
+    "a": [
+     "Dresden",
+     "Leipzig",
+     "Chemnitz",
+     "Zwickau"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Sachsen-Anhalt?",
+    "a": [
+     "Magdeburg",
+     "Halle (Saale)",
+     "Dessau-Roßlau",
+     "Wittenberg"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Schleswig-Holstein?",
+    "a": [
+     "Kiel",
+     "Lübeck",
+     "Flensburg",
+     "Neumünster"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i delstaten Thüringen?",
+    "a": [
+     "Erfurt",
+     "Jena",
+     "Weimar",
+     "Gera"
+    ]
+   }
+  ]
+ },
+ "deutschland": {
+  "title": "Allmänt om Tyskland",
+  "items": [
+   {
+    "q": "Vad heter Tysklands högsta berg?",
+    "a": [
+     "Zugspitze",
+     "Watzmann",
+     "Feldberg",
+     "Brocken"
+    ]
+   },
+   {
+    "q": "När firas den tyska enhetens dag?",
+    "a": [
+     "3 oktober",
+     "9 november",
+     "1 maj",
+     "17 juni"
+    ]
+   },
+   {
+    "q": "Vilket år föll Berlinmuren?",
+    "a": [
+     "1989",
+     "1990",
+     "1961",
+     "1975"
+    ]
+   },
+   {
+    "q": "Vilken port är ett kännetecken för Berlin?",
+    "a": [
+     "Brandenburger Tor",
+     "Holstentor",
+     "Siegestor",
+     "Porta Nigra"
+    ]
+   },
+   {
+    "q": "I vilken stad hålls Oktoberfest?",
+    "a": [
+     "München",
+     "Köln",
+     "Stuttgart",
+     "Berlin"
+    ]
+   },
+   {
+    "q": "Vilken flod rinner genom Köln?",
+    "a": [
+     "Rhen",
+     "Main",
+     "Elbe",
+     "Donau"
+    ]
+   },
+   {
+    "q": "Vilken flod rinner genom Hamburg och Dresden?",
+    "a": [
+     "Elbe",
+     "Weser",
+     "Oder",
+     "Spree"
+    ]
+   },
+   {
+    "q": "Vad heter Tysklands största ö?",
+    "a": [
+     "Rügen",
+     "Usedom",
+     "Sylt",
+     "Fehmarn"
+    ]
+   },
+   {
+    "q": "Vilken är den största sjön som ligger helt i Tyskland?",
+    "a": [
+     "Müritz",
+     "Chiemsee",
+     "Starnberger See",
+     "Bodensjön"
+    ]
+   },
+   {
+    "q": "Vilken valuta hade Tyskland före euron?",
+    "a": [
+     "D-mark",
+     "Schilling",
+     "Gulden",
+     "Franc"
+    ]
+   },
+   {
+    "q": "Hur många grannländer har Tyskland?",
+    "a": [
+     "9",
+     "7",
+     "8",
+     "10"
+    ]
+   },
+   {
+    "q": "Vilka två hav gränsar Tyskland till?",
+    "a": [
+     "Nordsjön och Östersjön",
+     "Nordsjön och Medelhavet",
+     "Östersjön och Atlanten",
+     "Nordsjön och Svarta havet"
+    ]
+   },
+   {
+    "q": "Vem var Västtysklands första förbundskansler?",
+    "a": [
+     "Konrad Adenauer",
+     "Willy Brandt",
+     "Helmut Kohl",
+     "Ludwig Erhard"
+    ]
+   }
+  ]
+ },
+ "oesterreich-bundeslaender": {
+  "title": "Österrike: förbundsländer",
+  "items": [
+   {
+    "q": "Hur många förbundsländer har Österrike?",
+    "a": [
+     "9",
+     "8",
+     "10",
+     "12"
+    ]
+   },
+   {
+    "q": "Vad heter Österrikes högsta berg?",
+    "a": [
+     "Grossglockner",
+     "Wildspitze",
+     "Dachstein",
+     "Zugspitze"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i förbundslandet Niederösterreich?",
+    "a": [
+     "St. Pölten",
+     "Wiener Neustadt",
+     "Krems",
+     "Baden"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i förbundslandet Oberösterreich?",
+    "a": [
+     "Linz",
+     "Wels",
+     "Steyr",
+     "Braunau"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i förbundslandet Salzburg?",
+    "a": [
+     "Salzburg",
+     "Hallein",
+     "Zell am See",
+     "Bischofshofen"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i förbundslandet Tyrolen?",
+    "a": [
+     "Innsbruck",
+     "Kufstein",
+     "Lienz",
+     "Kitzbühel"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i förbundslandet Vorarlberg?",
+    "a": [
+     "Bregenz",
+     "Dornbirn",
+     "Feldkirch",
+     "Bludenz"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i förbundslandet Kärnten?",
+    "a": [
+     "Klagenfurt",
+     "Villach",
+     "Wolfsberg",
+     "Spittal an der Drau"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i förbundslandet Steiermark?",
+    "a": [
+     "Graz",
+     "Leoben",
+     "Bruck an der Mur",
+     "Kapfenberg"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i förbundslandet Burgenland?",
+    "a": [
+     "Eisenstadt",
+     "Neusiedl am See",
+     "Oberwart",
+     "Mattersburg"
+    ]
+   }
+  ]
+ },
+ "niederlande-provinzen": {
+  "title": "Nederländerna: provinser",
+  "items": [
+   {
+    "q": "Hur många provinser har Nederländerna?",
+    "a": [
+     "12",
+     "10",
+     "11",
+     "16"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Groningen?",
+    "a": [
+     "Groningen",
+     "Assen",
+     "Leeuwarden",
+     "Emmen"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Friesland?",
+    "a": [
+     "Leeuwarden",
+     "Sneek",
+     "Heerenveen",
+     "Groningen"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Drenthe?",
+    "a": [
+     "Assen",
+     "Emmen",
+     "Hoogeveen",
+     "Meppel"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Overijssel?",
+    "a": [
+     "Zwolle",
+     "Enschede",
+     "Deventer",
+     "Almelo"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Flevoland?",
+    "a": [
+     "Lelystad",
+     "Almere",
+     "Emmeloord",
+     "Dronten"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Gelderland?",
+    "a": [
+     "Arnhem",
+     "Nijmegen",
+     "Apeldoorn",
+     "Ede"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Utrecht?",
+    "a": [
+     "Utrecht",
+     "Amersfoort",
+     "Zeist",
+     "Hilversum"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Noord-Holland?",
+    "a": [
+     "Haarlem",
+     "Amsterdam",
+     "Alkmaar",
+     "Zaandam"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Zuid-Holland?",
+    "a": [
+     "Den Haag",
+     "Rotterdam",
+     "Leiden",
+     "Delft"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Zeeland?",
+    "a": [
+     "Middelburg",
+     "Vlissingen",
+     "Goes",
+     "Terneuzen"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Noord-Brabant?",
+    "a": [
+     "’s-Hertogenbosch",
+     "Eindhoven",
+     "Tilburg",
+     "Breda"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i provinsen Limburg?",
+    "a": [
+     "Maastricht",
+     "Venlo",
+     "Heerlen",
+     "Roermond"
+    ]
+   }
+  ]
+ },
+ "niederlande": {
+  "title": "Allmänt om Nederländerna",
+  "items": [
+   {
+    "q": "Vad är Nederländernas huvudstad?",
+    "a": [
+     "Amsterdam",
+     "Haag",
+     "Rotterdam",
+     "Utrecht"
+    ]
+   },
+   {
+    "q": "I vilken stad sitter Nederländernas regering?",
+    "a": [
+     "Haag",
+     "Amsterdam",
+     "Rotterdam",
+     "Utrecht"
+    ]
+   },
+   {
+    "q": "Vad heter Nederländernas kung (sedan 2013)?",
+    "a": [
+     "Willem-Alexander",
+     "Vilhelm III",
+     "Maximilian",
+     "Friso"
+    ]
+   },
+   {
+    "q": "När firas Kungens dag?",
+    "a": [
+     "27 april",
+     "30 april",
+     "5 maj",
+     "1 maj"
+    ]
+   },
+   {
+    "q": "Vilken stad har Europas största hamn?",
+    "a": [
+     "Rotterdam",
+     "Antwerpen",
+     "Hamburg",
+     "Amsterdam"
+    ]
+   },
+   {
+    "q": "Vad heter den stora dammen mellan IJsselmeer och Vadehavet?",
+    "a": [
+     "Afsluitdijk",
+     "Deltaverken",
+     "Oosterscheldekering",
+     "Maeslantkering"
+    ]
+   },
+   {
+    "q": "Vad heter den högsta punkten i den europeiska delen av Nederländerna?",
+    "a": [
+     "Vaalserberg",
+     "Brocken",
+     "Taffelberget",
+     "Feldberg"
+    ]
+   },
+   {
+    "q": "Vilken färg har de nederländska idrottslagen?",
+    "a": [
+     "Orange",
+     "Blå",
+     "Röd",
+     "Grön"
+    ]
+   },
+   {
+    "q": "Vem målade «Nattvakten»?",
+    "a": [
+     "Rembrandt",
+     "Vermeer",
+     "Van Gogh",
+     "Mondrian"
+    ]
+   },
+   {
+    "q": "Vilken av de här öarna hör till Nederländerna?",
+    "a": [
+     "Texel",
+     "Sylt",
+     "Föhr",
+     "Rømø"
+    ]
+   },
+   {
+    "q": "Vilken valuta hade Nederländerna före euron?",
+    "a": [
+     "Gulden",
+     "Mark",
+     "Franc",
+     "Krona"
+    ]
+   }
+  ]
+ },
+ "frankreich": {
+  "title": "Allmänt om Frankrike",
+  "items": [
+   {
+    "q": "Vad är Frankrikes huvudstad?",
+    "a": [
+     "Paris",
+     "Lyon",
+     "Marseille",
+     "Bordeaux"
+    ]
+   },
+   {
+    "q": "Vad heter Frankrikes (och Alpernas) högsta berg?",
+    "a": [
+     "Mont Blanc",
+     "Matterhorn",
+     "Mont Ventoux",
+     "Puy de Dôme"
+    ]
+   },
+   {
+    "q": "Vilken är den längsta floden som bara rinner genom Frankrike?",
+    "a": [
+     "Loire",
+     "Seine",
+     "Rhône",
+     "Garonne"
+    ]
+   },
+   {
+    "q": "Vilken flod rinner genom Paris?",
+    "a": [
+     "Seine",
+     "Loire",
+     "Rhône",
+     "Marne"
+    ]
+   },
+   {
+    "q": "När firar Frankrike sin nationaldag?",
+    "a": [
+     "14 juli",
+     "1 augusti",
+     "3 oktober",
+     "11 november"
+    ]
+   },
+   {
+    "q": "Vilka färger har Frankrikes flagga (från vänster)?",
+    "a": [
+     "Blå, vit, röd",
+     "Röd, vit, blå",
+     "Blå, vit, grön",
+     "Vit, blå, röd"
+    ]
+   },
+   {
+    "q": "Vad heter Frankrikes nationalsång?",
+    "a": [
+     "La Marseillaise",
+     "La Parisienne",
+     "Le Chant du Départ",
+     "La Bretonne"
+    ]
+   },
+   {
+    "q": "Vilken ö i Medelhavet hör till Frankrike?",
+    "a": [
+     "Korsika",
+     "Sardinien",
+     "Mallorca",
+     "Elba"
+    ]
+   },
+   {
+    "q": "Vad heter det kända cykelloppet genom Frankrike?",
+    "a": [
+     "Tour de France",
+     "Giro d’Italia",
+     "Vuelta",
+     "Paris–Roubaix"
+    ]
+   },
+   {
+    "q": "Vilken valuta hade Frankrike före euron?",
+    "a": [
+     "Franc (fransk franc)",
+     "Livre",
+     "Écu",
+     "Gulden"
+    ]
+   },
+   {
+    "q": "I vilken stad ligger Europaparlamentet?",
+    "a": [
+     "Strasbourg",
+     "Paris",
+     "Lyon",
+     "Lille"
+    ]
+   },
+   {
+    "q": "Vilket djur är en symbol för Frankrike?",
+    "a": [
+     "Tupp",
+     "Örn",
+     "Lejon",
+     "Björn"
+    ]
+   },
+   {
+    "q": "Vilken tunnel förbinder Frankrike med England?",
+    "a": [
+     "Kanaltunneln (Eurotunnel)",
+     "Gotthardtunneln",
+     "Mont Blanc-tunneln",
+     "Fréjustunneln"
+    ]
+   },
+   {
+    "q": "Vilket museum i Paris visar «Mona Lisa»?",
+    "a": [
+     "Louvren",
+     "Musée d’Orsay",
+     "Centre Pompidou",
+     "Musée Rodin"
+    ]
+   },
+   {
+    "q": "Vad heter den pampiga gatan i Paris som leder till Triumfbågen?",
+    "a": [
+     "Champs-Élysées",
+     "Boulevard Saint-Germain",
+     "Rue de Rivoli",
+     "Avenue Foch"
+    ]
+   },
+   {
+    "q": "Hur många länder gränsar det franska fastlandet till (med Andorra och Monaco)?",
+    "a": [
+     "8",
+     "6",
+     "7",
+     "9"
+    ]
+   }
+  ]
+ },
+ "frankreich-regionen": {
+  "title": "Frankrike: regioner",
+  "items": [
+   {
+    "q": "Hur många regioner har det franska fastlandet (sedan 2016) – med Korsika?",
+    "a": [
+     "13",
+     "22",
+     "18",
+     "10"
+    ]
+   },
+   {
+    "q": "Vilken region ligger längst i nordväst vid Atlanten?",
+    "a": [
+     "Bretagne",
+     "Normandie",
+     "Alsace",
+     "Provence"
+    ]
+   },
+   {
+    "q": "Vilken region hör Alsace till i dag?",
+    "a": [
+     "Grand Est",
+     "Hauts-de-France",
+     "Bourgogne-Franche-Comté",
+     "Normandie"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Île-de-France?",
+    "a": [
+     "Paris",
+     "Versailles",
+     "Orléans",
+     "Reims"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Auvergne-Rhône-Alpes?",
+    "a": [
+     "Lyon",
+     "Grenoble",
+     "Clermont-Ferrand",
+     "Saint-Étienne"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Bourgogne-Franche-Comté?",
+    "a": [
+     "Dijon",
+     "Besançon",
+     "Auxerre",
+     "Mâcon"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Bretagne?",
+    "a": [
+     "Rennes",
+     "Brest",
+     "Quimper",
+     "Saint-Malo"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Centre-Val de Loire?",
+    "a": [
+     "Orléans",
+     "Tours",
+     "Bourges",
+     "Chartres"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Korsika?",
+    "a": [
+     "Ajaccio",
+     "Bastia",
+     "Calvi",
+     "Porto-Vecchio"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Grand Est?",
+    "a": [
+     "Strasbourg",
+     "Metz",
+     "Nancy",
+     "Reims"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Hauts-de-France?",
+    "a": [
+     "Lille",
+     "Amiens",
+     "Calais",
+     "Dunkerque"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Normandie?",
+    "a": [
+     "Rouen",
+     "Caen",
+     "Le Havre",
+     "Cherbourg"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Nouvelle-Aquitaine?",
+    "a": [
+     "Bordeaux",
+     "Limoges",
+     "Poitiers",
+     "La Rochelle"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Occitanie?",
+    "a": [
+     "Toulouse",
+     "Montpellier",
+     "Nîmes",
+     "Perpignan"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Pays de la Loire?",
+    "a": [
+     "Nantes",
+     "Angers",
+     "Le Mans",
+     "Saint-Nazaire"
+    ]
+   },
+   {
+    "q": "Vad är huvudstaden i regionen Provence-Alpes-Côte d’Azur?",
+    "a": [
+     "Marseille",
+     "Nice",
+     "Toulon",
+     "Avignon"
+    ]
+   }
+  ]
+ },
+ "frankreich-geschichte": {
+  "title": "Frankrike: historia",
+  "items": [
+   {
+    "q": "Vilket år började den franska revolutionen?",
+    "a": [
+     "1789",
+     "1799",
+     "1776",
+     "1815"
+    ]
+   },
+   {
+    "q": "Vilket fängelse stormades den 14 juli 1789?",
+    "a": [
+     "Bastiljen",
+     "Conciergerie",
+     "Louvren",
+     "Towern i London"
+    ]
+   },
+   {
+    "q": "Vad är den franska republikens motto?",
+    "a": [
+     "Frihet, jämlikhet, broderskap",
+     "Enighet och rätt och frihet",
+     "En för alla, alla för en",
+     "Gud, kung, fosterland"
+    ]
+   },
+   {
+    "q": "Vilken kejsare förlorade slaget vid Waterloo 1815?",
+    "a": [
+     "Napoleon Bonaparte",
+     "Karl den store",
+     "Ludvig XIV",
+     "Napoleon III"
+    ]
+   },
+   {
+    "q": "På vilken ö föddes Napoleon?",
+    "a": [
+     "Korsika",
+     "Elba",
+     "Sardinien",
+     "Sankt Helena"
+    ]
+   },
+   {
+    "q": "Vilken kung kallades «Solkungen»?",
+    "a": [
+     "Ludvig XIV",
+     "Ludvig XVI",
+     "Frans I",
+     "Henrik IV"
+    ]
+   },
+   {
+    "q": "Vilket slott lät Solkungen bygga ut till ett praktfullt palats?",
+    "a": [
+     "Versailles",
+     "Chambord",
+     "Fontainebleau",
+     "Chenonceau"
+    ]
+   },
+   {
+    "q": "Vilken ung kvinna ledde fransmännen i hundraåriga kriget?",
+    "a": [
+     "Jeanne d’Arc",
+     "Marie Antoinette",
+     "Katarina av Medici",
+     "Marie Curie"
+    ]
+   },
+   {
+    "q": "Till vilken världsutställning byggdes Eiffeltornet?",
+    "a": [
+     "1889",
+     "1900",
+     "1867",
+     "1937"
+    ]
+   },
+   {
+    "q": "Vilken kung avrättades under revolutionen?",
+    "a": [
+     "Ludvig XVI",
+     "Ludvig XIV",
+     "Karl X",
+     "Ludvig XVIII"
+    ]
+   },
+   {
+    "q": "Vad hette fursten som blev kejsare över ett stort rike omkring år 800?",
+    "a": [
+     "Karl den store",
+     "Klodvig",
+     "Pippin",
+     "Ludvig den fromme"
+    ]
+   },
+   {
+    "q": "Vid vilken kust landsteg de allierade den 6 juni 1944 (D-dagen)?",
+    "a": [
+     "Normandie",
+     "Bretagne",
+     "Côte d’Azur",
+     "Aquitanien"
+    ]
+   }
+  ]
+ },
+ "frankreich-kueche": {
+  "title": "Frankrike: mat och kultur",
+  "items": [
+   {
+    "q": "Vad heter det långa franska vita brödet?",
+    "a": [
+     "Baguette",
+     "Brioche",
+     "Ciabatta",
+     "Fougasse"
+    ]
+   },
+   {
+    "q": "Vad är en «croissant»?",
+    "a": [
+     "En giffel av smördeg",
+     "En ost",
+     "En soppa",
+     "En efterrätt av ägg"
+    ]
+   },
+   {
+    "q": "Från vilken stad kommer fisksoppan «bouillabaisse»?",
+    "a": [
+     "Marseille",
+     "Paris",
+     "Lyon",
+     "Brest"
+    ]
+   },
+   {
+    "q": "Vilken av de här ostarna kommer från Frankrike?",
+    "a": [
+     "Camembert",
+     "Gouda",
+     "Emmentaler",
+     "Parmesan"
+    ]
+   },
+   {
+    "q": "Vad är «crêpes»?",
+    "a": [
+     "Tunna pannkakor",
+     "Sniglar",
+     "Potatisgratäng",
+     "Grönsaksgryta"
+    ]
+   },
+   {
+    "q": "Från vilken region kommer crêpes från början?",
+    "a": [
+     "Bretagne",
+     "Provence",
+     "Alsace",
+     "Bourgogne"
+    ]
+   },
+   {
+    "q": "Vilken grönsaksgryta kommer från Provence?",
+    "a": [
+     "Ratatouille",
+     "Cassoulet",
+     "Pot-au-feu",
+     "Choucroute"
+    ]
+   },
+   {
+    "q": "Vilken region är känd för sitt mousserande vin?",
+    "a": [
+     "Champagne",
+     "Normandie",
+     "Bretagne",
+     "Korsika"
+    ]
+   },
+   {
+    "q": "Vad är «macarons»?",
+    "a": [
+     "Små mandelkakor med fyllning",
+     "Pasta",
+     "Salta kex",
+     "Fyllda degknyten"
+    ]
+   },
+   {
+    "q": "Vilken rätt från Alsace är en tunn bottenkaka med bacon och lök?",
+    "a": [
+     "Flammkuchen (tarte flambée)",
+     "Quiche",
+     "Tarte Tatin",
+     "Galette"
+    ]
+   },
+   {
+    "q": "Vilken målare med bilder av näckrosor bodde i Giverny?",
+    "a": [
+     "Claude Monet",
+     "Vincent van Gogh",
+     "Pablo Picasso",
+     "Paul Klee"
+    ]
+   },
+   {
+    "q": "Vad heter den kända katedralen i Paris som brann 2019?",
+    "a": [
+     "Notre-Dame",
+     "Sacré-Cœur",
+     "Saint-Sulpice",
+     "Sainte-Chapelle"
+    ]
+   },
+   {
+    "q": "Vilken stad är känd för sin filmfestival?",
+    "a": [
+     "Cannes",
+     "Nice",
+     "Lyon",
+     "Bordeaux"
+    ]
+   },
+   {
+    "q": "Hur säger man «god dag» på franska?",
+    "a": [
+     "Bonjour",
+     "Bonsoir",
+     "Merci",
+     "Salut"
+    ]
+   }
+  ]
+ },
+ "wo-liegt-frankreich": {
+  "title": "Var ligger det? (Frankrike)",
+  "items": [
+   {
+    "q": "Var ligger Paris?",
+    "label": "Paris"
+   },
+   {
+    "q": "Var ligger Marseille?",
+    "label": "Marseille"
+   },
+   {
+    "q": "Var ligger Lyon?",
+    "label": "Lyon"
+   },
+   {
+    "q": "Var ligger Bordeaux?",
+    "label": "Bordeaux"
+   },
+   {
+    "q": "Var ligger Strasbourg?",
+    "label": "Strasbourg"
+   },
+   {
+    "q": "Var ligger Nice?",
+    "label": "Nice"
+   },
+   {
+    "q": "Var ligger Lille?",
+    "label": "Lille"
+   },
+   {
+    "q": "Var ligger Brest?",
+    "label": "Brest"
+   },
+   {
+    "q": "Var ligger Toulouse?",
+    "label": "Toulouse"
+   },
+   {
+    "q": "Var ligger Nantes?",
+    "label": "Nantes"
+   },
+   {
+    "q": "Var ligger Mont-Saint-Michel?",
+    "label": "Mont-Saint-Michel"
+   },
+   {
+    "q": "Var ligger Mont Blanc?",
+    "label": "Mont Blanc"
+   },
+   {
+    "q": "Var ligger Ajaccio (Korsika)?",
+    "label": "Ajaccio (Korsika)"
+   },
+   {
+    "q": "Var ligger Calais?",
+    "label": "Calais"
+   },
+   {
+    "q": "Var ligger Biarritz?",
+    "label": "Biarritz"
+   }
+  ]
+ }
+}

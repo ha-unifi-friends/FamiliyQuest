@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-version="__VERSION__">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141414">
+<title>Family Quest – Planer</title>
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="shared/base.css?v=__VERSION__">
+<style>
+  body { background: #141414; margin: 0; }
+  #planer-root { min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+  html.fq-in-parent #planer-root { padding-bottom: 0; }
+  html.fq-in-parent body { background: var(--bg); }
+  .fq-wait { color: #aaa; padding: 40px; text-align: center; font-family: system-ui, sans-serif; }
+</style>
+<script>
+  window.I18N_EXTRA = ["planer"];
+  // planer?mode=parent (parent area → Chores, in a frame): only the chore plan and the planer settings.
+  // In the app the chore plan and the settings are hidden – they belong to the parents.
+  window.FQ_PLANER_MODE = new URLSearchParams(location.search).get("mode") === "parent" ? "parent" : "app";
+  if (window.FQ_PLANER_MODE === "parent") {
+    window.FQ_PARENT_AREA = true;
+    window.FQ_PLANER_ONLY = ["aemtliplan", "einstellungen"];
+    window.FQ_PLANER_DEFAULT = "aemtliplan";
+    window.FQ_PLANER_THEME = "fq";            // the look of the parent area
+    document.documentElement.classList.add("fq-in-parent");
+  } else {
+    window.FQ_PLANER_HIDE = ["aemtliplan", "einstellungen"];
+  }
+</script>
+<script src="shared/i18n.js?v=__VERSION__"></script>
+</head>
+<body>
+<div id="planer-root"><div class="fq-wait">…</div></div>
+<script src="shared/ui.js?v=__VERSION__"></script>
+<script src="planer/fq-pre.js?v=__VERSION__"></script>
+<script src="planer/mdi-icons.js?v=__VERSION__"></script>
+<script src="planer/family-planer-cards.js?v=__VERSION__"></script>
+<script src="planer/host.js?v=__VERSION__"></script>
+<script>
+  (async () => {
+    const root = document.getElementById("planer-root");
+    if (window.FQ_PLANER_MODE === "parent") {
+      if (!Auth.parent) { root.replaceChildren(h("div.fq-wait", T("Parent PIN required"))); return; }
+      try { await startPlaner(root); } catch (e) { root.replaceChildren(h("div.fq-wait", e.message || String(e))); }
+      return;
+    }
+    if (!Auth.kid && !Auth.parent) { location.href = "app"; return; }
+    // back to the app: the 🏠 button in the planer's top bar (planer/host.js FQ_NAV_HOOK)
+    try { await startPlaner(root); }
+    catch (e) { root.replaceChildren(h("div.fq-wait", e.message || String(e))); }
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+# Englisch A1 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
+id: "sprache-en-a1"
+titel: "Englisch A1 – Einstieg"
+fach: "englisch"
+stufe: "A1"
+sprache: "en"
+quellsprache: "de"
+version: 1
+quelle: "Family Quest (eigene Inhalte, CC0)"
+icon: "🇬🇧"
+beschreibung: "Erste Schritte auf Englisch: Begrüssungen, Zahlen, Familie, Essen und einfache Sätze für den Alltag."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "Your first steps in English: greetings, numbers, family, food and simple everyday sentences."
+  fr: "Tes premiers pas en anglais : salutations, nombres, famille, nourriture et phrases simples du quotidien."
+  it: "I primi passi in inglese: saluti, numeri, famiglia, cibo e frasi semplici di tutti i giorni."
+  es: "Tus primeros pasos en inglés: saludos, números, familia, comida y frases sencillas del día a día."
+  nl: "Je eerste stappen in het Engels: begroeten, getallen, familie, eten en eenvoudige zinnen voor elke dag."
+  pl: "Pierwsze kroki w angielskim: powitania, liczby, rodzina, jedzenie i proste codzienne zdania."
+  pt: "Seus primeiros passos em inglês: cumprimentos, números, família, comida e frases simples do dia a dia."
+  sv: "Dina första steg på engelska: hälsningar, siffror, familj, mat och enkla vardagsmeningar."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: greetings
+    titel: "Hallo und Tschüss"
+    icon: "👋"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "Hallo", en: "hello", auch: ["hi"], emoji: "👋"}
+      - {de: "Guten Morgen", en: "good morning", auch: ["morning"], emoji: "🌅"}
+      - {de: "Guten Tag", en: "good afternoon", auch: ["hello", "good day"], emoji: "🌞"}
+      - {de: "Guten Abend", en: "good evening", auch: ["evening"], emoji: "🌆"}
+      - {de: "Gute Nacht", en: "good night", auch: ["goodnight"], emoji: "🌙"}
+      - {de: "Tschüss", en: "goodbye", auch: ["bye", "bye-bye"], emoji: "👋"}
+      - {de: "Bis später", en: "see you later", auch: ["see you"], emoji: "⏰"}
+      - {de: "Danke", en: "thank you", auch: ["thanks"], emoji: "🙏"}
+      - {de: "Bitte (wenn man etwas möchte)", en: "please", emoji: "🙂"}
+      - {de: "Entschuldigung", en: "sorry", auch: ["excuse me"], emoji: "😅"}
+  - id: numbers-colours
+    titel: "Zahlen und Farben"
+    icon: "🔢"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "eins", en: "one", emoji: "1️⃣"}
+      - {de: "zwei", en: "two", emoji: "2️⃣"}
+      - {de: "drei", en: "three", emoji: "3️⃣"}
+      - {de: "fünf", en: "five", emoji: "5️⃣"}
+      - {de: "zehn", en: "ten", emoji: "🔟"}
+      - {de: "zwölf", en: "twelve"}
+      - {de: "zwanzig", en: "twenty"}
+      - {de: "rot", en: "red", emoji: "🔴"}
+      - {de: "blau", en: "blue", emoji: "🔵"}
+      - {de: "grün", en: "green", emoji: "🟢"}
+      - {de: "gelb", en: "yellow", emoji: "🟡"}
+      - {de: "schwarz", en: "black", emoji: "⚫"}
+  - id: family
+    titel: "Die Familie"
+    icon: "👪"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "die Mutter", en: "the mother", auch: ["mother", "mum", "the mum", "mom", "the mom"], emoji: "👩"}
+      - {de: "der Vater", en: "the father", auch: ["father", "dad", "the dad"], emoji: "👨"}
+      - {de: "die Schwester", en: "the sister", auch: ["sister"], emoji: "👧"}
+      - {de: "der Bruder", en: "the brother", auch: ["brother"], emoji: "👦"}
+      - {de: "die Eltern", en: "the parents", auch: ["parents"]}
+      - {de: "die Grossmutter", en: "the grandmother", auch: ["grandmother", "grandma", "the grandma"], emoji: "👵"}
+      - {de: "der Grossvater", en: "the grandfather", auch: ["grandfather", "grandpa", "the grandpa"], emoji: "👴"}
+      - {de: "das Baby", en: "the baby", auch: ["baby"], emoji: "👶"}
+      - {de: "der Sohn", en: "the son", auch: ["son"]}
+      - {de: "die Tochter", en: "the daughter", auch: ["daughter"]}
+  - id: food-drinks
+    titel: "Essen und Trinken"
+    icon: "🍎"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "das Brot", en: "the bread", auch: ["bread"], emoji: "🍞"}
+      - {de: "der Apfel", en: "the apple", auch: ["apple"], emoji: "🍎"}
+      - {de: "die Milch", en: "the milk", auch: ["milk"], emoji: "🥛"}
+      - {de: "das Wasser", en: "the water", auch: ["water"], emoji: "💧"}
+      - {de: "der Käse", en: "the cheese", auch: ["cheese"], emoji: "🧀"}
+      - {de: "das Ei", en: "the egg", auch: ["egg"], emoji: "🥚"}
+      - {de: "der Saft", en: "the juice", auch: ["juice"], emoji: "🧃"}
+      - {de: "die Banane", en: "the banana", auch: ["banana"], emoji: "🍌"}
+      - {de: "das Frühstück", en: "the breakfast", auch: ["breakfast"], emoji: "🥣"}
+      - {de: "das Abendessen", en: "the dinner", auch: ["dinner", "supper", "the supper"], emoji: "🍽️"}
+  - id: days-time
+    titel: "Tage und Uhrzeit"
+    icon: "📅"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "Montag", en: "Monday"}
+      - {de: "Dienstag", en: "Tuesday"}
+      - {de: "Mittwoch", en: "Wednesday"}
+      - {de: "Donnerstag", en: "Thursday"}
+      - {de: "Freitag", en: "Friday"}
+      - {de: "Samstag", en: "Saturday"}
+      - {de: "Sonntag", en: "Sunday"}
+      - {de: "heute", en: "today", emoji: "📅"}
+      - {de: "morgen", en: "tomorrow"}
+      - {de: "die Woche", en: "the week", auch: ["week"]}
+      - {de: "die Stunde", en: "the hour", auch: ["hour"], emoji: "🕐"}
+      - {de: "Wie spät ist es?", en: "What time is it?", auch: ["What's the time?", "what time is it"], emoji: "⏰"}
+  - id: school-work
+    titel: "Schule und Arbeit"
+    icon: "🏫"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "die Schule", en: "the school", auch: ["school"], emoji: "🏫"}
+      - {de: "der Lehrer / die Lehrerin", en: "the teacher", auch: ["teacher"], emoji: "🧑‍🏫"}
+      - {de: "das Buch", en: "the book", auch: ["book"], emoji: "📖"}
+      - {de: "der Stift", en: "the pen", auch: ["pen"], emoji: "🖊️"}
+      - {de: "der Bleistift", en: "the pencil", auch: ["pencil"], emoji: "✏️"}
+      - {de: "das Heft", en: "the exercise book", auch: ["exercise book", "the notebook", "notebook"], emoji: "📓"}
+      - {de: "die Hausaufgaben", en: "the homework", auch: ["homework"], emoji: "📝"}
+      - {de: "die Arbeit", en: "the work", auch: ["work", "the job", "job"], emoji: "💼"}
+      - {de: "das Büro", en: "the office", auch: ["office"], emoji: "🏢"}
+      - {de: "lernen", en: "to learn", auch: ["learn"], emoji: "🧠"}
+  - id: to-be
+    titel: "to be – sein"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "to be – I", antwort: "am", satz: "I ___ ten years old.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "to be – you", antwort: "are", satz: "You ___ my best friend.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "to be – he", antwort: "is", satz: "He ___ my brother.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "to be – she", antwort: "is", satz: "She ___ a teacher.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "to be – it", antwort: "is", satz: "It ___ cold today.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "to be – we", antwort: "are", satz: "We ___ at home.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "to be – they", antwort: "are", satz: "They ___ hungry.", optionen: ["am", "is", "are", "be"]}
+      - {frage: "Verneinung – I", antwort: "not", satz: "I am ___ tired.", optionen: ["not", "no", "don't", "isn't"]}
+      - {frage: "Frage – you", antwort: "Are", satz: "___ you from Zurich?", optionen: ["Are", "Is", "Am", "Do"]}
+  - id: to-have
+    titel: "to have – haben"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "to have – I", antwort: "have", satz: "I ___ a cat.", optionen: ["have", "has", "haves", "having"]}
+      - {frage: "to have – you", antwort: "have", satz: "You ___ a nice bike.", optionen: ["have", "has", "haves", "having"]}
+      - {frage: "to have – he", antwort: "has", satz: "He ___ a red ball.", optionen: ["have", "has", "haves", "having"]}
+      - {frage: "to have – she", antwort: "has", satz: "She ___ two sisters.", optionen: ["have", "has", "haves", "having"]}
+      - {frage: "to have – we", antwort: "have", satz: "We ___ a big garden.", optionen: ["have", "has", "haves", "having"]}
+      - {frage: "to have – they", antwort: "have", satz: "They ___ a new car.", optionen: ["have", "has", "haves", "having"]}
+      - {frage: "have got – I", antwort: "have", satz: "I ___ got a brother.", optionen: ["have", "has", "am", "is"]}
+      - {frage: "has got – she", antwort: "has", satz: "She ___ got long hair.", optionen: ["have", "has", "is", "are"]}
+      - {frage: "Frage – do", antwort: "Do", satz: "___ you have a dog?", optionen: ["Do", "Does", "Are", "Is"]}
+      - {frage: "Frage – does", antwort: "Does", satz: "___ he have a sister?", optionen: ["Do", "Does", "Are", "Is"]}
+  - id: phrases
+    titel: "Erste Sätze"
+    icon: "💬"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Wie heisst du?", en: "What's your name?", auch: ["What is your name?", "what's your name"]}
+      - {de: "Ich heisse Anna.", en: "My name is Anna.", auch: ["I'm Anna.", "I am Anna.", "My name's Anna."]}
+      - {de: "Wie geht es dir?", en: "How are you?", auch: ["how are you"]}
+      - {de: "Mir geht es gut, danke.", en: "I'm fine, thanks.", auch: ["I'm fine, thank you.", "I am fine, thank you.", "I'm good, thanks.", "I am fine, thanks."]}
+      - {de: "Woher kommst du?", en: "Where are you from?", auch: ["where are you from"]}
+      - {de: "Ich komme aus der Schweiz.", en: "I'm from Switzerland.", auch: ["I am from Switzerland.", "I come from Switzerland."]}
+      - {de: "Wie alt bist du?", en: "How old are you?", auch: ["how old are you"]}
+      - {de: "Ich bin acht Jahre alt.", en: "I'm eight years old.", auch: ["I am eight years old.", "I'm eight.", "I am eight."]}
+      - {de: "Freut mich.", en: "Nice to meet you.", auch: ["Pleased to meet you.", "nice to meet you"]}
+      - {de: "Ich verstehe nicht.", en: "I don't understand.", auch: ["I do not understand."]}
+      - {de: "Kannst du das wiederholen?", en: "Can you say that again?", auch: ["Can you repeat that?", "Could you say that again?", "Could you repeat that?"]}

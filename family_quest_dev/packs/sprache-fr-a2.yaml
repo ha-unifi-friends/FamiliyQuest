@@ -1,0 +1,167 @@
+# Französisch A2 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
+id: sprache-fr-a2
+titel: "Französisch A2 – Grundlagen"
+fach: franzoesisch
+stufe: "A2"
+sprache: fr
+quellsprache: de
+version: 1
+quelle: Family Quest (eigene Inhalte, CC0)
+icon: "🇫🇷"
+beschreibung: "Französisch für den Alltag: einkaufen, reisen, Wetter, Gesundheit, Hobbys und über Vergangenes und Pläne sprechen."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "French for everyday life: shopping, travelling, weather, health, hobbies and talking about the past and plans."
+  it: "Il francese di tutti i giorni: spesa, viaggi, tempo, salute, hobby e parlare del passato e dei progetti."
+  es: "Francés para el día a día: compras, viajes, el tiempo, la salud, aficiones y hablar del pasado y de planes."
+  nl: "Frans voor elke dag: boodschappen, reizen, weer, gezondheid, hobby's en praten over vroeger en plannen."
+  pl: "Francuski na co dzień: zakupy, podróże, pogoda, zdrowie, hobby oraz rozmowy o przeszłości i planach."
+  pt: "Francês para o dia a dia: compras, viagens, tempo, saúde, hobbies e falar do passado e de planos."
+  sv: "Franska i vardagen: handla, resa, väder, hälsa, fritid och prata om det som har hänt och om planer."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: einkaufen
+    titel: Einkaufen
+    icon: "🛒"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: der Laden, fr: le magasin, emoji: "🏪"}
+      - {de: die Bäckerei, fr: la boulangerie, emoji: "🥖"}
+      - {de: der Markt, fr: le marché, auch: [le marche], emoji: "🧺"}
+      - {de: das Geld, fr: l'argent, emoji: "💶"}
+      - {de: der Preis, fr: le prix, emoji: "🏷️"}
+      - {de: teuer, fr: cher}
+      - {de: billig, fr: bon marché, auch: [bon marche, pas cher]}
+      - {de: kaufen, fr: acheter}
+      - {de: bezahlen, fr: payer, emoji: "💳"}
+      - {de: "Wie viel kostet das?", fr: "Combien ça coûte ?", auch: ["Combien ça coûte?", "Combien ca coute ?", "Ça coûte combien ?"]}
+      - {de: "Ich hätte gern ein Kilo Tomaten.", fr: "Je voudrais un kilo de tomates.", emoji: "🍅"}
+      - {de: "Kann ich mit Karte bezahlen?", fr: "Je peux payer par carte ?", auch: ["Je peux payer par carte?", "Est-ce que je peux payer par carte ?"]}
+  - id: reisen
+    titel: Unterwegs
+    icon: "🚆"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: der Zug, fr: le train, emoji: "🚆"}
+      - {de: der Bus, fr: le bus, emoji: "🚌"}
+      - {de: das Flugzeug, fr: l'avion, emoji: "✈️"}
+      - {de: das Velo, fr: le vélo, auch: [le velo], emoji: "🚲"}
+      - {de: der Bahnhof, fr: la gare, emoji: "🚉"}
+      - {de: die Fahrkarte, fr: le billet, emoji: "🎫"}
+      - {de: der Koffer, fr: la valise, emoji: "🧳"}
+      - {de: das Hotel, fr: l'hôtel, auch: [l'hotel], emoji: "🏨"}
+      - {de: links, fr: à gauche, auch: [a gauche], emoji: "⬅️"}
+      - {de: rechts, fr: à droite, auch: [a droite], emoji: "➡️"}
+      - {de: geradeaus, fr: tout droit, emoji: "⬆️"}
+      - {de: "Wo ist der Bahnhof?", fr: "Où est la gare ?", auch: ["Où est la gare?", "Ou est la gare ?"]}
+  - id: wetter
+    titel: Wetter und Jahreszeiten
+    icon: "🌦️"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: der Frühling, fr: le printemps, emoji: "🌷"}
+      - {de: der Sommer, fr: l'été, auch: [l'ete], emoji: "☀️"}
+      - {de: der Herbst, fr: l'automne, emoji: "🍂"}
+      - {de: der Winter, fr: l'hiver, emoji: "❄️"}
+      - {de: Es ist schön., fr: "Il fait beau.", emoji: "😎"}
+      - {de: Es ist heiss., fr: "Il fait chaud.", emoji: "🥵"}
+      - {de: Es ist kalt., fr: "Il fait froid.", emoji: "🥶"}
+      - {de: Es regnet., fr: "Il pleut.", emoji: "🌧️"}
+      - {de: Es schneit., fr: "Il neige.", emoji: "🌨️"}
+      - {de: Es ist windig., fr: "Il y a du vent.", emoji: "💨"}
+      - {de: die Sonne, fr: le soleil, emoji: "🌞"}
+      - {de: die Wolke, fr: le nuage, emoji: "☁️"}
+  - id: koerper
+    titel: Körper und Gesundheit
+    icon: "🩺"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: der Kopf, fr: la tête, auch: [la tete], emoji: "🙂"}
+      - {de: der Arm, fr: le bras, emoji: "💪"}
+      - {de: das Bein, fr: la jambe, emoji: "🦵"}
+      - {de: der Fuss, fr: le pied, emoji: "🦶"}
+      - {de: die Hand, fr: la main, emoji: "✋"}
+      - {de: das Auge, fr: l'œil, auch: [l'oeil], emoji: "👁️"}
+      - {de: der Bauch, fr: le ventre}
+      - {de: der Zahn, fr: la dent, emoji: "🦷"}
+      - {de: krank, fr: malade, emoji: "🤒"}
+      - {de: Ich habe Kopfweh., fr: "J'ai mal à la tête.", auch: ["J'ai mal a la tete."]}
+      - {de: die Apotheke, fr: la pharmacie, emoji: "💊"}
+      - {de: "Gute Besserung!", fr: "Bon rétablissement !", auch: ["Bon rétablissement!", "Bon retablissement !"]}
+  - id: hobbys
+    titel: Freizeit und Hobbys
+    icon: "⚽"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: Fussball spielen, fr: jouer au foot, auch: [jouer au football], emoji: "⚽"}
+      - {de: schwimmen, fr: nager, emoji: "🏊"}
+      - {de: lesen, fr: lire, emoji: "📖"}
+      - {de: tanzen, fr: danser, emoji: "💃"}
+      - {de: singen, fr: chanter, emoji: "🎤"}
+      - {de: zeichnen, fr: dessiner, emoji: "✏️"}
+      - {de: Gitarre spielen, fr: jouer de la guitare, emoji: "🎸"}
+      - {de: wandern, fr: faire de la randonnée, auch: [faire de la randonnee], emoji: "🥾"}
+      - {de: Ski fahren, fr: faire du ski, emoji: "⛷️"}
+      - {de: das Spiel, fr: le jeu, emoji: "🎲"}
+      - {de: "Was machst du gern?", fr: "Qu'est-ce que tu aimes faire ?", auch: ["Qu'est-ce que tu aimes faire?"]}
+      - {de: "Ich spiele gern Tennis.", fr: "J'aime jouer au tennis.", emoji: "🎾"}
+  - id: zuhause
+    titel: Zu Hause
+    icon: "🏠"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: die Wohnung, fr: l'appartement, emoji: "🏢"}
+      - {de: die Küche, fr: la cuisine, emoji: "🍳"}
+      - {de: das Schlafzimmer, fr: la chambre, emoji: "🛏️"}
+      - {de: das Badezimmer, fr: la salle de bains, auch: [la salle de bain], emoji: "🛁"}
+      - {de: das Wohnzimmer, fr: le salon, emoji: "🛋️"}
+      - {de: der Kühlschrank, fr: le frigo, auch: [le réfrigérateur]}
+      - {de: das Sofa, fr: le canapé, auch: [le canape]}
+      - {de: aufräumen, fr: ranger, emoji: "🧹"}
+      - {de: kochen, fr: faire la cuisine, auch: [cuisiner]}
+      - {de: abwaschen, fr: faire la vaisselle, emoji: "🍽️"}
+      - {de: die Nachbarin, fr: la voisine}
+  - id: alltag
+    titel: Nützliche Sätze
+    icon: "💬"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Ich verstehe nicht.", fr: "Je ne comprends pas."}
+      - {de: "Kannst du das wiederholen?", fr: "Tu peux répéter ?", auch: ["Tu peux répéter?", "Tu peux repeter ?"]}
+      - {de: "Langsamer, bitte.", fr: "Plus lentement, s'il vous plaît.", auch: ["Plus lentement, s'il vous plait.", "Plus lentement, s'il te plaît."]}
+      - {de: "Was bedeutet das?", fr: "Qu'est-ce que ça veut dire ?", auch: ["Qu'est-ce que ça veut dire?", "Qu'est-ce que ca veut dire ?"]}
+      - {de: "Kein Problem.", fr: "Pas de problème.", auch: ["Pas de probleme."]}
+      - {de: "Ich habe keine Zeit.", fr: "Je n'ai pas le temps."}
+      - {de: "Hast du Lust, ins Kino zu gehen?", fr: "Tu as envie d'aller au cinéma ?", auch: ["Tu as envie d'aller au cinéma?", "Tu as envie d'aller au cinema ?"], emoji: "🎬"}
+      - {de: "Gute Idee!", fr: "Bonne idée !", auch: ["Bonne idée!", "Bonne idee !"]}
+      - {de: "Wir treffen uns um acht Uhr.", fr: "On se retrouve à huit heures.", auch: ["On se retrouve a huit heures."]}
+      - {de: "Schönes Wochenende!", fr: "Bon week-end !", auch: ["Bon week-end!", "Bon weekend !"]}
+  - id: passe-compose
+    titel: "Passé composé"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "manger – j' (passé composé)", antwort: ai mangé, auch: [ai mange], satz: "Hier, j'___ une pizza.", optionen: [ai mangé, suis mangé, mange, ai manger]}
+      - {frage: "aller – je (passé composé)", antwort: suis allé, auch: [suis allée, suis alle], satz: "Samedi, je ___ au marché.", optionen: [suis allé, ai allé, vais, suis aller]}
+      - {frage: "finir – tu (passé composé)", antwort: as fini, satz: "Tu ___ tes devoirs ?", optionen: [as fini, es fini, finis, as finir]}
+      - {frage: "voir – il (passé composé)", antwort: a vu, satz: "Il ___ un film au cinéma.", optionen: [a vu, est vu, voit, a voir]}
+      - {frage: "partir – elle (passé composé)", antwort: est partie, satz: "Elle ___ en vacances.", optionen: [est partie, a parti, est parti, part]}
+      - {frage: "faire – nous (passé composé)", antwort: avons fait, satz: "Nous ___ une randonnée.", optionen: [avons fait, sommes faits, faisons, avons faire]}
+      - {frage: "venir – vous (passé composé)", antwort: êtes venus, auch: [etes venus, êtes venu, êtes venue, êtes venues], satz: "Vous ___ en train ?", optionen: [êtes venus, avez venu, venez, êtes venir]}
+      - {frage: "acheter – ils (passé composé)", antwort: ont acheté, auch: [ont achete], satz: "Ils ___ du pain.", optionen: [ont acheté, sont achetés, achètent, ont acheter]}
+      - {frage: "prendre – j' (passé composé)", antwort: ai pris, satz: "J'___ le bus ce matin.", optionen: [ai pris, suis pris, prends, ai prendu]}
+      - {frage: "arriver – elles (passé composé)", antwort: sont arrivées, auch: [sont arrivees], satz: "Elles ___ à la gare.", optionen: [sont arrivées, ont arrivé, arrivent, sont arrivé]}
+  - id: futur-proche
+    titel: "Futur proche – aller + Infinitiv"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "aller – je (futur proche)", antwort: vais, satz: "Je ___ partir demain.", optionen: [vais, vas, va, allons, allez, vont]}
+      - {frage: "aller – tu (futur proche)", antwort: vas, satz: "Tu ___ venir à la fête ?", optionen: [vais, vas, va, allons, allez, vont]}
+      - {frage: "aller – il (futur proche)", antwort: va, satz: "Il ___ pleuvoir ce soir.", optionen: [vais, vas, va, allons, allez, vont]}
+      - {frage: "aller – on (futur proche)", antwort: va, satz: "On ___ manger au restaurant.", optionen: [vais, vas, va, allons, allez, vont]}
+      - {frage: "aller – nous (futur proche)", antwort: allons, satz: "Nous ___ visiter Paris.", optionen: [vais, vas, va, allons, allez, vont]}
+      - {frage: "aller – vous (futur proche)", antwort: allez, satz: "Vous ___ prendre le train ?", optionen: [vais, vas, va, allons, allez, vont]}
+      - {frage: "aller – ils (futur proche)", antwort: vont, satz: "Ils ___ jouer au foot.", optionen: [vais, vas, va, allons, allez, vont]}
+      - {frage: "aller – elles (futur proche)", antwort: vont, satz: "Elles ___ faire du ski.", optionen: [vais, vas, va, allons, allez, vont]}

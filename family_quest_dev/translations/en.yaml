@@ -1,0 +1,8 @@
+configuration:
+  log_level:
+    name: Log level
+  direct_access:
+    name: Direct access in the home network
+    description: Also serve the app on port 8099 (set the port under Network). Children then pick their profile, with an optional PIN, instead of a Home Assistant login.
+network:
+  8099/tcp: Direct access (only with the option direct access)

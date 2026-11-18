@@ -1,0 +1,36 @@
+# Englisch 5. Klasse – In the classroom (eigener Grundwortschatz, CC0)
+id: engl-5kl-unit-1
+titel: "Englisch 5. Klasse – In the classroom"
+fach: englisch
+stufe: 5. Klasse
+sprache: en
+quellsprache: de
+version: 1
+quelle: Family Quest (eigene Wortliste, CC0)
+einheiten:
+  - id: classroom
+    titel: In the classroom
+    icon: "🏫"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: der Bleistift, en: the pencil, emoji: "✏️"}
+      - {de: der Radiergummi, en: the rubber, auch: [the eraser]}
+      - {de: das Lineal, en: the ruler, emoji: "📏"}
+      - {de: die Schultasche, en: the schoolbag, emoji: "🎒"}
+      - {de: das Buch, en: the book, emoji: "📕"}
+      - {de: das Pult, en: the desk}
+      - {de: die Lehrerin, en: the teacher, emoji: "👩‍🏫"}
+      - {de: das Schulzimmer, en: the classroom, emoji: "🏫"}
+  - id: colours
+    titel: Colours
+    icon: "🎨"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: rot, en: red, emoji: "🟥"}
+      - {de: blau, en: blue, emoji: "🟦"}
+      - {de: grün, en: green, emoji: "🟩"}
+      - {de: gelb, en: yellow, emoji: "🟨"}
+      - {de: schwarz, en: black, emoji: "⬛"}
+      - {de: weiss, en: white, emoji: "⬜"}
+      - {de: orange, en: orange, emoji: "🟧"}
+      - {de: violett, en: purple, emoji: "🟪"}

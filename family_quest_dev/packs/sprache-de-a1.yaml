@@ -1,0 +1,171 @@
+# Deutsch A1 – language course (own content, Family Quest, CC0)
+id: sprache-de-a1
+titel: "German A1 – Beginner"
+fach: deutsch
+stufe: "A1"
+sprache: de
+quellsprache: en
+version: 1
+quelle: Family Quest (eigene Inhalte, CC0)
+icon: "🇩🇪"
+beschreibung: "Your first steps in German: greetings, numbers, family, food and simple everyday sentences."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  de: "Erste Schritte auf Deutsch: Begrüssungen, Zahlen, Familie, Essen und einfache Sätze für den Alltag."
+  fr: "Tes premiers pas en allemand : salutations, nombres, famille, nourriture et phrases simples du quotidien."
+  it: "I primi passi in tedesco: saluti, numeri, famiglia, cibo e frasi semplici di tutti i giorni."
+  es: "Tus primeros pasos en alemán: saludos, números, familia, comida y frases sencillas del día a día."
+  nl: "Je eerste stappen in het Duits: begroeten, getallen, familie, eten en eenvoudige zinnen voor elke dag."
+  pl: "Pierwsze kroki w niemieckim: powitania, liczby, rodzina, jedzenie i proste codzienne zdania."
+  pt: "Seus primeiros passos em alemão: cumprimentos, números, família, comida e frases simples do dia a dia."
+  sv: "Dina första steg på tyska: hälsningar, siffror, familj, mat och enkla vardagsmeningar."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: greetings
+    titel: Hello and goodbye
+    icon: "👋"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {en: hello, de: Hallo, emoji: "👋"}
+      - {en: good morning, de: Guten Morgen, emoji: "🌅"}
+      - {en: good evening, de: Guten Abend, emoji: "🌆"}
+      - {en: goodbye, de: Auf Wiedersehen}
+      - {en: bye, de: Tschüss, auch: [Tschüs]}
+      - {en: please, de: bitte, emoji: "🙏"}
+      - {en: thank you, de: danke}
+      - {en: My name is Anna., de: Ich heisse Anna., auch: [Ich heiße Anna.]}
+      - {en: "What is your name?", de: "Wie heisst du?", auch: ["Wie heißt du?"]}
+      - {en: "How are you?", de: "Wie geht es dir?"}
+      - {en: "I'm fine, thanks.", de: "Mir geht es gut, danke."}
+      - {en: "I don't understand.", de: Ich verstehe das nicht.}
+  - id: numbers
+    titel: Numbers 1–20
+    icon: "🔢"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: one, de: eins, emoji: "1️⃣"}
+      - {en: two, de: zwei, emoji: "2️⃣"}
+      - {en: three, de: drei, emoji: "3️⃣"}
+      - {en: four, de: vier, emoji: "4️⃣"}
+      - {en: five, de: fünf, emoji: "5️⃣"}
+      - {en: six, de: sechs, emoji: "6️⃣"}
+      - {en: seven, de: sieben, emoji: "7️⃣"}
+      - {en: eight, de: acht, emoji: "8️⃣"}
+      - {en: nine, de: neun, emoji: "9️⃣"}
+      - {en: ten, de: zehn, emoji: "🔟"}
+      - {en: twelve, de: zwölf}
+      - {en: twenty, de: zwanzig}
+  - id: family
+    titel: My family
+    icon: "👪"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: the mother, de: die Mutter, emoji: "👩"}
+      - {en: the father, de: der Vater, emoji: "👨"}
+      - {en: the sister, de: die Schwester, emoji: "👧"}
+      - {en: the brother, de: der Bruder, emoji: "👦"}
+      - {en: the parents, de: die Eltern}
+      - {en: the grandmother, de: die Grossmutter, auch: [die Großmutter], emoji: "👵"}
+      - {en: the grandfather, de: der Grossvater, auch: [der Großvater], emoji: "👴"}
+      - {en: the child, de: das Kind, emoji: "🧒"}
+      - {en: the baby, de: das Baby, emoji: "👶"}
+      - {en: the aunt, de: die Tante}
+      - {en: the uncle, de: der Onkel}
+  - id: food-drinks
+    titel: Food and drinks
+    icon: "🍎"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: the bread, de: das Brot, emoji: "🍞"}
+      - {en: the apple, de: der Apfel, emoji: "🍎"}
+      - {en: the water, de: das Wasser, emoji: "💧"}
+      - {en: the milk, de: die Milch, emoji: "🥛"}
+      - {en: the cheese, de: der Käse, emoji: "🧀"}
+      - {en: the egg, de: das Ei, emoji: "🥚"}
+      - {en: the banana, de: die Banane, emoji: "🍌"}
+      - {en: the juice, de: der Saft, emoji: "🧃"}
+      - {en: the coffee, de: der Kaffee, emoji: "☕"}
+      - {en: the tea, de: der Tee, emoji: "🍵"}
+      - {en: to eat, de: essen}
+      - {en: to drink, de: trinken}
+  - id: colours
+    titel: Colours
+    icon: "🎨"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: red, de: rot, emoji: "🟥"}
+      - {en: blue, de: blau, emoji: "🟦"}
+      - {en: green, de: grün, emoji: "🟩"}
+      - {en: yellow, de: gelb, emoji: "🟨"}
+      - {en: black, de: schwarz, emoji: "⬛"}
+      - {en: white, de: weiss, auch: [weiß], emoji: "⬜"}
+      - {en: orange, de: orange, emoji: "🟧"}
+      - {en: brown, de: braun, emoji: "🟫"}
+      - {en: purple, de: lila, emoji: "🟪"}
+      - {en: grey, de: grau}
+  - id: days-time
+    titel: Days and time
+    icon: "📅"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: Monday, de: Montag}
+      - {en: Tuesday, de: Dienstag}
+      - {en: Wednesday, de: Mittwoch}
+      - {en: Thursday, de: Donnerstag}
+      - {en: Friday, de: Freitag}
+      - {en: Saturday, de: Samstag}
+      - {en: Sunday, de: Sonntag}
+      - {en: today, de: heute}
+      - {en: tomorrow, de: morgen}
+      - {en: yesterday, de: gestern}
+      - {en: the hour, de: die Stunde, emoji: "⏰"}
+      - {en: the week, de: die Woche}
+  - id: school-work
+    titel: School and work
+    icon: "🏫"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {en: the school, de: die Schule, emoji: "🏫"}
+      - {en: the teacher (female), de: die Lehrerin, emoji: "👩‍🏫"}
+      - {en: the teacher (male), de: der Lehrer, emoji: "👨‍🏫"}
+      - {en: the book, de: das Buch, emoji: "📕"}
+      - {en: the pen, de: der Stift, emoji: "🖊️"}
+      - {en: the table, de: der Tisch}
+      - {en: the work / the job, de: die Arbeit, emoji: "💼"}
+      - {en: the office, de: das Büro, emoji: "🏢"}
+      - {en: to learn, de: lernen}
+      - {en: to work, de: arbeiten}
+      - {en: to read, de: lesen, emoji: "📖"}
+      - {en: to write, de: schreiben, emoji: "✏️"}
+  - id: sein-haben
+    titel: "sein and haben – to be, to have"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "sein – ich", antwort: bin, satz: "Ich ___ müde.", optionen: [bin, bist, ist, sind, seid]}
+      - {frage: "sein – du", antwort: bist, satz: "Du ___ mein Freund.", optionen: [bin, bist, ist, sind, seid]}
+      - {frage: "sein – er/sie/es", antwort: ist, satz: "Das Wetter ___ schön.", optionen: [bin, bist, ist, sind, seid]}
+      - {frage: "sein – wir", antwort: sind, satz: "Wir ___ zu Hause.", optionen: [bin, bist, ist, sind, seid]}
+      - {frage: "sein – ihr", antwort: seid, satz: "Ihr ___ sehr nett.", optionen: [bin, bist, ist, sind, seid]}
+      - {frage: "haben – ich", antwort: habe, satz: "Ich ___ einen Hund.", optionen: [habe, hast, hat, haben, habt]}
+      - {frage: "haben – du", antwort: hast, satz: "___ du Zeit?", optionen: [habe, hast, hat, haben, habt]}
+      - {frage: "haben – er/sie/es", antwort: hat, satz: "Mein Bruder ___ eine Katze.", optionen: [habe, hast, hat, haben, habt]}
+      - {frage: "haben – wir", antwort: haben, satz: "Wir ___ heute Schule.", optionen: [habe, hast, hat, haben, habt]}
+      - {frage: "haben – ihr", antwort: habt, satz: "___ ihr Hunger?", optionen: [habe, hast, hat, haben, habt]}
+  - id: articles
+    titel: "der, die, das"
+    icon: "📝"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "article – Hund (dog)", antwort: der, satz: "___ Hund ist gross.", optionen: [der, die, das]}
+      - {frage: "article – Katze (cat)", antwort: die, satz: "___ Katze schläft.", optionen: [der, die, das]}
+      - {frage: "article – Haus (house)", antwort: das, satz: "___ Haus ist alt.", optionen: [der, die, das]}
+      - {frage: "article – Schule (school)", antwort: die, satz: "___ Schule beginnt um acht.", optionen: [der, die, das]}
+      - {frage: "article – Apfel (apple)", antwort: der, satz: "___ Apfel ist rot.", optionen: [der, die, das]}
+      - {frage: "article – Buch (book)", antwort: das, satz: "___ Buch ist spannend.", optionen: [der, die, das]}
+      - {frage: "article – Milch (milk)", antwort: die, satz: "___ Milch ist kalt.", optionen: [der, die, das]}
+      - {frage: "article – Kind (child)", antwort: das, satz: "___ Kind spielt im Garten.", optionen: [der, die, das]}
+      - {frage: "article – Vater (father)", antwort: der, satz: "___ Vater kocht heute.", optionen: [der, die, das]}
+      - {frage: "a / an – Brot (das)", antwort: ein, satz: "Ich esse ___ Brot.", optionen: [ein, eine, einen]}
+      - {frage: "a / an – Banane (die)", antwort: eine, satz: "Ich möchte ___ Banane.", optionen: [ein, eine, einen]}

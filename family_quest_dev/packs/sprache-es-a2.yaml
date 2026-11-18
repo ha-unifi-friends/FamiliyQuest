@@ -1,0 +1,172 @@
+# Spanisch A2 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
+id: sprache-es-a2
+titel: "Spanisch A2 – Grundlagen"
+fach: spanisch
+stufe: "A2"
+sprache: es
+quellsprache: de
+version: 1
+quelle: Family Quest (eigene Inhalte, CC0)
+icon: "🇪🇸"
+beschreibung: "Spanisch für den Alltag: einkaufen, reisen, Wetter, Gesundheit, Freizeit, Perfekt und Zukunft mit ir a."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "Spanish for everyday life: shopping, travelling, weather, health, free time, the perfect tense and the future with ir a."
+  fr: "L'espagnol au quotidien : courses, voyages, météo, santé, loisirs, le passé composé et le futur avec ir a."
+  it: "Lo spagnolo di tutti i giorni: spesa, viaggi, tempo, salute, tempo libero, il passato prossimo e il futuro con ir a."
+  nl: "Spaans voor elke dag: boodschappen, reizen, weer, gezondheid, vrije tijd, de voltooide tijd en de toekomst met ir a."
+  pl: "Hiszpański na co dzień: zakupy, podróże, pogoda, zdrowie, czas wolny, czas przeszły i przyszłość z ir a."
+  pt: "Espanhol para o dia a dia: compras, viagens, tempo, saúde, lazer, o pretérito perfeito e o futuro com ir a."
+  sv: "Spanska i vardagen: handla, resa, väder, hälsa, fritid, perfekt och framtid med ir a."
+pfad: true
+standard: false
+selbst: true
+einheiten:
+  - id: compras
+    titel: "Einkaufen"
+    icon: "🛒"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "der Laden", es: "la tienda", emoji: "🏪"}
+      - {de: "der Supermarkt", es: "el supermercado", emoji: "🛒"}
+      - {de: "das Geld", es: "el dinero", emoji: "💶"}
+      - {de: "der Preis", es: "el precio", emoji: "🏷️"}
+      - {de: "die Kasse", es: "la caja"}
+      - {de: "die Tüte", es: "la bolsa", emoji: "🛍️"}
+      - {de: "billig", es: "barato"}
+      - {de: "teuer", es: "caro", emoji: "💎"}
+      - {de: "die Kleider", es: "la ropa", emoji: "👚"}
+      - {de: "das T-Shirt", es: "la camiseta", emoji: "👕"}
+      - {de: "die Hose", es: "los pantalones", emoji: "👖"}
+      - {de: "die Schuhe", es: "los zapatos", emoji: "👟"}
+  - id: transporte
+    titel: "Reisen und Verkehr"
+    icon: "🚆"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "der Zug", es: "el tren", emoji: "🚆"}
+      - {de: "der Bus", es: "el autobús", auch: ["el autobus"], emoji: "🚌"}
+      - {de: "das Flugzeug", es: "el avión", auch: ["el avion"], emoji: "✈️"}
+      - {de: "das Auto", es: "el coche", emoji: "🚗"}
+      - {de: "das Velo", es: "la bicicleta", auch: ["la bici"], emoji: "🚲"}
+      - {de: "das Schiff", es: "el barco", emoji: "🚢"}
+      - {de: "der Bahnhof", es: "la estación", auch: ["la estacion"], emoji: "🚉"}
+      - {de: "der Flughafen", es: "el aeropuerto", emoji: "🛫"}
+      - {de: "das Billett", es: "el billete", emoji: "🎫"}
+      - {de: "der Koffer", es: "la maleta", emoji: "🧳"}
+      - {de: "die U-Bahn", es: "el metro", emoji: "🚇"}
+      - {de: "die Strasse", es: "la calle", emoji: "🛣️"}
+  - id: tiempo
+    titel: "Wetter und Jahreszeiten"
+    icon: "⛅"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "Die Sonne scheint.", es: "Hace sol.", emoji: "☀️"}
+      - {de: "Es regnet.", es: "Llueve.", auch: ["Está lloviendo.", "Esta lloviendo."], emoji: "🌧️"}
+      - {de: "Es schneit.", es: "Nieva.", auch: ["Está nevando.", "Esta nevando."], emoji: "❄️"}
+      - {de: "Es ist kalt.", es: "Hace frío.", auch: ["Hace frio."], emoji: "🥶"}
+      - {de: "Es ist heiss.", es: "Hace calor.", emoji: "🥵"}
+      - {de: "Es ist windig.", es: "Hace viento.", emoji: "💨"}
+      - {de: "Es ist bewölkt.", es: "Está nublado.", auch: ["Esta nublado."], emoji: "☁️"}
+      - {de: "der Frühling", es: "la primavera", emoji: "🌷"}
+      - {de: "der Sommer", es: "el verano", emoji: "🏖️"}
+      - {de: "der Herbst", es: "el otoño", auch: ["el otono"], emoji: "🍂"}
+      - {de: "der Winter", es: "el invierno", emoji: "⛄"}
+  - id: cuerpo
+    titel: "Körper und Gesundheit"
+    icon: "🩺"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "der Kopf", es: "la cabeza"}
+      - {de: "der Arm", es: "el brazo", emoji: "💪"}
+      - {de: "die Hand", es: "la mano", emoji: "✋"}
+      - {de: "das Bein", es: "la pierna", emoji: "🦵"}
+      - {de: "der Fuss", es: "el pie", emoji: "🦶"}
+      - {de: "das Auge", es: "el ojo", emoji: "👁️"}
+      - {de: "der Mund", es: "la boca", emoji: "👄"}
+      - {de: "die Nase", es: "la nariz", emoji: "👃"}
+      - {de: "der Rücken", es: "la espalda"}
+      - {de: "der Magen", es: "el estómago", auch: ["el estomago"]}
+      - {de: "Ich habe Kopfweh.", es: "Me duele la cabeza.", emoji: "🤕"}
+      - {de: "Ich bin krank.", es: "Estoy enfermo.", auch: ["Estoy enferma."], emoji: "🤒"}
+  - id: hobbies
+    titel: "Freizeit und Hobbys"
+    icon: "⚽"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "Fussball spielen", es: "jugar al fútbol", auch: ["jugar al futbol"], emoji: "⚽"}
+      - {de: "schwimmen", es: "nadar", emoji: "🏊"}
+      - {de: "lesen", es: "leer", emoji: "📖"}
+      - {de: "tanzen", es: "bailar", emoji: "💃"}
+      - {de: "singen", es: "cantar", emoji: "🎤"}
+      - {de: "zeichnen", es: "dibujar", emoji: "✏️"}
+      - {de: "Gitarre spielen", es: "tocar la guitarra", emoji: "🎸"}
+      - {de: "Velo fahren", es: "montar en bici", auch: ["montar en bicicleta"], emoji: "🚲"}
+      - {de: "fernsehen", es: "ver la tele", emoji: "📺"}
+      - {de: "Musik hören", es: "escuchar música", auch: ["escuchar musica"], emoji: "🎧"}
+      - {de: "kochen", es: "cocinar", emoji: "🍳"}
+      - {de: "ins Kino gehen", es: "ir al cine", emoji: "🎬"}
+  - id: casa
+    titel: "Zu Hause"
+    icon: "🏠"
+    uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
+    karten:
+      - {de: "das Haus", es: "la casa", emoji: "🏠"}
+      - {de: "die Wohnung", es: "el piso", emoji: "🏢"}
+      - {de: "die Küche", es: "la cocina", emoji: "🍳"}
+      - {de: "das Schlafzimmer", es: "el dormitorio", emoji: "🛏️"}
+      - {de: "das Badezimmer", es: "el baño", auch: ["el bano"], emoji: "🛁"}
+      - {de: "das Wohnzimmer", es: "el salón", auch: ["el salon"], emoji: "🛋️"}
+      - {de: "der Tisch", es: "la mesa"}
+      - {de: "der Stuhl", es: "la silla", emoji: "🪑"}
+      - {de: "das Bett", es: "la cama", emoji: "🛏️"}
+      - {de: "das Fenster", es: "la ventana", emoji: "🪟"}
+      - {de: "die Tür", es: "la puerta", emoji: "🚪"}
+      - {de: "der Kühlschrank", es: "la nevera", emoji: "🧊"}
+  - id: alltag
+    titel: "Sätze für den Alltag"
+    icon: "💬"
+    uebungen: [auswahl, eintippen, hoeren, karteikarte]
+    karten:
+      - {de: "Wie viel kostet das?", es: "¿Cuánto cuesta?", auch: ["Cuanto cuesta?"], emoji: "💶"}
+      - {de: "Ich hätte gern ein Wasser, bitte.", es: "Quería un agua, por favor.", auch: ["Queria un agua, por favor."], emoji: "💧"}
+      - {de: "Wo ist der Bahnhof?", es: "¿Dónde está la estación?", auch: ["Donde esta la estacion?"], emoji: "🚉"}
+      - {de: "Die Rechnung, bitte.", es: "La cuenta, por favor.", emoji: "🧾"}
+      - {de: "Kannst du mir helfen?", es: "¿Me puedes ayudar?", auch: ["Me puedes ayudar?"]}
+      - {de: "Ich weiss es nicht.", es: "No lo sé.", auch: ["No lo se."], emoji: "🤷"}
+      - {de: "Kein Problem.", es: "No pasa nada."}
+      - {de: "Entschuldigung!", es: "¡Perdón!", auch: ["Perdon!"]}
+      - {de: "Langsamer, bitte.", es: "Más despacio, por favor.", auch: ["Mas despacio, por favor."]}
+      - {de: "Um wie viel Uhr?", es: "¿A qué hora?", auch: ["A que hora?"], emoji: "🕐"}
+      - {de: "Ich habe Hunger.", es: "Tengo hambre.", emoji: "😋"}
+      - {de: "Viel Glück!", es: "¡Mucha suerte!", auch: ["Mucha suerte!"], emoji: "🍀"}
+  - id: perfecto
+    titel: "Pretérito perfecto"
+    icon: "✍️"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "haber – yo", antwort: "he", satz: "Hoy ___ comido paella.", optionen: ["he", "has", "ha", "hemos", "habéis", "han"]}
+      - {frage: "haber – tú", antwort: "has", satz: "¿Ya ___ terminado los deberes?", optionen: ["he", "has", "ha", "hemos", "habéis", "han"]}
+      - {frage: "haber – mi hermana", antwort: "ha", satz: "Mi hermana ___ llegado tarde.", optionen: ["he", "has", "ha", "hemos", "habéis", "han"]}
+      - {frage: "haber – nosotros", antwort: "hemos", satz: "Esta semana ___ ido al cine.", optionen: ["he", "has", "ha", "hemos", "habéis", "han"]}
+      - {frage: "haber – vosotros", antwort: "habéis", auch: ["habeis"], satz: "¿Vosotros ___ estado en Barcelona?", optionen: ["he", "has", "ha", "hemos", "habéis", "han"]}
+      - {frage: "haber – mis padres", antwort: "han", satz: "Mis padres ___ viajado a Italia.", optionen: ["he", "has", "ha", "hemos", "habéis", "han"]}
+      - {frage: "hablar → Partizip", antwort: "hablado", satz: "He ___ con la profesora.", optionen: ["hablado", "hablando", "hablé", "habla"]}
+      - {frage: "comer → Partizip", antwort: "comido", satz: "Hemos ___ demasiado.", optionen: ["comido", "comiendo", "comí", "come"]}
+      - {frage: "hacer → Partizip", antwort: "hecho", satz: "¿Qué has ___ hoy?", optionen: ["hecho", "hacido", "haciendo", "hizo"]}
+      - {frage: "ver → Partizip", antwort: "visto", satz: "No he ___ la película.", optionen: ["visto", "vido", "viendo", "vio"]}
+      - {frage: "escribir → Partizip", antwort: "escrito", satz: "Ella ha ___ una carta.", optionen: ["escrito", "escribido", "escribiendo", "escribió"]}
+  - id: ir-a
+    titel: "ir a + Infinitiv"
+    icon: "🔮"
+    uebungen: [lueckentext, auswahl]
+    karten:
+      - {frage: "ir a – yo", antwort: "voy", satz: "Mañana ___ a visitar a mi abuela.", optionen: ["voy", "vas", "va", "vamos", "vais", "van"]}
+      - {frage: "ir a – tú", antwort: "vas", satz: "¿Qué ___ a hacer este fin de semana?", optionen: ["voy", "vas", "va", "vamos", "vais", "van"]}
+      - {frage: "ir a – (Wetter)", antwort: "va", satz: "Creo que ___ a llover.", optionen: ["voy", "vas", "va", "vamos", "vais", "van"]}
+      - {frage: "ir a – nosotros", antwort: "vamos", satz: "Esta noche ___ a cenar pizza.", optionen: ["voy", "vas", "va", "vamos", "vais", "van"]}
+      - {frage: "ir a – vosotros", antwort: "vais", satz: "¿Vosotros ___ a venir a la fiesta?", optionen: ["voy", "vas", "va", "vamos", "vais", "van"]}
+      - {frage: "ir a – mis amigos", antwort: "van", satz: "Mis amigos ___ a jugar al fútbol.", optionen: ["voy", "vas", "va", "vamos", "vais", "van"]}
+      - {frage: "ir a – mi madre", antwort: "va", satz: "Mi madre ___ a comprar pan.", optionen: ["voy", "vas", "va", "vamos", "vais", "van"]}
+      - {frage: "Infinitiv: kaufen", antwort: "comprar", satz: "Vamos a ___ un regalo.", optionen: ["comprar", "compramos", "comprado", "compra"]}
+      - {frage: "Infinitiv: lernen", antwort: "aprender", satz: "Voy a ___ español.", optionen: ["aprender", "aprendo", "aprendido", "aprende"]}
+      - {frage: "Infinitiv: schlafen", antwort: "dormir", satz: "Esta noche vas a ___ bien.", optionen: ["dormir", "duermes", "dormido", "duerme"]}
