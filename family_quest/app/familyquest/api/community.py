@@ -69,7 +69,7 @@ def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 â€
     """A learner who may play this game (parent area â€º Games, per game and person)."""
     fq = app_of(request)
     game = game_of(request.url.path)
-    if not fq.games_allowed(prof, game, time=False):
+    if not fq.games_allowed(prof, game, time=False) and not _parent_table(fq, prof, game, request):
         if game:
             raise HTTPException(403, "This game is switched off for you")
         raise HTTPException(403, "Games are switched off for you")
@@ -83,6 +83,24 @@ def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 â€
 
 
 Gamer = Depends(Player)
+
+# a locked game (switched off, not bought / rented) at a family table a PARENT opened: the child may look, join and
+# play that table â€“ but nothing that opens an own table (alone, a new family table, a rematch)
+OWN_TABLE = {"start", "again", "rematch", "solo", "duel", "accept", "seat", "delete", "resume"}
+
+
+def _parent_table(fq, prof: dict, game: str | None, request: Request) -> bool:
+    if not game or prof.get("role") != "kid":
+        return False
+    part = request.url.path.split("/api/community/", 1)[-1].strip("/").split("/")
+    if part[0] in NOT_PLAYING or part[-1] in OWN_TABLE:
+        return False
+    t = fq.parent_tables(prof, time=False).get(game)
+    if not t:
+        return False
+    if request.method == "GET" or t["member"]:
+        return True
+    return part[-1] == "join" and t["joinable"]
 
 
 def PlayerOrGuest(request: Request, x_fq_token: str | None = Header(default=None),        # noqa: N802

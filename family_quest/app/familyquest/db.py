@@ -610,6 +610,20 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(profile_id, day, minute)
     );
     """,
+    # 35 – games with a price for children (gamepasses.py): bought for good or rented until a time. The one-armed
+    # bandit joins this model – whoever bought it before (unlock «slot_machine») has it bought.
+    """
+    CREATE TABLE game_pass(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        game TEXT NOT NULL,
+        bought INTEGER NOT NULL DEFAULT 0,
+        bought_at TEXT,
+        rent_until TEXT,                         -- 'YYYY-MM-DD HH:MM:SS' local time; renting again extends from here
+        PRIMARY KEY(profile_id, game)
+    );
+    INSERT OR IGNORE INTO game_pass(profile_id, game, bought, bought_at)
+        SELECT profile_id, 'slots', 1, datetime('now','localtime') FROM unlock WHERE item='slot_machine';
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
