@@ -48,7 +48,7 @@ class Pranks:
         family = [{"id": r["id"], "name": r["name"], "avatar": json.loads(r["avatar"] or "{}"), "role": r["role"],
                    "hit_today": self._hit_today(r["id"])}
                   for r in self.db.q("SELECT id, name, avatar, role FROM profile WHERE archived=0 AND id!=? ORDER BY role DESC, name", pid)]
-        return {"price": KINDS["ink"][0], "charges": self.stock(pid, "ink"), "coins": self.rewards.balance(pid, "coins"), "family": family,
+        return {"price": KINDS["ink"][0], "charges": self.stock(pid, "ink"), "coins": self.rewards.available(pid), "family": family,
                 "fart": {"price": KINDS["fart"][0], "uses": KINDS["fart"][1], "left": self.stock(pid, "fart"), "speakers": self.speakers_ready()}}
 
     def buy(self, pid: int, kind: str = "ink") -> dict:
@@ -56,7 +56,7 @@ class Pranks:
             raise PrankError("Unknown prank")
         price, uses, label = KINDS[kind]
         with self.db.tx():                      # check and book in one step – a double tap cannot buy on credit
-            if self.rewards.balance(pid, "coins") < price:
+            if self.rewards.available(pid) < price:
                 raise PrankError("Not enough coins")
             self.rewards.book(pid, "coins", -float(price), "prank_buy", label, "prank")
             self.db.x("""INSERT INTO prank_stock(profile_id, kind, n) VALUES(?,?,?)

@@ -298,7 +298,7 @@ def avatar(request: Request, prof: dict = Learner) -> dict:
     return {"avatar": {**a, "pet": pet} if pet else a, **cat,
             "mood_text": json.loads(prof["settings"] or "{}").get("mood_text") or "",
             "mood": json.loads(prof["settings"] or "{}").get("mood") or "",
-            "coins": fq.rewards.balance(prof["id"], "coins"), "level": level,
+            "coins": fq.rewards.available(prof["id"]), "level": level,
             "new_xp": new_xp_left(fq, prof["id"])}
 
 
@@ -388,7 +388,7 @@ def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
     with fq.db.tx():
         if fq.db.q1("SELECT 1 FROM unlock WHERE profile_id=? AND item=?", prof["id"], body.item):
             return {"ok": True}
-        if fq.rewards.balance(prof["id"], "coins") < cost:
+        if fq.rewards.available(prof["id"]) < cost:
             raise HTTPException(400, "Not enough yet")
         if cost > 0:                                   # price 0 (parent area › Shop): free – nothing to book
             fq.rewards.book(prof["id"], "coins", -cost, "avatar", av.ITEMS[body.item][0], f"avatar:{body.item}")
@@ -560,7 +560,7 @@ class GamePassIn(BaseModel):
 def games_shop(request: Request, prof: dict = Learner) -> dict:
     """The priced games this child may play once bought or rented – with what it has (bought, rented until)."""
     fq = app_of(request)
-    return {"games": fq.game_offers(prof), "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"games": fq.game_offers(prof), "coins": fq.rewards.available(prof["id"])}
 
 
 @router.post("/me/games/buy")
@@ -646,7 +646,7 @@ def battery_recharge(request: Request, prof: dict = Learner) -> dict:
         raise HTTPException(400, str(e)) from None
     if fq.ha:
         fq.ha.profile_changed(prof["id"])
-    return {"battery": st, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"battery": st, "coins": fq.rewards.available(prof["id"])}
 
 
 # ---------------------------------------------------------------- game corner: one-armed bandit (slots.py)
@@ -693,7 +693,7 @@ def pet_more(body: PetMoreIn, request: Request, prof: dict = Learner) -> dict:
     """One more pet of a kind the child already has (same price as in the shop)."""
     fq = app_of(request)
     pet = _pet(fq.pets.buy_another, prof["id"], body.kind)
-    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"pet": pet, "coins": fq.rewards.available(prof["id"])}
 
 
 @router.post("/me/pets/{pet_id}/breed")
@@ -722,7 +722,7 @@ def pet_hotel(pet_id: int, body: PetHotelIn, request: Request, prof: dict = Lear
     """The Family Quest pet hotel: paid per day at once."""
     fq = app_of(request)
     pet = _pet(fq.pets.hotel, prof["id"], pet_id, body.days)
-    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"pet": pet, "coins": fq.rewards.available(prof["id"])}
 
 
 @router.post("/me/pets/{pet_id}/fetch")
@@ -730,7 +730,7 @@ def pet_fetch(pet_id: int, request: Request, prof: dict = Learner) -> dict:
     """Take the pet back from the sitter or from the hotel."""
     fq = app_of(request)
     pet = _pet(fq.pets.fetch, prof["id"], pet_id)
-    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"pet": pet, "coins": fq.rewards.available(prof["id"])}
 
 
 @router.post("/me/pets/{pet_id}/{action}")
@@ -739,7 +739,7 @@ def pet_action(pet_id: int, action: str, request: Request, prof: dict = Learner)
         raise HTTPException(404, "Unknown action")
     fq = app_of(request)
     pet = _pet(fq.pets.act, prof["id"], pet_id, action)
-    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"pet": pet, "coins": fq.rewards.available(prof["id"])}
 
 
 @router.put("/me/pets/{pet_id}")

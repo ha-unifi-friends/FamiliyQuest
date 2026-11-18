@@ -171,6 +171,7 @@ class Pets:
         self.lock = threading.RLock()
         self.db = db
         self.rewards = rewards
+        self.locked: Callable[[int], bool] = lambda pet_id: False     # promised in a deal (deals.py): no hotel, no sitter
         self.away: Callable[[int], set[str]] = lambda pid: set()     # holiday days of the Family Planer (set by services)
         self.on_zero: list[Callable[[dict, dict], None]] = []       # fn(profile, pet) – all bars at 0: tell the parents once
         self.on_change: list[Callable[[int], None]] = []
@@ -511,7 +512,7 @@ class Pets:
                     raise PetError("Your pet is full – feed it later")
                 cost = self.food_cost()
                 if cost:
-                    if self.rewards.balance(pid, "coins") < cost:
+                    if self.rewards.available(pid) < cost:
                         raise PetError("Not enough coins for pet food")
                     self.rewards.book(pid, "coins", -float(cost), "pet_food", _t("Pet food") + f" – {pet['name']}", f"pet:{pet_id}")
             val = min(100.0, float(pet[bar]) + gain)
@@ -553,7 +554,7 @@ class Pets:
             raise PetError("At most 6 pets of one kind")
         cost = self.price(kind)
         with self.db.tx():
-            if self.rewards.balance(pid, "coins") < cost:
+            if self.rewards.available(pid) < cost:
                 raise PetError("Not enough coins")
             self.rewards.book(pid, "coins", -float(cost), "avatar", av.ITEMS.get(kind, (kind,))[0], f"pet:more:{kind}")
             new = self._born(pid, kind)
@@ -628,6 +629,8 @@ class Pets:
         today = now().date()
         if day < today or day > today + timedelta(days=SIT_MAX_DAYS):
             raise PetError("Pet sitting is possible for up to 60 days")
+        if self.locked(pet_id):
+            raise PetError("This pet is part of a deal")
         self.refresh(pid)
         pet = self._mine(pid, pet_id)
         if _ts(pet["hotel_until"]) and _ts(pet["hotel_until"]) > now():
@@ -647,6 +650,8 @@ class Pets:
             days = 0
         if not 1 <= days <= HOTEL_MAX_DAYS:
             raise PetError("The pet hotel takes pets for 1 to 30 days")
+        if self.locked(pet_id):
+            raise PetError("This pet is part of a deal")
         self.refresh(pid)
         pet = self._mine(pid, pet_id)
         if _ts(pet["hotel_until"]) and _ts(pet["hotel_until"]) > now():
@@ -654,7 +659,7 @@ class Pets:
         cost = days * self.hotel_cost()
         with self.db.tx():
             if cost:
-                if self.rewards.balance(pid, "coins") < cost:
+                if self.rewards.available(pid) < cost:
                     raise PetError("Not enough coins for the pet hotel")
                 self.rewards.book(pid, "coins", -float(cost), "pet_hotel", _t("Pet hotel") + f" – {pet['name']}", f"pet:{pet_id}")
             self.db.x("UPDATE pet SET hotel_until=?, hotel_cost=?, sitter_id=NULL, sit_until=NULL, updated_at=? WHERE id=?",
@@ -711,7 +716,7 @@ class Pets:
         pets = [{k: p[k] for k in ("id", "kind", "name", "emoji", "mood", "outfit", "house", "furniture", "owned", "slow", "happy_home")}
                 for p in self.list(pid)]
         return {"currency": self.currency(), "max_furniture": MAX_FURNITURE,
-                "balance": {"coins": self.rewards.balance(pid, "coins"), "xp": self.rewards.balance(pid, "xp")},
+                "balance": {"coins": self.rewards.available(pid), "xp": self.rewards.balance(pid, "xp")},
                 "items": [{"id": k, "cat": c, "name": n, "emoji": e, "price": price, "best": list(best)}
                           for k, (c, n, e, price, best) in SHOP.items()],
                 "pets": pets}
@@ -732,7 +737,7 @@ class Pets:
         with self.db.tx():                     # check and book in one step – a double tap cannot buy twice
             if self.db.q1("SELECT 1 FROM pet_item WHERE pet_id=? AND item=?", pet_id, item):
                 raise PetError("Your pet has this already")
-            if self.rewards.balance(pid, pay) < price:
+            if self.rewards.available(pid, pay) < price:
                 raise PetError("Not enough coins" if pay == "coins" else "Not enough XP")
             self.rewards.book(pid, pay, -float(price), "pet_shop", f"{name} – {pet['name']}", f"pet:{pet_id}:{item}")
             self.db.x("INSERT INTO pet_item(pet_id, item, bought_at) VALUES(?,?,?)", pet_id, item, now().isoformat())
