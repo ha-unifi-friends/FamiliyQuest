@@ -2602,3 +2602,67 @@ svg.bb-erase .bb-hit { stroke: rgba(224, 49, 49, .45); }
 .game-sheet { display: grid; gap: 10px; }
 .game-sheet .card.in-sheet { box-shadow: none; padding: 0; background: transparent; }
 .game-sheet > .btn { justify-self: end; }
+
+/* ---------------------------------------------------------------- game battery (familyquest/battery.py) – class prefix bat- */
+.bat { --bat-c: var(--good); display: inline-flex; align-items: center; flex: none; vertical-align: middle; }
+.bat.mid { --bat-c: #e8a400; } .bat.low { --bat-c: #e8590c; } .bat.empty { --bat-c: var(--bad); } .bat.inf { --bat-c: var(--accent); }
+.bat-body { display: flex; gap: 2px; align-items: stretch; width: 52px; height: 22px; padding: 2px; border: 2.5px solid var(--bat-c);
+  border-radius: 6px; background: var(--card); }
+.bat-body i { flex: 1; min-width: 1px; border-radius: 2px; background: color-mix(in srgb, var(--bat-c) 14%, transparent); }
+.bat-body i.on { background: var(--bat-c); }
+.bat-tip { width: 4px; height: 10px; margin-left: 1px; border-radius: 0 3px 3px 0; background: var(--bat-c); }
+.bat.empty .bat-body { border-style: dashed; animation: bat-empty 2.4s ease-in-out infinite; }
+.bat-inf { flex: 1; text-align: center; font-size: .95rem; line-height: 14px; color: var(--bat-c); }
+.bat.big .bat-body { width: 84px; height: 34px; border-width: 3px; border-radius: 8px; gap: 3px; padding: 3px; }
+.bat.big .bat-tip { width: 6px; height: 14px; }
+.bat.big .bat-inf { font-size: 1.3rem; line-height: 22px; }
+@keyframes bat-empty { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .bat.empty .bat-body { animation: none; } }
+.bat-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.bat-bar .bat-text { min-width: 150px; }
+.bat-bar.compact { gap: 8px; margin: 6px 0 10px; }
+.bat-bar.empty .bat-text strong { color: var(--bad); }
+.bat-card { padding: 12px 16px; margin-bottom: 14px; }
+.bat-sheet { padding: 10px 12px; box-shadow: none; border: 1px solid var(--line); }
+.bat-sheet .bat-bar.compact { margin: 0; }
+.bat-chip { border: 0; background: transparent; padding: 6px; border-radius: 10px; }
+.bat-chip:hover { background: var(--hover); }
+.games-head { align-items: center; } .games-head h1 { margin-bottom: 0; }
+.bat-dialog { display: grid; justify-items: center; gap: 8px; }
+.chore-energy { color: var(--good); }
+
+/* ---------------------------------------------------------------- party mode – festive banner (prefix party-) */
+.party-banner { background: linear-gradient(110deg, #ff3cac22, #784ba033, #2b86c533); border: 2px solid #ff3cac66; cursor: default; margin-bottom: 14px; }
+.party-banner .party-ball { animation: party-spin 6s linear infinite; }
+@keyframes party-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .party-banner .party-ball { animation: none; } }
+
+/* ---------------------------------------------------------------- 🪩 Disco design (themes.DISCO): while party mode runs for the
+   child (or an own design with the disco look) – dark, neon accents, slow soft light spots, no flashing */
+body.disco {
+  --bg: #0d0b1a; --card: #1a1630; --fg: #f4f1ff; --muted: #b9b1d9; --line: #3a3160; --hover: #2a2348;
+  --accent: #ff4fb8; --accent-fg: #1a0b1f; --good: #3ee08f; --good-bg: #123a2a; --bad: #ff6b6b; --bad-bg: #4a1c2a;
+  --ring-bg: #2c2550; --shadow: 0 6px 22px rgba(0, 0, 0, .45); color-scheme: dark;
+  background: radial-gradient(ellipse at top, #241a45 0%, #0d0b1a 60%) fixed, #0d0b1a;
+}
+body.disco::before { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none; opacity: .32;
+  background: radial-gradient(circle at 20% 30%, #ff3cac 0, transparent 22%), radial-gradient(circle at 75% 25%, #2bd2ff 0, transparent 20%),
+    radial-gradient(circle at 60% 75%, #a0ff5c 0, transparent 18%), radial-gradient(circle at 25% 80%, #ffb84d 0, transparent 18%);
+  filter: blur(30px); animation: disco-drift 40s ease-in-out infinite alternate; }
+@keyframes disco-drift { 0% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(4%, -3%) rotate(8deg); } 100% { transform: translate(-4%, 3%) rotate(-6deg); } }
+body.disco .card { border: 1px solid #3a3160; }
+body.disco .btn:not(.ghost) { color: #1a0b1f; }
+body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
+.fq-head .disco-scn { background: linear-gradient(120deg, #1b1236, #2a1350 45%, #10203f); overflow: hidden; }
+.disco-scn .disco-ball { position: absolute; right: 18px; top: 4px; font-size: 2.4rem; animation: party-spin 12s linear infinite;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, .5)); }
+.disco-scn .spot { position: absolute; width: 140px; height: 140px; border-radius: 50%; filter: blur(26px); opacity: .45;
+  animation: disco-spot 18s ease-in-out infinite alternate; }
+.disco-scn .s1 { background: #ff3cac; left: 5%; top: -40px; }
+.disco-scn .s2 { background: #2bd2ff; left: 45%; top: 10px; animation-duration: 23s; }
+.disco-scn .s3 { background: #a0ff5c; left: 75%; top: -50px; animation-duration: 27s; opacity: .3; }
+@keyframes disco-spot { to { transform: translate(60px, 20px) scale(1.2); } }
+@media (max-width: 520px) { .disco-scn .disco-ball { font-size: 1.8rem; right: 8px; top: auto; bottom: 2px; } }
+@media (prefers-reduced-motion: reduce) {
+  body.disco::before, .disco-scn .disco-ball, .disco-scn .spot { animation: none; }
+}
