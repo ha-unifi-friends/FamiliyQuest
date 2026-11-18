@@ -1,5 +1,6 @@
-// ---------------------------------------------------------------- My adventure books (familyquest/stories.py)
-// Children and parents write branching stories (scenes with 2–4 choices, good and bad endings, items), the family reads
+// ---------------------------------------------------------------- 📖 Interactive books (familyquest/stories.py)
+// Children and parents write stories that read like a book – most pages go on («Next ▶»), at a few branch points the
+// reader chooses (2–4 choices); endings (all may be happy ones), items. The family reads
 // them on the shelf. storyShelf(box) draws the family bookshelf with every book type (📕 picture books: picturebook.js,
 // 📖 adventure books, 🗝️ adventure games: adventure.js) and the sample books (kid app #/stories, parent area › Family),
 // storyReader() reads a book (on the server – or a try-out of the working copy right here), storyEditor() writes one.
@@ -36,6 +37,7 @@ const SB_MSG = {
   no_target: T("Page {0}: choice {1} has no target"), choice_text: T("Page {0}: choice {1} has no text"),
   all_gated: T("Page {0}: at least one choice must work without an item"), item_never: T("Page {0}: choice {1} needs «{2}», but no page gives it"),
   no_good: T("No good ending yet"), unreachable: T("Page {0} cannot be reached from the start"),
+  no_next: T("Page {0}: choose the page that comes next"), no_way_out: T("Page {0}: from here no path leads to an ending"),
 };
 
 // replaceChildren without the «null» texts of left-out parts
@@ -57,6 +59,10 @@ function sbPic(pic, cls = "") {
   return null;
 }
 
+// a page that simply goes on (one next page, no choice) – the other scenes are branch points with 2–4 choices
+const sbLinear = p => p.kind === "scene" && "next" in p && !(p.choices || []).length;
+const sbTargets = p => sbLinear(p) ? (p.next ? [p.next] : []) : (p.choices || []).map(c => c.to).filter(Boolean);
+
 function sbCheck(data, title) {
   const out = [], add = (code, page, ...args) => out.push({ code, page, msg: SB_MSG[code], args: args.map(String) });
   if (!String(title || "").trim()) add("title", null);
@@ -69,6 +75,7 @@ function sbCheck(data, title) {
     const n = num.get(p.id);
     if (!(p.text || "").trim()) add("no_text", p.id, n);
     if (p.kind !== "scene") continue;
+    if (sbLinear(p)) { if (!p.next || !by.has(p.next) || p.next === p.id) add("no_next", p.id, n); continue; }
     const ch = p.choices || [];
     if (!ch.length) { add("dead_end", p.id, n); continue; }
     if (ch.length < 2) add("one_choice", p.id, n);
@@ -80,13 +87,23 @@ function sbCheck(data, title) {
     if (ch.every(c => c.need)) add("all_gated", p.id, n);
   }
   if (!pages.some(p => p.kind === "good")) add("no_good", null);
-  const reach = sbReach(data);
+  const reach = sbReach(data), out_ = sbWayOut(data);
   for (const p of pages) if (!reach.has(p.id)) add("unreachable", p.id, num.get(p.id));
+  if (pages.some(p => p.kind !== "scene"))                   // loops nobody gets out of
+    for (const p of pages) if (reach.has(p.id) && !out_.has(p.id) && p.kind === "scene" && sbTargets(p).some(t => by.has(t))) add("no_way_out", p.id, num.get(p.id));
   return out;
 }
 function sbReach(data) {
   const by = new Map(data.pages.map(p => [p.id, p])), seen = new Set(), todo = [data.start];
-  while (todo.length) { const id = todo.pop(); if (seen.has(id) || !by.has(id)) continue; seen.add(id); (by.get(id).choices || []).forEach(c => c.to && todo.push(c.to)); }
+  while (todo.length) { const id = todo.pop(); if (seen.has(id) || !by.has(id)) continue; seen.add(id); todo.push(...sbTargets(by.get(id))); }
+  return seen;
+}
+// the pages from which some path leads to an ending
+function sbWayOut(data) {
+  const back = new Map();
+  for (const p of data.pages) for (const t of sbTargets(p)) { if (!back.has(t)) back.set(t, []); back.get(t).push(p.id); }
+  const seen = new Set(), todo = data.pages.filter(p => p.kind !== "scene").map(p => p.id);
+  while (todo.length) { const id = todo.pop(); if (seen.has(id)) continue; seen.add(id); todo.push(...(back.get(id) || [])); }
   return seen;
 }
 const sbIssueText = i => sbFmt(i.msg, ...i.args);
@@ -120,7 +137,7 @@ function adventureGamesCard() {
 // the card on the Family page of the kid app
 function storiesCard() {
   return h("section.card.sb-famcard", h("div.row", h("span.sb-famic", "📚"),
-    h("div.grow", h("strong", T("Library")), h("div.small.muted", T("Books and adventure books: write your own and read the books of the family."))),
+    h("div.grow", h("strong", T("Library")), h("div.small.muted", T("Books and interactive books: write your own and read the books of the family."))),
     h("button.btn", { onclick: () => go("stories") }, T("Open"))));
 }
 
@@ -131,7 +148,7 @@ async function storiesSection() {
   const set = h("details.sb-settings", h("summary", "⚙️ ", T("Settings for the bookshelf")));
   set.addEventListener("toggle", () => { if (set.open && !set.dataset.done) { set.dataset.done = "1"; storiesSettings(set); } });
   sec.append(h("h2", "📚 ", T("Library")),
-    h("p.small.muted", T("Children and parents write books and choose-your-path stories, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones. The adventure games are under Games.")),
+    h("p.small.muted", T("Children and parents write books and interactive books, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones. The adventure games are under Games.")),
     box, set);
   await storyShelf(box, { byType: true, types: LIBRARY_TYPES });   // one box per type, each with its own import / new
   return sec;
@@ -168,7 +185,7 @@ async function storiesSettings(box) {
 // book types (stories.py TYPES): icon, name, plural, what it is
 const SB_TYPES = () => ({
   picture: ["📕", T("Book"), T("Books"), T("Pages with a picture and a text, read page by page.")],
-  adventure: ["📖", T("Adventure book"), T("Adventure books"), T("Choose-your-path: choices, good and bad endings.")],
+  adventure: ["📖", T("Interactive book"), T("Interactive books"), T("Reads like a book – at a few pages you decide how it goes on.")],
   game: ["🗝️", T("Adventure game"), T("Adventure games"), T("Point & click: rooms, things to find, riddles and characters.")] });
 const sbType = b => SB_TYPES()[b.type] || SB_TYPES().adventure;
 const sbOpen = (b, onClose) => b.type === "picture" ? pictureReader(pbServerEngine(b.id), { onClose })
@@ -223,7 +240,7 @@ async function storyShelf(box, opts = {}) {
     // a private book of somebody else (parent area only): that it exists – no title, no content
     const privRow = b => h("div.sb-row.sb-priv",
       h("span.sb-rowic", "🔒", h("span.sb-rowtype", (SB_TYPES()[b.type] || SB_TYPES().adventure)[0])),
-      h("div.grow.sb-rowtt", h("strong", b.type === "picture" ? T("Private book") : b.type === "game" ? T("Private adventure game") : T("Private adventure book")), h("div.sb-chips",
+      h("div.grow.sb-rowtt", h("strong", b.type === "picture" ? T("Private book") : b.type === "game" ? T("Private adventure game") : T("Private interactive book")), h("div.sb-chips",
         h("span.sb-by", avatarSvg(b.author.avatar, 22), C(b.author.name)),
         h("span.small.muted", sbSize(b), " · ", fmtDate(b.updated_at)))));
     const preview = async b => {
@@ -366,7 +383,7 @@ function storyNewDialog(done, creatable = ["picture", "adventure", "game"], fixe
       m.close(); done(r.id, type);
     } catch (e) { toast(e.message, "bad"); }
   };
-  const heading = fixedType ? { picture: ["📕", T("New book")], adventure: ["📖", T("New adventure book")], game: ["🗝️", T("New adventure game")] }[type]
+  const heading = fixedType ? { picture: ["📕", T("New book")], adventure: ["📖", T("New interactive book")], game: ["🗝️", T("New adventure game")] }[type]
     : ["📚", T("New book")];
   const m = modal(h("div.form.sb-new", h("h2", heading[0], " ", heading[1]),
     fixedType ? null : h("div.field", h("b", T("What kind of book?")), types),
@@ -403,11 +420,11 @@ function storyImportDialog(done, fixedType = null, kinds = ["picture", "adventur
     fixedType ? null : h("div.sb-segs.sb-impsegs", ...kinds.map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", title: SB_TYPES()[k][1],
       onclick: () => { type = k; drawTpl(); } }, SB_TYPES()[k][0], h("span.sb-hide-s", " ", SB_TYPES()[k][1])))),
     aiPromptBox({ picture: T("Write a picture book for a child aged [5].\nStory idea: [e.g. a little fox who is afraid of the dark]\nAbout [8] pages, language: [English]."),
-      adventure: T("Write an adventure book with choices for children aged [8 to 10].\nStory idea: [e.g. a secret door in grandma's attic]\nAbout [15] pages with [3] different endings, language: [English]."),
+      adventure: T("Write an interactive book for children aged [6 to 9].\nStory idea: [e.g. a little dragon who is afraid of the dark]\nAbout [12] pages that go on like a book, [2] pages where the reader chooses how it goes on, [3] happy endings, language: [English]."),
       game: T("Make an adventure game for children aged [8 to 12].\nStory idea: [e.g. the lost treasure in the old castle]\n[4] rooms with doors, objects and characters, a small puzzle in each room, language: [English].") }[type],
       { template: tplUrl(), name: tplName() }));
   drawTpl();
-  const impHead = fixedType ? { picture: T("Import a book"), adventure: T("Import an adventure book"), game: T("Import an adventure game") }[type] : T("Import a book");
+  const impHead = fixedType ? { picture: T("Import a book"), adventure: T("Import an interactive book"), game: T("Import an adventure game") }[type] : T("Import a book");
   const m = modal(h("div.form.sb-imp", h("h2", "📥 ", impHead),
     h("p.small", T("1. Copy the prompt (the template comes with it) and paste it into any AI chat. 2. Fill in the highlighted parts with your story idea. 3. Paste the answer here – or choose a book file that was exported.")),
     tpls, text, h("label.field", T("…or a file"), file),
@@ -418,92 +435,127 @@ function storyImportDialog(done, fixedType = null, kinds = ["picture", "adventur
 // ---------------------------------------------------------------- reading
 function sbServerEngine(id) {
   const post = (p, body) => api(`stories/${id}/${p}`, { method: "POST", body });
-  return { read: () => api(`stories/${id}/read`), choose: i => post("read/choose", { i }), restart: () => post("read/restart"), rate: n => post("rate", { stars: n }) };
+  return { read: () => api(`stories/${id}/read`), choose: i => post("read/choose", { i }), next: () => post("read/next"), back: () => post("read/back"),
+    restart: () => post("read/restart"), rate: n => post("rate", { stars: n }) };
 }
 
 // a try-out of a working copy (editor ▶, a book waiting for approval): runs right here, nothing is saved
 function sbLocalEngine(book) {
   const d = book.data, pg = id => d.pages.find(p => p.id === id);
   const ends = d.pages.filter(p => p.kind !== "scene").map(p => p.id), found = new Set();
-  let page = null, items = [], finished = 0;
+  let page = null, items = [], finished = 0, hist = [];
   const enter = id => { page = id; const p = pg(id); if (p && p.give && !items.includes(p.give)) items = [...items, p.give]; };
   const view = (ne = false) => {
     const p = pg(page) || d.pages[0];
     return { title: book.title, emoji: book.emoji, color: book.color, lang: book.lang, items, endings: ends.length, found: found.size,
-      new_ending: ne, finished, may_rate: false, number: d.pages.indexOf(p) + 1,
-      page: { id: p.id, kind: p.kind, text: p.text, pic: p.pic, bg: p.bg, give: p.give, start: p.id === d.start,
+      new_ending: ne, finished, may_rate: false, number: d.pages.indexOf(p) + 1, back: hist.length > 0, step: hist.length + 1,
+      page: { id: p.id, kind: p.kind, text: p.text, pic: p.pic, bg: p.bg, give: p.give, start: p.id === d.start, linear: sbLinear(p), next: sbLinear(p) && !!p.next,
         choices: (p.choices || []).map((c, i) => ({ i, t: c.t, need: c.need })).filter(c => !c.need || items.includes(c.need)) } };
+  };
+  const go = to => {
+    if (!to || !pg(to)) throw new Error(I18N.tr(T("This choice has no target yet")));
+    hist.push([page, items]); enter(to);
+    let ne = false;
+    if (pg(to).kind !== "scene") { ne = !found.has(to); found.add(to); finished++; }
+    return view(ne);
   };
   return {
     read: async () => { if (page == null) enter(d.start || (d.pages[0] || {}).id); return view(); },
-    restart: async () => { items = []; enter(d.start); return view(); },
-    choose: async i => {
-      const c = ((pg(page) || {}).choices || [])[i];
-      if (!c || !c.to || !pg(c.to)) throw new Error(I18N.tr(T("This choice has no target yet")));
-      enter(c.to);
-      let ne = false;
-      if (pg(c.to).kind !== "scene") { ne = !found.has(c.to); found.add(c.to); finished++; }
-      return view(ne);
-    },
+    restart: async () => { items = []; hist = []; enter(d.start); return view(); },
+    choose: async i => go((((pg(page) || {}).choices || [])[i] || {}).to),
+    next: async () => go((pg(page) || {}).next),
+    back: async () => { if (hist.length) [page, items] = hist.pop(); return view(); },
     rate: async () => {},
   };
 }
 
+// the reader: like a book – ◀ the page read before, ▶ on pages that go on, the choices at the bottom on branch points
 function storyReader(engine, { onClose = null, preview = false } = {}) {
-  const full = h("div.quiz-full.sb-full.sb-reader");
+  const full = h("div.quiz-full.sb-full.sb-reader.ib-reader");
   let st = null, busy = false, closed = false;
   const close = () => {
     if (closed) return; closed = true;
-    full.remove(); window.removeEventListener("hashchange", close);
+    full.remove(); window.removeEventListener("hashchange", close); document.removeEventListener("keydown", key);
     if (!document.querySelector(".sb-full")) document.body.classList.remove("quiz-open");
     onClose && onClose();
   };
-  window.addEventListener("hashchange", close);
-  const act = async (fn, fresh = true) => {
+  const act = async (fn, dir = 1) => {
     if (busy) return; busy = true;
-    try { st = await fn(); draw(fresh); } catch (e) { toast(e.message, "bad"); } finally { busy = false; }
+    try { st = await fn(); draw(dir); } catch (e) { toast(e.message, "bad"); } finally { busy = false; }
   };
-  const restart = () => act(() => engine.restart());
+  const next = () => st && st.page.next && act(() => engine.next(), 1);
+  const back = () => st && st.back && act(() => engine.back(), -1);
+  const restart = () => act(() => engine.restart(), -1);
+  const key = e => {
+    if (!st || document.querySelector(".modal-back")) return;
+    if (e.key === "ArrowRight" || e.key === "PageDown") { e.preventDefault(); next(); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); back(); }
+    else if (e.key === "Escape") close();
+  };
+  window.addEventListener("hashchange", close);
+  document.addEventListener("keydown", key);
   const bag = () => { const m = modal(h("div.sb-bag", h("h2", "🎒 ", T("Backpack")),
     st.items.length ? h("ul", ...st.items.map(i => C(i, "li"))) : h("p.muted", T("Nothing yet")),
     h("button.btn", { onclick: () => m.close() }, T("Close")))); };
-  const draw = fresh => {
+  const draw = dir => {
     const p = st.page, end = p.kind !== "scene";
     const rateBox = st.may_rate ? h("div.sb-rateme", h("span.small", T("How did you like the book?")),
       h("div.sb-stars", ...[1, 2, 3, 4, 5].map(n => h("button.sb-star" + (n <= (st.rating || 0) ? ".on" : ""), { "aria-label": n + " ★",
-        onclick: async () => { try { await engine.rate(n); st.rating = n; draw(false); toast(T("Thank you!"), "good"); } catch (e) { toast(e.message, "bad"); } } }, "★")))) : null;
-    sbSet(full, 
+        onclick: async () => { try { await engine.rate(n); st.rating = n; draw(0); toast(T("Thank you!"), "good"); } catch (e) { toast(e.message, "bad"); } } }, "★")))) : null;
+    const pic = p.pic || p.bg ? h("div.sb-ppic.ib-pic" + (p.bg ? ".bg" : ""), { style: p.bg ? { backgroundImage: sbBgCss(p.bg) } : null }, sbPic(p.pic)) : null;
+    const page = h("article.sb-page.ib-page.k-" + p.kind + (dir > 0 ? ".pb-next" : dir < 0 ? ".pb-prev" : ""), { lang: st.lang },
+      pic,
+      h("div.ib-body",
+        end ? h("div.sb-endtag", p.kind === "good" ? "🏆 " : "💀 ", p.kind === "good" ? T("Good ending") : T("Bad ending")) : null,
+        C(p.text, "div.sb-text"),
+        p.give ? h("div.sb-gift", "🎒 ", T("You get:"), " ", C(p.give, "b")) : null));
+    const endBox = end ? h("div.sb-endbox.ib-end",
+      st.new_ending ? h("p.sb-newend", p.kind === "good" ? "🎉 " : "😬 ", p.kind === "good" ? T("New ending found!") : T("New ending found – but not a happy one!")) : null,
+      h("p.sb-count", sbFmt(T("{0} of {1} endings found"), st.found, st.endings)),
+      h("div.row.center.wrap.pb-endbtns", h("button.btn" + (p.kind === "bad" ? ".big" : ""), { onclick: restart }, "↺ ", p.kind === "bad" ? T("Try again") : T("Read again")),
+        h("button.btn.ghost", { onclick: close }, "📚 ", T("Back to the bookshelf"))),
+      rateBox) : null;
+    // branch point: the choices sit at the bottom, right above ◀ ▶ (in reach of the thumb)
+    const choices = !end && !p.linear ? (p.choices.length
+      ? h("div.sb-choices.ib-choices", { lang: st.lang, role: "group", "aria-label": T("What do you do?") }, ...p.choices.map(c => h("button.sb-choice", { onclick: () => act(() => engine.choose(c.i)) },
+        h("span.sb-letter.l" + c.i, SB_LETTERS[c.i]), C(c.t || "…", "span.grow"), c.need ? h("span.sb-need", { title: c.need, translate: "no" }, "🎒") : null)))
+      : h("p.muted.center.ib-none", T("This page has no continuation yet"))) : null;
+    const nav = h("div.pb-nav.ib-nav",
+      h("button.pb-arrow", { "aria-label": T("Previous page"), title: T("Previous page"), disabled: !st.back, onclick: back }, "◀"),
+      h("div.ib-step", h("span", sbFmt(T("Page {0}"), st.step || 1)),
+        h("span.ib-found", { title: T("Endings found") }, "🏁 ", st.found + "/" + st.endings)),
+      p.linear && !end ? h("button.pb-arrow.next", { "aria-label": T("Next page"), title: T("Next page"), disabled: !p.next, onclick: next }, "▶")
+        : h("span.pb-arrow.ib-ghost", { "aria-hidden": "true" }));
+    full.classList.toggle("ib-branch", !!choices);
+    sbSet(full,
       h("div.sb-rtop",
         h("button.icon-btn", { title: T("Close"), "aria-label": T("Close"), onclick: close }, "✕"),
         h("div.sb-rtitle", h("span", { translate: "no" }, st.emoji), C(st.title, "strong")),
-        h("span.sb-pill", { title: T("Endings found") }, "🏁 ", st.found + "/" + st.endings),
         st.items.length ? h("button.sb-pill", { title: T("Backpack"), onclick: bag }, "🎒 ", String(st.items.length)) : null,
         !p.start ? h("button.icon-btn", { title: T("Back to the start"), "aria-label": T("Back to the start"), onclick: restart }, "⏮") : null),
       preview ? h("p.sb-try.small", "👀 ", T("Try-out – nothing is saved")) : null,
-      h("article.sb-page.k-" + p.kind + (fresh ? ".fresh" : ""), { lang: st.lang },
-        p.pic || p.bg ? h("div.sb-ppic" + (p.bg ? ".bg" : ""), { style: p.bg ? { backgroundImage: sbBgCss(p.bg) } : null }, sbPic(p.pic)) : null,
-        end ? h("div.sb-endtag", p.kind === "good" ? "🏆 " : "💀 ", p.kind === "good" ? T("Good ending") : T("Bad ending")) : null,
-        C(p.text, "div.sb-text"),
-        p.give ? h("div.sb-gift", "🎒 ", T("You get:"), " ", C(p.give, "b")) : null),
-      !end ? (p.choices.length ? h("div.sb-choices", { lang: st.lang }, ...p.choices.map(c => h("button.sb-choice", { onclick: () => act(() => engine.choose(c.i)) },
-        h("span.sb-letter.l" + c.i, SB_LETTERS[c.i]), C(c.t || "…", "span.grow"), c.need ? h("span.sb-need", { title: c.need, translate: "no" }, "🎒") : null)))
-        : h("p.muted.center", T("This page has no continuation yet")))
-      : h("div.sb-endbox",
-          st.new_ending ? h("p.sb-newend", p.kind === "good" ? "🎉 " : "😬 ", p.kind === "good" ? T("New ending found!") : T("New ending found – but not a happy one!")) : null,
-          h("p.sb-count", sbFmt(T("{0} of {1} endings found"), st.found, st.endings)),
-          h("div.row.center.wrap", h("button.btn" + (p.kind === "bad" ? ".big" : ""), { onclick: restart }, "↺ ", p.kind === "bad" ? T("Try again") : T("Read again")),
-            h("button.btn.ghost", { onclick: close }, "📚 ", T("Back to the bookshelf"))),
-          rateBox));
-    if (fresh) {
-      full.scrollTo(0, 0);
+      h("div.pb-stage.ib-stage", page, endBox),
+      choices, nav);
+    const stage = full.querySelector(".ib-stage");
+    stage.scrollTop = 0;
+    // swipe: to the left goes on (pages that go on), to the right turns back
+    let x0 = null, y0 = 0;
+    stage.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse") { x0 = e.clientX; y0 = e.clientY; } });
+    stage.addEventListener("pointerup", e => {
+      if (x0 == null) return;
+      const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) { if (dx < 0) next(); else back(); }
+    });
+    stage.addEventListener("pointercancel", () => { x0 = null; });
+    if (dir) {
       if (end && p.kind === "good") { Sound.play("done"); confetti(full); }
       else if (end) Sound.play("wrong");
-      else if (st.number > 1) Sound.play("tap");
+      else Sound.play("tap");
     }
   };
   document.body.append(full);
   document.body.classList.add("quiz-open");
-  act(() => engine.read(), false);
+  act(() => engine.read(), 0);
 }
 
 // ---------------------------------------------------------------- writing
@@ -516,9 +568,9 @@ async function storyEditor(id, onClose = null) {
   let mode = "cards", dirty = false, timer = null, saving = null, showIssues = false, closed = false, zoom = null;
   try { mode = localStorage.getItem("fq.sb.mode") === "map" ? "map" : "cards"; } catch {}
   const full = h("div.quiz-full.sb-full.sb-editor");
-  const head = h("div.sb-ehead"), checker = h("div.sb-checker"), body = h("div.sb-ebody");
+  const head = h("div.sb-ehead"), infoEl = h("div.pb-einfo"), checker = h("div.sb-checker"), body = h("div.sb-ebody");
   const stateEl = h("span.sb-state");
-  full.append(head, checker, body);
+  full.append(head, infoEl, checker, body);
 
   const issues = () => sbCheck(data, meta.title);
   const setState = s => { stateEl.className = "sb-state " + s; stateEl.textContent = { dirty: "●", saving: "…", saved: "✓", error: "⚠" }[s] || "";
@@ -558,7 +610,7 @@ async function storyEditor(id, onClose = null) {
   const newPage = kind => {
     const pid = Math.max(0, ...data.pages.map(p => p.id)) + 1;
     const p = { id: pid, kind, text: "", pic: null };
-    if (kind === "scene") Object.assign(p, { give: null, choices: [{ t: "", to: null, need: null }, { t: "", to: null, need: null }] });
+    if (kind === "scene") Object.assign(p, { give: null, next: null, choices: [] });     // a page that goes on – «Choice» makes it a branch point
     data.pages.push(p);
     if (!data.start) data.start = pid;
     return p;
@@ -584,7 +636,8 @@ async function storyEditor(id, onClose = null) {
   };
   const tryOut = () => storyReader(sbLocalEngine({ ...meta, data: JSON.parse(JSON.stringify(data)) }), { preview: true });
   const drawHead = () => {
-    const seg = (k, ic, label) => h("button.sb-seg" + (mode === k ? ".on" : ""), { onclick: () => { mode = k; try { localStorage.setItem("fq.sb.mode", k); } catch {} drawHead(); drawBody(); } }, ic, " ", label);
+    const seg = (k, ic, label) => h("button.sb-seg" + (mode === k ? ".on" : ""), { title: label, "aria-label": label,
+      onclick: () => { mode = k; try { localStorage.setItem("fq.sb.mode", k); } catch {} drawHead(); drawBody(); } }, ic, h("span.sb-hide-s", " ", label));
     sbSet(head, 
       h("div.sb-erow",
         h("button.icon-btn", { title: T("Close"), "aria-label": T("Close"), onclick: close }, "✕"),
@@ -597,7 +650,8 @@ async function storyEditor(id, onClose = null) {
         h("span.grow"),
         h("button.btn.small.ghost", { onclick: tryOut, title: T("Try it out") }, "▶ ", h("span.sb-hide-s", T("Try"))),
         h("button.btn.small", { onclick: publish },
-          "🚀 ", ed.live && !ed.changed ? T("On the shelf") : ed.pending ? T("Waiting") : T("Publish"))),
+          "🚀 ", ed.live && !ed.changed ? T("On the shelf") : ed.pending ? T("Waiting") : T("Publish"))));
+    sbSet(infoEl,                                     // below the sticky head: it scrolls away while writing
       ed.mine ? h("div.sb-erow.sb-visrow", h("b.small", T("Who can read it?")), sbVisPicker(visSent, v => { visSent = v; changed(); save(); }))
         : h("p.sb-note", SB_VIS()[ed.visibility][0], " ", SB_VIS()[ed.visibility][1], " · ", C(ed.author)),
       ed.pending ? h("p.sb-note", "⏳ ", ed.parent ? T("This book waits for a parent's approval (Family › Library).") : T("Your book waits for a parent's approval.")) : null,
@@ -625,19 +679,20 @@ async function storyEditor(id, onClose = null) {
       if (box) sbSet(box, ...mine.map(i => h("li", sbIssueText(i))));
     }
   };
-  const targetSelect = (p, c) => {
+  // where a choice or a page that goes on leads: `cur` the page now, `set` takes the new one
+  const targetSelect = (p, cur, set) => {
     const sel = h("select.sb-target", { "aria-label": T("Goes to") },
       h("option", { value: "" }, "→ ", T("choose a page")),
-      ...data.pages.filter(x => x.id !== p.id).map(x => h("option", { value: x.id, selected: x.id === c.to, translate: "no" },
+      ...data.pages.filter(x => x.id !== p.id).map(x => h("option", { value: x.id, selected: x.id === cur, translate: "no" },
         `${num(x.id)}. ${SB_KIND()[x.kind][0]} ${excerpt(x)}`)),
       h("option", { value: "new:scene" }, "＋ ", T("New scene")),
       h("option", { value: "new:good" }, "＋ 🏆 ", T("New good ending")),
       h("option", { value: "new:bad" }, "＋ 💀 ", T("New bad ending")));
     sel.onchange = () => {
       if (sel.value.startsWith("new:")) {
-        const np = newPage(sel.value.slice(4)); c.to = np.id;
+        const np = newPage(sel.value.slice(4)); set(np.id);
         toast(sbFmt(T("Page {0} added"), num(np.id)), "good");
-      } else c.to = sel.value ? +sel.value : null;
+      } else set(sel.value ? +sel.value : null);
       changed(true);
     };
     return sel;
@@ -662,8 +717,8 @@ async function storyEditor(id, onClose = null) {
         if (p.kind === k) return;
         if (k !== "scene" && (p.choices || []).some(c => c.t || c.to) && !confirm(I18N.tr(T("An ending has no choices – remove them?")))) return;
         p.kind = k;
-        if (k === "scene") { p.choices = p.choices && p.choices.length ? p.choices : [{ t: "", to: null, need: null }, { t: "", to: null, need: null }]; p.give = p.give || null; }
-        else { delete p.choices; delete p.give; }
+        if (k === "scene") { if (!(p.choices || []).length) { p.choices = []; p.next = p.next || null; } p.give = p.give || null; }
+        else { delete p.choices; delete p.give; delete p.next; }
         changed(true);
       } }, ic, h("span.sb-hide-s", " ", label))));
     const card = h("section.card.sb-pcard.k-" + p.kind, { id: "sbp-" + p.id, "data-id": p.id },
@@ -671,7 +726,7 @@ async function storyEditor(id, onClose = null) {
         h("button.icon-btn.sb-del", { title: T("Remove page"), "aria-label": T("Remove page"), onclick: () => {
           if (data.pages.length > 1 && !confirm(I18N.tr(T("Remove this page?")))) return;
           data.pages.splice(data.pages.indexOf(p), 1);
-          data.pages.forEach(x => (x.choices || []).forEach(c => { if (c.to === p.id) c.to = null; }));
+          data.pages.forEach(x => { (x.choices || []).forEach(c => { if (c.to === p.id) c.to = null; }); if (x.next === p.id) x.next = null; });
           if (data.start === p.id) data.start = (data.pages[0] || {}).id || null;
           changed(true);
         } }, "🗑")),
@@ -686,25 +741,54 @@ async function storyEditor(id, onClose = null) {
       p.kind === "scene" && p.id !== data.start ? h("button.link.small", { onclick: () => { data.start = p.id; changed(true); } }, "⭐ ", T("Make this the first page")) : null);
     return card;
   };
+  // «+ Next page»: a new page that goes on right after this one (between this page and the one it led to)
+  const addNext = p => {
+    const np = newPage("scene"), at = data.pages.indexOf(p);
+    data.pages.splice(data.pages.indexOf(np), 1); data.pages.splice(at + 1, 0, np);
+    np.next = p.next && p.next !== np.id ? p.next : null; np.bg = p.bg || null; p.next = np.id;
+    changed(true); setTimeout(() => goPage(np.id), 50);
+  };
   const sceneParts = p => {
-    const its = items();
+    const its = items(), lin = sbLinear(p);
     const give = h("input.sb-give", { type: "text", maxlength: 40, value: p.give || "", placeholder: I18N.tr(T("e.g. 🍌 Banana")), lang: meta.lang });
     give.oninput = () => { p.give = give.value.trim() || null; changed(); };
     give.onchange = () => changed(true);
+    // goes on to one page – or a branch point with 2–4 choices
+    const mode = h("div.sb-segs.ib-mode", { role: "group", "aria-label": T("How does the story go on?") },
+      h("button.sb-seg" + (lin ? ".on" : ""), { type: "button", onclick: () => {
+        if (lin) return;
+        if ((p.choices || []).some(c => (c.t || "").trim()) && !confirm(I18N.tr(T("Remove the choices?")))) return;
+        p.next = ((p.choices || []).find(c => c.to) || {}).to || null; p.choices = []; changed(true);
+      } }, "➡️ ", T("Goes on")),
+      h("button.sb-seg" + (!lin ? ".on" : ""), { type: "button", onclick: () => {
+        if (!lin) return;
+        p.choices = [{ t: "", to: p.next || null, need: null }, { t: "", to: null, need: null }]; delete p.next; changed(true);
+      } }, "🔀 ", T("Choice")));
+    const givePart = h("label.sb-givelab", h("span.small", "🎒 ", T("On this page you find (optional):")), give);
+    if (lin) {
+      const ok = p.next && byId(p.next);
+      return h("div.sb-scene", mode,
+        h("div.ib-nextrow",
+          h("span.small.ib-nextlab", T("Next page:")),
+          h("div.sb-csel", sbTargetNum(ok ? num(p.next) : null), targetSelect(p, p.next, v => { p.next = v; }),
+            ok ? h("button.icon-btn.sb-go", { title: T("Go to this page"), "aria-label": T("Go to this page"), onclick: () => goPage(p.next) }, "↘") : null),
+          h("button.btn.small.ib-addnext", { onclick: () => addNext(p), title: T("A new page right after this one") }, "+ ", T("Next page"))),
+        givePart);
+    }
     const rows = (p.choices || []).map((c, i) => {
       const t = h("input.sb-ctext", { type: "text", maxlength: 120, value: c.t || "", lang: meta.lang, placeholder: sbFmt(T("Choice {0}"), SB_LETTERS[i]) });
       t.oninput = () => { c.t = t.value; changed(); };
       return h("div.sb-crow",
         h("span.sb-letter.l" + i, SB_LETTERS[i]),
-        h("div.sb-cfields", t, h("div.sb-csel", sbTargetNum(c.to && byId(c.to) ? num(c.to) : null), targetSelect(p, c),
+        h("div.sb-cfields", t, h("div.sb-csel", sbTargetNum(c.to && byId(c.to) ? num(c.to) : null), targetSelect(p, c.to, v => { c.to = v; }),
           c.to && byId(c.to) ? h("button.icon-btn.sb-go", { title: T("Go to this page"), "aria-label": T("Go to this page"), onclick: () => goPage(c.to) }, "↘") : null,
           needSelect(c, its))),
         h("button.icon-btn.sb-cdel", { title: T("Remove choice"), "aria-label": T("Remove choice"), onclick: () => { p.choices.splice(i, 1); changed(true); } }, "✕"));
     });
-    return h("div.sb-scene",
-      h("div.sb-choices-ed", h("b.small", T("Choices")), ...rows,
+    return h("div.sb-scene", mode,
+      h("div.sb-choices-ed", ...rows,
         p.choices.length < 4 ? h("button.btn.small.ghost", { onclick: () => { p.choices.push({ t: "", to: null, need: null }); changed(true); } }, "+ ", T("Add choice")) : null),
-      h("label.sb-givelab", h("span.small", "🎒 ", T("On this page you find (optional):")), give));
+      givePart);
   };
   const drawCards = () => {
     sbSet(body, h("div.sb-cards", ...data.pages.map(pageCard)),
@@ -724,7 +808,7 @@ async function storyEditor(id, onClose = null) {
     if (queue.length) depth.set(data.start, 0);
     while (queue.length) {
       const pid = queue.shift(); order.push(pid);
-      for (const c of by.get(pid).choices || []) if (c.to && by.has(c.to) && !depth.has(c.to)) { depth.set(c.to, depth.get(pid) + 1); queue.push(c.to); }
+      for (const t of sbTargets(by.get(pid))) if (by.has(t) && !depth.has(t)) { depth.set(t, depth.get(pid) + 1); queue.push(t); }
     }
     const rows = [];
     order.forEach(pid => (rows[depth.get(pid)] = rows[depth.get(pid)] || []).push(pid));
@@ -743,8 +827,20 @@ async function storyEditor(id, onClose = null) {
     svg.append(S_("defs", {}, S_("marker", { id: "sbArrow", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" },
       S_("path", { d: "M0 0 L10 5 L0 10 z", class: "sb-arrowhead" }))));
     const edges = S_("g", { class: "sb-edges" }), boxes = S_("g");
+    // an arrow from page a to page b: down to a later row – or round the right side back up (paths that meet again, loops)
+    const curve = (a, b, x1) => {
+      const y1 = a.y + H;
+      if (b.y > a.y) { const x2 = b.x + W / 2, y2 = b.y; return `M${x1} ${y1} C${x1} ${y1 + GY / 2} ${x2} ${y2 - GY / 2} ${x2} ${y2 - 2}`; }
+      const x2 = b.x + W, y2 = b.y + H / 2, bend = Math.max(a.x + W, b.x + W) + 30;
+      return `M${x1} ${y1} C${x1} ${y1 + 26} ${bend} ${y1 + 26} ${bend} ${(y1 + y2) / 2} S${x2 + 30} ${y2} ${x2 + 2} ${y2}`;
+    };
     for (const p of data.pages) {
       const a = pos.get(p.id);
+      if (sbLinear(p)) {                                   // a page that goes on: a thin arrow without a letter
+        const b = p.next && pos.get(p.next), x1 = a.x + W / 2;
+        if (b) edges.append(S_("path", { d: curve(a, b, x1), class: "sb-edge lin", "marker-end": "url(#sbArrow)" }));
+        else edges.append(S_("path", { d: `M${x1} ${a.y + H} l0 18`, class: "sb-edge open lin" }), S_("text", { x: x1, y: a.y + H + 30, class: "sb-elabel open", "text-anchor": "middle" }, "?"));
+      }
       (p.choices || []).forEach((c, i) => {
         const b = c.to && pos.get(c.to);
         if (!b) {                                          // a choice without target: a short red stub
@@ -753,16 +849,8 @@ async function storyEditor(id, onClose = null) {
           return;
         }
         const x1 = a.x + W / 2 + (i - ((p.choices.length - 1) / 2)) * 22, y1 = a.y + H;
-        let d, lx, ly;
-        if (b.y > a.y) {
-          const x2 = b.x + W / 2, y2 = b.y;
-          d = `M${x1} ${y1} C${x1} ${y1 + GY / 2} ${x2} ${y2 - GY / 2} ${x2} ${y2 - 2}`; lx = x1 + 8; ly = y1 + 14;
-        } else {                                            // back up (paths that merge into an earlier page, loops): round the right side
-          const x2 = b.x + W, y2 = b.y + H / 2, bend = Math.max(a.x + W, b.x + W) + 30;
-          d = `M${x1} ${y1} C${x1} ${y1 + 26} ${bend} ${y1 + 26} ${bend} ${(y1 + y2) / 2} S${x2 + 30} ${y2} ${x2 + 2} ${y2}`; lx = x1 + 8; ly = y1 + 14;
-        }
-        edges.append(S_("path", { d, class: "sb-edge" + (c.need ? " need" : ""), "marker-end": "url(#sbArrow)" }),
-          S_("text", { x: lx, y: ly, class: "sb-elabel" }, SB_LETTERS[i] + (c.need ? "🎒" : "")));
+        edges.append(S_("path", { d: curve(a, b, x1), class: "sb-edge" + (c.need ? " need" : ""), "marker-end": "url(#sbArrow)" }),
+          S_("text", { x: x1 + 8, y: y1 + 14, class: "sb-elabel" }, SB_LETTERS[i] + (c.need ? "🎒" : "")));
       });
       const cls = "sb-node k-" + p.kind + (bad.has(p.id) ? " bad" : "") + (!depth.has(p.id) ? " lost" : "") + (p.id === data.start ? " start" : "");
       const g = S_("g", { class: cls, transform: `translate(${a.x} ${a.y})`, tabindex: 0, role: "button", "aria-label": sbFmt(T("Page {0}"), num(p.id)) });
@@ -775,19 +863,19 @@ async function storyEditor(id, onClose = null) {
         S_("text", { x: 40, y: 25, class: "sb-nstar" }, p.id === data.start ? "⭐" : ""),
         S_("text", { x: W - 10, y: 24, class: "sb-npic", "text-anchor": "end" }, pic),
         S_("text", { x: 10, y: 46, class: "sb-ntext" }, excerpt(p, 17)),
-        S_("text", { x: 10, y: 64, class: "sb-nkind" }, (p.kind !== "scene" ? SB_KIND()[p.kind][0] + " " : "") + (p.give ? "🎒 " + p.give.slice(0, 12) : "")));
+        S_("text", { x: 10, y: 64, class: "sb-nkind" }, (p.kind !== "scene" ? SB_KIND()[p.kind][0] + " " : !sbLinear(p) ? "🔀 " : "") + (p.give ? "🎒 " + p.give.slice(0, 12) : "")));
       if (bad.has(p.id)) g.append(S_("text", { x: W - 8, y: H - 8, class: "sb-nwarn", "text-anchor": "end" }, "⚠️"));
       boxes.append(g);
     }
     svg.append(edges, boxes);
     const z = f => { zoom = Math.max(0.4, Math.min(2, zoom * f)); drawMap(); };
     sbSet(body, 
-      h("div.sb-maphead", h("div.sb-legend.small", h("span", "⭐ ", T("First page")), h("span", "📄 ", T("Scene")), h("span", "🏆 ", T("Good ending")), h("span", "💀 ", T("Bad ending")),
+      h("div.sb-maphead", h("div.sb-legend.small", h("span", "⭐ ", T("First page")), h("span", "➡️ ", T("Goes on")), h("span", "🔀 ", T("Choice")), h("span", "🏆 ", T("Good ending")), h("span", "💀 ", T("Bad ending")),
         h("span.sb-lg-bad", "⚠️ ", T("needs work")), h("span.sb-lg-lost", T("cannot be reached"))),
         h("div.sb-zoom", h("button.icon-btn", { title: T("Zoom out"), "aria-label": T("Zoom out"), onclick: () => z(1 / 1.25) }, "−"),
           h("button.icon-btn", { title: T("Zoom in"), "aria-label": T("Zoom in"), onclick: () => z(1.25) }, "+"))),
       h("div.sb-map", svg),
-      h("p.small.muted", T("Tap a page to edit it. Arrows show where the choices lead; arrows back up are paths that meet again.")));
+      h("p.small.muted", T("Tap a page to edit it. Thin arrows: the page goes on. Arrows with a letter: the choices. Arrows back up are paths that meet again.")));
   };
   const drawBody = () => { if (mode === "map") drawMap(); else drawCards(); };
 

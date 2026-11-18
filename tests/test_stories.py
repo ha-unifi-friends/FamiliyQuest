@@ -85,6 +85,11 @@ def test_templates_valid_in_all_languages():
             d = S.clean(t["data"])
             assert S.check(d, t["title"]) == [], (lang, key)
             assert all(p["text"] for p in d["pages"]) and t["title"]
+            if key in ("princess", "fox"):                      # interactive books: mostly linear, two branch points, happy endings
+                assert sum(1 for p in d["pages"] if p.get("choices")) == 2 and 10 <= len(d["pages"]) <= 14, (lang, key)
+                assert sum(1 for p in d["pages"] if S.linear(p)) >= len(d["pages"]) // 2
+                assert {p["kind"] for p in d["pages"] if p["kind"] != "scene"} == {"good"} and len(S.endings(d)) >= 3
+                continue
             assert any(c["need"] for p in d["pages"] for c in p.get("choices", [])), (lang, key)    # every template uses an item
             assert any(p["kind"] == "bad" for p in d["pages"])
     assert S.template("jungle", "fr")["lang"] == "fr-FR"
@@ -266,7 +271,7 @@ def test_default_rewards(client):
 def test_create_from_template(client):
     ph, hm, hl, mia, leo = _logins(client)
     t = client.get("/api/stories/templates?lang=fr-FR", headers=hm).json()
-    assert [x["key"] for x in t] == ["jungle", "space", "castle", "sea"] and t[0]["title"] == "Le lion de la jungle"
+    assert [x["key"] for x in t] == ["jungle", "space", "castle", "sea", "princess", "fox"] and t[0]["title"] == "Le lion de la jungle"
     sid = client.post("/api/stories", json={"template": "castle", "lang": "de-CH"}, headers=hm).json()["id"]
     ed = client.get(f"/api/stories/{sid}", headers=hm).json()
     assert ed["title"] == "S Gspängschterschloss" and ed["lang"] == "de-CH" and ed["issues"] == []
@@ -429,7 +434,9 @@ def test_ai_template_is_valid(client):
     doc = r.json()
     assert doc["_format"] == S.STORY_FORMAT and doc["_ai_instructions"] and set(doc["_backgrounds"]) == set(S.BACKGROUNDS)
     [b] = S.import_books(r.text)
-    assert S.check(b["data"], b["title"]) == [] and b["lang"] == "en" and len(b["data"]["pages"]) == 9
+    assert S.check(b["data"], b["title"]) == [] and b["lang"] == "en" and len(b["data"]["pages"]) == 13
+    assert sum(1 for p in b["data"]["pages"] if p.get("choices")) == 2 and sum(1 for p in b["data"]["pages"] if S.linear(p)) == 8
+    assert "next" in doc["_field_guide"]["pages[]"] and any("'next'" in x for x in doc["_ai_instructions"])
 
 
 def test_export_import_round_trip(client):

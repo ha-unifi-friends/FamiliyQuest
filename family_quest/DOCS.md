@@ -485,10 +485,10 @@ A board opens full screen (✕ closes it):
 Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
 to 600 points. Everything is in the database, so the backup contains the boards.
 
-### 📚 Library: the family bookshelf (books, adventure books) – and the adventure games
+### 📚 Library: the family bookshelf (books, interactive books) – and the adventure games
 In the app menu **📚 Library** (formerly «My books»; also a card on the Family page) and in the parent area under **Family**: children and
 parents write books, the whole family reads them. Guests never see them. The library shows two **book types**, shown as
-a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Books · 📖 Adventure books). The third
+a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Books · 📖 Interactive books). The third
 type, the **🗝️ adventure games**, is stored the same way (table `story`, type `game`, same API `/api/stories`) but lives
 under **Games**: in the kids' app a card «🗝️ Adventure games» on the games page (below the family quiz) opens their own
 shelf (`#/advgames`: play, continue, own drafts, 📥 Import and + New with the templates); in the parent area under
@@ -499,7 +499,8 @@ from its shelf and refuses reading, playing, writing, creating and importing the
 for you»); parents are never bound. A family that never set it keeps them open after the update (not switched off like
 a really new game).
 - **📕 Book** (picture book) – pages with a picture and a text, read page by page (below).
-- **📖 Adventure book** – choose-your-path stories with choices, good and bad endings and items (below).
+- **📖 Interactive book** (formerly «adventure book», type key `adventure`) – reads like a book; at a few pages the
+  reader chooses how it goes on; one or several endings (all may be happy), items (below).
 - **🗝️ Adventure game** – point & click games: rooms, hotspots, items, switches, dialogues and endings (below).
 Visibility (🔒 / 🧒 / 👨‍👩‍👧), approval, rewards, ⭐ ratings, reading progress, the parent area and the privacy rules are
 the same for every type. **+ New book** first asks for the type; a new book of any type is for the **👨‍👩‍👧 whole family**
@@ -618,15 +619,21 @@ spellings of actions) and checks everything again; games come in as private draf
 the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200 dialogue lines, 6 answers, 200 rules,
 20 endings, 2 MB per game.
 
-#### 📖 Adventure books
+#### 📖 Interactive books
 
-**Writing** (✏️ Edit, or **+ New book**: title, language, an empty book or a template – 🌴 jungle with the lion,
-🚀 space, 🏰 haunted castle, 🐠 underwater, each a small finished story in all app languages):
-- A book is a list of **pages**: 📄 **scene** (text, a picture and 2–4 choices A–D, each pointing to another page),
-  🏆 **good ending** (confetti) or 💀 **bad ending** («Try again»). Paths may merge or go back to an earlier page.
-  In the target list of a choice «＋ New scene / good ending / bad ending» makes the page right away. Every page carries
-  its **number in a purple circle** (page cards and map), and next to the target list of a choice the same purple
-  circle shows the number of the page it leads to.
+**Writing** (✏️ Edit, or **+ New book**: title, language, an empty book or a template – 👸 «The princess who didn't
+want to marry» (marry the prince as a friend first, become a dragon tamer or open a bakery – three happy endings),
+🦊 «The little fox's birthday» (for the youngest: which friends, which cake – three happy endings), both 13–14 pages
+with exactly two branch points; and the older choose-your-path stories 🌴 jungle with the lion, 🚀 space, 🏰 haunted
+castle, 🐠 underwater – each a small finished story in all app languages, de-CH in Zürich dialect):
+- A book is a list of **pages**: 📄 **scene**, 🏆 **good ending** (confetti) or 💀 **bad ending** («Try again»; optional –
+  every ending of a book may be a happy one). Each scene has a switch: **➡️ Goes on** (a linear page: one next page,
+  `next` – the reader taps «▶») or **🔀 Choice** (a branch point: 2–4 choices A–D, each pointing to another page). Most
+  pages of a book simply go on; new scenes start as «goes on». **+ Next page** on a page that goes on makes a new
+  linked page right after it (it takes over the old next page and the background). Paths may merge or go back to an
+  earlier page. In the target list «＋ New scene / good ending / bad ending» makes the page right away. Every page
+  carries its **number in a purple circle** (page cards and map), and next to the target list the same purple circle
+  shows the number of the page it leads to. Books of older versions (every scene with choices) stay as they are.
 - **Picture** per page: an emoji, an **own drawing** (the drawing editor above – a thing with a see-through
   background) or a **photo** (made smaller in the browser, max. 2 MB per picture).
 - **🏞️ Background** per page: 🎨 an **own drawn background** (a scene of the drawing editor), one of 24 own scenes
@@ -635,17 +642,22 @@ the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200 di
   train station, school, kids' room, attic, laboratory – small SVG files in `web/img/stories`) or none; the picture
   sits on top of it, the text stays on the paper below.
 - **🎒 Items:** a scene can give one item («🍌 Banana»); a choice can need one – readers only see it when they have it.
-- **🃏 Pages / 🗺️ Map:** the map shows every page as a box (rows by distance from the first page) with arrows for the
-  choices; dashed arrows need an item, red stubs are choices without a target, orange boxes need work, dashed boxes
+- **🃏 Pages / 🗺️ Map:** the map shows every page as a box (rows by distance from the first page): thin arrows for
+  pages that go on, arrows with the letter A–D for the choices (🔀 marks a branch point); dashed arrows need an item, red stubs are choices without a target, orange boxes need work, dashed boxes
   cannot be reached. Tap a box to edit the page.
-- The **checker** lists what is missing: a scene without continuation or with only one choice, choices without
-  target or text, no good ending, pages that cannot be reached, an item no page gives, a scene where every choice
-  needs an item. Drafts are saved automatically (also incomplete); **🚀 Publish** needs a complete book. **▶ Try**
+- The **checker** lists what is missing: a page that goes on without its next page, a branch point without
+  continuation or with only one choice, choices without target or text, no good ending (one ending is enough), pages
+  that cannot be reached, pages from which no path leads to an ending (endless loops), an item no page gives, a branch
+  point where every choice needs an item. Drafts are saved automatically (also incomplete); **🚀 Publish** needs a complete book. **▶ Try**
   reads the draft right away (nothing is saved).
 - After publishing, further changes stay in the draft until it is published again – readers see the published version.
 
-**Reading** (tap a cover): page by page in book typography, choices as big buttons, ⏮ back to the start, 🎒 the
-backpack. Every reader collects their own endings («2 of 5 endings found» on the cover) and gives ⭐ 1–5 after reaching
+**Reading** (tap a cover): like the book reader – the picture across the width, the text in book typography (long text
+scrolls inside the page, the screen itself does not scroll), at the bottom ◀ «Page n» ▶ in reach of the thumb (also
+swipe and the arrow keys). ▶ turns a page that goes on; on a branch point the choices sit as big buttons right above
+◀ ▶. ◀ goes back to the page actually read before (the server keeps each reader's path, `story_read.state`, with
+the backpack of then; endings found stay found). ⏮ back to the start, 🎒 the backpack. Phones on their side show the
+picture left and the text right. Every reader collects their own endings («2 of 5 endings found» on the cover) and gives ⭐ 1–5 after reaching
 an ending (not for the own book).
 
 **Who can read it** (chosen by the author when the book is made and in the editor at any time; new books: 👨‍👩‍👧, imported
@@ -665,9 +677,9 @@ comes in as a private draft.
 
 **Import / export** (same idea as the quiz and pack files for an AI): ⚙️ › **Export as a file** saves a book as
 self-describing JSON (`family-quest-story/1`: instructions, field guide and `_svg_rules` for an AI, the background ids,
-the book with pages, choices, endings, items, emoji pictures, own drawings as inline SVG (`"picture": {"svg": …}`,
-`"background": {"svg": …}`) and backgrounds – photos stay out; the template shows a drawn page background and a drawn
-thing as examples). **📥 Import** on
+the book with pages, `next` (the page that follows a page that goes on – files without it still import), choices, endings, items, emoji pictures, own drawings as inline SVG (`"picture": {"svg": …}`,
+`"background": {"svg": …}`) and backgrounds – photos stay out; the template for the AI is the fox book: mostly linear
+with two branch points and three happy endings, with a drawn page background and a drawn thing as examples). **📥 Import** on
 the shelf: copy the **template for the AI** into any AI chat, describe the idea, paste the answer (sentences and code
 fences around the JSON are fine) or choose a file. Every book comes in as a private draft of whoever imports it (ids,
 authors and anything else from the file are not taken over), the checker shows what is still missing. Every drawing

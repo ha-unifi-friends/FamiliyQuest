@@ -3477,6 +3477,55 @@ textarea.pb-svgcode { min-height: 150px; }
   .pb-covercard .pb-picbtn { max-width: 240px; }
 }
 
+/* ---------------------------------------------------------------- 📖 interactive books (stories.js) – class prefix ib-
+   the reader like the book reader: picture to the width, the text scrolls inside the page, ◀ ▶ and the choices at the bottom */
+.ib-reader.quiz-full { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;
+  padding-left: max(10px, env(safe-area-inset-left), calc((100vw - 900px) / 2)); padding-right: max(10px, env(safe-area-inset-right), calc((100vw - 900px) / 2)); }
+.ib-reader .sb-rtop { flex: none; }
+.ib-reader .sb-try { flex: none; }
+.ib-stage { padding-top: 2px; }
+.sb-page.ib-page { width: min(100%, 760px); max-width: none; flex: none; margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.ib-page .ib-pic { margin: 0; width: 100%; aspect-ratio: 4 / 3; max-height: 42dvh; min-height: 0; display: grid; place-items: center; border-radius: 0; }
+.ib-page .ib-pic:not(.bg) { aspect-ratio: auto; max-height: none; padding: 14px 0 0; }
+.ib-page .ib-pic .sb-emo { font-size: clamp(4rem, 22vw, 7.5rem); }
+.ib-page .ib-pic.bg .sb-img.sb-svg { width: min(48%, 230px); max-height: none; }
+.ib-page .ib-pic .sb-img:not(.sb-svg) { max-height: calc(42dvh - 24px); max-width: calc(100% - 24px); }
+.ib-body { padding: 12px 18px 18px; }
+/* a branch point: a smaller picture, so the text and the choices fit on the screen */
+.ib-branch .ib-page .ib-pic.bg { max-height: 30dvh; }
+@media (max-height: 700px) { .ib-page .ib-pic.bg { max-height: 36dvh; } .ib-branch .ib-page .ib-pic.bg { max-height: 24dvh; } }
+.ib-page .sb-text { font-size: clamp(1.12rem, 4.4vw, 1.42rem); }
+.ib-end { width: min(100%, 760px); margin: 0 auto; gap: 6px; }
+.ib-end .sb-count, .ib-end .sb-newend { margin: 0; }
+.ib-choices { flex: none; width: min(100%, 760px); max-height: 46dvh; overflow: auto; margin: 6px auto 0; gap: 8px; padding: 2px; }
+.ib-choices .sb-choice { min-height: 52px; }
+.ib-none { flex: none; margin: 8px 0 0; }
+.ib-nav { padding-top: 8px; }
+.ib-step { flex: 1; min-width: 0; display: grid; justify-items: center; line-height: 1.2; font-weight: 800; }
+.ib-found { font-size: .8rem; font-weight: 700; color: var(--muted); }
+.pb-arrow.ib-ghost { visibility: hidden; }
+/* phones on their side: picture left, text right – the page still fits without scrolling the screen */
+@media (orientation: landscape) and (max-height: 520px) {
+  .sb-page.ib-page { flex-direction: row; }
+  .ib-page .ib-pic, .ib-page .ib-pic:not(.bg) { width: 42%; flex: none; aspect-ratio: auto; max-height: none; align-self: stretch; padding: 0; }
+  .ib-page .ib-pic.bg::after { display: none; }
+  .ib-page .ib-pic .sb-emo { font-size: clamp(3rem, 14vh, 5rem); }
+  .ib-body { flex: 1; min-width: 0; padding: 10px 14px 12px; }
+  .ib-choices { max-height: 38dvh; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ib-choices .sb-choice { min-height: 44px; }
+  .ib-nav, .pb-nav { padding-top: 4px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+  .pb-arrow { height: 42px; }
+}
+/* the editor: «goes on» or «choice» per page, the next page with «+ Next page» */
+.ib-mode { display: flex; width: 100%; }
+.ib-mode .sb-seg { flex: 1 1 0; white-space: nowrap; }
+.ib-nextrow { display: grid; gap: 6px; background: var(--bg); border-radius: 12px; padding: 8px; }
+.ib-nextlab { font-weight: 700; }
+.ib-addnext { justify-self: start; }
+@media (max-width: 560px) { .sb-csel select { flex-basis: 96px; } }
+.sb-edge.lin { stroke-width: 1.4; }
+.sb-edge.open.lin { stroke-width: 2; }
+
 /* ---------------------------------------------------------------- adventure games (adventure.js) – class prefix ag- */
 .ag-emo { line-height: 1; }
 /* playing: the room picture with the hotspots on top, the panel (verbs, messages, description), the backpack at the bottom */
