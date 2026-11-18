@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-dev.6
+
+- Everything from 1.1.1-beta.11 plus the dev-only game «Beat the Bureaucracy»
+
 ## 1.1.1-dev.5
 
 - Everything from 1.1.1-beta.10 plus the dev-only games

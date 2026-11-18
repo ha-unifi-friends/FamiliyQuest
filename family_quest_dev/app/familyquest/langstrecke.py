@@ -1,40 +1,37 @@
-"""«24h Endurance» (24-Stunden-Rennen) – a live team endurance race on the fictional «Circuit des Tannes».
+"""«24h Endurance» (24-Stunden-Rennen) – a short, fast live team race on the fictional «Circuit des Tannes».
 
 Teams are racing stables (a colour, a name, a start number), each with ONE car. The family splits into 1–4 teams at
-the table (guests via QR code join a team too); bots bring extra cars (traffic) – alone against bot teams works too. The
-tables live in the `card_game` table with kind "langstrecke" (lobby, join, summary, may_lead from cardgames.CardGames).
+the table (guests via QR code join a team too); bots bring extra cars – alone against bot teams works too. The tables
+live in the `card_game` table with kind "langstrecke" (lobby, join, summary, may_lead from cardgames.CardGames).
 
-24 race hours are compressed into 10 / 15 / 20 real minutes (rule `minutes`): the race clock starts at 15:00 and runs
-through the night (dusk, headlights, a shorter view, fog banks) into the next afternoon. Optional rain (rule `weather`):
-showers drawn at the start, the race engineer sees them coming on the radar. Winner: the most laps at the end (then
-the longer distance).
+24 race hours are compressed into 5 / 8 / 12 real minutes (rule `minutes`, default 8): the race clock starts at 15:00
+and runs through the night into the next afternoon. Winner: the most laps (then the longer distance). In the lobby each
+team chooses its colour (from the palette, unique), its country (a flag on the car) and its car number (1–99, unique).
 
-Roles in a team, each on their own phone – they rotate at every pit stop (driver change; a driver may drive at most
-STINT_MAX stints in a row, so everybody gets to drive):
-- alone: you drive and do the pit-stop jobs yourself one after the other;
-- 2–3 people: a driver and the pit crew; 4–5: also a race engineer (telemetry, radar, gaps, radio calls).
-The driver steers the car on three lanes (swipe / arrow keys) with a throttle lever (0–10). Pushing is faster but
-heats the engine (yellow: hot, red: lift off within GRACE seconds of pushing – else engine damage: limp to the pits; ignoring the
-red twice: the team retires and keeps its laps) and costs tyres and fuel. On the track: gravel, oil, debris, slow
-cars (backmarkers); collisions wear the tyres or break the wing. Rain on slicks: less grip; rain tyres in the dry wear
-twice as fast. A crash (engine failure, a fast hit into a backmarker) brings the safety car: SC_LEN seconds at a
-limited speed for everybody, no overtaking, the track is cleared – a cheap moment for a pit stop. The last two race
-hours are the finale.
+Weather (rule `weather`, on by default): sudden showers (30–55 s, every 1–2 minutes, planned at the start, everybody
+sees the forecast). Slicks in the rain and rain tyres in the dry are slower (grip WET_SLICK / DRY_RAIN); the crew picks
+the tyres for the next lap. The lap has two chicanes: at each gate a kerb covers a lane (in the rain or at night also
+the middle lane) – touching it slows the car down for a moment. Other cars are not obstacles (no collisions between
+cars); the app draws a car close to mine in my lane moving over to a free lane while it overtakes.
 
-Pit stop (the driver boxes: «Box this lap» – the car stops at the line): the crew plays mini-games on their phones at
-the same time while a stopwatch runs – tyres (choose the compound, tap the 4 wheel nuts in the shown order and hold
-each until tight: a loose one costs a wheel on the next lap), refuelling (hold the nozzle, let go in the green zone:
-too little may run dry, an overflow costs SPILL_PEN seconds), and after damage a repair (connect the cables by colour
-or turn the screws straight; a wrong answer costs WRONG_PEN seconds). Each job ends at the moment the server gets it
-(server time); claimed hold times must fit into that time. A job nobody does is done by the garage after
-PIT_TASK_MAX seconds.
+The loop – one short lap (about 20–30 s), then the car drives into the pits by itself, every time:
+- the driver (one person of the team) steers on three lanes (swipe / arrow keys) round a few things on the track and
+  holds the throttle for full speed. Full throttle heats the engine; at RED it overheats: the car limps on to the pits
+  and the engine has to be swapped there.
+- everybody else of the team is the pit crew: during the lap they prepare the stop on their phones – lay out the 4
+  tyres (slicks or rain tyres, tap the 4 spots), fill the fuel canister (hold, let go in the green zone; too much spills and it starts
+  empty again) and, only after an overheat, prepare the spare engine (hold). The server keeps the times of all of it.
+- the stop: STOP_BASE seconds + a penalty for every job that was not ready when the car arrived (tyres / fuel
+  PEN_PREP each, the engine swap ENG_READY prepared or ENG_SWAP not). Shown as a stopwatch to the whole team.
+- at EVERY stop the driver changes: the next person of the team (in turn) drives, the driver joins the crew. A team of
+  two takes turns; a team of one (or a team whose crew is all offline) gets the garage: a fixed GARAGE seconds.
 
 The server decides everything (the same step function runs in web/langstrecke.js for a smooth picture of the own
-car): the driver's app only reports its inputs (lane, throttle, box) with their game time; the server simulates all
-cars in fixed steps of DT seconds SETTLE seconds behind the clock – a late input is applied at the next step (never
-in the past), so laps, hits, damage and pit results cannot be cheated. A driver whose app is silent for AUTO_AFTER
-seconds gets the autopilot (the bot driver) until the app is back. Bots drive by the same rules: they dodge what
-they see (easier bots miss more), manage the temperature and pit sensibly (fuel, tyres, damage, rain, safety car).
+car): the driver's app only reports its inputs (lane, throttle) with their game time; the server simulates all cars
+in fixed steps of DT seconds SETTLE seconds behind the clock – a late input is applied at the next step (never in the
+past). Pit jobs are actions on the server (a tyre on a spot, start / stop holding) timed with the server's clock: a
+job counts only if it was finished before the car arrived. A driver whose app is silent for AUTO_AFTER seconds gets
+the autopilot until the app is back. Bots drive by the same rules and prepare their stops (easier bots miss more).
 
 Coins (setting `game_rewards["langstrecke"]`): places 1–3, for every person of the family in that team, only at a
 family table with at least two people of the family, only for a race run to the end – paid once (flag `paid`, a
@@ -60,43 +57,56 @@ CIRCUIT = "Circuit des Tannes"
 MAX_PLAYERS = 12
 LEVELS = ("easy", "normal", "hard")
 DIFFS = ("junior", "normal")
-MINUTES = (10, 15, 20)
-DEFAULTS = {"bots": 2, "level": "normal", "minutes": 15, "weather": 1, "difficulty": "normal", "team_size": 4, "teams": 2}
+MINUTES = (5, 8, 12)
+DEFAULTS = {"bots": 2, "level": "normal", "minutes": 8, "weather": 1, "difficulty": "normal", "team_size": 3, "teams": 2}
+# the countries a team can race for (ISO codes; names and groups in web/langstrecke.js) – or none
+COUNTRIES = ("BE", "BG", "DK", "DE", "FI", "FR", "GR", "GB", "IE", "IT", "LV", "LI", "LU", "MC", "NL", "NO", "AT", "PL", "PT", "RO",
+             "RU", "SM", "SE", "CH", "SK", "SI", "ES", "CZ", "TR", "HU", "BY",
+             "AR", "BO", "BR", "CL", "DO", "EC", "GT", "CA", "CO", "CU", "MX", "PA", "PR", "KN", "US", "VE",
+             "CN", "HK", "IN", "ID", "JP", "QA", "MY", "OM", "SA", "SG", "KR", "SY", "TW", "TH", "AE",
+             "AU", "MA", "NZ", "ZA")
 
 # ---------------------------------------------------------------- the car (the same numbers in web/langstrecke.js)
-L = 1500.0                   # metres per lap
+L = 640.0                    # metres per lap: about 22 s at full throttle, 32 s lifted
 DT = 0.1                     # one step of the simulation (seconds)
-VMIN, VMAX = 10.0, 62.0      # m/s at throttle 0 / 10 (shown as km/h × 5)
-ACC, BRAKE = 9.0, 22.0       # m/s²
-VLIMP, VDRY, VSC, VSLOW, VBACK = 18.0, 8.0, 26.0, 16.0, 24.0   # limping / no fuel / safety car / after gravel or oil / backmarkers
-HEAT, HEAT_JR = 1.5, 0.8     # °/s per throttle step above COOL_AT
-COOL_AT = 7.4
-YELLOW, RED = 75.0, 90.0
-GRACE, GRACE_JR = 3.0, 6.0   # seconds in the red before the engine is damaged
-FUEL_M = 100.0 / (7 * L)     # % fuel per metre at full throttle (×(0.55 + 0.045·throttle))
-WEAR_M = 100.0 / (12 * L)    # % tyre wear per metre at full throttle (×(0.5 + 0.05·throttle))
-GRAVEL, OIL, SLOW, DEBRIS = 0, 1, 2, 3
-COUNTDOWN = 8.0              # seconds from the start to game time 0 (the intro: run to the cars, engines, lights)
+VLIFT, VFULL = 20.0, 30.0    # m/s lifted / full throttle (shown as km/h × 7)
+ACC, BRAKE, COAST = 7.0, 14.0, 5.0   # m/s²: speeding up, braking (the brake), slowing down by lifting off
+VBRAKE = 8.0                 # holding the brake slows down towards this
+VLIMP, VSLOW = 13.0, 10.0    # with an overheated engine / after a hit
+SLOW_T = 1.2                 # seconds slow after a hit
+HEAT, HEAT_JR = 2.6, 1.7     # °/s at full throttle
+COOL = 4.0                   # °/s lifted
+TMIN, YELLOW, RED = 60.0, 85.0, 100.0
+OIL, CONES, SLOWCAR = 0, 1, 2
+# grip: slicks in the rain / rain tyres in the dry are slower (the right tyres: 1.0)
+WET_SLICK, DRY_RAIN = 0.8, 0.9
+# two chicanes (S-bends): at each gate a kerb covers a lane (in the rain or at night two) – touching it slows the car
+CHICANES = ((210.0, 245.0, 2, 0), (450.0, 485.0, 0, 2))      # gate a, gate b, kerb lane at a, at b
+KERB_T, KERB_T_WET = 0.6, 1.0                               # seconds slow after touching a kerb
+SAFE, SAFE_TRICKY = 23.0, 18.0                              # m/s at most into a chicane (by day and dry / in the rain or at night)
+VOFF, OFF_T = 6.0, 3.0                                      # too fast: off into the gravel – this slow for this long
+COUNTDOWN = 6.0              # seconds from the start to game time 0 (the intro: run to the cars, engines, lights)
 SETTLE = 0.8                 # the server simulates this far behind the clock
 AHEAD = 0.5                  # inputs may be this much ahead of the server's clock
 AUTO_AFTER = 6.0             # a silent driver: the autopilot drives
-STALE = 10.0                 # a silent member gets no pit job
-STINT_MAX = 2                # stints in a row per driver
-CHANGE_T = 2.0               # a driver change takes at least this long
-PIT_TASK_MAX = 30.0          # a job nobody does: the garage does it after this long
-FILL_RATE = 30.0             # % per second at the fuel nozzle
-GREEN = (88.0, 100.0)        # the green zone of the fuel gauge
-SPILL_PEN, WRONG_PEN = 3.0, 2.0
-HOLD_MIN = 0.5               # a wheel nut held at least this long is tight
-SC_LEN, SC_GAP = 20.0, 60.0  # safety car: duration, at least this long between two
-REF_V = 45.0                 # m/s for the gaps in seconds
-RADIO = ("box", "save", "push", "rain", "dry")
+STALE = 10.0                 # a silent person is not counted as crew / next driver
+# ---------------------------------------------------------------- the pit stop
+STOP_BASE = 3.0              # every stop (the driver change included)
+PEN_PREP = 4.0               # tyres / fuel not ready
+ENG_READY, ENG_SWAP = 2.0, 6.0   # the engine swap: prepared / not prepared
+GARAGE = 5.0                 # a team without crew: the garage prepares, a fixed time (+ GARAGE_ENG after an overheat)
+GARAGE_ENG = 4.0
+TYRE_GAP = 0.25              # seconds at least between two tyres of a team
+FILL_RATE = 25.0             # % per second at the canister
+GREEN = 80.0                 # 80–100 % is the green zone
+SPILL_AFTER = 0.5            # held this long past 100 %: spilled (also without letting go)
+ENGINE_HOLD = 2.0            # seconds of holding to prepare the spare engine
 TEAM_STYLES = (("Comet Racing", "#e03131"), ("Blue Falcon Works", "#1c7ed6"), ("Pine Cone Motors", "#2f9e44"),
                ("Sunrise Speedsters", "#f08c00"), ("Silver Owl Garage", "#7048e8"), ("Night Fox Racing", "#0c8599"),
                ("Thunder Bee Team", "#e8590c"), ("Snow Hare Racing", "#495057"))
 NUMBERS = (3, 7, 8, 11, 12, 17, 21, 24, 27, 33, 36, 42, 44, 51, 58, 63, 77, 88, 91, 99)
-BOT_SKILL = {"easy": (0.22, 7.0, (7, 10), (4, 6), (7, 10)), "normal": (0.1, 9.0, (5, 8), (3.5, 5), (5, 8)),
-             "hard": (0.04, 10.0, (4, 6), (3, 4), (4, 6))}       # missed things, push, tyres / fuel / repair seconds
+# missed things, temperature to lift off / to push again, the chance that a job of the crew is not ready
+BOT_SKILL = {"easy": (0.25, 92.0, 78.0, 0.35), "normal": (0.12, 93.0, 84.0, 0.15), "hard": (0.04, 96.0, 90.0, 0.05)}
 
 
 def rewards_of(db) -> list[int]:
@@ -125,13 +135,13 @@ def lap_things(seed: int, lap: int, junior: bool) -> list[list]:
     got = _THINGS.get(key)
     if got is None:
         rnd = mulberry32((seed + lap * 7919) & 0xFFFFFFFF)
-        n = (2 + int(rnd() * 2)) if junior else (4 + int(rnd() * 3))
+        n = 2 if junior else (3 + int(rnd() * 2))
         got = []
         for i in range(n):
-            x = 160 + (L - 320) * (i + 0.15 + 0.7 * rnd()) / n
+            x = free_x((i + 0.15 + 0.7 * rnd()) / n)
             lane = int(rnd() * 3)
             r = rnd()
-            kind = GRAVEL if r < 0.28 else OIL if r < 0.48 else SLOW if r < 0.76 else DEBRIS
+            kind = OIL if r < 0.35 else CONES if r < 0.7 else SLOWCAR
             got.append([math.floor(x * 10 + 0.5) / 10, lane, kind])
         if len(_THINGS) > 4000:
             _THINGS.clear()
@@ -139,20 +149,38 @@ def lap_things(seed: int, lap: int, junior: bool) -> list[list]:
     return got
 
 
-def fog_at(seed: int, lap: int) -> float:
-    """A fog bank in this lap (only at night, only for the eyes): its position in the lap."""
-    rnd = mulberry32((seed * 3 + lap * 104729 + 17) & 0xFFFFFFFF)
-    return math.floor((300 + (L - 600) * rnd()) * 10 + 0.5) / 10
+FREE = ((100.0, 180.0), (285.0, 420.0), (525.0, 600.0))   # the parts of the lap without a chicane: things lie only there
+
+
+def free_x(u: float) -> float:
+    """u in 0…1 along the free parts of the lap → the position in the lap."""
+    x = u * sum(b - a for a, b in FREE)
+    for a, b in FREE:
+        if x <= b - a:
+            return a + x
+        x -= b - a
+    return FREE[-1][1]
+
+
+def kerbs(tricky: bool) -> list[list]:
+    """The chicane gates: [[x in the lap, [kerb lanes]], …] – in the rain or at night the kerb reaches the middle lane."""
+    out = []
+    for xa, xb, la, lb in CHICANES:
+        out.append([xa, [la, 1] if tricky else [la]])
+        out.append([xb, [lb, 1] if tricky else [lb]])
+    return out
+
+
+def default_looks(country: str | None = None) -> list[dict]:
+    """The lobby: colour, country (the family's own if the app knows it, else none) and car number of the teams of
+    people – they can change them."""
+    c = country if country in COUNTRIES else None
+    return [{"color": TEAM_STYLES[i][1], "country": c, "num": (7, 24, 44, 88)[i]} for i in range(4)]
 
 
 def new_car(lane: int, d: float) -> dict:
-    return {"d": d, "v": 0.0, "lane": lane, "thr": 6, "temp": 60.0, "red": 0.0, "blow": 0, "eng": 0, "wing": 0, "wheel": 0,
-            "loose": -1.0, "wear": 0.0, "fuel": 100.0, "tyre": "s", "box": 0, "boxed": 0, "slow": 0.0, "olap": 0, "ob": 0,
-            "ls": 0.0, "best": 0.0, "out": None, "pit": 0, "hits": 0}
-
-
-def in_window(wins, s: float) -> bool:
-    return any(a <= s < b for a, b in wins or ())
+    return {"d": d, "v": 0.0, "lane": lane, "thr": 0, "temp": TMIN, "eng": 0, "slow": 0.0, "olap": 0, "ob": 0,
+            "ls": 0.0, "best": 0.0, "pit": 0, "hits": 0, "blows": 0, "tyre": "s", "kerb": 0, "off": 0.0, "offs": 0}
 
 
 def apply_input(car: dict, c: str, v) -> None:
@@ -163,71 +191,46 @@ def apply_input(car: dict, c: str, v) -> None:
     elif c == "r":
         if not car["pit"]:
             car["lane"] = min(2, car["lane"] + 1)
-    elif c == "u":
-        car["thr"] = max(0, min(10, int(v)))
-    elif c == "b":
-        car["box"] = max(0, min(2, int(v))) if not (car["eng"] or car["wheel"] or car["fuel"] <= 0) else max(1, int(v))
+    elif c == "u":                                       # 1 full throttle, 0 lifted, -1 braking
+        car["thr"] = 1 if int(v) > 0 else -1 if int(v) < 0 else 0
 
 
-def step(car: dict, s: float, seed: int, jr: bool, rain: bool, sc: bool) -> list[str]:
+def grip(tyre: str, rain: bool) -> float:
+    return (WET_SLICK if tyre != "r" else 1.0) if rain else (DRY_RAIN if tyre == "r" else 1.0)
+
+
+def step(car: dict, s: float, seed: int, jr: bool, rain: bool = False, dark: bool = False) -> list[str]:
     """One step of DT seconds from game time s – the same in web/langstrecke.js. Answers what happened."""
     ev: list[str] = []
-    if car["out"] is not None:
-        return ev
     if car["pit"]:
-        car["temp"] = max(55.0, car["temp"] - 8 * DT)
+        car["temp"] = max(TMIN, car["temp"] - COOL * DT)
         return ev
-    thr = car["thr"]
-    w = car["wear"]
-    g = 1 - 0.3 * (w / 100) * (w / 100) if w < 100 else 0.55
-    if rain:
-        g *= 0.97 if car["tyre"] == "r" else 0.75
-    elif car["tyre"] == "r":
-        g *= 0.93
-    vt = (VMIN + (VMAX - VMIN) * thr / 10) * g
-    if car["wing"]:
-        vt *= 0.88
-    if car["eng"] or car["wheel"]:
-        vt = min(vt, VLIMP)
-    if car["fuel"] <= 0:
-        vt = min(vt, VDRY)
+    full = car["thr"] > 0 and not car["eng"]
+    vt = VLIMP if car["eng"] else (VFULL if full else VLIFT) * grip(car["tyre"], rain)
+    dec = COAST
+    if car["thr"] < 0:
+        vt = min(vt, VBRAKE)
+        dec = BRAKE
     if car["slow"] > 0:
-        vt = min(vt, VSLOW)
+        vt = min(vt, VOFF if car.get("off", 0) > 0 else VSLOW)
+        dec = BRAKE
         car["slow"] = max(0.0, car["slow"] - DT)
-    if sc:
-        vt = min(vt, VSC)
+    car["off"] = max(0.0, car.get("off", 0.0) - DT)
     v = car["v"]
-    v = min(vt, v + ACC * DT) if v < vt else max(vt, v - BRAKE * DT)
+    v = min(vt, v + ACC * DT) if v < vt else max(vt, v - dec * DT)
     d0 = car["d"]
     d1 = d0 + v * DT
-    # the engine
-    heat = (HEAT_JR if jr else HEAT) * (0.5 if car["eng"] else 1)          # a damaged engine (limping) heats slower
-    car["temp"] = min(110.0, max(50.0, car["temp"] + ((thr - COOL_AT) * heat - (0.4 if rain else 0)) * DT))
-    if car["temp"] >= RED and thr > COOL_AT:            # in the red and still pushing: the clock runs (lifting off stops it)
-        car["red"] += DT
-        if car["red"] > (GRACE_JR if jr else GRACE) + 1e-9:
-            car["blow"] += 1
-            car["red"] = 0.0
-            car["temp"] = 70.0
-            if car["blow"] >= 2:
-                car["out"] = round(s + DT, 2)
-                car["v"] = 0.0
-                ev.append("retired")
-                return ev
-            car["eng"] = 1
-            car["box"] = max(car["box"], 1)
-            ev.append("blow")
-    elif car["temp"] < RED:
-        car["red"] = 0.0
-    # fuel and tyres
-    dist = d1 - d0
-    had = car["fuel"] > 0
-    car["fuel"] = max(0.0, car["fuel"] - dist * FUEL_M * (0.55 + 0.045 * thr))
-    if had and car["fuel"] <= 0:
-        car["box"] = max(car["box"], 1)
-        ev.append("dry")
-    car["wear"] = min(100.0, car["wear"] + dist * WEAR_M * (0.5 + 0.05 * thr) * (2 if car["tyre"] == "r" and not rain else 1))
-    # what lies on the track (cleared under the safety car)
+    # the engine: full throttle heats it, lifting cools it; at RED it overheats (limp to the pits, swap it there)
+    if full:
+        car["temp"] = min(RED, car["temp"] + (HEAT_JR if jr else HEAT) * DT)
+    else:
+        car["temp"] = max(TMIN, car["temp"] - COOL * DT)
+    if full and car["temp"] >= RED - 1e-9:
+        car["eng"] = 1
+        car["blows"] += 1
+        car["temp"] = 80.0
+        ev.append("blow")
+    # what lies on the track
     while True:
         things = lap_things(seed, car["olap"], jr)
         if car["ob"] >= len(things):
@@ -241,50 +244,40 @@ def step(car: dict, s: float, seed: int, jr: bool, rain: bool, sc: bool) -> list
         if xa > d1:
             break
         car["ob"] += 1
-        if xa <= d0 or sc or lane != car["lane"]:
+        if xa <= d0 or lane != car["lane"]:
             continue
-        if kind == GRAVEL:
-            car["slow"] = 1.5
-            car["wear"] = min(100.0, car["wear"] + 6)
-            ev.append("gravel")
-        elif kind == OIL:
-            car["slow"] = 3.0 if rain and car["tyre"] != "r" else 2.0
-            car["wear"] = min(100.0, car["wear"] + 3)
-            ev.append("oil")
-        elif kind == DEBRIS:
-            car["wear"] = min(100.0, car["wear"] + 12)
-            if v > 40:
-                car["wing"] = 1
-            ev.append("debris")
-        elif v > VBACK + 4:                              # into a slow car
-            car["wing"] = 1
-            car["wear"] = min(100.0, car["wear"] + 8)
-            car["slow"] = 1.0
-            ev.append("bigcrash" if v > 45 else "crash")
-            v = min(v, 20.0)
-        else:
-            continue
+        car["slow"] = SLOW_T
         car["hits"] += 1
-    if car["loose"] >= 0 and d1 >= car["loose"]:          # the loose wheel comes off
-        car["wheel"] = 1
-        car["loose"] = -1.0
-        car["box"] = max(car["box"], 1)
-        ev.append("wheel")
-    # the line: a lap, maybe into the pits
+        v = min(v, VSLOW + 4)
+        ev.append("hit")
+    # the chicanes: too fast into one – off into the gravel; a kerb at the gate in my lane
+    lap0 = math.floor(d0 / L)
+    if lap0 >= 0:
+        for xa_, _, _, _ in CHICANES:
+            xa = lap0 * L + xa_
+            if d0 < xa <= d1 and v > (SAFE_TRICKY if rain or dark else SAFE) + 1e-9:
+                car["slow"] = max(car["slow"], OFF_T)
+                car["off"] = OFF_T
+                car["offs"] = car.get("offs", 0) + 1
+                v = min(v, VOFF)
+                ev.append("off")
+        for x, lanes in kerbs(rain or dark):
+            xa = lap0 * L + x
+            if d0 < xa <= d1 and car["lane"] in lanes:
+                car["slow"] = max(car["slow"], KERB_T_WET if rain else KERB_T)
+                car["kerb"] += 1
+                v = min(v, VSLOW + 6)
+                ev.append("kerb")
+    # the line: a lap – and into the pits, every time (not at the start)
     n0, n1 = math.floor(d0 / L), math.floor(d1 / L)
     if n1 > n0 and n0 >= 0:
         lt = s + DT - car["ls"]
-        if car["ls"] > 0 or n0 >= 1:
-            car["best"] = round(lt, 2) if not car["best"] or lt < car["best"] else car["best"]
+        car["best"] = round(lt, 2) if not car["best"] or lt < car["best"] else car["best"]
         car["ls"] = round(s + DT, 2)
-        ev.append("lap")
-        if car["box"]:
-            d1 = n1 * L
-            v = 0.0
-            car["pit"] = 1
-            car["boxed"] = car["box"]
-            car["box"] = 0
-            ev.append("pit")
+        d1 = n1 * L
+        v = 0.0
+        car["pit"] = 1
+        ev += ["lap", "pit"]
     elif n1 > n0:
         car["ls"] = round(s + DT, 2)                    # the start: the first lap begins
     car["d"] = d1
@@ -313,14 +306,26 @@ def darkness(s: float, limit: float) -> float:
     return 0.0
 
 
+def in_window(wins, s: float) -> bool:
+    return any(a <= s < b for a, b in wins or ())
+
+
 def rain_plan(rng, limit: float) -> list[list[float]]:
-    """1–2 showers somewhere in the race (not right at the start)."""
+    """Frequent, sudden showers: 30–55 s of rain, then 45–90 s dry."""
     out = []
-    n = rng.choice((1, 2, 2))
-    for k in range(n):
-        a = limit * (0.12 + 0.8 * (k + rng.random() * 0.7) / n)
-        out.append([round(a, 1), round(min(limit, a + limit * (0.06 + 0.06 * rng.random())), 1)])
+    t = rng.uniform(35, 70)
+    while t < limit - 20:
+        dur = rng.uniform(30, 55)
+        out.append([round(t, 1), round(min(limit, t + dur), 1)])
+        t += dur + rng.uniform(45, 90)
     return out
+
+
+def new_prep() -> dict:
+    """The pit crew's jobs for the next stop: tyres on the 4 spots (the server's time of each), the canister (level,
+    who holds since when, when it was green), the spare engine (held seconds, who holds since when, when ready)."""
+    return {"tyres": [None, None, None, None], "tyre_t": -99.0, "compound": None, "fuel": 0.0, "fuel_on": None, "fuel_at": None, "spill": 0,
+            "eng": 0.0, "eng_on": None, "eng_at": None}
 
 
 # ================================================================ one table (pure logic on a dict)
@@ -335,7 +340,7 @@ class Table:
         return self.now() - self.st["t0"]
 
     def limit(self) -> float:
-        return 60.0 * int(self.st["rules"].get("minutes", 15))
+        return 60.0 * int(self.st["rules"].get("minutes", 8))
 
     def jr(self) -> bool:
         return self.st["rules"].get("difficulty") == "junior"
@@ -362,32 +367,40 @@ class Table:
             groups.setdefault(int(p.get("team", 0)), []).append(p["id"])
         teams = []
         styles = list(TEAM_STYLES)
-        nums = self.rng.sample(NUMBERS, len(groups) + len(bots))
-        for i, k in enumerate(sorted(groups)):           # a team keeps the look it had in the lobby
-            name, color = styles[k % len(styles)]
-            teams.append({"name": name, "color": color, "num": nums[i], "members": groups[k], "bot": False})
-        free = [st_ for i, st_ in enumerate(styles) if i not in groups] or styles
+        looks = self.st.get("looks") or default_looks()
+        taken: set[int] = set()
+        for i, k in enumerate(sorted(groups)):           # a team keeps the name, colour, country and number of the lobby
+            look = looks[k] if k < len(looks) else {}
+            num = int(look.get("num") or 0)
+            if not 1 <= num <= 99 or num in taken:
+                num = next(n for n in NUMBERS if n not in taken)
+            taken.add(num)
+            teams.append({"name": styles[k % len(styles)][0], "color": look.get("color") or styles[k % len(styles)][1],
+                          "country": look.get("country"), "num": num, "members": groups[k], "bot": False})
+        nums = self.rng.sample([n for n in NUMBERS if n not in taken], len(bots))
+        used = {t["color"] for t in teams}
+        free = [st_ for i, st_ in enumerate(styles) if i not in groups and st_[1] not in used] or styles
         for j, b in enumerate(bots):
             name, color = free[j % len(free)]
-            teams.append({"name": name, "color": color, "num": nums[len(groups) + j], "members": [b["id"]], "bot": True})
+            teams.append({"name": name, "color": color, "country": self.rng.choice(COUNTRIES), "num": nums[j],
+                          "members": [b["id"]], "bot": True})
         if not teams:
             raise CommunityError("Nobody is at the table")
         order = list(range(len(teams)))
         self.rng.shuffle(order)
         for pos, ti in enumerate(order):                 # the grid: two by two, 10 m apart
             t = teams[ti]
-            t.update(car=new_car(pos % 3, -5.0 - 10.0 * pos), driver=t["members"][0], streak=1, stints={t["members"][0]: 1},
-                     stop=None, pits=[], radio=None, best_pit=None, ev=[], auto=False, bm=[], blc=-9.0, hot=0, grid=pos + 1)
+            t.update(car=new_car(pos % 3, -5.0 - 10.0 * pos), driver=t["members"][0], drives={t["members"][0]: 1},
+                     stop=None, pits=[], best_pit=None, ev=[], auto=False, bm=[], blc=-9.0, hot=0, grid=pos + 1, prep=new_prep())
         for p in players:
             p["team"] = next(i for i, t in enumerate(teams) if p["id"] in t["members"])
-        rules = self.st["rules"]
         self.st.update(phase="play", seed=seed if seed is not None else self.rng.randrange(1, 2 ** 31), t0=self.now() + COUNTDOWN,
-                       k=0, teams=teams, sc=[], rain=rain_plan(self.rng, self.limit()) if rules.get("weather") else [],
-                       seen={p["id"]: self.now() for p in humans}, ranking=None, places=None, complete=False, end_t=None, log=[])
+                       k=0, teams=teams, rain=rain_plan(self.rng, self.limit()) if self.st["rules"].get("weather", 1) else [], seen={p["id"]: self.now() for p in humans}, ranking=None, places=None, complete=False,
+                       end_t=None, log=[])
 
     # ---------- what the apps send
     def report(self, pid: str, inputs=()) -> int:
-        """The driver's inputs ([game time, "l"|"r"|"u"|"b", value]) – only the current driver's count; a late one is
+        """The driver's inputs ([game time, "l"|"r"|"u", value]) – only the current driver's count; a late one is
         applied at the next step (never in the past). Answers how many were taken."""
         if self.st.get("phase") != "play":
             raise CommunityError("The game is not running")
@@ -396,7 +409,7 @@ class Table:
             raise CommunityError("You are not at this table")
         self.st["seen"][pid] = self.now()
         t = self.team_of(pid)
-        if not t or t["driver"] != pid or t["car"]["out"] is not None:
+        if not t or t["driver"] != pid:
             return 0
         now_t, sim = self.gt(), self.sim_t()
         taken = 0
@@ -406,7 +419,7 @@ class Table:
                 v = int(item[2]) if len(item) > 2 and item[2] is not None else 0
             except (TypeError, ValueError, IndexError, KeyError):
                 continue
-            if c not in ("l", "r", "u", "b") or not math.isfinite(te) or te > now_t + AHEAD:
+            if c not in ("l", "r", "u") or not math.isfinite(te) or te > now_t + AHEAD:
                 continue
             last = t["ev"][-1][0] if t["ev"] else -COUNTDOWN
             te = max(te, sim, last)
@@ -415,197 +428,176 @@ class Table:
         del t["ev"][:-120]
         return taken
 
-    def radio(self, pid: str, msg: str) -> None:
-        if self.st.get("phase") != "play":
-            raise CommunityError("The game is not running")
-        if msg not in RADIO:
-            raise CommunityError("Unknown radio call")
-        t = self.team_of(pid)
-        if not t or t["bot"]:
-            raise CommunityError("You are not at this table")
-        if t["driver"] == pid and len(t["members"]) > 1:
-            raise CommunityError("The driver keeps the hands on the wheel")
-        now_t = self.gt()
-        if t["radio"] and now_t - t["radio"]["t"] < 1.5:
-            return
-        self.st["seen"][pid] = self.now()
-        t["radio"] = {"m": msg, "t": round(now_t, 2), "from": pid}
+    def crew(self, t: dict) -> list[str]:
+        return [m for m in t["members"] if m != t["driver"]]
 
-    def pit_job(self, pid: str, task: str, data: dict) -> dict:
-        """A pit-stop job done on a phone – checked here; the job counts at the server's time of now."""
+    def prep(self, pid: str, action: str, spot=None) -> dict:
+        """A job of the pit crew during the lap – the server's clock decides (a tyre on a spot, start / stop holding
+        the canister or the spare engine)."""
         if self.st.get("phase") != "play":
             raise CommunityError("The game is not running")
         t = self.team_of(pid)
         if not t or t["bot"]:
             raise CommunityError("You are not at this table")
         self.st["seen"][pid] = self.now()
-        stop = t.get("stop")
-        if not stop or task not in stop["tasks"]:
-            raise CommunityError("No pit stop right now")
-        if stop["who"].get(task) != pid:
-            raise CommunityError("This is not your job")
-        if task in stop["done"]:
-            return {"ok": True, "again": True}
-        now_t = self.gt()
-        el = now_t - stop["t"]
-        if el < 0:
-            raise CommunityError("No pit stop right now")
-        busy = stop["busy"].get(pid, 0.0)
-        data = data if isinstance(data, dict) else {}
-        out: dict = {"ok": True}
-        if task == "tyres":
-            nuts = data.get("nuts")
-            if not isinstance(nuts, list) or len(nuts) != 4:
-                raise CommunityError("Four wheel nuts are needed")
+        if t["driver"] == pid:
+            raise CommunityError("The driver keeps the hands on the wheel")
+        if t["car"]["pit"]:
+            raise CommunityError("The car is in the pits")
+        now_t = math.floor(self.gt() * 1000) / 1000       # stored to the millisecond, never later than now
+        pr = t["prep"]
+        self._settle(t, now_t)
+        if action == "tyre":
             try:
-                order = [int(n[0]) for n in nuts]
-                holds = [max(0.0, min(10.0, float(n[1]))) for n in nuts]
-            except (TypeError, ValueError, IndexError):
-                raise CommunityError("Four wheel nuts are needed") from None
-            if order != stop["tasks"]["tyres"]["order"] or not all(math.isfinite(x) for x in holds):
-                raise CommunityError("Wrong order")
-            if busy + sum(holds) > el + 0.3:
-                raise CommunityError("Too fast")
-            tyre = "r" if data.get("tyre") == "r" else "s"
-            loose = [order[i] for i, x in enumerate(holds) if x < HOLD_MIN]
-            stop["busy"][pid] = busy + sum(holds)
-            stop["done"]["tyres"] = {"at": round(now_t, 2), "tyre": tyre, "loose": loose}
-            out["loose"] = loose
-        elif task == "fuel":
-            try:
-                hold = max(0.0, min(20.0, float(data.get("hold"))))
+                k = int(spot)
             except (TypeError, ValueError):
-                raise CommunityError("How long was the nozzle held?") from None
-            if not math.isfinite(hold) or busy + hold > el + 0.3:
+                raise CommunityError("Unknown spot") from None
+            if not 0 <= k <= 3:
+                raise CommunityError("Unknown spot")
+            if pr["tyres"][k] is not None:
+                return {"ok": True, "again": True}
+            if now_t - pr["tyre_t"] < TYRE_GAP:
                 raise CommunityError("Too fast")
-            level = stop["tasks"]["fuel"]["from"] + FILL_RATE * hold
-            spill = level > 100.0
-            stop["busy"][pid] = busy + hold
-            stop["done"]["fuel"] = {"at": round(now_t, 2), "level": round(min(100.0, level), 1), "spill": spill}
-            if spill:
-                stop["pen"] = round(stop["pen"] + SPILL_PEN, 2)
-            out.update(level=round(min(100.0, level), 1), spill=spill, green=GREEN[0] <= level <= GREEN[1])
-        elif task == "repair":
-            rep = stop["tasks"]["repair"]
-            ans = data.get("answer")
-            try:
-                ans = [int(x) for x in ans]
-            except (TypeError, ValueError):
-                raise CommunityError("Wrong answer") from None
-            ok = (ans == rep["perm"]) if rep["kind"] == "cables" else (len(ans) == len(rep["rot"]) and all((r + a) % 4 == 0 for r, a in zip(rep["rot"], ans)))
-            if not ok:
-                stop["pen"] = round(stop["pen"] + WRONG_PEN, 2)
-                return {"ok": False, "pen": WRONG_PEN}
-            stop["done"]["repair"] = {"at": round(now_t, 2)}
-        self._stop_end(t)
-        return out
+            pr["tyres"][k] = now_t
+            pr["tyre_t"] = now_t
+            return {"ok": True, "tyres": sum(1 for x in pr["tyres"] if x is not None)}
+        if action in ("slicks", "rain"):
+            pr["compound"] = "r" if action == "rain" else "s"
+            return {"ok": True, "compound": pr["compound"]}
+        if action in ("fuel_on", "eng_on"):
+            key = action[:-3]
+            if key == "eng" and not t["car"]["eng"]:
+                raise CommunityError("The engine is fine")
+            if pr[key + "_at"] is not None:
+                return {"ok": True, "again": True}
+            if pr[key + "_on"]:
+                if pr[key + "_on"][0] != pid:
+                    raise CommunityError("Somebody else is on it")
+                return {"ok": True, "again": True}
+            pr[key + "_on"] = [pid, now_t]
+            return {"ok": True}
+        if action in ("fuel_off", "eng_off"):
+            key = action[:-4]
+            on = pr[key + "_on"]
+            if not on or on[0] != pid:
+                return {"ok": True, "again": True, **self._prep_out(pr, key)}
+            held = max(0.0, now_t - on[1])
+            pr[key + "_on"] = None
+            if key == "fuel":
+                level = pr["fuel"] + FILL_RATE * held
+                if level > 100.0:
+                    pr["fuel"] = 0.0
+                    pr["spill"] += 1
+                    return {"ok": True, "spill": True, "level": 0.0, "green": False}
+                pr["fuel"] = round(level, 1)
+                if level >= GREEN:
+                    pr["fuel_at"] = now_t
+            else:
+                pr["eng"] = round(min(ENGINE_HOLD, pr["eng"] + held), 2)
+                if pr["eng"] >= ENGINE_HOLD - 1e-9:
+                    pr["eng_at"] = now_t
+            return {"ok": True, **self._prep_out(pr, key)}
+        raise CommunityError("Unknown job")
+
+    @staticmethod
+    def _prep_out(pr: dict, key: str) -> dict:
+        if key == "fuel":
+            return {"level": pr["fuel"], "green": pr["fuel_at"] is not None, "spill": False}
+        return {"held": pr["eng"], "ready": pr["eng_at"] is not None}
+
+    def _settle(self, t: dict, now_t: float) -> None:
+        """Holding on too long: the canister spills over (starts empty again), the spare engine is ready."""
+        pr = t["prep"]
+        on = pr["fuel_on"]
+        if on and pr["fuel"] + FILL_RATE * (now_t - on[1]) > 100.0 + FILL_RATE * SPILL_AFTER:
+            pr.update(fuel=0.0, fuel_on=None, spill=pr["spill"] + 1)
+        on = pr["eng_on"]
+        if on and pr["eng"] + now_t - on[1] >= ENGINE_HOLD:
+            at = round(on[1] + ENGINE_HOLD - pr["eng"], 3)
+            pr.update(eng=ENGINE_HOLD, eng_on=None, eng_at=at)
+
+    def ready(self, t: dict, at: float) -> dict:
+        """Which jobs were finished by game time `at`."""
+        pr = t["prep"]
+        ty = pr["tyres"]
+        eng_at = pr["eng_at"]
+        if eng_at is None and pr["eng_on"]:
+            eng_at = pr["eng_on"][1] + ENGINE_HOLD - pr["eng"]
+        return {"tyres": all(x is not None and x <= at + 1e-9 for x in ty),
+                "fuel": pr["fuel_at"] is not None and pr["fuel_at"] <= at + 1e-9,
+                "engine": eng_at is not None and eng_at <= at + 1e-9}
 
     # ---------- the pit stop
-    def _rotation(self, t: dict) -> list[str]:
-        """The members from the driver on (the order of the roles)."""
+    def next_driver(self, t: dict) -> str:
+        """The next person of the team in turn (who is online); alone: the same."""
         m = t["members"]
         i = m.index(t["driver"]) if t["driver"] in m else 0
-        return m[i:] + m[:i]
-
-    def roles(self, t: dict) -> dict[str, str]:
-        rot = self._rotation(t)
-        out = {rot[0]: "driver"}
-        for k, pid in enumerate(rot[1:]):
-            out[pid] = "engineer" if k == 0 and len(rot) >= 4 else "crew"
-        return out
+        for k in range(1, len(m)):
+            pid = m[(i + k) % len(m)]
+            if self.seen_ok(pid, STALE):
+                return pid
+        return t["driver"]
 
     def _open_stop(self, t: dict, s: float) -> None:
         car = t["car"]
-        dmg = bool(car["eng"] or car["wing"] or car["wheel"])
-        tasks: dict = {"tyres": {"order": self.rng.sample(range(4), 4), "from": car["tyre"]},
-                       "fuel": {"from": round(car["fuel"], 1), "rate": FILL_RATE, "green": list(GREEN)}}
-        if dmg:
-            if self.rng.random() < 0.5:
-                tasks["repair"] = {"kind": "cables", "perm": self.rng.sample(range(4), 4)}
-            else:
-                tasks["repair"] = {"kind": "screws", "rot": [self.rng.choice((1, 2, 3, 5, 6, 7)) for _ in range(3)]}   # 45° steps; straight: 0° or 180°
-        stop = {"t": round(s + DT, 2), "n": len(t["pits"]) + 1, "tasks": tasks, "who": {}, "done": {}, "pen": 0.0, "busy": {},
-                "end": None, "dmg": dmg}
-        # the driver: change (default) or stay for a second stint in a row
-        rot = self._rotation(t)
-        nxt = t["driver"]
-        if len(rot) > 1 and not t["bot"] and not (car.get("boxed") == 2 and t["streak"] < STINT_MAX):
-            for pid in rot[1:]:
-                if self.seen_ok(pid, STALE):
-                    nxt = pid
-                    break
-        stop["next"], stop["change"] = nxt, nxt != t["driver"]
+        at = round(s + DT, 2)
+        eng = bool(car["eng"])
+        crew = [p for p in self.crew(t) if self.seen_ok(p, STALE)] if not t["bot"] else []
+        parts: list[list] = []
+        garage = False
         if t["bot"]:
-            self._bot_jobs(t, stop, self.person(t["driver"]).get("level", "normal"), s)
+            miss = BOT_SKILL.get(self.person(t["driver"]).get("level", "normal"), BOT_SKILL["normal"])[3]
+            parts.append(["base", STOP_BASE, True])
+            for job in ("tyres", "fuel"):
+                ok = self.rng.random() >= miss
+                parts.append([job, 0.0 if ok else PEN_PREP, ok])
+            if eng:
+                ok = self.rng.random() >= miss
+                parts.append(["engine", ENG_READY if ok else ENG_SWAP, ok])
+        elif not crew:                                   # alone (or the crew is offline): the garage, a fixed time
+            garage = True
+            parts.append(["garage", GARAGE, True])
+            if eng:
+                parts.append(["engine", GARAGE_ENG, False])
         else:
-            roles = self.roles(t)
-            crew = [p for p in rot[1:] if roles[p] == "crew" and self.seen_ok(p, STALE)]
-            if not crew:
-                crew = [p for p in rot[1:] if self.seen_ok(p, STALE)]
-            if not crew and self.seen_ok(t["driver"], STALE) and not t["auto"]:
-                crew = [t["driver"]]
-            jobs = list(tasks)
-            if not crew:                                 # nobody there: the garage does it (a bit slower)
-                self._bot_jobs(t, stop, "easy", s, extra=3.0)
-            else:
-                for i, job in enumerate(jobs):
-                    stop["who"][job] = crew[min(i, len(crew) - 1)] if len(crew) >= 3 else crew[0] if len(crew) == 1 else crew[0 if job == "tyres" else 1]
-        t["stop"] = stop
-        self._stop_end(t)
+            self._settle(t, at)
+            rd = self.ready(t, at)
+            parts.append(["base", STOP_BASE, True])
+            parts.append(["tyres", 0.0 if rd["tyres"] else PEN_PREP, rd["tyres"]])
+            parts.append(["fuel", 0.0 if rd["fuel"] else PEN_PREP, rd["fuel"]])
+            if eng:
+                parts.append(["engine", ENG_READY if rd["engine"] else ENG_SWAP, rd["engine"]])
+        took = round(sum(p[1] for p in parts), 1)
+        # the tyres for the next lap: the crew's choice (the garage and the bots look at the forecast)
+        wet_soon = self.wet_soon(at + took)
+        if t["bot"]:
+            tyre = ("r" if wet_soon else "s") if self.rng.random() >= miss else ("s" if wet_soon else "r")
+        elif garage:
+            tyre = "r" if wet_soon else "s"
+        else:
+            tyre = t["prep"]["compound"] or car["tyre"]
+        nxt = self.next_driver(t)
+        t["stop"] = {"t": at, "end": round(at + took, 2), "time": took, "n": len(t["pits"]) + 1, "parts": parts,
+                     "prev": t["driver"], "next": nxt, "change": nxt != t["driver"], "garage": garage, "eng": eng, "tyre": tyre}
 
-    def _bot_jobs(self, t: dict, stop: dict, level: str, s: float, extra: float = 0.0) -> None:
-        _, _, ty, fu, rp = BOT_SKILL.get(level, BOT_SKILL["normal"])
-        rain_soon = any(a - 45 <= s < b for a, b in self.st["rain"])
-        base = stop["t"] + 1.0 + extra
-        stop["done"]["tyres"] = {"at": round(base + self.rng.uniform(*ty), 2), "tyre": "r" if rain_soon else "s", "loose": []}
-        stop["done"]["fuel"] = {"at": round(base + self.rng.uniform(*fu), 2), "level": round(self.rng.uniform(95, 100), 1), "spill": False}
-        if "repair" in stop["tasks"]:
-            stop["done"]["repair"] = {"at": round(base + self.rng.uniform(*rp), 2)}
-        for job in stop["tasks"]:
-            stop["who"][job] = "bot"
-
-    def _stop_end(self, t: dict) -> None:
-        stop = t["stop"]
-        if not stop or stop["end"] is not None or any(job not in stop["done"] for job in stop["tasks"]):
-            return
-        end = max(d["at"] for d in stop["done"].values()) + stop["pen"]
-        if stop["change"]:
-            end = max(end, stop["t"] + CHANGE_T)
-        stop["end"] = round(end, 2)
-
-    def _garage(self, t: dict, s: float) -> None:
-        """Jobs nobody did in time: the garage does them."""
-        stop = t["stop"]
-        if not stop or stop["end"] is not None or s < stop["t"] + PIT_TASK_MAX:
-            return
-        at = round(stop["t"] + PIT_TASK_MAX, 2)
-        for job in stop["tasks"]:
-            if job not in stop["done"]:
-                stop["done"][job] = {"at": at, "tyre": stop["tasks"]["tyres"]["from"], "loose": []} if job == "tyres" else \
-                    {"at": at, "level": 80.0, "spill": False} if job == "fuel" else {"at": at}
-                stop["done"][job]["garage"] = True
-        self._stop_end(t)
+    def wet_soon(self, s: float) -> bool:
+        """The forecast for the next lap: rain at about the middle of it."""
+        return in_window(self.st.get("rain"), s + 12.0)
 
     def _release(self, t: dict) -> None:
         car, stop = t["car"], t["stop"]
-        ty, fu = stop["done"]["tyres"], stop["done"]["fuel"]
-        car.update(pit=0, v=0.0, wear=0.0, tyre=ty["tyre"], fuel=max(car["fuel"], fu["level"]), slow=0.0, box=0, boxed=0,
-                   loose=(car["d"] + L * 0.5) if ty["loose"] else -1.0)
-        if "repair" in stop["done"]:
-            car.update(eng=0, wing=0, wheel=0)
-        car["temp"] = min(car["temp"], 70.0)
-        took = round(stop["end"] - stop["t"], 1)
-        t["pits"].append({"n": stop["n"], "time": took, "change": stop["change"], "who": dict(stop["who"]), "loose": bool(ty["loose"]),
-                          "spill": bool(fu.get("spill")), "at": stop["t"]})
-        if t["best_pit"] is None or took < t["best_pit"]:
-            t["best_pit"] = took
-        if stop["change"]:
-            t["driver"], t["streak"] = stop["next"], 1
-        else:
-            t["streak"] += 1
-        t["stints"][t["driver"]] = t["stints"].get(t["driver"], 0) + 1
+        car.update(pit=0, v=0.0, eng=0, slow=0.0, temp=min(car["temp"], 70.0), tyre=stop["tyre"])
+        if not t["bot"]:
+            car["thr"] = 0                               # the new driver presses the pedal again
+        t["pits"].append({"n": stop["n"], "time": stop["time"], "change": stop["change"], "garage": stop["garage"],
+                          "eng": stop["eng"], "at": stop["t"], "driver": stop["prev"]})
+        if not stop["garage"] and (t["best_pit"] is None or stop["time"] < t["best_pit"]):
+            t["best_pit"] = stop["time"]
+        t["driver"] = stop["next"]
+        t["drives"][t["driver"]] = t["drives"].get(t["driver"], 0) + 1
         t["ev"] = []
         t["stop"] = None
+        t["prep"] = new_prep()
 
     # ---------- the clock: everything up to SETTLE seconds ago
     def tick(self) -> None:
@@ -616,53 +608,46 @@ class Table:
         horizon = min(now_t - SETTLE, lim)
         seed, jr = self.st["seed"], self.jr()
         for t in self.st["teams"]:                       # who drives: the app, or the autopilot when it is silent
+            was = t["auto"]
             t["auto"] = not t["bot"] and not self.seen_ok(t["driver"], AUTO_AFTER) and now_t > 0
+            if was and not t["auto"]:
+                t["car"]["thr"] = 0                      # back in the app: the pedal is released until pressed again
         steps = 0
         while (self.st["k"] + 1) / 10 <= horizon + 1e-9 and steps < 30000:
             s = self.st["k"] / 10
-            rain, sc = in_window(self.st["rain"], s), in_window(self.st["sc"], s)
+            rain, dark = in_window(self.st.get("rain"), s), darkness(s, lim) > 0.5
             for t in self.st["teams"]:
                 car = t["car"]
-                if car["out"] is not None:
-                    continue
-                if car["pit"]:
-                    self._garage(t, s)
-                    if t["stop"] and t["stop"]["end"] is not None and s + 1e-9 >= t["stop"]["end"]:
-                        self._release(t)
+                if car["pit"] and t["stop"] and s + 1e-9 >= t["stop"]["end"]:
+                    self._release(t)
                 if t["bot"] or t["auto"]:
-                    self._drive(t, s, rain, sc)
+                    self._drive(t, s)
                 else:
                     while t["ev"] and t["ev"][0][0] <= s + 1e-9:
                         _, c, v = t["ev"].pop(0)
                         apply_input(car, c, v)
-                for e in step(car, s, seed, jr, rain, sc):
+                for e in step(car, s, seed, jr, rain, dark):
                     if e == "pit":
                         self._open_stop(t, s)
-                    elif e in ("blow", "retired", "bigcrash"):
-                        self._safety_car(s + DT)
+                    elif e == "blow":
                         self.st["log"].append([round(s + DT, 1), e, t["num"]])
-                    del self.st["log"][:-30]
+                        del self.st["log"][:-30]
             self.st["k"] += 1
             steps += 1
+        for t in self.st["teams"]:
+            if not t["car"]["pit"]:
+                self._settle(t, now_t)
         self._maybe_end(horizon)
 
-    def _safety_car(self, s: float) -> None:
-        sc = self.st["sc"]
-        lim = self.limit()
-        if len(sc) >= (2 if lim <= 600 else 3) or s > lim - 60 or in_window(sc, s) or (sc and s - sc[-1][1] < SC_GAP):
-            return
-        sc.append([round(s, 1), round(s + SC_LEN, 1)])
-
-    def _drive(self, t: dict, s: float, rain: bool, sc: bool) -> None:
-        """The bot driver (also the autopilot of a silent app): dodge, manage the engine, box sensibly."""
+    def _drive(self, t: dict, s: float) -> None:
+        """The bot driver (also the autopilot of a silent app): dodge, push, lift off when hot."""
         car = t["car"]
         if car["pit"]:
             return
         level = self.person(t["driver"]).get("level", "normal") if t["bot"] else "normal"
-        miss, push, *_ = BOT_SKILL.get(level, BOT_SKILL["normal"])
+        miss, hot_hi, hot_lo, _ = BOT_SKILL.get(level, BOT_SKILL["normal"])
         jr = self.jr()
-        # dodge: what is ahead in my lane
-        look = car["v"] * 1.4 + 18
+        look = car["v"] * 1.4 + 14
         ahead = []
         lap, ob = car["olap"], car["ob"]
         for k in range(2):
@@ -679,8 +664,16 @@ class Table:
                             t["bm"].append("x" + key)
                     if "x" + key not in t["bm"]:
                         ahead.append((dz, lane))
-        if not sc and s - t["blc"] >= 0.3:
-            blocked = {lane for _, lane in ahead}
+        lap0 = math.floor(car["d"] / L)
+        tricky = in_window(self.st.get("rain"), s) or darkness(s, self.limit()) > 0.5
+        for k in range(2):
+            for x, lanes in kerbs(tricky):
+                dz = (lap0 + k) * L + x - car["d"]
+                if 0 < dz <= look:
+                    ahead += [(dz, ln) for ln in lanes]
+        if s - t["blc"] >= 0.3 and ahead:
+            near = min(ahead)[0]
+            blocked = {lane for dz, lane in ahead if dz <= near + 20}
             if car["lane"] in blocked:
                 free = [ln for ln in (car["lane"] - 1, car["lane"] + 1) if 0 <= ln <= 2 and ln not in blocked]
                 far = [ln for ln in range(3) if ln not in blocked]
@@ -688,36 +681,31 @@ class Table:
                 if goal != car["lane"]:
                     car["lane"] += 1 if goal > car["lane"] else -1
                     t["blc"] = s
-        # the engine: push, lift when hot
-        hot_at = {"easy": (89.0, 74.0, 5), "normal": (84.0, 74.0, 6), "hard": (87.0, 81.0, 7)}.get(level, (84.0, 74.0, 6))
-        if car["temp"] >= hot_at[0]:
+        if car["temp"] >= hot_hi:
             t["hot"] = 1
-        elif car["temp"] <= hot_at[1]:
+        elif car["temp"] <= hot_lo:
             t["hot"] = 0
-        car["thr"] = 6 if sc else (hot_at[2] if t["hot"] else int(push))
-        # box: fuel, tyres, damage, the weather, a cheap stop under the safety car
-        per_lap = L * FUEL_M * (0.55 + 0.045 * 10)
-        rain_soon = any(a - 30 <= s < b for a, b in self.st["rain"])
-        if car["fuel"] < per_lap * 1.25 or car["wear"] > 82 or car["wing"] or (rain and car["tyre"] == "s" and t["bot"]) \
-                or (not rain_soon and car["tyre"] == "r") or (sc and car["fuel"] < 55) or car["eng"] or car["wheel"]:
-            car["box"] = 1
+        car["thr"] = 0 if t["hot"] else 1
+        # brake in time before a chicane (down to a little below the safe speed)
+        safe = (SAFE_TRICKY if tricky else SAFE) - {"easy": 2.5, "normal": 1.5, "hard": 0.8}.get(level, 1.5)
+        for k in range(2):
+            for xa_, _, _, _ in CHICANES:
+                dz = (lap0 + k) * L + xa_ - car["d"]
+                if 0 < dz <= 160 and car["v"] > safe and dz <= (car["v"] ** 2 - safe ** 2) / (2 * BRAKE) + car["v"] * 0.4 + 4:
+                    car["thr"] = -1
 
     # ---------- the end
     def _maybe_end(self, horizon: float) -> None:
         if self.st.get("phase") != "play":
             return
-        humans = [t for t in self.st["teams"] if not t["bot"]]
         if horizon >= self.limit() and self.st["k"] / 10 >= self.limit() - 1e-9:
-            self.st["complete"] = True
-            self._finish()
-        elif humans and all(t["car"]["out"] is not None for t in humans):     # every team of people retired
             self.st["complete"] = True
             self._finish()
 
     def standings(self) -> list[int]:
-        """Team indexes by laps, then distance (a retired car keeps its laps)."""
+        """Team indexes by laps, then distance, then who crossed the line first (two cars in the pits)."""
         ts = self.st["teams"]
-        return sorted(range(len(ts)), key=lambda i: (-laps_of(ts[i]["car"]["d"]), -ts[i]["car"]["d"], ts[i]["grid"]))
+        return sorted(range(len(ts)), key=lambda i: (-laps_of(ts[i]["car"]["d"]), -ts[i]["car"]["d"], ts[i]["car"]["ls"], ts[i]["grid"]))
 
     def _finish(self) -> None:
         order = self.standings()
@@ -725,7 +713,7 @@ class Table:
         pl, n = {}, 0
         prev = None
         for k, i in enumerate(order):
-            key = (laps_of(ts[i]["car"]["d"]), round(ts[i]["car"]["d"], 1))
+            key = (laps_of(ts[i]["car"]["d"]), round(ts[i]["car"]["d"], 1), ts[i]["car"]["ls"])
             if key != prev:
                 n = k + 1
                 prev = key
@@ -778,7 +766,7 @@ class Langstrecke(CardGames):
                 out[k] = str(x)
         out["bots"] = max(0, min(5, out["bots"]))
         out["level"] = out["level"] if out["level"] in LEVELS else "normal"
-        out["minutes"] = out["minutes"] if out["minutes"] in MINUTES else 15
+        out["minutes"] = out["minutes"] if out["minutes"] in MINUTES else DEFAULTS["minutes"]
         out["weather"] = 1 if out["weather"] else 0
         out["difficulty"] = out["difficulty"] if out["difficulty"] in DIFFS else "normal"
         out["team_size"] = max(1, min(5, out["team_size"]))
@@ -843,8 +831,8 @@ class Langstrecke(CardGames):
                 try:
                     self.add_history(int(p["id"]), KIND, {
                         "place": st["places"].get(p["id"]), "players": len(st["teams"]), "laps": laps_of(t["car"]["d"]),
-                        "team": t["name"], "num": t["num"], "best_pit": t.get("best_pit"), "stints": t["stints"].get(p["id"], 0),
-                        "retired": t["car"]["out"] is not None, "record": bool(records.get(p["id"])), "complete": bool(st.get("complete")),
+                        "team": t["name"], "num": t["num"], "best_pit": t.get("best_pit"), "drives": t["drives"].get(p["id"], 0),
+                        "stops": len(t["pits"]), "record": bool(records.get(p["id"])), "complete": bool(st.get("complete")),
                         "coins": coins.get(p["id"], 0)})
                 except Exception:  # noqa: BLE001
                     pass
@@ -906,7 +894,8 @@ class Langstrecke(CardGames):
             raise CommunityError("The table is full")
         p["team"] = min(free, key=lambda i: (counts[i], i))
 
-    def start(self, kind: str, host: int, rules: dict | None = None, solo: bool = False, bots: list[dict] | None = None) -> int:
+    def start(self, kind: str, host: int, rules: dict | None = None, solo: bool = False, bots: list[dict] | None = None,
+              country: str | None = None) -> int:
         if kind != KIND:
             raise CommunityError("Unknown game")
         with self.lock:
@@ -918,7 +907,7 @@ class Langstrecke(CardGames):
                     self.db.x("UPDATE card_game SET status='done', finished_at=datetime('now','localtime') WHERE id=?", old["id"])
             r = self.clean_rules(KIND, {**self.default_rules(), **{k: v for k, v in (rules or {}).items() if v is not None}})
             self.db.set_setting(f"game_rules.{KIND}", r)
-            st = {"kind": KIND, "rules": r, "players": [], "phase": "lobby", "solo": solo, "bot_pool": list(bots or [])}
+            st = {"kind": KIND, "rules": r, "players": [], "phase": "lobby", "solo": solo, "bot_pool": list(bots or []), "looks": default_looks(country)}
             me = self._person(host)
             self._seat(st, me)
             st["players"].append(me)
@@ -965,6 +954,44 @@ class Langstrecke(CardGames):
             if p.get("team") != int(team) and sum(1 for q in st["players"] if q.get("team") == int(team)) >= r["team_size"]:
                 raise CommunityError("This team is full")
             p["team"] = int(team)
+            self._save(row, st)
+
+    def choose_look(self, pid: int, color: str | None = None, country: str | None = None, num: int | None = None) -> None:
+        """In the lobby: the colour (from the palette, not taken by another team), the country and the car number (1–99,
+        not taken by another team) of my team."""
+        with self.lock:
+            row = self._row(KIND, pid)
+            if not row:
+                raise CommunityError("No game is running")
+            st = json.loads(row["state"])
+            if st["phase"] != "lobby":
+                raise CommunityError("The game has already started")
+            p = next((x for x in st["players"] if x["id"] == str(pid)), None)
+            if not p:
+                raise CommunityError("You are not at this table")
+            looks = st.setdefault("looks", default_looks())
+            k = int(p.get("team", 0))
+            if color is not None:
+                if color not in [c for _, c in TEAM_STYLES]:
+                    raise CommunityError("Unknown colour")
+                if any(i != k and lk["color"] == color for i, lk in enumerate(looks)):
+                    raise CommunityError("Another team has this colour")
+                looks[k]["color"] = color
+            if country is not None:
+                if country and country not in COUNTRIES:
+                    raise CommunityError("Unknown country")
+                looks[k]["country"] = country or None
+            if num is not None:
+                try:
+                    num = int(num)
+                except (TypeError, ValueError):
+                    raise CommunityError("Car numbers go from 1 to 99") from None
+                if not 1 <= num <= 99:
+                    raise CommunityError("Car numbers go from 1 to 99")
+                n = 1 if st.get("solo") else st["rules"]["teams"]
+                if any(i != k and i < n and lk.get("num") == num for i, lk in enumerate(looks)):
+                    raise CommunityError("Another team has this number")
+                looks[k]["num"] = num
             self._save(row, st)
 
     def shuffle(self, viewer: int) -> None:
@@ -1032,11 +1059,9 @@ class Langstrecke(CardGames):
             return self.state(KIND, pid)
         return {**self._view(row, st, str(pid)), "taken": taken}
 
-    def radio(self, pid: int, msg: str) -> None:
-        self._with_play(pid, lambda t, st: t.radio(str(pid), msg))
-
-    def pit_job(self, pid: int, task: str, data: dict) -> dict:
-        return self._with_play(pid, lambda t, st: t.pit_job(str(pid), task, data)) or {"ok": False}
+    def prep(self, pid: int, action: str, spot=None) -> dict:
+        """A job of the pit crew (tyre, canister, spare engine) – checked and timed by the server."""
+        return self._with_play(pid, lambda t, st: t.prep(str(pid), action, spot)) or {"ok": False}
 
     def end(self, kind: str, viewer: int) -> None:
         with self.lock:
@@ -1086,25 +1111,27 @@ class Langstrecke(CardGames):
                 "best": self.best(me) if joined else None, "now": self.now()}
         if st["phase"] == "lobby":
             nb = max(0, min(st["rules"]["bots"], 8))
-            return {**base, "bots": nb, "nteams": 1 if st.get("solo") else st["rules"]["teams"]}
+            return {**base, "bots": nb, "nteams": 1 if st.get("solo") else st["rules"]["teams"], "looks": st.get("looks") or default_looks(),
+                    "palette": [{"name": n, "color": c} for n, c in TEAM_STYLES], "countries": list(COUNTRIES)}
         t_ = self.table(st)
         mine = t_.team_of(me) if joined else None
         coins, recs = st.get("coins") or {}, st.get("records") or {}
         teams = []
         lead = max((t["car"]["d"] for t in st["teams"]), default=0)
+        now_t = t_.gt()
         for i, t in enumerate(st["teams"]):
             car = t["car"]
-            tv = {"i": i, "name": t["name"], "color": t["color"], "num": t["num"], "members": t["members"], "bot": t["bot"],
+            tv = {"i": i, "name": t["name"], "color": t["color"], "country": t.get("country"), "tyre": car["tyre"], "num": t["num"], "members": t["members"], "bot": t["bot"],
                   "driver": t["driver"], "laps": laps_of(car["d"]), "d": round(car["d"], 2), "v": round(car["v"], 2), "lane": car["lane"],
-                  "pit": car["pit"], "out": car["out"], "stops": len(t["pits"]), "best_pit": t["best_pit"], "best_lap": car["best"],
-                  "gap": round(lead - car["d"], 1), "auto": t["auto"], "place": t.get("place"), "grid": t["grid"],
-                  "dmg": [k for k in ("eng", "wing", "wheel") if car[k]]}
+                  "pit": car["pit"], "eng": car["eng"], "stops": len(t["pits"]), "best_pit": t["best_pit"], "best_lap": car["best"],
+                  "gap": round(lead - car["d"], 1), "auto": t["auto"], "place": t.get("place"), "grid": t["grid"]}
             if t is mine or ph == "done":
-                tv.update(car=car, roles=t_.roles(t), stints=t["stints"], streak=t["streak"], pits=t["pits"],
-                          radio=t["radio"], ev=t["ev"] if t is mine else [])
-                if t["stop"]:
-                    stop = t["stop"]
-                    tv["stop"] = {k: stop[k] for k in ("t", "n", "tasks", "who", "done", "pen", "end", "next", "change", "dmg")}
+                pr = t["prep"]
+                tv.update(car=car, drives=t["drives"], pits=t["pits"], ev=t["ev"] if t is mine else [], stop=t["stop"],
+                          next=t_.next_driver(t) if ph == "play" else None,
+                          prep={"tyres": [x is not None for x in pr["tyres"]], "fuel": pr["fuel"], "fuel_on": pr["fuel_on"], "spill": pr["spill"],
+                                "compound": pr["compound"] or car["tyre"], "eng": pr["eng"], "eng_on": pr["eng_on"], "need_eng": bool(car["eng"]),
+                                "ready": t_.ready(t, now_t if ph == "play" else 1e9)})
             teams.append(tv)
         players_out = []
         for p in players:
@@ -1114,7 +1141,7 @@ class Langstrecke(CardGames):
             p["record"] = recs.get(p["id"]) or None
             players_out.append(p)
         return {**base, "players": players_out, "me": me if joined else None, "seed": st["seed"], "t0": st["t0"], "limit": t_.limit(),
-                "k": st["k"], "rain": st["rain"], "sc": st["sc"], "teams": teams, "my_team": mine and st["teams"].index(mine),
+                "k": st["k"], "rain": st.get("rain") or [], "teams": teams, "my_team": mine and st["teams"].index(mine),
                 "standings": t_.standings(), "log": st.get("log", [])[-6:], "end_t": st.get("end_t"), "ranking": st.get("ranking"),
                 "complete": bool(st.get("complete")), "now_t": t_.gt() if ph == "play" else st.get("end_t")}
 

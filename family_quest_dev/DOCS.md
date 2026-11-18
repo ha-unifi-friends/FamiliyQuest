@@ -36,7 +36,7 @@ they are read at start. Packs changed in the parent area are not overwritten by 
 Three apps of this repository can run side by side, each with its own data and entities: **Family Quest** (stable,
 `family_quest_…`, port 8099), **Family Quest Beta** (the next version for testing, `family_quest_beta_…`, port 8098,
 orange «BETA» icon) and **Family Quest Dev** (development builds, `family_quest_dev_…`, port 8097, purple «DEV» icon).
-Only the dev app has games that are still being reworked (now: 🏎️ 24h Endurance and 🏛️ Beat the Bureaucracy) –
+Only the dev app has games that are still being reworked (now: 🏛️ Beat the Bureaucracy) –
 stable and beta do not show them; history entries of earlier games stay.
 
 ## The app: menu and season designs
@@ -485,10 +485,10 @@ A board opens full screen (✕ closes it):
 Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
 to 600 points. Everything is in the database, so the backup contains the boards.
 
-### 📚 Library: the family bookshelf (books, adventure books) – and the adventure games
+### 📚 Library: the family bookshelf (books, interactive books) – and the adventure games
 In the app menu **📚 Library** (formerly «My books»; also a card on the Family page) and in the parent area under **Family**: children and
 parents write books, the whole family reads them. Guests never see them. The library shows two **book types**, shown as
-a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Books · 📖 Adventure books). The third
+a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Books · 📖 Interactive books). The third
 type, the **🗝️ adventure games**, is stored the same way (table `story`, type `game`, same API `/api/stories`) but lives
 under **Games**: in the kids' app a card «🗝️ Adventure games» on the games page (below the family quiz) opens their own
 shelf (`#/advgames`: play, continue, own drafts, 📥 Import and + New with the templates); in the parent area under
@@ -499,7 +499,8 @@ from its shelf and refuses reading, playing, writing, creating and importing the
 for you»); parents are never bound. A family that never set it keeps them open after the update (not switched off like
 a really new game).
 - **📕 Book** (picture book) – pages with a picture and a text, read page by page (below).
-- **📖 Adventure book** – choose-your-path stories with choices, good and bad endings and items (below).
+- **📖 Interactive book** (formerly «adventure book», type key `adventure`) – reads like a book; at a few pages the
+  reader chooses how it goes on; one or several endings (all may be happy), items (below).
 - **🗝️ Adventure game** – point & click games: rooms, hotspots, items, switches, dialogues and endings (below).
 Visibility (🔒 / 🧒 / 👨‍👩‍👧), approval, rewards, ⭐ ratings, reading progress, the parent area and the privacy rules are
 the same for every type. **+ New book** first asks for the type; a new book of any type is for the **👨‍👩‍👧 whole family**
@@ -618,15 +619,21 @@ spellings of actions) and checks everything again; games come in as private draf
 the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200 dialogue lines, 6 answers, 200 rules,
 20 endings, 2 MB per game.
 
-#### 📖 Adventure books
+#### 📖 Interactive books
 
-**Writing** (✏️ Edit, or **+ New book**: title, language, an empty book or a template – 🌴 jungle with the lion,
-🚀 space, 🏰 haunted castle, 🐠 underwater, each a small finished story in all app languages):
-- A book is a list of **pages**: 📄 **scene** (text, a picture and 2–4 choices A–D, each pointing to another page),
-  🏆 **good ending** (confetti) or 💀 **bad ending** («Try again»). Paths may merge or go back to an earlier page.
-  In the target list of a choice «＋ New scene / good ending / bad ending» makes the page right away. Every page carries
-  its **number in a purple circle** (page cards and map), and next to the target list of a choice the same purple
-  circle shows the number of the page it leads to.
+**Writing** (✏️ Edit, or **+ New book**: title, language, an empty book or a template – 👸 «The princess who didn't
+want to marry» (marry the prince as a friend first, become a dragon tamer or open a bakery – three happy endings),
+🦊 «The little fox's birthday» (for the youngest: which friends, which cake – three happy endings), both 13–14 pages
+with exactly two branch points; and the older choose-your-path stories 🌴 jungle with the lion, 🚀 space, 🏰 haunted
+castle, 🐠 underwater – each a small finished story in all app languages, de-CH in Zürich dialect):
+- A book is a list of **pages**: 📄 **scene**, 🏆 **good ending** (confetti) or 💀 **bad ending** («Try again»; optional –
+  every ending of a book may be a happy one). Each scene has a switch: **➡️ Goes on** (a linear page: one next page,
+  `next` – the reader taps «▶») or **🔀 Choice** (a branch point: 2–4 choices A–D, each pointing to another page). Most
+  pages of a book simply go on; new scenes start as «goes on». **+ Next page** on a page that goes on makes a new
+  linked page right after it (it takes over the old next page and the background). Paths may merge or go back to an
+  earlier page. In the target list «＋ New scene / good ending / bad ending» makes the page right away. Every page
+  carries its **number in a purple circle** (page cards and map), and next to the target list the same purple circle
+  shows the number of the page it leads to. Books of older versions (every scene with choices) stay as they are.
 - **Picture** per page: an emoji, an **own drawing** (the drawing editor above – a thing with a see-through
   background) or a **photo** (made smaller in the browser, max. 2 MB per picture).
 - **🏞️ Background** per page: 🎨 an **own drawn background** (a scene of the drawing editor), one of 24 own scenes
@@ -635,17 +642,22 @@ the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200 di
   train station, school, kids' room, attic, laboratory – small SVG files in `web/img/stories`) or none; the picture
   sits on top of it, the text stays on the paper below.
 - **🎒 Items:** a scene can give one item («🍌 Banana»); a choice can need one – readers only see it when they have it.
-- **🃏 Pages / 🗺️ Map:** the map shows every page as a box (rows by distance from the first page) with arrows for the
-  choices; dashed arrows need an item, red stubs are choices without a target, orange boxes need work, dashed boxes
+- **🃏 Pages / 🗺️ Map:** the map shows every page as a box (rows by distance from the first page): thin arrows for
+  pages that go on, arrows with the letter A–D for the choices (🔀 marks a branch point); dashed arrows need an item, red stubs are choices without a target, orange boxes need work, dashed boxes
   cannot be reached. Tap a box to edit the page.
-- The **checker** lists what is missing: a scene without continuation or with only one choice, choices without
-  target or text, no good ending, pages that cannot be reached, an item no page gives, a scene where every choice
-  needs an item. Drafts are saved automatically (also incomplete); **🚀 Publish** needs a complete book. **▶ Try**
+- The **checker** lists what is missing: a page that goes on without its next page, a branch point without
+  continuation or with only one choice, choices without target or text, no good ending (one ending is enough), pages
+  that cannot be reached, pages from which no path leads to an ending (endless loops), an item no page gives, a branch
+  point where every choice needs an item. Drafts are saved automatically (also incomplete); **🚀 Publish** needs a complete book. **▶ Try**
   reads the draft right away (nothing is saved).
 - After publishing, further changes stay in the draft until it is published again – readers see the published version.
 
-**Reading** (tap a cover): page by page in book typography, choices as big buttons, ⏮ back to the start, 🎒 the
-backpack. Every reader collects their own endings («2 of 5 endings found» on the cover) and gives ⭐ 1–5 after reaching
+**Reading** (tap a cover): like the book reader – the picture across the width, the text in book typography (long text
+scrolls inside the page, the screen itself does not scroll), at the bottom ◀ «Page n» ▶ in reach of the thumb (also
+swipe and the arrow keys). ▶ turns a page that goes on; on a branch point the choices sit as big buttons right above
+◀ ▶. ◀ goes back to the page actually read before (the server keeps each reader's path, `story_read.state`, with
+the backpack of then; endings found stay found). ⏮ back to the start, 🎒 the backpack. Phones on their side show the
+picture left and the text right. Every reader collects their own endings («2 of 5 endings found» on the cover) and gives ⭐ 1–5 after reaching
 an ending (not for the own book).
 
 **Who can read it** (chosen by the author when the book is made and in the editor at any time; new books: 👨‍👩‍👧, imported
@@ -665,9 +677,9 @@ comes in as a private draft.
 
 **Import / export** (same idea as the quiz and pack files for an AI): ⚙️ › **Export as a file** saves a book as
 self-describing JSON (`family-quest-story/1`: instructions, field guide and `_svg_rules` for an AI, the background ids,
-the book with pages, choices, endings, items, emoji pictures, own drawings as inline SVG (`"picture": {"svg": …}`,
-`"background": {"svg": …}`) and backgrounds – photos stay out; the template shows a drawn page background and a drawn
-thing as examples). **📥 Import** on
+the book with pages, `next` (the page that follows a page that goes on – files without it still import), choices, endings, items, emoji pictures, own drawings as inline SVG (`"picture": {"svg": …}`,
+`"background": {"svg": …}`) and backgrounds – photos stay out; the template for the AI is the fox book: mostly linear
+with two branch points and three happy endings, with a drawn page background and a drawn thing as examples). **📥 Import** on
 the shelf: copy the **template for the AI** into any AI chat, describe the idea, paste the answer (sentences and code
 fences around the JSON are fine) or choose a file. Every book comes in as a private draft of whoever imports it (ids,
 authors and anything else from the file are not taken over), the checker shows what is still missing. Every drawing
@@ -1322,55 +1334,57 @@ drivers).
 
 ### 24h Endurance (24-Stunden-Rennen)
 
-*Only in the app «Family Quest Dev» for now – it is being reworked before it comes to the beta.*
+Games › For a game night › **🏎️ 24h Endurance**: a **short, fast team race** on the fictional **Circuit des Tannes**.
+Every team is a racing stable with **one car**; the family splits into 1–4 teams at the table (1–5 people per team,
+guests via QR code join a team too), **bot teams** race along. Alone you race against bot teams. A family table needs
+at least two cars (without bots: two teams of people).
 
-Games › For a game night › **🏎️ 24h Endurance**: a live **team endurance race** on the fictional **Circuit des Tannes**.
-Every team is a racing stable (colour, name, start number) with **one car**; the family splits into 1–4 teams at the
-table (2–5 people per team, guests via QR code join a team too), **bot teams** bring traffic. Alone you race against
-bot teams. A family table needs at least two cars (without bots: two teams of people).
+- **Team look in the lobby:** every team chooses its **colour** (palette of 8, each colour once), its **country** (66
+  countries in four groups – Europe, Americas, Asia & Middle East, Africa & Oceania – alphabetical in the viewer's
+  language, or «no country»; the suggestion is the family's own country from the app's language, e.g. de-CH → 🇨🇭) and
+  its **car number** (1–99, each number once). The flag is shown on the car, in the standings and on the podium (emoji
+  flags; where the device has none, e.g. Windows, the country code as a small chip).
+- **24 race hours in 5 / 8 / 12 minutes** (default 8). The race clock starts at 15:00 and runs through **dusk, night
+  (headlights, a shorter view) and dawn** into the next afternoon. **Rain showers** (on by default): sudden showers of
+  30–55 s every 1–2 minutes; everybody sees the forecast («Rain in ~20 s»). **Winner: the most laps** (then distance, then who reached the line first).
+- **Intro:** the drivers run to their cars, doors close, engines roar, five red lights → **GO!** (about 6 s).
+- **One short lap (about 20–30 s), then the car drives into the pits by itself – after every lap.** At every stop the
+  **driver changes**: the next person of the team drives (in turn), the driver joins the crew. Two people take turns;
+  alone (or when the whole crew is offline) the **garage** prepares: every stop takes a fixed **5 s** (+4 s after an
+  overheat), tyres by the forecast.
+- **Driver:** three lanes – swipe or ◀ ▶ (←/→) to dodge oil, cones and slow cars; **hold 🚀 Gas** (↑ / Space) for full
+  speed, **🛑 Brake** (↓) to brake, neither = lifted off. Full throttle heats the engine; in the **red it overheats**:
+  the car limps to the pits and the engine is swapped there (no retirement). **Two chicanes** per lap: **braking zones**
+  with boards at 150 / 100 / 50 m – too fast into a chicane (by day and dry over 23, in the rain or at night over 18
+  «m/s») and the car goes **off into the gravel** (3 s very slow); then change the lane past the **kerbs** (touching one
+  slows a little; in the rain or at night the kerbs reach the middle lane). Juniors – and everybody in the first two
+  laps – get a big «🛑 Brake!» hint. **Slicks in the rain** and **rain tyres in the dry** are slower (and slicks slide).
+  Other cars never block you: a car close to yours in your lane is drawn moving over to a free lane while overtaking.
+- **Pit crew** (everybody else of the team) – during the lap on their phones: **🛞 lay out 4 tyres** (choose ☀️ slicks or
+  🌧️ rain tyres, tap the 4 spots), **⛽ fill the canister** (hold, let go in the green zone 80–100 %; too much spills
+  and the canister starts empty again) and, only after an overheat, **🔧 prepare the spare engine** (hold 2 s). Each
+  finished job shows ✓ (also for the driver). A bar shows when the car comes in.
+- **The stop** – a big stopwatch, the car in its pit box, the crew at work and cheering stands for the whole team:
+  **3 s** (stop and driver change) **+4 s for tyres not ready, +4 s for fuel not ready, engine swap +6 s (+2 s if
+  prepared)**. A job only counts if it was finished before the car arrived. A super fast stop (≤ 4 s) gets a cheer.
+- Trackside banners now and then (own, invented: Family Quest, Home Assistant with an own house icon, «Snowman Tyres»).
+- Now and then **fans camp beside the track** (tents, a camper van, a campfire at night) waving a sign «I ❤️ #7 🇨🇭» –
+  mostly with the viewer's own car number and flag, sometimes for another team.
+- **Difficulty:** junior (fewer things on the track, the engine heats slower, the braking hint always) or normal.
+  **Bots** (easy / normal / hard) dodge, manage the temperature, brake for the chicanes and prepare their stops (easier
+  bots miss more jobs or pick the wrong tyres). A driver whose app is silent for 6 s gets the **autopilot**.
 
-- **24 race hours in 10 / 15 / 20 minutes** (default 15). The race clock starts at 15:00 and runs through the **night**
-  (dusk around 21:00, headlights, a shorter view, fog banks) into the next afternoon. Optional **rain** (1–2 showers).
-  The **final two race hours** get a fanfare and the gaps pulse. **Winner: the most laps** (then the longer distance).
-- **Intro:** the drivers (their avatars) stand beside the track opposite their cars, run across, jump in, the doors
-  close, the engines roar and five red lights go out → **GO!** (about 8 s; a tap skips to the lights; with «reduce
-  motion» a still picture with the countdown).
-- **Roles** on their own phones, rotating at **every pit stop**: alone you drive and do the pit jobs yourself one after
-  the other; 2–3 people: driver + pit crew; 4–5: also a **race engineer**. A driver may drive at most **2 stints in a
-  row** (at the box: «Driver change» or once «Stay in»), so everybody gets to drive.
-- **Driver:** the car from behind on three lanes – swipe or ←/→ to change the lane, the **throttle lever** on the right
-  (0–10, ↑/↓ or a vertical swipe). On the track: gravel and oil (slow, tyres), debris (tyres, the wing at speed) and
-  **slow cars** (a fast hit breaks the wing). **Engine temperature:** pushing heats it – yellow = hot, **red = lift off**
-  within 3 s of pushing (junior 6 s), else **engine damage** (limp to the pits); ignoring the red a second time and
-  the **team retires** (keeps its laps). Pushing also costs **fuel** (an empty tank crawls to the pits) and **tyres**
-  (less grip). Slicks slide in the rain, rain tyres wear twice as fast in the dry.
-- **📦 Box:** the car stops at the line. The stopwatch runs while the crew plays the jobs **at the same time**:
-  **tyres** (choose slicks / rain tyres, tap the glowing wheel nut and **hold until tight** – 4 in the shown order; a
-  loose nut costs that wheel half a lap later), **fuel** (hold the nozzle, let go in the **green zone**; too little may
-  run dry, an overflow costs +3 s) and after damage a **repair** (connect the cables by colour – a wrong try +2 s – or
-  turn the screws straight). A driver change takes at least 2 s. A job nobody does is done by the garage after 30 s.
-- **Race engineer / crew** (pit wall): the team's car on a TV, telemetry (engine, fuel, tyres, damage, best lap, stops),
-  the **rain radar** (the next 2 race hours) and the live gaps; **radio calls** shown big on the driver's screen:
-  «Box this lap!», «Save the engine», «Push!», «Rain tyres?», «Slicks?».
-- **Safety car** after an engine failure, a retirement or a fast crash into a slow car: 20 s at a limited speed for
-  everybody, the track is cleared, no overtaking – a cheap moment for a pit stop (at most 2–3 per race, 60 s apart).
-- **Difficulty:** junior (fewer things on the track, slower overheating, more time in the red) or normal. **Bots**
-  (easy / normal / hard) dodge what they see (easier ones miss more), manage the temperature and box for fuel, tyres,
-  damage, the weather and under the safety car. A driver whose app is silent for 6 s gets the **autopilot** until the
-  app is back.
-
-The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for
-a smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane,
-throttle, box) with their game time; a late input is applied at the next step, never in the past. Pit jobs are
-checked on the server (the order of the nuts, hold times that must fit into the time since the stop began, the repair
-answer); a job counts at the server's time. Who leads may end the race early: ranked as it stands, no coins. Parents ›
-Games › 24h Endurance: the defaults (race length, weather, difficulty, people per team), active / without bots /
-inactive, the coins.
+The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for a
+smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane, gas /
+brake); the crew's jobs are actions timed by the server (a tyre on a spot, start / stop holding). Who leads may end the
+race early: ranked as it stands, no coins. Parents › Games › 24h Endurance: the defaults (race length, weather,
+difficulty, people per team), active / without bots / inactive, the coins.
 
 **Coins for places 1–3:** default 10 / 5 / 2 for every person of the family in that team, paid once, only for a race
 run to the end at a family table with **at least two people of the family** – not alone, not for guests or bots; the
-winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (also questions in
-«Family Quest Facts»). Every person of the family gets a history entry (place, laps, team, best pit stop, stints).
+winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (garage stops do not
+count; also questions in «Family Quest Facts»). Every person of the family gets a history entry (place, laps, team,
+best pit stop, drives, stops).
 
 ### Klatsch den Beat
 
