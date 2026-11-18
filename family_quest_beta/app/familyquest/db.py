@@ -744,6 +744,11 @@ MIGRATIONS: list[str] = [
     ALTER TABLE story ADD COLUMN type TEXT NOT NULL DEFAULT 'adventure';   -- picture | adventure | game
     ALTER TABLE story ADD COLUMN sample TEXT;                               -- key of a shipped sample book (author: Family Quest)
     """,
+    # 41 – 🗝️ adventure games (adventuregame.py): the saved game of every player (room, inventory, switches, taken things,
+    # the dialogue line, the ending) – resume where they stopped; NULL: not started / started again
+    """
+    ALTER TABLE story_read ADD COLUMN state TEXT;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [

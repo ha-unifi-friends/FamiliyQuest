@@ -68,13 +68,33 @@ class SampleIn(BaseModel):
     hidden: bool
 
 
+class MoveIn(BaseModel):
+    """One move in an adventure game: look / take / talk / go / use (with an item or without) / combine / answer / leave."""
+    verb: str = Field(max_length=16)
+    spot: int | None = None
+    item: int | None = None
+    item2: int | None = None
+    answer: int | None = None
+
+
+class TryIn(BaseModel):
+    """▶ in the editor: the state so far (None: start – in `room`, or the start room) and the move."""
+    state: dict[str, Any] | None = None
+    move: MoveIn | None = None
+    room: int | None = None
+    pending: bool = False
+
+
 @router.get("")
 def shelf(request: Request, lang: str = "en", prof: dict = Learner) -> dict:
     return _run(app_of(request).stories.shelf, prof, _oversee(request, prof), lang[:16])
 
 
 @router.get("/templates")
-def templates(request: Request, lang: str = "en", prof: dict = Learner) -> list[dict]:
+def templates(request: Request, lang: str = "en", type: str = "adventure", prof: dict = Learner) -> list[dict]:
+    if type == "game":
+        from ..adventuregame import templates as game_tpl
+        return game_tpl(lang[:16])
     from ..stories import templates as tpl
     return tpl(lang)
 
@@ -82,8 +102,12 @@ def templates(request: Request, lang: str = "en", prof: dict = Learner) -> list[
 @router.get("/ai-template")
 def ai_template(type: str = "adventure") -> Response:
     """The template for an AI: self-describing JSON (instructions, field guide, backgrounds, an example book).
-    `type=picture`: the picture book format (family-quest-picturebook/1, with the rules for SVG pictures)."""
-    if type == "picture":
+    `type=picture`: the picture book format (family-quest-picturebook/1, with the rules for SVG pictures);
+    `type=game`: the adventure game format (family-quest-adventuregame/1, with the assets and a full example game)."""
+    if type == "game":
+        from ..adventuregame import document as game_doc
+        doc, name = game_doc([], example=True), "family-quest-adventuregame-template.json"
+    elif type == "picture":
         from ..picturebooks import document
         doc, name = document([], example=True), "family-quest-picturebook-template.json"
     else:
@@ -204,6 +228,19 @@ def turn(sid: int, body: TurnIn, request: Request, prof: dict = Learner) -> dict
 @router.post("/{sid}/read/choose")
 def choose(sid: int, body: ChoiceIn, request: Request, prof: dict = Learner) -> dict:
     return _run(app_of(request).stories.choose, prof, sid, body.i, _oversee(request, prof))
+
+
+@router.post("/{sid}/read/act")
+def act(sid: int, body: MoveIn, request: Request, prof: dict = Learner) -> dict:
+    """An adventure game: one move – the server plays it and saves the state of this player."""
+    return _run(app_of(request).stories.play, prof, sid, body.model_dump(), _oversee(request, prof))
+
+
+@router.post("/{sid}/try")
+def try_game(sid: int, body: TryIn, request: Request, prof: dict = Learner) -> dict:
+    """An adventure game: ▶ the working copy from any room (author and parents) – nothing is saved."""
+    return _run(app_of(request).stories.try_game, prof, sid, body.state, body.move.model_dump() if body.move else None, body.room,
+                body.pending)
 
 
 @router.post("/{sid}/rate")
