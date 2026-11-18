@@ -441,6 +441,13 @@ only against the family or two on one device, Ping-Pong doubles only with people
 played alone, without practice bots. A table where a parent plays along may still be filled with bots.
 Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `PUT /api/parent/games`).
 
+**The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
+(icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,
+Kartenlauf, Werwölfe, Escape Room, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
+Bingo, Chess) and **⚡ Quick games for in between** (Paarjagd, Fünf Würfel, Jump, Klatsch den Beat, Star Runner, Snack
+Rush, Traffic Cadet, duels for two), and the game corner at the end. A tile with a running table has a pulsing dot; a
+tap opens the game's card in a sheet with its usual buttons (family table, alone against bots, join, rules).
+
 ### Family council: new topic
 
 **+ New topic** (top right) opens a window: the question, a few words more, the first ideas, the rule of the vote

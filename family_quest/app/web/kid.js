@@ -1689,15 +1689,14 @@ async function gamesView() {
   const quiz = canPlay("quiz") ? await quizCard() : null;
   // longer table games for a game night, then short games for in between (only the games this child may play) –
   // each one a small tile; a tap opens its card (the same actions as before: family table, bots, join, rules)
-  const pick = async list => (await Promise.all(list.filter(([k]) => k === "duel" ? canPlay("ttt") || canPlay("pingpong") : canPlay(k))
-    .map(async ([k, make]) => [k, await make()]))).filter(([, card]) => card);
-  const night = await pick([["tschau", () => cardsFamilyCard("tschau")], ["karussell", () => cardsFamilyCard("karussell")], ["domino", dominoFamilyCard],
-    ["jass", jassFamilyCard], ["poker", pokerFamilyCard], ["dorfmarkt", dorfmarktFamilyCard], ["heimwaerts", heimwaertsFamilyCard],
-    ["kartenlauf", kartenlaufFamilyCard], ["werwolf", werwolfFamilyCard], ["escape", escapeFamilyCard], ["werbinich", werbinichFamilyCard],
-    ["verboten", verbotenFamilyCard], ["zeichnen", zeichnenFamilyCard], ["stadtland", stadtlandFamilyCard], ["song", songFamilyCard],
-    ["bingo", bingoCard], ["schach", schachFamilyCard]]);
-  const quick = await pick([["paarjagd", paarjagdFamilyCard], ["wuerfel", wuerfelFamilyCard], ["jump", jumpFamilyCard], ["klatsch", klatschFamilyCard],
-    ["sternlauf", sternlaufFamilyCard], ["snack", snackFamilyCard], ["verkehr", verkehrFamilyCard], ["duel", tttDuelCard]]);
+  const pick = async list => (await Promise.all(list.filter(([, ok]) => ok).map(async ([k, , make]) => [k, await make()]))).filter(([, card]) => card);
+  const night = await pick([["tschau", canPlay("tschau"), () => cardsFamilyCard("tschau")], ["karussell", canPlay("karussell"), () => cardsFamilyCard("karussell")], ["domino", canPlay("domino"), dominoFamilyCard],
+    ["jass", canPlay("jass"), jassFamilyCard], ["poker", canPlay("poker"), pokerFamilyCard], ["dorfmarkt", canPlay("dorfmarkt"), dorfmarktFamilyCard], ["heimwaerts", canPlay("heimwaerts"), heimwaertsFamilyCard],
+    ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
+    ["verboten", canPlay("verboten"), verbotenFamilyCard], ["zeichnen", canPlay("zeichnen"), zeichnenFamilyCard], ["stadtland", canPlay("stadtland"), stadtlandFamilyCard], ["song", canPlay("song"), songFamilyCard],
+    ["bingo", canPlay("bingo"), bingoCard], ["schach", canPlay("schach"), schachFamilyCard]]);
+  const quick = await pick([["paarjagd", canPlay("paarjagd"), paarjagdFamilyCard], ["wuerfel", canPlay("wuerfel"), wuerfelFamilyCard], ["jump", canPlay("jump"), jumpFamilyCard], ["klatsch", canPlay("klatsch"), klatschFamilyCard],
+    ["sternlauf", canPlay("sternlauf"), sternlaufFamilyCard], ["snack", canPlay("snack"), snackFamilyCard], ["verkehr", canPlay("verkehr"), verkehrFamilyCard], ["duel", canPlay("ttt") || canPlay("pingpong"), tttDuelCard]]);
   // the games running just now on top – the same pulsing banners as on the start page
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
   screen("games", h("h1", "🎲 ", T("Games")), timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
