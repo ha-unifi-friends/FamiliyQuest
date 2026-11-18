@@ -1,0 +1,179 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Family Quest",
+        "description": "Connect the Family Quest app. In Family Quest: parent area › Settings › «Family Quest HA integration» – switch it on and copy the token.",
+        "data": {
+          "url": "Address of the Family Quest app",
+          "token": "Integration token"
+        },
+        "data_description": {
+          "url": "Inside Home Assistant OS: http://<add-on hostname>:8099 (suggested).",
+          "token": "Shown once in the parent area of Family Quest (starts with fqi_)."
+        }
+      },
+      "reauth_confirm": {
+        "title": "New integration token",
+        "description": "The token was refused. Make a new token in Family Quest (parent area › Settings › «Family Quest HA integration») and paste it here.",
+        "data": {
+          "token": "Integration token"
+        },
+        "data_description": {
+          "token": "Shown once in the parent area of Family Quest (starts with fqi_)."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Wrong token, or the integration is switched off in Family Quest.",
+      "cannot_connect": "Family Quest cannot be reached at this address."
+    },
+    "abort": {
+      "already_configured": "This Family Quest is already set up.",
+      "reauth_successful": "The new token works."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "xp_today": {
+        "name": "XP today"
+      },
+      "total_xp": {
+        "name": "Total XP"
+      },
+      "level": {
+        "name": "Level"
+      },
+      "streak": {
+        "name": "Streak"
+      },
+      "goal_progress": {
+        "name": "Daily goal progress"
+      },
+      "chores_open": {
+        "name": "Open chores"
+      },
+      "lessons_today": {
+        "name": "Lessons today"
+      },
+      "internet_minutes": {
+        "name": "Internet minutes left"
+      },
+      "game_time_left": {
+        "name": "Game time left today"
+      },
+      "learn_time_left": {
+        "name": "Learning time left today"
+      },
+      "family_total_xp": {
+        "name": "Family total XP"
+      },
+      "family_xp_today": {
+        "name": "Family XP today"
+      },
+      "running_games": {
+        "name": "Running games"
+      },
+      "open_votes": {
+        "name": "Open votes and polls"
+      },
+      "pending_approvals": {
+        "name": "Waiting for approval"
+      },
+      "balance": {
+        "name": "{account}"
+      }
+    },
+    "binary_sensor": {
+      "goal_met": {
+        "name": "Daily goal met"
+      },
+      "internet_blocked": {
+        "name": "Internet blocked"
+      },
+      "game_time_used_up": {
+        "name": "Game time used up"
+      },
+      "offline_time": {
+        "name": "OfflineTime"
+      }
+    },
+    "switch": {
+      "internet": {
+        "name": "Internet"
+      }
+    }
+  },
+  "services": {
+    "add_points": {
+      "name": "Add points",
+      "description": "Book points (or a correction) for a child, like «Book points» in the parent area.",
+      "fields": {
+        "child": {
+          "name": "Child",
+          "description": "Name or id of the child."
+        },
+        "account": {
+          "name": "Account",
+          "description": "Key of the account, e.g. coins or internet."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Points to add (negative to take some away)."
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Shown in the child's history."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Only needed when more than one Family Quest is set up."
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Approve chore",
+      "description": "Confirm (or send back with approve: false) a chore that waits for approval.",
+      "fields": {
+        "task_id": {
+          "name": "Task id",
+          "description": "task_id from the attribute `chores` of «Waiting for approval»."
+        },
+        "approve": {
+          "name": "Approve",
+          "description": "true = done, false = do it again."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Only needed when more than one Family Quest is set up."
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Approve reward",
+      "description": "Approve or reject a reward a child wants to redeem.",
+      "fields": {
+        "redemption_id": {
+          "name": "Redemption id",
+          "description": "redemption_id from the attribute `rewards` of «Waiting for approval»."
+        },
+        "approve": {
+          "name": "Approve",
+          "description": "true = done, false = do it again."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Only needed when more than one Family Quest is set up."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "Family Quest is not set up or not loaded."
+    },
+    "several_entries": {
+      "message": "More than one Family Quest is set up – choose one with config_entry_id."
+    }
+  }
+}

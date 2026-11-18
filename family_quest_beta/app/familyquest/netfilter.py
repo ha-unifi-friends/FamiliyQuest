@@ -14,6 +14,7 @@ import ipaddress
 import time
 
 PARENT_PATHS = ("/eltern", "/api/parent/")
+SUPERVISOR_NET = "172.30.32.0/23"     # hassio network: Home Assistant Core (Family Quest HA integration) comes from 172.30.32.1
 _last_logged: dict[str, float] = {}
 
 

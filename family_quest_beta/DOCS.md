@@ -205,6 +205,59 @@ Events: `family_quest_lektion_fertig`, `family_quest_aemtli_erledigt`, `family_q
 (each with `profile` and `profile_id`). The sensors are written through the REST API, so they are recreated when the app
 starts and do not have a unique id.
 
+### Family Quest HA integration (own devices and entities)
+
+For real entities (unique id, one device per child, editable in Home Assistant, with history and areas) Family Quest
+brings its own Home Assistant integration (custom component `familyquest`). It is **off by default** – nothing is
+copied into the Home Assistant configuration until a parent switches it on.
+
+1. Parent area › Settings › **🏠 Family Quest HA integration** › switch it on. Family Quest
+   - makes an **integration token** and shows it **once** (📋 Copy) – only a hash is stored; *🔄 New token* makes a
+     new one (the old one stops working, Home Assistant then asks for the new one),
+   - copies the integration to `/config/custom_components/familyquest` (and again at every start of the app while it
+     is on, so an update of the app updates the integration; *⬇️ Install again* does it by hand). For this the app
+     maps the Home Assistant configuration writable (`homeassistant_config:rw`); its AppArmor profile allows writing
+     only in `custom_components/familyquest` – everything else (e.g. the Family Planer import) stays read-only.
+2. **Restart Home Assistant** (Settings › System › Restart).
+3. Settings › Devices & services › **Add integration** › *Family Quest*: keep the suggested address
+   (`http://<add-on hostname>:8099`, the app on the internal Supervisor network) and paste the token.
+
+Switched off, the API refuses the token (Home Assistant shows the integration as failed / asks to re-authenticate);
+the button *🗑️ Remove from Home Assistant* deletes the folder again (delete the integration under Devices & services
+first, then restart Home Assistant). The integration asks the app every **30 seconds** and right after every action.
+The API (`/api/integration/state`, `/api/integration/action`, header `Authorization: Bearer <token>`) answers inside
+Home Assistant OS only to Home Assistant Core on the Supervisor network – not through ingress, not from the home
+network; wrong tokens are limited like wrong PINs.
+
+**Devices and entities** (names follow the language of Home Assistant – English and German included):
+
+| Device | Entity | |
+| --- | --- | --- |
+| each child | sensor *XP today* | attribute `daily_goal` |
+| | sensor *Total XP*, *Level*, *Streak* (days) | level: attribute `next_level_at` |
+| | sensor *Daily goal progress* (%) | |
+| | sensor per spendable account, e.g. *Coins*, *Internet minutes* | balance |
+| | sensor *Open chores* | attributes `chores`, `waiting_for_approval` |
+| | sensor *Lessons today* | attribute `learning_minutes_today` |
+| | sensor *Internet minutes left* | only with internet time managed by Family Quest; ∞ = state *unknown* + `unlimited: true` |
+| | sensor *Game time left today*, *Learning time left today* (min) | ∞ = state *unknown* + `unlimited: true`; `used_today` |
+| | binary sensor *Daily goal met*, *Game time used up*, *OfflineTime* | OfflineTime: calendar OfflineTime or a block time of the internet plan |
+| | binary sensor *Internet blocked* | internet time not running (attributes `block_until`, `can_start`) |
+| | **switch** *Internet* | on = the internet time runs. Off pauses it; on starts it with the child's minutes – same rules as in the app (no minutes, block time or OfflineTime: refused) |
+| Family Quest (family) | sensor *Family total XP*, *Family XP today*, *Running games*, *Open votes and polls* | votes: family council votes + open polls |
+| | sensor *Waiting for approval* | chores + rewards; attributes `chores` (`task_id`), `rewards` (`redemption_id`) |
+
+**Actions** (Developer tools › Actions; with `return_response` they answer with the result):
+
+- `familyquest.add_points` – `child` (name or id), `account` (default `coins`), `amount` (−10000 … 10000, not 0),
+  `reason`: like *Book points* in the parent area (shown in the child's history).
+- `familyquest.approve_chore` – `task_id`, `approve` (`false` = «again»).
+- `familyquest.approve_reward` – `redemption_id`, `approve` (`false` = reject).
+
+Nothing else can be changed from Home Assistant (no profiles, settings, PINs or deletions). The sensors above
+(`sensor.family_quest_…` without unique id) are still written as before, so existing automations keep working;
+with the integration you can hide or ignore them.
+
 ### Family Planer
 
 Family Quest reads the persons and their chore lists (`todo.*`) from the Family Planer's entity registry. Link a profile
@@ -465,6 +518,11 @@ Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `
 **Price for children** (each game's «⚙️ Settings» block, below the status): a game can cost coins for the children –
 parents always play for free.
 
+- **Defaults** (where the parents never set a value for that game): the **quick games for in between** (Pair Hunt, Five
+  Dice, Jump, Klatsch den Beat, Star Runner, Snack Rush, Traffic Cadet) rent for **100 coins per week**, the games of
+  the **game corner** (Tic-Tac-Toe, Sudoku, Patience, Ping-Pong, Cube solver, One-armed bandit) for **20 coins per
+  day**; the one-armed bandit can also be bought for 250 coins; every other game is free. The fields show these values;
+  saving the Games page stores what is shown – a 0 set by the parents stays 0 (also after updates).
 - **Price for children (coins)** – default 0. With a price, a child buys the game once in the shop and keeps it for
   good, also when the parents change the price later. Back to 0 (and no rent price): free again for everybody.
 - **Rent price (coins)** with **Day / Week / Month** (the three are greyed out while the rent price is 0): renting opens
@@ -477,13 +535,22 @@ parents always play for free.
   the unlock – a second tap books nothing (a rent sends the end the app showed; when it changed meanwhile nothing is
   booked). On the **Games page** and in the **game corner** a locked game is a tile with 🔒 and its price; a tap opens
   buying / renting.
+- **🎁 Free tries before buying** (0–20, default 1 – only matters with a price or a rent): how often a child may play
+  a locked game for free first. A locked tile shows «🎁 1 free try»; the tap offers **Try for free** besides buying and
+  renting, the shop lists the tries left. A try is used when the child **starts or joins a table** of a family game
+  (alone or with the family; a rematch / «again» is a new try) – once seated, the table can be played to the end and its
+  result seen. A game of the **game corner** uses a try when it opens on the try (`POST /api/me/games/try`); closed, it is
+  locked again. On the **one-armed bandit** a try is **one spin** (the bet of 1 coin still counts). A second start
+  within 10 seconds (double tap, second device) is the same try; the count is checked in one database transaction, so
+  parallel requests never use more tries than there are; a start that fails gives the try back. Joining a table a
+  parent opened uses no try. After the tries the game is locked as before. Every child starts with 0 tries used.
 - **Tables a parent opened**: when a **parent** opens a family table (not alone) of a game that is locked for a child –
   switched off, not bought, rent run out – the child may still **join and play that table**: it shows in the running
   banners, the note «somebody opened a table» and the game's tile («Join»). Starting an own table, alone, a rematch
   stay locked. The daily game time, OfflineTime and block times still count.
 
-Stored in `games_access` per game (`price`, `rent`, `period`; `luck` for the one-armed bandit) and per child and game
-in the table `game_pass` (`bought`, `rent_until`). API: `GET /api/me/games/shop`, `POST /api/me/games/buy`
+Stored in `games_access` per game (`price`, `rent`, `period`, `preview`; `luck` for the one-armed bandit) and per child
+and game in the table `game_pass` (`bought`, `rent_until`, `previews_used`, `preview_at`). API: `GET /api/me/games/shop`, `POST /api/me/games/buy`
 (`{"game", "kind": "buy" | "rent", "until"}`).
 
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
@@ -1278,7 +1345,7 @@ the server; best times stay in this browser), shown when family games are on for
 - **🎰 One-armed bandit** – a slot machine with three reels: pull the lever for 1 coin, three times a day; three alike
   win (7️⃣ 100, ⭐ 40, 🔔 20, 🍊 10, 🍋 8, 🍒 5 coins), two cherries anywhere 2, one cherry gives the coin back. The
   reels are drawn on the server. It uses the **standard game price**: by default a child buys it once for **250
-  coins**; the parents can change the price, set 0 (free) or add a rent. Whoever bought it before (for 150 coins) keeps
+  coins** or rents it for 20 coins a day (a free try = one spin); the parents can change the price and the rent or set 0 (free). Whoever bought it before (for 150 coins) keeps
   it. **Win chance** (slider 1–10 in its settings, default 5) sets what comes back on average: 5 ≈ 92 % like a typical
   casino machine, 10 ≈ 120 %, 1 ≈ 60 % (straight steps in between; the hint under the slider shows the value). The pay
   table stays; the server draws the outcome first with the win chances of the reels scaled to that return, then shows
