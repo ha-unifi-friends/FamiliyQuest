@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.1.0
+
+Version 1.1 – everything that was tested in the betas 1.1.0-beta.1 … 15.
+
+**Before updating:** download a backup in the parent area (Settings › Backup & restore). Home Assistant may ask you
+to confirm that the app may now write to its config folder – this is only used by the optional Family Quest HA
+integration (off by default) and only for `custom_components/familyquest`.
+
+**New defaults – please check parent area › Games:** quick games rent for 100 coins per week and game-corner games
+for 20 coins per day (one free try each, other games stay free), and every child has a game battery with 5 charges
+(recharging costs 50 coins). Every value can be changed or switched off per game, per family or per child.
+
+- **New games:** Star Runner (3-lane run as your own avatar, the others as ghosts), Escape Room (56 riddles, teams),
+  Snack Rush (own snack stand), Traffic Cadet (traffic lights without accidents), the cube solver for 2×2 and 3×3 in
+  the game corner; Werewolves from 2 people with bots; Jump with crates, cacti and a cloud parcours.
+- **Games page:** running games on top, then the family quiz, «For a game night», «Quick games for in between» and
+  the game corner as tiles; a header note (with a chime) when somebody opens a table – join with one tap; ☰ game
+  menu in every game (rules, guests, language, sound, leave); who begins: dice, leader or chosen player.
+- **Game prices, battery and party mode:** parents set a buy and / or rent price (day, week, month) and free tries
+  per game – children unlock games in the shop; children may always join tables a parent opened; game battery with
+  recharge, goal and chore bonus and unlimited periods; 🎉 party mode unlocks all games and / or gives unlimited
+  battery (optionally lifting time limits) for all or chosen children – with a Disco theme in the app; the one-armed
+  bandit gets a win-chance slider.
+- **Time per day for each child:** sliders for games, learning and internet, per weekday if wanted (∞ by default).
+- **Family:** bulletin boards (sticky notes, texts, drawings, zoom); FamilyTime game wishes and vote; the special
+  quiz «Family Quest Facts» made from the family's own data; multilingual quizzes (all 28 templates translated);
+  running quizzes can be cancelled.
+- **Parent area:** own «Games» menu (active / without bots / inactive, search); «Community» is now «Family»; shop
+  with search, own prices, switched-off items and items paid with new XP; learning packs with search, own packs on
+  top, own XP and coins per lesson; 15 new avatar backgrounds; the session renews itself after a long pause.
+- **Family Quest HA integration** (optional, off by default): devices per child and for the family with sensors
+  (XP, level, coins, goal, chores, time left, running games, approvals), an internet switch and actions to book
+  points and approve chores and rewards.
+- Game names translated, many fixes from code, security and usability reviews, older iPhones display boards
+  correctly, backups of older versions can be restored.
+
 ## 1.0.0
 
 Version 1 – everything that was tested in the betas 0.4.0-beta.1 … 26 and 1.0.0-beta.1 … 5.
