@@ -337,7 +337,7 @@ def test_visibility_private_kids_family(client):
     assert all(b["id"] != sid for b in shelf(hl)["books"]) and shelf(hl)["private"] == []
     # the parent area only knows that it exists: author, pages, dates
     pv = shelf(ph)["private"]
-    assert len(pv) == 1 and set(pv[0]) == {"id", "private", "visibility", "author", "pages", "created_at", "updated_at"}
+    assert len(pv) == 1 and set(pv[0]) == {"id", "private", "visibility", "type", "author", "pages", "created_at", "updated_at"}
     assert pv[0]["author"]["name"] == "Mia" and pv[0]["pages"] == 5
     assert shelf(papa_app)["private"] == []
     # nobody but the author chooses who reads it

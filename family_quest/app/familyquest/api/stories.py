@@ -36,6 +36,7 @@ class BookIn(BaseModel):
     color: int = 0
     lang: str = Field(default="en", max_length=16)
     template: str | None = Field(default=None, max_length=32)
+    type: str = Field(default="adventure", max_length=16)
 
 
 class BookEditIn(BaseModel):
@@ -55,9 +56,21 @@ class RateIn(BaseModel):
     stars: int
 
 
+class TurnIn(BaseModel):
+    page: int
+
+
+class SvgIn(BaseModel):
+    svg: str = Field(max_length=40_000)
+
+
+class SampleIn(BaseModel):
+    hidden: bool
+
+
 @router.get("")
-def shelf(request: Request, prof: dict = Learner) -> dict:
-    return _run(app_of(request).stories.shelf, prof, _oversee(request, prof))
+def shelf(request: Request, lang: str = "en", prof: dict = Learner) -> dict:
+    return _run(app_of(request).stories.shelf, prof, _oversee(request, prof), lang[:16])
 
 
 @router.get("/templates")
@@ -67,11 +80,17 @@ def templates(request: Request, lang: str = "en", prof: dict = Learner) -> list[
 
 
 @router.get("/ai-template")
-def ai_template() -> Response:
-    """The template for an AI: self-describing JSON (instructions, field guide, backgrounds, an example book)."""
-    from ..stories import story_document
-    return Response(json.dumps(story_document([], example=True), ensure_ascii=False, indent=2), media_type="application/json; charset=utf-8",
-                    headers={"Content-Disposition": 'attachment; filename="family-quest-story-template.json"'})
+def ai_template(type: str = "adventure") -> Response:
+    """The template for an AI: self-describing JSON (instructions, field guide, backgrounds, an example book).
+    `type=picture`: the picture book format (family-quest-picturebook/1, with the rules for SVG pictures)."""
+    if type == "picture":
+        from ..picturebooks import document
+        doc, name = document([], example=True), "family-quest-picturebook-template.json"
+    else:
+        from ..stories import story_document
+        doc, name = story_document([], example=True), "family-quest-story-template.json"
+    return Response(json.dumps(doc, ensure_ascii=False, indent=2), media_type="application/json; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 class ImportIn(BaseModel):
@@ -93,6 +112,19 @@ def settings_put(body: dict[str, Any], request: Request, me: dict = Parent) -> d
     return app_of(request).stories.save_settings(body)
 
 
+@router.post("/svg")
+def svg(body: SvgIn, request: Request, prof: dict = Learner) -> dict:
+    """An own SVG picture for a picture book: cleaned (what the book will show) – or 400 with the reason."""
+    return {"svg": _run(app_of(request).stories.check_svg, prof, body.svg)}
+
+
+@router.put("/samples/{key}")
+def sample_hidden(key: str, body: SampleIn, request: Request, prof: dict = Learner) -> dict:
+    """Parents: take a sample book off the shelf (for the whole family) or put it back."""
+    _run(app_of(request).stories.sample_hidden, prof, key, body.hidden)
+    return {"ok": True}
+
+
 @router.post("/image")
 async def image(request: Request, file: UploadFile = File(...), prof: dict = Learner) -> dict:
     from ..memorygame import picture_kind
@@ -103,7 +135,8 @@ async def image(request: Request, file: UploadFile = File(...), prof: dict = Lea
 
 @router.post("")
 def create(body: BookIn, request: Request, prof: dict = Learner) -> dict:
-    return {"id": _run(app_of(request).stories.create, prof, body.title, body.emoji, body.color, body.lang, body.template, body.visibility)}
+    return {"id": _run(app_of(request).stories.create, prof, body.title, body.emoji, body.color, body.lang, body.template, body.visibility,
+                       body.type)}
 
 
 @router.get("/{sid}")
@@ -153,13 +186,19 @@ def reject(sid: int, request: Request, prof: dict = Learner) -> dict:
 
 
 @router.get("/{sid}/read")
-def read(sid: int, request: Request, prof: dict = Learner) -> dict:
-    return _run(app_of(request).stories.read, prof, sid, _oversee(request, prof))
+def read(sid: int, request: Request, lang: str = "en", prof: dict = Learner) -> dict:
+    return _run(app_of(request).stories.read, prof, sid, _oversee(request, prof), lang[:16])
 
 
 @router.post("/{sid}/read/restart")
-def restart(sid: int, request: Request, prof: dict = Learner) -> dict:
-    return _run(app_of(request).stories.restart, prof, sid, _oversee(request, prof))
+def restart(sid: int, request: Request, lang: str = "en", prof: dict = Learner) -> dict:
+    return _run(app_of(request).stories.restart, prof, sid, _oversee(request, prof), lang[:16])
+
+
+@router.post("/{sid}/read/page")
+def turn(sid: int, body: TurnIn, request: Request, prof: dict = Learner) -> dict:
+    """A picture book: the reader is on this page now (0 = the cover) – the last page reads it to the end."""
+    return _run(app_of(request).stories.turn, prof, sid, body.page, _oversee(request, prof))
 
 
 @router.post("/{sid}/read/choose")

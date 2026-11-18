@@ -3301,3 +3301,103 @@ textarea.sb-imptext { min-height: 140px; font-family: ui-monospace, monospace; f
   .sb-bgbtn { width: 72px; }
 }
 .sb-sec .sec-head > h2 { flex: 1 1 220px; }
+/* the bookshelf with book types (stories.js): type badge and filter, sample books, «New book» by type */
+.sb-type { position: absolute; left: 8px; top: 8px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255, 255, 255, .88); font-size: .95rem; box-shadow: 0 1px 4px rgba(0, 0, 0, .2); }
+.sb-tfilter { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+.sb-tfilter::-webkit-scrollbar { display: none; }
+.sb-tchip { flex: none; display: inline-flex; align-items: center; gap: 2px; border: 2px solid var(--line); border-radius: 999px; background: var(--card);
+  padding: 4px 12px; font-weight: 700; min-height: 38px; white-space: nowrap; color: var(--fg); }
+.sb-tchip.on { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
+.sb-tchip.soon { opacity: .55; cursor: default; }
+.sb-tchip small { font-weight: 700; opacity: .75; margin-left: 4px; }
+.sb-rowic { position: relative; }
+.sb-rowtype { position: absolute; right: -5px; bottom: -5px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--card); font-size: .78rem; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.sb-fq { display: grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; background: var(--hover); font-size: .75rem; }
+.sb-hidden { opacity: .7; }
+.sb-newtypes { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+.sb-newtype { display: flex; align-items: center; gap: 10px; padding: 10px; border: 2px solid var(--line); border-radius: 14px; background: var(--card); text-align: left; color: var(--fg); }
+.sb-newtype.on { border-color: var(--accent); background: var(--hover); }
+.sb-newtype.soon { opacity: .5; cursor: default; }
+.sb-newic { flex: none; font-size: 2rem; line-height: 1; }
+.sb-newtx { display: grid; gap: 2px; min-width: 0; }
+
+/* ---------------------------------------------------------------- picture books (picturebook.js) – class prefix pb- */
+.pb-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pb-img.pb-photo { object-fit: contain; background: #fff; }
+.pb-emo { font-size: clamp(4rem, 18vw, 8rem); line-height: 1.1; }
+.sb-cover .pb-cimg { position: absolute; inset: 0; }
+.sb-cover .pb-emo { font-size: 3.6rem; }
+/* reading: one page at a time, arrows and dots below, swipe to turn */
+.pb-reader.quiz-full { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+.pb-stage { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 12px; padding: 2px 2px 12px; touch-action: pan-y; }
+.pb-page { --paper: #fffdf6; position: relative; width: min(100%, 760px); flex: none; background: var(--paper); border-radius: 20px; overflow: hidden;
+  box-shadow: var(--shadow); display: flex; flex-direction: column; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pb-page { --paper: #22212a; } }
+:root[data-theme="dark"] .pb-page { --paper: #22212a; }
+.pb-pic { width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; background: var(--hover); overflow: hidden; }
+.pb-pic.none { aspect-ratio: 4 / 1; }
+.pb-text { padding: 14px 20px 20px; font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  font-size: clamp(1.12rem, 2.6vw, 1.5rem); line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; hyphens: auto; }
+/* full-page picture: the whole picture edge to edge, the text lies on its lower edge (on wide screens on the picture) */
+.pb-page.pb-l-full .pb-text { position: relative; margin-top: -64px; padding: 40px 18px 18px; background: linear-gradient(to bottom, transparent, var(--paper) 38px); }
+@media (min-width: 700px) {
+  .pb-page.pb-l-full .pb-text { position: absolute; left: 16px; right: 16px; bottom: 16px; margin: 0; padding: 12px 18px; border-radius: 16px;
+    background: color-mix(in srgb, var(--paper) 88%, transparent); box-shadow: 0 4px 16px rgba(0, 0, 0, .2); max-height: 48%; overflow: auto; }
+}
+.pb-page.pb-l-text { min-height: min(52dvh, 420px); justify-content: center; border-top: 6px solid var(--accent); }
+.pb-page.pb-l-text .pb-text { font-size: clamp(1.25rem, 3.2vw, 1.75rem); text-align: center; padding: 28px 24px; }
+.pb-cover { background: var(--sb-c, #5b5bd6); color: #fff; padding: 14px; gap: 12px; box-shadow: inset 12px 0 0 rgba(0, 0, 0, .16), var(--shadow); }
+.pb-cpic { width: 100%; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; display: grid; place-items: center; background: rgba(255, 255, 255, .18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
+.pb-ctitle { text-align: center; padding: 0 6px 8px; }
+.pb-ctitle h2 { margin: 0; font-family: Georgia, "Iowan Old Style", serif; font-size: clamp(1.45rem, 5vw, 2.3rem); line-height: 1.2; text-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
+.pb-by { margin: 6px 0 0; font-weight: 700; opacity: .92; }
+.pb-next { animation: pb-in-next .38s ease-out; } .pb-prev { animation: pb-in-prev .38s ease-out; }
+@keyframes pb-in-next { from { opacity: 0; transform: perspective(900px) translateX(36px) rotateY(-10deg); } to { opacity: 1; transform: none; } }
+@keyframes pb-in-prev { from { opacity: 0; transform: perspective(900px) translateX(-36px) rotateY(10deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pb-next, .pb-prev { animation: none; } }
+.pb-end { display: grid; gap: 4px; justify-items: center; text-align: center; width: min(100%, 760px); }
+.pb-endtitle { margin: 0; font-size: 1.25rem; font-weight: 900; }
+.pb-end .sb-rateme { margin-top: 0; }
+.pb-end .sb-star { font-size: 1.9rem; padding: 0 3px; }
+.pb-endbtns { gap: 6px; margin-top: 4px; }
+.pb-nav { flex: none; display: flex; align-items: center; gap: 10px; width: min(100%, 760px); margin: 0 auto; padding: 8px 0 calc(10px + env(safe-area-inset-bottom)); }
+.pb-arrow { flex: none; width: 60px; height: 50px; border: 0; border-radius: 16px; background: var(--accent); color: var(--accent-fg); font-size: 1.3rem;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .15); }
+.pb-arrow:disabled { opacity: .3; box-shadow: none; }
+.pb-arrow:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.pb-dots { flex: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; min-width: 0; }
+.pb-dots i { width: 7px; height: 7px; border-radius: 4px; background: var(--line); transition: width .2s; }
+.pb-dots i.on { width: 18px; background: var(--accent); }
+.pb-count { min-width: 64px; justify-content: center; }
+/* writing: the cover and the page cards */
+.pb-emain { display: grid; grid-template-columns: minmax(130px, 40%) 1fr; gap: 10px; align-items: start; }
+.pb-cl-text .pb-emain { grid-template-columns: 1fr; }
+.pb-picbtn { width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 2px dashed var(--line); border-radius: 14px; background: var(--bg); overflow: hidden;
+  display: grid; place-items: center; }
+.pb-picbtn:has(img) { border-style: solid; }
+.pb-picbtn .pb-emo { font-size: 3.2rem; }
+.pb-tlab { display: grid; gap: 2px; }
+textarea.pb-ptext { min-height: 110px; }
+.pb-chars { justify-self: end; }
+.pb-mv { width: 34px; height: 34px; font-size: 1rem; }
+.pb-mv:disabled { opacity: .3; }
+.pb-covercard { border-left-color: #e8590c !important; }
+.pb-covertxt { display: grid; gap: 6px; align-content: start; }
+.pb-einfo { display: grid; gap: 6px; margin: 2px 0 8px; }
+.pb-editor .sb-pcard { scroll-margin-top: 100px; }
+.pb-covertxt .btn { justify-self: start; }
+.pb-tabs { display: flex; margin-bottom: 8px; }
+.pb-tabs .sb-seg { flex: 1 1 auto; }
+.pb-pictab { min-height: 160px; display: grid; gap: 8px; align-content: start; }
+textarea.pb-svgcode { min-height: 150px; }
+.pb-ownbtns { padding: 12px 0; }
+@media (max-width: 560px) {
+  .pb-emain { grid-template-columns: 1fr; }
+  .pb-text { padding: 12px 16px 16px; }
+  .pb-arrow { width: 54px; height: 46px; }
+  .pb-cover { padding: 10px; }
+  .pb-covercard .pb-picbtn { max-width: 240px; }
+}

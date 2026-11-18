@@ -477,9 +477,39 @@ A board opens full screen (✕ closes it):
 Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
 to 600 points. Everything is in the database, so the backup contains the boards.
 
-### My adventure books (choose-your-path stories)
-In the app menu **📖 My adventure books** (also a card on the Family page) and in the parent area under **Family**:
-children and parents write branching stories, the whole family reads them. Guests never see them.
+### My books: the family bookshelf (picture books, adventure books)
+In the app menu **📚 My books** (also a card on the Family page) and in the parent area under **Family**: children and
+parents write books, the whole family reads them. Guests never see them. The shelf holds three **book types**, shown as
+a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Picture books · 📖 Adventure books ·
+🗝️ Adventure games):
+- **📕 Picture book** – pages with a picture and a text, read page by page (below).
+- **📖 Adventure book** – choose-your-path stories with choices, good and bad endings and items (below).
+- **🗝️ Adventure game** – reserved for later: the shelf and the data know the type, it cannot be made yet («soon»).
+Visibility (🔒 / 🧒 / 👨‍👩‍👧), approval, rewards, ⭐ ratings, reading progress, the parent area and the privacy rules are
+the same for every type. **+ New book** first asks for the type.
+
+#### 📕 Picture books
+- A **cover** (picture, title, author – the title and the colour are set in ⚙️) and up to **60 pages**. Every page has a
+  **layout**: 🖼️ *picture on top* (text below), 🌄 *full-page picture* (the whole picture edge to edge, the text lies on
+  its lower edge – on tablets on the picture) or 📝 *text only* – and a text (max. 600 characters).
+- **Picture** per page: 🏞️ one of the 24 shipped scenes (`web/img/stories`), 😀 an emoji, 🎨 an own drawing (the
+  painter of the adventure books), 📷 a photo (same upload rules, max. 2 MB) or **</> SVG code** (e.g. from an AI).
+  SVG pictures are **cleaned strictly on the server** (`svgsafe.py`): only drawing elements (path, circle, rect,
+  polygon, g, gradients, clip paths, short text) and presentation attributes survive; `script`, `foreignObject`,
+  `image`, `use`, `style`, links/`href`, `on…` handlers, external `url(…)` references are removed, a DOCTYPE / entity or a
+  file that is not an `<svg>` with a viewBox is refused; max. 12 KB per picture. The app shows them only as an image
+  (`<img>` data URL), where nothing can run.
+- The editor (phone and tablet): cards for the cover and every page with the layout switch, ↑ ↓ to move, 🗑, a
+  character counter; the checker lists pages without text or without picture. ▶ reads the draft.
+- **Reading:** the cover, then page by page – ◀ ▶ buttons, swiping with the finger or the arrow keys, page counter and
+  dots; book typography; «The end» with ⭐ after the last page. The shelf shows «Page 3 of 12» / «▶ Continue» and
+  «✅ Read». Reaching the last page counts as reading it to the end (reading reward, ratings).
+- **Sample book:** «Klonk, the laziest dwarf in the mountain» (12 pages with own SVG illustrations, author
+  «Family Quest») is on the shelf for the whole family, in the language of the app (all 10 languages, Swiss German in
+  Zürich dialect). Nobody can change it; parents hide it (parent area › ✨ Sample books, or ⚙️) and show it again –
+  progress and ratings stay.
+
+#### 📖 Adventure books
 
 **Writing** (✏️ Edit, or **+ New book**: title, language, an empty book or a template – 🌴 jungle with the lion,
 🚀 space, 🏰 haunted castle, 🐠 underwater, each a small finished story in all app languages):
@@ -514,6 +544,12 @@ an ending (not for the own book).
   (moderation: read, edit, unpublish, remove).
 - **👨‍👩‍👧 Whole family** – children and parents.
 
+**Import / export of picture books:** the same, with the format `family-quest-picturebook/1` (instructions for an AI,
+`_svg_rules` – how to draw safe inline SVG: viewBox 400×300, simple flat shapes, own background, max. 12 KB, no scripts or
+external files, little text –, the library ids and the sample book as an example). Pictures go along as SVG, library id
+or emoji; own drawings and photos stay out. A file may contain picture books and adventure books together; every book
+comes in as a private draft.
+
 **Import / export** (same idea as the quiz and pack files for an AI): ⚙️ › **Export as a file** saves a book as
 self-describing JSON (`family-quest-story/1`: instructions and field guide for an AI, the background ids, the book with
 pages, choices, endings, items, emoji pictures and backgrounds – own drawings and photos stay out). **📥 Import** on
@@ -525,7 +561,7 @@ books per file.
 **Single-language books:** a book is written in one language (a language tag, chosen when it is made, changeable in ⚙️)
 – there are no translations inside a book. The templates come in every app language.
 
-**Parents** (Family › My adventure books › ⚙️): adventure books on/off per child (off: no menu entry, no reading or
+**Parents** (Family › My books › ⚙️): the bookshelf on/off per child (off: no menu entry, no reading or
 writing), **approval** before the others see a child's book (default off – then a book for 🧒 / 👨‍👩‍👧 waits under
 «Waiting for approval»: 👀 read, ✓ approve, ✗ back to a draft; a new version waits again while the readers keep the
 approved one), rewards for writing: coins / XP per book (default 20 coins, paid once per book when the others can first
@@ -533,7 +569,8 @@ read it – not for private books) and per reader who is somebody else and reach
 (default 0, once per reader). Parents edit, unpublish and remove every book that is not private; children edit their
 own.
 
-Limits: 300 books, 200 pages per book, 1500 characters per page, 120 per choice, 40 per item, 80 per title, pictures
+Limits: 300 books (sample books not counted), 200 pages per adventure book, 60 per picture book (600 characters per
+page, SVG pictures 12 KB each); adventure books: 1500 characters per page, 120 per choice, 40 per item, 80 per title, pictures
 max. 2 MB each and 300 MB together (in `media/_stories`, part of the backup; pictures no book uses are removed).
 
 ### Wichteln (secret gift giving)

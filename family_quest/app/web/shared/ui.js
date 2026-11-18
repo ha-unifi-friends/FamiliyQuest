@@ -427,7 +427,7 @@ function crestSvg(c, { ribbon = true } = {}) {
 
 // ---------------------------------------------------------------- ☰ the menu of the app (also on the planner page)
 const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learning")], ["deck", "📇", T("My card box")], ["shop", "🛍️", T("Shop")],
-  ...(window.FQ_STORIES === false ? [] : [["stories", "📖", T("My adventure books")]]),       // stories.js – off per child (kid.js)
+  ...(window.FQ_STORIES === false ? [] : [["stories", "📚", T("My books")]]),       // stories.js – off per child (kid.js)
   ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["deals", "🤝", T("Deals")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]]
   .filter(([k]) => k !== "deals" || !window.FQ_DEALS_OFF);      // deals (deals.js): hidden when trading is off for this profile
 
