@@ -17,7 +17,8 @@ const SR = { V0: 9, VMAX: 18, ACC: 0.07, FIRST: 3, JT: 0.65, AIR0: 0.07, DT: 0.7
 SR.T1 = (SR.VMAX - SR.V0) / SR.ACC;
 SR.D1 = SR.V0 * SR.T1 + SR.ACC * SR.T1 * SR.T1 / 2;
 const SR_LOG = 0, SR_PUDDLE = 1, SR_BRANCH = 2, SR_ROCK = 3, SR_SPARK = 4, SR_SKY = 5;
-const SR_GHOST_DELAY = 0.45;                    // the others are drawn this much later (their inputs need to arrive)
+const SR_GHOST_DELAY = 0.45;
+const SR_GHOST_SCALE = 0.42;                     // the ghosts at less than half the size of your own runner                    // the others are drawn this much later (their inputs need to arrive)
 const SR_VIEW = 60;                             // metres of path ahead on the screen
 const SR_COLORS = ["#f2545b", "#2f8fdd", "#33a852", "#f2b705", "#8b5cf6", "#14b8a6", "#ec4899", "#f97316"];
 
@@ -458,7 +459,8 @@ function sternlaufLive(box, me, back) {
   }
   // a runner: the avatar (face, hair, outfit) on running legs, arms swinging; ghosts translucent with a name tag
   function runner(p, pose, z, phase, alpha, tag, color) {
-    const x = X(pose.lanePos, z), gy = Y(z), u = U(z);
+    // the others (with a name tag) are drawn small – they should not distract from your own run
+    const x = X(pose.lanePos, z), gy = Y(z), u = U(z) * (tag ? SR_GHOST_SCALE : 1);
     ctx.save();
     ctx.globalAlpha = alpha * 0.5;
     ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.beginPath(); ctx.ellipse(x, gy, u * 0.45 * (1 - pose.hgt * 0.2), u * 0.1, 0, 0, 7); ctx.fill();

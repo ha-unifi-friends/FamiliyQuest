@@ -393,17 +393,96 @@ function entitySelect(current, domains) {
   return sel;
 }
 
-/** Internet budget of a child: minutes per day / week, other weekdays, reset time and block times. */
+// ---------------------------------------------------------------- time sliders (games, learning, internet per day)
+// positions of the slider → minutes: minutes first, then hours; the last position (far right) is ∞ = unlimited
+const LIMIT_STEPS = [0, 5, 10, 15, 20, 30, 45, 60, 75, 90, 120, 150, 180, 240, 300, 360, 480, 600, 720];
+const LIMIT_STEPS_WEEK = [0, 30, 60, 90, 120, 180, 240, 300, 360, 420, 480, 600, 720, 900, 1080, 1200, 1500, 1800, 2400];
+
+/** A master slider with a «Days» button: 7 weekday sliders (Mon … Sun) docked to it – they move with the master
+ *  until one is moved on its own (undocked: own limit); moved back to the master's value it docks again.
+ *  value {all: minutes|null, days: {"0".."6": minutes|null}} – null = ∞, days only the undocked ones. */
+function limitSlider({ icon, label, value, steps = LIMIT_STEPS, extra = null }) {
+  const v = Object.assign({ all: null, days: {} }, value || {});
+  let master = v.all;                                         // minutes or null (∞)
+  const own = {};                                             // undocked weekdays: own minutes or null
+  for (const [k, x] of Object.entries(v.days || {})) if (/^[0-6]$/.test(k) && x !== master) own[k] = x;
+  const INF = () => steps.length;                            // index of ∞
+  const toMin = i => i >= INF() ? null : steps[i];
+  const toIdx = m => {                                       // the nearest position (a value between steps stays as it is until moved)
+    if (m == null) return INF();
+    let best = 0;
+    steps.forEach((x, i) => { if (Math.abs(x - m) < Math.abs(steps[best] - m)) best = i; });
+    return best;
+  };
+  const paint = (inp, m) => { const i = toIdx(m); inp.max = INF(); inp.value = i; inp.style.setProperty("--p", (i / INF() * 100) + "%");
+    inp.setAttribute("aria-valuetext", fmtMinutes(m)); };
+  const masterOut = h("output.lim-val");
+  const masterIn = h("input.lim-range", { type: "range", min: 0, step: 1, "aria-label": label });
+  const scale = h("div.lim-scale", { "aria-hidden": "true" });
+  const drawScale = () => scale.replaceChildren(...[0, Math.round(INF() * .37), Math.round(INF() * .63), INF()]
+    .map(i => h("span", { style: { "--p": i / INF() } }, i === INF() ? "∞" : fmtMinutes(steps[i]))));
+  const dayRows = WEEKDAYS.map((d, i) => {
+    const k = String(i);
+    const inp = h("input.lim-range.lim-day-range", { type: "range", min: 0, step: 1, "aria-label": label + " – " + d });
+    const out = h("output.lim-val");
+    const pin = h("button.lim-pin", { type: "button", onclick: () => { delete own[k]; draw(); } });
+    const row = h("div.lim-day", h("span.lim-dname", d), inp, out, pin);
+    inp.addEventListener("input", () => {
+      const m = toMin(+inp.value);
+      if (+inp.value === toIdx(master)) delete own[k]; else own[k] = m;     // back on the master's value: docked again
+      draw();
+    });
+    return { k, row, inp, out, pin };
+  });
+  const week = h("div.lim-week", { hidden: true }, ...dayRows.map(r => r.row));
+  const daysBtn = h("button.btn.small.ghost.lim-days", { type: "button", "aria-expanded": "false",
+    onclick: () => { week.hidden = !week.hidden; draw(); } }, "📅 ", T("Days"));
+  masterIn.addEventListener("input", () => { master = toMin(+masterIn.value); draw(); });
+  function draw() {
+    paint(masterIn, master);
+    masterOut.textContent = fmtMinutes(master);
+    masterIn.classList.toggle("inf", master == null);
+    const n = Object.keys(own).length;
+    daysBtn.setAttribute("aria-expanded", String(!week.hidden));
+    daysBtn.classList.toggle("on", !week.hidden);
+    daysBtn.replaceChildren(...["📅 ", I18N.tr(T("Days")), n ? h("span.lim-badge", String(n)) : ""].filter(Boolean));
+    for (const r of dayRows) {
+      const docked = !(r.k in own), m = docked ? master : own[r.k];
+      paint(r.inp, m);
+      r.out.textContent = fmtMinutes(m);
+      r.row.classList.toggle("own", !docked);
+      r.pin.textContent = docked ? "🔗" : "🔓";
+      r.pin.title = I18N.tr(docked ? T("Moves with the slider above") : T("Own time – tap to dock again"));
+      r.pin.disabled = docked;
+    }
+  }
+  drawScale();
+  if (Object.keys(own).length) week.hidden = false;         // a weekday with its own time: the days are open
+  draw();
+  const el = h("div.lim", h("div.lim-head", h("span.lim-ic", icon), h("b.grow", label), masterOut, extra, daysBtn),
+    h("div.lim-master", masterIn, scale), week);
+  return {
+    el,
+    value: () => ({ all: master, days: daysBtn.hidden ? {} : Object.fromEntries(Object.entries(own).filter(([, x]) => x !== master)) }),
+    /** per week: no weekday sliders; other steps */
+    setMode(withDays, newSteps) {
+      daysBtn.hidden = !withDays;
+      if (!withDays) week.hidden = true;
+      if (newSteps && newSteps !== steps) { steps = newSteps; drawScale(); }
+      draw();
+    },
+  };
+}
+
+/** Internet budget of a child: the slider (minutes per day / week, own minutes per weekday) for the time sliders,
+ *  reset time and block times. A budget of 0 without weekdays and block times = no plan (only earned minutes). */
 function internetPlanEditor(cur) {
   const p = Object.assign({ budget: 0, period: "day", reset: "00:00", reset_day: 0, days: {}, blocks: [] }, cur || {});
-  const on = h("input", { type: "checkbox", checked: !!cur });
-  const budget = h("input", { type: "number", min: 0, max: 10080, value: p.budget });
-  const period = h("select", h("option", { value: "day", selected: p.period === "day" }, T("per day")), h("option", { value: "week", selected: p.period === "week" }, T("per week")));
+  const period = h("select.lim-period", { "aria-label": T("Internet") }, h("option", { value: "day", selected: p.period === "day" }, T("per day")), h("option", { value: "week", selected: p.period === "week" }, T("per week")));
+  const slider = limitSlider({ icon: "🌐", label: T("Internet"), value: { all: p.budget, days: p.period === "day" ? p.days : {} },
+    steps: p.period === "week" ? LIMIT_STEPS_WEEK : LIMIT_STEPS, extra: period });
   const reset = h("input", { type: "time", value: p.reset });
   const resetDay = h("select", ...WEEKDAYS.map((d, i) => h("option", { value: i, selected: +p.reset_day === i }, d)));
-  const dayInputs = WEEKDAYS.map((d, i) => h("input", { type: "number", min: 0, max: 1440, placeholder: "–", value: p.days[String(i)] ?? "" }));
-  const daysRow = h("div.field", h("b", T("Other budget on these days")), h("div.plan-days", ...WEEKDAYS.map((d, i) => h("label", d, dayInputs[i]))),
-    h("span.hint", T("Empty = the default budget.")));
   const resetDayField = h("label.field", T("Reset on"), resetDay);
   const blocks = p.blocks.map(b => Object.assign({}, b));
   const blockBox = h("div.plan-blocks");
@@ -417,21 +496,20 @@ function internetPlanEditor(cur) {
       h("button.icon-btn", { type: "button", title: T("Delete"), onclick: () => { blocks.splice(bi, 1); drawBlocks(); } }, "🗑️")))),
     h("button.btn.small.ghost", { type: "button", onclick: () => { blocks.push({ days: [0, 1, 2, 3, 4], from: "20:00", to: "07:00", mode: "internet" }); drawBlocks(); } }, "+ ", T("Block time")));
   drawBlocks();
-  const body = h("div.plan-body");
-  const sync = () => { body.hidden = !on.checked; daysRow.hidden = period.value !== "day"; resetDayField.hidden = period.value !== "week"; };
-  on.onchange = sync; period.onchange = sync;
-  body.append(
-    h("div.grid2", h("label.field", T("Default budget (minutes)"), h("div.row", budget, period)),
-      h("div.row.wrap", resetDayField, h("label.field", T("Reset at"), reset))),
-    daysRow,
-    h("div.field", h("b", T("Block times")), h("span.hint", T("The internet is off – and you choose what Family Quest still allows.")), blockBox),
-    h("p.small.muted", T("Minutes from the shop or rewards come on top; the budget is used first and starts again at the reset.")));
+  const sync = () => { resetDayField.hidden = period.value !== "week"; slider.setMode(period.value === "day", period.value === "week" ? LIMIT_STEPS_WEEK : LIMIT_STEPS); };
+  period.onchange = sync;
   sync();
   return {
-    el: h("div.plan", h("label.check", on, h("b", T("Internet budget and block times"))), body),
-    value: () => on.checked ? { budget: +budget.value || 0, period: period.value, reset: reset.value || "00:00", reset_day: +resetDay.value,
-      days: Object.fromEntries(dayInputs.map((x, i) => [String(i), x.value]).filter(([, v]) => v !== "")),
-      blocks: blocks.filter(b => b.days.length) } : null,
+    slider,
+    el: h("div.plan", h("b", T("Internet budget and block times")),
+      h("div.row.wrap", resetDayField, h("label.field", T("Reset at"), reset)),
+      h("div.field", h("b", T("Block times")), h("span.hint", T("The internet is off – and you choose what Family Quest still allows.")), blockBox),
+      h("p.small.muted", T("Minutes from the shop or rewards come on top; the budget is used first and starts again at the reset."))),
+    value: () => {
+      const sv = slider.value(), bl = blocks.filter(b => b.days.length);
+      if (sv.all === 0 && !Object.keys(sv.days).length && !bl.length) return null;      // no plan: only earned minutes
+      return { budget: sv.all, period: period.value, reset: reset.value || "00:00", reset_day: +resetDay.value, days: sv.days, blocks: bl };
+    },
   };
 }
 
@@ -466,6 +544,13 @@ async function profileDialog(p, persons, role = "kid") {
   if (P.meta.ha) call("parent/ha/entities?domain=notify").then(l => notifyList.replaceChildren(...l.map(e => h("option", { value: e.entity_id })))).catch(() => {});
   const ents = null;
   const plan = internetPlanEditor(s.internet_plan);
+  // daily time: games, learning, internet – three sliders, each with its weekdays (children only)
+  const gameLimit = limitSlider({ icon: "🎮", label: T("Games per day"), value: s.game_limit });
+  const learnLimit = limitSlider({ icon: "📚", label: T("Learning per day"), value: s.learn_limit });
+  const timePart = h("div.form.lim-box", h("h3", "⏱️ ", T("Time per day")),
+    h("p.small.muted", T("Far right ∞ = not limited. 📅 Days: own times per weekday – a weekday moves with the slider above until you move it yourself.")),
+    gameLimit.el, learnLimit.el, plan.slider.el,
+    h("p.small.muted", T("Games: family games and the game corner – a game already running may be finished. Internet: the free minutes of the internet budget (needs the UniFi firewall rule below); 0 = only minutes from the shop.")));
   const kidPart = h("div.form", h("h3", T("Internet minutes")),
     h("p.small.muted", T("Optional. Family Quest manages the internet time itself with the UniFi firewall rule; an input_number can also receive the minutes.")),
     h("div.grid2", h("label.field", T("UniFi firewall rule (switch)"), f.internet_rule, ruleList,
@@ -562,7 +647,7 @@ async function profileDialog(p, persons, role = "kid") {
         : T("Children: 4 digits, optional. Parents: 4–8 digits, required."))));
     } else pinArea.replaceChildren(h("p.small.muted", kid ? T("The child logs in without a PIN.") : T("No login in the app – the parent area opens with the Home Assistant user.")));
   };
-  const syncRole = () => { kidPart.hidden = f.role.value !== "kid"; parentPart.hidden = f.role.value !== "parent"; haPart.hidden = f.role.value !== "parent" || !P.meta.ha; drawPin(); };
+  const syncRole = () => { kidPart.hidden = timePart.hidden = f.role.value !== "kid"; parentPart.hidden = f.role.value !== "parent"; haPart.hidden = f.role.value !== "parent" || !P.meta.ha; drawPin(); };
   f.role.addEventListener("change", syncRole); syncRole();
   const m = modal(h("div.form",
     h("h2", isNew ? (p.role === "parent" ? T("New parent") : T("New child")) : T("Edit profile")),
@@ -575,6 +660,7 @@ async function profileDialog(p, persons, role = "kid") {
       h("label.field", T("New cards per lesson"), f.new_per_lesson),
       h("label.field", T("Learning hours"), f.learning_hours, h("span.hint", T("Empty = always. Example: 07:00-20:00"))),
       h("label.field", T("Log out after minutes without touch"), f.auto_logout_min, h("span.hint", T("0 = never")))),
+    timePart,
     P.meta.ha ? h("h3", "🏠 ", T("Devices")) : null, P.meta.ha ? devBox : null,
     kidPart, parentPart,
     persons.length ? h("label.field", T("Person in the Family Planer"), f.planer, h("span.hint", T("Shows the chores of this person and counts them."))) : null,
@@ -598,6 +684,7 @@ async function profileDialog(p, persons, role = "kid") {
         learning_hours: f.learning_hours.value.trim(), auto_logout_min: +f.auto_logout_min.value, internet_entity: f.internet_entity.value,
         internet_daily_limit: +f.internet_daily_limit.value, notify_service: f.notify_service.value.trim(),
         internet_rule: f.internet_rule.value, internet_rule_blocks: f.internet_rule_blocks.checked, internet_plan: plan.value(),
+        ...(isParent ? {} : { game_limit: gameLimit.value(), learn_limit: learnLimit.value() }),
         ...(P.meta.ha ? { devices: [...devSel] } : {}) } };
     if (isParent && !body.ha_user_id && (pin === "" || (!p.has_pin && !body.pin))) {
       if (P.meta.ha) { haUser.focus(); return toast(T("Parents need a Home Assistant user or a PIN"), "bad"); }

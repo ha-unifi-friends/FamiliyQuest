@@ -14,6 +14,7 @@ from .community import Community
 from .chores import Chores
 from .internet import InternetTime
 from .db import Database, profile_settings
+from . import timelimits
 from .learning.lesson import Learning
 from .packs.registry import PackStore, subject_meta
 from .rewards import avatar as av
@@ -205,10 +206,13 @@ class FamilyQuest:
             return False
         return True
 
-    def games_for(self, prof: dict) -> list[str]:
-        """The games this profile may play: parents all, children as set in the parent area (per game)."""
+    def games_for(self, prof: dict, time: bool = True) -> list[str]:
+        """The games this profile may play: parents all, children as set in the parent area (per game).
+        `time`: a child whose game time of today is used up (timelimits.py) may start or join none."""
         if prof["role"] == "parent":
             return list(self.GAMES)
+        if time and timelimits.used_up(self.db, prof, "game"):
+            return []
         if self.calendar.blocks(prof["id"], "games"):              # OfflineTime: the games of the app are locked
             return []
         blk = self.internet.block(prof)                            # block time of the internet plan: games or the whole app
@@ -252,9 +256,10 @@ class FamilyQuest:
         out["familytime"] = self.familytime.summary(prof)            # FamilyTime: a wish or a vote is missing
         return out
 
-    def games_allowed(self, prof: dict, game: str | None = None) -> bool:
-        """This game (or, without one, any family game) for this profile?"""
-        allowed = self.games_for(prof)
+    def games_allowed(self, prof: dict, game: str | None = None, time: bool = True) -> bool:
+        """This game (or, without one, any family game) for this profile? `time=False`: the daily game time does not
+        count (a game the child is already in may be played to the end)."""
+        allowed = self.games_for(prof, time)
         return game in allowed if game else bool(allowed)
 
     def kids(self) -> list[dict]:
@@ -310,6 +315,7 @@ class FamilyQuest:
             "community": self._community_summary(prof),
             "has_devices": bool(profile_settings(prof).get("devices")) and bool(self.ha and self.ha.connected),
             "internet": self.internet.state(prof),
+            "time_left": self.time_left(prof),
             "offline_lock": self._offline_lock(prof),
             "weather": self.weather.current(pid) if prof.get("role") != "parent" else None,
             "special_times": self.calendar.special(pid) if prof.get("role") != "parent" else self.calendar.special(None),
@@ -317,6 +323,13 @@ class FamilyQuest:
             "pending": [r for r in self.shop.list("pending", pid)],
             "pets": self.pets.summary(pid),
         }
+
+    def time_left(self, prof: dict) -> dict:
+        """Minutes left today: family games, learning, internet – None = unlimited (parents always)."""
+        net = self.internet.state(prof) if prof.get("role") == "kid" else None
+        unlimited = not net or (net.get("budget") or {}).get("unlimited")
+        return {"games": timelimits.left(self.db, prof, "game"), "learn": timelimits.left(self.db, prof, "learn"),
+                "internet": None if unlimited else net["minutes"]}
 
     def _offline_lock(self, prof: dict) -> dict | None:
         """Block time «only a message»: the app shows that it is OfflineTime (children only)."""

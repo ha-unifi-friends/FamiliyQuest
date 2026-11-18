@@ -194,6 +194,9 @@ class Learning:
             raise LearnError("unknown profile")
         ps = profile_settings(prof)
         self._check_hours(ps)
+        from .. import timelimits
+        if timelimits.used_up(self.db, prof, "learn"):          # daily learning time (a running lesson may be finished)
+            raise LearnError("Learning time for today is used up – see you tomorrow!")
         n, n_new = int(ps["lesson_length"]), int(ps["new_per_lesson"])
         rng = random.Random(seed)
         steps: list[dict] = []
