@@ -125,6 +125,8 @@ class FamilyQuest:
         self.wichteln = Wichteln(self.db, lambda: self.planer_host)
         from .boards import Boards
         self.boards = Boards(self.db)
+        from .stories import Stories
+        self.stories = Stories(self.db, self.rewards, settings.media_dir)
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
         from .pong4 import Doubles
@@ -495,6 +497,7 @@ class FamilyQuest:
             "party": self.party_public(prof),                 # party mode for this child (banner, disco theme)
             "deals": self.deals.summary(prof),                # deals waiting for an answer, news (deals.py)
             "coins_reserved": self.rewards.reserved(pid),     # promised in a deal that stands – cannot be spent
+            "stories": self.stories.enabled_for(prof),        # adventure books (stories.py) – off per child by the parents
         }
 
     def party_public(self, prof: dict) -> dict | None:

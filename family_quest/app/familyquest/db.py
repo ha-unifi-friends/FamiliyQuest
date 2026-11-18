@@ -705,6 +705,39 @@ MIGRATIONS: list[str] = [
     ALTER TABLE chore_task ADD COLUMN from_id INTEGER;     -- taken over in a deal from this profile
     ALTER TABLE chore_task ADD COLUMN deal_id INTEGER;
     """,
+    # 39 – adventure books (stories.py): branching stories of the family – the working copy of the author, the published
+    # copy the readers see, a copy waiting for parent approval; per reader the page, items, endings found and ⭐
+    """
+    CREATE TABLE story(
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        emoji TEXT NOT NULL DEFAULT '📖',
+        color INTEGER NOT NULL DEFAULT 0,
+        lang TEXT NOT NULL DEFAULT 'en',
+        author_id INTEGER,
+        data TEXT NOT NULL,                      -- JSON {start, pages}: the working copy
+        live TEXT,                               -- the published copy (NULL: not published)
+        pending TEXT,                            -- sent for parent approval
+        visibility TEXT NOT NULL DEFAULT 'me',   -- who reads it besides the author: me (nobody) | kids (the children) | family
+        approved INTEGER NOT NULL DEFAULT 0,     -- the published copy may be shown to the others (approval, if switched on)
+        rewarded INTEGER NOT NULL DEFAULT 0,     -- the writing reward is paid (once per book, when the others first see it)
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        published_at TEXT
+    );
+    CREATE TABLE story_read(
+        story_id INTEGER NOT NULL REFERENCES story(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        page INTEGER,
+        items TEXT NOT NULL DEFAULT '[]',
+        endings TEXT NOT NULL DEFAULT '[]',      -- ending pages found
+        finished INTEGER NOT NULL DEFAULT 0,     -- endings reached (also the same one again)
+        rating INTEGER,                          -- 1…5 stars after finishing
+        rewarded INTEGER NOT NULL DEFAULT 0,     -- the author got the reading reward for this reader
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        PRIMARY KEY(story_id, profile_id)
+    );
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -774,6 +807,7 @@ DEFAULT_SETTINGS = {
     "familytime_vote_hours": 24,         # the wishes close (and the vote starts) this many hours before the FamilyTime
     "planer_points_account": "coins",    # built-in planner: its points and this account are one balance ("" = separate)
     "deals": None,                       # deals between children and with parents (deals.py) – None = defaults (deals.DEFAULT)
+    "stories": None,                     # adventure books (stories.py): children off, approval, rewards – None = stories.DEFAULT
 }
 
 DEFAULT_PROFILE_SETTINGS = {

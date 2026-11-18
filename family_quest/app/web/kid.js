@@ -87,6 +87,7 @@ async function route() {
   if (view === "stempeljagd") return stempeljagdView();
   if (view === "arcade") return arcadeView(arg);
   if (view === "deck") return arg ? deckView(+arg) : decksView();
+  if (view === "stories") return storiesView();
   return dashboardView();
 }
 
@@ -98,6 +99,7 @@ async function loadMe() {
   // deals (deals.js): the menu entry only when this profile may trade, a badge for offers waiting for an answer
   window.FQ_DEALS_OFF = !(S.me.deals && S.me.deals.on);
   window.FQ_NAV_BADGES = { deals: S.me.deals ? S.me.deals.turn || 0 : 0 };
+  window.FQ_STORIES = S.me.stories !== false;           // adventure books switched off for this child: no menu entry
   if (S.me.prank) setTimeout(() => inkOverlay(S.me.prank), 400);     // somebody threw an ink bomb meanwhile
   idleReset();
 }
@@ -1776,7 +1778,8 @@ async function familyView() {
         m.chores && m.chores.reliability != null ? [h("dt", "🧹 " + I18N.tr(T("Chores"))), h("dd", fmt(m.chores.reliability) + " %")] : null,
         showAll && m.level ? [h("dt", "Level"), h("dd", String(m.level))] : null)))) : null,
     h("p.small.muted.center", T("Compared is the effort towards each one's own goal – not the raw points.")),
-    await familyTimeSection(), await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
+    await familyTimeSection(), await councilSection(), await pollsSection(), await boardsSection(),
+    S.me.stories !== false ? storiesCard() : null, await wichtelnSection(), await historySection());
 }
 
 // ---------------------------------------------------------------- games with a price: buy or rent (familyquest/gamepasses.py)
