@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from .. import timelimits
 from ..community import CommunityError
+from ..gamewords import lang_of
 from ..guests import GUEST, GUEST_HOURS, GuestError
 from .auth import Learner, app_of, learner
 
@@ -927,7 +928,7 @@ def _lead_whoami(fq, prof: dict) -> None:
 
 @router.get("/werbinich")
 def whoami_state(request: Request, prof: dict = Playing) -> dict | None:
-    return app_of(request).werbinich.state("werbinich", prof["id"])
+    return app_of(request).werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.get("/werbinich/rules")
@@ -939,14 +940,14 @@ def whoami_rules(request: Request, prof: dict = Gamer) -> dict:
 def whoami_start(body: WhoamiStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _run(fq.werbinich.start, "werbinich", prof["id"], body.model_dump())
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/join")
 def whoami_join(request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
     _run(fq.werbinich.join, "werbinich", prof["id"])
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/begin")
@@ -954,21 +955,21 @@ def whoami_begin(request: Request, body: BeginIn | None = None, prof: dict = Gam
     fq = app_of(request)
     _lead_whoami(fq, prof)
     _run(fq.werbinich.begin, "werbinich", prof["id"], (body or BeginIn()).starter)
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/ask")
 def whoami_ask(body: WhoamiTextIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.werbinich.ask, prof["id"], body.text)
-    return fq.werbinich.state("werbinich", prof["id"])
+    _run(fq.werbinich.ask, prof["id"], body.text, lang_of(request))
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/answer")
 def whoami_answer(body: WhoamiVoteIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.werbinich.answer, prof["id"], body.vote)
-    return fq.werbinich.state("werbinich", prof["id"])
+    _run(fq.werbinich.answer, prof["id"], body.vote, lang_of(request))
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/close")
@@ -976,21 +977,21 @@ def whoami_close(request: Request, prof: dict = Playing) -> dict | None:
     """The asker closes their question early – or who leads the game."""
     fq = app_of(request)
     _run(fq.werbinich.close, prof["id"], prof["role"] != "guest" and fq.werbinich.may_lead("werbinich", prof))
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/guess")
 def whoami_guess(body: WhoamiTextIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.werbinich.guess, prof["id"], body.text)
-    return fq.werbinich.state("werbinich", prof["id"])
+    _run(fq.werbinich.guess, prof["id"], body.text, lang_of(request))
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/giveup")
 def whoami_give_up(request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.werbinich.give_up, prof["id"])
-    return fq.werbinich.state("werbinich", prof["id"])
+    _run(fq.werbinich.give_up, prof["id"], lang_of(request))
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/skip")
@@ -999,7 +1000,7 @@ def whoami_skip(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_whoami(fq, prof)
     _run(fq.werbinich.skip, prof["id"])
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/end")
@@ -1007,7 +1008,7 @@ def whoami_end(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_whoami(fq, prof)
     fq.werbinich.end("werbinich", prof["id"])
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 # ---------------------------------------------------------------- Kartenlauf (familyquest/kartenlauf.py)
@@ -1971,7 +1972,7 @@ def _lead_zeichnen(fq, prof: dict) -> None:
 def zeichnen_state(request: Request, n: int | None = None, pl: int = 0, t: int | None = None, prof: dict = Playing) -> dict | None:
     """The view; with the cursor n (events the app has), pl (points of its last event) and t (the turn) only the new
     strokes of the drawing come along."""
-    return app_of(request).zeichnen.state("zeichnen", prof["id"], n, pl, t)
+    return app_of(request).zeichnen.state("zeichnen", prof["id"], n, pl, t, lang=lang_of(request))
 
 
 @router.get("/zeichnen/rules")
@@ -1983,14 +1984,14 @@ def zeichnen_rules(request: Request, prof: dict = Gamer) -> dict:
 def zeichnen_start(body: ZeichnenStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _run(fq.zeichnen.start, "zeichnen", prof["id"], body.model_dump())
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/join")
 def zeichnen_join(request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
     _run(fq.zeichnen.join, "zeichnen", prof["id"])
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/begin")
@@ -1998,27 +1999,27 @@ def zeichnen_begin(request: Request, body: BeginIn | None = None, prof: dict = G
     fq = app_of(request)
     _lead_zeichnen(fq, prof)
     _run(fq.zeichnen.begin, "zeichnen", prof["id"], (body or BeginIn()).starter)
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/choose")
 def zeichnen_choose(body: ZeichnenChooseIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.zeichnen.choose, prof["id"], body.idx)
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    _run(fq.zeichnen.choose, prof["id"], body.idx, lang_of(request))
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/draw")
 def zeichnen_draw(body: ZeichnenDrawIn, request: Request, prof: dict = Playing) -> dict:
     """A batch of strokes of the drawer (sent every ~120 ms while drawing) – a short answer, not the whole view."""
-    return _run(app_of(request).zeichnen.draw, prof["id"], body.ops, body.turn)
+    return _run(app_of(request).zeichnen.draw, prof["id"], body.ops, body.turn, lang_of(request))
 
 
 @router.post("/zeichnen/guess")
 def zeichnen_guess(body: ZeichnenGuessIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    res = _run(fq.zeichnen.guess, prof["id"], body.text)
-    return {**(fq.zeichnen.state("zeichnen", prof["id"]) or {}), "result": res}
+    res = _run(fq.zeichnen.guess, prof["id"], body.text, lang_of(request))
+    return {**(fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request)) or {}), "result": res}
 
 
 @router.post("/zeichnen/skip")
@@ -2027,7 +2028,7 @@ def zeichnen_skip(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_zeichnen(fq, prof)
     _run(fq.zeichnen.skip, prof["id"])
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/end")
@@ -2035,7 +2036,7 @@ def zeichnen_end(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_zeichnen(fq, prof)
     fq.zeichnen.end("zeichnen", prof["id"])
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 # ---------------------------------------------------------------- «Verbotene Wörter» (familyquest/verboten.py)
@@ -2060,7 +2061,7 @@ def _lead_verboten(fq, prof: dict) -> None:
 
 @router.get("/verboten")
 def verboten_state(request: Request, prof: dict = Playing) -> dict | None:
-    return app_of(request).verboten.state("verboten", prof["id"])
+    return app_of(request).verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.get("/verboten/rules")
@@ -2072,14 +2073,14 @@ def verboten_rules(request: Request, prof: dict = Gamer) -> dict:
 def verboten_start(body: VerbotenStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _run(fq.verboten.start, "verboten", prof["id"], body.model_dump())
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/join")
 def verboten_join(request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
     _run(fq.verboten.join, "verboten", prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/mix")
@@ -2088,7 +2089,7 @@ def verboten_mix(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_verboten(fq, prof)
     _run(fq.verboten.mix, prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/begin")
@@ -2096,7 +2097,7 @@ def verboten_begin(request: Request, body: BeginIn | None = None, prof: dict = G
     fq = app_of(request)
     _lead_verboten(fq, prof)
     _run(fq.verboten.begin, "verboten", prof["id"], (body or BeginIn()).starter)
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/go")
@@ -2104,14 +2105,14 @@ def verboten_go(request: Request, prof: dict = Playing) -> dict | None:
     """The explainer is ready: the clock starts, the first card comes."""
     fq = app_of(request)
     _run(fq.verboten.go, prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/mark")
 def verboten_mark(body: VerbotenMarkIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
     _run(fq.verboten.mark, prof["id"], body.n, body.result, body.guesser)
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/skip")
@@ -2120,7 +2121,7 @@ def verboten_skip(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_verboten(fq, prof)
     _run(fq.verboten.skip, prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/end")
@@ -2128,7 +2129,7 @@ def verboten_end(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_verboten(fq, prof)
     fq.verboten.end("verboten", prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 # ---------------------------------------------------------------- «Escape Room» (familyquest/escape.py)
@@ -3018,7 +3019,7 @@ def history(request: Request, profile_id: int | None = None, prof: dict = Learne
         if prof["role"] != "parent":
             raise HTTPException(403, "Only your own history")
         pid = profile_id
-    return app_of(request).community.history(pid)
+    return app_of(request).community.history(pid, lang=lang_of(request))
 
 
 # ---------------------------------------------------------------- pairs game (game corner): photo sets and family crest

@@ -26,6 +26,13 @@ collects own endings («2 of 5 endings found») and gives ⭐ after finishing a 
 
 Pictures: an emoji, an own drawing or a photo – drawings and photos are files in media/_stories (checked by their first
 bytes, max. IMAGE_MAX), named after their content. Files no book uses any more are removed after an hour.
+
+Book types (`type`, the badge and filter on the shelf): 📕 «picture» – picture books (picturebooks.py: pages with a
+picture and a text, read page by page), 📖 «adventure» – the adventure books of this module, 🗝️ «game» – adventure
+games (reserved: the shelf knows the type, it cannot be made yet). Visibility, approval, rewards, ratings, the parent
+area and privacy are the same for every type; only the content (`clean` / `check`), reading and the file format
+differ. Sample books (`sample`: a key of picturebooks.SAMPLES) come with the app: author «Family Quest», visible to the
+whole family in the reader's app language, never changed; parents hide them (settings «samples_off»).
 """
 from __future__ import annotations
 
@@ -63,7 +70,10 @@ BACKGROUNDS = {"jungle": "Jungle", "beach": "Beach and island", "deepsea": "Deep
                "school": "School", "kidsroom": "Kids' room", "attic": "Attic", "lab": "Laboratory"}
 VISIBILITY = ("me", "kids", "family")   # only the author (parents neither) · the children and the author · everybody
 IMG_NAME = re.compile(r"s-[0-9a-f]{16}\.(jpg|png|webp|gif)")
-DEFAULT = {"off": [], "approval": False, "write_coins": 20, "write_xp": 0, "read_coins": 0, "read_xp": 0}
+DEFAULT = {"off": [], "approval": False, "write_coins": 20, "write_xp": 0, "read_coins": 0, "read_xp": 0, "samples_off": []}
+TYPES = ("picture", "adventure", "game")        # 📕 picture book · 📖 adventure book · 🗝️ adventure game (reserved)
+CREATABLE = ("picture", "adventure")
+TYPE_ICON = {"picture": "📕", "adventure": "📖", "game": "🗝️"}
 
 # messages of the checker – English source text, the app translates them ({0} page, {1} choice letter, {2} item)
 MSG = {
@@ -216,7 +226,30 @@ def check(data: dict, title: str = "x") -> list[dict]:
 
 
 def endings(data: dict | None) -> list[int]:
-    return [p["id"] for p in (data or {}).get("pages", []) if p["kind"] != "scene"]
+    return [p["id"] for p in (data or {}).get("pages", []) if p.get("kind", "scene") != "scene"]
+
+
+def clean_as(kind: str, data, folder: Path | None = None) -> dict:
+    """`clean` of the book type."""
+    if kind == "picture":
+        from . import picturebooks
+        return picturebooks.clean(data, folder)
+    return clean(data, folder)
+
+
+def check_as(kind: str, data: dict, title: str = "x") -> list[dict]:
+    """`check` of the book type."""
+    if kind == "picture":
+        from . import picturebooks
+        return picturebooks.check(data, title)
+    return check(data, title)
+
+
+def empty_book(kind: str) -> dict:
+    if kind == "picture":
+        return {"cover": {"pic": None}, "pages": [{"id": 1, "layout": "top", "text": "", "pic": None}]}
+    return {"start": 1, "pages": [{"id": 1, "kind": "scene", "text": "", "pic": None, "give": None,
+                                   "choices": [{"t": "", "to": None, "need": None}, {"t": "", "to": None, "need": None}]}]}
 
 
 # ---------------------------------------------------------------- templates (texts in stories_templates.json)
@@ -383,8 +416,10 @@ def story_document(books: list[dict], example: bool = False) -> dict:
 
 
 def import_books(text) -> list[dict]:
-    """Books from a file or a pasted AI answer (JSON, also in a code fence with sentences around it): [{title, emoji,
-    lang, data}] – cleaned and limited; ids, authors and anything else from the file are not trusted."""
+    """Books from a file or a pasted AI answer (JSON, also in a code fence with sentences around it): [{type, title,
+    emoji, lang, data}] – cleaned and limited; ids, authors and anything else from the file are not trusted.
+    Adventure books (family-quest-story/1) and picture books (family-quest-picturebook/1) – also both in one file."""
+    from . import picturebooks
     from .ai_format import strip_meta
     from .jsonish import loads
     if not isinstance(text, str) or not text.strip():
@@ -392,7 +427,9 @@ def import_books(text) -> list[dict]:
     if len(text) > IMPORT_MAX:
         raise CommunityError("The file is too large")
     try:
-        doc = strip_meta(loads(text))
+        doc = loads(text)
+        fmt = doc.get("_format") if isinstance(doc, dict) else None
+        doc = strip_meta(doc)
     except (ValueError, RecursionError):
         raise CommunityError("No book found – is it the JSON of an adventure book?") from None
     raw = doc.get("books") if isinstance(doc, dict) and isinstance(doc.get("books"), list) else [doc] if isinstance(doc, dict) else doc
@@ -401,6 +438,11 @@ def import_books(text) -> list[dict]:
     out = []
     for b in raw[:IMPORT_BOOKS]:
         if not isinstance(b, dict) or not isinstance(b.get("pages"), list):
+            continue
+        if picturebooks.is_picture_book(fmt, b):
+            pb = picturebooks.import_book(b)
+            if pb["data"]["pages"]:
+                out.append(pb)
             continue
         if len(b["pages"]) > MAX_PAGES:
             raise CommunityError("A book can have at most 200 pages")
@@ -428,7 +470,7 @@ def import_books(text) -> list[dict]:
             continue
         lang = b.get("language") if b.get("language") in LANGS else template_lang(str(b.get("language") or "en"))
         title = _text(b.get("title"), TITLE) or "?"
-        out.append({"title": title, "emoji": _text(b.get("emoji"), EMOJI) or "📖", "lang": lang,
+        out.append({"type": "adventure", "title": title, "emoji": _text(b.get("emoji"), EMOJI) or "📖", "lang": lang,
                     "data": clean({"start": ids.get(str(b.get("start"))), "pages": pages})})
     if not out:
         raise CommunityError("No book found – is it the JSON of an adventure book?")
@@ -445,11 +487,14 @@ class Stories:
     # ---------------------------------------------------------------- settings
     @staticmethod
     def _clean_settings(d: dict, s: dict) -> dict:
+        from .picturebooks import SAMPLES
         s = dict(s)
         if isinstance(d.get("off"), list):
             s["off"] = sorted({int(x) for x in d["off"] if isinstance(x, int) or str(x).isdigit()})
         if "approval" in d:
             s["approval"] = bool(d["approval"])
+        if isinstance(d.get("samples_off"), list):
+            s["samples_off"] = sorted({x for x in d["samples_off"] if x in SAMPLES})
         for k in ("write_coins", "write_xp", "read_coins", "read_xp"):
             if k in d and d[k] is not None:
                 s[k] = _int(d[k], 0, 10000, s[k])
@@ -492,7 +537,9 @@ class Stories:
 
     def visible(self, prof: dict, b: dict, oversee: bool = False) -> bool:
         """May this person read the published copy? The author always; a parent in the parent area every book that
-        is not private; the others what the visibility allows (once approved)."""
+        is not private; the others what the visibility allows (once approved). A hidden sample book: nobody."""
+        if b.get("sample"):
+            return b["sample"] not in self.settings()["samples_off"]
         if b["author_id"] == prof["id"]:
             return True
         if b["visibility"] == "me":
@@ -509,14 +556,19 @@ class Stories:
         if b["live"] and b["approved"] and b["visibility"] != "me" and not b["rewarded"] and b["author_id"]:
             self.db.x("UPDATE story SET rewarded=1 WHERE id=?", sid)
             s = self.settings()
-            self._pay(b["author_id"], s["write_coins"], s["write_xp"], "story_written", f"📖 {b['title']}", f"story:{sid}:written")
+            self._pay(b["author_id"], s["write_coins"], s["write_xp"], "story_written", f"{TYPE_ICON.get(b['type'], '📖')} {b['title']}",
+                      f"story:{sid}:written")
 
     def _may_edit(self, prof: dict, b: dict) -> bool:
+        if b.get("sample"):
+            return False
         return b["author_id"] == prof["id"] or (self._parent(prof) and b["visibility"] != "me")
 
     def _edit(self, prof: dict, sid: int) -> dict:
         self._need(prof)
         b = self._book(sid)
+        if b.get("sample"):
+            raise CommunityError("The sample book cannot be changed")
         if self._private(prof, b):
             raise CommunityError("Only the author can open this book")
         if not self._may_edit(prof, b):
@@ -540,97 +592,153 @@ class Stories:
             out["lang"] = lang if lang in LANGS else "en"
         return out
 
+    # ---------------------------------------------------------------- sample books (picturebooks.SAMPLES)
+    def _samples(self) -> dict[str, dict]:
+        """The rows of the sample books – made the first time the shelf is opened (the readers' progress and ⭐ need them)."""
+        from . import picturebooks
+        rows = {r["sample"]: r for r in self.db.q("SELECT * FROM story WHERE sample IS NOT NULL")}
+        for key in picturebooks.SAMPLES:
+            if key not in rows:
+                s = picturebooks.sample(key, "en")
+                raw = json.dumps(s["data"], ensure_ascii=False)
+                sid = self.db.x("""INSERT INTO story(title, emoji, color, lang, author_id, data, live, visibility, approved, rewarded, type,
+                                   sample, published_at) VALUES(?,?,?,?,NULL,?,?,'family',1,1,'picture',?,datetime('now','localtime'))""",
+                                s["title"], s["emoji"], s["color"], s["lang"], raw, raw, key)
+                rows[key] = self._book(sid)
+        return rows
+
+    @staticmethod
+    def _localized(b: dict, lang: str | None) -> tuple[dict, dict]:
+        """A sample book in the reader's language: (the row with that title and language, the book)."""
+        from . import picturebooks
+        s = picturebooks.sample(b["sample"], lang or "en")
+        return {**b, "title": s["title"], "lang": s["lang"]}, s["data"]
+
     # ---------------------------------------------------------------- the shelf
-    def shelf(self, prof: dict, oversee: bool = False) -> dict:
+    def shelf(self, prof: dict, oversee: bool = False, lang: str | None = None) -> dict:
         self._need(prof)
         pid, parent = prof["id"], self._parent(prof)
         oversee = oversee and parent
         people = self._people()
+        samples = self._samples()
+        hidden = self.settings()["samples_off"]
         reads = {r["story_id"]: r for r in self.db.q("SELECT * FROM story_read WHERE profile_id=?", pid)}
         stats = {r["story_id"]: r for r in self.db.q(
             """SELECT story_id, COUNT(*) AS readers, AVG(rating) AS avg, COUNT(rating) AS votes FROM story_read
                WHERE finished > 0 GROUP BY story_id""")}
-        books, privates = [], []
+        books, privates, sample_list = [], [], []
         for b in self.db.q("SELECT * FROM story ORDER BY COALESCE(published_at, updated_at) DESC, id DESC"):
-            mine = b["author_id"] == pid
+            mine = b["author_id"] == pid and not b["sample"]
             a = people.get(b["author_id"]) or {"id": None, "name": "?", "avatar": {}}
-            if self._private(prof, b):
+            if b["sample"]:
+                if b["sample"] not in samples:
+                    continue
+                b, live = self._localized(b, lang)
+                data = live
+                a = {"id": None, "name": "Family Quest", "avatar": {}}
+            elif self._private(prof, b):
                 if oversee:                                    # parents: only that it exists – no title, no content
-                    privates.append({"id": b["id"], "private": True, "visibility": "me", "author": {"id": a["id"], "name": a["name"], "avatar": a["avatar"]},
+                    privates.append({"id": b["id"], "private": True, "visibility": "me", "type": b["type"],
+                                     "author": {"id": a["id"], "name": a["name"], "avatar": a["avatar"]},
                                      "pages": len(json.loads(b["data"])["pages"]), "created_at": b["created_at"], "updated_at": b["updated_at"]})
                 continue
-            if not (mine or (oversee and not b["live"]) or self.visible(prof, b, oversee)):
+            elif not (mine or (oversee and not b["live"]) or self.visible(prof, b, oversee)):
                 continue
-            live = json.loads(b["live"]) if b["live"] else None
-            data = json.loads(b["data"])
+            else:
+                live = json.loads(b["live"]) if b["live"] else None
+                data = json.loads(b["data"])
             r = reads.get(b["id"])
-            ends = endings(live)
-            found = [e for e in json.loads(r["endings"]) if e in ends] if r else []
             st = stats.get(b["id"]) or {}
-            cover = (live or data).get("pages") or []
-            first = next((p for p in cover if p["id"] == (live or data).get("start")), None)
-            books.append({
-                "id": b["id"], "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
-                "author": {"id": a["id"], "name": a["name"], "avatar": a["avatar"]}, "mine": mine,
+            book = {
+                "id": b["id"], "type": b["type"], "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
+                "author": {"id": a["id"], "name": a["name"], "avatar": a["avatar"]}, "mine": mine, "sample": b["sample"],
                 "edit": self._may_edit(prof, b), "live": bool(live), "pending": bool(b["pending"]),
                 "visibility": b["visibility"], "shared": bool(live and b["approved"] and b["visibility"] != "me"),
-                "changed": bool(live) and live != data, "pages": len(data["pages"]),
-                "cover": first["pic"] if first and first.get("pic") and first["pic"]["k"] == "img" else None,
-                "cover_bg": first.get("bg") if first else None,
-                "endings": len(ends), "found": len(found), "finished": (r or {}).get("finished", 0),
-                "reading": bool(r and live and r["page"] != live["start"]
-                                and any(p["id"] == r["page"] and p["kind"] == "scene" for p in live["pages"])),
+                "changed": bool(live) and live != data and not b["sample"], "pages": len(data["pages"]),
+                "finished": (r or {}).get("finished", 0),
                 "rating": round(st["avg"], 1) if st.get("avg") else None, "votes": st.get("votes", 0),
                 "readers": st.get("readers", 0), "my_rating": (r or {}).get("rating"),
-                "updated_at": b["updated_at"], "published_at": b["published_at"]})
+                "updated_at": b["updated_at"], "published_at": b["published_at"]}
+            if b["type"] == "picture":
+                n = len((live or data)["pages"])
+                at = min(max((r or {}).get("page") or 0, 0), n) if live else 0
+                book.update({"cover": (live or data).get("cover", {}).get("pic"), "cover_bg": None, "endings": 0, "found": 0,
+                             "at": at, "reading": bool(live and 0 < at < n)})
+            else:
+                ends = endings(live)
+                found = [e for e in json.loads(r["endings"]) if e in ends] if r else []
+                cover = (live or data).get("pages") or []
+                first = next((p for p in cover if p["id"] == (live or data).get("start")), None)
+                book.update({"cover": first["pic"] if first and first.get("pic") and first["pic"]["k"] == "img" else None,
+                             "cover_bg": first.get("bg") if first else None, "endings": len(ends), "found": len(found),
+                             "reading": bool(r and live and r["page"] != live["start"]
+                                             and any(p["id"] == r["page"] and p.get("kind") == "scene" for p in live["pages"]))})
+            if b["sample"]:
+                book["hidden"] = b["sample"] in hidden
+                if not book["hidden"] or oversee:
+                    sample_list.append(book)
+                continue
+            books.append(book)
         s = self.settings()
-        return {"books": books, "private": privates, "approval": s["approval"], "rewards": {k: s[k] for k in ("write_coins", "write_xp", "read_coins", "read_xp")},
-                "pending": sum(1 for b in books if b["pending"]) if oversee else 0, "parent": parent, "oversee": oversee}
+        return {"books": books, "samples": sample_list, "private": privates, "approval": s["approval"],
+                "rewards": {k: s[k] for k in ("write_coins", "write_xp", "read_coins", "read_xp")}, "types": list(TYPES),
+                "creatable": list(CREATABLE), "pending": sum(1 for b in books if b["pending"]) if oversee else 0,
+                "parent": parent, "oversee": oversee}
 
     def pending_count(self) -> int:
         return int(self.db.val("SELECT COUNT(*) FROM story WHERE pending IS NOT NULL", default=0))
 
+    def _count(self) -> int:
+        return int(self.db.val("SELECT COUNT(*) FROM story WHERE sample IS NULL", default=0))
+
     # ---------------------------------------------------------------- writing
     def create(self, prof: dict, title: str = "", emoji: str = "📖", color: int = 0, lang: str = "en", tpl: str | None = None,
-               visibility: str = "me") -> int:
+               visibility: str = "me", kind: str = "adventure") -> int:
         self._need(prof)
-        if int(self.db.val("SELECT COUNT(*) FROM story", default=0)) >= MAX_BOOKS:
+        if kind == "game":
+            raise CommunityError("Adventure games are coming later")
+        if kind not in CREATABLE:
+            raise CommunityError("Unknown book type")
+        if self._count() >= MAX_BOOKS:
             raise CommunityError("The bookshelf is full – remove an old book first")
-        if tpl:
+        if tpl and kind == "adventure":
             t = template(tpl, lang)
             m = self._meta(title or t["title"], t["emoji"], t["color"], lang if lang in LANGS else t["lang"])
             data = clean(t["data"])
         else:
-            m = self._meta(title, emoji, color, lang)
-            data = {"start": 1, "pages": [{"id": 1, "kind": "scene", "text": "", "pic": None, "give": None,
-                                           "choices": [{"t": "", "to": None, "need": None}, {"t": "", "to": None, "need": None}]}]}
+            m = self._meta(title, emoji if kind == "adventure" or emoji != "📖" else "📕", color, lang)
+            data = empty_book(kind)
         if not m["title"]:
             raise CommunityError("Give the book a title")
-        return self.db.x("INSERT INTO story(title, emoji, color, lang, author_id, data, visibility) VALUES(?,?,?,?,?,?,?)",
+        return self.db.x("INSERT INTO story(title, emoji, color, lang, author_id, data, visibility, type) VALUES(?,?,?,?,?,?,?,?)",
                          m["title"], m["emoji"], m["color"], m["lang"], prof["id"], json.dumps(data, ensure_ascii=False),
-                         visibility if visibility in VISIBILITY else "me")
+                         visibility if visibility in VISIBILITY else "me", kind)
 
     def import_(self, prof: dict, text: str) -> list[int]:
         """Import books (file or AI answer) as private drafts of this person – the checker tells what is missing."""
         self._need(prof)
         books = import_books(text)
-        if int(self.db.val("SELECT COUNT(*) FROM story", default=0)) + len(books) > MAX_BOOKS:
+        if self._count() + len(books) > MAX_BOOKS:
             raise CommunityError("The bookshelf is full – remove an old book first")
-        return [self.db.x("INSERT INTO story(title, emoji, color, lang, author_id, data, visibility) VALUES(?,?,?,?,?,?,'me')",
-                          b["title"], b["emoji"], 0, b["lang"], prof["id"], json.dumps(b["data"], ensure_ascii=False)) for b in books]
+        return [self.db.x("INSERT INTO story(title, emoji, color, lang, author_id, data, visibility, type) VALUES(?,?,?,?,?,?,'me',?)",
+                          b["title"], b["emoji"], 0, b["lang"], prof["id"], json.dumps(b["data"], ensure_ascii=False), b["type"])
+                for b in books]
 
     def export(self, prof: dict, sid: int) -> dict:
         b = self._edit(prof, sid)
+        if b["type"] == "picture":
+            from . import picturebooks
+            return picturebooks.document([picturebooks.export_book(b["title"], b["emoji"], b["lang"], json.loads(b["data"]))])
         return story_document([export_book(b["title"], b["emoji"], b["lang"], json.loads(b["data"]))])
 
     def _editor(self, prof: dict, b: dict) -> dict:
         data = json.loads(b["data"])
         live = json.loads(b["live"]) if b["live"] else None
         a = self._people().get(b["author_id"]) or {"name": "?"}
-        return {"id": b["id"], "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
+        return {"id": b["id"], "type": b["type"], "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
                 "author": a["name"], "author_id": b["author_id"], "mine": b["author_id"] == prof["id"],
                 "data": data, "live": bool(live), "pending": json.loads(b["pending"]) if b["pending"] else None,
-                "changed": bool(live) and live != data, "issues": check(data, b["title"]),
+                "changed": bool(live) and live != data, "issues": check_as(b["type"], data, b["title"]),
                 "visibility": b["visibility"], "shared": bool(live and b["approved"] and b["visibility"] != "me"),
                 "approval": self._approval(prof), "parent": self._parent(prof),
                 "reward": None if b["rewarded"] else {k: self.settings()[k] for k in ("write_coins", "write_xp")}}
@@ -645,7 +753,7 @@ class Stories:
             if "title" in m and not m["title"]:
                 raise CommunityError("Give the book a title")
             if data is not None:
-                b["data"] = json.dumps(clean(data, self.folder), ensure_ascii=False)
+                b["data"] = json.dumps(clean_as(b["type"], data, self.folder), ensure_ascii=False)
             b.update(m)
             self.db.x("UPDATE story SET title=?, emoji=?, color=?, lang=?, data=?, updated_at=datetime('now','localtime') WHERE id=?",
                       b["title"], b["emoji"], b["color"], b["lang"], b["data"], sid)
@@ -673,7 +781,7 @@ class Stories:
         with self.db.tx():
             b = self._edit(prof, sid)
             data = json.loads(b["data"])
-            if check(data, b["title"]):
+            if check_as(b["type"], data, b["title"]):
                 raise CommunityError("The book is not finished yet – the checker shows what is missing")
             need = self._approval(prof)
             if b["visibility"] != "me" and need:
@@ -688,7 +796,7 @@ class Stories:
         self._shared(b["id"])
 
     def _pay(self, pid: int, coins: int, xp: int, event: str, reason: str, ref: str) -> None:
-        if not self.db.q1("SELECT 1 FROM profile WHERE id=?", pid):
+        if not pid or not self.db.q1("SELECT 1 FROM profile WHERE id=?", pid):
             return
         if coins:
             self.rewards.book(pid, "coins", float(coins), event, reason, ref)
@@ -702,7 +810,7 @@ class Stories:
             b = self._book(sid)
             if not b["pending"] or b["visibility"] == "me":
                 raise CommunityError("This book does not wait for approval")
-            if check(json.loads(b["pending"]), b["title"]):
+            if check_as(b["type"], json.loads(b["pending"]), b["title"]):
                 raise CommunityError("The book is not finished yet – the checker shows what is missing")
             self._go_live(b, b["pending"])
 
@@ -718,11 +826,25 @@ class Stories:
         self.db.x("UPDATE story SET live=NULL, pending=NULL, approved=0 WHERE id=?", sid)
 
     def delete(self, prof: dict, sid: int) -> None:
+        b = self._book(sid) if self.db.q1("SELECT 1 FROM story WHERE id=? AND sample IS NOT NULL", sid) else None
+        if b:                                                  # a sample book: parents take it off the shelf (and back)
+            self.sample_hidden(prof, b["sample"], True)
+            return
         self._edit(prof, sid)
         with self.db.tx():
             self.db.x("DELETE FROM story_read WHERE story_id=?", sid)
             self.db.x("DELETE FROM story WHERE id=?", sid)
         self._gc()
+
+    def sample_hidden(self, prof: dict, key: str, hidden: bool) -> None:
+        from .picturebooks import SAMPLES
+        if not self._parent(prof):
+            raise CommunityError("Only a parent can take the sample book off the shelf")
+        if key not in SAMPLES:
+            raise CommunityError("Unknown book")
+        off = set(self.settings()["samples_off"])
+        off = off | {key} if hidden else off - {key}
+        self.save_settings({"samples_off": sorted(off)})
 
     # ---------------------------------------------------------------- pictures
     def save_image(self, prof: dict, raw: bytes, kind: str | None) -> dict:
@@ -743,6 +865,17 @@ class Stories:
             f.touch()
         return {"name": name, "url": f"media/{FOLDER}/{name}"}
 
+    def check_svg(self, prof: dict, svg: str) -> str:
+        """An own SVG drawing for a picture book, cleaned (the editor shows what is left) – or why it cannot be used."""
+        from .svgsafe import SvgError, clean_svg
+        self._need(prof)
+        try:
+            return clean_svg(svg)
+        except SvgError as e:
+            if str(e) == "too large":
+                raise CommunityError("The SVG picture is too large (max. 12 KB)") from None
+            raise CommunityError("This is not a usable SVG picture (<svg viewBox=…> with simple shapes)") from None
+
     def _gc(self) -> None:
         """Remove pictures no book uses any more (not fresh uploads: the book that uses them is not saved yet)."""
         if not self.folder.is_dir():
@@ -761,11 +894,13 @@ class Stories:
                 pass
 
     # ---------------------------------------------------------------- reading (the published copy only)
-    def _live(self, prof: dict, sid: int, oversee: bool = False) -> tuple[dict, dict]:
+    def _live(self, prof: dict, sid: int, oversee: bool = False, lang: str | None = None) -> tuple[dict, dict]:
         self._need(prof)
         b = self._book(sid)
         if not b["live"] or not self.visible(prof, b, oversee):
             raise CommunityError("This book is not published")
+        if b["sample"]:
+            return self._localized(b, lang)
         return b, json.loads(b["live"])
 
     def _row(self, b: dict, live: dict, pid: int) -> dict:
@@ -773,6 +908,9 @@ class Stories:
         if not r:
             self.db.x("INSERT INTO story_read(story_id, profile_id) VALUES(?,?)", b["id"], pid)
             r = self.db.q1("SELECT * FROM story_read WHERE story_id=? AND profile_id=?", b["id"], pid)
+        if b["type"] == "picture":
+            r["page"] = min(max(r["page"] or 0, 0), len(live["pages"]))
+            return r
         ids = {p["id"] for p in live["pages"]}
         if r["page"] not in ids:                              # new reader – or the page is gone in a new version
             self._move(r, live, live["start"], [])
@@ -786,7 +924,22 @@ class Stories:
         self.db.x("UPDATE story_read SET page=?, items=?, updated_at=datetime('now','localtime') WHERE story_id=? AND profile_id=?",
                   page, r["items"], r["story_id"], r["profile_id"])
 
+    def _author_name(self, b: dict) -> str:
+        if b["sample"]:
+            return "Family Quest"
+        return (self._people().get(b["author_id"]) or {"name": "?"})["name"]
+
+    def _picture_view(self, b: dict, live: dict, r: dict, prof: dict, new_finish: bool = False) -> dict:
+        """A picture book: every page at once (the reader turns them in the app) and where this reader is."""
+        from .picturebooks import view_page
+        return {"id": b["id"], "type": "picture", "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
+                "author": self._author_name(b), "sample": b["sample"], "cover": (live.get("cover") or {}).get("pic"),
+                "pages": [view_page(p) for p in live["pages"]], "at": r["page"], "finished": r["finished"],
+                "new_finish": new_finish, "rating": r["rating"], "may_rate": r["finished"] > 0 and b["author_id"] != prof["id"]}
+
     def _view(self, b: dict, live: dict, r: dict, prof: dict, new_ending: bool = False) -> dict:
+        if b["type"] == "picture":
+            return self._picture_view(b, live, r, prof, new_ending)
         p = next(x for x in live["pages"] if x["id"] == r["page"])
         items = json.loads(r["items"])
         ends = endings(live)
@@ -795,27 +948,65 @@ class Stories:
                 "start": p["id"] == live["start"],
                 "choices": [{"i": i, "t": c["t"], "need": c["need"]} for i, c in enumerate(p.get("choices", []))
                             if not c["need"] or c["need"] in items]}
-        return {"id": b["id"], "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
+        return {"id": b["id"], "type": b["type"], "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
                 "page": page, "items": items, "endings": len(ends), "found": len(found), "new_ending": new_ending,
                 "finished": r["finished"], "rating": r["rating"], "may_rate": r["finished"] > 0 and b["author_id"] != prof["id"],
                 "number": [x["id"] for x in live["pages"]].index(p["id"]) + 1}
 
-    def read(self, prof: dict, sid: int, oversee: bool = False) -> dict:
+    def read(self, prof: dict, sid: int, oversee: bool = False, lang: str | None = None) -> dict:
         with self.db.tx():
-            b, live = self._live(prof, sid, oversee)
+            b, live = self._live(prof, sid, oversee, lang)
             r = self._row(b, live, prof["id"])
         return self._view(b, live, r, prof)
 
-    def restart(self, prof: dict, sid: int, oversee: bool = False) -> dict:
+    def restart(self, prof: dict, sid: int, oversee: bool = False, lang: str | None = None) -> dict:
         with self.db.tx():
-            b, live = self._live(prof, sid, oversee)
+            b, live = self._live(prof, sid, oversee, lang)
             r = self._row(b, live, prof["id"])
-            self._move(r, live, live["start"], [])
+            if b["type"] == "picture":
+                self._turn(r, 0)
+            else:
+                self._move(r, live, live["start"], [])
         return self._view(b, live, r, prof)
+
+    def _turn(self, r: dict, page: int) -> None:
+        r["page"] = page
+        self.db.x("UPDATE story_read SET page=?, updated_at=datetime('now','localtime') WHERE story_id=? AND profile_id=?",
+                  page, r["story_id"], r["profile_id"])
+
+    def _finished(self, b: dict, r: dict, prof: dict) -> None:
+        """A reader reached an end: counted; the author's reading reward once per reader who is somebody else."""
+        r["finished"] += 1
+        self.db.x("UPDATE story_read SET endings=?, finished=? WHERE story_id=? AND profile_id=?",
+                  r["endings"], r["finished"], b["id"], prof["id"])
+        if b["author_id"] and b["author_id"] != prof["id"] and not r["rewarded"] and b["approved"] and b["visibility"] != "me":
+            self.db.x("UPDATE story_read SET rewarded=1 WHERE story_id=? AND profile_id=?", b["id"], prof["id"])
+            s = self.settings()
+            self._pay(b["author_id"], s["read_coins"], s["read_xp"], "story_read",
+                      f"{TYPE_ICON.get(b['type'], '📖')} {b['title']} – {prof['name']}", f"story:{b['id']}:read:{prof['id']}")
+
+    def turn(self, prof: dict, sid: int, page: int, oversee: bool = False, lang: str | None = None) -> dict:
+        """A picture book: this reader is on page `page` now (0 = the cover). Arriving at the last page reads it to the end."""
+        with self.db.tx():
+            b, live = self._live(prof, sid, oversee, lang)
+            if b["type"] != "picture":
+                raise CommunityError("This choice is not possible")
+            n = len(live["pages"])
+            if not isinstance(page, int) or not 0 <= page <= n:
+                raise CommunityError("This page does not exist")
+            r = self._row(b, live, prof["id"])
+            done = page == n and r["page"] != n
+            self._turn(r, page)
+            if done:
+                self._finished(b, r, prof)
+        return {"at": r["page"], "finished": r["finished"], "new_finish": done and r["finished"] == 1, "rating": r["rating"],
+                "may_rate": r["finished"] > 0 and b["author_id"] != prof["id"]}
 
     def choose(self, prof: dict, sid: int, i: int, oversee: bool = False) -> dict:
         with self.db.tx():
             b, live = self._live(prof, sid, oversee)
+            if b["type"] != "adventure":
+                raise CommunityError("This choice is not possible")
             r = self._row(b, live, prof["id"])
             p = next(x for x in live["pages"] if x["id"] == r["page"])
             items = json.loads(r["items"])
@@ -834,14 +1025,7 @@ class Stories:
                 if new:
                     found.append(nxt["id"])
                 r["endings"] = json.dumps(found)
-                r["finished"] += 1
-                self.db.x("UPDATE story_read SET endings=?, finished=? WHERE story_id=? AND profile_id=?",
-                          r["endings"], r["finished"], b["id"], prof["id"])
-                if b["author_id"] != prof["id"] and not r["rewarded"] and b["approved"] and b["visibility"] != "me":
-                    self.db.x("UPDATE story_read SET rewarded=1 WHERE story_id=? AND profile_id=?", b["id"], prof["id"])
-                    s = self.settings()
-                    self._pay(b["author_id"], s["read_coins"], s["read_xp"], "story_read", f"📖 {b['title']} – {prof['name']}",
-                              f"story:{b['id']}:read:{prof['id']}")
+                self._finished(b, r, prof)
         return self._view(b, live, r, prof, new_ending=new)
 
     def rate(self, prof: dict, sid: int, stars: int, oversee: bool = False) -> None:

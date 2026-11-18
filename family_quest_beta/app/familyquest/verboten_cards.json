@@ -1,3727 +1,3727 @@
 {
- "_about": "Verbotene Wörter (verboten.py): the built-in German word cards – a word to explain and 5 words that must not be said. Levels: easy (younger children), normal.",
+ "_about": "Verbotene Wörter (verboten.py): the built-in word cards – a word to explain and 5 words that must not be said. English source texts: the word and its forbidden words joined with ' · ' are keys of web/i18n/<lang>.json (tools/i18n_extract.py reads this file), so every language has its own obvious associations. Levels: easy (younger children), normal. The order must stay: running tables keep cards by their index.",
  "levels": {
   "easy": [
    {
-    "word": "Hund",
+    "word": "Dog",
     "taboo": [
-     "bellen",
-     "Katze",
-     "Haustier",
-     "Leine",
-     "Knochen"
+     "bark",
+     "cat",
+     "pet",
+     "leash",
+     "bone"
     ]
    },
    {
-    "word": "Katze",
+    "word": "Cat",
     "taboo": [
-     "miauen",
-     "Maus",
-     "Haustier",
-     "Hund",
-     "Schnurrhaare"
+     "meow",
+     "mouse",
+     "pet",
+     "dog",
+     "whiskers"
     ]
    },
    {
-    "word": "Elefant",
+    "word": "Elephant",
     "taboo": [
-     "Rüssel",
-     "groß",
-     "grau",
-     "Afrika",
-     "Zoo"
+     "trunk",
+     "big",
+     "grey",
+     "Africa",
+     "zoo"
     ]
    },
    {
     "word": "Giraffe",
     "taboo": [
-     "Hals",
-     "lang",
-     "Flecken",
-     "Afrika",
-     "Zoo"
+     "neck",
+     "long",
+     "spots",
+     "Africa",
+     "zoo"
     ]
    },
    {
-    "word": "Löwe",
+    "word": "Lion",
     "taboo": [
-     "König",
-     "Mähne",
-     "Raubkatze",
-     "brüllen",
-     "Afrika"
+     "king",
+     "mane",
+     "big cat",
+     "roar",
+     "Africa"
     ]
    },
    {
-    "word": "Pinguin",
+    "word": "Penguin",
     "taboo": [
-     "Eis",
-     "Vogel",
-     "schwarz",
-     "weiß",
-     "watscheln"
+     "ice",
+     "bird",
+     "black",
+     "white",
+     "waddle"
     ]
    },
    {
-    "word": "Frosch",
+    "word": "Frog",
     "taboo": [
-     "quaken",
-     "grün",
-     "Teich",
-     "springen",
-     "Prinz"
+     "croak",
+     "green",
+     "pond",
+     "jump",
+     "prince"
     ]
    },
    {
-    "word": "Biene",
+    "word": "Bee",
     "taboo": [
-     "Honig",
-     "summen",
-     "stechen",
-     "gelb",
-     "Blume"
+     "honey",
+     "buzz",
+     "sting",
+     "yellow",
+     "flower"
     ]
    },
    {
-    "word": "Schmetterling",
+    "word": "Butterfly",
     "taboo": [
-     "Flügel",
-     "bunt",
-     "Raupe",
-     "fliegen",
-     "Blume"
+     "wings",
+     "colourful",
+     "caterpillar",
+     "fly",
+     "flower"
     ]
    },
    {
-    "word": "Schnecke",
+    "word": "Snail",
     "taboo": [
-     "langsam",
-     "Haus",
-     "schleimig",
-     "Salat",
-     "kriechen"
+     "slow",
+     "shell",
+     "slimy",
+     "lettuce",
+     "crawl"
     ]
    },
    {
-    "word": "Fisch",
+    "word": "Fish",
     "taboo": [
-     "Wasser",
-     "schwimmen",
-     "Flosse",
-     "Aquarium",
-     "Meer"
+     "water",
+     "swim",
+     "fin",
+     "aquarium",
+     "sea"
     ]
    },
    {
-    "word": "Pferd",
+    "word": "Horse",
     "taboo": [
-     "reiten",
-     "Sattel",
-     "wiehern",
-     "Stall",
-     "Hufe"
+     "ride",
+     "saddle",
+     "neigh",
+     "stable",
+     "hooves"
     ]
    },
    {
-    "word": "Kuh",
+    "word": "Cow",
     "taboo": [
-     "Milch",
-     "muh",
-     "Bauernhof",
-     "Weide",
-     "Kalb"
+     "milk",
+     "moo",
+     "farm",
+     "pasture",
+     "calf"
     ]
    },
    {
-    "word": "Schwein",
+    "word": "Pig",
     "taboo": [
-     "rosa",
-     "grunzen",
-     "Ringelschwanz",
-     "Bauernhof",
-     "Schlamm"
+     "pink",
+     "oink",
+     "curly tail",
+     "farm",
+     "mud"
     ]
    },
    {
-    "word": "Hase",
+    "word": "Rabbit",
     "taboo": [
-     "Ohren",
-     "Ostern",
-     "Karotte",
-     "hoppeln",
-     "Kaninchen"
+     "ears",
+     "Easter",
+     "carrot",
+     "hop",
+     "hare"
     ]
    },
    {
-    "word": "Maus",
+    "word": "Mouse",
     "taboo": [
-     "Käse",
-     "klein",
-     "Katze",
-     "piepsen",
-     "Computer"
+     "cheese",
+     "small",
+     "cat",
+     "squeak",
+     "computer"
     ]
    },
    {
-    "word": "Eule",
+    "word": "Owl",
     "taboo": [
-     "Nacht",
-     "Vogel",
-     "Uhu",
-     "Augen",
-     "Federn"
+     "night",
+     "bird",
+     "eagle owl",
+     "eyes",
+     "feathers"
     ]
    },
    {
-    "word": "Affe",
+    "word": "Monkey",
     "taboo": [
-     "Banane",
-     "klettern",
-     "Baum",
-     "Zoo",
-     "Dschungel"
+     "banana",
+     "climb",
+     "tree",
+     "zoo",
+     "jungle"
     ]
    },
    {
-    "word": "Krokodil",
+    "word": "Crocodile",
     "taboo": [
-     "Zähne",
-     "Fluss",
-     "grün",
-     "Reptil",
-     "gefährlich"
+     "teeth",
+     "river",
+     "green",
+     "reptile",
+     "dangerous"
     ]
    },
    {
-    "word": "Schlange",
+    "word": "Snake",
     "taboo": [
-     "zischen",
-     "lang",
-     "giftig",
-     "kriechen",
-     "Reptil"
+     "hiss",
+     "long",
+     "poisonous",
+     "slither",
+     "reptile"
     ]
    },
    {
-    "word": "Hai",
+    "word": "Shark",
     "taboo": [
-     "Meer",
-     "Zähne",
-     "Flosse",
-     "gefährlich",
-     "Fisch"
+     "sea",
+     "teeth",
+     "fin",
+     "dangerous",
+     "fish"
     ]
    },
    {
-    "word": "Igel",
+    "word": "Hedgehog",
     "taboo": [
-     "Stacheln",
-     "Herbst",
-     "Laub",
-     "rollen",
-     "klein"
+     "spines",
+     "autumn",
+     "leaves",
+     "roll up",
+     "small"
     ]
    },
    {
-    "word": "Bär",
+    "word": "Bear",
     "taboo": [
-     "Honig",
-     "Teddy",
-     "braun",
-     "Wald",
-     "Höhle"
+     "honey",
+     "teddy",
+     "brown",
+     "forest",
+     "cave"
     ]
    },
    {
-    "word": "Hahn",
+    "word": "Rooster",
     "taboo": [
-     "Kikeriki",
-     "Huhn",
-     "Morgen",
-     "Bauernhof",
-     "Kamm"
+     "cock-a-doodle-doo",
+     "hen",
+     "morning",
+     "farm",
+     "comb"
     ]
    },
    {
-    "word": "Ente",
+    "word": "Duck",
     "taboo": [
-     "quaken",
-     "Teich",
-     "Schnabel",
-     "Vogel",
-     "schwimmen"
+     "quack",
+     "pond",
+     "beak",
+     "bird",
+     "swim"
     ]
    },
    {
-    "word": "Marienkäfer",
+    "word": "Ladybird",
     "taboo": [
-     "Punkte",
-     "rot",
-     "Glück",
-     "Käfer",
-     "krabbeln"
+     "dots",
+     "red",
+     "luck",
+     "beetle",
+     "crawl"
     ]
    },
    {
-    "word": "Spinne",
+    "word": "Spider",
     "taboo": [
-     "Netz",
-     "acht",
-     "Beine",
-     "krabbeln",
-     "Angst"
+     "web",
+     "eight",
+     "legs",
+     "crawl",
+     "fear"
     ]
    },
    {
     "word": "Hamster",
     "taboo": [
-     "Käfig",
-     "Laufrad",
-     "Nager",
-     "klein",
-     "Haustier"
+     "cage",
+     "wheel",
+     "rodent",
+     "small",
+     "pet"
     ]
    },
    {
-    "word": "Papagei",
+    "word": "Parrot",
     "taboo": [
-     "Vogel",
-     "bunt",
-     "sprechen",
-     "nachplappern",
-     "Federn"
+     "bird",
+     "colourful",
+     "talk",
+     "repeat",
+     "feathers"
     ]
    },
    {
-    "word": "Kamel",
+    "word": "Camel",
     "taboo": [
-     "Wüste",
-     "Höcker",
-     "Durst",
-     "Dromedar",
-     "reiten"
+     "desert",
+     "hump",
+     "thirst",
+     "dromedary",
+     "ride"
     ]
    },
    {
     "word": "Zebra",
     "taboo": [
-     "Streifen",
-     "schwarz",
-     "weiß",
-     "Pferd",
-     "Afrika"
+     "stripes",
+     "black",
+     "white",
+     "horse",
+     "Africa"
     ]
    },
    {
-    "word": "Ameise",
+    "word": "Ant",
     "taboo": [
-     "klein",
-     "Haufen",
-     "krabbeln",
-     "Insekt",
-     "fleißig"
+     "small",
+     "anthill",
+     "crawl",
+     "insect",
+     "hard-working"
     ]
    },
    {
-    "word": "Apfel",
+    "word": "Apple",
     "taboo": [
-     "Baum",
-     "rot",
-     "Obst",
-     "Birne",
-     "Kerngehäuse"
+     "tree",
+     "red",
+     "fruit",
+     "pear",
+     "core"
     ]
    },
    {
-    "word": "Banane",
+    "word": "Banana",
     "taboo": [
-     "gelb",
-     "krumm",
-     "Affe",
-     "Obst",
-     "schälen"
+     "yellow",
+     "curved",
+     "monkey",
+     "fruit",
+     "peel"
     ]
    },
    {
-    "word": "Erdbeere",
+    "word": "Strawberry",
     "taboo": [
-     "rot",
-     "Sommer",
-     "Obst",
-     "Beere",
-     "Marmelade"
+     "red",
+     "summer",
+     "fruit",
+     "berry",
+     "jam"
     ]
    },
    {
     "word": "Pizza",
     "taboo": [
-     "Italien",
-     "Teig",
-     "Käse",
-     "Tomate",
-     "Ofen"
+     "Italy",
+     "dough",
+     "cheese",
+     "tomato",
+     "oven"
     ]
    },
    {
     "word": "Spaghetti",
     "taboo": [
-     "Nudeln",
-     "Tomatensauce",
-     "Italien",
-     "lang",
-     "Gabel"
+     "noodles",
+     "tomato sauce",
+     "Italy",
+     "long",
+     "fork"
     ]
    },
    {
-    "word": "Glace",
+    "word": "Ice cream",
     "taboo": [
-     "Eis",
-     "kalt",
-     "Waffel",
-     "Kugel",
-     "schlecken"
+     "summer",
+     "cold",
+     "cone",
+     "scoop",
+     "lick"
     ]
    },
    {
-    "word": "Schokolade",
+    "word": "Chocolate",
     "taboo": [
-     "braun",
-     "süß",
-     "Kakao",
-     "Tafel",
-     "naschen"
+     "brown",
+     "sweet",
+     "cocoa",
+     "bar",
+     "treat"
     ]
    },
    {
-    "word": "Kuchen",
+    "word": "Cake",
     "taboo": [
-     "Geburtstag",
-     "backen",
-     "Torte",
-     "süß",
-     "Stück"
+     "birthday",
+     "bake",
+     "icing",
+     "sweet",
+     "slice"
     ]
    },
    {
-    "word": "Brot",
+    "word": "Bread",
     "taboo": [
-     "Bäcker",
-     "backen",
-     "Scheibe",
-     "Butter",
-     "Mehl"
+     "baker",
+     "bake",
+     "slice",
+     "butter",
+     "flour"
     ]
    },
    {
-    "word": "Käse",
+    "word": "Cheese",
     "taboo": [
-     "Löcher",
-     "Milch",
-     "gelb",
-     "Maus",
-     "Fondue"
+     "holes",
+     "milk",
+     "yellow",
+     "mouse",
+     "fondue"
     ]
    },
    {
-    "word": "Ei",
+    "word": "Egg",
     "taboo": [
-     "Huhn",
-     "Ostern",
-     "Schale",
-     "Dotter",
-     "kochen"
+     "hen",
+     "Easter",
+     "shell",
+     "yolk",
+     "boil"
     ]
    },
    {
-    "word": "Karotte",
+    "word": "Carrot",
     "taboo": [
      "orange",
-     "Gemüse",
-     "Hase",
-     "Rübli",
-     "gesund"
+     "vegetable",
+     "rabbit",
+     "root",
+     "healthy"
     ]
    },
    {
-    "word": "Milch",
+    "word": "Milk",
     "taboo": [
-     "Kuh",
-     "weiß",
-     "trinken",
-     "Glas",
-     "Kakao"
+     "cow",
+     "white",
+     "drink",
+     "glass",
+     "cocoa"
     ]
    },
    {
     "word": "Popcorn",
     "taboo": [
-     "Kino",
-     "Mais",
-     "knallen",
-     "salzig",
-     "süß"
+     "cinema",
+     "corn",
+     "pop",
+     "salty",
+     "sweet"
     ]
    },
    {
-    "word": "Honig",
+    "word": "Honey",
     "taboo": [
-     "Biene",
-     "süß",
-     "gelb",
-     "klebrig",
-     "Brot"
+     "bee",
+     "sweet",
+     "yellow",
+     "sticky",
+     "bread"
     ]
    },
    {
-    "word": "Tomate",
+    "word": "Tomato",
     "taboo": [
-     "rot",
-     "Gemüse",
-     "Salat",
-     "Ketchup",
-     "Sauce"
+     "red",
+     "vegetable",
+     "salad",
+     "ketchup",
+     "sauce"
     ]
    },
    {
-    "word": "Zitrone",
+    "word": "Lemon",
     "taboo": [
-     "sauer",
-     "gelb",
-     "Frucht",
-     "Saft",
-     "Limonade"
+     "sour",
+     "yellow",
+     "fruit",
+     "juice",
+     "lemonade"
     ]
    },
    {
-    "word": "Wassermelone",
+    "word": "Watermelon",
     "taboo": [
-     "grün",
-     "rot",
-     "Kerne",
-     "Sommer",
-     "groß"
+     "green",
+     "red",
+     "seeds",
+     "summer",
+     "big"
     ]
    },
    {
     "word": "Ball",
     "taboo": [
-     "rund",
-     "spielen",
-     "Fußball",
-     "werfen",
-     "kicken"
+     "round",
+     "play",
+     "football",
+     "throw",
+     "kick"
     ]
    },
    {
-    "word": "Puppe",
+    "word": "Doll",
     "taboo": [
-     "spielen",
-     "Spielzeug",
-     "Haare",
-     "Kleider",
-     "Baby"
+     "play",
+     "toy",
+     "hair",
+     "dresses",
+     "baby"
     ]
    },
    {
-    "word": "Teddybär",
+    "word": "Teddy bear",
     "taboo": [
-     "kuscheln",
-     "Stofftier",
-     "Bär",
-     "Bett",
-     "weich"
+     "cuddle",
+     "soft toy",
+     "bear",
+     "bed",
+     "soft"
     ]
    },
    {
-    "word": "Bett",
+    "word": "Bed",
     "taboo": [
-     "schlafen",
-     "Kissen",
-     "Decke",
-     "Nacht",
-     "liegen"
+     "sleep",
+     "pillow",
+     "blanket",
+     "night",
+     "lie"
     ]
    },
    {
-    "word": "Stuhl",
+    "word": "Chair",
     "taboo": [
-     "sitzen",
-     "Tisch",
-     "Beine",
-     "Lehne",
-     "Möbel"
+     "sit",
+     "table",
+     "legs",
+     "backrest",
+     "furniture"
     ]
    },
    {
-    "word": "Tisch",
+    "word": "Table (furniture)",
     "taboo": [
-     "essen",
-     "Stuhl",
-     "Beine",
-     "Platte",
-     "Möbel"
+     "eat",
+     "chair",
+     "legs",
+     "top",
+     "furniture"
     ]
    },
    {
-    "word": "Lampe",
+    "word": "Lamp",
     "taboo": [
-     "Licht",
-     "hell",
-     "Glühbirne",
-     "Strom",
-     "Schalter"
+     "light",
+     "bright",
+     "light bulb",
+     "electricity",
+     "switch"
     ]
    },
    {
-    "word": "Fernseher",
+    "word": "Television",
     "taboo": [
-     "schauen",
-     "Film",
-     "Bildschirm",
-     "Programm",
-     "Fernbedienung"
+     "watch",
+     "film",
+     "screen",
+     "programme",
+     "remote control"
     ]
    },
    {
-    "word": "Telefon",
+    "word": "Telephone",
     "taboo": [
-     "anrufen",
-     "Handy",
-     "sprechen",
-     "klingeln",
-     "Nummer"
+     "call",
+     "mobile phone",
+     "talk",
+     "ring",
+     "number"
     ]
    },
    {
-    "word": "Uhr",
+    "word": "Clock",
     "taboo": [
-     "Zeit",
-     "Zeiger",
-     "ticken",
-     "Stunde",
-     "Armband"
+     "time",
+     "hands",
+     "tick",
+     "hour",
+     "wristband"
     ]
    },
    {
-    "word": "Schlüssel",
+    "word": "Key",
     "taboo": [
-     "Schloss",
-     "Tür",
-     "aufschließen",
-     "Bund",
-     "verlieren"
+     "lock",
+     "door",
+     "unlock",
+     "bunch",
+     "lose"
     ]
    },
    {
-    "word": "Tür",
+    "word": "Door",
     "taboo": [
-     "öffnen",
-     "schließen",
-     "Haus",
-     "Klinke",
-     "Schlüssel"
+     "open",
+     "close",
+     "house",
+     "handle",
+     "key"
     ]
    },
    {
-    "word": "Fenster",
+    "word": "Window",
     "taboo": [
-     "Glas",
-     "Aussicht",
-     "öffnen",
-     "Haus",
-     "Vorhang"
+     "glass",
+     "view",
+     "open",
+     "house",
+     "curtain"
     ]
    },
    {
-    "word": "Zahnbürste",
+    "word": "Toothbrush",
     "taboo": [
-     "Zähne",
-     "putzen",
-     "Zahnpasta",
-     "Bad",
-     "morgens"
+     "teeth",
+     "brush",
+     "toothpaste",
+     "bathroom",
+     "morning"
     ]
    },
    {
-    "word": "Seife",
+    "word": "Soap",
     "taboo": [
-     "waschen",
-     "Hände",
-     "Schaum",
-     "sauber",
-     "Bad"
+     "wash",
+     "hands",
+     "foam",
+     "clean",
+     "bathroom"
     ]
    },
    {
-    "word": "Handtuch",
+    "word": "Towel",
     "taboo": [
-     "abtrocknen",
-     "Bad",
-     "nass",
-     "Dusche",
-     "Stoff"
+     "dry",
+     "bathroom",
+     "wet",
+     "shower",
+     "fabric"
     ]
    },
    {
-    "word": "Regenschirm",
+    "word": "Umbrella",
     "taboo": [
-     "Regen",
-     "nass",
-     "aufspannen",
-     "Wetter",
-     "tragen"
+     "rain",
+     "wet",
+     "open up",
+     "weather",
+     "carry"
     ]
    },
    {
-    "word": "Schuh",
+    "word": "Shoe",
     "taboo": [
-     "Fuß",
-     "laufen",
-     "Schnürsenkel",
-     "Paar",
-     "Socke"
+     "foot",
+     "walk",
+     "shoelace",
+     "pair",
+     "sock"
     ]
    },
    {
-    "word": "Mütze",
+    "word": "Woolly hat",
     "taboo": [
-     "Kopf",
-     "Winter",
+     "head",
+     "winter",
      "warm",
-     "Wolle",
-     "Hut"
+     "wool",
+     "hat"
     ]
    },
    {
-    "word": "Brille",
+    "word": "Glasses",
     "taboo": [
-     "Augen",
-     "sehen",
-     "Gläser",
-     "Nase",
-     "Optiker"
+     "eyes",
+     "see",
+     "lenses",
+     "nose",
+     "optician"
     ]
    },
    {
-    "word": "Rucksack",
+    "word": "Backpack",
     "taboo": [
-     "Schule",
-     "tragen",
-     "Rücken",
-     "Tasche",
-     "packen"
+     "school",
+     "carry",
+     "back",
+     "bag",
+     "pack"
     ]
    },
    {
-    "word": "Schere",
+    "word": "Scissors",
     "taboo": [
-     "schneiden",
-     "Papier",
-     "basteln",
-     "scharf",
-     "Klinge"
+     "cut",
+     "paper",
+     "craft",
+     "sharp",
+     "blade"
     ]
    },
    {
-    "word": "Bleistift",
+    "word": "Pencil",
     "taboo": [
-     "schreiben",
-     "malen",
-     "Spitzer",
-     "Radiergummi",
-     "Holz"
+     "write",
+     "draw",
+     "sharpener",
+     "eraser",
+     "wood"
     ]
    },
    {
-    "word": "Buch",
+    "word": "Book (to read)",
     "taboo": [
-     "lesen",
-     "Seiten",
-     "Geschichte",
-     "Bibliothek",
-     "Autor"
+     "read",
+     "pages",
+     "story",
+     "library",
+     "author"
     ]
    },
    {
-    "word": "Auto",
+    "word": "Car",
     "taboo": [
-     "fahren",
-     "Räder",
-     "Straße",
-     "Motor",
-     "Lenkrad"
+     "drive",
+     "wheels",
+     "road",
+     "engine",
+     "steering wheel"
     ]
    },
    {
-    "word": "Fahrrad",
+    "word": "Bicycle",
     "taboo": [
-     "Velo",
-     "fahren",
-     "Pedale",
-     "Helm",
-     "Lenker"
+     "bike",
+     "ride",
+     "pedals",
+     "helmet",
+     "handlebars"
     ]
    },
    {
-    "word": "Zug",
+    "word": "Train",
     "taboo": [
-     "Bahnhof",
-     "Gleise",
-     "Lokomotive",
-     "Wagen",
-     "fahren"
+     "station",
+     "tracks",
+     "locomotive",
+     "carriage",
+     "ride"
     ]
    },
    {
-    "word": "Flugzeug",
+    "word": "Airplane",
     "taboo": [
-     "fliegen",
-     "Pilot",
-     "Flughafen",
-     "Flügel",
-     "Himmel"
+     "fly",
+     "pilot",
+     "airport",
+     "wings",
+     "sky"
     ]
    },
    {
-    "word": "Schiff",
+    "word": "Ship",
     "taboo": [
-     "Meer",
-     "Wasser",
-     "Kapitän",
-     "Hafen",
-     "Boot"
+     "sea",
+     "water",
+     "captain",
+     "harbour",
+     "boat"
     ]
    },
    {
     "word": "Bus",
     "taboo": [
-     "fahren",
-     "Haltestelle",
-     "Schule",
-     "Fahrer",
-     "Linie"
+     "drive",
+     "bus stop",
+     "school",
+     "driver",
+     "line"
     ]
    },
    {
-    "word": "Feuerwehr",
+    "word": "Fire brigade",
     "taboo": [
-     "Feuer",
-     "löschen",
-     "Wasser",
-     "rot",
-     "Leiter"
+     "fire",
+     "put out",
+     "water",
+     "red",
+     "ladder"
     ]
    },
    {
-    "word": "Polizei",
+    "word": "Police",
     "taboo": [
-     "Verbrecher",
-     "Blaulicht",
-     "Uniform",
-     "Dieb",
-     "Sirene"
+     "criminal",
+     "blue light",
+     "uniform",
+     "thief",
+     "siren"
     ]
    },
    {
-    "word": "Rakete",
+    "word": "Rocket",
     "taboo": [
-     "Weltall",
-     "fliegen",
-     "Mond",
-     "Astronaut",
-     "Start"
+     "space",
+     "fly",
+     "moon",
+     "astronaut",
+     "launch"
     ]
    },
    {
-    "word": "Sonne",
+    "word": "Sun (in the sky)",
     "taboo": [
-     "hell",
-     "gelb",
+     "bright",
+     "yellow",
      "warm",
-     "Himmel",
-     "scheinen"
+     "sky",
+     "shine"
     ]
    },
    {
-    "word": "Mond",
+    "word": "Moon",
     "taboo": [
-     "Nacht",
-     "Himmel",
-     "Sterne",
-     "rund",
-     "Vollmond"
+     "night",
+     "sky",
+     "stars",
+     "round",
+     "crescent"
     ]
    },
    {
-    "word": "Stern",
+    "word": "Star",
     "taboo": [
-     "Himmel",
-     "Nacht",
-     "leuchten",
-     "Zacken",
-     "funkeln"
+     "sky",
+     "night",
+     "glow",
+     "points",
+     "twinkle"
     ]
    },
    {
-    "word": "Regenbogen",
+    "word": "Rainbow",
     "taboo": [
-     "Farben",
-     "Regen",
-     "Sonne",
-     "bunt",
-     "Himmel"
+     "colours",
+     "shower",
+     "sun",
+     "colourful",
+     "sky"
     ]
    },
    {
-    "word": "Schnee",
+    "word": "Snow",
     "taboo": [
-     "Winter",
-     "weiß",
-     "kalt",
-     "Flocken",
-     "Schneemann"
+     "winter",
+     "white",
+     "cold",
+     "flakes",
+     "sledge"
     ]
    },
    {
-    "word": "Regen",
+    "word": "Rain",
     "taboo": [
-     "nass",
-     "Wolken",
-     "Tropfen",
-     "Schirm",
-     "Wetter"
+     "wet",
+     "clouds",
+     "drops",
+     "umbrella",
+     "weather"
     ]
    },
    {
-    "word": "Gewitter",
+    "word": "Thunderstorm",
     "taboo": [
-     "Blitz",
-     "Donner",
-     "Regen",
-     "laut",
-     "Wolken"
+     "lightning",
+     "thunder",
+     "rain",
+     "loud",
+     "clouds"
     ]
    },
    {
-    "word": "Wolke",
+    "word": "Cloud",
     "taboo": [
-     "Himmel",
-     "weiß",
-     "Regen",
-     "grau",
-     "schweben"
+     "sky",
+     "white",
+     "rain",
+     "grey",
+     "float"
     ]
    },
    {
-    "word": "Baum",
+    "word": "Tree",
     "taboo": [
-     "Blätter",
-     "Wald",
-     "Stamm",
-     "Äste",
-     "Holz"
+     "leaves",
+     "forest",
+     "trunk",
+     "branches",
+     "wood"
     ]
    },
    {
-    "word": "Blume",
+    "word": "Flower",
     "taboo": [
-     "Blüte",
-     "Garten",
-     "duften",
-     "Rose",
-     "gießen"
+     "blossom",
+     "garden",
+     "smell",
+     "rose",
+     "water"
     ]
    },
    {
-    "word": "Wald",
+    "word": "Forest",
     "taboo": [
-     "Bäume",
-     "Tiere",
-     "Förster",
-     "spazieren",
-     "grün"
+     "trees",
+     "animals",
+     "forester",
+     "walk",
+     "green"
     ]
    },
    {
-    "word": "Meer",
+    "word": "Sea",
     "taboo": [
-     "Wasser",
-     "salzig",
-     "Strand",
-     "Wellen",
-     "Ozean"
+     "water",
+     "salty",
+     "beach",
+     "waves",
+     "ocean"
     ]
    },
    {
-    "word": "Strand",
+    "word": "Beach",
     "taboo": [
-     "Sand",
-     "Meer",
-     "Ferien",
-     "Muscheln",
-     "baden"
+     "sand",
+     "sea",
+     "holidays",
+     "shells",
+     "swim"
     ]
    },
    {
-    "word": "Berg",
+    "word": "Mountain",
     "taboo": [
-     "hoch",
-     "wandern",
-     "Gipfel",
-     "Alpen",
-     "klettern"
+     "high",
+     "hike",
+     "summit",
+     "Alps",
+     "climb"
     ]
    },
    {
-    "word": "Insel",
+    "word": "Island",
     "taboo": [
-     "Wasser",
-     "Meer",
-     "Palme",
-     "umgeben",
-     "Schatz"
+     "water",
+     "sea",
+     "palm tree",
+     "surrounded",
+     "treasure"
     ]
    },
    {
-    "word": "Schule",
+    "word": "School",
     "taboo": [
-     "lernen",
-     "Lehrer",
-     "Klasse",
-     "Hausaufgaben",
-     "Pause"
+     "learn",
+     "teacher",
+     "class",
+     "homework",
+     "break"
     ]
    },
    {
-    "word": "Geburtstag",
+    "word": "Birthday",
     "taboo": [
-     "Kuchen",
-     "Geschenke",
-     "Party",
-     "Kerzen",
-     "älter"
+     "cake",
+     "presents",
+     "party",
+     "candles",
+     "older"
     ]
    },
    {
-    "word": "Weihnachten",
+    "word": "Christmas",
     "taboo": [
-     "Christbaum",
-     "Geschenke",
-     "Dezember",
-     "Christkind",
+     "tree",
+     "presents",
+     "December",
+     "Santa",
      "Advent"
     ]
    },
    {
-    "word": "Ostern",
+    "word": "Easter",
     "taboo": [
-     "Hase",
-     "Eier",
-     "Frühling",
-     "suchen",
-     "Schokolade"
+     "bunny",
+     "eggs",
+     "spring",
+     "search",
+     "chocolate"
     ]
    },
    {
-    "word": "Geschenk",
+    "word": "Present (gift)",
     "taboo": [
-     "Geburtstag",
-     "auspacken",
-     "Papier",
-     "Schleife",
-     "Überraschung"
+     "birthday",
+     "unwrap",
+     "paper",
+     "bow",
+     "surprise"
     ]
    },
    {
-    "word": "Ferien",
+    "word": "Holidays",
     "taboo": [
-     "Schule",
-     "frei",
-     "Urlaub",
-     "Reise",
-     "Sommer"
+     "school",
+     "free",
+     "vacation",
+     "trip",
+     "summer"
     ]
    },
    {
     "word": "Zoo",
     "taboo": [
-     "Tiere",
-     "Gehege",
-     "Wärter",
-     "Affen",
-     "besuchen"
+     "animals",
+     "enclosure",
+     "keeper",
+     "monkeys",
+     "visit"
     ]
    },
    {
-    "word": "Spielplatz",
+    "word": "Playground",
     "taboo": [
-     "Rutschbahn",
-     "Schaukel",
-     "Sandkasten",
-     "Kinder",
-     "spielen"
+     "slide",
+     "swing",
+     "sandpit",
+     "children",
+     "play"
     ]
    },
    {
-    "word": "Schaukel",
+    "word": "Swing",
     "taboo": [
-     "hin",
-     "her",
-     "Spielplatz",
-     "sitzen",
-     "schwingen"
+     "back",
+     "forth",
+     "playground",
+     "sit",
+     "high"
     ]
    },
    {
-    "word": "Rutschbahn",
+    "word": "Slide (playground)",
     "taboo": [
-     "rutschen",
-     "Spielplatz",
-     "runter",
-     "Treppe",
-     "Wasser"
+     "glide",
+     "playground",
+     "down",
+     "ladder",
+     "water"
     ]
    },
    {
-    "word": "Zahnarzt",
+    "word": "Dentist",
     "taboo": [
-     "Zähne",
-     "Bohrer",
-     "Loch",
-     "Praxis",
-     "Karies"
+     "teeth",
+     "drill",
+     "hole",
+     "practice",
+     "tooth decay"
     ]
    },
    {
-    "word": "Arzt",
+    "word": "Doctor",
     "taboo": [
-     "krank",
-     "Praxis",
-     "Medizin",
-     "Doktor",
-     "Spritze"
+     "sick",
+     "surgery",
+     "medicine",
+     "nurse",
+     "injection"
     ]
    },
    {
-    "word": "Lehrer",
+    "word": "Teacher",
     "taboo": [
-     "Schule",
-     "unterrichten",
-     "Klasse",
-     "Tafel",
-     "Schüler"
+     "school",
+     "teach",
+     "class",
+     "blackboard",
+     "pupils"
     ]
    },
    {
-    "word": "Koch",
+    "word": "Cook",
     "taboo": [
-     "Küche",
-     "kochen",
-     "Essen",
-     "Mütze",
-     "Restaurant"
+     "kitchen",
+     "stove",
+     "food",
+     "hat",
+     "restaurant"
     ]
    },
    {
-    "word": "Bauer",
+    "word": "Farmer",
     "taboo": [
-     "Bauernhof",
-     "Traktor",
-     "Feld",
-     "Kühe",
-     "Ernte"
+     "farm",
+     "tractor",
+     "field",
+     "cows",
+     "harvest"
     ]
    },
    {
-    "word": "Pirat",
+    "word": "Pirate",
     "taboo": [
-     "Schiff",
-     "Schatz",
-     "Augenklappe",
-     "Meer",
-     "Säbel"
+     "ship",
+     "treasure",
+     "eye patch",
+     "sea",
+     "sabre"
     ]
    },
    {
-    "word": "Prinzessin",
+    "word": "Princess",
     "taboo": [
-     "Krone",
-     "Schloss",
-     "König",
-     "Prinz",
-     "Kleid"
+     "crown",
+     "castle",
+     "king",
+     "prince",
+     "dress"
     ]
    },
    {
-    "word": "Hexe",
+    "word": "Witch",
     "taboo": [
-     "Besen",
-     "zaubern",
-     "Hut",
-     "Märchen",
-     "böse"
+     "broom",
+     "magic",
+     "hat",
+     "fairy tale",
+     "evil"
     ]
    },
    {
-    "word": "Zauberer",
+    "word": "Magician",
     "taboo": [
-     "Zauberstab",
-     "Hut",
-     "Trick",
-     "Kaninchen",
-     "Magie"
+     "wand",
+     "hat",
+     "trick",
+     "rabbit",
+     "abracadabra"
     ]
    },
    {
-    "word": "Ritter",
+    "word": "Knight",
     "taboo": [
-     "Rüstung",
-     "Burg",
-     "Schwert",
-     "Pferd",
-     "Mittelalter"
+     "armour",
+     "castle",
+     "sword",
+     "horse",
+     "Middle Ages"
     ]
    },
    {
-    "word": "Drache",
+    "word": "Dragon",
     "taboo": [
-     "Feuer",
-     "fliegen",
-     "Märchen",
-     "Schuppen",
-     "Ritter"
+     "fire",
+     "fly",
+     "fairy tale",
+     "scales",
+     "knight"
     ]
    },
    {
-    "word": "Gespenst",
+    "word": "Ghost",
     "taboo": [
-     "Geist",
-     "spuken",
-     "weiß",
-     "Bettlaken",
-     "Angst"
+     "spirit",
+     "haunt",
+     "white",
+     "sheet",
+     "scary"
     ]
    },
    {
-    "word": "Schneemann",
+    "word": "Snowman",
     "taboo": [
-     "Schnee",
-     "Karotte",
-     "Winter",
-     "Kugeln",
-     "bauen"
+     "snow",
+     "carrot",
+     "winter",
+     "balls",
+     "build"
     ]
    },
    {
-    "word": "Sandburg",
+    "word": "Sandcastle",
     "taboo": [
-     "Sand",
-     "Strand",
-     "bauen",
-     "Schaufel",
-     "Eimer"
+     "beach",
+     "build",
+     "spade",
+     "bucket",
+     "sea"
     ]
    },
    {
-    "word": "Küche",
+    "word": "Kitchen",
     "taboo": [
-     "kochen",
-     "Herd",
-     "Raum",
-     "Essen",
-     "Kühlschrank"
+     "cook",
+     "stove",
+     "room",
+     "food",
+     "fridge"
     ]
    },
    {
-    "word": "Kühlschrank",
+    "word": "Fridge",
     "taboo": [
-     "kalt",
-     "Küche",
-     "Essen",
-     "kühlen",
-     "Tür"
+     "cold",
+     "kitchen",
+     "food",
+     "cool",
+     "door"
     ]
    },
    {
-    "word": "Badewanne",
+    "word": "Bathtub",
     "taboo": [
-     "baden",
-     "Wasser",
-     "Schaum",
-     "Bad",
-     "Ente"
+     "bath",
+     "water",
+     "foam",
+     "soap",
+     "duck"
     ]
    },
    {
-    "word": "Fußball",
+    "word": "Football",
     "taboo": [
-     "Tor",
-     "Ball",
-     "kicken",
-     "Mannschaft",
-     "Schiedsrichter"
+     "goal",
+     "ball",
+     "kick",
+     "team",
+     "referee"
     ]
    },
    {
-    "word": "Schwimmbad",
+    "word": "Public pool",
     "taboo": [
-     "Wasser",
-     "schwimmen",
-     "Badehose",
-     "Sprungbrett",
-     "Becken"
+     "water",
+     "swim",
+     "swimsuit",
+     "diving board",
+     "lanes"
     ]
    },
    {
-    "word": "Kerze",
+    "word": "Candle",
     "taboo": [
-     "Licht",
-     "Wachs",
-     "Flamme",
-     "anzünden",
-     "Docht"
+     "light",
+     "wax",
+     "flame",
+     "light up",
+     "wick"
     ]
    },
    {
-    "word": "Luftballon",
+    "word": "Balloon",
     "taboo": [
-     "Luft",
-     "aufblasen",
-     "platzen",
-     "Party",
-     "Gas"
+     "air",
+     "blow up",
+     "burst",
+     "party",
+     "gas"
     ]
    },
    {
-    "word": "Krone",
+    "word": "Crown",
     "taboo": [
-     "König",
-     "Kopf",
-     "Gold",
-     "Königin",
-     "Edelsteine"
+     "king",
+     "head",
+     "gold",
+     "queen",
+     "gems"
     ]
    },
    {
-    "word": "Zelt",
+    "word": "Tent",
     "taboo": [
-     "campen",
-     "schlafen",
-     "draußen",
-     "Heringe",
-     "Schlafsack"
+     "camping",
+     "sleep",
+     "outside",
+     "tent pegs",
+     "sleeping bag"
     ]
    },
    {
-    "word": "Feuer",
+    "word": "Fire",
     "taboo": [
-     "heiß",
-     "brennen",
-     "Flamme",
-     "Holz",
-     "Rauch"
+     "hot",
+     "burn",
+     "flame",
+     "wood",
+     "smoke"
     ]
    },
    {
-    "word": "Kino",
+    "word": "Cinema",
     "taboo": [
-     "Film",
-     "Popcorn",
-     "Leinwand",
-     "Sessel",
-     "Ticket"
+     "film",
+     "popcorn",
+     "screen",
+     "seat",
+     "ticket"
     ]
    },
    {
     "word": "Computer",
     "taboo": [
-     "Tastatur",
-     "Maus",
-     "Bildschirm",
-     "Internet",
-     "Laptop"
+     "keyboard",
+     "mouse",
+     "screen",
+     "internet",
+     "laptop"
     ]
    },
    {
-    "word": "Würfel",
+    "word": "Dice",
     "taboo": [
-     "Augen",
-     "sechs",
-     "werfen",
-     "Spiel",
-     "Zahl"
+     "dots",
+     "six",
+     "throw",
+     "game",
+     "number"
     ]
    },
    {
-    "word": "Kissen",
+    "word": "Pillow",
     "taboo": [
-     "Kopf",
-     "Bett",
-     "weich",
-     "schlafen",
-     "Federn"
+     "head",
+     "bed",
+     "soft",
+     "sleep",
+     "feathers"
     ]
    },
    {
-    "word": "Zahn",
+    "word": "Tooth",
     "taboo": [
-     "Mund",
-     "beißen",
-     "Zahnarzt",
-     "Milchzahn",
-     "putzen"
+     "mouth",
+     "bite",
+     "dentist",
+     "wobbly",
+     "brush"
     ]
    },
    {
-    "word": "Nase",
+    "word": "Nose",
     "taboo": [
-     "riechen",
-     "Gesicht",
-     "Schnupfen",
-     "schnäuzen",
-     "Loch"
+     "smell",
+     "face",
+     "cold",
+     "blow",
+     "nostril"
     ]
    },
    {
-    "word": "Ohr",
+    "word": "Ear",
     "taboo": [
-     "hören",
-     "Kopf",
-     "zwei",
-     "Ohrring",
-     "Musik"
+     "hear",
+     "head",
+     "two",
+     "earring",
+     "music"
     ]
    },
    {
     "word": "Hand",
     "taboo": [
-     "Finger",
-     "fünf",
-     "greifen",
-     "Arm",
-     "winken"
+     "finger",
+     "five",
+     "grab",
+     "arm",
+     "wave"
     ]
    },
    {
-    "word": "Burg",
+    "word": "Castle (fortress)",
     "taboo": [
-     "Ritter",
-     "Mauern",
-     "Turm",
-     "Mittelalter",
-     "Schloss"
+     "knight",
+     "walls",
+     "tower",
+     "Middle Ages",
+     "palace"
     ]
    },
    {
-    "word": "Trampolin",
+    "word": "Trampoline",
     "taboo": [
-     "springen",
-     "hüpfen",
-     "hoch",
-     "Netz",
-     "Garten"
+     "jump",
+     "bounce",
+     "high",
+     "net",
+     "garden"
     ]
    },
    {
-    "word": "Hut",
+    "word": "Hat",
     "taboo": [
-     "Kopf",
-     "tragen",
-     "Mütze",
-     "Sonne",
-     "Zauberer"
+     "head",
+     "wear",
+     "woolly hat",
+     "sun",
+     "magician"
     ]
    },
    {
-    "word": "Sonnenbrille",
+    "word": "Sunglasses",
     "taboo": [
-     "Sonne",
-     "Augen",
-     "dunkel",
-     "Sommer",
-     "Brille"
+     "eyes",
+     "dark",
+     "summer",
+     "beach",
+     "bright"
     ]
    },
    {
-    "word": "Hotdog",
+    "word": "Hot dog",
     "taboo": [
-     "Wurst",
-     "Brötchen",
-     "Senf",
-     "Ketchup",
-     "Amerika"
+     "sausage",
+     "bun",
+     "mustard",
+     "ketchup",
+     "America"
     ]
    },
    {
-    "word": "Lutscher",
+    "word": "Lollipop",
     "taboo": [
-     "Lolli",
-     "Stiel",
-     "süß",
-     "schlecken",
-     "Zucker"
+     "stick",
+     "sweet",
+     "lick",
+     "sugar",
+     "candy"
     ]
    },
    {
-    "word": "Kakao",
+    "word": "Hot chocolate",
     "taboo": [
-     "Schokolade",
-     "warm",
-     "Milch",
-     "trinken",
-     "Tasse"
+     "cocoa",
+     "milk",
+     "drink",
+     "mug",
+     "winter"
     ]
    },
    {
-    "word": "Taschenlampe",
+    "word": "Torch",
     "taboo": [
-     "Licht",
-     "dunkel",
-     "Batterie",
-     "leuchten",
-     "Nacht"
+     "light",
+     "dark",
+     "battery",
+     "shine",
+     "night"
     ]
    },
    {
-    "word": "Pflaster",
+    "word": "Plaster (for a cut)",
     "taboo": [
-     "Wunde",
-     "kleben",
-     "Verletzung",
-     "Knie",
-     "Blut"
+     "wound",
+     "stick",
+     "injury",
+     "knee",
+     "blood"
     ]
    },
    {
-    "word": "Lachen",
+    "word": "Laughing",
     "taboo": [
-     "lustig",
-     "Witz",
-     "Freude",
-     "kichern",
-     "Spaß"
+     "funny",
+     "joke",
+     "joy",
+     "giggle",
+     "fun"
     ]
    },
    {
-    "word": "Gähnen",
+    "word": "Yawning",
     "taboo": [
-     "müde",
-     "Mund",
-     "schlafen",
-     "aufmachen",
-     "langweilig"
+     "tired",
+     "mouth",
+     "sleep",
+     "open",
+     "boring"
     ]
    },
    {
-    "word": "Kitzeln",
+    "word": "Tickling",
     "taboo": [
-     "lachen",
-     "Füße",
-     "Finger",
-     "kichern",
-     "Bauch"
+     "laugh",
+     "feet",
+     "fingers",
+     "giggle",
+     "tummy"
     ]
    }
   ],
   "normal": [
    {
-    "word": "Bibliothek",
+    "word": "Library",
     "taboo": [
-     "Bücher",
-     "ausleihen",
-     "lesen",
-     "leise",
-     "Regal"
+     "books",
+     "borrow",
+     "read",
+     "quiet",
+     "shelf"
     ]
    },
    {
     "word": "Museum",
     "taboo": [
-     "Ausstellung",
-     "Bilder",
-     "alt",
-     "besuchen",
-     "Kunst"
+     "exhibition",
+     "pictures",
+     "old",
+     "visit",
+     "art"
     ]
    },
    {
-    "word": "Krankenhaus",
+    "word": "Hospital",
     "taboo": [
-     "krank",
-     "Arzt",
-     "Pflege",
-     "Operation",
-     "Spital"
+     "sick",
+     "doctor",
+     "care",
+     "operation",
+     "clinic"
     ]
    },
    {
-    "word": "Flughafen",
+    "word": "Airport",
     "taboo": [
-     "Flugzeug",
-     "Koffer",
-     "abheben",
-     "Reise",
-     "Pilot"
+     "plane",
+     "suitcase",
+     "take off",
+     "trip",
+     "pilot"
     ]
    },
    {
-    "word": "Bahnhof",
+    "word": "Train station",
     "taboo": [
-     "Zug",
-     "Gleis",
-     "warten",
-     "Billett",
-     "Bahn"
+     "train",
+     "platform",
+     "wait",
+     "ticket",
+     "railway"
     ]
    },
    {
-    "word": "Leuchtturm",
+    "word": "Lighthouse",
     "taboo": [
-     "Licht",
-     "Meer",
-     "Schiffe",
-     "Küste",
-     "Turm"
+     "light",
+     "sea",
+     "ships",
+     "coast",
+     "tower"
     ]
    },
    {
-    "word": "Vulkan",
+    "word": "Volcano",
     "taboo": [
-     "Lava",
-     "Ausbruch",
-     "Berg",
-     "heiß",
-     "Feuer"
+     "lava",
+     "eruption",
+     "mountain",
+     "hot",
+     "fire"
     ]
    },
    {
-    "word": "Wüste",
+    "word": "Desert",
     "taboo": [
-     "Sand",
-     "heiß",
-     "trocken",
-     "Kamel",
-     "Oase"
+     "sand",
+     "hot",
+     "dry",
+     "camel",
+     "oasis"
     ]
    },
    {
-    "word": "Dschungel",
+    "word": "Jungle",
     "taboo": [
-     "Urwald",
-     "Affen",
-     "Lianen",
-     "feucht",
-     "Regenwald"
+     "rainforest",
+     "monkeys",
+     "vines",
+     "humid",
+     "tropical"
     ]
    },
    {
-    "word": "Gletscher",
+    "word": "Glacier",
     "taboo": [
-     "Eis",
-     "Berg",
-     "schmelzen",
-     "Alpen",
-     "kalt"
+     "ice",
+     "mountain",
+     "melt",
+     "Alps",
+     "cold"
     ]
    },
    {
-    "word": "Wasserfall",
+    "word": "Waterfall",
     "taboo": [
-     "Wasser",
-     "fallen",
-     "Fluss",
-     "Felsen",
-     "hoch"
+     "water",
+     "fall",
+     "river",
+     "rocks",
+     "high"
     ]
    },
    {
-    "word": "Höhle",
+    "word": "Cave",
     "taboo": [
-     "dunkel",
-     "Berg",
-     "Fledermaus",
-     "Stein",
-     "Eingang"
+     "dark",
+     "mountain",
+     "bat",
+     "stone",
+     "entrance"
     ]
    },
    {
-    "word": "Erdbeben",
+    "word": "Earthquake",
     "taboo": [
-     "Erde",
-     "wackeln",
-     "Boden",
-     "Katastrophe",
-     "Häuser"
+     "shake",
+     "ground",
+     "disaster",
+     "houses",
+     "tremor"
     ]
    },
    {
     "word": "Tornado",
     "taboo": [
-     "Wirbel",
-     "Sturm",
-     "Wind",
-     "drehen",
-     "Wetter"
+     "whirl",
+     "storm",
+     "wind",
+     "spin",
+     "weather"
     ]
    },
    {
-    "word": "Nebel",
+    "word": "Fog",
     "taboo": [
-     "grau",
-     "sehen",
-     "Wetter",
-     "dicht",
-     "Morgen"
+     "grey",
+     "see",
+     "weather",
+     "thick",
+     "morning"
     ]
    },
    {
-    "word": "Hagel",
+    "word": "Hail",
     "taboo": [
-     "Eis",
-     "Körner",
-     "Wetter",
-     "Gewitter",
-     "Regen"
+     "ice",
+     "grains",
+     "weather",
+     "thunderstorm",
+     "rain"
     ]
    },
    {
     "word": "Astronaut",
     "taboo": [
-     "Weltall",
-     "Rakete",
-     "Mond",
-     "Anzug",
-     "schweben"
+     "space",
+     "rocket",
+     "moon",
+     "suit",
+     "float"
     ]
    },
    {
     "word": "Planet",
     "taboo": [
-     "Sonne",
-     "Erde",
-     "Weltall",
+     "sun",
+     "earth",
+     "space",
      "Mars",
-     "kreisen"
+     "orbit"
     ]
    },
    {
-    "word": "Dinosaurier",
+    "word": "Dinosaur",
     "taboo": [
-     "ausgestorben",
-     "groß",
-     "Urzeit",
-     "Knochen",
-     "Echse"
+     "extinct",
+     "big",
+     "prehistoric",
+     "bones",
+     "lizard"
     ]
    },
    {
     "word": "Fossil",
     "taboo": [
-     "Stein",
-     "versteinert",
-     "alt",
-     "Knochen",
-     "Abdruck"
+     "stone",
+     "petrified",
+     "old",
+     "bones",
+     "imprint"
     ]
    },
    {
-    "word": "Roboter",
+    "word": "Robot",
     "taboo": [
-     "Maschine",
-     "Metall",
-     "programmieren",
-     "Mensch",
-     "Computer"
+     "machine",
+     "metal",
+     "program",
+     "human",
+     "computer"
     ]
    },
    {
     "word": "Magnet",
     "taboo": [
-     "anziehen",
-     "Metall",
-     "Pol",
-     "Kühlschrank",
-     "Eisen"
+     "attract",
+     "metal",
+     "pole",
+     "fridge",
+     "iron"
     ]
    },
    {
-    "word": "Kompass",
+    "word": "Compass",
     "taboo": [
-     "Norden",
-     "Richtung",
-     "Nadel",
-     "Karte",
-     "Süden"
+     "north",
+     "direction",
+     "needle",
+     "map",
+     "south"
     ]
    },
    {
-    "word": "Landkarte",
+    "word": "Map (paper)",
     "taboo": [
-     "Weg",
-     "Länder",
-     "Straßen",
-     "finden",
-     "Atlas"
+     "way",
+     "countries",
+     "roads",
+     "find",
+     "atlas"
     ]
    },
    {
-    "word": "Fernrohr",
+    "word": "Spyglass",
     "taboo": [
-     "Sterne",
-     "weit",
-     "sehen",
-     "Teleskop",
-     "Linse"
+     "stars",
+     "far",
+     "see",
+     "telescope",
+     "lens"
     ]
    },
    {
-    "word": "Mikroskop",
+    "word": "Microscope",
     "taboo": [
-     "klein",
-     "vergrößern",
-     "Labor",
-     "Zellen",
-     "Linse"
+     "small",
+     "magnify",
+     "lab",
+     "cells",
+     "lens"
     ]
    },
    {
     "word": "Thermometer",
     "taboo": [
-     "Temperatur",
-     "Grad",
-     "Fieber",
-     "messen",
+     "temperature",
+     "degrees",
+     "fever",
+     "measure",
      "warm"
     ]
    },
    {
-    "word": "Batterie",
+    "word": "Battery (power cell)",
     "taboo": [
-     "Strom",
-     "Energie",
-     "laden",
-     "leer",
-     "Akku"
+     "electricity",
+     "energy",
+     "charge",
+     "empty",
+     "rechargeable"
     ]
    },
    {
-    "word": "Glühbirne",
+    "word": "Light bulb",
     "taboo": [
-     "Licht",
-     "Lampe",
-     "Strom",
-     "hell",
-     "Fassung"
+     "light",
+     "lamp",
+     "electricity",
+     "bright",
+     "socket"
     ]
    },
    {
-    "word": "Treppe",
+    "word": "Stairs",
     "taboo": [
-     "Stufen",
-     "hoch",
-     "runter",
-     "Stockwerk",
-     "Geländer"
+     "steps",
+     "up",
+     "down",
+     "floor",
+     "banister"
     ]
    },
    {
-    "word": "Aufzug",
+    "word": "Elevator",
     "taboo": [
-     "Lift",
-     "hoch",
-     "Stockwerk",
-     "Knopf",
-     "fahren"
+     "lift",
+     "up",
+     "floor",
+     "button",
+     "ride"
     ]
    },
    {
-    "word": "Briefkasten",
+    "word": "Mailbox",
     "taboo": [
-     "Post",
-     "Briefe",
-     "Zeitung",
-     "Haus",
-     "einwerfen"
+     "post",
+     "letters",
+     "newspaper",
+     "house",
+     "drop in"
     ]
    },
    {
-    "word": "Briefmarke",
+    "word": "Stamp (for letters)",
     "taboo": [
-     "Brief",
-     "Post",
-     "kleben",
-     "sammeln",
-     "Porto"
+     "letter",
+     "post",
+     "stick",
+     "collect",
+     "postage"
     ]
    },
    {
-    "word": "Zeitung",
+    "word": "Newspaper",
     "taboo": [
-     "lesen",
-     "Nachrichten",
-     "Papier",
-     "täglich",
-     "Artikel"
+     "read",
+     "news",
+     "paper",
+     "daily",
+     "article"
     ]
    },
    {
-    "word": "Kalender",
+    "word": "Calendar",
     "taboo": [
-     "Tage",
-     "Monat",
-     "Jahr",
-     "Datum",
-     "Termin"
+     "days",
+     "month",
+     "year",
+     "date",
+     "appointment"
     ]
    },
    {
-    "word": "Wecker",
+    "word": "Alarm clock",
     "taboo": [
-     "aufwachen",
-     "Uhr",
-     "klingeln",
-     "Morgen",
-     "Zeit"
+     "wake up",
+     "clock",
+     "ring",
+     "morning",
+     "time"
     ]
    },
    {
-    "word": "Spiegel",
+    "word": "Mirror",
     "taboo": [
-     "Bild",
-     "sehen",
-     "Glas",
-     "Bad",
-     "Gesicht"
+     "image",
+     "see",
+     "glass",
+     "bathroom",
+     "face"
     ]
    },
    {
-    "word": "Staubsauger",
+    "word": "Vacuum cleaner",
     "taboo": [
-     "Staub",
-     "saugen",
-     "Boden",
-     "putzen",
-     "laut"
+     "dust",
+     "suck",
+     "floor",
+     "clean",
+     "loud"
     ]
    },
    {
-    "word": "Waschmaschine",
+    "word": "Washing machine",
     "taboo": [
-     "Wäsche",
-     "waschen",
-     "Kleider",
-     "Trommel",
-     "schleudern"
+     "laundry",
+     "wash",
+     "clothes",
+     "drum",
+     "spin"
     ]
    },
    {
-    "word": "Bügeleisen",
+    "word": "Iron (for clothes)",
     "taboo": [
-     "Wäsche",
-     "glatt",
-     "heiß",
-     "Falten",
-     "bügeln"
+     "laundry",
+     "smooth",
+     "hot",
+     "creases",
+     "steam"
     ]
    },
    {
-    "word": "Mikrowelle",
+    "word": "Microwave",
     "taboo": [
-     "aufwärmen",
-     "Küche",
-     "Essen",
+     "heat up",
+     "kitchen",
+     "food",
      "warm",
-     "Gerät"
+     "appliance"
     ]
    },
    {
     "word": "Toaster",
     "taboo": [
-     "Brot",
-     "rösten",
-     "Frühstück",
-     "knusprig",
-     "Scheibe"
+     "bread",
+     "breakfast",
+     "crispy",
+     "slice",
+     "butter"
     ]
    },
    {
-    "word": "Pfanne",
+    "word": "Frying pan",
     "taboo": [
-     "braten",
-     "Küche",
-     "Herd",
-     "Öl",
-     "Spiegelei"
+     "fry",
+     "kitchen",
+     "stove",
+     "oil",
+     "fried egg"
     ]
    },
    {
-    "word": "Gabel",
+    "word": "Fork",
     "taboo": [
-     "essen",
-     "Messer",
-     "Löffel",
-     "Zinken",
-     "Besteck"
+     "eat",
+     "knife",
+     "spoon",
+     "prongs",
+     "cutlery"
     ]
    },
    {
-    "word": "Suppe",
+    "word": "Soup",
     "taboo": [
-     "Löffel",
-     "heiß",
-     "Teller",
-     "Gemüse",
-     "flüssig"
+     "spoon",
+     "hot",
+     "plate",
+     "vegetables",
+     "liquid"
     ]
    },
    {
-    "word": "Salat",
+    "word": "Salad",
     "taboo": [
-     "grün",
-     "Blätter",
-     "Sauce",
-     "gesund",
-     "Gurke"
+     "green",
+     "leaves",
+     "dressing",
+     "healthy",
+     "cucumber"
     ]
    },
    {
-    "word": "Pfannkuchen",
+    "word": "Pancake",
     "taboo": [
-     "Pfanne",
-     "Teig",
-     "flach",
-     "Crêpe",
-     "Sirup"
+     "pan",
+     "batter",
+     "flat",
+     "crêpe",
+     "syrup"
     ]
    },
    {
-    "word": "Brezel",
+    "word": "Pretzel",
     "taboo": [
-     "Bäckerei",
-     "Salz",
-     "verschlungen",
-     "Laugen",
-     "Teig"
+     "bakery",
+     "salt",
+     "twisted",
+     "Germany",
+     "dough"
     ]
    },
    {
-    "word": "Müsli",
+    "word": "Muesli",
     "taboo": [
-     "Frühstück",
-     "Haferflocken",
-     "Milch",
-     "Schüssel",
-     "Früchte"
+     "breakfast",
+     "oat flakes",
+     "milk",
+     "bowl",
+     "fruit"
     ]
    },
    {
-    "word": "Pommes frites",
+    "word": "Fries",
     "taboo": [
-     "Kartoffeln",
-     "frittiert",
-     "Ketchup",
-     "Mayonnaise",
-     "Fritteuse"
+     "potatoes",
+     "deep-fried",
+     "ketchup",
+     "mayonnaise",
+     "fryer"
     ]
    },
    {
     "word": "Sushi",
     "taboo": [
      "Japan",
-     "Reis",
-     "Fisch",
-     "roh",
-     "Stäbchen"
+     "rice",
+     "fish",
+     "raw",
+     "chopsticks"
     ]
    },
    {
     "word": "Fondue",
     "taboo": [
-     "Käse",
-     "Schweiz",
-     "Brot",
-     "Gabel",
-     "Caquelon"
+     "cheese",
+     "Switzerland",
+     "bread",
+     "fork",
+     "caquelon"
     ]
    },
    {
     "word": "Raclette",
     "taboo": [
-     "Käse",
-     "Schweiz",
-     "Kartoffeln",
-     "schmelzen",
-     "Pfännchen"
+     "cheese",
+     "Switzerland",
+     "potatoes",
+     "melt",
+     "little pan"
     ]
    },
    {
-    "word": "Zahnfee",
+    "word": "Tooth fairy",
     "taboo": [
-     "Zahn",
-     "Kissen",
-     "Geld",
-     "Milchzahn",
-     "Nacht"
+     "pillow",
+     "money",
+     "wobbly",
+     "night",
+     "coin"
     ]
    },
    {
-    "word": "Weihnachtsmann",
+    "word": "Santa Claus",
     "taboo": [
-     "Bart",
-     "Geschenke",
-     "rot",
-     "Rentiere",
-     "Schlitten"
+     "beard",
+     "presents",
+     "red",
+     "reindeer",
+     "sleigh"
     ]
    },
    {
-    "word": "Osterhase",
+    "word": "Easter bunny",
     "taboo": [
-     "Eier",
-     "Ostern",
-     "verstecken",
-     "Hase",
-     "Schokolade"
+     "eggs",
+     "spring",
+     "hide",
+     "basket",
+     "chocolate"
     ]
    },
    {
-    "word": "Fasnacht",
+    "word": "Carnival",
     "taboo": [
-     "Karneval",
-     "verkleiden",
-     "Masken",
-     "Umzug",
-     "Konfetti"
+     "costume",
+     "masks",
+     "parade",
+     "confetti",
+     "dress up"
     ]
    },
    {
     "word": "Halloween",
     "taboo": [
-     "Kürbis",
-     "Kostüm",
-     "Süßes",
-     "Saures",
-     "gruselig"
+     "pumpkin",
+     "costume",
+     "trick",
+     "treat",
+     "spooky"
     ]
    },
    {
-    "word": "Hochzeit",
+    "word": "Wedding",
     "taboo": [
-     "heiraten",
-     "Braut",
-     "Ring",
-     "Kirche",
-     "Fest"
+     "marry",
+     "bride",
+     "ring",
+     "church",
+     "party"
     ]
    },
    {
-    "word": "Zirkus",
+    "word": "Circus",
     "taboo": [
-     "Clown",
-     "Zelt",
-     "Akrobat",
-     "Manege",
-     "Tiere"
+     "clown",
+     "tent",
+     "acrobat",
+     "ring",
+     "animals"
     ]
    },
    {
-    "word": "Achterbahn",
+    "word": "Roller coaster",
     "taboo": [
-     "Freizeitpark",
-     "schnell",
-     "Looping",
-     "fahren",
-     "kreischen"
+     "amusement park",
+     "fast",
+     "loop",
+     "ride",
+     "scream"
     ]
    },
    {
-    "word": "Karussell",
+    "word": "Carousel",
     "taboo": [
-     "drehen",
-     "Jahrmarkt",
-     "Pferde",
-     "rund",
-     "fahren"
+     "spin",
+     "fair",
+     "horses",
+     "round",
+     "ride"
     ]
    },
    {
-    "word": "Feuerwerk",
+    "word": "Fireworks",
     "taboo": [
-     "Silvester",
-     "Raketen",
-     "knallen",
-     "Himmel",
-     "bunt"
+     "New Year's Eve",
+     "rockets",
+     "bang",
+     "sky",
+     "colourful"
     ]
    },
    {
-    "word": "Silvester",
+    "word": "New Year's Eve",
     "taboo": [
-     "Neujahr",
-     "Mitternacht",
-     "Feuerwerk",
-     "Dezember",
-     "feiern"
+     "midnight",
+     "fireworks",
+     "December",
+     "celebrate",
+     "countdown"
     ]
    },
    {
-    "word": "Picknick",
+    "word": "Picnic",
     "taboo": [
-     "Decke",
-     "Korb",
-     "draußen",
-     "essen",
-     "Wiese"
+     "blanket",
+     "basket",
+     "outside",
+     "eat",
+     "meadow"
     ]
    },
    {
     "word": "Camping",
     "taboo": [
-     "Zelt",
-     "Wohnwagen",
-     "draußen",
-     "Ferien",
-     "Schlafsack"
+     "tent",
+     "caravan",
+     "outside",
+     "holidays",
+     "sleeping bag"
     ]
    },
    {
-    "word": "Schatzsuche",
+    "word": "Treasure hunt",
     "taboo": [
-     "Karte",
-     "Schatz",
-     "finden",
-     "suchen",
-     "Pirat"
+     "map",
+     "gold",
+     "find",
+     "clues",
+     "pirate"
     ]
    },
    {
-    "word": "Verstecken",
+    "word": "Hide and seek",
     "taboo": [
-     "suchen",
-     "zählen",
-     "finden",
-     "Spiel",
-     "Versteck"
+     "seek",
+     "count",
+     "find",
+     "game",
+     "hiding place"
     ]
    },
    {
-    "word": "Schach",
+    "word": "Chess",
     "taboo": [
-     "König",
-     "Dame",
-     "Brett",
-     "Figuren",
-     "matt"
+     "king",
+     "queen",
+     "board",
+     "pieces",
+     "checkmate"
     ]
    },
    {
     "word": "Puzzle",
     "taboo": [
-     "Teile",
-     "legen",
-     "Bild",
-     "zusammensetzen",
-     "Rand"
+     "pieces",
+     "put together",
+     "picture",
+     "assemble",
+     "edge"
     ]
    },
    {
-    "word": "Fotoapparat",
+    "word": "Camera (photo)",
     "taboo": [
-     "Kamera",
-     "Foto",
-     "knipsen",
-     "Bild",
-     "Linse"
+     "photo",
+     "snap",
+     "picture",
+     "lens",
+     "flash"
     ]
    },
    {
-    "word": "Gitarre",
+    "word": "Guitar",
     "taboo": [
-     "Saiten",
-     "Musik",
-     "spielen",
-     "Instrument",
-     "zupfen"
+     "strings",
+     "music",
+     "play",
+     "instrument",
+     "pluck"
     ]
    },
    {
-    "word": "Klavier",
+    "word": "Piano",
     "taboo": [
-     "Tasten",
-     "schwarz",
-     "weiß",
-     "Musik",
-     "Instrument"
+     "keys",
+     "black",
+     "white",
+     "music",
+     "instrument"
     ]
    },
    {
-    "word": "Schlagzeug",
+    "word": "Drums",
     "taboo": [
-     "Trommel",
-     "Musik",
-     "Becken",
-     "Stöcke",
-     "laut"
+     "drum",
+     "music",
+     "cymbal",
+     "sticks",
+     "loud"
     ]
    },
    {
-    "word": "Trompete",
+    "word": "Trumpet",
     "taboo": [
-     "blasen",
-     "Musik",
-     "Instrument",
-     "Blech",
-     "laut"
+     "blow",
+     "music",
+     "instrument",
+     "brass",
+     "loud"
     ]
    },
    {
-    "word": "Blockflöte",
+    "word": "Recorder (flute)",
     "taboo": [
-     "blasen",
-     "Musik",
-     "Instrument",
-     "Holz",
-     "Löcher"
+     "blow",
+     "music",
+     "instrument",
+     "wood",
+     "holes"
     ]
    },
    {
-    "word": "Orchester",
+    "word": "Orchestra",
     "taboo": [
-     "Musik",
-     "Dirigent",
-     "Instrumente",
-     "Konzert",
-     "Geige"
+     "music",
+     "conductor",
+     "instruments",
+     "concert",
+     "violin"
     ]
    },
    {
-    "word": "Theater",
+    "word": "Theatre",
     "taboo": [
-     "Bühne",
-     "Schauspieler",
-     "Vorhang",
-     "Stück",
-     "Publikum"
+     "stage",
+     "actor",
+     "curtain",
+     "play",
+     "audience"
     ]
    },
    {
-    "word": "Zauberwürfel",
+    "word": "Puzzle cube",
     "taboo": [
-     "Farben",
-     "drehen",
-     "Würfel",
-     "lösen",
-     "Seiten"
+     "colours",
+     "twist",
+     "solve",
+     "sides",
+     "squares"
     ]
    },
    {
     "word": "Skateboard",
     "taboo": [
-     "Rollen",
-     "Brett",
-     "fahren",
-     "Tricks",
-     "Rampe"
+     "wheels",
+     "board",
+     "ride",
+     "tricks",
+     "ramp"
     ]
    },
    {
-    "word": "Skifahren",
+    "word": "Skiing",
     "taboo": [
-     "Schnee",
-     "Piste",
-     "Berg",
-     "Stöcke",
-     "Winter"
+     "snow",
+     "slope",
+     "mountain",
+     "poles",
+     "winter"
     ]
    },
    {
-    "word": "Schlittschuh",
+    "word": "Ice skate",
     "taboo": [
-     "Eis",
-     "Kufen",
-     "laufen",
-     "Winter",
-     "Halle"
+     "ice",
+     "blades",
+     "glide",
+     "winter",
+     "rink"
     ]
    },
    {
     "word": "Tennis",
     "taboo": [
-     "Schläger",
-     "Ball",
-     "Netz",
-     "Platz",
-     "Aufschlag"
+     "racket",
+     "ball",
+     "net",
+     "court",
+     "serve"
     ]
    },
    {
     "word": "Basketball",
     "taboo": [
-     "Korb",
-     "Ball",
-     "werfen",
-     "dribbeln",
-     "Mannschaft"
+     "basket",
+     "ball",
+     "throw",
+     "dribble",
+     "team"
     ]
    },
    {
-    "word": "Turnen",
+    "word": "Gymnastics",
     "taboo": [
-     "Halle",
-     "Reck",
-     "Barren",
-     "Purzelbaum",
-     "Sport"
+     "gym",
+     "high bar",
+     "parallel bars",
+     "somersault",
+     "sport"
     ]
    },
    {
-    "word": "Tauchen",
+    "word": "Diving",
     "taboo": [
-     "Wasser",
-     "Meer",
-     "Sauerstoff",
-     "Fische",
-     "Unterwasser"
+     "water",
+     "sea",
+     "oxygen",
+     "fish",
+     "underwater"
     ]
    },
    {
-    "word": "Angeln",
+    "word": "Fishing",
     "taboo": [
-     "Fisch",
-     "Rute",
-     "Haken",
-     "Wurm",
-     "See"
+     "rod",
+     "hook",
+     "worm",
+     "lake",
+     "catch"
     ]
    },
    {
-    "word": "Medaille",
+    "word": "Medal (prize)",
     "taboo": [
-     "Gold",
-     "Silber",
-     "Bronze",
-     "gewinnen",
-     "Sieger"
+     "gold",
+     "silver",
+     "bronze",
+     "win",
+     "winner"
     ]
    },
    {
-    "word": "Schiedsrichter",
+    "word": "Referee",
     "taboo": [
-     "Pfeife",
-     "Fußball",
-     "Regeln",
-     "Karte",
-     "Spiel"
+     "whistle",
+     "football",
+     "rules",
+     "card",
+     "game"
     ]
    },
    {
-    "word": "Pokal",
+    "word": "Trophy",
     "taboo": [
-     "gewinnen",
-     "Sieger",
-     "Gold",
-     "Turnier",
-     "Preis"
+     "win",
+     "winner",
+     "gold",
+     "tournament",
+     "prize"
     ]
    },
    {
-    "word": "Detektiv",
+    "word": "Detective",
     "taboo": [
-     "Fall",
-     "Lupe",
-     "lösen",
-     "Spuren",
-     "Täter"
+     "case",
+     "magnifying glass",
+     "solve",
+     "clues",
+     "culprit"
     ]
    },
    {
-    "word": "Lupe",
+    "word": "Magnifying glass",
     "taboo": [
-     "vergrößern",
-     "Glas",
-     "Detektiv",
-     "klein",
-     "sehen"
+     "bigger",
+     "lens",
+     "detective",
+     "small",
+     "see"
     ]
    },
    {
-    "word": "Krankenwagen",
+    "word": "Ambulance",
     "taboo": [
-     "Notfall",
-     "Sirene",
-     "Spital",
-     "Blaulicht",
-     "Sanitäter"
+     "emergency",
+     "siren",
+     "hospital",
+     "blue light",
+     "paramedic"
     ]
    },
    {
-    "word": "Bagger",
+    "word": "Excavator",
     "taboo": [
-     "Baustelle",
-     "graben",
-     "Schaufel",
-     "Erde",
-     "Maschine"
+     "construction site",
+     "dig",
+     "bucket",
+     "earth",
+     "machine"
     ]
    },
    {
-    "word": "Traktor",
+    "word": "Tractor",
     "taboo": [
-     "Bauer",
-     "Feld",
-     "Anhänger",
-     "Maschine",
-     "ziehen"
+     "farmer",
+     "field",
+     "trailer",
+     "machine",
+     "pull"
     ]
    },
    {
-    "word": "Hubschrauber",
+    "word": "Helicopter",
     "taboo": [
-     "fliegen",
-     "Rotor",
-     "Helikopter",
-     "Rettung",
-     "landen"
+     "fly",
+     "rotor",
+     "chopper",
+     "rescue",
+     "land"
     ]
    },
    {
-    "word": "U-Boot",
+    "word": "Submarine",
     "taboo": [
-     "Wasser",
-     "tauchen",
-     "Meer",
-     "unter",
-     "Schiff"
+     "water",
+     "dive",
+     "sea",
+     "deep",
+     "ship"
     ]
    },
    {
-    "word": "Heißluftballon",
+    "word": "Hot-air balloon",
     "taboo": [
-     "Korb",
-     "fliegen",
-     "Luft",
-     "Feuer",
-     "Himmel"
+     "basket",
+     "fly",
+     "float",
+     "fire",
+     "sky"
     ]
    },
    {
-    "word": "Seilbahn",
+    "word": "Cable car",
     "taboo": [
-     "Berg",
-     "Kabine",
-     "Seil",
-     "hoch",
-     "Gondel"
+     "mountain",
+     "cabin",
+     "cable",
+     "up",
+     "gondola"
     ]
    },
    {
-    "word": "Brücke",
+    "word": "Bridge",
     "taboo": [
-     "Fluss",
-     "über",
-     "Seite",
-     "bauen",
-     "Wasser"
+     "river",
+     "over",
+     "side",
+     "build",
+     "water"
     ]
    },
    {
     "word": "Tunnel",
     "taboo": [
-     "Berg",
-     "durch",
-     "dunkel",
-     "Zug",
-     "Röhre"
+     "mountain",
+     "through",
+     "dark",
+     "train",
+     "tube"
     ]
    },
    {
-    "word": "Ampel",
+    "word": "Traffic light",
     "taboo": [
-     "rot",
-     "grün",
-     "gelb",
-     "Straße",
-     "warten"
+     "red",
+     "green",
+     "yellow",
+     "street",
+     "wait"
     ]
    },
    {
-    "word": "Tankstelle",
+    "word": "Petrol station",
     "taboo": [
-     "Benzin",
-     "Auto",
-     "tanken",
-     "Diesel",
-     "Zapfsäule"
+     "fuel",
+     "car",
+     "fill up",
+     "diesel",
+     "pump"
     ]
    },
    {
-    "word": "Baustelle",
+    "word": "Construction site",
     "taboo": [
-     "bauen",
-     "Kran",
-     "Bagger",
-     "Helm",
-     "Arbeiter"
+     "build",
+     "crane",
+     "excavator",
+     "helmet",
+     "workers"
     ]
    },
    {
-    "word": "Kran",
+    "word": "Crane (machine)",
     "taboo": [
-     "hoch",
-     "heben",
-     "Baustelle",
-     "Haken",
-     "Last"
+     "high",
+     "lift",
+     "construction site",
+     "hook",
+     "load"
     ]
    },
    {
-    "word": "Stau",
+    "word": "Traffic jam",
     "taboo": [
-     "Autos",
-     "warten",
-     "Straße",
-     "Autobahn",
-     "langsam"
+     "cars",
+     "wait",
+     "road",
+     "motorway",
+     "slow"
     ]
    },
    {
-    "word": "Rathaus",
+    "word": "City hall",
     "taboo": [
-     "Bürgermeister",
-     "Stadt",
-     "Gemeinde",
-     "Amt",
-     "Gebäude"
+     "mayor",
+     "town",
+     "council",
+     "office",
+     "building"
     ]
    },
    {
-    "word": "Bauernhof",
+    "word": "Farm",
     "taboo": [
-     "Tiere",
-     "Bauer",
-     "Stall",
-     "Traktor",
-     "Land"
+     "animals",
+     "farmer",
+     "stable",
+     "tractor",
+     "countryside"
     ]
    },
    {
-    "word": "Mühle",
+    "word": "Mill",
     "taboo": [
-     "mahlen",
-     "Mehl",
-     "Wind",
-     "Wasser",
-     "Rad"
+     "grind",
+     "flour",
+     "wind",
+     "water",
+     "wheel"
     ]
    },
    {
-    "word": "Schloss",
+    "word": "Castle",
     "taboo": [
-     "König",
-     "Prinzessin",
-     "Türme",
-     "Märchen",
-     "Schlüssel"
+     "king",
+     "princess",
+     "towers",
+     "fairy tale",
+     "ball"
     ]
    },
    {
-    "word": "Kirche",
+    "word": "Church",
     "taboo": [
-     "Glocken",
-     "Turm",
-     "beten",
-     "Pfarrer",
-     "Sonntag"
+     "bells",
+     "tower",
+     "pray",
+     "priest",
+     "Sunday"
     ]
    },
    {
-    "word": "Gewächshaus",
+    "word": "Greenhouse",
     "taboo": [
-     "Glas",
-     "Pflanzen",
+     "glass",
+     "plants",
      "warm",
-     "Tomaten",
-     "Garten"
+     "tomatoes",
+     "garden"
     ]
    },
    {
-    "word": "Kaktus",
+    "word": "Cactus",
     "taboo": [
-     "Stacheln",
-     "Wüste",
-     "Pflanze",
-     "grün",
-     "Wasser"
+     "spines",
+     "desert",
+     "plant",
+     "green",
+     "water"
     ]
    },
    {
-    "word": "Sonnenblume",
+    "word": "Sunflower",
     "taboo": [
-     "gelb",
-     "groß",
-     "Kerne",
-     "Sonne",
-     "Blume"
+     "yellow",
+     "tall",
+     "seeds",
+     "sun",
+     "flower"
     ]
    },
    {
-    "word": "Pilz",
+    "word": "Mushroom",
     "taboo": [
-     "Wald",
-     "giftig",
-     "Hut",
-     "sammeln",
-     "Fliegenpilz"
+     "forest",
+     "poisonous",
+     "cap",
+     "pick",
+     "fly agaric"
     ]
    },
    {
-    "word": "Kürbis",
+    "word": "Pumpkin",
     "taboo": [
      "orange",
      "Halloween",
-     "Herbst",
-     "groß",
-     "Suppe"
+     "autumn",
+     "big",
+     "soup"
     ]
    },
    {
-    "word": "Herbst",
+    "word": "Autumn",
     "taboo": [
-     "Blätter",
-     "bunt",
-     "fallen",
-     "Jahreszeit",
-     "Oktober"
+     "leaves",
+     "colourful",
+     "fall",
+     "season",
+     "October"
     ]
    },
    {
-    "word": "Frühling",
+    "word": "Spring",
     "taboo": [
-     "Jahreszeit",
-     "Blumen",
-     "März",
+     "season",
+     "flowers",
+     "March",
      "warm",
-     "blühen"
+     "bloom"
     ]
    },
    {
-    "word": "Sommer",
+    "word": "Summer",
     "taboo": [
-     "heiß",
-     "Jahreszeit",
-     "Ferien",
-     "Sonne",
-     "baden"
+     "hot",
+     "season",
+     "holidays",
+     "sun",
+     "swim"
     ]
    },
    {
     "word": "Winter",
     "taboo": [
-     "Schnee",
-     "kalt",
-     "Jahreszeit",
-     "Dezember",
-     "Weihnachten"
+     "snow",
+     "cold",
+     "season",
+     "December",
+     "Christmas"
     ]
    },
    {
-    "word": "Traum",
+    "word": "Dream",
     "taboo": [
-     "schlafen",
-     "Nacht",
-     "Bett",
-     "Albtraum",
-     "träumen"
+     "sleep",
+     "night",
+     "bed",
+     "nightmare",
+     "imagination"
     ]
    },
    {
-    "word": "Zeitmaschine",
+    "word": "Time machine",
     "taboo": [
-     "Zeit",
-     "reisen",
-     "Vergangenheit",
-     "Zukunft",
-     "Maschine"
+     "travel",
+     "past",
+     "future",
+     "dinosaurs",
+     "clock"
     ]
    },
    {
-    "word": "Superheld",
+    "word": "Superhero",
     "taboo": [
-     "Kräfte",
-     "retten",
-     "Umhang",
-     "fliegen",
-     "Bösewicht"
+     "powers",
+     "save",
+     "cape",
+     "fly",
+     "villain"
     ]
    },
    {
-    "word": "Einhorn",
+    "word": "Unicorn",
     "taboo": [
-     "Horn",
-     "Pferd",
-     "Regenbogen",
-     "Fabelwesen",
-     "weiß"
+     "horse",
+     "rainbow",
+     "magical creature",
+     "white",
+     "glitter"
     ]
    },
    {
-    "word": "Meerjungfrau",
+    "word": "Mermaid",
     "taboo": [
-     "Meer",
-     "Fischschwanz",
-     "Nixe",
-     "Märchen",
-     "schwimmen"
+     "sea",
+     "fish tail",
+     "nymph",
+     "fairy tale",
+     "swim"
     ]
    },
    {
-    "word": "Zwerg",
+    "word": "Dwarf",
     "taboo": [
-     "klein",
-     "Mütze",
-     "Schneewittchen",
-     "Garten",
-     "Märchen"
+     "small",
+     "hat",
+     "Snow White",
+     "garden",
+     "fairy tale"
     ]
    },
    {
-    "word": "Vampir",
+    "word": "Vampire",
     "taboo": [
-     "Blut",
-     "Zähne",
-     "Nacht",
-     "Fledermaus",
-     "Graf"
+     "blood",
+     "teeth",
+     "night",
+     "bat",
+     "count"
     ]
    },
    {
-    "word": "Mumie",
+    "word": "Mummy (Egypt)",
     "taboo": [
-     "Ägypten",
-     "Pyramide",
-     "Binden",
-     "eingewickelt",
-     "Grab"
+     "Egypt",
+     "pyramid",
+     "bandages",
+     "wrapped",
+     "tomb"
     ]
    },
    {
-    "word": "Pyramide",
+    "word": "Pyramid",
     "taboo": [
-     "Ägypten",
-     "Dreieck",
-     "Pharao",
-     "Stein",
-     "Wüste"
+     "Egypt",
+     "triangle",
+     "pharaoh",
+     "stone",
+     "desert"
     ]
    },
    {
-    "word": "Fledermaus",
+    "word": "Bat (animal)",
     "taboo": [
-     "Nacht",
-     "fliegen",
-     "Höhle",
-     "kopfüber",
-     "Vampir"
+     "night",
+     "fly",
+     "cave",
+     "upside down",
+     "vampire"
     ]
    },
    {
-    "word": "Krake",
+    "word": "Octopus",
     "taboo": [
-     "Arme",
-     "acht",
-     "Tintenfisch",
-     "Meer",
-     "Tinte"
+     "arms",
+     "eight",
+     "squid",
+     "sea",
+     "ink"
     ]
    },
    {
-    "word": "Qualle",
+    "word": "Jellyfish",
     "taboo": [
-     "Meer",
-     "durchsichtig",
-     "brennen",
-     "glibberig",
-     "schwimmen"
+     "sea",
+     "transparent",
+     "sting",
+     "jelly-like",
+     "swim"
     ]
    },
    {
-    "word": "Seestern",
+    "word": "Starfish",
     "taboo": [
-     "Meer",
-     "Arme",
-     "fünf",
-     "Strand",
-     "Stern"
+     "sea",
+     "arms",
+     "five",
+     "beach",
+     "points"
     ]
    },
    {
-    "word": "Muschel",
+    "word": "Seashell",
     "taboo": [
-     "Meer",
-     "Strand",
-     "Schale",
-     "Perle",
-     "sammeln"
+     "sea",
+     "beach",
+     "shell",
+     "pearl",
+     "collect"
     ]
    },
    {
-    "word": "Wal",
+    "word": "Whale",
     "taboo": [
-     "Meer",
-     "groß",
-     "Säugetier",
-     "Fontäne",
-     "Fisch"
+     "sea",
+     "big",
+     "mammal",
+     "spout",
+     "fish"
     ]
    },
    {
-    "word": "Eisbär",
+    "word": "Polar bear",
     "taboo": [
-     "weiß",
-     "Nordpol",
-     "Eis",
-     "kalt",
-     "Bär"
+     "white",
+     "North Pole",
+     "ice",
+     "cold",
+     "seal"
     ]
    },
    {
-    "word": "Känguru",
+    "word": "Kangaroo",
     "taboo": [
-     "Beutel",
-     "springen",
-     "Australien",
-     "Baby",
-     "hüpfen"
+     "pouch",
+     "jump",
+     "Australia",
+     "baby",
+     "hop"
     ]
    },
    {
     "word": "Koala",
     "taboo": [
-     "Australien",
-     "Baum",
-     "Eukalyptus",
-     "schlafen",
-     "Bär"
+     "Australia",
+     "tree",
+     "eucalyptus",
+     "sleep",
+     "bear"
     ]
    },
    {
-    "word": "Faultier",
+    "word": "Sloth",
     "taboo": [
-     "langsam",
-     "hängen",
-     "Baum",
-     "schlafen",
-     "faul"
+     "slow",
+     "hang",
+     "tree",
+     "sleep",
+     "lazy"
     ]
    },
    {
-    "word": "Chamäleon",
+    "word": "Chameleon",
     "taboo": [
-     "Farbe",
-     "wechseln",
-     "Echse",
-     "Zunge",
-     "tarnen"
+     "colour",
+     "change",
+     "lizard",
+     "tongue",
+     "camouflage"
     ]
    },
    {
-    "word": "Specht",
+    "word": "Woodpecker",
     "taboo": [
-     "Vogel",
-     "klopfen",
-     "Baum",
-     "Schnabel",
-     "Loch"
+     "bird",
+     "knock",
+     "tree",
+     "beak",
+     "hole"
     ]
    },
    {
-    "word": "Storch",
+    "word": "Stork",
     "taboo": [
-     "Vogel",
-     "Babys",
-     "Beine",
-     "Nest",
-     "klappern"
+     "bird",
+     "babies",
+     "legs",
+     "nest",
+     "clatter"
     ]
    },
    {
     "word": "Flamingo",
     "taboo": [
-     "rosa",
-     "Bein",
-     "Vogel",
-     "stehen",
-     "Wasser"
+     "pink",
+     "leg",
+     "bird",
+     "stand",
+     "water"
     ]
    },
    {
-    "word": "Pfau",
+    "word": "Peacock",
     "taboo": [
-     "Federn",
-     "Rad",
-     "bunt",
-     "Vogel",
-     "schlagen"
+     "feathers",
+     "fan",
+     "colourful",
+     "bird",
+     "proud"
     ]
    },
    {
-    "word": "Nashorn",
+    "word": "Rhino",
     "taboo": [
-     "Horn",
-     "grau",
-     "Afrika",
-     "groß",
-     "Haut"
+     "horn",
+     "grey",
+     "Africa",
+     "big",
+     "skin"
     ]
    },
    {
-    "word": "Nilpferd",
+    "word": "Hippo",
     "taboo": [
-     "Fluss",
-     "Afrika",
-     "groß",
-     "Wasser",
-     "Maul"
+     "river",
+     "Africa",
+     "big",
+     "water",
+     "jaws"
     ]
    },
    {
     "word": "Wolf",
     "taboo": [
-     "heulen",
-     "Rudel",
-     "Mond",
-     "Hund",
-     "Rotkäppchen"
+     "howl",
+     "pack",
+     "moon",
+     "dog",
+     "Little Red Riding Hood"
     ]
    },
    {
-    "word": "Fuchs",
+    "word": "Fox",
     "taboo": [
-     "rot",
-     "schlau",
-     "Schwanz",
-     "Wald",
-     "Huhn"
+     "red",
+     "clever",
+     "tail",
+     "forest",
+     "chicken"
     ]
    },
    {
-    "word": "Eichhörnchen",
+    "word": "Squirrel",
     "taboo": [
-     "Nüsse",
-     "Baum",
-     "Schwanz",
-     "klettern",
-     "rot"
+     "nuts",
+     "tree",
+     "tail",
+     "climb",
+     "red"
     ]
    },
    {
-    "word": "Biber",
+    "word": "Beaver",
     "taboo": [
-     "Damm",
-     "Zähne",
-     "Holz",
-     "Fluss",
-     "Nagetier"
+     "dam",
+     "teeth",
+     "wood",
+     "river",
+     "rodent"
     ]
    },
    {
-    "word": "Maulwurf",
+    "word": "Mole (animal)",
     "taboo": [
-     "graben",
-     "Erde",
+     "dig",
+     "earth",
      "blind",
-     "Hügel",
-     "Garten"
+     "molehill",
+     "garden"
     ]
    },
    {
-    "word": "Regenwurm",
+    "word": "Earthworm",
     "taboo": [
-     "Erde",
-     "Regen",
-     "lang",
-     "Boden",
-     "kriechen"
+     "soil",
+     "rain",
+     "long",
+     "slimy",
+     "wriggle"
     ]
    },
    {
-    "word": "Libelle",
+    "word": "Dragonfly",
     "taboo": [
-     "Flügel",
-     "Teich",
-     "Insekt",
-     "fliegen",
-     "Wasser"
+     "wings",
+     "pond",
+     "insect",
+     "fly",
+     "water"
     ]
    },
    {
-    "word": "Glühwürmchen",
+    "word": "Firefly",
     "taboo": [
-     "leuchten",
-     "Nacht",
-     "Käfer",
-     "Licht",
-     "Sommer"
+     "glow",
+     "night",
+     "beetle",
+     "light",
+     "summer"
     ]
    },
    {
-    "word": "Zahnspange",
+    "word": "Braces",
     "taboo": [
-     "Zähne",
-     "gerade",
-     "Draht",
-     "Zahnarzt",
-     "Mund"
+     "teeth",
+     "straight",
+     "wire",
+     "dentist",
+     "mouth"
     ]
    },
    {
-    "word": "Fieber",
+    "word": "Fever",
     "taboo": [
-     "krank",
-     "Temperatur",
-     "heiß",
-     "Thermometer",
-     "Grad"
+     "sick",
+     "temperature",
+     "hot",
+     "thermometer",
+     "degrees"
     ]
    },
    {
-    "word": "Schluckauf",
+    "word": "Hiccups",
     "taboo": [
-     "hicksen",
-     "Atem",
-     "Zwerchfell",
-     "erschrecken",
-     "Wasser"
+     "hic",
+     "breath",
+     "diaphragm",
+     "scare",
+     "water"
     ]
    },
    {
-    "word": "Niesen",
+    "word": "Sneezing",
     "taboo": [
-     "Nase",
-     "Schnupfen",
-     "Hatschi",
-     "Gesundheit",
-     "kitzeln"
+     "nose",
+     "cold",
+     "atchoo",
+     "bless you",
+     "tickle"
     ]
    },
    {
-    "word": "Witz",
+    "word": "Joke",
     "taboo": [
-     "lustig",
-     "lachen",
-     "erzählen",
-     "Pointe",
-     "Humor"
+     "funny",
+     "laugh",
+     "tell",
+     "punchline",
+     "humour"
     ]
    },
    {
-    "word": "Geheimnis",
+    "word": "Secret",
     "taboo": [
-     "verraten",
-     "flüstern",
-     "niemand",
-     "wissen",
-     "erzählen"
+     "give away",
+     "whisper",
+     "nobody",
+     "know",
+     "tell"
     ]
    },
    {
-    "word": "Heimweh",
+    "word": "Homesickness",
     "taboo": [
-     "Zuhause",
-     "vermissen",
-     "Ferien",
-     "traurig",
-     "Eltern"
+     "family",
+     "miss",
+     "holidays",
+     "sad",
+     "parents"
     ]
    },
    {
-    "word": "Langeweile",
+    "word": "Boredom",
     "taboo": [
-     "nichts",
-     "tun",
-     "langweilig",
-     "öde",
-     "Zeit"
+     "nothing",
+     "do",
+     "yawn",
+     "dull",
+     "time"
     ]
    },
    {
-    "word": "Muskelkater",
+    "word": "Sore muscles",
     "taboo": [
-     "Muskeln",
-     "Sport",
-     "Schmerzen",
-     "Tag",
-     "danach"
+     "legs",
+     "sport",
+     "pain",
+     "next day",
+     "training"
     ]
    },
    {
-    "word": "Hausaufgaben",
+    "word": "Homework",
     "taboo": [
-     "Schule",
-     "Lehrer",
-     "lernen",
-     "Heft",
-     "Zuhause"
+     "school",
+     "teacher",
+     "learn",
+     "exercise book",
+     "evening"
     ]
    },
    {
-    "word": "Zeugnis",
+    "word": "School report",
     "taboo": [
-     "Noten",
-     "Schule",
-     "Ende",
-     "Schuljahr",
-     "Halbjahr"
+     "grades",
+     "school",
+     "end",
+     "school year",
+     "term"
     ]
    },
    {
-    "word": "Pause",
+    "word": "Recess",
     "taboo": [
-     "Schule",
-     "Glocke",
-     "Hof",
-     "spielen",
-     "Znüni"
+     "school",
+     "bell",
+     "schoolyard",
+     "play",
+     "snack"
     ]
    },
    {
-    "word": "Wandtafel",
+    "word": "Blackboard",
     "taboo": [
-     "Kreide",
-     "Schule",
-     "schreiben",
-     "grün",
-     "Lehrer"
+     "chalk",
+     "school",
+     "write",
+     "green",
+     "teacher"
     ]
    },
    {
-    "word": "Taschenrechner",
+    "word": "Calculator",
     "taboo": [
-     "rechnen",
-     "Zahlen",
-     "Mathe",
-     "Tasten",
+     "add",
+     "numbers",
+     "maths",
+     "keys",
      "plus"
     ]
    },
    {
-    "word": "Lineal",
+    "word": "Ruler (for lines)",
     "taboo": [
-     "messen",
-     "Zentimeter",
-     "gerade",
-     "Strich",
-     "Schule"
+     "measure",
+     "centimetre",
+     "straight",
+     "line",
+     "school"
     ]
    },
    {
-    "word": "Radiergummi",
+    "word": "Eraser",
     "taboo": [
-     "radieren",
-     "Bleistift",
-     "Fehler",
-     "weg",
-     "Gummi"
+     "rub out",
+     "pencil",
+     "mistake",
+     "away",
+     "rubber"
     ]
    },
    {
-    "word": "Globus",
+    "word": "Globe",
     "taboo": [
-     "Erde",
-     "Kugel",
-     "Länder",
-     "drehen",
-     "Karte"
+     "earth",
+     "ball",
+     "countries",
+     "spin",
+     "map"
     ]
    },
    {
-    "word": "Wörterbuch",
+    "word": "Dictionary",
     "taboo": [
-     "Wörter",
-     "nachschlagen",
-     "Sprache",
-     "Buch",
-     "Bedeutung"
+     "words",
+     "look up",
+     "language",
+     "book",
+     "meaning"
     ]
    },
    {
-    "word": "Postkarte",
+    "word": "Postcard",
     "taboo": [
-     "Ferien",
-     "Grüße",
-     "schreiben",
-     "Bild",
-     "Briefmarke"
+     "holidays",
+     "greetings",
+     "write",
+     "picture",
+     "stamp"
     ]
    },
    {
-    "word": "Koffer",
+    "word": "Suitcase",
     "taboo": [
-     "Reise",
-     "packen",
-     "Ferien",
-     "Kleider",
-     "Flughafen"
+     "trip",
+     "pack",
+     "holidays",
+     "clothes",
+     "airport"
     ]
    },
    {
-    "word": "Reisepass",
+    "word": "Passport",
     "taboo": [
-     "Ausweis",
-     "Grenze",
-     "Reise",
-     "Foto",
-     "Land"
+     "ID",
+     "border",
+     "trip",
+     "photo",
+     "country"
     ]
    },
    {
-    "word": "Passwort",
+    "word": "Password",
     "taboo": [
-     "geheim",
-     "Computer",
-     "eingeben",
-     "Buchstaben",
-     "Zugang"
+     "secret",
+     "computer",
+     "type",
+     "letters",
+     "access"
     ]
    },
    {
     "word": "Internet",
     "taboo": [
      "online",
-     "Computer",
-     "surfen",
-     "WLAN",
-     "Webseite"
+     "computer",
+     "surf",
+     "Wi-Fi",
+     "website"
     ]
    },
    {
-    "word": "Fernbedienung",
+    "word": "Remote control",
     "taboo": [
-     "Fernseher",
-     "Knöpfe",
-     "Sofa",
-     "umschalten",
-     "Batterie"
+     "television",
+     "buttons",
+     "sofa",
+     "switch channel",
+     "battery"
     ]
    },
    {
     "word": "Sofa",
     "taboo": [
-     "sitzen",
-     "Wohnzimmer",
-     "Couch",
-     "bequem",
-     "liegen"
+     "sit",
+     "living room",
+     "couch",
+     "comfortable",
+     "lie"
     ]
    },
    {
-    "word": "Keller",
+    "word": "Cellar",
     "taboo": [
-     "unten",
-     "dunkel",
-     "Treppe",
-     "Haus",
-     "Vorräte"
+     "down",
+     "dark",
+     "stairs",
+     "house",
+     "supplies"
     ]
    },
    {
-    "word": "Dachboden",
+    "word": "Attic",
     "taboo": [
-     "oben",
-     "Estrich",
-     "Haus",
-     "Gerümpel",
-     "Dach"
+     "up",
+     "loft",
+     "house",
+     "junk",
+     "roof"
     ]
    },
    {
     "word": "Garage",
     "taboo": [
-     "Auto",
-     "parken",
-     "Tor",
-     "Haus",
-     "Werkzeug"
+     "car",
+     "park",
+     "door",
+     "house",
+     "tools"
     ]
    },
    {
-    "word": "Werkzeug",
+    "word": "Tools (workshop)",
     "taboo": [
-     "Hammer",
-     "Schraubenzieher",
-     "reparieren",
-     "Kiste",
-     "Nagel"
+     "hammer",
+     "screwdriver",
+     "repair",
+     "box",
+     "nail"
     ]
    },
    {
     "word": "Hammer",
     "taboo": [
-     "Nagel",
-     "schlagen",
-     "Werkzeug",
-     "Holz",
-     "Stiel"
+     "nail",
+     "hit",
+     "tool",
+     "wood",
+     "handle"
     ]
    },
    {
-    "word": "Schraube",
+    "word": "Screw",
     "taboo": [
-     "drehen",
-     "Schraubenzieher",
-     "Gewinde",
-     "Mutter",
-     "Metall"
+     "turn",
+     "screwdriver",
+     "thread",
+     "nut",
+     "metal"
     ]
    },
    {
-    "word": "Leiter",
+    "word": "Ladder",
     "taboo": [
-     "Sprossen",
-     "hoch",
-     "klettern",
-     "steigen",
-     "Feuerwehr"
+     "rungs",
+     "up",
+     "climb",
+     "step",
+     "fire brigade"
     ]
    },
    {
-    "word": "Schubkarre",
+    "word": "Wheelbarrow",
     "taboo": [
-     "Rad",
-     "Garten",
-     "schieben",
-     "Erde",
-     "transportieren"
+     "wheel",
+     "garden",
+     "push",
+     "earth",
+     "transport"
     ]
    },
    {
-    "word": "Gießkanne",
+    "word": "Watering can",
     "taboo": [
-     "Wasser",
-     "Blumen",
-     "gießen",
-     "Garten",
-     "Kanne"
+     "water",
+     "flowers",
+     "pour",
+     "garden",
+     "spout"
     ]
    },
    {
-    "word": "Rasenmäher",
+    "word": "Lawn mower",
     "taboo": [
-     "Gras",
-     "mähen",
-     "Garten",
-     "laut",
-     "kurz"
+     "grass",
+     "mow",
+     "garden",
+     "loud",
+     "short"
     ]
    },
    {
-    "word": "Besen",
+    "word": "Broom",
     "taboo": [
-     "fegen",
-     "wischen",
-     "Hexe",
-     "Staub",
-     "Boden"
+     "sweep",
+     "wipe",
+     "witch",
+     "dust",
+     "floor"
     ]
    },
    {
-    "word": "Mülleimer",
+    "word": "Rubbish bin",
     "taboo": [
-     "Abfall",
-     "Müll",
-     "wegwerfen",
-     "Deckel",
-     "Kübel"
+     "waste",
+     "litter",
+     "throw away",
+     "lid",
+     "bag"
     ]
    },
    {
     "word": "Recycling",
     "taboo": [
-     "wiederverwerten",
-     "Plastik",
-     "Altglas",
-     "trennen",
-     "Umwelt"
+     "reuse",
+     "plastic",
+     "glass",
+     "sort",
+     "environment"
     ]
    },
    {
-    "word": "Sparschwein",
+    "word": "Piggy bank",
     "taboo": [
-     "Geld",
-     "sparen",
-     "Münzen",
-     "Schwein",
-     "Bank"
+     "money",
+     "save",
+     "coins",
+     "pig",
+     "bank"
     ]
    },
    {
-    "word": "Geldbeutel",
+    "word": "Wallet",
     "taboo": [
-     "Geld",
-     "Portemonnaie",
-     "Münzen",
-     "Tasche",
-     "bezahlen"
+     "money",
+     "purse",
+     "coins",
+     "pocket",
+     "pay"
     ]
    },
    {
-    "word": "Supermarkt",
+    "word": "Supermarket",
     "taboo": [
-     "einkaufen",
-     "Kasse",
-     "Regale",
-     "Einkaufswagen",
-     "Lebensmittel"
+     "shop",
+     "checkout",
+     "shelves",
+     "trolley",
+     "groceries"
     ]
    },
    {
-    "word": "Einkaufsliste",
+    "word": "Shopping list",
     "taboo": [
-     "einkaufen",
-     "Zettel",
-     "schreiben",
-     "Supermarkt",
-     "vergessen"
+     "shop",
+     "note",
+     "write",
+     "supermarket",
+     "forget"
     ]
    },
    {
-    "word": "Bäckerei",
+    "word": "Bakery",
     "taboo": [
-     "Brot",
-     "Bäcker",
-     "Gipfeli",
-     "Brötchen",
-     "kaufen"
+     "bread",
+     "baker",
+     "croissant",
+     "roll",
+     "buy"
     ]
    },
    {
     "word": "Restaurant",
     "taboo": [
-     "essen",
-     "Kellner",
-     "bestellen",
-     "Speisekarte",
-     "Koch"
+     "eat",
+     "waiter",
+     "order",
+     "menu",
+     "cook"
     ]
    },
    {
-    "word": "Kellner",
+    "word": "Waiter",
     "taboo": [
-     "bedienen",
-     "Restaurant",
-     "bestellen",
-     "Teller",
-     "Trinkgeld"
+     "serve",
+     "restaurant",
+     "order",
+     "plate",
+     "tip"
     ]
    },
    {
-    "word": "Trinkgeld",
+    "word": "Tip (money)",
     "taboo": [
-     "Kellner",
-     "Geld",
-     "Restaurant",
+     "waiter",
+     "money",
+     "restaurant",
      "extra",
-     "danke"
+     "thanks"
     ]
    },
    {
-    "word": "Friseur",
+    "word": "Hairdresser (job)",
     "taboo": [
-     "Haare",
-     "schneiden",
-     "Coiffeur",
-     "Schere",
-     "Salon"
+     "hair",
+     "cut",
+     "barber",
+     "scissors",
+     "salon"
     ]
    },
    {
-    "word": "Briefträger",
+    "word": "Mail carrier",
     "taboo": [
-     "Briefe",
-     "Post",
-     "bringen",
-     "Pöstler",
-     "Paket"
+     "letters",
+     "post",
+     "deliver",
+     "postbox",
+     "parcel"
     ]
    },
    {
-    "word": "Gärtner",
+    "word": "Gardener",
     "taboo": [
-     "Garten",
-     "Pflanzen",
-     "Blumen",
-     "Rasen",
-     "gießen"
+     "flowerbed",
+     "plants",
+     "flowers",
+     "lawn",
+     "water"
     ]
    },
    {
-    "word": "Kapitän",
+    "word": "Captain",
     "taboo": [
-     "Schiff",
-     "Meer",
-     "Steuer",
-     "Mütze",
-     "Mannschaft"
+     "ship",
+     "sea",
+     "helm",
+     "cap",
+     "crew"
     ]
    },
    {
     "word": "Pilot",
     "taboo": [
-     "Flugzeug",
-     "fliegen",
-     "Cockpit",
-     "Flughafen",
-     "Uniform"
+     "plane",
+     "fly",
+     "cockpit",
+     "airport",
+     "uniform"
     ]
    },
    {
-    "word": "Tierarzt",
+    "word": "Vet",
     "taboo": [
-     "Tiere",
-     "krank",
-     "Arzt",
-     "Hund",
-     "Praxis"
+     "animals",
+     "sick",
+     "doctor",
+     "dog",
+     "practice"
     ]
    },
    {
-    "word": "Kaminfeger",
+    "word": "Chimney sweep",
     "taboo": [
-     "Kamin",
-     "schwarz",
-     "Ruß",
-     "Glück",
-     "Dach"
+     "chimney",
+     "black",
+     "soot",
+     "luck",
+     "roof"
     ]
    },
    {
-    "word": "Sänger",
+    "word": "Singer",
     "taboo": [
-     "singen",
-     "Lied",
-     "Bühne",
-     "Stimme",
-     "Mikrofon"
+     "sing",
+     "song",
+     "stage",
+     "voice",
+     "microphone"
     ]
    },
    {
-    "word": "Mikrofon",
+    "word": "Microphone",
     "taboo": [
-     "laut",
-     "sprechen",
-     "singen",
-     "Bühne",
-     "Stimme"
+     "loud",
+     "speak",
+     "sing",
+     "stage",
+     "voice"
     ]
    },
    {
-    "word": "Kopfhörer",
+    "word": "Headphones",
     "taboo": [
-     "Musik",
-     "hören",
-     "Ohren",
-     "leise",
-     "Kabel"
+     "music",
+     "listen",
+     "ears",
+     "quiet",
+     "cable"
     ]
    },
    {
-    "word": "Spielkonsole",
+    "word": "Game console",
     "taboo": [
-     "Videospiel",
-     "Controller",
-     "spielen",
-     "Fernseher",
-     "gamen"
+     "video game",
+     "controller",
+     "play",
+     "TV",
+     "gaming"
     ]
    },
    {
     "word": "Selfie",
     "taboo": [
-     "Foto",
-     "Handy",
-     "selbst",
-     "Kamera",
-     "lächeln"
+     "photo",
+     "mobile",
+     "self",
+     "camera",
+     "smile"
     ]
    },
    {
-    "word": "Schlafsack",
+    "word": "Sleeping bag",
     "taboo": [
-     "Camping",
-     "schlafen",
-     "Zelt",
-     "Reißverschluss",
+     "camping",
+     "sleep",
+     "tent",
+     "zip",
      "warm"
     ]
    },
    {
-    "word": "Lagerfeuer",
+    "word": "Campfire",
     "taboo": [
-     "Feuer",
-     "Holz",
-     "Wurst",
-     "Camping",
-     "Stockbrot"
+     "flames",
+     "wood",
+     "sausage",
+     "camping",
+     "marshmallows"
     ]
    },
    {
-    "word": "Kaugummi",
+    "word": "Chewing gum",
     "taboo": [
-     "kauen",
-     "Blase",
-     "klebrig",
-     "Pfefferminz",
-     "Mund"
+     "chew",
+     "bubble",
+     "sticky",
+     "peppermint",
+     "mouth"
     ]
    },
    {
-    "word": "Zuckerwatte",
+    "word": "Candyfloss",
     "taboo": [
-     "Jahrmarkt",
-     "rosa",
-     "süß",
-     "Stiel",
-     "flauschig"
+     "fair",
+     "pink",
+     "sweet",
+     "stick",
+     "fluffy"
     ]
    },
    {
-    "word": "Limonade",
+    "word": "Lemonade",
     "taboo": [
-     "trinken",
-     "süß",
-     "Zitrone",
-     "sprudeln",
-     "Getränk"
+     "drink",
+     "sweet",
+     "lemon",
+     "fizzy",
+     "beverage"
     ]
    },
    {
-    "word": "Waffel",
+    "word": "Waffle",
     "taboo": [
-     "Teig",
-     "Eisen",
-     "Puderzucker",
-     "Gitter",
-     "backen"
+     "batter",
+     "iron",
+     "icing sugar",
+     "grid",
+     "bake"
     ]
    },
    {
-    "word": "Lebkuchen",
+    "word": "Gingerbread",
     "taboo": [
-     "Weihnachten",
-     "Gewürze",
-     "Herz",
-     "Hexenhaus",
-     "braun"
+     "Christmas",
+     "spices",
+     "heart",
+     "witch's house",
+     "brown"
     ]
    },
    {
-    "word": "Spiegelei",
+    "word": "Fried egg",
     "taboo": [
-     "Ei",
-     "Pfanne",
-     "braten",
-     "Dotter",
-     "Frühstück"
+     "frying pan",
+     "fry",
+     "yolk",
+     "breakfast",
+     "white"
     ]
    }
   ]
