@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-beta.12
+
+- Clap the Beat: four «get ready» clicks before every clap bar – the first note can now be hit
+
 ## 1.1.1-beta.11
 
 - «24h Endurance» is back as a short, fast race: short laps with two chicanes (brake before them!), automatic pit stop and driver change after every lap; the pit crew lays out slicks or rain tyres, fills the fuel can and prepares a spare engine after an overheat; day, night and sudden rain; team colour, car number and country; cheering stands, campers with signs and trackside banners

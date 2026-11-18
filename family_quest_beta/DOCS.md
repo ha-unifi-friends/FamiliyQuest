@@ -1394,7 +1394,7 @@ files), then everybody **claps it back** on the big clap button. Play **alone** 
 practice bots) or open a **family table** (1 to 8 players, optionally with bots; guests via QR code). Turn the sound on!
 
 - **A round** (call and response): a **count-in** of four clicks, then **listen** – the pattern sounds over the groove and
-  its dots light up on a bar of 16 steps; then the **clap bar** – the same dots stay, a playhead sweeps over them, clap
+  its dots light up on a bar of 16 steps; then a **run-up** of four clicks («get ready»); then the **clap bar** – the same dots stay, a playhead sweeps over them, clap
   when it reaches a dot. A short pause shows your points and the live ranking, then the next round starts by itself.
   We chose this variant over notes sliding to a hit line: you hear the beat first (the fun part of clapping along) and
   the dots still help children who cannot remember the whole pattern.
