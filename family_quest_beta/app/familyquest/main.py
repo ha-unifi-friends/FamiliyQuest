@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
+from .api import stories as stories_api
 from . import loginlog, netfilter
 from .api import deals as deals_api
 from .api.auth import INGRESS_IP
@@ -114,6 +115,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     app.include_router(planer.router)
     app.include_router(community.router)
     app.include_router(decks.router)
+    app.include_router(stories_api.router)
     app.include_router(integration_api.router)
     app.include_router(integration_api.parent_router)
     app.include_router(deals_api.router)               # deals (deals.py)

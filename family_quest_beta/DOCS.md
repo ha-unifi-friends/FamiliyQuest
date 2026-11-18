@@ -477,6 +477,65 @@ A board opens full screen (✕ closes it):
 Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
 to 600 points. Everything is in the database, so the backup contains the boards.
 
+### My adventure books (choose-your-path stories)
+In the app menu **📖 My adventure books** (also a card on the Family page) and in the parent area under **Family**:
+children and parents write branching stories, the whole family reads them. Guests never see them.
+
+**Writing** (✏️ Edit, or **+ New book**: title, language, an empty book or a template – 🌴 jungle with the lion,
+🚀 space, 🏰 haunted castle, 🐠 underwater, each a small finished story in all app languages):
+- A book is a list of **pages**: 📄 **scene** (text, a picture and 2–4 choices A–D, each pointing to another page),
+  🏆 **good ending** (confetti) or 💀 **bad ending** («Try again»). Paths may merge or go back to an earlier page.
+  In the target list of a choice «＋ New scene / good ending / bad ending» makes the page right away.
+- **Picture** per page: an emoji, an **own drawing** (painter for finger and stylus: pen in 4 sizes with stylus pressure,
+  14 colours, rubber, fill bucket, undo) or a **photo** (made smaller in the browser, max. 2 MB per picture).
+- **🏞️ Background** per page: 24 own scenes (jungle, beach, deep sea, space, haunted castle, enchanted forest, snowy
+  mountains, desert, pirate ship, crystal cave, city at night, village, dragon's lair, candy land, dinosaur valley,
+  volcano, North Pole, mine, castle in the clouds, train station, school, kids' room, attic, laboratory – small SVG
+  files in `web/img/stories`) or none; the picture sits on top of it, the text stays on the paper below.
+- **🎒 Items:** a scene can give one item («🍌 Banana»); a choice can need one – readers only see it when they have it.
+- **🃏 Pages / 🗺️ Map:** the map shows every page as a box (rows by distance from the first page) with arrows for the
+  choices; dashed arrows need an item, red stubs are choices without a target, orange boxes need work, dashed boxes
+  cannot be reached. Tap a box to edit the page.
+- The **checker** lists what is missing: a scene without continuation or with only one choice, choices without
+  target or text, no good ending, pages that cannot be reached, an item no page gives, a scene where every choice
+  needs an item. Drafts are saved automatically (also incomplete); **🚀 Publish** needs a complete book. **▶ Try**
+  reads the draft right away (nothing is saved).
+- After publishing, further changes stay in the draft until it is published again – readers see the published version.
+
+**Reading** (tap a cover): page by page in book typography, choices as big buttons, ⏮ back to the start, 🎒 the
+backpack. Every reader collects their own endings («2 of 5 endings found» on the cover) and gives ⭐ 1–5 after reaching
+an ending (not for the own book).
+
+**Who can read it** (chosen by the author when the book is made and in the editor at any time; new books: 🔒):
+- **🔒 Only me** – only the author can read it, parents neither. Nobody else gets its title, text or pictures from the
+  app; in the parent area parents only see that a private book exists (author, page count, date) and cannot open,
+  change or remove it. Never needs approval.
+- **🧒 Other children** – all children of the family (and the author). Parents see these books only in the parent area
+  (moderation: read, edit, unpublish, remove).
+- **👨‍👩‍👧 Whole family** – children and parents.
+
+**Import / export** (same idea as the quiz and pack files for an AI): ⚙️ › **Export as a file** saves a book as
+self-describing JSON (`family-quest-story/1`: instructions and field guide for an AI, the background ids, the book with
+pages, choices, endings, items, emoji pictures and backgrounds – own drawings and photos stay out). **📥 Import** on
+the shelf: copy the **template for the AI** into any AI chat, describe the idea, paste the answer (sentences and code
+fences around the JSON are fine) or choose a file. Every book comes in as a private draft of whoever imports it (ids,
+authors and anything else from the file are not taken over), the checker shows what is still missing. Max. 1 MB, 5
+books per file.
+
+**Single-language books:** a book is written in one language (a language tag, chosen when it is made, changeable in ⚙️)
+– there are no translations inside a book. The templates come in every app language.
+
+**Parents** (Family › My adventure books › ⚙️): adventure books on/off per child (off: no menu entry, no reading or
+writing), **approval** before the others see a child's book (default off – then a book for 🧒 / 👨‍👩‍👧 waits under
+«Waiting for approval»: 👀 read, ✓ approve, ✗ back to a draft; a new version waits again while the readers keep the
+approved one), rewards for writing: coins / XP per book (default 20 coins, paid once per book when the others can first
+read it – not for private books) and per reader who is somebody else and reaches an ending for the first time
+(default 0, once per reader). Parents edit, unpublish and remove every book that is not private; children edit their
+own.
+
+Limits: 300 books, 200 pages per book, 1500 characters per page, 120 per choice, 40 per item, 80 per title, pictures
+max. 2 MB each and 300 MB together (in `media/_stories`, part of the backup; pictures no book uses are removed).
+
 ### Wichteln (secret gift giving)
 Under the polls, everybody can start a **Wichteln**: enter the occasion (e.g. «Christmas 2026»), choose who takes part
 (whole family or single members) and the rules – *parents not among each other*, *children not among each other*, or

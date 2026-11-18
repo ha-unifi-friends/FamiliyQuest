@@ -2117,6 +2117,7 @@ async function communityView(main) {
     await familyTimeSection(me, { settings: redraw => familyTimeSettings(redraw, true) }),
     await councilSection(me), await pollsSection(me),
     await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }),
+    await storiesSection(),
     await wichtelnSection(me),
     section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
   drawHist();
