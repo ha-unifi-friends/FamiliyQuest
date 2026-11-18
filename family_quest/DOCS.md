@@ -205,6 +205,59 @@ Events: `family_quest_lektion_fertig`, `family_quest_aemtli_erledigt`, `family_q
 (each with `profile` and `profile_id`). The sensors are written through the REST API, so they are recreated when the app
 starts and do not have a unique id.
 
+### Family Quest HA integration (own devices and entities)
+
+For real entities (unique id, one device per child, editable in Home Assistant, with history and areas) Family Quest
+brings its own Home Assistant integration (custom component `familyquest`). It is **off by default** – nothing is
+copied into the Home Assistant configuration until a parent switches it on.
+
+1. Parent area › Settings › **🏠 Family Quest HA integration** › switch it on. Family Quest
+   - makes an **integration token** and shows it **once** (📋 Copy) – only a hash is stored; *🔄 New token* makes a
+     new one (the old one stops working, Home Assistant then asks for the new one),
+   - copies the integration to `/config/custom_components/familyquest` (and again at every start of the app while it
+     is on, so an update of the app updates the integration; *⬇️ Install again* does it by hand). For this the app
+     maps the Home Assistant configuration writable (`homeassistant_config:rw`); its AppArmor profile allows writing
+     only in `custom_components/familyquest` – everything else (e.g. the Family Planer import) stays read-only.
+2. **Restart Home Assistant** (Settings › System › Restart).
+3. Settings › Devices & services › **Add integration** › *Family Quest*: keep the suggested address
+   (`http://<add-on hostname>:8099`, the app on the internal Supervisor network) and paste the token.
+
+Switched off, the API refuses the token (Home Assistant shows the integration as failed / asks to re-authenticate);
+the button *🗑️ Remove from Home Assistant* deletes the folder again (delete the integration under Devices & services
+first, then restart Home Assistant). The integration asks the app every **30 seconds** and right after every action.
+The API (`/api/integration/state`, `/api/integration/action`, header `Authorization: Bearer <token>`) answers inside
+Home Assistant OS only to Home Assistant Core on the Supervisor network – not through ingress, not from the home
+network; wrong tokens are limited like wrong PINs.
+
+**Devices and entities** (names follow the language of Home Assistant – English and German included):
+
+| Device | Entity | |
+| --- | --- | --- |
+| each child | sensor *XP today* | attribute `daily_goal` |
+| | sensor *Total XP*, *Level*, *Streak* (days) | level: attribute `next_level_at` |
+| | sensor *Daily goal progress* (%) | |
+| | sensor per spendable account, e.g. *Coins*, *Internet minutes* | balance |
+| | sensor *Open chores* | attributes `chores`, `waiting_for_approval` |
+| | sensor *Lessons today* | attribute `learning_minutes_today` |
+| | sensor *Internet minutes left* | only with internet time managed by Family Quest; ∞ = state *unknown* + `unlimited: true` |
+| | sensor *Game time left today*, *Learning time left today* (min) | ∞ = state *unknown* + `unlimited: true`; `used_today` |
+| | binary sensor *Daily goal met*, *Game time used up*, *OfflineTime* | OfflineTime: calendar OfflineTime or a block time of the internet plan |
+| | binary sensor *Internet blocked* | internet time not running (attributes `block_until`, `can_start`) |
+| | **switch** *Internet* | on = the internet time runs. Off pauses it; on starts it with the child's minutes – same rules as in the app (no minutes, block time or OfflineTime: refused) |
+| Family Quest (family) | sensor *Family total XP*, *Family XP today*, *Running games*, *Open votes and polls* | votes: family council votes + open polls |
+| | sensor *Waiting for approval* | chores + rewards; attributes `chores` (`task_id`), `rewards` (`redemption_id`) |
+
+**Actions** (Developer tools › Actions; with `return_response` they answer with the result):
+
+- `familyquest.add_points` – `child` (name or id), `account` (default `coins`), `amount` (−10000 … 10000, not 0),
+  `reason`: like *Book points* in the parent area (shown in the child's history).
+- `familyquest.approve_chore` – `task_id`, `approve` (`false` = «again»).
+- `familyquest.approve_reward` – `redemption_id`, `approve` (`false` = reject).
+
+Nothing else can be changed from Home Assistant (no profiles, settings, PINs or deletions). The sensors above
+(`sensor.family_quest_…` without unique id) are still written as before, so existing automations keep working;
+with the integration you can hide or ignore them.
+
 ### Family Planer
 
 Family Quest reads the persons and their chore lists (`todo.*`) from the Family Planer's entity registry. Link a profile

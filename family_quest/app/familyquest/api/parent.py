@@ -1022,7 +1022,13 @@ def delete_goal(gid: int, request: Request, me: dict = Parent) -> dict:
 # ---------------------------------------------------------------- settings
 @router.get("/settings")
 def settings(request: Request, me: dict = Parent) -> dict:
-    return app_of(request).db.all_settings()
+    return _public_settings(app_of(request))
+
+
+def _public_settings(fq) -> dict:
+    s = fq.db.all_settings()
+    s.pop("ha_integration", None)        # token hash: only through /api/parent/integration
+    return s
 
 
 @router.put("/settings")
@@ -1066,7 +1072,7 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
     for k, v in body.items():
         if k in DEFAULT_SETTINGS:
             fq.db.set_setting(k, v)
-    return fq.db.all_settings()
+    return _public_settings(fq)
 
 
 # ---------------------------------------------------------------- behaviour weather

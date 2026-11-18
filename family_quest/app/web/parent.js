@@ -1799,6 +1799,62 @@ function haLoginSection(s) {
     } }, "💾 ", T("Save")));
 }
 
+// ---------------------------------------------------------------- Family Quest HA integration (custom component)
+// on: a token (shown once) and the component in /config/custom_components/familyquest; off: the token is refused
+async function integrationSection() {
+  const box = h("section.card.sec");
+  let st, token = "";
+  try { st = await call("parent/integration"); } catch { return null; }
+  const copyField = (value, label) => {
+    const inp = h("input", { type: "text", readonly: true, value, spellcheck: false, translate: "no", onfocus: e => e.target.select() });
+    return h("label.field", label, h("div.row", h("span.grow", inp), h("button.btn.small", { onclick: async () => {
+      try { await navigator.clipboard.writeText(value); toast(T("Copied"), "good"); } catch { inp.focus(); inp.select(); }
+    } }, "📋 ", T("Copy"))));
+  };
+  const apply = r => { st = r; if (r.token) token = r.token; draw(); };
+  async function switchTo(on) {
+    try { apply(await call("parent/integration", { method: "PUT", body: { enabled: on } })); toast(T("Saved"), "good"); }
+    catch { draw(); }
+    if (st.install_error) toast(st.install_error, "bad");
+  }
+  function draw() {
+    const comp = st.component || {};
+    const on = h("input", { type: "checkbox", checked: st.enabled, onchange: () => switchTo(on.checked) });
+    box.replaceChildren(...[h("h2", "🏠 ", T("Family Quest HA integration")),
+      h("p.small.muted", T("Shows the most important numbers of every child (XP, coins, chores, time left, internet …) as sensors in Home Assistant – with a switch for the internet time and actions to book points and to approve chores and rewards.")),
+      h("label.check", on, h("strong", T("Family Quest HA integration"))),
+      !st.config_writable ? h("p.warn-text", T("The Home Assistant configuration folder cannot be written – the component cannot be copied (update the app).")) : null,
+      st.enabled ? [
+        token ? h("div.card.note",
+          h("p", h("strong", "🔑 ", T("Integration token")), " – ", T("shown only now. Copy it and keep it until Home Assistant asks for it.")),
+          copyField(token, T("Token"))) : null,
+        copyField(st.url, T("Address of Family Quest (for Home Assistant)")),
+        h("p.small", comp.installed ? ["✓ ", I18N.tr(T("Installed in {0} (version {1})")).replace("{0}", comp.path).replace("{1}", comp.version || "?")]
+          : h("span.warn-text", T("Not installed in Home Assistant yet."))),
+        h("h3", T("Next steps")),
+        h("ol.small",
+          h("li", T("Restart Home Assistant (Settings › System › Restart).")),
+          h("li", T("Settings › Devices & services › Add integration › Family Quest.")),
+          h("li", T("Keep the suggested address and paste the token."))),
+        st.last_poll ? h("p.small.muted", I18N.tr(T("Home Assistant last asked: {0}")).replace("{0}", st.last_poll.replace("T", " "))) : null,
+        h("div.row.wrap",
+          h("button.btn.small.ghost", { onclick: async () => {
+            if (!confirm(I18N.tr(T("Make a new token? Home Assistant asks for the new one; the old token stops working.")))) return;
+            apply(await call("parent/integration/token", { method: "POST" }));
+          } }, "🔄 ", T("New token")),
+          h("button.btn.small.ghost", { onclick: async () => { apply(await call("parent/integration/install", { method: "POST" })); toast(T("Copied to Home Assistant – restart Home Assistant"), "good"); } },
+            "⬇️ ", T("Install again")))]
+      : [h("p.small.muted", T("Off: Home Assistant gets no data and the token does not work.")),
+        comp.installed ? h("div.row.wrap", h("span.small.grow", I18N.tr(T("Still installed in {0}")).replace("{0}", comp.path)),
+          h("button.btn.small.ghost", { onclick: async () => {
+            if (!confirm(I18N.tr(T("Remove the component from Home Assistant? Delete the integration under Devices & services first, then restart Home Assistant.")))) return;
+            apply(await call("parent/integration/component", { method: "DELETE" })); toast(T("Removed – restart Home Assistant"), "good");
+          } }, "🗑️ ", T("Remove from Home Assistant"))) : null]].flat(2).filter(x => x != null));
+  }
+  draw();
+  return box;
+}
+
 // IPv4 helpers for the range editor (IPv6 entries stay as written)
 const ip2n = ip => { const m = String(ip).trim().match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/); if (!m || m.slice(1).some(x => +x > 255)) return null; return ((+m[1] << 24) >>> 0) + (+m[2] << 16) + (+m[3] << 8) + +m[4]; };
 const n2ip = n => [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".");
@@ -2885,6 +2941,7 @@ async function settingsView(main) {
     themesSection(),
     weatherBox("config"),
     haLoginSection(s),
+    await integrationSection(),
     await firewallSection(s),
     await translationsSection(),
     backupSection(),

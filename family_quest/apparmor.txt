@@ -26,6 +26,12 @@ profile family_quest flags=(attach_disconnected,mediate_deleted) {
   /data/** rwlk,
   /share/ rw,
   /share/** rwlk,
+  # Family Quest HA integration: only its own folder in Home Assistant's configuration (the rest stays read-only)
+  /homeassistant/custom_components/ rw,
+  /homeassistant/custom_components/familyquest/ rw,
+  /homeassistant/custom_components/familyquest/** rwlk,
+  /homeassistant/custom_components/.familyquest.new/ rw,
+  /homeassistant/custom_components/.familyquest.new/** rwlk,
   /tmp/ rw,
   /tmp/** rwlk,
   /var/tmp/** rwlk,

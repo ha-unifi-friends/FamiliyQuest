@@ -21,7 +21,7 @@ ports_description:
   8099/tcp: "Direct access for tablets in the home network (only with the option direct_access)"
 map:
   - share:rw
-  - homeassistant_config:ro
+  - homeassistant_config:rw
   - media:rw
 options:
   log_level: info
