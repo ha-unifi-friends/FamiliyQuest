@@ -29,6 +29,9 @@ const CUBE_VIEWS = [["F", T("Front side"), -22, -22], ["B", T("Back side"), 158,
   ["R", T("Right side"), -68, -22], ["U", T("Top side"), -22, -68], ["D", T("Bottom side"), -22, 68]];
 const CUBE_FACE_CSS = ["rotateX(90deg)", "rotateY(90deg)", "", "rotateX(-90deg)", "rotateY(-90deg)", "rotateY(180deg)"];   // U R F D L B
 
+// a turn in the guide: slow enough to follow with the own cube, after a moment that shows the colours before it
+const CUBE_TURN_MS = 1500, CUBE_HOLD_MS = 1100;
+
 // the 3D cube: stickers as tiles turned into place with CSS 3D; drag to look around, tap a sticker to paint it
 function cube3d(n, { onTap } = {}) {
   const g = CubeSolver.geom(n), scene = h("div.cb-scene"), body = h("div.cb-cube");
@@ -120,6 +123,19 @@ function cube3d(n, { onTap } = {}) {
   };
 }
 
+// the first time: a finger takes the middle of the cube and drags it – the cube turns along (shows: you can turn it)
+function cubeDragHint(area, viewer) {
+  try { localStorage.setItem("fq.cube.hint", "1"); } catch {}
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const finger = h("div.cb-finger", { "aria-hidden": "true" }, "👆");
+  area.append(finger);
+  const steps = [[-30, -24, 0], [25, -24, 900], [25, 18, 1800], [-30, -24, 2900]];
+  const timers = steps.map(([y, p, t], i) => setTimeout(() => { if (i) viewer.look(y, p, true); }, t + 500));
+  const stop = () => { timers.forEach(clearTimeout); finger.remove(); viewer.el.removeEventListener("pointerdown", stop); };
+  viewer.el.addEventListener("pointerdown", stop);
+  setTimeout(stop, 4200);
+}
+
 // the flat net: top above, then left, front, right, back, then bottom – for small phones
 function cubeNet(n, colors, marks, onTap) {
   const g = CubeSolver.geom(n), at = { 0: [0, 1], 4: [1, 0], 2: [1, 1], 1: [1, 2], 5: [1, 3], 3: [2, 1] };
@@ -162,6 +178,8 @@ function cubeGame(box) {
     if (netView) area.append(cubeNet(n, input[n], marks, tap));
     else {
       viewer = cube3d(n, { onTap: tap }); viewer.set(input[n], marks); area.append(viewer.el);
+      let seen = false; try { seen = localStorage.getItem("fq.cube.hint") === "1"; } catch {}
+      if (!seen) cubeDragHint(area, viewer);
     }
     const views = netView ? null : h("div.cb-views", ...CUBE_VIEWS.map(([k, label, y, p]) => h("button", { onclick: () => viewer.look(y, p) }, label)));
     const palette = h("div.cb-palette", ...CUBE_ORDER.map(c => h("button.cb-sw" + (c === pick ? ".on" : ""), {
@@ -228,7 +246,7 @@ function cubeGame(box) {
   // ------------------------------------------------ the step-by-step guide
   const steps = () => guide.phases.flatMap((p, pi) => p.moves.map(m => ({ m, pi })));
   const stateAt = k => CubeSolver.applyAll(guide.stickers, steps().slice(0, k).map(s => s.m), guide.n);
-  let gv = null;
+  let gv = null, replayT = null;
   const lookFor = m => m[0] === "L" ? [32, -24] : m[0] === "D" ? [-30, 26] : m[0] === "B" ? [-40, -38] : [-30, -24];
   function drawGuide(intro = false, animate = false) {
     const all = steps(), k = guide.step, total = all.length;
@@ -242,7 +260,7 @@ function cubeGame(box) {
           .replace("{0}", colorList([guide.ref[3], guide.ref[5], guide.ref[4]])));
       head.append(h("strong", "🧊 ", I18N.tr(T("{0} moves")).replace("{0}", total)), guide.phases.length > 1 ? h("span.muted.small", " · " + I18N.tr(T("{0} phases")).replace("{0}", guide.phases.length)) : null);
       card.append(h("div.cb-hold", guide.n === 3 ? [h("span.cb-dot", { style: { "--c": CUBE_HEX.Y } }), h("span.cb-dot", { style: { "--c": CUBE_HEX.G } })] : null), hold);
-      nav.append(h("button.btn.ghost", { onclick: edit }, "✎ ", T("Colours")), h("button.btn.grow", { onclick: () => go1(1) }, T("Let's go"), " ▶"));
+      nav.append(h("button.btn.ghost", { onclick: edit }, "✎ ", T("Colours")), h("button.btn.grow", { onclick: () => go1(1, true) }, T("Let's go"), " ▶"));
     } else if (k > total) {
       gv.set(stateAt(total), []); gv.look(-30, -24, false);
       head.append(h("strong", "🎉 ", T("Solved! Great job!")));
@@ -259,11 +277,13 @@ function cubeGame(box) {
         h("p.small.muted.cb-ptext", h("span", ptext), " (" + inPhase + "/" + ph.moves.length + ")"),
         h("p.small.muted.cb-then", I18N.tr(T("Then:")) + " " + (all.slice(k, k + 6).map(x => x.m).join(" ") || "🎉")));
       nav.append(h("button.btn.ghost", { onclick: () => go1(k - 1) }, "◀ ", T("Back")),
-        h("button.btn.ghost", { title: T("Show again"), onclick: () => { gv.set(stateAt(k - 1), []); gv.turn(s.m); } }, "🔁"),
+        // show again: the colours before the move stay a moment (that is where you start), then the slow turn
+        h("button.btn.ghost", { title: T("Show again"), onclick: () => { clearTimeout(replayT); gv.set(stateAt(k - 1), []); replayT = setTimeout(() => gv.turn(s.m, CUBE_TURN_MS), CUBE_HOLD_MS); } }, "🔁"),
         h("button.btn.grow.cb-next", { onclick: () => go1(k + 1, true) }, T("Next"), " ▶"));
     }
     box.replaceChildren(h("div.cb-wrap.cb-guide", head, h("div.cb-area", gv.el), card, nav));
-    if (animate && k >= 1 && k <= total) setTimeout(() => gv.turn(all[k - 1].m), 120);
+    clearTimeout(replayT);
+    if (animate && k >= 1 && k <= total) replayT = setTimeout(() => gv.turn(all[k - 1].m, CUBE_TURN_MS), CUBE_HOLD_MS);
   }
   function go1(k, forward = false) {
     const total = steps().length;
