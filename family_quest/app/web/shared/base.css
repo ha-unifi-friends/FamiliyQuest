@@ -2588,6 +2588,13 @@ svg.bb-erase .bb-hit { stroke: rgba(224, 49, 49, .45); }
 .gp-item.open { border-color: var(--good, #2e9d5b); }
 .gp-status { color: var(--good, #2e9d5b); font-weight: 600; }
 .gp-buttons { gap: 6px; }
+/* free tries before buying / renting (gamepasses.py `preview`) */
+.gp-try-tag { font-size: .68rem; font-weight: 700; color: var(--accent); text-align: center; line-height: 1.15; overflow-wrap: anywhere; }
+.gp-try { font-weight: 600; margin: 0; }
+.gp-try-btn { width: 100%; }
+.ob-buy:empty { display: none; }
+.ob-info .gp-try-tag { color: inherit; font-size: .8rem; }
+.ob-buy { display: flex; justify-content: center; }
 .live-dot { position: absolute; top: 7px; right: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--good);
   animation: live-dot 1.4s ease-in-out infinite; }
 @keyframes live-dot { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--good) 30%, transparent); transform: scale(1.15); } }

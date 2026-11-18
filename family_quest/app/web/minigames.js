@@ -30,7 +30,7 @@ function arcadeCard() {
 
 function arcadeView(kind) {
   const g = ARCADE[kind];
-  if (!g || !canPlay(kind)) return go("games");
+  if (!g || !(canPlay(kind) || S.trial === kind)) return go("games");      // S.trial: opened on a free try (kid.js)
   // full screen like the family quiz: no menus, the game uses the whole height
   const box = h("div.arcade-box");
   screen("games", h("div.quiz-full.arcade-full",
@@ -532,8 +532,13 @@ async function slotsGame(box) {
   let busy = false;
   const drawInfo = () => {
     info.replaceChildren(h("span", "🪙 ", String(Math.round(st.coins))), h("span", I18N.tr(T("Spins left today: {0} of {1}")).replace("{0}", st.left).replace("{1}", st.max)));
-    play.disabled = lever.disabled = busy || !st.left || st.coins < st.bet;
+    const trial = !st.owned;              // a free try: one spin each (familyquest/gamepasses.py `preview`)
+    if (trial) info.append(h("span.gp-try-tag", "🎁 ", I18N.tr(T("Free tries left: {0}")).replace("{0}", st.tries_left)));
+    play.disabled = lever.disabled = busy || !st.left || st.coins < st.bet || (trial && !st.tries_left);
+    buy.replaceChildren(...(trial && !st.tries_left && !busy ? [gamePassButtons(passOf(st), st.coins, () => slotsGame(box))] : []));
   };
+  const buy = h("div.ob-buy");
+  const passOf = x => ({ game: "slots", price: x.price, rent: x.rent, period: x.period, bought: false, rent_until: null, left_s: 0 });
   const spinReel = (el, sym, ms) => new Promise(res => {
     const strip = el.firstChild;
     const seq = Array.from({ length: 14 }, () => SYM[order[Math.floor(Math.random() * order.length)]]).concat(SYM[sym]);
@@ -569,10 +574,10 @@ async function slotsGame(box) {
     h("div.ob-row", h("span", SYM.cherry), h("b", "+" + st.cherries[1])));
   const machine = () => h("div.ob-machine",
     h("div.ob-top", "★ ", T("Lucky Star"), " ★"),
-    h("div.ob-window", ...reels), lever, msg, info, play, table);
-  if (st.owned) { box.replaceChildren(machine()); drawInfo(); return; }
+    h("div.ob-window", ...reels), lever, msg, info, play, buy, table);
+  if (st.owned || st.tries_left > 0) { box.replaceChildren(machine()); drawInfo(); return; }
   // not bought / rented yet: the standard price of a game (kid.js gamePassButtons, familyquest/gamepasses.py)
-  const o = { game: "slots", price: st.price, rent: st.rent, period: st.period, bought: false, rent_until: null, left_s: 0 };
+  const o = passOf(st);
   box.replaceChildren(h("div.ob-machine.locked", h("div.ob-top", "★ ", T("Lucky Star"), " ★"),
     h("div.ob-window", ...reels), h("p.center", T("Your own one-armed bandit for the game corner: play three times a day for 1 coin.")),
     h("p.small.muted.center", "🪙 ", String(Math.round(st.coins))), gamePassButtons(o, st.coins, () => slotsGame(box)), table));

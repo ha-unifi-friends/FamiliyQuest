@@ -465,6 +465,11 @@ Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `
 **Price for children** (each game's «⚙️ Settings» block, below the status): a game can cost coins for the children –
 parents always play for free.
 
+- **Defaults** (where the parents never set a value for that game): the **quick games for in between** (Pair Hunt, Five
+  Dice, Jump, Klatsch den Beat, Star Runner, Snack Rush, Traffic Cadet) rent for **100 coins per week**, the games of
+  the **game corner** (Tic-Tac-Toe, Sudoku, Patience, Ping-Pong, Cube solver, One-armed bandit) for **20 coins per
+  day**; the one-armed bandit can also be bought for 250 coins; every other game is free. The fields show these values;
+  saving the Games page stores what is shown – a 0 set by the parents stays 0 (also after updates).
 - **Price for children (coins)** – default 0. With a price, a child buys the game once in the shop and keeps it for
   good, also when the parents change the price later. Back to 0 (and no rent price): free again for everybody.
 - **Rent price (coins)** with **Day / Week / Month** (the three are greyed out while the rent price is 0): renting opens
@@ -477,13 +482,22 @@ parents always play for free.
   the unlock – a second tap books nothing (a rent sends the end the app showed; when it changed meanwhile nothing is
   booked). On the **Games page** and in the **game corner** a locked game is a tile with 🔒 and its price; a tap opens
   buying / renting.
+- **🎁 Free tries before buying** (0–20, default 1 – only matters with a price or a rent): how often a child may play
+  a locked game for free first. A locked tile shows «🎁 1 free try»; the tap offers **Try for free** besides buying and
+  renting, the shop lists the tries left. A try is used when the child **starts or joins a table** of a family game
+  (alone or with the family; a rematch / «again» is a new try) – once seated, the table can be played to the end and its
+  result seen. A game of the **game corner** uses a try when it opens on the try (`POST /api/me/games/try`); closed, it is
+  locked again. On the **one-armed bandit** a try is **one spin** (the bet of 1 coin still counts). A second start
+  within 10 seconds (double tap, second device) is the same try; the count is checked in one database transaction, so
+  parallel requests never use more tries than there are; a start that fails gives the try back. Joining a table a
+  parent opened uses no try. After the tries the game is locked as before. Every child starts with 0 tries used.
 - **Tables a parent opened**: when a **parent** opens a family table (not alone) of a game that is locked for a child –
   switched off, not bought, rent run out – the child may still **join and play that table**: it shows in the running
   banners, the note «somebody opened a table» and the game's tile («Join»). Starting an own table, alone, a rematch
   stay locked. The daily game time, OfflineTime and block times still count.
 
-Stored in `games_access` per game (`price`, `rent`, `period`; `luck` for the one-armed bandit) and per child and game
-in the table `game_pass` (`bought`, `rent_until`). API: `GET /api/me/games/shop`, `POST /api/me/games/buy`
+Stored in `games_access` per game (`price`, `rent`, `period`, `preview`; `luck` for the one-armed bandit) and per child
+and game in the table `game_pass` (`bought`, `rent_until`, `previews_used`, `preview_at`). API: `GET /api/me/games/shop`, `POST /api/me/games/buy`
 (`{"game", "kind": "buy" | "rent", "until"}`).
 
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
@@ -1278,7 +1292,7 @@ the server; best times stay in this browser), shown when family games are on for
 - **🎰 One-armed bandit** – a slot machine with three reels: pull the lever for 1 coin, three times a day; three alike
   win (7️⃣ 100, ⭐ 40, 🔔 20, 🍊 10, 🍋 8, 🍒 5 coins), two cherries anywhere 2, one cherry gives the coin back. The
   reels are drawn on the server. It uses the **standard game price**: by default a child buys it once for **250
-  coins**; the parents can change the price, set 0 (free) or add a rent. Whoever bought it before (for 150 coins) keeps
+  coins** or rents it for 20 coins a day (a free try = one spin); the parents can change the price and the rent or set 0 (free). Whoever bought it before (for 150 coins) keeps
   it. **Win chance** (slider 1–10 in its settings, default 5) sets what comes back on average: 5 ≈ 92 % like a typical
   casino machine, 10 ≈ 120 %, 1 ≈ 60 % (straight steps in between; the hint under the slider shows the value). The pay
   table stays; the server draws the outcome first with the win chances of the reels scaled to that return, then shows

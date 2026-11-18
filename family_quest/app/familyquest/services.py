@@ -199,6 +199,9 @@ class FamilyQuest:
         def money(g: str, a: dict) -> dict:
             period = a.get("period")
             rent, rent_period = gp.DEFAULT_RENT.get(g, (0, DEFAULT_PERIOD))
+            if "preview" not in a and not int(a.get("rent") or 0):
+                # saved by beta 13 (before free tries existed): its rent 0 was only the shown default – use the new one
+                a = {k: v for k, v in a.items() if k not in ("rent", "period")}
             if "rent" not in a and "period" not in a:
                 period = rent_period
             out = {"price": num(a.get("price", DEFAULT_PRICE.get(g, 0)), DEFAULT_PRICE.get(g, 0)), "rent": num(a.get("rent", rent), rent),

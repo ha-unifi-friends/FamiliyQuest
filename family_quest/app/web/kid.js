@@ -134,6 +134,9 @@ const canPlay = game => !!(S.me && (S.me.games_list || []).includes(game));
 const tableOnly = game => !!(S.me && (S.me.games_tables || []).includes(game));
 // a game with a price this child has not bought / rented (yet): {game, price, rent, period, …} (familyquest/gamepasses.py)
 const lockedGame = game => ((S.me && S.me.games_locked) || []).find(g => g.game === game) || null;
+// locked, but free tries are left (or the child sits at a table on a try): {left, member} (familyquest/services.trial_games)
+const trialGame = game => (S.me && S.me.games_trial && S.me.games_trial[game]) || null;
+const triesText = n => I18N.tr(n === 1 ? T("1 free try") : T("{0} free tries")).replace("{0}", n);
 
 // somebody opened a family table: a note slides into the header (not while a game or a lesson fills the screen)
 const tableNote = { seen: null, box: null, timer: null };
@@ -1728,13 +1731,27 @@ function gamePassButtons(o, coins, after) {
 }
 const cheapest = o => Math.min(...[o.price, o.rent].filter(x => x > 0));
 // a locked tile (games page, game corner): what it costs and the buttons in a sheet
-async function gamePassDialog(o) {
+// `card`: the game's card (family games) – a free try opens it; starting or joining a table there uses the try
+async function gamePassDialog(o, card) {
   let coins = 0;
   try { const d = await api("me/games/shop"); coins = d.coins; o = d.games.find(g => g.game === o.game) || o; } catch {}
   const [ic, name] = gameInfo(o.game);
   if (S.sheet) S.sheet.close();
+  const arcade = typeof ARCADE !== "undefined" && !!ARCADE[o.game];
+  const tryIt = async () => {
+    if (arcade) {             // the game corner: the try is used when the game opens (the one-armed bandit: per spin)
+      if (o.game !== "slots") {
+        try { await api("me/games/try", { method: "POST", body: { game: o.game } }); } catch (e) { return toast(e.message, "bad"); }
+      }
+      S.trial = o.game; m.close(); go("arcade/" + o.game);
+    } else if (card) { m.close(); openGameSheet(card); }
+  };
+  const canTry = o.tries_left > 0 && (arcade || card);
   const m = modal(h("div.game-sheet.gp-sheet", h("section.card", h("h2", ic, " ", I18N.tr(name), " 🔒"),
       h("p", T("Your parents put a price on this game. Buy it once and it stays yours – or rent it for a while.")),
+      canTry ? [h("p.gp-try", "🎁 ", triesText(o.tries_left), " – ", T("try it before you buy or rent it.")),
+        arcade ? null : h("p.small.muted", T("Starting or joining a table uses a free try. Once you sit at the table you can play it to the end.")),
+        h("button.btn.big.gp-try-btn", { onclick: tryIt }, "🎁 ", T("Try for free"))] : null,
       h("p.small.muted", "🪙 ", I18N.tr(T("You have {0} coins")).replace("{0}", Math.floor(coins))),
       gamePassButtons(o, coins, () => { m.close(); route(); }), coins < cheapest(o) ? barCount(coins, cheapest(o), "🪙") : null),
     h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))), { onClose: () => { if (S.sheet === m) S.sheet = null; } });
@@ -1750,25 +1767,28 @@ async function unlockGamesSection() {
     h("div.gp-list", ...d.games.map(o => {
       const [ic, name] = gameInfo(o.game);
       return h("div.gp-item" + (o.open ? ".open" : ""), h("span.big-ic", ic),
-        h("div.grow", h("strong", I18N.tr(name)), o.open ? h("div.small.gp-status", passStatus(o)) : null),
+        h("div.grow", h("strong", I18N.tr(name)), o.open ? h("div.small.gp-status", passStatus(o))
+          : o.tries_left > 0 ? h("div.small.gp-status", "🎁 ", triesText(o.tries_left)) : null),
         o.bought ? null : gamePassButtons(o, d.coins, () => shopView()));
     })));
 }
 
 // ---------------------------------------------------------------- the games (own menu item)
 async function gamesView() {
-  const quiz = canPlay("quiz") || tableOnly("quiz") ? await quizCard() : null;
+  S.trial = null;             // a game of the game corner opened on a free try: locked again once closed
+  const quiz = canPlay("quiz") || tableOnly("quiz") || (trialGame("quiz") && trialGame("quiz").member) ? await quizCard() : null;
   // longer table games for a game night, then short games for in between (only the games this child may play) –
   // each one a small tile; a tap opens its card (the same actions as before: family table, bots, join, rules);
   // a game with a price not bought yet: a 🔒 tile that opens buying / renting; locked, but a parent's table is open: its card
-  const pick = async list => (await Promise.all(list.map(async ([k, ok, make]) => ok || tableOnly(k) ? [k, await make()]
-    : lockedGame(k) ? [k, null, lockedGame(k)] : null))).filter(x => x && (x[1] || x[2]));
+  // locked with free tries left: the 🔒 tile also offers the try (its card); seated at a table on a try: the normal tile
+  const pick = async list => (await Promise.all(list.map(async ([k, ok, make]) => ok || tableOnly(k) || (trialGame(k) && trialGame(k).member) ? [k, await make()]
+    : lockedGame(k) ? [k, trialGame(k) ? await make() : null, lockedGame(k)] : null))).filter(x => x && (x[1] || x[2]));
   const night = await pick([["tschau", canPlay("tschau"), () => cardsFamilyCard("tschau")], ["karussell", canPlay("karussell"), () => cardsFamilyCard("karussell")], ["domino", canPlay("domino"), dominoFamilyCard],
     ["jass", canPlay("jass"), jassFamilyCard], ["poker", canPlay("poker"), pokerFamilyCard], ["dorfmarkt", canPlay("dorfmarkt"), dorfmarktFamilyCard], ["heimwaerts", canPlay("heimwaerts"), heimwaertsFamilyCard],
     ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
     ["verboten", canPlay("verboten"), verbotenFamilyCard], ["zeichnen", canPlay("zeichnen"), zeichnenFamilyCard], ["stadtland", canPlay("stadtland"), stadtlandFamilyCard], ["song", canPlay("song"), songFamilyCard],
     ["bingo", canPlay("bingo"), bingoCard], ["schach", canPlay("schach"), schachFamilyCard]]);
-  if (!quiz && lockedGame("quiz")) night.unshift(["quiz", null, lockedGame("quiz")]);
+  if (!quiz && lockedGame("quiz")) night.unshift(["quiz", trialGame("quiz") ? await quizCard() : null, lockedGame("quiz")]);
   const quick = await pick([["paarjagd", canPlay("paarjagd"), paarjagdFamilyCard], ["wuerfel", canPlay("wuerfel"), wuerfelFamilyCard], ["jump", canPlay("jump"), jumpFamilyCard], ["klatsch", canPlay("klatsch"), klatschFamilyCard],
     ["sternlauf", canPlay("sternlauf"), sternlaufFamilyCard], ["snack", canPlay("snack"), snackFamilyCard], ["verkehr", canPlay("verkehr"), verkehrFamilyCard], ["duel", canPlay("ttt") || canPlay("pingpong"), tttDuelCard]]);
   // the games running just now on top – the same pulsing banners as on the start page
@@ -1783,7 +1803,7 @@ function gameGroup(ic, title, items) {
   const com = (S.me && S.me.community) || {};
   return h("section.card.game-group", h("h2", ic, " ", title),
     h("div.arcade-grid.game-tiles", ...items.map(([k, card, lock]) => {
-      if (lock) return lockedTile(k, lock);
+      if (lock) return lockedTile(k, lock, card);
       const head = card.querySelector("h2");
       const text = (head ? head.textContent : k).trim(), sp = text.indexOf(" ");
       const icon = sp > 0 ? text.slice(0, sp) : "🎲", name = sp > 0 ? text.slice(sp + 1) : text;
@@ -1794,11 +1814,12 @@ function gameGroup(ic, title, items) {
 }
 
 /** A tile of a game with a price not bought yet: 🔒 and the price – a tap opens buying / renting. */
-function lockedTile(k, o) {
+function lockedTile(k, o, card) {
   const [ic, name] = gameInfo(k);
-  return h("button.arcade-tile.game-tile.gp-locked", { onclick: () => gamePassDialog(o), title: T("Unlock games") },
+  return h("button.arcade-tile.game-tile.gp-locked", { onclick: () => gamePassDialog(o, card), title: T("Unlock games") },
     h("span.big-ic", ic), h("strong", I18N.tr(name)),
-    h("span.gp-price", "🔒 ", o.price > 0 ? o.price + " 🪙" : o.rent + " 🪙/" + I18N.tr({ day: T("Day"), week: T("Week"), month: T("Month") }[o.period] || T("Week"))));
+    h("span.gp-price", "🔒 ", o.price > 0 ? o.price + " 🪙" : o.rent + " 🪙/" + I18N.tr({ day: T("Day"), week: T("Week"), month: T("Month") }[o.period] || T("Week"))),
+    o.tries_left > 0 ? h("span.gp-try-tag", "🎁 ", triesText(o.tries_left)) : null);
 }
 
 // the card of a game in a sheet: closes itself when the app goes to another page (a game opened, a table joined)

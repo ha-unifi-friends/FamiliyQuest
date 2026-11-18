@@ -1561,6 +1561,7 @@ function gameAccess(kids, data) {
 }
 
 // what a child pays for a game (familyquest/gamepasses.py): buy once, or rent per day / week / month – 0 and 0 = free;
+// the fields show the defaults (quick games 100 a week, game corner 20 a day) – saving stores them as shown; free tries;
 // the one-armed bandit also gets its luck (1–10, what comes back on average). Parents always play for free.
 function gamePriceBox(k, a, set, returns) {
   const num = (v, max = 100000) => Math.max(0, Math.min(max, Math.round(+v || 0)));
@@ -1572,6 +1573,9 @@ function gamePriceBox(k, a, set, returns) {
   const periods = h("div.pin-kind.gp-periods", ...[["day", T("Day")], ["week", T("Week")], ["month", T("Month")]].map(([v, n]) =>
     h("button.btn.small" + ((a.period || "week") === v ? "" : ".ghost"), { disabled: !(a.rent > 0), "aria-pressed": String((a.period || "week") === v),
       onclick: () => set({ period: v }) }, n)));
+  // free tries before buying / renting (default 1) – only with a price or a rent
+  const preview = h("input.gp-preview", { type: "number", min: 0, max: 20, step: 1, inputmode: "numeric", value: a.preview ?? 1,
+    onchange: () => set({ preview: num(preview.value, 20) }) });
   let luck = null;
   if (k === "slots") {
     const pct = v => I18N.tr(T("≈ {0} % comes back on average")).replace("{0}", returns[v] ?? "?");
@@ -1588,6 +1592,8 @@ function gamePriceBox(k, a, set, returns) {
     h("label.field", h("span", "🔁 ", T("Rent price (coins)")), rent,
       h("span.hint", T("0 = no renting. Renting opens the game for one day, week or month; renting again adds the time."))),
     periods,
+    h("label.field", h("span", "🎁 ", T("Free tries before buying")), preview,
+      h("span.hint", T("How often a child may play the game for free before buying or renting it. Only matters with a price or a rent."))),
     h("p.small.muted", T("With a price the children buy or rent the game in the shop. Parents always play for free.")),
     luck);
 }

@@ -22,7 +22,7 @@ def test_api_stores_and_validates_the_bots_switch(client):
     assert "tschau" in d["bot_games"] and "werwolf" in d["bot_games"] and "bingo" not in d["bot_games"]
     assert all(a["bots"] for a in d["access"].values())                        # bots on by default
     d = no_bots(client, ph, "tschau")
-    assert d["access"]["tschau"] == {"mode": "all", "profiles": [], "bots": False, "price": 0, "rent": 0, "period": "week"}
+    assert d["access"]["tschau"] == {"mode": "all", "profiles": [], "bots": False, "price": 0, "rent": 0, "period": "week", "preview": 0}
     # bots stay off when only the mode changes (the entry without «bots» keeps it)
     d = client.put("/api/parent/games", json={"access": {"tschau": {"mode": "some", "profiles": [mia]}}}, headers=ph).json()
     assert d["access"]["tschau"]["bots"] is False and d["access"]["tschau"]["mode"] == "some"
