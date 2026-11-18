@@ -38,7 +38,8 @@ GAME_TITLES = {"quiz": "Family quiz", "bingo": "Bingo", "song": "Guess the song"
 CARD_TITLES = {"Tschau Sepp": "tschau", "Kartenkarussell": "karussell"}      # history «cards»: data.game → kind
 # personal bests kept in settings by the games: (setting, game kind, unit)
 BESTS = (("jump_best", "jump", ""), ("sternlauf_best", "sternlauf", ""), ("snack_best", "snack", ""),
-         ("verkehr_best", "verkehr", ""), ("klatsch_best", "klatsch", "%"))
+         ("verkehr_best", "verkehr", ""), ("klatsch_best", "klatsch", "%"),
+         ("langstrecke_best", "langstrecke", ""))
 SHOP_EVENTS = ("redeem", "avatar", "pet_shop", "prank_buy", "slots_buy")
 GUEST = "guest"                                       # a «who» answer: one of the guests
 NOT_EARNED = ("refund", "manual", "adjust", "slots_win", "slots_bet")   # coins that are no «earned this week»
@@ -382,11 +383,28 @@ class Facts:
             if len(q[0]["wrong"]) >= 1:
                 out += q
             out += self.who("record_who_" + kind, "all", (_t("Who holds the record in {0}?"), title), best)
+        out += self.pit_records()
         spins = int(self.db.val("SELECT COUNT(*) FROM ledger WHERE event='slots_bet'", default=0) or 0)
         if spins >= 3:
             out += self.number("slots_spins", "all", (_t("How often has the slot machine been played?"),), spins)
         wins = {r["profile_id"]: r["m"] for r in self.db.q("SELECT profile_id, MAX(amount) m FROM ledger WHERE event='slots_win' GROUP BY profile_id")}
         out += self.who("slots_jackpot", "all", (_t("Who has won the biggest prize at the slot machine?"),), wins)
+        return out
+
+    # «24h Endurance»: the fastest pit stop (setting langstrecke_pit, tenths of a second – lower is better)
+    def pit_records(self) -> list[dict]:
+        best = {int(k): int(v or 0) for k, v in (self.db.get_setting("langstrecke_pit") or {}).items()
+                if str(k).isdigit() and int(k) in self.name and int(v or 0) > 0}
+        if not best:
+            return []
+        title = self.game_title("langstrecke")
+        top = min(best.values())
+        sec = lambda x: f"{x / 10:.1f} s"                                          # noqa: E731
+        wrong = [sec(top + d) for d in (-12, -6, 5, 11, 17) if top + d > 0][:3]
+        out = [{"gen": "record_pit", "scope": "all", "q": (_t("How long did the family's fastest pit stop in {0} take?"), title),
+                "right": sec(top), "wrong": wrong}]
+        out += self.who("record_pit_who", "all", (_t("Who was in the team with the fastest pit stop in {0}?"), title),
+                        {k: 1000 - v for k, v in best.items()})
         return out
 
     # shop: rewards, avatar items, pet shop, pranks, the slot machine

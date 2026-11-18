@@ -75,6 +75,7 @@ async function route() {
   if (view === "sternlauf") return sternlaufView();
   if (view === "snack") return snackView();
   if (view === "verkehr") return verkehrView();
+  if (view === "langstrecke") return langstreckeView();
   if (view === "klatsch") return klatschView();
   if (view === "verboten") return verbotenView();
   if (view === "jass") return jassView();
@@ -1770,6 +1771,7 @@ const GAME_INFO = { quiz: ["🎯", T("Family quiz")], bingo: ["🎱", "Bingo"], 
   klatsch: ["👏", T("Clap the Beat")], verboten: ["🚫", T("Forbidden Words")], jass: ["♣️", T("Jass")], werwolf: ["🐺", T("Werewolves")], schach: ["♟️", T("Chess")],
   dorfmarkt: ["🏘️", T("Village Market")], escape: ["🗝️", T("Escape Room")], ttt: ["⭕", T("Tic-Tac-Toe")], sudoku: ["🔢", T("Sudoku")], patience: ["🃏", T("Patience")],
   pingpong: ["🏓", T("Ping-Pong")], slots: ["🎰", T("One-armed bandit")], cube: ["🧊", T("Cube solver")] };
+GAME_INFO.langstrecke = ["🏎️", T("24h Endurance")];
 const gameInfo = k => GAME_INFO[k] || ["🎮", k];
 const rentText = o => I18N.tr({ day: T("Rent: {0} 🪙 per day"), week: T("Rent: {0} 🪙 per week"), month: T("Rent: {0} 🪙 per month") }[o.period] || T("Rent: {0} 🪙 per week")).replace("{0}", o.rent);
 const buyText = o => I18N.tr(T("Buy: {0} 🪙")).replace("{0}", o.price);
@@ -1852,6 +1854,7 @@ async function gamesView() {
     : lockedGame(k) ? [k, trialGame(k) ? await make() : null, lockedGame(k)] : null))).filter(x => x && (x[1] || x[2]));
   const night = await pick([["tschau", canPlay("tschau"), () => cardsFamilyCard("tschau")], ["karussell", canPlay("karussell"), () => cardsFamilyCard("karussell")], ["domino", canPlay("domino"), dominoFamilyCard],
     ["jass", canPlay("jass"), jassFamilyCard], ["poker", canPlay("poker"), pokerFamilyCard], ["dorfmarkt", canPlay("dorfmarkt"), dorfmarktFamilyCard], ["heimwaerts", canPlay("heimwaerts"), heimwaertsFamilyCard],
+    ["langstrecke", canPlay("langstrecke"), langstreckeFamilyCard],
     ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
     ["verboten", canPlay("verboten"), verbotenFamilyCard], ["zeichnen", canPlay("zeichnen"), zeichnenFamilyCard], ["stadtland", canPlay("stadtland"), stadtlandFamilyCard], ["song", canPlay("song"), songFamilyCard],
     ["bingo", canPlay("bingo"), bingoCard], ["schach", canPlay("schach"), schachFamilyCard]]);

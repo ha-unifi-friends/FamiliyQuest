@@ -79,7 +79,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -1728,6 +1728,145 @@ def verkehr_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.verkehr.state("verkehr", prof["id"])
 
 
+# ---------------------------------------------------------------- «24h Endurance» (familyquest/langstrecke.py)
+class LangstreckeStartIn(BaseModel):
+    solo: bool = False                   # alone (private) against bot teams
+    bots: int | None = None              # 0–5 bot cars
+    level: str | None = None             # the bots: easy | normal | hard
+    minutes: int | None = None           # 10 | 15 | 20 real minutes for 24 race hours
+    weather: int | None = None           # 1: rain may come
+    difficulty: str | None = None        # junior | normal
+    team_size: int | None = None         # 1–5 people per team
+    teams: int | None = None             # 1–4 teams of people at a family table
+    bot_ids: list[int | str] = []
+
+
+class LangstreckeSyncIn(BaseModel):
+    inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "l"|"r"|"u"|"b", value]
+
+
+class LangstreckeTeamIn(BaseModel):
+    team: int
+
+
+class LangstreckeRadioIn(BaseModel):
+    msg: str = Field(max_length=10)
+
+
+class LangstreckePitIn(BaseModel):
+    task: str = Field(max_length=10)     # tyres | fuel | repair
+    data: dict = Field(default_factory=dict)
+
+
+class LangstreckeRulesIn(BaseModel):
+    minutes: int | None = None
+    weather: int | None = None
+    difficulty: str | None = None
+    team_size: int | None = None
+    teams: int | None = None
+
+
+def _lead_langstrecke(fq, prof: dict) -> None:
+    if not fq.langstrecke.may_lead("langstrecke", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/langstrecke")
+def langstrecke_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).langstrecke.state("langstrecke", prof["id"])
+
+
+@router.get("/langstrecke/rules")
+def langstrecke_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).langstrecke.rules_info()
+
+
+@router.put("/langstrecke/rules")
+def langstrecke_defaults(body: LangstreckeRulesIn, request: Request, prof: dict = Gamer) -> dict:
+    """Parent area: the defaults of the race (duration, weather, difficulty, team size, teams)."""
+    if prof.get("role") != "parent":
+        raise HTTPException(403, "Only parents")
+    fq = app_of(request)
+    fq.langstrecke.set_defaults(body.model_dump())
+    return fq.langstrecke.rules_info()
+
+
+@router.post("/langstrecke/start")
+def langstrecke_start(body: LangstreckeStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    forced = _no_bots(fq, prof, "langstrecke", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
+    with _bots_not_remembered(fq, "langstrecke", forced):
+        _run(fq.langstrecke.start, "langstrecke", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/join")
+def langstrecke_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.langstrecke.join, "langstrecke", prof["id"])
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/team")
+def langstrecke_team(body: LangstreckeTeamIn, request: Request, prof: dict = Playing) -> dict | None:
+    """In the lobby: sit down in another team."""
+    fq = app_of(request)
+    _run(fq.langstrecke.choose_team, prof["id"], body.team)
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/mix")
+def langstrecke_mix(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_langstrecke(fq, prof)
+    _run(fq.langstrecke.shuffle, prof["id"])
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/begin")
+def langstrecke_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_langstrecke(fq, prof)
+    _run(fq.langstrecke.begin, "langstrecke", prof["id"])
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/sync")
+def langstrecke_sync(body: LangstreckeSyncIn, request: Request, prof: dict = Playing) -> dict | None:
+    """Every app keeps in touch here; the driver's app also reports its inputs (only the current driver's count)."""
+    fq = app_of(request)
+    return _run(fq.langstrecke.report, prof["id"], body.inputs)
+
+
+@router.post("/langstrecke/radio")
+def langstrecke_radio(body: LangstreckeRadioIn, request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.langstrecke.radio, prof["id"], body.msg)
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/pit")
+def langstrecke_pit(body: LangstreckePitIn, request: Request, prof: dict = Playing) -> dict:
+    """A pit-stop job done on this phone (tyres, fuel, repair) – checked by the server."""
+    fq = app_of(request)
+    out = _run(fq.langstrecke.pit_job, prof["id"], body.task, body.data)
+    return {**(out or {}), "state": fq.langstrecke.state("langstrecke", prof["id"])}
+
+
+@router.post("/langstrecke/end")
+def langstrecke_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_langstrecke(fq, prof)
+    fq.langstrecke.end("langstrecke", prof["id"])
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
 # ---------------------------------------------------------------- «Klatsch den Beat» (familyquest/klatsch.py)
 class KlatschStartIn(BaseModel):
     solo: bool = False                   # alone (private) – optionally with practice bots
@@ -2523,9 +2662,9 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
-                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
+                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "langstrecke": fq.langstrecke, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
                  "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:

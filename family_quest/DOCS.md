@@ -386,7 +386,8 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
   About 60 kinds of questions: chores today / this week / last week / of all time (who of the children, how many),
   XP, levels, streaks, coins earned this week, badges, learning time and lessons, games played this week / last week /
   in the last 7 days / in all, the most popular game, who wins the most games (also «a guest»), family quiz and chess
-  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice), the
+  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice, 24h Endurance: most laps and the
+  fastest pit stop), the
   slot machine, the shop (things bought, coins spent, the shopping queen or king, the favourite reward, avatar
   items, pranks), pets (how many, who has the most, who lost the most, the oldest, the most common kind, babies, coins
   of the hamsters, whose pets are cared for best – the average of the care bars of the pets at home), bulletin board
@@ -619,7 +620,7 @@ app gets `party` in `GET /api/me`.
 
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
 (icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,
-Kartenlauf, Werwölfe, Escape Room, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
+24h Endurance, Kartenlauf, Werwölfe, Escape Room, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
 Bingo, Chess) and **⚡ Quick games for in between** (Paarjagd, Fünf Würfel, Jump, Klatsch den Beat, Star Runner, Snack
 Rush, Traffic Cadet, duels for two), and the game corner at the end. A tile with a running table has a pulsing dot; a
 tap opens the game's card in a sheet with its usual buttons (family table, alone against bots, join, rules).
@@ -1047,6 +1048,56 @@ the table) or inactive.
 played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots;
 the winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, cars, accidents, angry
 drivers).
+
+### 24h Endurance (24-Stunden-Rennen)
+
+Games › For a game night › **🏎️ 24h Endurance**: a live **team endurance race** on the fictional **Circuit des Tannes**.
+Every team is a racing stable (colour, name, start number) with **one car**; the family splits into 1–4 teams at the
+table (2–5 people per team, guests via QR code join a team too), **bot teams** bring traffic. Alone you race against
+bot teams. A family table needs at least two cars (without bots: two teams of people).
+
+- **24 race hours in 10 / 15 / 20 minutes** (default 15). The race clock starts at 15:00 and runs through the **night**
+  (dusk around 21:00, headlights, a shorter view, fog banks) into the next afternoon. Optional **rain** (1–2 showers).
+  The **final two race hours** get a fanfare and the gaps pulse. **Winner: the most laps** (then the longer distance).
+- **Intro:** the drivers (their avatars) stand beside the track opposite their cars, run across, jump in, the doors
+  close, the engines roar and five red lights go out → **GO!** (about 8 s; a tap skips to the lights; with «reduce
+  motion» a still picture with the countdown).
+- **Roles** on their own phones, rotating at **every pit stop**: alone you drive and do the pit jobs yourself one after
+  the other; 2–3 people: driver + pit crew; 4–5: also a **race engineer**. A driver may drive at most **2 stints in a
+  row** (at the box: «Driver change» or once «Stay in»), so everybody gets to drive.
+- **Driver:** the car from behind on three lanes – swipe or ←/→ to change the lane, the **throttle lever** on the right
+  (0–10, ↑/↓ or a vertical swipe). On the track: gravel and oil (slow, tyres), debris (tyres, the wing at speed) and
+  **slow cars** (a fast hit breaks the wing). **Engine temperature:** pushing heats it – yellow = hot, **red = lift off**
+  within 3 s of pushing (junior 6 s), else **engine damage** (limp to the pits); ignoring the red a second time and
+  the **team retires** (keeps its laps). Pushing also costs **fuel** (an empty tank crawls to the pits) and **tyres**
+  (less grip). Slicks slide in the rain, rain tyres wear twice as fast in the dry.
+- **📦 Box:** the car stops at the line. The stopwatch runs while the crew plays the jobs **at the same time**:
+  **tyres** (choose slicks / rain tyres, tap the glowing wheel nut and **hold until tight** – 4 in the shown order; a
+  loose nut costs that wheel half a lap later), **fuel** (hold the nozzle, let go in the **green zone**; too little may
+  run dry, an overflow costs +3 s) and after damage a **repair** (connect the cables by colour – a wrong try +2 s – or
+  turn the screws straight). A driver change takes at least 2 s. A job nobody does is done by the garage after 30 s.
+- **Race engineer / crew** (pit wall): the team's car on a TV, telemetry (engine, fuel, tyres, damage, best lap, stops),
+  the **rain radar** (the next 2 race hours) and the live gaps; **radio calls** shown big on the driver's screen:
+  «Box this lap!», «Save the engine», «Push!», «Rain tyres?», «Slicks?».
+- **Safety car** after an engine failure, a retirement or a fast crash into a slow car: 20 s at a limited speed for
+  everybody, the track is cleared, no overtaking – a cheap moment for a pit stop (at most 2–3 per race, 60 s apart).
+- **Difficulty:** junior (fewer things on the track, slower overheating, more time in the red) or normal. **Bots**
+  (easy / normal / hard) dodge what they see (easier ones miss more), manage the temperature and box for fuel, tyres,
+  damage, the weather and under the safety car. A driver whose app is silent for 6 s gets the **autopilot** until the
+  app is back.
+
+The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for
+a smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane,
+throttle, box) with their game time; a late input is applied at the next step, never in the past. Pit jobs are
+checked on the server (the order of the nuts, hold times that must fit into the time since the stop began, the repair
+answer); a job counts at the server's time. Who leads may end the race early: ranked as it stands, no coins. Parents ›
+Games › 24h Endurance: the defaults (race length, weather, difficulty, people per team), active / without bots /
+inactive, the coins.
+
+**Coins for places 1–3:** default 10 / 5 / 2 for every person of the family in that team, paid once, only for a race
+run to the end at a family table with **at least two people of the family** – not alone, not for guests or bots; the
+winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (also questions in
+«Family Quest Facts»). Every person of the family gets a history entry (place, laps, team, best pit stop, stints).
 
 ### Klatsch den Beat
 

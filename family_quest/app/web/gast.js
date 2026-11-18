@@ -35,7 +35,7 @@ async function start() {
   name.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
   screen(h("section.card.center.guest-join",
     h("img", { src: "img/icon.svg", alt: "", width: 64, height: 64 }),
-    h("h1", { bingo: "🎱 Bingo", poker: "🃏 Texas Hold'em", tschau: "🂡 Tschau Sepp", karussell: "🎠 Kartenkarussell", song: "🎵 Errate den Song", domino: "🁫 Domino", paarjagd: "🧠 " + I18N.tr(T("Pair Hunt")), werbinich: "🎭 " + I18N.tr(T("Who am I?")), kartenlauf: "🏁 Kartenlauf", stadtland: "🏙️ " + I18N.tr(T("City, Country, River")), zeichnen: "🎨 " + I18N.tr(T("Draw & Guess")), wuerfel: "🎲 " + I18N.tr(T("Five Dice")), heimwaerts: "🏠 " + I18N.tr(T("Homeward")), jump: "🦘 Jump", sternlauf: "🌠 " + I18N.tr(T("Star Runner")), snack: "🍔 " + I18N.tr(T("Snack Rush")), verkehr: "🚦 " + I18N.tr(T("Traffic Cadet")), klatsch: "👏 " + I18N.tr(T("Clap the Beat")), verboten: "🚫 " + I18N.tr(T("Forbidden Words")), jass: "♣️ " + I18N.tr(T("Jass")), werwolf: "🐺 " + I18N.tr(T("Werewolves")), schach: "♟️ " + I18N.tr(T("Chess")), dorfmarkt: "🏘️ " + I18N.tr(T("Village Market")), escape: "🗝️ " + I18N.tr(T("Escape Room")) }[info.game] || "🎯 ", info.game === "quiz" ? C(info.title) : null),
+    h("h1", { bingo: "🎱 Bingo", poker: "🃏 Texas Hold'em", tschau: "🂡 Tschau Sepp", karussell: "🎠 Kartenkarussell", song: "🎵 Errate den Song", domino: "🁫 Domino", paarjagd: "🧠 " + I18N.tr(T("Pair Hunt")), werbinich: "🎭 " + I18N.tr(T("Who am I?")), kartenlauf: "🏁 Kartenlauf", stadtland: "🏙️ " + I18N.tr(T("City, Country, River")), zeichnen: "🎨 " + I18N.tr(T("Draw & Guess")), wuerfel: "🎲 " + I18N.tr(T("Five Dice")), heimwaerts: "🏠 " + I18N.tr(T("Homeward")), jump: "🦘 Jump", sternlauf: "🌠 " + I18N.tr(T("Star Runner")), snack: "🍔 " + I18N.tr(T("Snack Rush")), verkehr: "🚦 " + I18N.tr(T("Traffic Cadet")), langstrecke: "🏎️ " + I18N.tr(T("24h Endurance")), klatsch: "👏 " + I18N.tr(T("Clap the Beat")), verboten: "🚫 " + I18N.tr(T("Forbidden Words")), jass: "♣️ " + I18N.tr(T("Jass")), werwolf: "🐺 " + I18N.tr(T("Werewolves")), schach: "♟️ " + I18N.tr(T("Chess")), dorfmarkt: "🏘️ " + I18N.tr(T("Village Market")), escape: "🗝️ " + I18N.tr(T("Escape Room")) }[info.game] || "🎯 ", info.game === "quiz" ? C(info.title) : null),
     h("p", T("You are invited to play along! What is your name?")),
     name, h("button.btn.big", { onclick: go }, "🙋 ", T("Join")),
     h("div.row.center", langPicker())));
@@ -60,6 +60,7 @@ function play(me, game) {
   if (game === "sternlauf") return sternlaufLive(box, me, back);
   if (game === "snack") return snackLive(box, me, back);
   if (game === "verkehr") return vkLive(box, me, back);
+  if (game === "langstrecke") return langstreckeLive(box, me, back);
   if (game === "klatsch") return klatschLive(box, me, back);
   if (game === "verboten") return verbotenLive(box, me, back);
   if (game === "jass") return jassLive(box, me, back);
