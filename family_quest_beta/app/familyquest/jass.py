@@ -47,6 +47,7 @@ import time
 from .cardgames import BOTS, BOT_DELAY, CardGames, bot_delay
 from .community import CommunityError
 from .pairhunt import rewards_of as _rewards_of
+from .running import win_reason
 
 KIND = "jass"
 TITLE = "Jass"
@@ -594,7 +595,7 @@ class Jass(CardGames):
             ref = f"{KIND}:{row['id']}:{pid}"
             if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
                 try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Platz 1", ref=ref)
+                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND, 1), ref=ref)
                 except Exception:  # noqa: BLE001
                     pass
         tot = st.get("totals") or [0, 0]

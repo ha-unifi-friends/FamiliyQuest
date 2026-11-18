@@ -37,6 +37,7 @@ import time
 from .cardgames import BOTS, CardGames
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
+from .running import win_reason
 
 KIND = "klatsch"
 TITLE = "Klatsch den Beat"
@@ -334,7 +335,7 @@ class Klatsch(CardGames):
             ref = f"{KIND}:{row['id']}:{pid}"
             if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
                 try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Platz {st['places'][pid]}", ref=ref)
+                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND, st['places'][pid]), ref=ref)
                 except Exception:  # noqa: BLE001
                     pass
         if len(st["players"]) >= 2:

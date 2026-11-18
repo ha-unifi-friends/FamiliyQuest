@@ -34,6 +34,7 @@ import time
 from .community import CommunityError
 from .pairhunt import rewards_of as _rewards_of
 from .schach_engine import START_FEN, Position, Searcher, bot_move, name, parse_sq
+from .running import win_reason
 
 KIND = "schach"
 TITLE = "Schach"
@@ -481,7 +482,7 @@ class Schach:
             ref = f"{KIND}:{row['id']}:{pid}"
             if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
                 try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Sieg", ref=ref)
+                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND), ref=ref)
                 except Exception:  # noqa: BLE001
                     pass
         res = st["result"]

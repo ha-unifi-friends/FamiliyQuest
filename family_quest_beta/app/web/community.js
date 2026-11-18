@@ -828,8 +828,10 @@ function historyText(e) {
   if (e.kind === "stempeljagd") return ["🏛️", (d.admin ? I18N.tr(T("Beat the Bureaucracy: played the administration – place {0} of {1}")).replace("{0}", d.place).replace("{1}", d.players)
     : I18N.tr(T("Beat the Bureaucracy: place {0} of {1} · {2} of {3} stamps")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.stamps).replace("{3}", d.target))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
-  if (e.kind === "dorfmarkt") return ["🏘️", I18N.tr(T("Dorfmarkt: place {0} of {1} · {2} Taler")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", Number(d.worth || 0).toLocaleString("de-CH"))
+  if (e.kind === "dorfmarkt") return ["🏘️", I18N.tr(T("Dorfmarkt: place {0} of {1} · {2} Taler")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", Number(d.worth || 0).toLocaleString(I18N.locale))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "poker") return ["🃏", I18N.tr(T("Texas Hold'em: place {0} of {1} · {2} chips")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.chips), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "cards") return [d.game === "Tschau Sepp" ? "🂡" : "🎠", I18N.tr(T("{0}: place {1} of {2}")).replace("{0}", I18N.tr(d.game || "")).replace("{1}", d.place).replace("{2}", d.players), d.place === 1 ? "🏆" : ""];
   return ["•", e.kind, ""];
 }
 

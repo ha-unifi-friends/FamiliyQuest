@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-beta.2
+
+- French pass of the kids' app: card game calls and Swiss suit names, bot names, coin reasons in the history (also older entries), guest pages, game titles, short templates and many server error messages are now translated
+
 ## 1.1.1-beta.1
 
 - New team game «24h Endurance»: racing stables with driver, pit crew and race engineer, pit stops (tyres, fuel, repairs), engine overheating, day and night, rain, safety car, a running-start intro and a podium

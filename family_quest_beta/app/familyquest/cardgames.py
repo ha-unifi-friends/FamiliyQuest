@@ -26,9 +26,11 @@ import threading
 import time
 
 from .community import CommunityError
+from .i18n import _t
 
-BOTS = [("Fuchs Fridolin", "🦊"), ("Bär Bruno", "🐻"), ("Eule Olga", "🦉"), ("Frosch Fritz", "🐸"), ("Katze Kiki", "🐱"),
-        ("Hase Hoppel", "🐰"), ("Pinguin Pino", "🐧"), ("Igel Ida", "🦔")]
+# the bots' names: German source, translated in the app (keys in web/i18n)
+BOTS = [(_t("Fuchs Fridolin"), "🦊"), (_t("Bär Bruno"), "🐻"), (_t("Eule Olga"), "🦉"), (_t("Frosch Fritz"), "🐸"), (_t("Katze Kiki"), "🐱"),
+        (_t("Hase Hoppel"), "🐰"), (_t("Pinguin Pino"), "🐧"), (_t("Igel Ida"), "🦔")]
 BOT_DELAY = 1.4                      # seconds before a bot moves (default – the reaction time is set at the start: bot_ms)
 
 # ---------------------------------------------------------------- the two games
@@ -46,7 +48,7 @@ GAMES = {
     "karussell": {
         "title": "Kartenkarussell",
         "defaults": {"hand": 7, "rounds": 1, "stack": True, "penalty": 2, "bots": 2, "level": "normal", "back": "classic", "bot_ms": 1400},
-        "calls": ("Letzte!", "Fertig!"),
+        "calls": (_t("Last card!"), _t("Done!")),          # «Letzte!» / «Fertig!» – translated in the app
     },
 }
 

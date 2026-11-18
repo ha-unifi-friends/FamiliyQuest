@@ -68,7 +68,9 @@ import time
 
 from .cardgames import BOTS, CardGames
 from .community import CommunityError
+from .i18n import _t
 from .pairhunt import rewards_of as _rewards_of
+from .running import win_reason
 
 KIND = "werwolf"
 TITLE = "Werwölfe"
@@ -82,7 +84,7 @@ DEFAULTS = {"auto": True, "wolves": 2, "seer": True, "witch": True, "hunter": Tr
 STEPS = ("amor", "wolves", "seer", "witch")
 ACTIONS = ("lovers", "bite", "look", "sleep", "potion", "shoot", "vote")
 # the bots: the animals of the card games and a few more (up to 10 bots at a table of 2 people)
-BOT_NAMES = list(BOTS) + [("Maus Mimi", "🐭"), ("Dachs Dani", "🦡"), ("Reh Rosi", "🦌"), ("Biber Benno", "🦫")]
+BOT_NAMES = list(BOTS) + [(_t("Maus Mimi"), "🐭"), (_t("Dachs Dani"), "🦡"), (_t("Reh Rosi"), "🦌"), (_t("Biber Benno"), "🦫")]
 BOT_NIGHT, BOT_NIGHT_SPREAD = 4.0, 7            # seconds before a bot acts at night: 4 … 10 (varies by night and step)
 BOT_VOTE, BOT_STAGGER = 3.0, 1.5                # the vote: 3 s, then one bot after the other
 WITCH_HEAL, WITCH_POISON = 0.5, 0.15
@@ -571,7 +573,7 @@ class Werwolf(CardGames):
             ref = f"{KIND}:{row['id']}:{pid}"
             if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
                 try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Sieg", ref=ref)
+                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND), ref=ref)
                 except Exception:  # noqa: BLE001
                     pass
         if not st.get("winner"):
@@ -668,7 +670,7 @@ class Werwolf(CardGames):
             if len(humans) < MIN_HUMANS:
                 raise CommunityError("At least 2 players are needed")
             if len(humans) < MIN_PLAYERS and self.bots_off(KIND, humans):
-                raise CommunityError("Without bots Werwölfe needs at least 5 players")
+                raise CommunityError("Without bots Werewolves needs at least 5 players")
             st["players"] = humans + self._bots(self.seats(st) - len(humans))
             self.table(st).begin()
         self._lobby(viewer, go)

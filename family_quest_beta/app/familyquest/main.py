@@ -11,6 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
+from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
 from . import loginlog, netfilter
 from .api.auth import INGRESS_IP
@@ -78,7 +79,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         if request.url.path.startswith("/api/integration/") and settings.ha_enabled:
             host = request.client.host if request.client else ""
             if not netfilter.allowed(host, [netfilter.SUPERVISOR_NET]) or host == INGRESS_IP:
-                return JSONResponse({"detail": "Only Home Assistant may use the integration API"}, status_code=403)
+                return JSONResponse({"detail": _t("Only Home Assistant may use the integration API")}, status_code=403)
             resp = await call_next(request)
             resp.headers["Cache-Control"] = "no-store"
             return resp
@@ -86,14 +87,14 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         if settings.ha_enabled and not settings.direct_access:
             host = request.client.host if request.client else ""
             if host != INGRESS_IP:
-                return JSONResponse({"detail": "Direct access is switched off – open Family Quest from Home Assistant"},
+                return JSONResponse({"detail": _t("Direct access is switched off – open Family Quest from Home Assistant")},
                                     status_code=403)
         # mini firewall: networks allowed for the app / the parent area (parent area → Settings)
         ip = loginlog.client_ip(request)
         reason = netfilter.check(app.state.fq, ip, request.url.path)
         if reason:
             netfilter.log_blocked(app.state.fq, ip, loginlog.device(app.state.fq, ip))
-            msg = {"app": "Access from this network is not allowed", "parent": "The parent area cannot be opened from this network",
+            msg = {"app": _t("Access from this network is not allowed"), "parent": _t("The parent area cannot be opened from this network"),
                    "guest": "Guest network: only games with an invitation (QR code) are open"}[reason]
             if request.url.path.startswith("/api/"):
                 return JSONResponse({"detail": msg}, status_code=403)

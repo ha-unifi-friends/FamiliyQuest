@@ -76,7 +76,19 @@ async function apiOnce(path, { method = "GET", body, form, parent = false } = {}
     if (r.status === 403 && window.FQ_BATTERY_EMPTY && /^Your game battery is empty/.test(msg)) setTimeout(window.FQ_BATTERY_EMPTY, 300);
     throw new ApiError(r.status, msg);
   }
-  return data;
+  return botNamesTr(data);
+}
+
+// the built-in bots have German names (familyquest/cardgames.py, werwolf.py) – shown in the app language («Eule Olga» → «Chouette Olga»).
+// Names are drawn as content (translate="no"), so they are translated here, where the game states come in.
+const BOT_NAMES = new Set([T("Fuchs Fridolin"), T("Bär Bruno"), T("Eule Olga"), T("Frosch Fritz"), T("Katze Kiki"), T("Hase Hoppel"), T("Pinguin Pino"),
+  T("Igel Ida"), T("Maus Mimi"), T("Dachs Dani"), T("Reh Rosi"), T("Biber Benno")]);
+function botNamesTr(v, depth = 0) {
+  if (typeof v === "string") return BOT_NAMES.has(v) ? I18N.tr(v) : v;
+  if (!v || typeof v !== "object" || depth > 8 || I18N.lang === "en") return v;
+  if (Array.isArray(v)) { for (let i = 0; i < v.length; i++) if (v[i] && (typeof v[i] === "object" || BOT_NAMES.has(v[i]))) v[i] = botNamesTr(v[i], depth + 1); return v; }
+  for (const k in v) { const x = v[k]; if (x && (typeof x === "object" || BOT_NAMES.has(x))) v[k] = botNamesTr(x, depth + 1); }
+  return v;
 }
 
 // ---------------------------------------------------------------- feedback
