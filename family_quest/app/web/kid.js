@@ -1704,7 +1704,7 @@ function passStatus(o) {
   if (o.bought) return I18N.tr(T("bought ✓"));
   if (!o.rent_until) return "";
   const d = Math.ceil(o.left_s / 86400), hr = Math.ceil(o.left_s / 3600);
-  return o.left_s < 86400 ? I18N.tr(hr === 1 ? T("rented – 1 hour left") : T("rented – {0} hours left")).replace("{0}", hr)
+  return o.left_s <= 23 * 3600 ? I18N.tr(hr === 1 ? T("rented – 1 hour left") : T("rented – {0} hours left")).replace("{0}", hr)
     : I18N.tr(d === 1 ? T("rented – 1 day left") : T("rented – {0} days left")).replace("{0}", d);
 }
 // buy or rent after a confirmation – the coins are booked on the server (once: a second tap books nothing)
