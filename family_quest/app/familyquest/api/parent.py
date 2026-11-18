@@ -32,6 +32,7 @@ from .. import loginlog, netfilter, symbols
 from ..rewards.engine import BADGES, EVENTS
 from ..rewards.shop import KINDS, ShopError
 from .auth import INGRESS_IP, Parent, PARENT_MAX_AGE, app_of, check_pin, hash_pin, valid_pin
+from ..i18n import _t
 
 router = APIRouter(prefix="/api/parent")
 
@@ -1047,11 +1048,11 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         ip = loginlog.client_ip(request)
         for k in ("allowed_networks", "parent_networks"):
             if not netfilter.allowed(ip, nets.get(k, fq.db.get_setting(k) or [])):
-                raise HTTPException(400, f"This would lock you out – your device ({ip}) is not in these networks")
+                raise HTTPException(400, _t("This would lock you out – your device ({0}) is not in these networks").replace("{0}", ip))
         guests = nets.get("guest_networks", fq.db.get_setting("guest_networks") or [])
         family = nets.get("allowed_networks", fq.db.get_setting("allowed_networks") or [])
         if guests and netfilter.allowed(ip, guests) and not (family and netfilter.allowed(ip, family)):
-            raise HTTPException(400, f"This would lock you out – your device ({ip}) would only be a guest")
+            raise HTTPException(400, _t("This would lock you out – your device ({0}) would only be a guest").replace("{0}", ip))
         body = {**body, **nets}
     if body.get("parent_ha_only"):
         u = ha_user(request)

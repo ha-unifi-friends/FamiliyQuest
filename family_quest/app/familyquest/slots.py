@@ -72,9 +72,9 @@ def clean_luck(v) -> int:
     try:
         n = int(v)
     except (TypeError, ValueError):
-        raise ValueError("Luck: 1 to 10") from None
+        raise ValueError(_t("Luck: 1 to 10")) from None
     if not 1 <= n <= 10:
-        raise ValueError("Luck: 1 to 10")
+        raise ValueError(_t("Luck: 1 to 10"))
     return n
 
 

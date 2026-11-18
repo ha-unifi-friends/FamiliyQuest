@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import ipaddress
 import time
+from .i18n import _t
 
 PARENT_PATHS = ("/eltern", "/api/parent/")
 SUPERVISOR_NET = "172.30.32.0/23"     # hassio network: Home Assistant Core (Family Quest HA integration) comes from 172.30.32.1
@@ -41,7 +42,7 @@ def parse(values) -> list[str]:
             else:
                 out.append(str(ipaddress.ip_network(v, strict=False)))
         except ValueError:
-            raise ValueError(f"Not a network: {v}") from None
+            raise ValueError(_t("Not a network: {0}").replace("{0}", str(v))) from None
     return out
 
 

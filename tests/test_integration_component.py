@@ -218,7 +218,12 @@ def test_entities_devices_and_values(comp, fq, family):
     assert by_id[f"{inst}_family_total_xp"]._attr_device_info["identifiers"] == {("familyquest", f"{inst}_family")}
     # child devices: one per child, linked to the family device
     s = by_id[f"{inst}_{mia}_balance_coins"]
-    assert s.native_value == 7 and s._attr_translation_placeholders == {"account": "Coins"}
+    # built-in account with its default name: translated by Home Assistant (balance_coins), an own name stays as it is
+    assert s.native_value == 7 and s._attr_translation_key == "balance_coins" and not hasattr(s, "_attr_translation_placeholders")
+    own = comp["sensor"].BalanceSensor(coord, mia, {"key": "stars", "name": "Sterne"})
+    assert own._attr_translation_key == "balance" and own._attr_translation_placeholders == {"account": "Sterne"}
+    renamed = comp["sensor"].BalanceSensor(coord, mia, {"key": "coins", "name": "Batzen"})
+    assert renamed._attr_translation_key == "balance" and renamed._attr_translation_placeholders == {"account": "Batzen"}
     assert s._attr_device_info["name"] == "Mia" and s._attr_device_info["via_device"] == ("familyquest", f"{inst}_family")
     assert by_id[f"{inst}_{mia}_balance_internet"].native_value == 20
     assert by_id[f"{inst}_{mia}_internet_minutes"].native_value == 20

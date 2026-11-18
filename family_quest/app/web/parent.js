@@ -138,7 +138,8 @@ async function loginView(auto = true) {
 async function releaseNotes() {
   let text = "";
   try { text = (await api("parent/changelog")).text; } catch (e) { return toast(e.message, "bad"); }
-  const out = h("div.release-notes");
+  // the release notes exist in English only: shown as they are (single words translated in between would mix two languages)
+  const out = h("div.release-notes", { translate: "no", lang: "en" });
   let ul = null, li = null;
   // **bold** as <strong>, everything else as plain text
   const md = t => t.split(/\*\*(.+?)\*\*/).map((x, i) => i % 2 ? h("strong", x) : x);
@@ -152,7 +153,8 @@ async function releaseNotes() {
   api("parent/update-info").then(u => {
     if (u.version) upd.replaceChildren(u.update ? h("b", "🆕 ", I18N.tr(T("Update available: {0}")).replace("{0}", u.latest)) : "✓ " + I18N.tr(T("Up to date ({0})")).replace("{0}", u.version));
   }).catch(() => {});
-  const m = modal(h("div", h("h2", "📝 ", T("Release notes")), upd, out.childNodes.length ? out : h("p.muted", T("No release notes found.")),
+  const m = modal(h("div", h("h2", "📝 ", T("Release notes")), upd,
+    I18N.base !== "en" && out.childNodes.length ? h("p.small.muted", T("The release notes are written in English.")) : null, out.childNodes.length ? out : h("p.muted", T("No release notes found.")),
     h("div.row.wrap",
       // the add-ons page of Home Assistant: the store is checked there and the update is one click
       P.info.via_ha ? h("a.btn.ghost", { href: "/config/apps/installed", target: "_blank", rel: "noopener" }, "🔄 ", T("Check for updates")) : null,
@@ -232,7 +234,7 @@ async function overviewView(main) {
   async function decide(id, approve) { await call(`parent/redemptions/${id}`, { method: "POST", body: { approve } }); toast(approve ? T("Approved") : T("Declined"), "good"); render(); }
   const chorePend = d.chores_pending.length ? section("🧹 " + I18N.tr(T("Chores to confirm")), choreConfirmList(d.chores_pending, render)) : null;
   const kids = d.kids.map(k => h("section.card.kid",
-    h("div.row", avatarSvg(k.profile.avatar, 56), h("div.grow", C(k.profile.name, "h2"), h("span.muted", "Level " + k.level.level + " · 🔥 " + k.streak),
+    h("div.row", avatarSvg(k.profile.avatar, 56), h("div.grow", C(k.profile.name, "h2"), h("span.muted", I18N.tr(T("Level {0}")).replace("{0}", k.level.level) + " · 🔥 " + k.streak),
       k.sad_since ? h("div.mood-note", "😢 ", T("feels sad"), " (", T("since"), " ",
         new Date(k.sad_since).toLocaleString(I18N.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }), ")") : null,
       k.mood_text || k.mood ? h("div.mood-text", h("span.mood-emoji", k.mood || "💬"), " ", T("Today I feel …"), " ", k.mood_text ? C("«" + k.mood_text + "»", "strong") : null,
@@ -423,7 +425,7 @@ function limitSlider({ icon, label, value, steps = LIMIT_STEPS, extra = null }) 
     .map(i => h("span", { style: { "--p": i / INF() } }, i === INF() ? "∞" : fmtMinutes(steps[i]))));
   const dayRows = WEEKDAYS.map((d, i) => {
     const k = String(i);
-    const inp = h("input.lim-range.lim-day-range", { type: "range", min: 0, step: 1, "aria-label": label + " – " + d });
+    const inp = h("input.lim-range.lim-day-range", { type: "range", min: 0, step: 1, "aria-label": I18N.tr(label) + " – " + I18N.tr(d) });
     const out = h("output.lim-val");
     const pin = h("button.lim-pin", { type: "button", onclick: () => { delete own[k]; draw(); } });
     const row = h("div.lim-day", h("span.lim-dname", d), inp, out, pin);
@@ -1852,7 +1854,7 @@ async function crestSection() {
     h("button.btn.small.ghost", { onclick: () => Photos.fromHa(true, setImage) }, "🏠 ", T("From Home Assistant Media")),
     crest.image ? h("button.btn.small.ghost", { onclick: () => { crest.image = null; drawCrest(); drawPictureRow(); } }, "✕ ", T("Remove picture")) : null].filter(Boolean)); };
   const crestForm = h("div.form",
-    h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: "Muster" })),
+    h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: T("e.g. Miller") })),
     h("div.field", h("span", T("Own picture as crest")), h("p.small.muted", T("A photo or drawing of your crest – it is shown in the shield. Without a picture the crest is drawn from colours, pattern and symbol.")), pictureRow),
     drawnFields);
   const onOff = h("input", { type: "checkbox", checked: useCrest, onchange: e => { useCrest = e.target.checked; crestForm.hidden = !useCrest; drawCrest(); } });

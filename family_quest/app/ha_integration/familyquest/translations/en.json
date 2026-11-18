@@ -82,6 +82,12 @@
       },
       "balance": {
         "name": "{account}"
+      },
+      "balance_coins": {
+        "name": "Coins"
+      },
+      "balance_internet": {
+        "name": "Internet minutes"
       }
     },
     "binary_sensor": {
