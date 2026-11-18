@@ -28,10 +28,10 @@ Pictures: an emoji, an own drawing or a photo – drawings and photos are files 
 bytes, max. IMAGE_MAX), named after their content. Files no book uses any more are removed after an hour.
 
 Book types (`type`, the badge and filter on the shelf): 📕 «picture» – picture books (picturebooks.py: pages with a
-picture and a text, read page by page), 📖 «adventure» – the adventure books of this module, 🗝️ «game» – adventure
-games (reserved: the shelf knows the type, it cannot be made yet). Visibility, approval, rewards, ratings, the parent
-area and privacy are the same for every type; only the content (`clean` / `check`), reading and the file format
-differ. Sample books (`sample`: a key of picturebooks.SAMPLES) come with the app: author «Family Quest», visible to the
+picture and a text, read page by page), 📖 «adventure» – the adventure books of this module, 🗝️ «game» – point & click
+adventure games (adventuregame.py: rooms, hotspots, items, switches, dialogues; played on the server, state per player).
+Visibility, approval, rewards, ratings, the parent area and privacy are the same for every type; only the content
+(`clean` / `check`), reading and the file format differ. Sample books (`sample`: a key of picturebooks.SAMPLES) come with the app: author «Family Quest», visible to the
 whole family in the reader's app language, never changed; parents hide them (settings «samples_off»).
 """
 from __future__ import annotations
@@ -71,8 +71,8 @@ BACKGROUNDS = {"jungle": "Jungle", "beach": "Beach and island", "deepsea": "Deep
 VISIBILITY = ("me", "kids", "family")   # only the author (parents neither) · the children and the author · everybody
 IMG_NAME = re.compile(r"s-[0-9a-f]{16}\.(jpg|png|webp|gif)")
 DEFAULT = {"off": [], "approval": False, "write_coins": 20, "write_xp": 0, "read_coins": 0, "read_xp": 0, "samples_off": []}
-TYPES = ("picture", "adventure", "game")        # 📕 picture book · 📖 adventure book · 🗝️ adventure game (reserved)
-CREATABLE = ("picture", "adventure")
+TYPES = ("picture", "adventure", "game")        # 📕 picture book · 📖 adventure book · 🗝️ adventure game
+CREATABLE = ("picture", "adventure", "game")
 TYPE_ICON = {"picture": "📕", "adventure": "📖", "game": "🗝️"}
 
 # messages of the checker – English source text, the app translates them ({0} page, {1} choice letter, {2} item)
@@ -226,7 +226,16 @@ def check(data: dict, title: str = "x") -> list[dict]:
 
 
 def endings(data: dict | None) -> list[int]:
+    if data and "rooms" in data:
+        from .adventuregame import endings as game_endings
+        return game_endings(data)
     return [p["id"] for p in (data or {}).get("pages", []) if p.get("kind", "scene") != "scene"]
+
+
+def size_of(data: dict | None) -> int:
+    """Pages of a book – rooms of a game."""
+    data = data or {}
+    return len(data["rooms"]) if "rooms" in data else len(data.get("pages") or [])
 
 
 def clean_as(kind: str, data, folder: Path | None = None) -> dict:
@@ -234,6 +243,9 @@ def clean_as(kind: str, data, folder: Path | None = None) -> dict:
     if kind == "picture":
         from . import picturebooks
         return picturebooks.clean(data, folder)
+    if kind == "game":
+        from . import adventuregame
+        return adventuregame.clean(data, folder)
     return clean(data, folder)
 
 
@@ -242,10 +254,21 @@ def check_as(kind: str, data: dict, title: str = "x") -> list[dict]:
     if kind == "picture":
         from . import picturebooks
         return picturebooks.check(data, title)
+    if kind == "game":
+        from . import adventuregame
+        return adventuregame.check(data, title)
     return check(data, title)
 
 
+def blocking_as(kind: str, data: dict, title: str = "x") -> list[dict]:
+    """The problems that stop publishing (games also have hints that do not)."""
+    return [i for i in check_as(kind, data, title) if i.get("level", "error") == "error"]
+
+
 def empty_book(kind: str) -> dict:
+    if kind == "game":
+        from .adventuregame import empty_game
+        return empty_game()
     if kind == "picture":
         return {"cover": {"pic": None}, "pages": [{"id": 1, "layout": "top", "text": "", "pic": None}]}
     return {"start": 1, "pages": [{"id": 1, "kind": "scene", "text": "", "pic": None, "give": None,
@@ -418,7 +441,8 @@ def story_document(books: list[dict], example: bool = False) -> dict:
 def import_books(text) -> list[dict]:
     """Books from a file or a pasted AI answer (JSON, also in a code fence with sentences around it): [{type, title,
     emoji, lang, data}] – cleaned and limited; ids, authors and anything else from the file are not trusted.
-    Adventure books (family-quest-story/1) and picture books (family-quest-picturebook/1) – also both in one file."""
+    Adventure books (family-quest-story/1), picture books (family-quest-picturebook/1) and adventure games
+    (family-quest-adventuregame/1) – also together in one file."""
     from . import picturebooks
     from .ai_format import strip_meta
     from .jsonish import loads
@@ -432,11 +456,18 @@ def import_books(text) -> list[dict]:
         doc = strip_meta(doc)
     except (ValueError, RecursionError):
         raise CommunityError("No book found – is it the JSON of an adventure book?") from None
-    raw = doc.get("books") if isinstance(doc, dict) and isinstance(doc.get("books"), list) else [doc] if isinstance(doc, dict) else doc
+    from . import adventuregame
+    raw = doc.get("books") if isinstance(doc, dict) and isinstance(doc.get("books"), list) else \
+        doc.get("games") if isinstance(doc, dict) and isinstance(doc.get("games"), list) else [doc] if isinstance(doc, dict) else doc
     if not isinstance(raw, list):
         raw = []
     out = []
     for b in raw[:IMPORT_BOOKS]:
+        if isinstance(b, dict) and isinstance(b.get("rooms"), list) and adventuregame.is_game(fmt, b):
+            g = adventuregame.import_game(b)
+            if g["data"]["rooms"]:
+                out.append(g)
+            continue
         if not isinstance(b, dict) or not isinstance(b.get("pages"), list):
             continue
         if picturebooks.is_picture_book(fmt, b):
@@ -640,7 +671,7 @@ class Stories:
                 if oversee:                                    # parents: only that it exists – no title, no content
                     privates.append({"id": b["id"], "private": True, "visibility": "me", "type": b["type"],
                                      "author": {"id": a["id"], "name": a["name"], "avatar": a["avatar"]},
-                                     "pages": len(json.loads(b["data"])["pages"]), "created_at": b["created_at"], "updated_at": b["updated_at"]})
+                                     "pages": size_of(json.loads(b["data"])), "created_at": b["created_at"], "updated_at": b["updated_at"]})
                 continue
             elif not (mine or (oversee and not b["live"]) or self.visible(prof, b, oversee)):
                 continue
@@ -654,7 +685,7 @@ class Stories:
                 "author": {"id": a["id"], "name": a["name"], "avatar": a["avatar"]}, "mine": mine, "sample": b["sample"],
                 "edit": self._may_edit(prof, b), "live": bool(live), "pending": bool(b["pending"]),
                 "visibility": b["visibility"], "shared": bool(live and b["approved"] and b["visibility"] != "me"),
-                "changed": bool(live) and live != data and not b["sample"], "pages": len(data["pages"]),
+                "changed": bool(live) and live != data and not b["sample"], "pages": size_of(data),
                 "finished": (r or {}).get("finished", 0),
                 "rating": round(st["avg"], 1) if st.get("avg") else None, "votes": st.get("votes", 0),
                 "readers": st.get("readers", 0), "my_rating": (r or {}).get("rating"),
@@ -664,6 +695,17 @@ class Stories:
                 at = min(max((r or {}).get("page") or 0, 0), n) if live else 0
                 book.update({"cover": (live or data).get("cover", {}).get("pic"), "cover_bg": None, "endings": 0, "found": 0,
                              "at": at, "reading": bool(live and 0 < at < n)})
+            elif b["type"] == "game":
+                ends = endings(live)
+                found = [e for e in json.loads(r["endings"]) if e in ends] if r else []
+                src = live or data
+                first = next((x for x in src["rooms"] if x["id"] == src.get("start")), None)
+                bg = (first or {}).get("bg")
+                st = json.loads(r["state"]) if r and r.get("state") else None
+                book.update({"cover": bg if bg and bg["k"] in ("img", "svg") else None, "cover_bg": bg["v"] if bg and bg["k"] == "lib" else None,
+                             "endings": len(ends), "found": len(found),
+                             "reading": bool(live and isinstance(st, dict) and not st.get("end")
+                                             and (st.get("room") != live.get("start") or st.get("inv") or st.get("flags")))})
             else:
                 ends = endings(live)
                 found = [e for e in json.loads(r["endings"]) if e in ends] if r else []
@@ -695,8 +737,6 @@ class Stories:
     def create(self, prof: dict, title: str = "", emoji: str = "📖", color: int = 0, lang: str = "en", tpl: str | None = None,
                visibility: str = "family", kind: str = "adventure") -> int:
         self._need(prof)
-        if kind == "game":
-            raise CommunityError("Adventure games are coming later")
         if kind not in CREATABLE:
             raise CommunityError("Unknown book type")
         if self._count() >= MAX_BOOKS:
@@ -705,8 +745,13 @@ class Stories:
             t = template(tpl, lang)
             m = self._meta(title or t["title"], t["emoji"], t["color"], lang if lang in LANGS else t["lang"])
             data = clean(t["data"])
+        elif tpl and kind == "game":
+            from . import adventuregame
+            t = adventuregame.template(tpl, lang)
+            m = self._meta(title or t["title"], t["emoji"], t["color"], lang if lang in LANGS else t["lang"])
+            data = t["data"]
         else:
-            m = self._meta(title, emoji if kind == "adventure" or emoji != "📖" else "📕", color, lang)
+            m = self._meta(title, emoji if kind == "adventure" or emoji != "📖" else {"picture": "📕", "game": "🗝️"}[kind], color, lang)
             data = empty_book(kind)
         if not m["title"]:
             raise CommunityError("Give the book a title")
@@ -729,6 +774,9 @@ class Stories:
         if b["type"] == "picture":
             from . import picturebooks
             return picturebooks.document([picturebooks.export_book(b["title"], b["emoji"], b["lang"], json.loads(b["data"]))])
+        if b["type"] == "game":
+            from . import adventuregame
+            return adventuregame.document([adventuregame.export_game(b["title"], b["emoji"], b["lang"], json.loads(b["data"]))])
         return story_document([export_book(b["title"], b["emoji"], b["lang"], json.loads(b["data"]))])
 
     def _editor(self, prof: dict, b: dict) -> dict:
@@ -781,7 +829,7 @@ class Stories:
         with self.db.tx():
             b = self._edit(prof, sid)
             data = json.loads(b["data"])
-            if check_as(b["type"], data, b["title"]):
+            if blocking_as(b["type"], data, b["title"]):
                 raise CommunityError("The book is not finished yet – the checker shows what is missing")
             need = self._approval(prof)
             if b["visibility"] != "me" and need:
@@ -810,7 +858,7 @@ class Stories:
             b = self._book(sid)
             if not b["pending"] or b["visibility"] == "me":
                 raise CommunityError("This book does not wait for approval")
-            if check_as(b["type"], json.loads(b["pending"]), b["title"]):
+            if blocking_as(b["type"], json.loads(b["pending"]), b["title"]):
                 raise CommunityError("The book is not finished yet – the checker shows what is missing")
             self._go_live(b, b["pending"])
 
@@ -911,6 +959,8 @@ class Stories:
         if b["type"] == "picture":
             r["page"] = min(max(r["page"] or 0, 0), len(live["pages"]))
             return r
+        if b["type"] == "game":
+            return r
         ids = {p["id"] for p in live["pages"]}
         if r["page"] not in ids:                              # new reader – or the page is gone in a new version
             self._move(r, live, live["start"], [])
@@ -940,6 +990,8 @@ class Stories:
     def _view(self, b: dict, live: dict, r: dict, prof: dict, new_ending: bool = False) -> dict:
         if b["type"] == "picture":
             return self._picture_view(b, live, r, prof, new_ending)
+        if b["type"] == "game":
+            return self._game_view(b, live, r, prof, [], new_ending)
         p = next(x for x in live["pages"] if x["id"] == r["page"])
         items = json.loads(r["items"])
         ends = endings(live)
@@ -965,6 +1017,8 @@ class Stories:
             r = self._row(b, live, prof["id"])
             if b["type"] == "picture":
                 self._turn(r, 0)
+            elif b["type"] == "game":
+                self._game_save(r, None)
             else:
                 self._move(r, live, live["start"], [])
         return self._view(b, live, r, prof)
@@ -1027,6 +1081,65 @@ class Stories:
                 r["endings"] = json.dumps(found)
                 self._finished(b, r, prof)
         return self._view(b, live, r, prof, new_ending=new)
+
+    # ---------------------------------------------------------------- 🗝️ adventure games (adventuregame.py)
+    def _game_save(self, r: dict, st: dict | None) -> None:
+        r["state"] = json.dumps(st) if st is not None else None
+        self.db.x("UPDATE story_read SET state=?, updated_at=datetime('now','localtime') WHERE story_id=? AND profile_id=?",
+                  r["state"], r["story_id"], r["profile_id"])
+
+    def _game_view(self, b: dict, live: dict, r: dict, prof: dict, msgs: list, new_ending: bool = False) -> dict:
+        from . import adventuregame as A
+        ix = A.Index(live)
+        st = A.clean_state(live, json.loads(r["state"]) if r.get("state") else None)
+        ends = endings(live)
+        found = [e for e in json.loads(r["endings"]) if e in ends]
+        return {"id": b["id"], "type": "game", "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
+                **A.view(ix, st), "msgs": msgs, "endings": len(ends), "found": len(found), "new_ending": new_ending,
+                "finished": r["finished"], "rating": r["rating"], "may_rate": r["finished"] > 0 and b["author_id"] != prof["id"],
+                "fresh": st == A.new_state(live)}
+
+    def play(self, prof: dict, sid: int, move: dict, oversee: bool = False) -> dict:
+        """One move of a player in a published game – the engine runs here, the state is saved per player (resume)."""
+        from . import adventuregame as A
+        with self.db.tx():
+            b, live = self._live(prof, sid, oversee)
+            if b["type"] != "game":
+                raise CommunityError("This choice is not possible")
+            r = self._row(b, live, prof["id"])
+            ix = A.Index(live)
+            st = A.clean_state(live, json.loads(r["state"]) if r.get("state") else None)
+            msgs = A.act(ix, st, move)
+            new = False
+            if st["end"]:
+                found = json.loads(r["endings"])
+                new = st["end"] not in found
+                if new:
+                    found.append(st["end"])
+                r["endings"] = json.dumps(found)
+                self._finished(b, r, prof)
+            self._game_save(r, st)
+        return self._game_view(b, live, r, prof, msgs, new)
+
+    def try_game(self, prof: dict, sid: int, state=None, move=None, room=None, pending: bool = False) -> dict:
+        """▶ in the editor (and 👀 of a game waiting for approval): play the working copy from any room – nothing is
+        saved, the state goes back and forth with the app (and is checked again every time)."""
+        from . import adventuregame as A
+        b = self._edit(prof, sid)
+        if b["type"] != "game":
+            raise CommunityError("This choice is not possible")
+        if pending and not b["pending"]:
+            raise CommunityError("This book does not wait for approval")
+        data = json.loads(b["pending"] if pending else b["data"])
+        if not data["rooms"]:
+            raise CommunityError("The game has no rooms yet")
+        ix = A.Index(data)
+        st = A.clean_state(data, state) if isinstance(state, dict) else A.new_state(data, room)
+        msgs = A.act(ix, st, move) if move else []
+        ends = endings(data)
+        return {"id": b["id"], "type": "game", "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
+                **A.view(ix, st), "msgs": msgs, "state": st, "endings": len(ends), "found": 0, "new_ending": bool(st["end"]),
+                "finished": 0, "rating": None, "may_rate": False, "fresh": False}
 
     def rate(self, prof: dict, sid: int, stars: int, oversee: bool = False) -> None:
         b, live = self._live(prof, sid, oversee)
