@@ -933,10 +933,11 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
     const aiBox = h("div.ai-box",
       h("div.row.wrap",
         h("button.btn.small", { onclick: () => file.click() }, "⬆️ ", T("Import")),
-        h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: "api/ai-template/quiz", download: "family-quest-quiz-template.json" }, "⬇️ ", T("Download template")),
         quizzes.length ? h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all")) : null,
         file),
-      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")));
+      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")),
+      aiPromptBox(T("Make me a family quiz about [topic, e.g. animals of Switzerland].\n[10] questions for players aged [8] to [45], language: [English].\nMix the question types: multiple choice, pictures, estimates and map questions."),
+        { template: "api/ai-template/quiz", name: "family-quest-quiz-template.json" }));
     // templates first (one tap), the own quiz next to it; AI and import folded away – rarely needed
     m = modal(h("div.form", h("div.row.wrap", h("h2.grow", "🎯 ", T("New quiz")),
         h("button.btn", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz"))),

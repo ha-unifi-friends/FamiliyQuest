@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------- 📕 Picture books (familyquest/picturebooks.py)
 // Pages with a picture and a text, read page by page. The shelf, visibility, approval and pictures upload are the ones of
 // the adventure books (stories.js). pictureReader() turns the pages (buttons, swipe, arrow keys), pictureEditor() writes
-// a book (cover, pages with three layouts, pictures from the library, emoji, painter, photo or own SVG code).
+// a book (cover, pages with three layouts, pictures from the library, emoji, own drawing (svgpaint.js), photo or SVG code).
 "use strict";
 
 // layouts of a page (picturebooks.py LAYOUTS)
@@ -13,7 +13,7 @@ const PB_TEXT = 600, PB_MAX_PAGES = 60;
 // a picture of a page: library scene, own SVG (always as an <img>, so nothing in it can run), drawing / photo, emoji
 function pbPic(pic, cls = "") {
   if (!pic) return null;
-  if (pic.k === "svg") return h("img.pb-img" + cls, { src: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(pic.v), alt: "", draggable: false });
+  if (pic.k === "svg") return h("img.pb-img" + cls, { src: svgDataUrl(pic.v), alt: "", draggable: false });
   if (pic.k === "lib") return h("img.pb-img" + cls, { src: sbBgUrl(pic.v), alt: "", draggable: false });
   if (pic.k === "img") return h("img.pb-img.pb-photo" + cls, { src: sbImg(pic.v), alt: "", draggable: false, loading: "lazy" });
   if (pic.k === "emoji") return h("span.pb-emo" + cls, { translate: "no", "aria-hidden": "true" }, pic.v);
@@ -263,7 +263,7 @@ async function pictureEditor(id, onClose = null) {
     markCards();
   };
 
-  // ---------- pictures: library, emoji, painter, photo, own SVG code
+  // ---------- pictures: library, emoji, own drawing (vector editor), photo, SVG code
   const picDialog = target => {
     const set = pic => { target.pic = pic; m.close(); changed(true); };
     let tab = "lib";
@@ -285,12 +285,11 @@ async function pictureEditor(id, onClose = null) {
       else if (tab === "own") sbSet(box, h("div.row.wrap.pb-ownbtns",
         h("button.btn", { onclick: async () => {
           m.close();
-          const blob = await sbPainter(target.pic && target.pic.k === "img" && target.pic.src === "draw" ? sbImg(target.pic.v) : null);
-          if (!blob) return;
-          try { const r = await sbUpload(blob, "drawing.png"); target.pic = { k: "img", v: r.name, src: "draw" }; changed(true); } catch (e) { toast(e.message, "bad"); }
-        } }, "🎨 ", T("Paint")),
+          const svg = await svgPaint({ kind: "bg", svg: target.pic && target.pic.k === "svg" ? target.pic.v : null });
+          if (svg) { target.pic = { k: "svg", v: svg }; changed(true); }
+        } }, target.pic && target.pic.k === "svg" ? ["✏️ ", T("Change drawing")] : ["🎨 ", T("Draw a picture")]),
         h("button.btn.ghost", { onclick: () => file.click() }, "📷 ", T("Photo")), file));
-      else sbSet(box, h("p.small.muted", T("Paste an SVG drawing (e.g. made by an AI): simple shapes with a viewBox, max. 12 KB. Scripts, links and external files are removed.")),
+      else sbSet(box, h("p.small.muted", T("Paste an SVG drawing (e.g. made by an AI): simple shapes with a viewBox, max. 60 KB. Scripts, links and external files are removed.")),
         code, h("button.btn", { onclick: async () => {
           try { const r = await api("stories/svg", { method: "POST", body: { svg: code.value } }); set({ k: "svg", v: r.svg }); } catch (e) { toast(e.message, "bad"); }
         } }, "✓ ", T("Use picture")));
@@ -325,7 +324,7 @@ async function pictureEditor(id, onClose = null) {
         Object.assign(meta, { title: title.value.trim(), emoji, color, lang: lang.value }); m.close(); drawHead(); changed(true);
       } }, "💾 ", T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel"))),
       h("div.row.wrap", h("button.btn.small.ghost", { onclick: async () => { await save(); downloadApi(`stories/${id}/export`, `family-quest-picturebook-${id}.json`); } }, "⬇️ ", T("Export as a file")),
-        h("span.small.muted", T("For a backup, another family or an AI – SVG, library and emoji pictures go along, own drawings and photos stay out."))),
+        h("span.small.muted", T("For a backup, another family or an AI – own drawings, SVG, library and emoji pictures go along, photos stay out."))),
       h("div.sb-danger.row.wrap",
         ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Take the book off the shelf? It stays here as a draft."))) &&
           run(`stories/${id}/unpublish`, "POST", T("The book is a draft again"), async () => { ed = await api("stories/" + id); drawHead(); }) }, "📥 ", T("Unpublish")) : null,

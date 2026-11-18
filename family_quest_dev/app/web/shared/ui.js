@@ -513,14 +513,39 @@ async function downloadApi(path, name) {
   } catch (e) { toast(e.message, "bad"); }
 }
 
-function aiTemplateButtons(kind) {
-  const url = `api/ai-template/${kind}`;
-  return h("div.row.wrap",
-    h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: url, download: `family-quest-${kind}-template.json` }, "⬇️ ", T("Template for the AI")),
-    h("button.btn.small.ghost", { onclick: async () => {
-      try { await navigator.clipboard.writeText(await (await fetch(url)).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
-      catch { toast(T("Copying did not work – use the download"), "bad"); }
-    } }, "📋 ", T("Copy for the AI")));
+// «Made with your AI» (packs, quizzes, books, adventure games): one example prompt for an AI chat – a monospace block with
+// the parts to fill in [like this] highlighted, «📋 Copy prompt» (the prompt + the template in one go, the template is a
+// self-describing JSON: familyquest/ai_format.py, stories.py, picturebooks.py, adventuregame.py) and «⬇️ Template»
+function aiPromptBox(promptText, { template, name } = {}) {
+  const text = I18N.tr(promptText) + (template ? "\n" + I18N.tr(T("Use exactly the format of the attached Family Quest template and answer only with the JSON.")) : "");
+  const pre = h("pre.ai-prompt-text", { translate: "no", tabindex: "0" },
+    ...text.split(/(\[[^\]\n]+\])/).map((p, i) => i % 2 ? h("mark.ai-ph", p) : p));
+  let tplText = null, tplLoad = null;          // fetched ahead: the copy itself happens right in the tap (Safari, http)
+  const load = () => tplLoad || (tplLoad = !template ? Promise.resolve("") :
+    fetch(template).then(r => r.ok ? r.text() : "").catch(() => "").then(t => (tplText = t)));
+  load();
+  const selectPrompt = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); pre.focus(); };
+  const copy = async () => {
+    if (tplText == null) await load();
+    const all = text + (tplText ? "\n\n" + tplText : "");
+    let ok = false;
+    try { await navigator.clipboard.writeText(all); ok = true; } catch {}
+    if (!ok) {                                  // no clipboard API (plain http in the home network): the old way
+      const ta = h("textarea", { readonly: true, style: { position: "fixed", top: "0", left: "0", opacity: "0", width: "1px", height: "1px" } });
+      ta.value = all; (pre.closest("dialog, .modal") || document.body).append(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+    }
+    if (ok) return toast(I18N.tr(tplText ? T("Copied – paste it into the chat of your AI") : T("Copied")), "good");
+    selectPrompt();
+    toast(I18N.tr(T("Copying is blocked here – the prompt is selected: copy it yourself and attach the template file.")), "bad");
+  };
+  return h("div.ai-prompt",
+    h("div.ai-prompt-head", h("b", "💬 ", T("Example prompt")),
+      h("button.btn.small.ai-copy", { type: "button", onclick: copy }, "📋 ", T("Copy prompt"))),
+    pre,
+    template ? h("p.small.muted", T("«Copy prompt» copies the prompt together with the template. Paste it into the chat of your AI (ChatGPT, Claude, Gemini …) and replace the highlighted [parts].")) : null,
+    template ? h("div.row.wrap", h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: template, download: name || "family-quest-template.json" }, "⬇️ ", T("Template for the AI"))) : null);
 }
 
 // link to the parent area: when it is only offered in Home Assistant, straight to the Family Quest panel there
