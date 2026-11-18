@@ -38,7 +38,8 @@ GAME_TITLES = {"quiz": "Family quiz", "bingo": "Bingo", "song": "Guess the song"
 CARD_TITLES = {"Tschau Sepp": "tschau", "Kartenkarussell": "karussell"}      # history «cards»: data.game → kind
 # personal bests kept in settings by the games: (setting, game kind, unit)
 BESTS = (("jump_best", "jump", ""), ("sternlauf_best", "sternlauf", ""), ("snack_best", "snack", ""),
-         ("verkehr_best", "verkehr", ""), ("klatsch_best", "klatsch", "%"))
+         ("verkehr_best", "verkehr", ""), ("klatsch_best", "klatsch", "%"),
+         ("langstrecke_best", "langstrecke", ""))
 SHOP_EVENTS = ("redeem", "avatar", "pet_shop", "prank_buy", "slots_buy")
 GUEST = "guest"                                       # a «who» answer: one of the guests
 NOT_EARNED = ("refund", "manual", "adjust", "slots_win", "slots_bet")   # coins that are no «earned this week»
@@ -91,18 +92,26 @@ def nice_max(n: float) -> int:
         k *= 10
 
 
-def near_numbers(n: int, k: int = 3) -> list[int]:
-    """Plausible wrong numbers around n (never negative, never n)."""
+def near_numbers(n: int, k: int = 3, hi: int | None = None) -> list[int]:
+    """Plausible wrong numbers around n (never negative, never n, never above `hi`)."""
     n = int(n)
     step = max(1, round(abs(n) * 0.25))
     pool = [n - 2 * step, n - step, n + step, n + 2 * step, n + 3 * step]
-    pool = [x for x in dict.fromkeys(pool) if x >= 0 and x != n]
+    pool = [x for x in dict.fromkeys(pool) if x >= 0 and x != n and (hi is None or x <= hi)]
     random.shuffle(pool)
     out = pool[:k]
-    extra = n + 4 * step
+    extra, down = n + 4 * step, n - 3 * step
     while len(out) < k:
-        out.append(extra)
-        extra += step
+        if hi is None or extra <= hi:
+            out.append(extra)
+            extra += step
+        elif down >= 0 and down not in out:
+            out.append(down)
+            down -= step
+        else:
+            down -= 1
+            if down < 0:
+                break
     return out
 
 
@@ -356,6 +365,17 @@ class Facts:
             if len(same) == 1:                          # one winner (not a team)
                 out += self.who("last_winner", "week", (_t("Who won the last family game ({0})?"), self.game_title(last["game"])),
                                 {self.person(last["profile_id"]): 1}, guests=True)
+        # «Beat the Bureaucracy»: the most referrals in one game, the fastest permit (family only)
+        refs, fast = {}, {}
+        for r in h:
+            if r["game"] == "stempeljagd" and r["profile_id"] in self.name:
+                d = r["data"]
+                refs[r["profile_id"]] = max(refs.get(r["profile_id"], 0), int(d.get("referrals") or 0))
+                if d.get("won") and d.get("complete") and d.get("seconds") is not None and not d.get("admin"):
+                    fast[r["profile_id"]] = max(fast.get(r["profile_id"], 0), 100000 - int(d["seconds"]))
+        title = self.game_title("stempeljagd")
+        out += self.who("stempeljagd_referrals", "all", (_t("Who was sent to another counter the most times in one game of {0}?"), title), refs)
+        out += self.who("stempeljagd_fastest", "all", (_t("Who got the building permit the fastest in {0}?"), title), fast)
         dice = {}
         for r in h:
             if r["game"] == "wuerfel" and self.person(r["profile_id"]) is not None:
@@ -378,15 +398,32 @@ class Facts:
             title = self.game_title(kind)
             top = max(best.values())
             q = [{"gen": "record_" + kind, "scope": "all", "q": (_t("What is the family record in {0}?"), title),
-                  "right": f"{top}{unit}", "wrong": [f"{x}{unit}" for x in near_numbers(top) if not unit or x <= 100]}]
+                  "right": f"{top}{unit}", "wrong": [f"{x}{unit}" for x in near_numbers(top, hi=100 if unit else None)]}]
             if len(q[0]["wrong"]) >= 1:
                 out += q
             out += self.who("record_who_" + kind, "all", (_t("Who holds the record in {0}?"), title), best)
+        out += self.pit_records()
         spins = int(self.db.val("SELECT COUNT(*) FROM ledger WHERE event='slots_bet'", default=0) or 0)
         if spins >= 3:
             out += self.number("slots_spins", "all", (_t("How often has the slot machine been played?"),), spins)
         wins = {r["profile_id"]: r["m"] for r in self.db.q("SELECT profile_id, MAX(amount) m FROM ledger WHERE event='slots_win' GROUP BY profile_id")}
         out += self.who("slots_jackpot", "all", (_t("Who has won the biggest prize at the slot machine?"),), wins)
+        return out
+
+    # «24h Endurance»: the fastest pit stop (setting langstrecke_pit, tenths of a second – lower is better)
+    def pit_records(self) -> list[dict]:
+        best = {int(k): int(v or 0) for k, v in (self.db.get_setting("langstrecke_pit") or {}).items()
+                if str(k).isdigit() and int(k) in self.name and int(v or 0) > 0}
+        if not best:
+            return []
+        title = self.game_title("langstrecke")
+        top = min(best.values())
+        sec = lambda x: f"{x / 10:.1f} s"                                          # noqa: E731
+        wrong = [sec(top + d) for d in (-12, -6, 5, 11, 17) if top + d > 0][:3]
+        out = [{"gen": "record_pit", "scope": "all", "q": (_t("How long did the family's fastest pit stop in {0} take?"), title),
+                "right": sec(top), "wrong": wrong}]
+        out += self.who("record_pit_who", "all", (_t("Who was in the team with the fastest pit stop in {0}?"), title),
+                        {k: 1000 - v for k, v in best.items()})
         return out
 
     # shop: rewards, avatar items, pet shop, pranks, the slot machine

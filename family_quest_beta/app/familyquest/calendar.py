@@ -18,6 +18,7 @@ import time
 from datetime import date, datetime, timedelta
 
 import httpx
+from .i18n import _t
 
 OPENHOLIDAYS = "https://openholidaysapi.org"
 # the 26 cantons (ISO 3166-2:CH) – names stay as they are (proper names)
@@ -321,7 +322,7 @@ class FamilyCalendar:
                     for h in r.json():
                         out.append(self._holiday(h, kind, canton, lang))
         except (httpx.HTTPError, ValueError) as e:
-            raise CalendarError(f"The holiday service cannot be reached: {e}") from None
+            raise CalendarError(_t("The holiday service cannot be reached: {0}").replace("{0}", str(e))) from None
         out = [e for e in out if e]
         out.sort(key=lambda e: e["start"])
         self._holiday_cache[key] = (time.time(), out)

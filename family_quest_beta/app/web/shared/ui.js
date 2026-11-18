@@ -556,6 +556,7 @@ function noTableActions(game, back) {
     jass: () => jassStartDialog(false, again), kartenlauf: () => kartenlaufStartDialog(false, again), klatsch: () => klatschStartDialog(false, again),
     paarjagd: () => paarjagdStartDialog(false, again), song: () => songStartDialog(again), stadtland: () => stadtlandStartDialog(again),
     verboten: () => verbotenStartDialog(again), werwolf: () => werwolfStartDialog(again), werbinich: () => werbinichStartDialog(again),
-    wuerfel: () => wuerfelStartDialog(false, again), zeichnen: () => zeichnenStartDialog(again) }[game];
+    wuerfel: () => wuerfelStartDialog(false, again), zeichnen: () => zeichnenStartDialog(again),
+    stempeljagd: () => stempeljagdStartDialog(false, again) }[game];
   return h("div.row.center.wrap", fn ? h("button.btn", { onclick: () => fn() }, "👨‍👩‍👧 ", T("Open a family table")) : null, backBtn);
 }

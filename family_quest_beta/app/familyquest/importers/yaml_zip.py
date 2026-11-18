@@ -9,6 +9,7 @@ import httpx
 
 from ..packs.loader import MAX_ZIP_BYTES, PackError, pack_dict, parse_doc, parse_text, parse_zip
 from .common import draft_from_dict
+from ..i18n import _t
 
 
 def import_bytes(fq, name: str, raw: bytes) -> list[dict]:
@@ -63,7 +64,7 @@ def import_url(fq, url: str) -> list[dict]:
             r.raise_for_status()
             data = r.content
     except httpx.HTTPError as e:
-        raise PackError(f"download failed: {e}") from None
+        raise PackError(_t("Download failed: {0}").replace("{0}", str(e))) from None
     if len(data) > MAX_ZIP_BYTES:
         raise PackError("file too large")
     name = u.path.rsplit("/", 1)[-1] or "download.yaml"

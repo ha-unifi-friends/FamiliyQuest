@@ -14,6 +14,7 @@ import secrets
 
 from ..packs.loader import PackError
 from .common import draft_from_dict, suggest_meta
+from ..i18n import _t
 
 log = logging.getLogger("familyquest.ai")
 
@@ -112,7 +113,7 @@ def draft_from_document(fq, name: str, raw: bytes) -> list[dict]:
         folder.mkdir(parents=True, exist_ok=True)
         tmp.write_bytes(raw)
     except OSError as e:
-        raise PackError(f"cannot write to the media folder of Home Assistant ({e.strerror})") from None
+        raise PackError(_t("Cannot write to the media folder of Home Assistant ({0})").replace("{0}", str(e.strerror))) from None
     instructions = PROMPT.format(name=name) + "\n\nAnswer ONLY with one JSON object (no text around it) of this JSON schema:\n" + json.dumps(SCHEMA, ensure_ascii=False)
     try:
         text = fq.ha.ai_task(instructions, f"media-source://media_source/local/{IMPORT_DIR}/{tmp.name}", mime)
@@ -120,7 +121,7 @@ def draft_from_document(fq, name: str, raw: bytes) -> list[dict]:
         raise
     except Exception as e:  # noqa: BLE001
         log.warning("AI task failed: %s", e)
-        raise PackError(f"the AI in Home Assistant did not answer ({str(e)[:160]})") from None
+        raise PackError(_t("The AI in Home Assistant did not answer ({0})").replace("{0}", str(e)[:160])) from None
     finally:
         try:
             tmp.unlink()
