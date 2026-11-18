@@ -116,7 +116,7 @@ async function storiesSection() {
   sec.append(h("h2", "📚 ", T("Library")),
     h("p.small.muted", T("Children and parents write books, choose-your-path stories and adventure games, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones.")),
     box, set);
-  await storyShelf(box);
+  await storyShelf(box, { byType: true });          // one box per type, each with its own import / new
   return sec;
 }
 
@@ -159,7 +159,7 @@ const sbOpen = (b, onClose) => b.type === "picture" ? pictureReader(pbServerEngi
 const sbEdit = (id, type, onClose) => type === "picture" ? pictureEditor(id, onClose) : type === "game" ? gameEditor(id, onClose) : storyEditor(id, onClose);
 const sbSize = b => sbFmt(b.type === "game" ? T("Rooms: {0}") : T("Pages: {0}"), b.pages);
 
-async function storyShelf(box) {
+async function storyShelf(box, opts = {}) {
   let filter = "all";
   try { filter = localStorage.getItem("fq.sb.type") || "all"; } catch {}
   const draw = async () => {
@@ -237,6 +237,30 @@ async function storyShelf(box) {
     const filters = h("div.sb-tfilter", { role: "group", "aria-label": T("Book types") },
       chip("all", "📚", T("All"), count("all")),
       ...["picture", "adventure", "game"].map(k => chip(k, T_[k][0], T_[k][2], count(k), !(d.creatable || []).includes(k))));
+    const done = (id, type) => sbEdit(id, type, draw);
+    // parent area: a box per type – 📕 books, 📖 adventure books, 🗝️ adventure games – each with its own import and new
+    const typeBox = k => {
+      const [ic, , plural, what] = T_[k], on = (d.creatable || []).includes(k);
+      const shelf = onShelf.filter(b => b.type === k), own = mine.filter(b => b.type === k), fam = others.filter(b => b.type === k);
+      return h("section.sb-sec.sb-typebox.t-" + k,
+        h("div.sec-head", h("h2", h("span", { translate: "no" }, ic), " ", plural),
+          on ? h("div.head-actions",
+            h("button.btn.ghost", { onclick: () => storyImportDialog(done, k) }, "📥 ", T("Import")),
+            h("button.btn", { onclick: () => storyNewDialog(done, d.creatable, k) }, "+ ", T("New"))) : null),
+        h("p.small.muted", what),
+        shelf.length ? h("div.sb-shelf", ...shelf.map(cover)) : h("p.small.muted.sb-empty", T("Nothing on the shelf yet.")),
+        own.length ? [h("h3.sb-sub", "✏️ ", T("Mine")), h("div.sb-rows", ...own.map(row))] : null,
+        fam.length ? [h("h3.sb-sub", "📝 ", T("Drafts of the family")), h("div.sb-rows", ...fam.map(row))] : null);
+    };
+    if (opts.byType) return sbSet(box,
+      pend.length ? h("section.sb-sec.sb-wait", h("h2", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
+      ...["picture", "adventure", "game"].map(typeBox),
+      d.oversee && samples.length ? h("section.sb-sec", h("h2", "✨ ", T("Sample books")),
+        h("p.small.muted", T("Ready-made books of Family Quest for the whole family, in the language of the app. Hide them if you do not want them on the shelf.")),
+        h("div.sb-rows", ...samples.map(sampleRow))) : null,
+      (d.private || []).length ? h("section.sb-sec", h("h2", "🔒 ", T("Private books")),
+        h("p.small.muted", T("Only their authors can read these books – parents neither. You see only that they exist.")),
+        h("div.sb-rows", ...d.private.map(privRow))) : null);
     sbSet(box,
       pend.length ? h("section.sb-sec.sb-wait", h("h2", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
       h("section.sb-sec", h("div.sec-head", h("h2", "📚 ", T("Family bookshelf")),
@@ -272,9 +296,10 @@ function sbVisPicker(value, onPick) {
   return box;
 }
 
-function storyNewDialog(done, creatable = ["picture", "adventure", "game"]) {
+function storyNewDialog(done, creatable = ["picture", "adventure", "game"], fixedType = null) {
   let type = "picture", tpl = null, emoji = "📖", color = 0, visibility = "family";   // new books: the whole family
   try { type = ["adventure", "game"].includes(localStorage.getItem("fq.sb.newtype")) ? localStorage.getItem("fq.sb.newtype") : "picture"; } catch {}
+  if (fixedType) type = fixedType;                       // parent area: the box of a type – no choice needed
   if (!creatable.includes(type)) type = "picture";
   const title = h("input", { type: "text", maxlength: 80 });
   const lang = h("select", ...I18N.LANGS.filter(([k]) => k !== "auto").map(([k, n]) => h("option", { value: k, translate: "no", selected: k === sbAppLang() }, n)));
@@ -308,8 +333,10 @@ function storyNewDialog(done, creatable = ["picture", "adventure", "game"]) {
       m.close(); done(r.id, type);
     } catch (e) { toast(e.message, "bad"); }
   };
-  const m = modal(h("div.form.sb-new", h("h2", "📚 ", T("New book")),
-    h("div.field", h("b", T("What kind of book?")), types),
+  const heading = fixedType ? { picture: ["📕", T("New book")], adventure: ["📖", T("New adventure book")], game: ["🗝️", T("New adventure game")] }[type]
+    : ["📚", T("New book")];
+  const m = modal(h("div.form.sb-new", h("h2", heading[0], " ", heading[1]),
+    fixedType ? null : h("div.field", h("b", T("What kind of book?")), types),
     h("label.field", T("Title"), title, titleHint),
     h("label.field", T("Language of the book"), lang),
     tplField,
@@ -318,9 +345,10 @@ function storyNewDialog(done, creatable = ["picture", "adventure", "game"]) {
 }
 
 // import: a file or the answer of an AI (paste) – becomes a private draft (picture books and adventure books)
-function storyImportDialog(done) {
+function storyImportDialog(done, fixedType = null) {
   let type = "picture";
   try { type = ["adventure", "game"].includes(localStorage.getItem("fq.sb.newtype")) ? localStorage.getItem("fq.sb.newtype") : "picture"; } catch {}
+  if (fixedType) type = fixedType;                       // parent area: the box of a type – its template only
   const text = h("textarea.sb-imptext", { rows: 8, placeholder: I18N.tr(T("Paste the answer of the AI here …")) });
   const file = h("input", { type: "file", accept: ".json,.txt,application/json,text/plain" });
   file.onchange = async () => { const f = file.files[0]; if (!f) return; if (f.size > 1e6) return toast(I18N.tr(T("The file is too large")), "bad"); text.value = await f.text(); };
@@ -331,19 +359,21 @@ function storyImportDialog(done) {
       const r = await api("stories/import", { method: "POST", body: { text: text.value } });
       m.close(); toast(I18N.tr(T("Imported as a private draft")), "good");
       const e = await api("stories/" + r.ids[0]);
+      if (fixedType && e.type !== fixedType) toast(sbFmt(T("This file is: {0} – it was added there."), SB_TYPES()[e.type][1]), "good");
       done(r.ids[0], e.type);
     } catch (e) { toast(e.message, "bad"); }
   };
   const tpls = h("div.row.wrap");
   const drawTpl = () => sbSet(tpls,
-    h("div.sb-segs.sb-impsegs", ...["picture", "adventure", "game"].map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", title: SB_TYPES()[k][1],
+    fixedType ? null : h("div.sb-segs.sb-impsegs", ...["picture", "adventure", "game"].map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", title: SB_TYPES()[k][1],
       onclick: () => { type = k; drawTpl(); } }, SB_TYPES()[k][0], h("span.sb-hide-s", " ", SB_TYPES()[k][1])))),
     h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: tplUrl(), download: tplName() }, "⬇️ ", T("Template for the AI")),
     h("button.btn.small.ghost", { onclick: async () => {
       try { await navigator.clipboard.writeText(await (await fetch(tplUrl())).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
       catch { toast(T("Copying did not work – use the download"), "bad"); } } }, "📋 ", T("Copy for the AI")));
   drawTpl();
-  const m = modal(h("div.form.sb-imp", h("h2", "📥 ", T("Import a book")),
+  const impHead = fixedType ? { picture: T("Import a book"), adventure: T("Import an adventure book"), game: T("Import an adventure game") }[type] : T("Import a book");
+  const m = modal(h("div.form.sb-imp", h("h2", "📥 ", impHead),
     h("p.small", T("1. Copy the template for the AI and paste it into any AI chat. 2. Describe your story idea. 3. Paste the answer here – or choose a book file that was exported.")),
     tpls, text, h("label.field", T("…or a file"), file),
     h("p.small.muted", "🔒 ", T("The book comes in as a private draft – the checker shows what is still missing. Own drawings and photos are not part of the file.")),

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-dev.3
+
+- Everything from 1.1.1-beta.8 plus the dev-only games
+
 ## 1.1.1-dev.2
 
 - Everything from 1.1.1-beta.7 (adventure games) plus the dev-only games
