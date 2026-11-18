@@ -1730,6 +1730,30 @@ async def memory_photo(request: Request, file: UploadFile = File(...), me: dict 
     return {"name": name, "url": f"media/{memorygame.FOLDER}/{name}"}
 
 
+@router.post("/memory/import")
+async def memory_import(request: Request, file: UploadFile = File(...), me: dict = Parent) -> dict:
+    """A photo set from a ZIP file: the pictures are copied into the photo folder – the set itself is saved with
+    PUT /memory (like after uploading single photos)."""
+    from .. import memorygame
+    raw = await file.read(memorygame.ZIP_MAX + 1)
+    if len(raw) > memorygame.ZIP_MAX:
+        raise HTTPException(400, "The ZIP file is too large (max. 60 MB)")
+    try:
+        return {"names": memorygame.import_zip(app_of(request), raw)}
+    except memorygame.MemoryError_ as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.get("/memory/sets/{sid}/export")
+def memory_export(sid: str, request: Request, me: dict = Parent) -> Response:
+    from .. import memorygame
+    try:
+        name, raw = memorygame.export_zip(app_of(request), sid)
+    except memorygame.MemoryError_ as e:
+        raise HTTPException(404, str(e)) from None
+    return Response(raw, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
 # ---------------------------------------------------------------- running games: end one or all (running.py)
 @router.get("/games/running")
 def games_running(request: Request, me: dict = Parent) -> list[dict]:
