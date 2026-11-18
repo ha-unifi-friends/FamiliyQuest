@@ -1,4 +1,5 @@
-"""Strict cleaning of SVG pictures that come from a family member or an AI (picture books, picturebooks.py).
+"""Strict cleaning of SVG pictures that come from a family member, the drawing editor (web/svgpaint.js) or an AI – every
+book type (picture books, adventure books, adventure games) keeps them inside the book data.
 
 Only plain drawing survives: an allow-list of shape elements and presentation attributes. Everything else is dropped –
 <script>, <foreignObject>, <image>, <use>, <style>, <a>, animation, every `on…` event handler, every `href`, every
@@ -14,9 +15,13 @@ import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape, quoteattr
 
 SVG_NS = "http://www.w3.org/2000/svg"
-SVG_MAX = 12_000                 # characters of one cleaned picture
-RAW_MAX = 40_000                 # characters before cleaning (comments, white space and dropped parts included)
-MAX_NODES = 600
+BG_MAX = 60_000                  # characters of one cleaned picture that fills a page / a room (4:3, viewBox 800×600)
+ART_MAX = 20_000                 # … of a thing on a page or in a room (square, transparent, viewBox 200×200)
+SVG_MAX = BG_MAX                 # the default limit
+LIMITS = {"bg": BG_MAX, "art": ART_MAX}
+RAW_MAX = 200_000                # characters before cleaning (comments, white space and dropped parts included)
+MAX_NODES = 2500                 # parts of a background (a thing: ART_NODES)
+ART_NODES = 900
 MAX_DEPTH = 16
 
 TAGS = {"svg", "g", "path", "circle", "ellipse", "rect", "line", "polyline", "polygon", "defs", "linearGradient",
@@ -66,12 +71,14 @@ def _value(name: str, v: str) -> str | None:
     return None if _BAD.search(v) else v
 
 
-def clean_svg(raw) -> str:
-    """The cleaned picture (a string `<svg xmlns=… viewBox=…>…</svg>`) – or SvgError when it is not a usable SVG."""
+def clean_svg(raw, limit: int = SVG_MAX) -> str:
+    """The cleaned picture (a string `<svg xmlns=… viewBox=…>…</svg>`, at most `limit` characters) – or SvgError when it is
+    not a usable SVG."""
     if not isinstance(raw, str):
         raise SvgError("not text")
     raw = raw.strip()
-    if len(raw) > RAW_MAX:
+    max_nodes = MAX_NODES if limit > ART_MAX else ART_NODES
+    if len(raw) > min(RAW_MAX, max(40_000, limit * 3)):
         raise SvgError("too large")
     if re.search(r"<!DOCTYPE|<!ENTITY|<\?xml-stylesheet", raw, re.I):
         raise SvgError("DOCTYPE / entity")
@@ -102,7 +109,7 @@ def clean_svg(raw) -> str:
         if name not in TAGS or depth > MAX_DEPTH:
             return ""
         count += 1
-        if count > MAX_NODES:
+        if count > max_nodes:
             raise SvgError("too many parts")
         a = attrs(el, name)
         if name == "svg" and depth == 0:
@@ -127,13 +134,13 @@ def clean_svg(raw) -> str:
         return head + (">" + body + f"</{tag}>" if body else "/>")
 
     out = walk(root, 0)
-    if len(out) > SVG_MAX:
+    if len(out) > limit:
         raise SvgError("too large")
     return out
 
 
-def safe_svg(raw) -> str | None:
+def safe_svg(raw, limit: int = SVG_MAX) -> str | None:
     try:
-        return clean_svg(raw)
+        return clean_svg(raw, limit)
     except SvgError:
         return None

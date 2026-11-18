@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.10
+
+- Own drawings as SVG in books, adventure books and adventure games: a new vector painter (pen, lines, shapes, fill, stamps, gradient backgrounds, move/rotate/scale, layers, undo) for page pictures, backgrounds, rooms, hotspots and items – saved in the book and included in the AI import/export
+- Every AI import shows its example prompt in a highlighted box with «Copy prompt» (learning packs, family quiz, books, adventure books, adventure games)
+
 ## 1.1.1-beta.9
 
 - Parent area › Games: every game starts collapsed; new «Custom games» group under the running games with Family quiz, Pair Hunt and Adventure games – each with Import and New (New starts with templates)

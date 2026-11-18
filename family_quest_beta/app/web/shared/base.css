@@ -2002,6 +2002,15 @@ img.coin-ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-ali
 .ai-fold { border-top: 1px solid var(--line); padding-top: 8px; }
 .ai-fold > summary { cursor: pointer; font-weight: 700; padding: 6px 0; min-height: 32px; }
 .ai-fold[open] > .ai-box { margin-top: 6px; }
+/* «Made with your AI»: the example prompt (ui.js aiPromptBox) – a code block, clearly apart from the text around it */
+.ai-prompt { margin: 10px 0 6px; display: grid; gap: 8px; min-width: 0; }
+.ai-prompt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ai-prompt-text { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px;
+  background: var(--hover); color: var(--fg); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .84rem; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; user-select: text; -webkit-user-select: text; cursor: text; }
+.ai-prompt-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ai-ph { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit; border: 1px dashed var(--accent); border-radius: 4px; padding: 0 3px; font-weight: 700; }
+.ai-prompt > p { margin: 0; }
 /* quiz pictures: a big flag, a big emoji, an own SVG drawing (community.js questionImage) */
 .q-img.q-flag img { height: min(26vh, 170px); width: auto; max-width: 100%; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 .q-img.q-emoji { font-size: min(18vh, 120px); line-height: 1.1; text-align: center; }
@@ -3250,19 +3259,58 @@ input.sb-ownemo { width: 88px; text-align: center; height: 44px; min-height: 44p
 .sb-col { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; padding: 0; }
 .sb-col.on { border-color: var(--fg); transform: scale(1.1); }
 .sb-danger { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
-/* the painter: tools on top, the canvas as large as it fits (finger and stylus draw, the page never scrolls) */
-.sb-painter.quiz-full { display: flex; flex-direction: column; gap: 8px; padding: calc(8px + env(safe-area-inset-top)) 10px 10px; overflow: hidden; touch-action: none; }
-.sb-pbar { display: grid; gap: 6px; }
-.sb-ptools, .sb-pcolors { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.sb-ptool { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 2px solid var(--line); border-radius: 12px; background: var(--card); font-size: 1.3rem; }
-.sb-ptool.on { border-color: var(--accent); background: var(--hover); }
-.sb-ptool:disabled { opacity: .4; }
-.sb-size i { display: block; border-radius: 50%; background: var(--fg); }
-.sb-pcol { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); padding: 0; }
-.sb-pcol.on { border-color: var(--accent); transform: scale(1.15); }
-.sb-cvwrap { flex: 1; min-height: 0; display: grid; place-items: center; }
-.sb-canvas { display: block; width: min(100%, calc((100dvh - 240px) * 4 / 3)); height: auto; aspect-ratio: 4 / 3; background: #fff; border-radius: 12px;
-  box-shadow: var(--shadow); touch-action: none; cursor: crosshair; }
+/* the drawing editor (svgpaint.js): tools on top, the picture as large as it fits; two fingers zoom the picture, never the page */
+.svp-full.quiz-full { display: flex; flex-direction: column; gap: 6px; padding: calc(6px + env(safe-area-inset-top)) max(8px, calc((100vw - 1100px) / 2)) 8px;
+  overflow: hidden; touch-action: none; overscroll-behavior: contain; }
+.svp-top { display: flex; align-items: center; gap: 6px; min-height: 40px; }
+.svp-top .btn { white-space: nowrap; flex: none; }
+.svp-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34vw; }
+.svp-meter { display: inline-flex; align-items: center; gap: 5px; font-size: .75rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.svp-mbar { width: 42px; height: 7px; border-radius: 4px; background: var(--ring-bg); overflow: hidden; }
+.svp-mbar i { display: block; height: 100%; background: var(--good); border-radius: 4px; }
+.svp-meter.over { color: var(--bad); font-weight: 800; }
+.svp-meter.over .svp-mbar i { background: var(--bad); }
+.svp-tools, .svp-row { display: flex; gap: 4px; align-items: center; overflow-x: auto; scrollbar-width: none; flex: none; padding: 1px; }
+.svp-tools::-webkit-scrollbar, .svp-row::-webkit-scrollbar { display: none; }
+.svp-tool { position: relative; flex: none; width: 42px; height: 42px; display: grid; place-items: center; padding: 0; border: 2px solid var(--line);
+  border-radius: 12px; background: var(--card); color: var(--fg); font-size: 1.2rem; line-height: 1; touch-action: manipulation; }
+.svp-tool.on { border-color: var(--accent); background: var(--hover); box-shadow: 0 0 0 2px var(--accent) inset; }
+.svp-tool:disabled, .svp-tool.dis { opacity: .35; }
+.svp-tool.svp-more::after { content: ""; position: absolute; right: 3px; bottom: 3px; border: 4px solid transparent; border-right-color: var(--muted);
+  border-bottom-color: var(--muted); }
+.svp-tool.svp-outline.off { opacity: .5; text-decoration: line-through; }
+.svp-size i { display: block; border-radius: 50%; background: var(--fg); }
+.svp-sep { flex: none; width: 1px; height: 28px; background: var(--line); margin: 0 2px; }
+.svp-col { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--line); padding: 0; touch-action: manipulation; }
+.svp-col.on { border-color: var(--accent); transform: scale(1.12); }
+.svp-custom { flex: none; width: 40px; height: 36px; padding: 2px; border: 2px solid var(--line); border-radius: 10px; background: var(--card); }
+.svp-tools + .svp-row { height: 52px; }
+.svp-row.panel { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 4px; }
+.svp-plabel { flex: none; font-size: .8rem; font-weight: 800; color: var(--muted); padding: 0 4px; }
+.svp-bgp { flex: none; width: 70px; height: 42px; border-radius: 10px; border: 2px solid var(--line); padding: 0; display: flex; align-items: flex-end;
+  background: repeating-conic-gradient(#dee2e6 0 25%, #fff 0 50%) 0 0 / 14px 14px; overflow: hidden; }
+.svp-bgp span { width: 100%; font-size: .68rem; font-weight: 800; background: rgba(0, 0, 0, .45); color: #fff; padding: 1px 2px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.svp-bgp.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.svp-selbar { position: absolute; z-index: 2; left: 50%; bottom: 6px; transform: translateX(-50%); max-width: calc(100% - 12px);
+  background: var(--card); border-radius: 14px; padding: 5px; box-shadow: 0 4px 16px rgba(0, 0, 0, .25); }
+.svp-selbar .grow { min-width: 4px; }
+.svp-unzoom.svp-tool { position: absolute; z-index: 2; right: 6px; top: 6px; box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
+.svp-selbar .btn { flex: none; }
+.svp-note { margin: 0; }
+.svp-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; border-radius: 12px; touch-action: none; }
+.svp-zoom { position: absolute; inset: 0; display: grid; place-items: start center; padding-top: 2px; transform-origin: 0 0; }
+.svp-canvas { display: block; background: #fff; border-radius: 10px; box-shadow: var(--shadow); touch-action: none; cursor: crosshair;
+  user-select: none; -webkit-user-select: none; }
+.svp-canvas.art { background: repeating-conic-gradient(#e9ecef 0 25%, #fff 0 50%) 0 0 / 20px 20px; }
+.svp-over { pointer-events: none; }
+@media (max-width: 560px) {
+  .svp-title { display: none; }
+  .svp-mbar { width: 26px; }
+  .svp-top { gap: 4px; }
+  .svp-tool { width: 40px; height: 40px; font-size: 1.1rem; }
+  .svp-col { width: 30px; height: 30px; }
+}
 @media (max-width: 560px) {
   .sb-hide-s { display: none; }
   .sb-full.quiz-full { padding-left: 10px; padding-right: 10px; }
@@ -3273,8 +3321,6 @@ input.sb-ownemo { width: 88px; text-align: center; height: 44px; min-height: 44p
   .sb-picbtn .sb-emo { font-size: 2.3rem; }
   .sb-cover { height: 112px; }
   .sb-shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .sb-ptool { width: 40px; height: 40px; }
-  .sb-pcol { width: 30px; height: 30px; }
 }
 /* backgrounds (img/stories/*.svg), who reads it, import */
 .sb-cover { background-size: cover; background-position: center; }
@@ -3296,6 +3342,10 @@ input.sb-ownemo { width: 88px; text-align: center; height: 44px; min-height: 44p
 .sb-bgtile.on { border-color: var(--accent); background: var(--hover); }
 .sb-bgimg { display: block; aspect-ratio: 4 / 3; border-radius: 8px; background: var(--bg) center / cover; }
 .sb-bgtile.none .sb-bgimg { background: repeating-linear-gradient(45deg, var(--bg), var(--bg) 8px, var(--hover) 8px, var(--hover) 16px); }
+.sb-bgtile.own .sb-bgimg { display: grid; place-items: center; font-size: 2rem; outline: 2px dashed var(--accent); outline-offset: -2px; }
+/* own drawings (svgpaint.js) on a page: a thing on a see-through background – no frame, no white paper */
+.sb-ppic .sb-img.sb-svg { width: min(220px, 60vw); height: auto; aspect-ratio: 1; background: transparent; box-shadow: none; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .25)); }
+.sb-cover .sb-img.sb-svg, .sb-picbtn .sb-img.sb-svg { object-fit: contain; padding: 6%; }
 .sb-vispick { display: grid; gap: 4px; }
 .sb-visseg { display: flex; flex-wrap: wrap; }
 .sb-visseg .sb-seg { flex: 1 1 auto; font-size: .88rem; padding: 6px 10px; }
