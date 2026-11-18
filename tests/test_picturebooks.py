@@ -62,10 +62,10 @@ def test_svg_clean_refuses():
             "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'><text>&lol2;</text></svg>")
     ext = "<!DOCTYPE svg [<!ENTITY x SYSTEM 'file:///etc/passwd'>]><svg viewBox='0 0 1 1'><text>&x;</text></svg>"
     for bad in (bomb, ext, "<html><body>hi</body></html>", "not xml", "<svg><rect/></svg>", None, 42,
-                "<svg viewBox='0 0 1 1'>" + "<rect width='1' height='1'/>" * 2000 + "</svg>",
+                "<svg viewBox='0 0 1 1'>" + "<rect width='1' height='1'/>" * 3000 + "</svg>",
                 "<svg xmlns='http://www.w3.org/1999/xhtml' viewBox='0 0 1 1'/>"):
         assert safe_svg(bad) is None, bad
-    big = "<svg viewBox='0 0 1 1'>" + "".join(f"<circle cx='{i}' cy='{i}' r='{i}' fill='#123456'/>" for i in range(400)) + "</svg>"
+    big = "<svg viewBox='0 0 1 1'>" + "".join(f"<circle cx='{i}' cy='{i}' r='{i}' fill='#123456'/>" for i in range(1500)) + "</svg>"
     try:
         clean_svg(big)
         raise AssertionError("too large passed")

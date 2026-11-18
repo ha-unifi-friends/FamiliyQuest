@@ -13,9 +13,6 @@ const SB_PICS = ["🌴", "🦁", "🐒", "🐍", "🐊", "🦜", "🐘", "🦒",
   "🚀", "🌕", "⭐", "👽", "🛸", "🪐", "🌌", "☄️", "🏰", "👻", "🦇", "🕯️", "🗝️", "📚", "🧙", "🐉",
   "🐠", "🐙", "🐢", "🦈", "🧜", "🪸", "🐚", "⚓", "🏠", "🏫", "🚗", "🚂", "🍌", "🍎", "🎁", "💎",
   "👑", "🗺️", "💰", "🍫", "🌈", "⛈️", "🌙", "🔥", "😀", "😱", "😴", "🤩", "🙈", "🏆", "💀", "❓"];
-const SB_INK = ["#1f2433", "#ffffff", "#868e96", "#e03131", "#f76707", "#fcc419", "#2f9e44", "#0b7285", "#74c0fc", "#1c7ed6",
-  "#7048e8", "#f783ac", "#8d5524", "#ffd8a8"];
-const SB_SIZES = [4, 10, 22, 44];
 const SB_LETTERS = "ABCD";
 // who reads a book (stories.py VISIBILITY)
 const SB_VIS = () => ({ me: ["🔒", T("Only me"), T("Only you can read it – also parents can't.")],
@@ -28,6 +25,9 @@ const SB_BGS = () => ({ jungle: T("Jungle"), beach: T("Beach and island"), deeps
   candy: T("Candy land"), dino: T("Dinosaur valley"), volcano: T("Volcano"), northpole: T("North Pole"), mine: T("Underground mine"),
   clouds: T("Castle in the clouds"), station: T("Train station"), school: T("School"), kidsroom: T("Kids' room"), attic: T("Attic"), lab: T("Laboratory") });
 const sbBgUrl = key => "img/stories/" + key + ".svg";
+// the CSS background of a page: a library scene (its key) or an own drawing {k: "svg", v} (always as an image: nothing in it runs)
+const sbBgCss = (bg, game = false) => !bg ? null : typeof bg === "object" ? (bg.k === "svg" ? `url("${svgDataUrl(bg.v)}")` : null)
+  : `url(${game ? agBgUrl(bg) : sbBgUrl(bg)})`;
 const SB_KIND = () => ({ scene: ["📄", T("Scene")], good: ["🏆", T("Good ending")], bad: ["💀", T("Bad ending")] });
 // the checker (same rules and texts as stories.py check – the server checks again when publishing)
 const SB_MSG = {
@@ -51,6 +51,7 @@ function sbAppLang() {
 const sbLangName = code => (I18N.LANGS.find(([k]) => k === code) || [code, code])[1];
 
 function sbPic(pic, cls = "") {
+  if (pic && pic.k === "svg") return h("img.sb-img.sb-svg" + cls, { src: svgDataUrl(pic.v), alt: "", draggable: false });
   if (pic && pic.k === "img") return h("img.sb-img" + cls, { src: sbImg(pic.v), alt: "", draggable: false, loading: "lazy" });
   if (pic && pic.k === "emoji") return h("span.sb-emo" + cls, { translate: "no", "aria-hidden": "true" }, pic.v);
   return null;
@@ -203,7 +204,7 @@ async function storyShelf(box, opts = {}) {
       ? (b.cover ? pbPic(b.cover, ".pb-cimg") : h("span.sb-cemo", { translate: "no" }, b.emoji))
       : (b.cover ? sbPic(b.cover) : h("span.sb-cemo", { translate: "no" }, b.emoji));
     const cover = b => h("button.sb-book.t-" + b.type, { onclick: () => read(b), style: { "--sb-c": SB_COVERS[b.color] || SB_COVERS[0] } },
-      h("span.sb-cover", { style: b.cover_bg && !b.cover ? { backgroundImage: `url(${b.type === "game" ? agBgUrl(b.cover_bg) : sbBgUrl(b.cover_bg)})` } : null },
+      h("span.sb-cover", { style: b.cover_bg && (!b.cover || (b.type === "adventure" && b.cover.k !== "img")) ? { backgroundImage: sbBgCss(b.cover_bg, b.type === "game") } : null },
         coverArt(b), b.reading ? h("span.sb-cont", "▶ ", T("Continue")) : null, typeBadge(b), b.sample ? null : visBadge(b)),
       h("span.sb-binfo", C(b.title, "strong.sb-btitle"), author(b), progress(b),
         b.rating ? h("span.sb-rate", { title: sbFmt(T("Ratings: {0}"), b.votes) }, stars(Math.round(b.rating)), " ", fmt(b.rating, 1)) : null));
@@ -410,7 +411,7 @@ function storyImportDialog(done, fixedType = null, kinds = ["picture", "adventur
   const m = modal(h("div.form.sb-imp", h("h2", "📥 ", impHead),
     h("p.small", T("1. Copy the prompt (the template comes with it) and paste it into any AI chat. 2. Fill in the highlighted parts with your story idea. 3. Paste the answer here – or choose a book file that was exported.")),
     tpls, text, h("label.field", T("…or a file"), file),
-    h("p.small.muted", "🔒 ", T("The book comes in as a private draft – the checker shows what is still missing. Own drawings and photos are not part of the file.")),
+    h("p.small.muted", "🔒 ", T("The book comes in as a private draft – the checker shows what is still missing. Own drawings come along, photos are not part of the file.")),
     h("div.row", h("button.btn", { onclick: go }, "📥 ", T("Import")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
 }
 
@@ -480,7 +481,7 @@ function storyReader(engine, { onClose = null, preview = false } = {}) {
         !p.start ? h("button.icon-btn", { title: T("Back to the start"), "aria-label": T("Back to the start"), onclick: restart }, "⏮") : null),
       preview ? h("p.sb-try.small", "👀 ", T("Try-out – nothing is saved")) : null,
       h("article.sb-page.k-" + p.kind + (fresh ? ".fresh" : ""), { lang: st.lang },
-        p.pic || p.bg ? h("div.sb-ppic" + (p.bg ? ".bg" : ""), { style: p.bg ? { backgroundImage: `url(${sbBgUrl(p.bg)})` } : null }, sbPic(p.pic)) : null,
+        p.pic || p.bg ? h("div.sb-ppic" + (p.bg ? ".bg" : ""), { style: p.bg ? { backgroundImage: sbBgCss(p.bg) } : null }, sbPic(p.pic)) : null,
         end ? h("div.sb-endtag", p.kind === "good" ? "🏆 " : "💀 ", p.kind === "good" ? T("Good ending") : T("Bad ending")) : null,
         C(p.text, "div.sb-text"),
         p.give ? h("div.sb-gift", "🎒 ", T("You get:"), " ", C(p.give, "b")) : null),
@@ -676,9 +677,9 @@ async function storyEditor(id, onClose = null) {
         } }, "🗑")),
       h("div.sb-pmain",
         h("div.sb-picbtns",
-          h("button.sb-picbtn" + (p.bg ? ".bg" : ""), { title: T("Picture"), onclick: () => picDialog(p), style: p.bg ? { backgroundImage: `url(${sbBgUrl(p.bg)})` } : null },
+          h("button.sb-picbtn" + (p.bg ? ".bg" : ""), { title: T("Picture"), onclick: () => picDialog(p), style: p.bg ? { backgroundImage: sbBgCss(p.bg) } : null },
             p.pic ? sbPic(p.pic) : h("span.sb-nopic", "🖼️", h("span.small", T("Picture")))),
-          h("button.btn.small.ghost.sb-bgbtn", { onclick: () => bgDialog(p), title: p.bg ? SB_BGS()[p.bg] : T("Background") }, "🏞️ ", h("span.small", T("Background")))),
+          h("button.btn.small.ghost.sb-bgbtn", { onclick: () => bgDialog(p), title: p.bg ? (typeof p.bg === "string" ? SB_BGS()[p.bg] : I18N.tr(T("Own background"))) : T("Background") }, "🏞️ ", h("span.small", T("Background")))),
         text),
       p.kind === "scene" ? sceneParts(p) : null,
       h("ul.sb-pissues"),
@@ -806,20 +807,23 @@ async function storyEditor(id, onClose = null) {
       h("div.row.wrap",
         h("button.btn", { onclick: async () => {
           m.close();
-          const blob = await sbPainter(p.pic && p.pic.k === "img" && p.pic.src === "draw" ? sbImg(p.pic.v) : null);
-          if (!blob) return;
-          try { const r = await sbUpload(blob, "drawing.png"); p.pic = { k: "img", v: r.name, src: "draw" }; changed(true); } catch (e) { toast(e.message, "bad"); }
-        } }, "🎨 ", T("Paint")),
+          const svg = await svgPaint({ kind: "art", svg: p.pic && p.pic.k === "svg" ? p.pic.v : null });
+          if (svg) { p.pic = { k: "svg", v: svg }; changed(true); }
+        } }, p.pic && p.pic.k === "svg" ? ["✏️ ", T("Change drawing")] : ["🎨 ", T("Draw a thing")]),
         h("button.btn.ghost", { onclick: () => file.click() }, "📷 ", T("Photo")), file,
         p.pic ? h("button.btn.ghost", { onclick: () => set(null) }, "🗑 ", T("No picture")) : null,
         h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
   };
 
-  // ---------- backgrounds: own scenes behind the picture
+  // ---------- backgrounds: library scenes or an own drawing behind the picture
   const bgDialog = p => {
     const set = bg => { p.bg = bg; m.close(); changed(true); };
+    const own = p.bg && typeof p.bg === "object" ? p.bg : null;
+    const draw = async () => { m.close(); const svg = await svgPaint({ kind: "bg", svg: own ? own.v : null }); if (svg) { p.bg = { k: "svg", v: svg }; changed(true); } };
     const m = modal(h("div.form.sb-bgdlg", h("h2", "🏞️ ", T("Background")),
       h("div.sb-bggrid",
+        h("button.sb-bgtile.own" + (own ? ".on" : ""), { type: "button", onclick: draw },
+          h("span.sb-bgimg", { style: own ? { backgroundImage: sbBgCss(own) } : null }, own ? null : "🎨"), h("span.small", own ? T("Change drawing") : T("Draw own background"))),
         h("button.sb-bgtile.none" + (!p.bg ? ".on" : ""), { type: "button", onclick: () => set(null) }, h("span.sb-bgimg"), h("span.small", T("No background"))),
         ...Object.entries(SB_BGS()).map(([k, n]) => h("button.sb-bgtile" + (p.bg === k ? ".on" : ""), { type: "button", onclick: () => set(k) },
           h("span.sb-bgimg", { style: { backgroundImage: `url(${sbBgUrl(k)})` } }), h("span.small", n)))),
@@ -848,7 +852,7 @@ async function storyEditor(id, onClose = null) {
         Object.assign(meta, { title: title.value.trim(), emoji, color, lang: lang.value }); m.close(); drawHead(); changed(true);
       } }, "💾 ", T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel"))),
       h("div.row.wrap", h("button.btn.small.ghost", { onclick: async () => { await save(); downloadApi(`stories/${id}/export`, `family-quest-book-${id}.json`); } }, "⬇️ ", T("Export as a file")),
-        h("span.small.muted", T("For a backup, another family or an AI – own drawings and photos stay out."))),
+        h("span.small.muted", T("For a backup, another family or an AI – own drawings go along, photos stay out."))),
       h("div.sb-danger.row.wrap",
         ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Take the book off the shelf? It stays here as a draft."))) &&
           run(`stories/${id}/unpublish`, "POST", T("The book is a draft again"), async () => { ed = await api("stories/" + id); drawHead(); }) }, "📥 ", T("Unpublish")) : null,
@@ -863,7 +867,7 @@ async function storyEditor(id, onClose = null) {
   drawHead(); drawChecker(); drawBody();
 }
 
-// ---------------------------------------------------------------- pictures: upload, photos smaller, the painter
+// ---------------------------------------------------------------- pictures: upload, photos smaller (drawings: svgpaint.js)
 async function sbUpload(blob, name) {
   const fd = new FormData();
   fd.append("file", blob, name);
@@ -879,86 +883,4 @@ async function sbShrink(file, max = 1024) {
     cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
     return await new Promise(res => cv.toBlob(b => res(b || file), "image/jpeg", 0.85));
   } catch { throw new Error(I18N.tr(T("This photo format cannot be read – please use JPEG or PNG."))); }
-}
-
-// a simple painter for finger and stylus: pens, colours, rubber, fill, undo – resolves with a PNG (or null)
-function sbPainter(src = null) {
-  return new Promise(resolve => {
-    const CW = 800, CH = 600;
-    const cv = h("canvas.sb-canvas", { width: CW, height: CH });
-    const ctx = cv.getContext("2d", { willReadFrequently: true });
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, CW, CH);
-    if (src) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, CW, CH); img.src = src; }
-    let color = SB_INK[0], size = SB_SIZES[1], tool = "pen", undo = [], cur = null, done = false;
-    const snap = () => { undo.push(ctx.getImageData(0, 0, CW, CH)); if (undo.length > 15) undo.shift(); drawBar(); };
-    const at = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * CW / r.width, (e.clientY - r.top) * CH / r.height]; };
-    const width = e => size * (e.pointerType === "pen" && e.pressure > 0 ? 0.35 + e.pressure * 1.3 : 1);
-    cv.addEventListener("pointerdown", e => {
-      if (e.button > 0 || cur) return;
-      e.preventDefault();
-      const [x, y] = at(e);
-      snap();
-      if (tool === "fill") { sbFlood(ctx, Math.floor(x), Math.floor(y), color); return; }
-      cv.setPointerCapture(e.pointerId);
-      cur = { id: e.pointerId, x, y };
-      ctx.fillStyle = tool === "eraser" ? "#ffffff" : color;
-      ctx.beginPath(); ctx.arc(x, y, width(e) / 2, 0, Math.PI * 2); ctx.fill();
-    });
-    const move = e => {
-      if (!cur || e.pointerId !== cur.id) return;
-      e.preventDefault();
-      for (const ev of (e.getCoalescedEvents ? e.getCoalescedEvents() : null) || [e]) {
-        const [x, y] = at(ev);
-        ctx.strokeStyle = tool === "eraser" ? "#ffffff" : color; ctx.lineWidth = width(ev); ctx.lineCap = ctx.lineJoin = "round";
-        ctx.beginPath(); ctx.moveTo(cur.x, cur.y); ctx.lineTo(x, y); ctx.stroke();
-        cur.x = x; cur.y = y;
-      }
-    };
-    cv.addEventListener("pointermove", move);
-    const up = e => { if (cur && e.pointerId === cur.id) cur = null; };
-    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
-    const bar = h("div.sb-pbar");
-    const drawBar = () => sbSet(bar, 
-      h("div.sb-ptools",
-        ...[["pen", "✏️", T("Pen")], ["eraser", "🧽", T("Rubber")], ["fill", "🪣", T("Fill")]].map(([k, ic, n]) =>
-          h("button.sb-ptool" + (tool === k ? ".on" : ""), { title: n, "aria-label": n, onclick: () => { tool = k; drawBar(); } }, ic)),
-        ...SB_SIZES.map(s => h("button.sb-ptool.sb-size" + (size === s && tool !== "fill" ? ".on" : ""), { title: s + " px", "aria-label": s + " px",
-          onclick: () => { size = s; if (tool === "fill") tool = "pen"; drawBar(); } }, h("i", { style: { width: Math.min(26, s / 1.6 + 3) + "px", height: Math.min(26, s / 1.6 + 3) + "px" } }))),
-        h("button.sb-ptool", { title: T("Undo"), "aria-label": T("Undo"), disabled: !undo.length, onclick: () => { const d = undo.pop(); if (d) ctx.putImageData(d, 0, 0); drawBar(); } }, "↶"),
-        h("button.sb-ptool", { title: T("Clear"), "aria-label": T("Clear"), onclick: () => { snap(); ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, CW, CH); } }, "🗑")),
-      h("div.sb-pcolors", ...SB_INK.map(c => h("button.sb-pcol" + (c === color ? ".on" : ""), { "aria-label": c, style: { background: c },
-        onclick: () => { color = c; if (tool === "eraser") tool = "pen"; drawBar(); } }))));
-    drawBar();
-    const finish = blob => { if (done) return; done = true; wrap.remove(); window.removeEventListener("hashchange", cancel); resolve(blob); };
-    const cancel = () => finish(null);
-    window.addEventListener("hashchange", cancel);
-    const wrap = h("div.quiz-full.sb-full.sb-painter",
-      h("div.sb-erow", h("button.icon-btn", { title: T("Cancel"), "aria-label": T("Cancel"), onclick: cancel }, "✕"), h("strong.grow", "🎨 ", T("Draw a picture")),
-        h("button.btn.small", { onclick: () => cv.toBlob(b => finish(b), "image/png") }, "✓ ", T("Use picture"))),
-      bar, h("div.sb-cvwrap", cv));
-    document.body.append(wrap);
-  });
-}
-
-// flood fill (scanline) – similar colours count as the same area, so anti-aliased edges fill nicely
-function sbFlood(ctx, x0, y0, hex) {
-  const { width: W, height: H } = ctx.canvas;
-  const img = ctx.getImageData(0, 0, W, H), d = img.data;
-  const fill = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-  const i0 = (y0 * W + x0) * 4, base = [d[i0], d[i0 + 1], d[i0 + 2]];
-  if (Math.abs(base[0] - fill[0]) + Math.abs(base[1] - fill[1]) + Math.abs(base[2] - fill[2]) < 12) return;
-  const same = i => Math.abs(d[i] - base[0]) + Math.abs(d[i + 1] - base[1]) + Math.abs(d[i + 2] - base[2]) < 90;
-  const seen = new Uint8Array(W * H), stack = [[x0, y0]];
-  while (stack.length) {
-    let [x, y] = stack.pop();
-    while (x > 0 && !seen[y * W + x - 1] && same((y * W + x - 1) * 4)) x--;
-    let up = false, down = false;
-    for (; x < W && !seen[y * W + x] && same((y * W + x) * 4); x++) {
-      const k = y * W + x, i = k * 4;
-      seen[k] = 1; d[i] = fill[0]; d[i + 1] = fill[1]; d[i + 2] = fill[2]; d[i + 3] = 255;
-      if (y > 0) { const ok = !seen[k - W] && same(i - W * 4); if (ok && !up) stack.push([x, y - 1]); up = ok; }
-      if (y < H - 1) { const ok = !seen[k + W] && same(i + W * 4); if (ok && !down) stack.push([x, y + 1]); down = ok; }
-    }
-  }
-  ctx.putImageData(img, 0, 0);
 }

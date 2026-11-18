@@ -24,8 +24,12 @@ else – the reading reward once, when that reader reaches an ending for the fir
 Reading runs on the server (page, items, endings found per reader), so items cannot be cheated and every reader
 collects own endings («2 of 5 endings found») and gives ⭐ after finishing a book.
 
-Pictures: an emoji, an own drawing or a photo – drawings and photos are files in media/_stories (checked by their first
-bytes, max. IMAGE_MAX), named after their content. Files no book uses any more are removed after an hour.
+Pictures: an emoji, an own drawing or a photo. Own drawings are vector pictures of the drawing editor (web/svgpaint.js):
+cleaned SVG text inside the book data ({"k": "svg", "v": "<svg …>"}, svgsafe.py – a picture on a page max. ART_MAX, a page
+background max. BG_MAX), so they belong to the book: the same privacy, backups and export as its texts. Photos (and the
+painted PNG drawings of older versions) are files in media/_stories (checked by their first bytes, max. IMAGE_MAX), named
+after their content; files no book uses any more are removed after an hour. A page background is a library scene (its
+key) or an own drawing ({"k": "svg", …}).
 
 Book types (`type`, the badge and filter on the shelf): 📕 «picture» – picture books (picturebooks.py: pages with a
 picture and a text, read page by page), 📖 «adventure» – the adventure books of this module, 🗝️ «game» – point & click
@@ -57,7 +61,7 @@ TEXT = 1500                     # characters of one page
 CHOICE = 120
 ITEM = 40
 EMOJI = 16
-MAX_BYTES = 400_000             # JSON of one book
+MAX_BYTES = 2_000_000           # JSON of one book (own drawings included)
 IMAGE_MAX = 2 * 1024 * 1024     # one picture (the app makes them smaller before the upload)
 FOLDER_MAX = 300 * 1024 * 1024  # all pictures of all books
 COLORS = 8
@@ -105,8 +109,13 @@ def _int(v, lo: int, hi: int, default: int | None = None) -> int | None:
 
 
 def clean_pic(p, folder: Path | None) -> dict | None:
+    """A picture on a page: an emoji, an own drawing (SVG, max. ART_MAX) or an uploaded file (photo, older PNG drawing)."""
     if not isinstance(p, dict):
         return None
+    if p.get("k") == "svg":
+        from .svgsafe import ART_MAX, safe_svg
+        svg = safe_svg(p.get("v"), ART_MAX)
+        return {"k": "svg", "v": svg} if svg else None
     if p.get("k") == "emoji":
         v = _text(p.get("v"), EMOJI)
         return {"k": "emoji", "v": v} if v else None
@@ -115,6 +124,20 @@ def clean_pic(p, folder: Path | None) -> dict | None:
         if not IMG_NAME.fullmatch(v) or (folder is not None and not (folder / v).is_file()):
             return None
         return {"k": "img", "v": v, "src": "draw" if p.get("src") == "draw" else "photo"}
+    return None
+
+
+def clean_bg(v) -> str | dict | None:
+    """The background of a page: the key of a library scene – or an own drawing {"k": "svg", "v": …} (max. BG_MAX)."""
+    if isinstance(v, str):
+        return v if v in BACKGROUNDS else None
+    if isinstance(v, dict):
+        if v.get("k") == "lib":
+            return v.get("v") if v.get("v") in BACKGROUNDS else None
+        if v.get("k") == "svg":
+            from .svgsafe import BG_MAX, safe_svg
+            svg = safe_svg(v.get("v"), BG_MAX)
+            return {"k": "svg", "v": svg} if svg else None
     return None
 
 
@@ -136,7 +159,7 @@ def clean(data, folder: Path | None = None) -> dict:
         seen.add(pid)
         kind = p.get("kind") if p.get("kind") in KINDS else "scene"
         out = {"id": pid, "kind": kind, "text": _text(p.get("text"), TEXT), "pic": clean_pic(p.get("pic"), folder),
-               "bg": p.get("bg") if p.get("bg") in BACKGROUNDS else None}
+               "bg": clean_bg(p.get("bg"))}
         if kind == "scene":
             give = _text(p.get("give"), ITEM)
             out["give"] = give or None
@@ -365,7 +388,7 @@ def templates(lang: str) -> list[dict]:
 
 # ---------------------------------------------------------------- file format (export, template for an AI, import)
 STORY_FORMAT = "family-quest-story/1"
-IMPORT_MAX = 1_000_000            # characters of a pasted answer / file
+IMPORT_MAX = 4_000_000            # characters of a pasted answer / file (own drawings included)
 IMPORT_BOOKS = 5                  # books in one file
 _KIND_OUT = {"scene": "scene", "good": "good_ending", "bad": "bad_ending"}
 _KIND_IN = {v: k for k, v in _KIND_OUT.items()} | {"good": "good", "bad": "bad", "ending": "good"}
@@ -384,8 +407,9 @@ AI_INSTRUCTIONS = [
     "Items (optional, keep it simple): a scene can give ONE item with 'gives' (an emoji and a short name, e.g. "
     "'🍌 Banana'). A choice can need an item with 'needs' (exactly the same text); it is only shown to readers who have "
     "it. Every scene needs at least one choice without 'needs', and only use items that some page gives.",
-    "Pictures: 'picture' is ONE emoji per page (no images, no links). 'background' is one id from '_backgrounds' (or "
-    "leave it out).",
+    "Pictures: 'picture' is ONE emoji per page or an own drawing {'svg': '<svg …>'} (a thing or a character on a "
+    "transparent background, see '_svg_rules'). 'background' is one id from '_backgrounds', an own drawing {'svg': …} "
+    "(a whole scene, see '_svg_rules') or left out. No images, no links.",
     "Suitable for children: exciting but never cruel or scary in a bad way; bad endings are funny or mild ('you have to "
     "walk home wet'). Short sentences; max. 1500 characters per page, 120 per choice, 40 per item, 80 for the title.",
     "Write in the language the user writes in (or the one they ask for) and set 'language' to it: one of " + ", ".join(LANGS) + ".",
@@ -402,24 +426,101 @@ AI_GUIDE = {
         "id": "A short unique name of the page, e.g. 'p1' or 'lion'.",
         "type": "'scene', 'good_ending' or 'bad_ending'.",
         "text": "What happens on this page.",
-        "picture": "One emoji (optional).",
-        "background": "One background id from '_backgrounds' (optional).",
+        "picture": "One emoji or {'svg': '<svg …>'} (optional, see '_svg_rules').",
+        "background": "One background id from '_backgrounds' or {'svg': '<svg …>'} (optional, see '_svg_rules').",
         "gives": "Scenes only, optional: the item the reader finds here, e.g. '🗝️ Old key'.",
         "choices": "Scenes only: 2–4 choices {'text', 'goes_to', optional 'needs'}.",
     },
 }
 
 
+def svg_rules(kind: str) -> list[str]:
+    """The rules for own SVG drawings in a file (`_svg_rules`) – the same for every book type, the sizes of svgsafe.py."""
+    from .svgsafe import ART_MAX, BG_MAX
+    where = {"adventure": "a page 'background'", "picture": "a page 'picture' or the cover", "game": "a room 'background'"}[kind]
+    thing = {"adventure": "a page 'picture'", "picture": "not used in picture books",
+             "game": "the 'picture' of a hotspot or an item"}[kind]
+    return [
+        "An own drawing is ONE <svg> element as a JSON string inside {'svg': '…'}. Use single quotes inside it so the JSON "
+        "stays valid, and always give a viewBox.",
+        f"Scenes – {where}: viewBox='0 0 800 600' (landscape 4:3). Paint the whole area (sky, wall, floor …) as the first "
+        f"shape, so it works on light and dark screens. Max. {BG_MAX // 1000} KB after cleaning – aim for 2–12 KB.",
+        f"Things and characters – {thing}: viewBox='0 0 200 200' (square), NO background: leave the area around it "
+        f"transparent so it stands in the scene. Max. {ART_MAX // 1000} KB – aim for 1–5 KB.",
+        "Allowed: svg, g, path, rect, circle, ellipse, line, polyline, polygon, defs, linearGradient, radialGradient, stop, "
+        "clipPath and text (a word at most). Attributes: fill, stroke, stroke-width, stroke-linecap, stroke-linejoin, "
+        "opacity, fill-opacity, transform, points, d, x/y/width/height, cx/cy/r/rx/ry, gradient stops, id (for "
+        "fill='url(#id)' inside the same picture). Colours as #hex or names.",
+        "Not allowed (removed, or the picture is refused): script, foreignObject, image, use, style elements and style "
+        "attributes, class, links (href), events (onload, onclick …), animation, external files or fonts, DOCTYPE, "
+        "entities, CSS, data: URLs.",
+        "Flat, simple shapes with few points look best and stay small. No text-heavy pictures – the story text is on the "
+        "page. Keep characters the same (colours, clothes) wherever they appear.",
+    ]
+
+
+SVG_EXAMPLE_THING = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><path d='M60 150 Q40 70 120 40 Q100 100 150 "
+                     "150 Z' fill='#fcc419' stroke='#8d5524' stroke-width='6' stroke-linejoin='round'/><path d='M120 40 l12 -14' "
+                     "stroke='#8d5524' stroke-width='8' stroke-linecap='round'/></svg>")
+SVG_EXAMPLE_SCENE = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'><defs><linearGradient id='sky' x1='0' y1='0' "
+                     "x2='0' y2='1'><stop offset='0' stop-color='#74c0fc'/><stop offset='1' stop-color='#d0ebff'/></linearGradient>"
+                     "</defs><rect width='800' height='600' fill='url(#sky)'/><circle cx='660' cy='110' r='60' fill='#ffd43b'/>"
+                     "<path d='M0 430 Q200 360 400 420 T800 400 V600 H0 Z' fill='#2f9e44'/><path d='M120 430 v-120' stroke='#8d5524' "
+                     "stroke-width='26'/><ellipse cx='120' cy='290' rx='80' ry='60' fill='#37b24d'/></svg>")
+
+
+def export_pic(p: dict | None):
+    """A picture of a page in the file format: an emoji – or {'svg': …} for an own drawing; photos stay out."""
+    if not p:
+        return None
+    if p["k"] == "emoji":
+        return p["v"]
+    if p["k"] == "svg":
+        return {"svg": p["v"]}
+    return None                                  # photos (and old painted PNG drawings) are files of this family
+
+
+def export_bg(bg):
+    if isinstance(bg, dict):
+        return {"svg": bg["v"]} if bg.get("k") == "svg" else None
+    return bg or None
+
+
+def import_pic(v) -> dict | None:
+    if isinstance(v, dict):
+        if isinstance(v.get("svg"), str):
+            return clean_pic({"k": "svg", "v": v["svg"]}, None)
+        v = v.get("emoji")
+    if not isinstance(v, str) or not v.strip():
+        return None
+    s = v.strip()
+    if s.startswith("<"):
+        return clean_pic({"k": "svg", "v": s}, None)
+    return {"k": "emoji", "v": s} if len(s) <= EMOJI else None
+
+
+def import_bg(v):
+    if isinstance(v, dict):
+        if isinstance(v.get("svg"), str):
+            return clean_bg({"k": "svg", "v": v["svg"]})
+        v = v.get("library") or v.get("background")
+    if isinstance(v, str):
+        s = v.strip()
+        return clean_bg({"k": "svg", "v": s}) if s.startswith("<") else clean_bg(s)
+    return None
+
+
 def export_book(title: str, emoji: str, lang: str, data: dict) -> dict:
-    """A book in the file format. Own drawings and photos stay out (they are files of this family) – only emoji pictures."""
+    """A book in the file format. Own drawings (SVG) go along; photos stay out (they are files of this family)."""
     ids = {p["id"]: f"p{i + 1}" for i, p in enumerate(data.get("pages") or [])}
     pages = []
     for p in data.get("pages") or []:
         out = {"id": ids[p["id"]], "type": _KIND_OUT[p["kind"]], "text": p["text"]}
-        if p.get("pic") and p["pic"]["k"] == "emoji":
-            out["picture"] = p["pic"]["v"]
-        if p.get("bg"):
-            out["background"] = p["bg"]
+        pic, bg = export_pic(p.get("pic")), export_bg(p.get("bg"))
+        if pic:
+            out["picture"] = pic
+        if bg:
+            out["background"] = bg
         if p["kind"] == "scene":
             if p.get("give"):
                 out["gives"] = p["give"]
@@ -433,8 +534,10 @@ def story_document(books: list[dict], example: bool = False) -> dict:
     if example:
         t = template("jungle", "en")
         books = [export_book(t["title"], t["emoji"], t["lang"], t["data"])]
-    return {"_format": STORY_FORMAT, "_ai_instructions": AI_INSTRUCTIONS, "_field_guide": AI_GUIDE,
-            "_backgrounds": BACKGROUNDS, "_note": "Own drawings and photos are not part of the file – only emoji pictures.",
+        books[0]["pages"][1]["picture"] = {"svg": SVG_EXAMPLE_THING}          # the banana: an own drawing (a thing)
+        books[0]["pages"][0]["background"] = {"svg": SVG_EXAMPLE_SCENE}       # the first page: an own scene
+    return {"_format": STORY_FORMAT, "_ai_instructions": AI_INSTRUCTIONS, "_field_guide": AI_GUIDE, "_svg_rules": svg_rules("adventure"),
+            "_backgrounds": BACKGROUNDS, "_note": "Own drawings (SVG) are part of the file, photos are not.",
             "books": books}
 
 
@@ -488,9 +591,7 @@ def import_books(text) -> list[dict]:
             pid = ids[str(p.get("id"))]
             seen.add(pid)
             kind = _KIND_IN.get(str(p.get("type") or p.get("kind") or "scene").strip().lower(), "scene")
-            pic = p.get("picture")
-            page = {"id": pid, "kind": kind, "text": p.get("text"), "bg": p.get("background"),
-                    "pic": {"k": "emoji", "v": pic} if isinstance(pic, str) and pic.strip() and len(pic) <= EMOJI else None}
+            page = {"id": pid, "kind": kind, "text": p.get("text"), "bg": import_bg(p.get("background")), "pic": import_pic(p.get("picture"))}
             if kind == "scene":
                 page["give"] = p.get("gives") if isinstance(p.get("gives"), str) else None
                 page["choices"] = [{"t": c.get("text"), "to": ids.get(str(c.get("goes_to"))),
@@ -725,7 +826,7 @@ class Stories:
                 found = [e for e in json.loads(r["endings"]) if e in ends] if r else []
                 cover = (live or data).get("pages") or []
                 first = next((p for p in cover if p["id"] == (live or data).get("start")), None)
-                book.update({"cover": first["pic"] if first and first.get("pic") and first["pic"]["k"] == "img" else None,
+                book.update({"cover": first["pic"] if first and first.get("pic") and first["pic"]["k"] in ("img", "svg") else None,
                              "cover_bg": first.get("bg") if first else None, "endings": len(ends), "found": len(found),
                              "reading": bool(r and live and r["page"] != live["start"]
                                              and any(p["id"] == r["page"] and p.get("kind") == "scene" for p in live["pages"]))})
@@ -930,15 +1031,17 @@ class Stories:
             f.touch()
         return {"name": name, "url": f"media/{FOLDER}/{name}"}
 
-    def check_svg(self, prof: dict, svg: str) -> str:
-        """An own SVG drawing for a picture book, cleaned (the editor shows what is left) – or why it cannot be used."""
-        from .svgsafe import SvgError, clean_svg
+    def check_svg(self, prof: dict, svg: str, use: str = "bg") -> str:
+        """An own SVG drawing (drawing editor or pasted code), cleaned – what the book will keep – or why it cannot be used.
+        `use`: «bg» a scene that fills a page or a room (max. BG_MAX), «art» a thing / a character (max. ART_MAX)."""
+        from .svgsafe import LIMITS, SvgError, clean_svg
         self._need(prof)
         try:
-            return clean_svg(svg)
+            return clean_svg(svg, LIMITS.get(use, LIMITS["bg"]))
         except SvgError as e:
-            if str(e) == "too large":
-                raise CommunityError("The SVG picture is too large (max. 12 KB)") from None
+            if str(e) in ("too large", "too many parts"):
+                raise CommunityError(_t("The drawing is too large (max. 20 KB)") if use == "art"
+                                     else _t("The drawing is too large (max. 60 KB)")) from None
             raise CommunityError("This is not a usable SVG picture (<svg viewBox=…> with simple shapes)") from None
 
     def _gc(self) -> None:

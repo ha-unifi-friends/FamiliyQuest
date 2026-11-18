@@ -27,13 +27,13 @@ const agAssetUrl = k => "img/adventure/" + k + ".svg";
 const agBgUrl = k => (k in AG_ROOMS() ? agAssetUrl(k) : sbBgUrl(k));
 const agMsg = m => m.t != null ? m.t : sbFmt(AG_CODES[m.c] || "…", ...(m.a || []));
 
-// a picture of a hotspot or an item: asset, emoji, own drawing / photo, cleaned SVG (always as an <img>)
+// a picture of a hotspot or an item: asset, emoji, own drawing (SVG of svgpaint.js, or an older PNG) / photo – always as an <img>
 function agArt(p, cls = "") {
   if (!p) return null;
   if (p.k === "asset") return h("img.ag-art" + cls, { src: agAssetUrl(p.v), alt: "", draggable: false });
   if (p.k === "emoji") return h("span.ag-emo" + cls, { translate: "no", "aria-hidden": "true" }, p.v);
   if (p.k === "img") return h("img.ag-art" + cls, { src: sbImg(p.v), alt: "", draggable: false, loading: "lazy" });
-  if (p.k === "svg") return h("img.ag-art" + cls, { src: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(p.v), alt: "", draggable: false });
+  if (p.k === "svg") return h("img.ag-art" + cls, { src: svgDataUrl(p.v), alt: "", draggable: false });
   return null;
 }
 // the picture of a room (fills the 4:3 scene)
@@ -41,7 +41,7 @@ function agBg(p) {
   if (!p) return h("div.ag-bg.none");
   if (p.k === "lib") return h("img.ag-bg", { src: agBgUrl(p.v), alt: "", draggable: false });
   if (p.k === "img") return h("img.ag-bg", { src: sbImg(p.v), alt: "", draggable: false });
-  if (p.k === "svg") return h("img.ag-bg", { src: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(p.v), alt: "", draggable: false });
+  if (p.k === "svg") return h("img.ag-bg", { src: svgDataUrl(p.v), alt: "", draggable: false });
   return h("div.ag-bg.none");
 }
 const agItemLabel = it => h("span.ag-ilabel", it.icon ? agArt(it.icon, ".ag-iicon") : h("span.ag-emo.ag-iicon", "🎒"), C(it.name || "…", "span.ag-iname"));
@@ -720,7 +720,7 @@ async function gameEditor(id, onClose = null) {
   };
   const drawBody = () => { ({ map: drawMap, rooms: drawRooms, things: drawThings, talk: drawTalk, rules: drawRules }[mode] || drawRooms)(); };
 
-  // ---------- pictures: a room (library, own drawing, photo, SVG code), a hotspot / an item (asset, emoji, own drawing)
+  // ---------- pictures: a room (library, own drawing, photo, SVG code), a hotspot / an item (asset, emoji, own drawing) – svgpaint.js draws
   const bgDialog = (target, variant = false) => {
     const set = bg => { target.bg = bg; m.close(); changed(true); };
     let tab = "lib";
@@ -738,12 +738,11 @@ async function gameEditor(id, onClose = null) {
       else if (tab === "own") sbSet(box, h("div.row.wrap.pb-ownbtns",
         h("button.btn", { onclick: async () => {
           m.close();
-          const blob = await sbPainter(target.bg && target.bg.k === "img" && target.bg.src === "draw" ? sbImg(target.bg.v) : null);
-          if (!blob) return;
-          try { const r = await sbUpload(blob, "drawing.png"); target.bg = { k: "img", v: r.name, src: "draw" }; changed(true); } catch (e) { toast(e.message, "bad"); }
-        } }, "🎨 ", T("Paint")),
+          const svg = await svgPaint({ kind: "bg", svg: target.bg && target.bg.k === "svg" ? target.bg.v : null });
+          if (svg) { target.bg = { k: "svg", v: svg }; changed(true); }
+        } }, target.bg && target.bg.k === "svg" ? ["✏️ ", T("Change drawing")] : ["🎨 ", T("Draw a picture")]),
         h("button.btn.ghost", { onclick: () => file.click() }, "📷 ", T("Photo")), file));
-      else sbSet(box, h("p.small.muted", T("Paste an SVG drawing (e.g. made by an AI): simple shapes with a viewBox, max. 12 KB. Scripts, links and external files are removed.")),
+      else sbSet(box, h("p.small.muted", T("Paste an SVG drawing (e.g. made by an AI): simple shapes with a viewBox, max. 60 KB. Scripts, links and external files are removed.")),
         code, h("button.btn", { onclick: async () => {
           try { const r = await api("stories/svg", { method: "POST", body: { svg: code.value } }); set({ k: "svg", v: r.svg }); } catch (e) { toast(e.message, "bad"); }
         } }, "✓ ", T("Use picture")));
@@ -768,10 +767,10 @@ async function gameEditor(id, onClose = null) {
         own, h("button.btn.small", { onclick: () => own.value.trim() && set({ k: "emoji", v: own.value.trim() }) }, "✓")));
       else sbSet(box, h("div.row.wrap.pb-ownbtns", h("button.btn", { onclick: async () => {
         m.close();
-        const blob = await sbPainter(target[key] && target[key].k === "img" ? sbImg(target[key].v) : null);
-        if (!blob) return;
-        try { const r = await sbUpload(await agClearWhite(blob), "drawing.png"); target[key] = { k: "img", v: r.name, src: "draw" }; changed(true); } catch (e) { toast(e.message, "bad"); }
-      } }, "🎨 ", T("Paint")), h("span.small.muted", T("White becomes see-through, so the drawing stands in the room."))));
+        const svg = await svgPaint({ kind: "art", svg: target[key] && target[key].k === "svg" ? target[key].v : null });
+        if (svg) { target[key] = { k: "svg", v: svg }; changed(true); }
+      } }, target[key] && target[key].k === "svg" ? ["✏️ ", T("Change drawing")] : ["🎨 ", T("Draw a thing")]),
+        h("span.small.muted", T("The drawing has a see-through background, so it stands in the room."))));
     };
     const tabs = h("div.sb-segs.pb-tabs", ...[["assets", "🧸", T("Things")], ["emoji", "😀", T("Emoji")], ["own", "🎨", T("Own picture")]]
       .map(([k, ic, n]) => h("button.sb-seg", { type: "button", "data-k": k, title: n, "aria-label": n, onclick: () => { tab = k; drawTab(); } }, h("span", { translate: "no" }, ic), h("span.sb-hide-s", " ", n))));
@@ -803,7 +802,7 @@ async function gameEditor(id, onClose = null) {
         Object.assign(meta, { title: title.value.trim(), emoji, color, lang: lang.value }); m.close(); drawHead(); changed(true);
       } }, "💾 ", T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel"))),
       h("div.row.wrap", h("button.btn.small.ghost", { onclick: async () => { await save(); downloadApi(`stories/${id}/export`, `family-quest-game-${id}.json`); } }, "⬇️ ", T("Export as a file")),
-        h("span.small.muted", T("For a backup, another family or an AI – own drawings and photos stay out."))),
+        h("span.small.muted", T("For a backup, another family or an AI – own drawings go along, photos stay out."))),
       h("div.sb-danger.row.wrap",
         ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Take the game off the shelf? It stays here as a draft."))) &&
           runA(`stories/${id}/unpublish`, "POST", T("The game is a draft again"), async () => { ed = await api("stories/" + id); drawHead(); }) }, "📥 ", T("Unpublish")) : null,
@@ -815,17 +814,4 @@ async function gameEditor(id, onClose = null) {
   document.body.classList.add("quiz-open");
   setState("saved");
   drawHead(); drawChecker(); drawBody();
-}
-
-// own drawings of things: the white paper becomes see-through (the painter paints on white)
-async function agClearWhite(blob) {
-  try {
-    const bmp = await createImageBitmap(blob);
-    const cv = h("canvas", { width: bmp.width, height: bmp.height }), ctx = cv.getContext("2d");
-    ctx.drawImage(bmp, 0, 0);
-    const img = ctx.getImageData(0, 0, cv.width, cv.height), d = img.data;
-    for (let i = 0; i < d.length; i += 4) if (d[i] > 246 && d[i + 1] > 246 && d[i + 2] > 246) d[i + 3] = 0;
-    ctx.putImageData(img, 0, 0);
-    return await new Promise(res => cv.toBlob(b => res(b || blob), "image/png"));
-  } catch { return blob; }
 }
