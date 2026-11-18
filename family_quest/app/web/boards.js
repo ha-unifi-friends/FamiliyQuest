@@ -7,7 +7,7 @@
 const BB_NOTE = ["#fff1a8", "#ffd8a8", "#ffc9c9", "#fcc2d7", "#d0bfff", "#a5d8ff", "#99e9f2", "#c3fae8"];
 const BB_INK = ["var(--fg)", "#e03131", "#f08c00", "#2f9e44", "#1c7ed6", "#7048e8", "#d6336c", "#868e96"];
 const BB_EMOJI = ["📌", "💡", "🏖️", "🎄", "🎂", "🍝", "🧳", "🏡", "🎨", "📚", "⚽", "🎉", "🛒", "🌱", "🐾", "❤️"];
-const BB_MIN = 0.05, BB_MAX = 4, BB_SYNC_MS = 1000, BB_PTR_MS = 300, BB_UNDO = 50;
+const BB_MIN = 0.05, BB_MAX = 4, BB_SYNC_MS = 1000, BB_PTR_MS = 300, BB_UNDO = 50, BB_ERASE_PX = 14;
 
 // ---------------------------------------------------------------- the list on the Family page
 async function boardsSection(me = S.profile, open = id => go("board/" + id)) {
@@ -72,7 +72,7 @@ async function boardView(id) {
 const bbPress = fn => ({ onpointerdown: e => { if (e.button > 0) return; e.preventDefault(); fn(e); }, onclick: e => { if (e.detail === 0) fn(e); } });
 function bbTap(fn) {
   let d = null;
-  return { onpointerdown: e => { d = e.button > 0 ? null : { id: e.pointerId, x: e.clientX, y: e.clientY }; },
+  return { onpointerdown: e => { d = e.button > 0 ? null : { id: e.pointerId, x: e.clientX, y: e.clientY }; if (d) e.preventDefault(); },
     onpointerup: e => { const g = d; d = null; if (g && g.id === e.pointerId && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 14) { e.preventDefault(); fn(e); } },
     onpointercancel: () => { d = null; }, onclick: e => { if (e.detail === 0) fn(e); } };
 }
@@ -389,11 +389,11 @@ function boardLive(box, me, boardId, back) {
   }
 
   // ---------- selection and writing
-  function select(k) {
+  function select(k, opts = true) {
     if (sel && els.get(sel)) els.get(sel).classList.remove("bb-sel");
     sel = k && items.has(k) ? k : null;
     if (sel && els.get(sel)) els.get(sel).classList.add("bb-sel");
-    drawOpts();
+    if (opts) drawOpts();
   }
   function edit(k) {
     const it = items.get(k), el = els.get(k);
@@ -427,37 +427,49 @@ function boardLive(box, me, boardId, back) {
 
   // ---------- tools
   const TOOLS = [["select", "👆", T("Move and choose")], ["note", "🗒️", T("Sticky note")], ["text", "🔤", T("Text")],
-    ["pen", "✏️", T("Pen")], ["eraser", "🧽", T("Eraser")], ["shape", "🔷", T("Shapes")]];
+    ["pen", "✏️", T("Pen")], ["eraser", null, T("Eraser")], ["shape", "🔷", T("Shapes")]];
+  // the tool buttons are made once; switching a tool only moves the «on» mark (instant, on the finger going down)
+  const toolBtns = new Map();
+  const noteSwatch = h("span.bb-swatch", "🗒️");
+  for (const [k, ic, n] of TOOLS)
+    toolBtns.set(k, h("button.bb-tool", { type: "button", title: n, "aria-label": n, "aria-pressed": "false", ...bbPress(() => setTool(k)) },
+      k === "note" ? noteSwatch : k === "eraser" ? h("span.bb-ic", { html: BB_ERASER }) : ic));
+  const undoBtn = h("button.bb-tool", { type: "button", title: T("Undo"), "aria-label": T("Undo"), ...bbPress(() => doUndo()) }, "↶");
+  tools.append(...toolBtns.values(), undoBtn);
+  function setTool(k) {
+    if (readOnly && k !== "select") return;
+    commitEdit(); cancelGesture();
+    tool = k; select(null, false); drawTools();
+  }
   function drawTools() {
-    tools.replaceChildren(...(readOnly ? TOOLS.slice(0, 1) : TOOLS).map(([k, ic, n]) =>
-      h("button.bb-tool" + (tool === k ? ".on" : ""), { title: n, "aria-label": n, onclick: () => { commitEdit(); tool = k; select(null); drawTools(); } },
-        k === "note" ? h("span.bb-swatch", { style: { background: BB_NOTE[noteC] } }, ic) : ic)),
-      readOnly ? null : h("button.bb-tool", { title: T("Undo"), "aria-label": T("Undo"), disabled: !undo.length, onclick: doUndo }, "↶"));
+    for (const [k, b] of toolBtns) { b.classList.toggle("on", tool === k); b.setAttribute("aria-pressed", String(tool === k)); b.hidden = readOnly && k !== "select"; }
+    undoBtn.hidden = readOnly; undoBtn.disabled = !undo.length;
+    noteSwatch.style.background = BB_NOTE[noteC];
     vp.dataset.tool = tool;
     drawOpts();
   }
   function swatches(list, cur, set, note) {
-    return list.map((c, i) => h("button.bb-col" + (i === cur ? ".on" : ""), { style: { "--c": note ? c : (i === 0 ? "var(--fg)" : c) }, "aria-label": T("Colour"), onclick: () => set(i) }));
+    return list.map((c, i) => h("button.bb-col" + (i === cur ? ".on" : ""), { style: { "--c": note ? c : (i === 0 ? "var(--fg)" : c) }, "aria-label": T("Colour"), ...bbTap(() => set(i)) }));
   }
   function drawOpts() {
     let row = [];
     if (sel && items.has(sel) && !readOnly) {
       const it = items.get(sel), by = people[it.by];
       row = [by ? h("span.bb-who.small", { style: { "--who": by.color } }, C(by.name)) : null,
-        it.k === "note" || it.k === "text" ? h("button.bb-opt", { title: T("Write"), onclick: () => edit(sel) }, "✏️") : null,
-        h("button.bb-opt", { title: T("Remove"), onclick: () => removeItem(sel) }, "🗑️"),
-        h("button.bb-opt", { title: T("Bring to front"), onclick: () => front(sel) }, "⬆️"),
-        it.k === "text" ? [h("button.bb-opt", { title: T("Smaller"), onclick: () => setItem(sel, { s: Math.max(10, Math.round(it.d.s / 1.25)) }) }, "A−"),
-          h("button.bb-opt", { title: T("Bigger"), onclick: () => setItem(sel, { s: Math.min(400, Math.round(it.d.s * 1.25)) }) }, "A+")] : null,
+        it.k === "note" || it.k === "text" ? h("button.bb-opt", { title: T("Write"), ...bbTap(() => edit(sel)) }, "✏️") : null,
+        h("button.bb-opt", { title: T("Remove"), ...bbTap(() => removeItem(sel)) }, "🗑️"),
+        h("button.bb-opt", { title: T("Bring to front"), ...bbTap(() => front(sel)) }, "⬆️"),
+        it.k === "text" ? [h("button.bb-opt", { title: T("Smaller"), ...bbTap(() => setItem(sel, { s: Math.max(10, Math.round(it.d.s / 1.25)) })) }, "A−"),
+          h("button.bb-opt", { title: T("Bigger"), ...bbTap(() => setItem(sel, { s: Math.min(400, Math.round(it.d.s * 1.25)) })) }, "A+")] : null,
         ...swatches(it.k === "note" ? BB_NOTE : BB_INK, it.d.c, i => setItem(sel, { c: i }), it.k === "note")];
     } else if (tool === "note") row = swatches(BB_NOTE, noteC, i => { noteC = i; drawTools(); }, true);
     else if (tool === "pen" || tool === "text" || tool === "shape") {
       row = [...(tool === "shape" ? [["rect", "⬜"], ["ellipse", "⚪"], ["arrow", "↗"], ["line", "╱"]].map(([f, ic]) =>
-        h("button.bb-opt" + (shapeF === f ? ".on" : ""), { onclick: () => { shapeF = f; drawOpts(); } }, ic)) : []),
+        h("button.bb-opt" + (shapeF === f ? ".on" : ""), { ...bbTap(() => { shapeF = f; drawOpts(); }) }, ic)) : []),
         ...swatches(BB_INK, inkC, i => { inkC = i; drawOpts(); }),
-        ...(tool === "pen" ? [2, 4, 10].map(w => h("button.bb-opt.bb-w" + (penW === w ? ".on" : ""), { title: T("Line width"), onclick: () => { penW = w; drawOpts(); } },
+        ...(tool === "pen" ? [2, 4, 10].map(w => h("button.bb-opt.bb-w" + (penW === w ? ".on" : ""), { title: T("Line width"), ...bbTap(() => { penW = w; drawOpts(); }) },
           h("i", { style: { height: w + "px", width: w + "px" } }))) : [])];
-    } else if (tool === "eraser") row = [h("span.small.muted.bb-hint", T("Wipe over lines and shapes to remove them"))];
+    } else if (tool === "eraser") row = [h("span.small.muted.bb-hint", T("Tap or wipe over something to remove it"))];
     else if (readOnly) row = [h("span.small.muted.bb-hint", T("This board is archived – it can only be looked at"))];
     else row = [h("span.small.muted.bb-hint", T("Drag to move · two fingers to zoom · double tap to write"))];
     opts.replaceChildren(...row.flat().filter(Boolean));
@@ -477,6 +489,7 @@ function boardLive(box, me, boardId, back) {
     if (shape) { shape.el.remove(); shape = null; }
     if (drag && drag.moved) { const it = items.get(key(drag.id)); if (it) render(it); }
     drag = null;
+    if (er) { for (const k of er.marked) { const el = els.get(k); if (el) el.classList.remove("bb-erase"); } er = null; }
   }
   vp.addEventListener("pointerdown", e => {
     if (e.target.closest(".bb-edit")) return;
@@ -504,7 +517,7 @@ function boardLive(box, me, boardId, back) {
       shape.el.style.zIndex = 2 ** 30; world.append(shape.el);
       return;
     }
-    if (!panning && !readOnly && tool === "eraser") { erase(e); drag = { erase: true }; return; }
+    if (!panning && !readOnly && tool === "eraser") { er = { marked: new Set(), last: w, lines: null }; eraseAt(w); return; }
     if (!panning && tool === "select" && k && items.has(k) && !readOnly) {
       const it = items.get(k);
       drag = { id: it.id, sx: p.x, sy: p.y, ox: it.d.x, oy: it.d.y, moved: false, el: els.get(k), resize: !!e.target.closest(".bb-handle") };
@@ -536,8 +549,13 @@ function boardLive(box, me, boardId, back) {
       shape.el.style.left = d.x + "px"; shape.el.style.top = d.y + "px";
       return;
     }
+    if (er) {                                             // sample the way of the finger: fast wipes skip nothing
+      const tol = BB_ERASE_PX / view.s, dx = w.x - er.last.x, dy = w.y - er.last.y, n = Math.min(200, Math.ceil(Math.hypot(dx, dy) / (tol / 2)));
+      for (let i = 1; i <= n; i++) eraseAt({ x: er.last.x + dx * i / n, y: er.last.y + dy * i / n });
+      er.last = w;
+      return;
+    }
     if (!drag) return;
-    if (drag.erase) return erase(e);
     const dx = p.x - drag.sx, dy = p.y - drag.sy;
     if (!drag.moved && Math.hypot(dx, dy) < 6) return;
     drag.moved = true;
@@ -562,6 +580,13 @@ function boardLive(box, me, boardId, back) {
     if (pinch) { if (pts.size < 2) pinch = null; if (pts.size === 1) { const [q] = [...pts.values()]; drag = { pan: true, sx: q.x, sy: q.y, vx: view.x, vy: view.y, moved: true }; } return; }
     if (e.type === "pointercancel") return cancelGesture();
     const w = toWorld(e.clientX, e.clientY);
+    if (er) {                                               // what was marked goes – one step to undo
+      const g = er; er = null;
+      const gone = [...g.marked].map(k => items.get(k)).filter(Boolean);
+      for (const it of gone) removeItem(key(it.id), false);
+      if (gone.length) remember({ undo: () => { for (const it of gone) { items.set(key(it.id), it); render(it); send({ op: "restore", id: it.id }); } } });
+      return;
+    }
     if (line) {
       const l = line; line = null; l.el.remove();
       const pts2 = simplify(l.pts, 0.8 / view.s);
@@ -578,7 +603,7 @@ function boardLive(box, me, boardId, back) {
       return;
     }
     const g = drag; drag = null;
-    if (!g || g.erase) return;
+    if (!g) return;
     if (g.pan) {
       if (g.moved) return;
       if (!readOnly && (tool === "note" || tool === "text")) {               // place a note / a text where tapped
@@ -620,11 +645,41 @@ function boardLive(box, me, boardId, back) {
     if (e.ctrlKey || (Math.abs(e.deltaY) >= 40 && !e.deltaX)) zoomAt(view.s * Math.exp(-Math.max(-300, Math.min(300, e.deltaY)) * (e.ctrlKey ? 0.01 : 0.0015)), p.x, p.y);
     else { view.x -= e.deltaX; view.y -= e.deltaY; applyView(); }
   }, { passive: false });
-  function erase(e) {
-    for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
-      const t = el.closest && el.closest("[data-id]");
-      if (t && (t.dataset.k === "stroke" || t.dataset.k === "shape") && items.has(t.dataset.id)) { removeItem(t.dataset.id); break; }
+  // ---------- eraser: hit-testing in world coordinates (a few screen pixels of tolerance, at every zoom)
+  function segDist(px, py, ax, ay, bx, by) {
+    const vx = bx - ax, vy = by - ay, l = vx * vx + vy * vy;
+    const t = l ? Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / l)) : 0;
+    return Math.hypot(px - ax - t * vx, py - ay - t * vy);
+  }
+  function hits(it, x, y, tol) {
+    const d = it.d;
+    if (it.k === "stroke") {
+      const r = tol + d.w / 2, p = d.p, px = x - d.x, py = y - d.y;
+      if (p.length === 2) return Math.hypot(px - p[0], py - p[1]) <= r;
+      for (let i = 2; i < p.length; i += 2) if (segDist(px, py, p[i - 2], p[i - 1], p[i], p[i + 1]) <= r) return true;
+      return false;
     }
+    if (it.k === "shape" && (d.f === "line" || d.f === "arrow")) return segDist(x, y, d.x, d.y, d.x + d.w, d.y + d.h) <= tol + d.sw / 2;
+    const b = bbox(it), m = it.k === "shape" ? tol + d.sw / 2 : tol;
+    return x >= b.x - m && x <= b.x + b.w + m && y >= b.y - m && y <= b.y + b.h + m;
+  }
+  // the topmost item under the eraser is marked (shown faded) and goes when the finger lifts; a wipe that started on a
+  // line or shape only takes lines and shapes – so wiping a scribble off a note leaves the note
+  function eraseAt(w) {
+    const tol = BB_ERASE_PX / view.s;
+    let top = null, topLine = null;
+    for (const it of items.values()) {
+      if (!hits(it, w.x, w.y, tol)) continue;
+      if (!top || it.z > top.z) top = it;
+      if ((it.k === "stroke" || it.k === "shape") && (!topLine || it.z > topLine.z)) topLine = it;
+    }
+    if (er.lines === null && top) er.lines = top.k === "stroke" || top.k === "shape";
+    const it = er.lines ? topLine : top;
+    if (!it) return;
+    const k = key(it.id);
+    if (er.marked.has(k)) return;
+    er.marked.add(k);
+    const el = els.get(k); if (el) el.classList.add("bb-erase");
   }
   function shapeData(x0, y0, x1, y1) {
     const base = { c: inkC, sw: Math.max(1, Math.min(60, Math.round(4 / view.s))), f: shapeF };

@@ -1685,14 +1685,25 @@ async function familyView() {
 
 // ---------------------------------------------------------------- the games (own menu item)
 async function gamesView() {
-  const cards = [canPlay("quiz") ? await quizCard() : null, canPlay("bingo") ? await bingoCard() : null, canPlay("song") ? await songFamilyCard() : null,
-    canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
-    canPlay("domino") ? await dominoFamilyCard() : null, canPlay("paarjagd") ? await paarjagdFamilyCard() : null,
-    canPlay("werbinich") ? await werbinichFamilyCard() : null, canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null,
-    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("sternlauf") ? await sternlaufFamilyCard() : null, canPlay("snack") ? await snackFamilyCard() : null, canPlay("verkehr") ? await verkehrFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("escape") ? await escapeFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
+  const quiz = canPlay("quiz") ? await quizCard() : null;
+  // longer table games for a game night, then short games for in between (only the games this child may play)
+  const night = [canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
+    canPlay("domino") ? await dominoFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null,
+    canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null,
+    canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null,
+    canPlay("escape") ? await escapeFamilyCard() : null, canPlay("werbinich") ? await werbinichFamilyCard() : null,
+    canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null,
+    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("song") ? await songFamilyCard() : null,
+    canPlay("bingo") ? await bingoCard() : null, canPlay("schach") ? await schachFamilyCard() : null].filter(Boolean);
+  const quick = [canPlay("paarjagd") ? await paarjagdFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null,
+    canPlay("jump") ? await jumpFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null,
+    canPlay("sternlauf") ? await sternlaufFamilyCard() : null, canPlay("snack") ? await snackFamilyCard() : null,
+    canPlay("verkehr") ? await verkehrFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null].filter(Boolean);
+  const group = (ic, title, list) => list.length ? [h("h2.games-group", ic, " ", title), ...list] : [];
   // the games running just now on top – the same pulsing banners as on the start page
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
-  screen("games", h("h1", "🎲 ", T("Games")), timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), ...cards);
+  screen("games", h("h1", "🎲 ", T("Games")), timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
+    ...group("🎲", T("For a game night"), night), ...group("⚡", T("Quick games for in between"), quick), arcadeCard());
 }
 
 // ---------------------------------------------------------------- my devices (Home Assistant)
