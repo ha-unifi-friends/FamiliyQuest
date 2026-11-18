@@ -67,6 +67,19 @@ async function boardView(id) {
 }
 
 // ---------------------------------------------------------------- one board, full screen
+// buttons of the board react on the finger, not on «click» (no waiting for a double tap, no lost taps when the finger
+// moves a little); the keyboard still works through click (detail 0)
+const bbPress = fn => ({ onpointerdown: e => { if (e.button > 0) return; e.preventDefault(); fn(e); }, onclick: e => { if (e.detail === 0) fn(e); } });
+function bbTap(fn) {
+  let d = null;
+  return { onpointerdown: e => { d = e.button > 0 ? null : { id: e.pointerId, x: e.clientX, y: e.clientY }; },
+    onpointerup: e => { const g = d; d = null; if (g && g.id === e.pointerId && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 14) { e.preventDefault(); fn(e); } },
+    onpointercancel: () => { d = null; }, onclick: e => { if (e.detail === 0) fn(e); } };
+}
+const BB_ERASER = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g transform="rotate(-45 12 11)" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">'
+  + '<rect x="3" y="7" width="18" height="8" rx="2" fill="#a5d8ff"/><path d="M5 7h5v8H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" fill="#f783ac"/></g>'
+  + '<path d="M13 21.5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
 function boardLive(box, me, boardId, back) {
   const items = new Map();                 // key (String id, or "t…" before the server gave one) → {id, k, d, z, by, ub}
   const els = new Map();                   // key → element
@@ -74,6 +87,7 @@ function boardLive(box, me, boardId, back) {
   const people = {};
   let others = [], board = null, since = 0, alive = true, timer = null, inflight = false, lastSend = 0, ptrDirty = false;
   let queue = [], pend = new Map(), undo = [], tmpN = 0;
+  let busyKeys = new Map(), er = null, peopleSig = "", titleSig = "";
   let tool = "select", noteC = 0, inkC = 0, penW = 4, shapeF = "rect", sel = null, editing = null, readOnly = false;
   const view = { s: 1, x: 0, y: 0 };      // screen = world * s + (x, y)
   let ptr = null;                          // own pointer (world) for the others
@@ -88,15 +102,27 @@ function boardLive(box, me, boardId, back) {
   const bar = h("div.bb-people");
   const opts = h("div.bb-opts");
   const tools = h("div.bb-tools");
-  const zoomPct = h("button.bb-zbtn.bb-pct", { title: T("100 %"), onclick: () => zoomTo(1) }, "100 %");
+  const zoomPct = h("button.bb-zbtn.bb-pct", { title: T("100 %"), ...bbTap(() => zoomTo(1)) }, "100 %");
   const zoom = h("div.bb-zoom",
-    h("button.bb-zbtn", { title: T("Zoom in"), onclick: () => zoomTo(view.s * 1.5) }, "+"), zoomPct,
-    h("button.bb-zbtn", { title: T("Zoom out"), onclick: () => zoomTo(view.s / 1.5) }, "−"),
-    h("button.bb-zbtn", { title: T("Show everything"), onclick: () => fitAll() }, "⤢"));
-  const top = h("div.bb-top", h("button.icon-btn.bb-close", { title: T("Close"), onclick: () => close() }, "✕"), titleEl, bar);
+    h("button.bb-zbtn", { title: T("Zoom out"), "aria-label": T("Zoom out"), ...bbTap(() => zoomTo(view.s / 1.5)) }, "−"), zoomPct,
+    h("button.bb-zbtn", { title: T("Zoom in"), "aria-label": T("Zoom in"), ...bbTap(() => zoomTo(view.s * 1.5)) }, "+"),
+    h("button.bb-zbtn", { title: T("Show everything"), "aria-label": T("Show everything"), ...bbTap(() => fitAll()) }, "⤢"));
+  const top = h("div.bb-top", h("button.bb-back", { title: T("Back"), "aria-label": T("Back"), ...bbTap(() => close()) }, h("span", { "aria-hidden": "true" }, "⌫")),
+    titleEl, zoom, bar);
+  // header, tools and their options: one fixed block at the top – the canvas below it is the only thing that pans and zooms
+  const head = h("div.bb-head", top, tools, opts);
   box.classList.add("bb-full", "quiz-full");
   document.body.classList.add("quiz-open");
-  box.replaceChildren(top, vp, zoom, h("div.bb-bottom", opts, tools));
+  box.replaceChildren(head, vp);
+  // no page zoom while on the board: the canvas zooms itself (touch-action alone is not enough on every phone)
+  const meta = document.querySelector('meta[name="viewport"]'), metaWas = meta && meta.getAttribute("content");
+  if (meta) meta.setAttribute("content", metaWas.replace(/,\s*(maximum-scale|user-scalable)=[^,]*/g, "") + ", maximum-scale=1, user-scalable=no");
+  const noPageZoom = e => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
+  const noGesture = e => e.preventDefault();
+  document.addEventListener("touchstart", noPageZoom, { passive: false });
+  document.addEventListener("touchmove", noPageZoom, { passive: false });
+  for (const g of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(g, noGesture, { passive: false });
+  vp.addEventListener("touchmove", e => { if (!e.target.closest(".bb-edit")) e.preventDefault(); }, { passive: false });
 
   function close() { stop(); back(); }
   function stop() {
@@ -107,6 +133,9 @@ function boardLive(box, me, boardId, back) {
     api(`community/boards/${boardId}/leave`, { method: "POST" }).catch(() => {});
     try { localStorage.setItem("fq.board." + boardId, JSON.stringify(view)); } catch {}
     window.removeEventListener("hashchange", onHash); window.removeEventListener("keydown", onKey); window.removeEventListener("resize", onResize);
+    document.removeEventListener("touchstart", noPageZoom); document.removeEventListener("touchmove", noPageZoom);
+    for (const g of ["gesturestart", "gesturechange", "gestureend"]) document.removeEventListener(g, noGesture);
+    if (meta && metaWas != null) meta.setAttribute("content", metaWas);
     box.classList.remove("bb-full", "quiz-full"); document.body.classList.remove("quiz-open");
   }
   const onHash = () => { stop(); if (box.parentNode === document.body) box.remove(); };
@@ -132,9 +161,9 @@ function boardLive(box, me, boardId, back) {
   }
   function zoomTo(s) { const r = rect(); zoomAt(s, r.width / 2, r.height / 2); }
   function showRect(b, maxS = 1.5) {                // world box → fits into the view
-    const r = rect(), pad = 30, t = top.offsetHeight, hh = Math.max(100, r.height - t - box.querySelector(".bb-bottom").offsetHeight);
-    const s = Math.min(maxS, Math.max(BB_MIN, Math.min((r.width - 2 * pad - 50) / Math.max(1, b.w), (hh - 2 * pad) / Math.max(1, b.h))));
-    view.s = s; view.x = (r.width - 50) / 2 - (b.x + b.w / 2) * s; view.y = t + hh / 2 - (b.y + b.h / 2) * s;
+    const r = rect(), pad = 30, hh = Math.max(100, r.height);
+    const s = Math.min(maxS, Math.max(BB_MIN, Math.min((r.width - 2 * pad) / Math.max(1, b.w), (hh - 2 * pad) / Math.max(1, b.h))));
+    view.s = s; view.x = r.width / 2 - (b.x + b.w / 2) * s; view.y = hh / 2 - (b.y + b.h / 2) * s;
     applyView();
   }
   function bbox(it) {
@@ -200,8 +229,9 @@ function boardLive(box, me, boardId, back) {
     el.dataset.id = k; el.dataset.k = it.k;
     if (old) old.replaceWith(el); else world.append(el);
     els.set(k, el);
-    markBusy();
+    paintBusy(k, el);
     if (sel === k) el.classList.add("bb-sel");
+    if (er && er.marked.has(k)) el.classList.add("bb-erase");
   }
   function unrender(k) { const el = els.get(k); if (el) el.remove(); els.delete(k); if (sel === k) select(null); }
 
@@ -295,46 +325,67 @@ function boardLive(box, me, boardId, back) {
     for (const x of r.items) {
       const k = String(x.id);
       if (busy(k)) continue;
-      if (x.del) { items.delete(k); unrender(k); continue; }
-      const it = { id: x.id, k: x.k, d: x.d, z: x.z, by: x.by, ub: x.ub };
+      if (x.del) { if (items.has(k) || els.has(k)) { items.delete(k); unrender(k); } continue; }
+      const old = items.get(k);
+      if (old && old.v === x.v) continue;                                     // nothing new: keep the element
+      if (old && old.z === x.z && JSON.stringify(old.d) === JSON.stringify(x.d)) { old.v = x.v; old.ub = x.ub; continue; }  // own change coming back
+      const it = { id: x.id, k: x.k, d: x.d, z: x.z, by: x.by, ub: x.ub, v: x.v };
       items.set(k, it); render(it);
     }
     since = r.version;
     board = r.board;
-    if (board) {
+    const tsig = board ? [board.emoji, board.title, board.archived].join("\n") : "";
+    if (board && tsig !== titleSig) {
+      titleSig = tsig;
       titleEl.replaceChildren(h("span.bb-emoji", board.emoji), C(board.title, "strong"), board.archived ? h("span.chip.closed", T("archived")) : "");
-      if (readOnly !== board.archived) { readOnly = board.archived; if (readOnly) { tool = "select"; select(null); } drawTools(); }
     }
+    if (board && readOnly !== board.archived) { readOnly = board.archived; if (readOnly) { tool = "select"; select(null); } drawTools(); }
     others = r.presence || [];
     drawPeople(); drawCursors(); markBusy();
   }
 
   // ---------- the others: avatars, pointers, what they edit
-  function drawPeople() {
+  function drawPeople() {                    // rebuilt only when somebody comes or goes – not on every poll
     const list = [{ id: me.id }, ...others];
+    const sig = list.map(o => { const p = people[o.id]; return o.id + ":" + (p ? p.name + p.color + JSON.stringify(p.avatar) : "?"); }).join("|");
+    if (sig === peopleSig) return;
+    peopleSig = sig;
     bar.replaceChildren(...list.slice(0, 6).map(o => {
       const p = people[o.id] || { name: "?", color: "#888" };
       return h("button.bb-av" + (o.id === me.id ? ".me" : ""), { title: p.name, style: { "--who": p.color },
-        onclick: () => { if (o.view) showRect({ x: o.view[0], y: o.view[1], w: o.view[2], h: o.view[3] }, BB_MAX); } }, avatarSvg(p.avatar, 30));
+        ...bbTap(() => { const v = (others.find(x => x.id === o.id) || {}).view; if (v) showRect({ x: v[0], y: v[1], w: v[2], h: v[3] }, BB_MAX); }) }, avatarSvg(p.avatar, 30));
     }), list.length > 6 ? h("span.small.bb-more-n", "+" + (list.length - 6)) : "");
   }
+  const cursorEls = new Map();              // person → element: moved, not rebuilt (this runs on every frame of a pinch)
   function drawCursors() {
-    const r = { w: vp.clientWidth, h: vp.clientHeight };
-    cursors.replaceChildren(...others.filter(o => o.x != null).map(o => {
-      const p = people[o.id] || { name: "?", color: "#888" };
+    const r = { w: vp.clientWidth, h: vp.clientHeight }, seen = new Set();
+    for (const o of others) {
+      if (o.x == null) continue;
       const sx = o.x * view.s + view.x, sy = o.y * view.s + view.y;
-      if (sx < -20 || sy < -20 || sx > r.w + 20 || sy > r.h + 20) return null;
-      return h("div.bb-cursor", { style: { transform: `translate(${sx}px, ${sy}px)`, "--who": p.color } },
-        h("i.bb-arrow"), h("span", p.name));
-    }).filter(Boolean));
+      if (sx < -20 || sy < -20 || sx > r.w + 20 || sy > r.h + 20) continue;
+      const p = people[o.id] || { name: "?", color: "#888" };
+      let el = cursorEls.get(o.id);
+      if (!el || el.dataset.sig !== p.name + p.color) {
+        if (el) el.remove();
+        el = h("div.bb-cursor", { style: { "--who": p.color } }, h("i.bb-arrow"), h("span", p.name));
+        el.dataset.sig = p.name + p.color; cursorEls.set(o.id, el); cursors.append(el);
+      }
+      el.style.transform = `translate(${sx}px, ${sy}px)`;
+      seen.add(o.id);
+    }
+    for (const [id, el] of cursorEls) if (!seen.has(id)) { el.remove(); cursorEls.delete(id); }
   }
   function markBusy() {
-    for (const el of world.querySelectorAll(".bb-busy")) { el.classList.remove("bb-busy"); el.removeAttribute("data-who"); }
-    for (const o of others) {
-      if (o.edit == null) continue;
-      const el = els.get(String(o.edit)), p = people[o.id];
-      if (el && p) { el.classList.add("bb-busy"); el.style.setProperty("--who", p.color); el.setAttribute("data-who", p.name); }
-    }
+    const now = new Map();
+    for (const o of others) if (o.edit != null && people[o.id]) now.set(String(o.edit), people[o.id]);
+    for (const k of busyKeys.keys()) if (!now.has(k)) { const el = els.get(k); if (el) { el.classList.remove("bb-busy"); el.removeAttribute("data-who"); } }
+    busyKeys = now;
+    for (const k of now.keys()) paintBusy(k, els.get(k));
+  }
+  function paintBusy(k, el) {
+    const p = busyKeys.get(k);
+    if (!el || !p) return;
+    el.classList.add("bb-busy"); el.style.setProperty("--who", p.color); el.setAttribute("data-who", p.name);
   }
 
   // ---------- selection and writing
