@@ -129,6 +129,22 @@ def test_death_after_three_days_at_zero(client, clock):
     assert len(new) == 1 and new[0]["id"] != dog["id"] and new[0]["age"] == 0 and new[0]["hunger"] == 100
 
 
+def test_new_xp_spent_on_a_pet_stay_spent_when_it_dies(client, clock):
+    ph, mia, _ = setup_family(client)
+    fq = client.app.state.fq
+    h = login(client, mia, "1111")
+    client.put("/api/parent/shop/items/dog", json={"currency": "xp", "price": 100}, headers=ph)
+    fq.rewards.book(mia, "xp", 150, "bonus", "new")
+    assert client.post("/api/me/avatar/buy", json={"item": "dog"}, headers=h).status_code == 200
+    assert client.get("/api/me/avatar", headers=h).json()["new_xp"] == 50
+    clock.add(hours=72 + 72, minutes=1)
+    fq.pets.tick()
+    assert client.get("/api/me/pets", headers=h).json()["pets"] == []
+    assert not fq.db.q1("SELECT 1 FROM unlock WHERE profile_id=? AND item='dog'", mia)
+    assert client.get("/api/me/avatar", headers=h).json()["new_xp"] == 50          # the 100 do not come back
+    assert client.post("/api/me/avatar/buy", json={"item": "dog"}, headers=h).status_code == 400
+
+
 def test_care_resets_the_death_timer(client, clock):
     ph, mia, _ = setup_family(client)
     h, dog = buy_dog(client, ph, mia)

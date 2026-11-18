@@ -17,6 +17,7 @@ History
 from __future__ import annotations
 
 import json
+import re
 import random
 import threading
 import time
@@ -42,15 +43,21 @@ class Community:
 
     # ================================================================ quizzes (definitions)
     @staticmethod
-    def clean_questions(questions) -> list[dict]:
+    def clean_questions(questions, more: list[str] | None = None) -> list[dict]:
+        """`more`: the further languages of a multilingual quiz – each question keeps its texts in them ("tr")."""
         out = []
         for q in questions or []:
             kind = (q or {}).get("kind") or "choice"
             if kind in ("estimate", "pin"):
-                out.append(clean_special(q))
+                item = clean_special(q)
+                tr = clean_tr(q.get("tr"), more, kind)
+                if tr:
+                    item["tr"] = tr
+                out.append(item)
                 continue
             text = str((q or {}).get("q", "")).strip()
-            answers = [str(a).strip()[:120] for a in (q.get("a") or []) if str(a).strip()]
+            keep = [j for j, a in enumerate(q.get("a") or []) if str(a).strip()]     # the answers that are not empty
+            answers = [str((q.get("a") or [])[j]).strip()[:120] for j in keep]
             if not text and not answers:
                 continue
             if not text or not 2 <= len(answers) <= 4:
@@ -61,12 +68,19 @@ class Community:
             t = q.get("t", 20)
             t = max(5, min(120, int(t))) if isinstance(t, (int, float)) else 20
             item = {"q": text[:300], "a": answers, "c": c, "t": t}
+            tr = clean_tr(q.get("tr"), more, "choice", keep, answers)
+            if tr:
+                item["tr"] = tr
             img = clean_image(q.get("img"))
             if img:
                 item["img"] = img
             out.append(item)
         if not out:
             raise CommunityError("Add at least one question")
+        if len(out) > MAX_QUESTIONS:
+            raise CommunityError("A quiz can have at most 100 questions")
+        if sum(len((q.get("img") or {}).get("svg") or "") for q in out) > MAX_QUIZ_SVG:
+            raise CommunityError("The drawings of this quiz are too big together (max. 300 KB)")
         return out
 
     def quizzes(self) -> list[dict]:
@@ -74,6 +88,7 @@ class Community:
                             WHERE q.archived=0 ORDER BY q.id DESC""")
         for r in rows:
             r["questions"] = json.loads(r["questions"])
+            r["langs"] = json.loads(r["langs"]) if r.get("langs") else None
             r["games"] = int(self.db.val("SELECT COUNT(*) FROM quiz_game WHERE quiz_id=? AND status='done'", r["id"], default=0))
             last = self.db.q1("SELECT id, finished_at FROM quiz_game WHERE quiz_id=? AND status='done' ORDER BY id DESC LIMIT 1", r["id"])
             r["last_played"] = last["finished_at"] if last else None
@@ -94,12 +109,47 @@ class Community:
         title = str(data.get("title", "")).strip()[:80]
         if not title:
             raise CommunityError("The quiz needs a title")
-        qs = json.dumps(self.clean_questions(data.get("questions")), ensure_ascii=False)
+        langs = clean_langs(data.get("langs"))
+        qs = json.dumps(self.clean_questions(data.get("questions"), langs["more"] if langs else None), ensure_ascii=False)
+        lj = json.dumps(langs, ensure_ascii=False) if langs else None
         if quiz_id:
             self._own(prof, quiz_id)
-            self.db.x("UPDATE quiz SET title=?, questions=? WHERE id=?", title, qs, quiz_id)
+            self.db.x("UPDATE quiz SET title=?, questions=?, langs=? WHERE id=?", title, qs, lj, quiz_id)
             return quiz_id
-        return self.db.x("INSERT INTO quiz(title, questions, created_by) VALUES(?,?,?)", title, qs, prof["id"])
+        return self.db.x("INSERT INTO quiz(title, questions, created_by, langs) VALUES(?,?,?,?)", title, qs, prof["id"], lj)
+
+    def import_quizzes(self, prof: dict, text: str) -> list[int]:
+        """Quizzes from a file in the Family Quest quiz format (ai_format.py, self-describing JSON) – also JSON as AIs write it."""
+        from .jsonish import loads
+        try:
+            data = loads(text)
+        except ValueError:
+            raise CommunityError("The file is not a quiz in the Family Quest format (JSON)") from None
+        from .ai_format import strip_meta
+        data = strip_meta(data)
+        items = data if isinstance(data, list) else data.get("quizzes") if isinstance(data, dict) and isinstance(data.get("quizzes"), list) else [data]
+        if not items or not all(isinstance(x, dict) for x in items):
+            raise CommunityError("The file is not a quiz in the Family Quest format (JSON)")
+        ids = []
+        for i, quiz in enumerate(items[:20]):
+            questions = [quiz_question(q) for q in quiz.get("questions") or [] if isinstance(q, dict)]
+            if not questions:
+                raise CommunityError("The quiz has no questions")
+            try:
+                ids.append(self.save_quiz({"title": quiz.get("title") or f"Quiz {i + 1}", "questions": questions,
+                                           "langs": import_langs(quiz)}, prof))
+            except CommunityError as e:
+                raise CommunityError(f"{quiz.get('title') or 'Quiz'}: {e}") from None
+        return ids
+
+    def export_quizzes(self, quiz_id: int | None = None) -> dict:
+        """One quiz or all of them as self-describing JSON (ai_format) – an AI can change it, the app imports it again."""
+        from .ai_format import export_quiz, quiz_document
+        rows = self.db.q("SELECT * FROM quiz WHERE archived=0" + (" AND id=?" if quiz_id else "") + " ORDER BY id", *([quiz_id] if quiz_id else []))
+        if quiz_id and not rows:
+            raise CommunityError("Unknown quiz")
+        return quiz_document([export_quiz(r["title"], json.loads(r["questions"]), json.loads(r["langs"]) if r.get("langs") else None)
+                              for r in rows])
 
     def delete_quiz(self, prof: dict, quiz_id: int) -> None:
         self._own(prof, quiz_id)
@@ -110,7 +160,9 @@ class Community:
         t = TEMPLATES.get(template_id)
         if not t:
             raise CommunityError("Unknown template")
-        return self.save_quiz({"title": t["title"], "questions": template_questions(t)}, prof)
+        trs = template_translations(template_id)
+        langs = {"base": "de", "more": list(trs), "title": {k: v["title"] for k, v in trs.items()}} if trs else None
+        return self.save_quiz({"title": t["title"], "questions": template_questions(t, trs), "langs": langs}, prof)
 
     # ================================================================ quiz game
     def _load(self, g: dict) -> dict:
@@ -296,7 +348,8 @@ class Community:
             g = self._load(last)
         else:
             g = self._tick(g)
-        out = {"game": g["id"], "title": g["quiz"]["title"] if g["quiz"] else "", "status": g["status"], "idx": g["idx"],
+        langs = json.loads(g["quiz"]["langs"]) if g["quiz"] and g["quiz"].get("langs") else None
+        out = {"game": g["id"], "title": g["quiz"]["title"] if g["quiz"] else "", "langs": langs, "status": g["status"], "idx": g["idx"],
                "total": len(g["questions"]), "host": g["host_id"], "joined": viewer in g["players"],
                "players": self._scores(g)}
         if g["status"] in ("question", "reveal") and 0 <= g["idx"] < len(g["questions"]):
@@ -308,6 +361,7 @@ class Community:
             out["question"] = {"q": q["q"], "a": q.get("a", []), "t": q["t"], "img": q.get("img"), "kind": kind,
                                **({k: q[k] for k in ("min", "max", "unit", "step")} if kind == "estimate" else {}),
                                **({"map": q["map"]} if kind == "pin" else {}),
+                               **({"tr": {k: {f: v[f] for f in ("q", "a", "unit") if f in v} for k, v in q["tr"].items()}} if q.get("tr") else {}),
                                "remaining_ms": max(0, int((q["t"] - (time.time() - (g["q_started"] or 0))) * 1000))
                                if g["status"] == "question" else 0}
             out["answered"] = [a["profile_id"] for a in answers]
@@ -321,7 +375,8 @@ class Community:
                     out["counts"] = [sum(1 for a in answers if a["choice"] == i) for i in range(len(q["a"]))]
                 else:
                     out["solution"] = {"value": q.get("answer"), "lat": q.get("lat"), "lon": q.get("lon"), "label": q.get("label", ""),
-                                       "unit": q.get("unit", "")}
+                                       "unit": q.get("unit", ""),
+                                       "tr": {k: {f: v[f] for f in ("label", "unit") if f in v} for k, v in (q.get("tr") or {}).items()}}
                     out["guesses"] = sorted(({"id": a["profile_id"], "name": a["name"], "value": a["value"], "lat": a["lat"], "lon": a["lon"],
                                               "miss": miss(q, a), "points": a["points"]} for a in answers),
                                             key=lambda x: (x["miss"] is None, x["miss"] or 0))
@@ -605,7 +660,8 @@ class Community:
         open_votes = int(self.db.val("""SELECT COUNT(*) FROM council_topic t WHERE t.status='vote'
                                          AND NOT EXISTS(SELECT 1 FROM council_vote v WHERE v.topic_id=t.id AND v.profile_id=?)""", pid, default=0))
         collecting = int(self.db.val("SELECT COUNT(*) FROM council_topic WHERE status='collect'", default=0))
-        return {"quiz": ({"status": g["status"], "title": g["quiz"]["title"] if g["quiz"] else "", "joined": pid in g["players"]}
+        return {"quiz": ({"status": g["status"], "title": g["quiz"]["title"] if g["quiz"] else "", "joined": pid in g["players"],
+                          "langs": json.loads(g["quiz"]["langs"]) if g["quiz"] and g["quiz"].get("langs") else None}
                          if g else None),
                 "votes_open": open_votes, "topics_collecting": collecting,
                 "polls_open": int(self.db.val("""SELECT COUNT(*) FROM poll p WHERE p.status='open'
@@ -628,6 +684,58 @@ def miss(q: dict, a) -> float | None:
     if q.get("kind") == "pin":
         return None if a["lat"] is None else round(haversine_km(a["lat"], a["lon"], q["lat"], q["lon"]), 1)
     return None
+
+
+def quiz_question(q: dict) -> dict:
+    """A question of the import format (type / question / answers / correct / seconds …) – into the inner format
+    (kind / q / a / c / t). Questions already in the inner format pass unchanged."""
+    if "q" in q and "question" not in q:
+        return q
+    kind = {"choice": "choice", "multiple": "choice", "estimate": "estimate", "number": "estimate",
+            "map": "pin", "pin": "pin"}.get(str(q.get("type") or q.get("kind") or "choice").lower(), "choice")
+    out = {"kind": kind, "q": q.get("question") or q.get("q") or ""}
+    if "seconds" in q or "t" in q:
+        out["t"] = q.get("seconds", q.get("t"))
+    pic = q.get("image") or q.get("img")
+    if isinstance(pic, dict):
+        t = str(pic.get("type") or "").lower()
+        if t.startswith("canton") or pic.get("canton"):
+            out["img"] = {"geo": "canton", "id": str(pic.get("canton") or pic.get("id") or "").upper(),
+                          "mode": {"canton_map": "map", "canton_arms": "arms"}.get(t, pic.get("mode") or "outline")}
+        else:
+            out["img"] = {k: pic[k] for k in ("flag", "emoji", "svg") if pic.get(k)}
+    if kind == "choice":
+        out["a"] = q.get("answers") or q.get("a") or []
+        c = q.get("correct", q.get("c", 0))
+        if isinstance(c, str) and c in out["a"]:
+            c = out["a"].index(c)                      # the right answer given as text
+        out["c"] = c
+        out.pop("kind")
+    elif kind == "estimate":
+        out.update({k: q.get(k) for k in ("answer", "min", "max", "unit", "step") if q.get(k) is not None})
+    else:
+        out.update({k: q.get(k) for k in ("lat", "lon", "map", "label") if q.get(k) is not None})
+    trs = q.get("translations")
+    if isinstance(trs, dict):                          # {"fr": {"question", "answers", "unit", "label"}}
+        out["tr"] = {str(lang).lower()[:2]: {k2: v[k1] for k1, k2 in (("question", "q"), ("answers", "a"), ("unit", "unit"), ("label", "label"))
+                                             if v.get(k1) not in (None, "", [])}
+                     for lang, v in trs.items() if isinstance(v, dict)}
+    return out
+
+
+def import_langs(quiz: dict) -> dict | None:
+    """The languages of an imported quiz: "language" (the base), "languages" (the further ones) and
+    "translations": {"fr": {"title"}} – or the languages the questions are translated into."""
+    trs = quiz.get("translations") if isinstance(quiz.get("translations"), dict) else {}
+    more = list(quiz.get("languages") or [])
+    for q in quiz.get("questions") or []:
+        if isinstance(q, dict) and isinstance(q.get("translations"), dict):
+            more += [k for k in q["translations"] if k not in more]
+    more += [k for k in trs if k not in more]
+    if not more:
+        return None
+    return clean_langs({"base": quiz.get("language") or "de", "more": more,
+                        "title": {k: (v or {}).get("title") for k, v in trs.items() if isinstance(v, dict)}})
 
 
 def clean_special(q: dict) -> dict:
@@ -654,28 +762,136 @@ def clean_special(q: dict) -> dict:
         raise CommunityError("Type a number") from None
 
 
+SVG_MAX = 30_000
+MAX_QUESTIONS = 100                 # per quiz – keeps the list of quizzes small for every device
+MAX_QUIZ_SVG = 300_000              # all own drawings of one quiz together
+
+
 def clean_image(img) -> dict | None:
-    """A picture of a question: a canton as outline, marked on the map (web/geo/ch.json) or its coat of arms (arms.json)."""
+    """A picture of a question:
+    - a canton as outline, marked on the map (web/geo/ch.json) or its coat of arms (arms.json): {geo, id, mode}
+    - a country flag, big: {flag: "CH"} (web/flags/<code>.svg)
+    - a big emoji: {emoji: "🦁"}
+    - an own drawing: {svg: "<svg …>"} – shown as an image (<img>), so nothing in it can run."""
     from .quiz_templates import CANTON_NAMES
-    if not isinstance(img, dict) or img.get("geo") != "canton" or img.get("id") not in CANTON_NAMES:
+    from .settings import WEB_DIR
+    if not isinstance(img, dict):
         return None
-    return {"geo": "canton", "id": img["id"], "mode": img.get("mode") if img.get("mode") in ("map", "arms") else "outline"}
+    if img.get("geo") == "canton" and img.get("id") in CANTON_NAMES:
+        return {"geo": "canton", "id": img["id"], "mode": img.get("mode") if img.get("mode") in ("map", "arms") else "outline"}
+    flag = str(img.get("flag") or "").upper()
+    if flag:
+        return {"flag": flag} if re.fullmatch(r"[A-Z]{2}", flag) and (WEB_DIR / "flags" / f"{flag}.svg").is_file() else None
+    emoji = str(img.get("emoji") or "").strip()
+    if emoji:
+        return {"emoji": emoji[:16]}
+    svg = str(img.get("svg") or "").strip()
+    if svg:
+        if len(svg) > SVG_MAX or not re.match(r"^(<\?xml[^>]*>\s*)?<svg[\s>]", svg, re.I):
+            raise CommunityError("A picture must be an SVG drawing (<svg …>) of at most 30 KB")
+        return {"svg": svg}
+    return None
 
 
 def shuffle_answers(q: dict) -> dict:
     order = list(range(len(q["a"])))
     random.shuffle(order)
-    return {**q, "a": [q["a"][i] for i in order], "c": order.index(q["c"])}
+    out = {**q, "a": [q["a"][i] for i in order], "c": order.index(q["c"])}
+    if q.get("tr"):                                  # the translations of the answers in the same new order
+        out["tr"] = {k: {**v, **({"a": [v["a"][i] for i in order]} if len(v.get("a") or []) == len(order) else {})}
+                     for k, v in q["tr"].items()}
+    return out
 
 
-def template_questions(t: dict) -> list[dict]:
-    """Template questions are (question, right answer, wrong answers …) – into the quiz format, answers shuffled."""
+# ---------------------------------------------------------------- multilingual quizzes
+QUIZ_LANGS = ("de", "fr", "it", "en", "es", "nl", "pl", "pt", "sv", "rm")
+
+
+def clean_langs(v) -> dict | None:
+    """{"base": "de", "more": ["fr", …], "title": {"fr": "…"}} – None: a quiz in one language."""
+    if not isinstance(v, dict):
+        return None
+    base = str(v.get("base") or "").lower()[:2]
+    if base not in QUIZ_LANGS:
+        return None
+    more = []
+    for x in v.get("more") or []:
+        x = str(x).lower()[:2]
+        if x in QUIZ_LANGS and x != base and x not in more:
+            more.append(x)
+    if not more:
+        return None
+    titles = v.get("title") if isinstance(v.get("title"), dict) else {}
+    return {"base": base, "more": more[:9],
+            "title": {k: str(titles[k]).strip()[:80] for k in more if str(titles.get(k) or "").strip()}}
+
+
+def clean_tr(tr, more: list[str] | None, kind: str, keep: list[int] | None = None, answers: list[str] | None = None) -> dict:
+    """The texts of a question in the further languages; an empty text falls back to the base language."""
+    if not more or not isinstance(tr, dict):
+        return {}
+    out = {}
+    for lang in more:
+        v = tr.get(lang)
+        if not isinstance(v, dict):
+            continue
+        item = {}
+        if str(v.get("q") or "").strip():
+            item["q"] = str(v["q"]).strip()[:300]
+        if kind == "choice" and isinstance(v.get("a"), list):
+            src = v["a"]
+            a = [str(src[j]).strip()[:120] if j < len(src) and str(src[j] or "").strip() else answers[n] for n, j in enumerate(keep or [])]
+            if any(x != answers[n] for n, x in enumerate(a)):
+                item["a"] = a
+        if kind == "estimate" and str(v.get("unit") or "").strip():
+            item["unit"] = str(v["unit"]).strip()[:20]
+        if kind == "pin" and str(v.get("label") or "").strip():
+            item["label"] = str(v["label"]).strip()[:60]
+        if item:
+            out[lang] = item
+    return out
+
+
+_TEMPLATE_TR: dict[str, dict] | None = None
+
+
+def template_translations(template_id: str) -> dict:
+    """{lang: {"title", "items"}} of a quiz template – from familyquest/quiz_templates_tr/<lang>.json
+    (made with tools/quiz_templates_tr.py); a language whose items do not fit the template is left out."""
+    global _TEMPLATE_TR
+    if _TEMPLATE_TR is None:
+        from pathlib import Path
+        _TEMPLATE_TR = {}
+        for f in sorted((Path(__file__).parent / "quiz_templates_tr").glob("*.json")):
+            if f.stem in QUIZ_LANGS and f.stem != "de":
+                try:
+                    _TEMPLATE_TR[f.stem] = json.loads(f.read_text(encoding="utf-8"))
+                except ValueError:
+                    pass
+    from .quiz_templates import TEMPLATES
+    n = len(TEMPLATES.get(template_id, {}).get("questions") or [])
+    return {lang: d[template_id] for lang, d in _TEMPLATE_TR.items()
+            if isinstance(d.get(template_id), dict) and len(d[template_id].get("items") or []) == n}
+
+
+def template_questions(t: dict, trs: dict | None = None) -> list[dict]:
+    """Template questions are (question, right answer, wrong answers …) – into the quiz format, answers shuffled;
+    `trs` (template_translations) gives every question its texts in the other languages."""
     out = []
-    for item in t["questions"]:
+    for i, item in enumerate(t["questions"]):
+        tr = {}
+        for lang, d in (trs or {}).items():
+            x = d["items"][i]
+            tr[lang] = {k: v for k, v in x.items() if k in ("q", "a", "unit", "label") and v}
         if isinstance(item, dict):                       # estimation and map questions
-            out.append({**item, "t": item.get("t", t.get("t", 30))})
+            out.append({**item, "t": item.get("t", t.get("t", 30)), **({"tr": tr} if tr else {})})
             continue
         img = item[-1] if isinstance(item[-1], dict) else None
         q, right, *wrong = item[:-1] if img else item
-        out.append(shuffle_answers({"q": q, "a": [right, *wrong][:4], "c": 0, "t": t.get("t", 20), **({"img": img} if img else {})}))
+        a = [right, *wrong][:4]
+        for v in tr.values():
+            if len(v.get("a") or []) != len(a):
+                v.pop("a", None)
+        out.append(shuffle_answers({"q": q, "a": a, "c": 0, "t": t.get("t", 20), **({"img": img} if img else {}),
+                                    **({"tr": tr} if tr else {})}))
     return out

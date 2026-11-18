@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
-from .api import community, decks, kid, parent, planer
+from .api import community, decks, integration as integration_api, kid, parent, planer
 from . import loginlog, netfilter
 from .api.auth import INGRESS_IP
 from .services import FamilyQuest
@@ -29,6 +29,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     async def lifespan(app: FastAPI):
         core = app.state.fq
         core.packs.sync_folders(settings.packs_dirs)
+        from . import integration
+        asyncio.get_running_loop().run_in_executor(None, integration.install_on_start, core)   # HA integration: update /config copy
         async def relink():
             """Old copies of Home Assistant Media photos become references (smaller backup) – in the background."""
             from . import memorygame
@@ -71,6 +73,15 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
 
     @app.middleware("http")
     async def access(request: Request, call_next):
+        # Family Quest HA integration (custom component): inside the add-on only Home Assistant Core on the Supervisor
+        # network may call it – the integration token is checked by the API itself (api/integration.py)
+        if request.url.path.startswith("/api/integration/") and settings.ha_enabled:
+            host = request.client.host if request.client else ""
+            if not netfilter.allowed(host, [netfilter.SUPERVISOR_NET]) or host == INGRESS_IP:
+                return JSONResponse({"detail": "Only Home Assistant may use the integration API"}, status_code=403)
+            resp = await call_next(request)
+            resp.headers["Cache-Control"] = "no-store"
+            return resp
         # Inside the add-on: without the direct-access option only Home Assistant ingress may talk to us.
         if settings.ha_enabled and not settings.direct_access:
             host = request.client.host if request.client else ""
@@ -101,6 +112,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     app.include_router(planer.router)
     app.include_router(community.router)
     app.include_router(decks.router)
+    app.include_router(integration_api.router)
+    app.include_router(integration_api.parent_router)
 
     def page(name: str) -> HTMLResponse:
         html = (WEB_DIR / name).read_text(encoding="utf-8").replace("__VERSION__", settings.version)

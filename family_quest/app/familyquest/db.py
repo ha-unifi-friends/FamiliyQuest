@@ -522,6 +522,136 @@ MIGRATIONS: list[str] = [
     INSERT INTO prank_stock(profile_id, kind, n) SELECT profile_id, 'ink', n FROM prank_charge WHERE n > 0;
     DROP TABLE prank_charge;
     """,
+    # 29 – avatar items unlocked with new XP: how many new XP were used (the XP account stays as it is)
+    """
+    ALTER TABLE unlock ADD COLUMN new_xp INTEGER NOT NULL DEFAULT 0;
+    """,
+    # 30 – multilingual quizzes: {"base": "de", "more": ["fr", "en"], "title": {"fr": "…"}} (NULL: one language)
+    """
+    ALTER TABLE quiz ADD COLUMN langs TEXT;
+    """,
+    # 31 – new XP spent on XP items whose unlock went again (a pet that died): they stay spent (api/kid.new_xp_left)
+    """
+    CREATE TABLE xp_spent(profile_id INTEGER PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE, n INTEGER NOT NULL DEFAULT 0);
+    """,
+    # 32 – bulletin boards (boards.py): an endless pin board per topic – sticky notes, texts, drawings, shapes.
+    # Every change raises the version of its board; the clients fetch only what changed since their version.
+    """
+    CREATE TABLE board(
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        emoji TEXT NOT NULL DEFAULT '📌',
+        created_by INTEGER,
+        archived INTEGER NOT NULL DEFAULT 0,
+        version INTEGER NOT NULL DEFAULT 0,        -- last change of the board (items and title)
+        floor INTEGER NOT NULL DEFAULT 0,          -- removed items up to this version are gone for good: older clients load anew
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE TABLE board_item(
+        id INTEGER PRIMARY KEY,
+        board_id INTEGER NOT NULL REFERENCES board(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL,                        -- note | text | stroke | shape
+        data TEXT NOT NULL,                        -- JSON: position, size, colour, text or the points of a line
+        z INTEGER NOT NULL DEFAULT 0,
+        size INTEGER NOT NULL DEFAULT 0,           -- bytes of data (the size limit of a board)
+        created_by INTEGER,
+        updated_by INTEGER,
+        version INTEGER NOT NULL,                  -- board version of its last change
+        deleted INTEGER NOT NULL DEFAULT 0,        -- removed (kept a while so the others see it go and «undo» works)
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE INDEX board_item_v ON board_item(board_id, version);
+    CREATE TABLE board_seen(
+        board_id INTEGER NOT NULL REFERENCES board(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        version INTEGER NOT NULL DEFAULT 0,        -- what this person has seen (the «new» badge)
+        PRIMARY KEY(board_id, profile_id)
+    );
+    """,
+    # 33 – games for FamilyTime (familytime.py): wishes per person, a vote, the game set on the agenda (or bought with coins)
+    """
+    CREATE TABLE ft_game(
+        event_id INTEGER PRIMARY KEY REFERENCES family_event(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'wish',     -- wish | vote | tie | skipped | set
+        choice TEXT,                             -- the game set: g:<app game> | t:<board game, lower case>
+        title TEXT,                              -- … as it is shown
+        how TEXT,                                -- single | vote | random | parent | bought
+        by_id INTEGER,                           -- who set it (parent), bought it (child) or wished it (single)
+        price INTEGER NOT NULL DEFAULT 0,        -- coins paid (bought) – given back when a parent removes it
+        tie TEXT,                                -- JSON list of the choices with the same number of votes
+        auto_done INTEGER NOT NULL DEFAULT 0,    -- the wish window has closed
+        vote_at TEXT,
+        set_at TEXT
+    );
+    CREATE TABLE ft_wish(
+        id INTEGER PRIMARY KEY,
+        event_id INTEGER NOT NULL REFERENCES family_event(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        choice TEXT NOT NULL,
+        title TEXT NOT NULL,
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        UNIQUE(event_id, profile_id)
+    );
+    CREATE TABLE ft_vote(
+        event_id INTEGER NOT NULL REFERENCES family_event(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        choice TEXT NOT NULL,
+        PRIMARY KEY(event_id, profile_id)
+    );
+    """,
+    # 34 – daily time limits (timelimits.py): the minutes in which a child used a family game, one row per minute
+    """
+    CREATE TABLE play_minute(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        day TEXT NOT NULL,
+        minute INTEGER NOT NULL,
+        PRIMARY KEY(profile_id, day, minute)
+    );
+    """,
+    # 35 – games with a price for children (gamepasses.py): bought for good or rented until a time. The one-armed
+    # bandit joins this model – whoever bought it before (unlock «slot_machine») has it bought.
+    """
+    CREATE TABLE game_pass(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        game TEXT NOT NULL,
+        bought INTEGER NOT NULL DEFAULT 0,
+        bought_at TEXT,
+        rent_until TEXT,                         -- 'YYYY-MM-DD HH:MM:SS' local time; renting again extends from here
+        PRIMARY KEY(profile_id, game)
+    );
+    INSERT OR IGNORE INTO game_pass(profile_id, game, bought, bought_at)
+        SELECT profile_id, 'slots', 1, datetime('now','localtime') FROM unlock WHERE item='slot_machine';
+    """,
+    # 36 – free tries of a game with a price before buying / renting (gamepasses.py: `preview`): how many a child used,
+    # and when the last one began (a second start right after it is the same try). Everybody starts with 0 used.
+    """
+    ALTER TABLE game_pass ADD COLUMN previews_used INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE game_pass ADD COLUMN preview_at TEXT;
+    """,
+    # 37 – game battery (battery.py): charge per child (NULL = full – everybody starts full), the last start (a second
+    # start of the same game right after it is the same start), a log of every change (unique refs: a goal or a chore
+    # charges once); per chore an energy bonus (charge segments when it is done)
+    """
+    CREATE TABLE battery(
+        profile_id INTEGER PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE,
+        charge INTEGER,                          -- NULL = full (whatever the capacity is)
+        last_game TEXT,
+        last_at TEXT
+    );
+    CREATE TABLE battery_log(
+        id INTEGER PRIMARY KEY,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        delta INTEGER NOT NULL,
+        kind TEXT NOT NULL,                      -- start | recharge | goal | chore | parent
+        game TEXT,
+        ref TEXT,
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        UNIQUE(profile_id, ref)
+    );
+    ALTER TABLE chore ADD COLUMN energy INTEGER NOT NULL DEFAULT 0;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -564,6 +694,8 @@ DEFAULT_SETTINGS = {
     "planer_points_factor": 1.0,
     "games": "all",                      # family games (quiz, bingo, card games): all | some (chosen children) | off – parents always
     "games_guests": True,                # guests may join family games with a QR code
+    "quiz_facts": True,                  # family quiz: the special quiz «Family Quest Facts» (facts.py) – questions from the family's data
+    "game_starter": "dice",              # who begins a turn-based game: dice (random) | leader | choose (cardgames.apply_starter)
     "games_profiles": [],                # with "some": the children who may play
     "games_access": None,                # per game {"mode", "profiles"} (services.games_access) – replaces the two above
     "parent_ha_only": False,             # parent area only through Home Assistant (linked HA user), no PIN login
@@ -575,13 +707,18 @@ DEFAULT_SETTINGS = {
     "translations": None,                # own texts and languages (translations.py)
     "weather": None,                     # behaviour weather – None = defaults (weather.DEFAULT)
     "themes": None,                      # season designs of the app header – None = defaults (themes.clean)
+    "battery": None,                     # game battery of the children (battery.py) – None = defaults (battery.DEFAULT)
+    "party": None,                       # party mode (battery.py, Party): None = off
     "pet_food_cost": 2,                  # coins for feeding a pet once (pets.py)
     "pet_hotel_cost": 10,                # Family Quest pet hotel: coins per day (pets.py)
     "hamster_coins_per_day": 15,         # the hamster mines (default: 5 more than a day in the pet hotel) this many coins per day while it is healthy (pets.py)
     "pet_shop_currency": "coins",        # pet shop (outfits, houses, furniture): coins | xp | mixed (the child chooses)
     "lesson_perfect_coins": 5,           # coins for a lesson without a single mistake (on top of «lesson finished»)
-    "game_rewards": {"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2]},   # live games: coins for places 1, 2, 3 (pairhunt.py, whoami.py, kartenlauf.py, stadtland.py, zeichnen.py, wuerfel.py, heimwaerts.py, jump.py, klatsch.py, verboten.py; jass.py: place 1 only; werwolf.py: place 1 for the winning side; schach.py: [win against family, against the hard bot, against the normal bot]; dorfmarkt.py) – family tables with ≥ 2 people
+    "game_rewards": {"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "verkehr": [10, 5, 2], "sternlauf": [10, 5, 2], "snack": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2], "escape": [10, 5, 2]},   # live games: coins for places 1, 2, 3 (pairhunt.py, whoami.py, kartenlauf.py, stadtland.py, zeichnen.py, wuerfel.py, heimwaerts.py, jump.py, snack.py, klatsch.py, verboten.py; jass.py: place 1 only; werwolf.py: place 1 for the winning side; schach.py: [win against family, against the hard bot, against the normal bot]; dorfmarkt.py; escape.py: place 1 only) – family tables with ≥ 2 people
     "memory": None,                      # pairs game: own photo sets and the family crest (memorygame.py)
+    "familytime_wishes": True,           # FamilyTime: game wishes, the vote and buying a game (familytime.py) – off: children see nothing
+    "familytime_game_price": 150,        # coins a child pays to set the game of a FamilyTime firmly (0 = buying off)
+    "familytime_vote_hours": 24,         # the wishes close (and the vote starts) this many hours before the FamilyTime
     "planer_points_account": "coins",    # built-in planner: its points and this account are one balance ("" = separate)
 }
 
@@ -595,6 +732,8 @@ DEFAULT_PROFILE_SETTINGS = {
     "internet_rule": "",          # switch of a UniFi firewall/traffic rule – the app manages budget and start/stop
     "internet_rule_blocks": True, # True = the rule blocks the internet while the switch is on
     "internet_plan": None,        # budget per day/week, other weekdays, block times (internet.clean_plan)
+    "game_limit": {"all": None, "days": {}},    # family games: minutes per day, own minutes on weekdays – None = unlimited (timelimits.py)
+    "learn_limit": {"all": None, "days": {}},   # learning: minutes per day, own minutes on weekdays – None = unlimited
     "auto_logout_min": 0,         # 0 = never
     "notify_service": "",         # parents: notify.mobile_app_xyz – approvals as push message to this phone
     "pin_kind": "",               # "symbols" = picture PIN (children), "digits" or "" = number PIN

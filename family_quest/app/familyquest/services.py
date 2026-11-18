@@ -14,6 +14,7 @@ from .community import Community
 from .chores import Chores
 from .internet import InternetTime
 from .db import Database, profile_settings
+from . import timelimits
 from .learning.lesson import Learning
 from .packs.registry import PackStore, subject_meta
 from .rewards import avatar as av
@@ -25,6 +26,7 @@ from .translations import Translations
 from .dashboard import Dashboard
 from .guests import Guests
 from .calendar import FamilyCalendar
+from .familytime import FamilyTimeGames
 
 log = logging.getLogger("familyquest")
 
@@ -35,6 +37,9 @@ class FamilyQuest:
         self.db = db or Database(settings.db_path)
         self.packs = PackStore(self.db, settings.media_dir)
         self.rewards = Rewards(self.db)
+        av.set_overrides(self.db.get_setting("shop_items", {}))          # the parents' changes to the shop
+        if self.db.q1("SELECT 1 FROM setting WHERE key='xp_items_from'") is None:   # «new» XP count from today on
+            self.db.set_setting("xp_items_from", int(self.db.val("SELECT MAX(id) FROM ledger", default=0) or 0))
         self.learning = Learning(self.db, self.packs, self.rewards)
         from .decks import Decks
         self.decks = Decks(self.db, self.packs)
@@ -63,6 +68,12 @@ class FamilyQuest:
         self.heimwaerts = Heimwaerts(self.db, self.community.add_history, self.rewards)
         from .jump import Jump
         self.jump = Jump(self.db, self.community.add_history, self.rewards)
+        from .sternlauf import Sternlauf
+        self.sternlauf = Sternlauf(self.db, self.community.add_history, self.rewards)
+        from .snack import Snack
+        self.snack = Snack(self.db, self.community.add_history, self.rewards)
+        from .verkehr import Verkehr
+        self.verkehr = Verkehr(self.db, self.community.add_history, self.rewards)
         from .klatsch import Klatsch
         self.klatsch = Klatsch(self.db, self.community.add_history, self.rewards)
         from .verboten import Verboten
@@ -75,14 +86,30 @@ class FamilyQuest:
         self.schach = Schach(self.db, self.community.add_history, self.rewards)
         from .dorfmarkt import Dorfmarkt
         self.dorfmarkt = Dorfmarkt(self.db, self.community.add_history, self.rewards)
+        from .escape import Escape
+        self.escape = Escape(self.db, self.community.add_history, self.rewards)
+        # games without bots (parent area › Games): the engines ask before bots take a seat (cardgames.CardGames.bots_off)
+        for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.snack, self.verkehr, self.klatsch,
+                    self.jass, self.werwolf, self.dorfmarkt):
+            eng.no_bots = self.table_without_bots
         from .songquiz import SongQuiz
         self.lan_base = None      # http://<Home Assistant IP>:<port of the direct access> – for sounds on speakers
         self.songs = SongQuiz(self.db, self.community.add_history, lambda: self.ha,
                               lambda name: f"{self.lan_base}/sounds/{name}.mp3" if self.lan_base else None)
         from .pets import Pets
         self.pets = Pets(self.db, self.rewards)
+        from .gamepasses import GamePasses
+        self.passes = GamePasses(self.db, self.rewards)          # games with a price for children (gamepasses.py)
+        from .battery import Battery
+        self.battery = Battery(self.db, self.rewards)              # game battery of the children, party mode (battery.py)
+        self.rewards.listeners.append(self.battery.on_reward)    # daily goal / chore done: charge segments
         from .slots import Slots
         self.slots = Slots(self.db, self.rewards)
+        self.slots.settings = lambda: self.games_access()["slots"]       # price, rent, luck (parent area › Games)
+        self.slots.unlocked = lambda pid: self.game_unlocked(pid, "slots")
+        # free tries (gamepasses.py `preview`): one spin each before buying / renting
+        self.slots.tries = lambda pid: self.passes.tries_left(pid, "slots", self.games_access()["slots"])
+        self.slots.try_play = lambda pid: self.passes.use_try(pid, "slots", self.games_access()["slots"], same=False) == "new"
         from .pranks import Pranks
         self.pranks = Pranks(self.db, self.rewards, lambda: self.ha,
                              lambda name: f"{self.lan_base}/sounds/{name}.mp3" if self.lan_base else None)
@@ -92,6 +119,8 @@ class FamilyQuest:
         self.bots.pets = self.pets
         from .wichteln import Wichteln
         self.wichteln = Wichteln(self.db, lambda: self.planer_host)
+        from .boards import Boards
+        self.boards = Boards(self.db)
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
         from .pong4 import Doubles
@@ -101,6 +130,7 @@ class FamilyQuest:
         self.kiosk = Dashboard(self)
         self.guests = Guests(self)
         self.calendar = FamilyCalendar(self)
+        self.familytime = FamilyTimeGames(self)
         self.internet.offline = lambda pid: self.calendar.blocks(pid, "internet")
         self.shop.internet = self.internet
         self.tokens = Tokens(settings.secret)
@@ -140,7 +170,10 @@ class FamilyQuest:
             out.update(pin_kind="symbols", symbol_set=random.sample(st["symbol_set"], len(st["symbol_set"])))
         return out
 
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "sudoku", "patience", "pingpong", "slots")
+    # the games that can be played with bots (alone against bots, bots at the table, chess / Tic-Tac-Toe / Ping-Pong
+    # against the computer, Werwölfe filled up with bots) – the parents can switch the bots off per game
+    BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "pingpong")
+    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -150,33 +183,202 @@ class FamilyQuest:
         return hashlib.sha256(f"{p['created_at']}|{p['pin_hash'] or ''}|{p['archived']}".encode()).hexdigest()[:12]
 
     def games_access(self) -> dict:
-        """Per game: {"mode": all | some | off, "profiles": [...]} – from the older single switch when not set yet."""
+        """Per game: {"mode": all | some | off, "profiles": [...], "bots": bool, "price": coins, "rent": coins,
+        "period": day | week | month} (+ "luck" 1–10 for the one-armed bandit) – from the older single switch when not
+        set yet. Price and rent: what a child pays to buy / rent the game (gamepasses.py) – 0 and 0 = free; "preview":
+        free tries before buying / renting. A value the parents never set (key missing) takes the default of
+        gamepasses.py (DEFAULT_PRICE, DEFAULT_RENT, DEFAULT_PREVIEW) – an explicit 0 stays 0."""
+        from . import gamepasses as gp
+        DEFAULT_PERIOD, DEFAULT_PRICE = gp.DEFAULT_PERIOD, gp.DEFAULT_PRICE   # noqa: N806 – read at call time (tests)
+        from .slots import DEFAULT_LUCK
         acc = self.db.get_setting("games_access")
+
+        def num(v, default: int, lo: int = 0, hi: int = 100000) -> int:
+            try:
+                return min(hi, max(lo, int(v)))
+            except (TypeError, ValueError):
+                return default
+
+        def money(g: str, a: dict) -> dict:
+            period = a.get("period")
+            rent, rent_period = gp.DEFAULT_RENT.get(g, (0, DEFAULT_PERIOD))
+            if "preview" not in a and not int(a.get("rent") or 0):
+                # saved by beta 13 (before free tries existed): its rent 0 was only the shown default – use the new one
+                a = {k: v for k, v in a.items() if k not in ("rent", "period")}
+            if "rent" not in a and "period" not in a:
+                period = rent_period
+            out = {"price": num(a.get("price", DEFAULT_PRICE.get(g, 0)), DEFAULT_PRICE.get(g, 0)), "rent": num(a.get("rent", rent), rent),
+                   "period": period if period in ("day", "week", "month") else rent_period,
+                   "preview": num(a.get("preview", gp.DEFAULT_PREVIEW), gp.DEFAULT_PREVIEW, 0, gp.MAX_PREVIEW)}
+            if g == "slots":
+                out["luck"] = num(a.get("luck", DEFAULT_LUCK), DEFAULT_LUCK, 1, 10)
+            return out
         if not acc:
             mode = self.db.get_setting("games") or "all"
             old = {"mode": mode if mode in ("all", "some", "off") else "all", "profiles": list(self.db.get_setting("games_profiles") or [])}
-            return {g: dict(old) for g in self.GAMES}
+            return {g: {**old, "bots": True, **money(g, {})} for g in self.GAMES}
         # a game that came with an update (not in the stored setting yet): open only if the parents left every game
         # open – if they restricted any game, a new one starts switched off until they decide
         stored = [(acc.get(g) or {}).get("mode", "all") for g in self.GAMES if g in acc]
         new_mode = "all" if all(m == "all" for m in stored) else "off"
         return {g: {"mode": (acc.get(g) or {}).get("mode", "all") if g in acc else new_mode,
-                    "profiles": list((acc.get(g) or {}).get("profiles") or [])} for g in self.GAMES}
+                    "profiles": list((acc.get(g) or {}).get("profiles") or []),
+                    "bots": (acc.get(g) or {}).get("bots") is not False or g not in self.BOT_GAMES,
+                    **money(g, acc.get(g) or {})} for g in self.GAMES}
 
-    def games_for(self, prof: dict) -> list[str]:
-        """The games this profile may play: parents all, children as set in the parent area (per game)."""
+    def games_without_bots(self, prof: dict) -> list[str]:
+        """The games this profile may play only without bots (parent area › Games: «active without bots») – parents
+        are not bound, like they can always play every game."""
+        if prof.get("role") == "parent":
+            return []
+        return [g for g, a in self.games_access().items() if not a.get("bots", True)]
+
+    def bots_allowed(self, prof: dict, game: str) -> bool:
+        return game not in self.games_without_bots(prof)
+
+    def table_without_bots(self, kind: str, people: list) -> bool:
+        """For the game engines: may no bot sit at this table? Not when a parent plays along (parents decide)."""
+        if (self.games_access().get(kind) or {}).get("bots", True):
+            return False
+        ids = [int(x) for x in people if str(x).isdigit()]
+        if ids and self.db.q1(f"SELECT id FROM profile WHERE role='parent' AND id IN ({','.join('?' * len(ids))})", *ids):
+            return False
+        return True
+
+    # ---------------------------------------------------------------- party mode (battery.py, Party)
+    def party_for(self, prof: dict) -> dict | None:
+        """The party mode for this child just now ({"unlock", "battery", "limits", "until", …}) – None: not in party."""
+        return self.battery.party.for_kid(prof)
+
+    def party_unlocks(self, prof: dict) -> bool:
+        p = self.party_for(prof)
+        return bool(p and p["unlock"])
+
+    def party_lifts(self, prof: dict) -> bool:
+        """Party mode with «also lift limits»: the daily game time, game block times and the OfflineTime game lock do
+        not count for games."""
+        p = self.party_for(prof)
+        return bool(p and p["limits"])
+
+    def game_used_up(self, prof: dict) -> bool:
+        """The daily game time of this child is used up (not during a party that lifts the limits)."""
+        return timelimits.used_up(self.db, prof, "game") and not self.party_lifts(prof)
+
+    def use_charge(self, prof: dict, game: str) -> tuple[str | None, int | None]:
+        """Starting a game costs a segment of the game battery (battery.py): "free", "same", "new" (+ log id) or None."""
+        return self.battery.use(prof, game)
+
+    def _games_blocked(self, prof: dict, time: bool = True) -> bool:
+        """No game at all just now for this child: game time of today used up (`time`), OfflineTime, block time.
+        A party with «also lift limits» lifts all of it for games – except a block time of the whole app."""
+        lift = prof.get("role") == "kid" and self.party_lifts(prof)
+        if time and not lift and timelimits.used_up(self.db, prof, "game"):
+            return True
+        if not lift and self.calendar.blocks(prof["id"], "games"):  # OfflineTime: the games of the app are locked
+            return True
+        blk = self.internet.block(prof)                            # block time of the internet plan: games or the whole app
+        return bool(blk and (blk["mode"] == "app" or (blk["mode"] == "games" and not lift)))
+
+    def games_open_to(self, prof: dict) -> list[str]:
+        """The games the parents switched on for this profile (parent area › Games) – price, time and blocks aside."""
+        if prof["role"] == "parent" or self.party_unlocks(prof):     # party mode «unlock all games»
+            return list(self.GAMES)
+        return [g for g, a in self.games_access().items() if a["mode"] == "all" or (a["mode"] == "some" and prof["id"] in a["profiles"])]
+
+    def games_for(self, prof: dict, time: bool = True) -> list[str]:
+        """The games this profile may play: parents all, children as set in the parent area (per game) and – for a
+        game with a price – once bought or while rented (gamepasses.py).
+        `time`: a child whose game time of today is used up (timelimits.py) may start or join none."""
         if prof["role"] == "parent":
             return list(self.GAMES)
-        if self.calendar.blocks(prof["id"], "games"):              # OfflineTime: the games of the app are locked
+        if self._games_blocked(prof, time):
             return []
-        blk = self.internet.block(prof)                            # block time of the internet plan: games or the whole app
-        if blk and blk["mode"] in ("games", "app"):
+        if self.party_unlocks(prof):
+            return list(self.GAMES)
+        acc = self.games_access()
+        paid = self.passes.unlocked_set(prof["id"], acc)
+        return [g for g in self.games_open_to(prof) if g in paid]
+
+    def game_unlocked(self, pid: int, game: str) -> bool:
+        """Parents always; a child when the game has no price or the child bought / rented it (or in party mode)."""
+        p = self.db.q1("SELECT * FROM profile WHERE id=?", pid)
+        if not p or p["role"] == "parent":
+            return bool(p)
+        if self.party_unlocks(p):
+            return True
+        return game in self.passes.unlocked_set(pid, {game: self.games_access()[game]})
+
+    def game_offers(self, prof: dict) -> list[dict]:
+        """The priced games this child may play once bought or rented (kid shop, locked tiles) – with what it has."""
+        if prof["role"] == "parent" or self.party_unlocks(prof):
             return []
-        return [g for g, a in self.games_access().items() if a["mode"] == "all" or (a["mode"] == "some" and prof["id"] in a["profiles"])]
+        return self.passes.offers(prof["id"], self.games_access(), self.games_open_to(prof))
+
+    def game_trial(self, prof: dict, game: str, time: bool = False) -> dict | None:
+        """A game with a price this child has not bought / rented, but may try (gamepasses.py `preview`):
+        {"left": free tries left, "member": seated at a running table of it, "active": a try began a short while ago}
+        – None for parents, games switched off for the child, free or unlocked games and while games are blocked."""
+        if prof.get("role") != "kid" or game not in self.GAMES or self._games_blocked(prof, time):
+            return None
+        if game not in self.games_open_to(prof):
+            return None
+        a = self.games_access()[game]
+        from .gamepasses import priced
+        if not priced(a) or game in self.passes.unlocked_set(prof["id"], {game: a}):
+            return None
+        return {"left": self.passes.tries_left(prof["id"], game, a), "member": self._seated(prof["id"], game),
+                "active": self.passes.trying(prof["id"], game)}
+
+    def _seated(self, pid: int, game: str) -> bool:
+        """Sits at a running table of this game (alone or with the family)."""
+        from . import running
+        return any(t["game"] == game and t["status"] != "done" and str(pid) in (t.get("members") or []) for t in running.running(self))
+
+    def trial_games(self, prof: dict) -> dict[str, dict]:
+        """The locked games with a price this child may try now or plays on a try: {game: {"left", "member"}}."""
+        if prof.get("role") != "kid" or self._games_blocked(prof, False):
+            return {}
+        offers = [o for o in self.game_offers(prof) if not o["open"]]
+        if not offers:
+            return {}
+        from . import running
+        seated = {t["game"] for t in running.running(self) if t["status"] != "done" and str(prof["id"]) in (t.get("members") or [])}
+        return {o["game"]: {"left": o["tries_left"], "member": o["game"] in seated} for o in offers
+                if o["tries_left"] > 0 or o["game"] in seated}
+
+    def use_game_try(self, prof: dict, game: str, same: bool = True) -> str | None:
+        """Use a free try of a locked game (gamepasses.use_try): "new", "same" or None."""
+        return self.passes.use_try(prof["id"], game, self.games_access()[game], same)
+
+    def parent_tables(self, prof: dict, time: bool = True) -> dict[str, dict]:
+        """Family tables a PARENT opened that this child may sit at although the game is locked for it (switched off,
+        not bought, not rented): {game: {"member": bool, "joinable": bool}}. Starting own tables stays locked.
+        Time limits (`time` as in games_for), OfflineTime and block times still count."""
+        if prof["role"] == "parent" or self._games_blocked(prof, time):
+            return {}
+        from . import running
+        ok = set(self.games_for(prof, time))
+        out: dict[str, dict] = {}
+        parents = None
+        for t in running.running(self):
+            if t["solo"] or t["game"] in ok or t["status"] == "done":
+                continue
+            if parents is None:
+                parents = {r["id"] for r in self.db.q("SELECT id FROM profile WHERE role='parent'")}
+            if t.get("host_id") not in parents:
+                continue
+            member = str(prof["id"]) in (t.get("members") or [])
+            joinable = t["status"] != "paused" and running._joinable(self, t)
+            if member or joinable:
+                cur = out.setdefault(t["game"], {"member": False, "joinable": False})
+                cur["member"] |= member
+                cur["joinable"] |= joinable
+        return out
 
     def _community_summary(self, prof: dict) -> dict:
         """Running games and open votes for the start page – only the games this profile may play."""
-        pid, ok = prof["id"], set(self.games_for(prof))
+        pid, ok = prof["id"], set(self.games_for(prof)) | set(self.parent_tables(prof))   # + tables a parent opened
+        ok |= set(self.trial_games(prof))                    # + locked games with a free try left or played on a try
         out = self.community.summary(pid)
         if "quiz" not in ok:
             out["quiz"] = None
@@ -194,19 +396,26 @@ class FamilyQuest:
         out["wuerfel"] = self.wuerfel.summary("wuerfel", pid) if "wuerfel" in ok else None
         out["heimwaerts"] = self.heimwaerts.summary("heimwaerts", pid) if "heimwaerts" in ok else None
         out["jump"] = self.jump.summary("jump", pid) if "jump" in ok else None
+        out["sternlauf"] = self.sternlauf.summary("sternlauf", pid) if "sternlauf" in ok else None
+        out["snack"] = self.snack.summary("snack", pid) if "snack" in ok else None
+        out["verkehr"] = self.verkehr.summary("verkehr", pid) if "verkehr" in ok else None
         out["klatsch"] = self.klatsch.summary("klatsch", pid) if "klatsch" in ok else None
         out["verboten"] = self.verboten.summary("verboten", pid) if "verboten" in ok else None
         out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None
         out["werwolf"] = self.werwolf.summary("werwolf", pid) if "werwolf" in ok else None
         out["schach"] = self.schach.summary("schach", pid) if "schach" in ok else None
         out["dorfmarkt"] = self.dorfmarkt.summary("dorfmarkt", pid) if "dorfmarkt" in ok else None
+        out["escape"] = self.escape.summary("escape", pid) if "escape" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
         out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
+        out["boards_new"] = self.boards.new_count(pid)       # bulletin boards: not a game, for everybody of the family
+        out["familytime"] = self.familytime.summary(prof)            # FamilyTime: a wish or a vote is missing
         return out
 
-    def games_allowed(self, prof: dict, game: str | None = None) -> bool:
-        """This game (or, without one, any family game) for this profile?"""
-        allowed = self.games_for(prof)
+    def games_allowed(self, prof: dict, game: str | None = None, time: bool = True) -> bool:
+        """This game (or, without one, any family game) for this profile? `time=False`: the daily game time does not
+        count (a game the child is already in may be played to the end)."""
+        allowed = self.games_for(prof, time)
         return game in allowed if game else bool(allowed)
 
     def kids(self) -> list[dict]:
@@ -221,7 +430,7 @@ class FamilyQuest:
             nxt = next((u for u in prog["units"] if u["id"] == prog["next"]), None)
             tiles.append({"pack": pack.id, "title": pack.title, "subject": s["subject"], "color": s.get("color"),
                           "icon": s.get("icon"), "stars": prog["stars"], "max_stars": prog["max_stars"],
-                          "percent": prog["percent"], "due": prog["due"], "next": nxt})
+                          "percent": prog["percent"], "due": prog["due"], "next": nxt, "status": s.get("status", "active")})
         return tiles
 
     def avatar_state(self, pid: int) -> tuple[int, set[str], set[str]]:
@@ -258,16 +467,37 @@ class FamilyQuest:
             "chores": chores,
             "games": self.games_allowed(prof),
             "games_list": self.games_for(prof),
+            "games_nobots": self.games_without_bots(prof),        # these only without bots (no «alone against bots»)
+            "games_locked": [o for o in self.game_offers(prof) if not o["open"]],   # to buy / rent first (🔒 tiles)
+            "games_tables": sorted(self.parent_tables(prof)),     # locked, but a parent opened a table to join
+            "games_trial": self.trial_games(prof),                # locked: free tries left / playing on a try
             "community": self._community_summary(prof),
             "has_devices": bool(profile_settings(prof).get("devices")) and bool(self.ha and self.ha.connected),
             "internet": self.internet.state(prof),
+            "time_left": self.time_left(prof),
             "offline_lock": self._offline_lock(prof),
             "weather": self.weather.current(pid) if prof.get("role") != "parent" else None,
             "special_times": self.calendar.special(pid) if prof.get("role") != "parent" else self.calendar.special(None),
             "weather_alarm": self.kiosk.weather_alarm() if self.kiosk.config().get("kids_alarm") else None,
             "pending": [r for r in self.shop.list("pending", pid)],
             "pets": self.pets.summary(pid),
+            "battery": self.battery.state(prof),              # game battery (battery.py) – None for parents
+            "party": self.party_public(prof),                 # party mode for this child (banner, disco theme)
         }
+
+    def party_public(self, prof: dict) -> dict | None:
+        p = self.party_for(prof)
+        if not p:
+            return None
+        from .themes import DISCO
+        return {"until": p["until"], "unlock": p["unlock"], "battery": p["battery"], "limits": p["limits"], "theme": DISCO}
+
+    def time_left(self, prof: dict) -> dict:
+        """Minutes left today: family games, learning, internet – None = unlimited (parents always)."""
+        net = self.internet.state(prof) if prof.get("role") == "kid" else None
+        unlimited = not net or (net.get("budget") or {}).get("unlimited")
+        return {"games": None if self.party_lifts(prof) else timelimits.left(self.db, prof, "game"), "learn": timelimits.left(self.db, prof, "learn"),
+                "internet": None if unlimited else net["minutes"]}
 
     def _offline_lock(self, prof: dict) -> dict | None:
         """Block time «only a message»: the app shows that it is OfflineTime (children only)."""

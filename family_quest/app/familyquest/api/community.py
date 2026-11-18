@@ -6,18 +6,71 @@ A game is led by whoever started it; a parent may always lead.
 from __future__ import annotations
 
 import random
+from contextlib import contextmanager
 
 from typing import Any
 
+import logging
+
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request
 from fastapi.responses import Response
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, Field
 
+from .. import timelimits
 from ..community import CommunityError
 from ..guests import GUEST, GUEST_HOURS, GuestError
 from .auth import Learner, app_of, learner
 
-router = APIRouter(prefix="/api/community")
+log = logging.getLogger("familyquest.api.community")
+
+# daily game time (timelimits.py): these requests start or join a game – refused once a child's game time is used up;
+# everything else (state, moves) stays open, so a game the child is already in can be played to the end
+STARTS = {"start", "join", "again", "duel", "pong4", "accept", "seat"}
+NOT_PLAYING = {"quizzes", "templates", "memory"}      # making quizzes and photo sets is no playing time
+
+
+class _PlayRoute(APIRoute):
+    """Counts a minute of game time for a child whose request answered with a game (not «null»: not in a game)."""
+
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+
+        async def run(request: Request):
+            try:
+                response = await handler(request)
+            except BaseException:
+                _give_back(request)
+                raise
+            if response.status_code >= 400:
+                _give_back(request)
+            pid = request.scope.get("fq_play")
+            if pid and response.status_code < 400 and getattr(response, "body", b"null") not in (b"null", b""):
+                try:
+                    timelimits.touch(app_of(request).db, pid)
+                except Exception:  # noqa: BLE001
+                    log.exception("counting game time failed")
+            return response
+        return run
+
+
+def _give_back(request: Request) -> None:
+    """A start that used a free try (gamepasses.py) or a battery segment (battery.py) failed: it is back."""
+    charge = request.scope.pop("fq_charge", None)
+    if charge:
+        try:
+            app_of(request).battery.give_back(*charge)
+        except Exception:  # noqa: BLE001
+            log.exception("giving back a battery segment failed")
+    used = request.scope.get("fq_try")
+    if used:
+        try:
+            app_of(request).passes.give_back(*used)
+        except Exception:  # noqa: BLE001
+            log.exception("giving back a free try failed")
+
+
+router = APIRouter(prefix="/api/community", route_class=_PlayRoute)
 
 
 def game_of(path: str) -> str | None:
@@ -26,7 +79,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -35,17 +88,100 @@ def game_of(path: str) -> str | None:
 
 
 def Player(request: Request, prof: dict = Learner) -> dict:      # noqa: N802 – used like Learner
-    """A learner who may play this game (parent area › Settings › Games, per game and person)."""
+    """A learner who may play this game (parent area › Games, per game and person)."""
     fq = app_of(request)
     game = game_of(request.url.path)
-    if not fq.games_allowed(prof, game):
-        if game:
-            raise HTTPException(403, "This game is switched off for you")
-        raise HTTPException(403, "Games are switched off for you")
+    trial = None
+    if not fq.games_allowed(prof, game, time=False) and not _parent_table(fq, prof, game, request):
+        trial = _trial(fq, prof, game, request)              # a game with a price: a free try (gamepasses.py)
+        if not trial:
+            if game:
+                raise HTTPException(403, "This game is switched off for you")
+            raise HTTPException(403, "Games are switched off for you")
+    if prof.get("role") == "kid":
+        part = request.url.path.split("/api/community/", 1)[-1].split("/")
+        if request.method == "POST" and part[-1] in STARTS and fq.game_used_up(prof):
+            raise HTTPException(403, "Game time for today is used up – see you tomorrow!")
+        if request.method == "POST" and _charges(game, part):  # an own start costs a segment of the game battery
+            used, lid = fq.use_charge(prof, game)
+            if not used:
+                raise HTTPException(403, "Your game battery is empty – recharge it or join a table of somebody else")
+            if used == "new":
+                request.scope["fq_charge"] = (prof["id"], lid)
+        if trial == "start":                                 # a new table (or a rematch) on a free try: count it
+            used = fq.use_game_try(prof, game)
+            if not used:
+                raise HTTPException(403, "No free tries left – buy or rent the game")
+            if used == "new":
+                request.scope["fq_try"] = (prof["id"], game)
+        if (game or part[0] == "duel") and part[0] not in NOT_PLAYING and not fq.party_lifts(prof):
+            request.scope["fq_play"] = prof["id"]          # a party that lifts the limits: no game time counted
     return prof
 
 
+def _charges(game: str | None, part: list[str]) -> bool:
+    """Does this request start an own game (battery.py)? A new table or round of a family game («start»: also alone
+    against bots, a rematch, a duel of chess). The game corner (Tic-Tac-Toe, Ping-Pong duels and doubles) is charged
+    when it opens (POST /api/me/games/try); joining, moves and the rest are free."""
+    from ..gamepasses import ARCADE
+    return bool(game) and game not in ARCADE and part[0] not in NOT_PLAYING and part[-1] == "start"
+
+
 Gamer = Depends(Player)
+
+# a locked game (switched off, not bought / rented) at a family table a PARENT opened: the child may look, join and
+# play that table – but nothing that opens an own table (alone, a new family table, a rematch)
+OWN_TABLE = {"start", "again", "rematch", "solo", "duel", "accept", "seat", "delete", "resume"}
+
+
+def _parent_table(fq, prof: dict, game: str | None, request: Request) -> bool:
+    if not game or prof.get("role") != "kid":
+        return False
+    part = request.url.path.split("/api/community/", 1)[-1].strip("/").split("/")
+    if part[0] in NOT_PLAYING or part[-1] in OWN_TABLE:
+        return False
+    t = fq.parent_tables(prof, time=False).get(game)
+    if not t:
+        return False
+    if request.method == "GET" or t["member"]:
+        return True
+    return part[-1] == "join" and t["joinable"]
+
+
+# a locked game with a price that the child may try (gamepasses.py `preview`): starting or joining a table uses a free try
+TRY_STARTS = (OWN_TABLE - {"delete"}) | {"join"}
+
+
+def _trial(fq, prof: dict, game: str | None, request: Request) -> str | None:
+    """«start»: this request starts / joins a table on a free try (counted in Player); «ok»: the child plays on a try –
+    seated at the table, or a try began a short while ago (leave, the result); a look (GET) while tries are left."""
+    if prof.get("role") != "kid":
+        return None
+    part = request.url.path.split("/api/community/", 1)[-1].strip("/").split("/")
+    if not game:              # the duels of the game corner: opened on a free try (POST /api/me/games/try)
+        return "ok" if part[0] == "duel" and _corner_try(fq, prof) else None
+    if part[0] in NOT_PLAYING:
+        return None
+    t = fq.game_trial(prof, game)
+    if not t:
+        return None
+    from ..gamepasses import ARCADE
+    if game in ARCADE:        # Ping-Pong doubles: the game corner was opened on a try
+        return "ok" if t["active"] else None
+    if request.method == "POST" and part[-1] in TRY_STARTS:
+        return "ok" if part[-1] == "join" and t["member"] else "start"
+    if t["member"] or t["active"]:
+        return "ok"
+    return "ok" if request.method == "GET" and t["left"] > 0 else None
+
+
+def _corner_try(fq, prof: dict, game: str | None = None) -> bool:
+    """Tic-Tac-Toe / Ping-Pong of the game corner opened on a free try a short while ago."""
+    for g in ([game] if game else ["ttt", "pingpong"]):
+        t = fq.game_trial(prof, g)
+        if t and t["active"]:
+            return True
+    return False
 
 
 def PlayerOrGuest(request: Request, x_fq_token: str | None = Header(default=None),        # noqa: N802
@@ -65,6 +201,32 @@ def PlayerOrGuest(request: Request, x_fq_token: str | None = Header(default=None
 
 
 Playing = Depends(PlayerOrGuest)
+
+
+def _no_bots(fq, prof: dict, game: str, wanted) -> bool:
+    """Parent area › Games: «active without bots» – a start that asks for bots is refused; True: play without bots."""
+    off = not fq.bots_allowed(prof, game)
+    if off and wanted:
+        raise HTTPException(403, "Playing with bots is switched off for this game")
+    return off
+
+
+@contextmanager
+def _bots_not_remembered(fq, kind: str, forced: bool):
+    """A start without bots forced by «active without bots» (Parent area › Games) must not become the remembered
+    number of bots (setting game_rules.<kind>) – once bots are switched on again, the old default is back."""
+    key = f"game_rules.{kind}"
+    before = fq.db.get_setting(key)
+    try:
+        yield
+    finally:
+        after = fq.db.get_setting(key)
+        if forced and isinstance(after, dict):
+            if isinstance(before, dict) and "bots" in before:
+                after["bots"] = before["bots"]
+            else:
+                after.pop("bots", None)
+            fq.db.set_setting(key, after)
 
 
 def _run(fn, *args):
@@ -112,6 +274,7 @@ def quiz_answer(body: AnswerIn, request: Request, prof: dict = Playing) -> dict 
 class QuizIn(BaseModel):
     title: str
     questions: list[dict[str, Any]] = []
+    langs: dict[str, Any] | None = None     # multilingual: {"base", "more", "title"} (community.clean_langs)
 
 
 class StartIn(BaseModel):
@@ -129,10 +292,20 @@ def quizzes(request: Request, prof: dict = Gamer) -> list[dict]:
     return app_of(request).community.quizzes()
 
 
+@router.get("/tables")
+def open_tables(request: Request, prof: dict = Gamer) -> list[dict]:
+    """Family tables somebody else opened just now – the app shows a note in its header (web/kid.js)."""
+    from .. import running
+    return running.open_tables(app_of(request), prof)
+
+
 @router.get("/templates")
 def templates(request: Request, prof: dict = Gamer) -> list[dict]:
     from ..quiz_templates import TEMPLATES
+    from ..community import template_translations
     return [{"id": k, "title": t["title"], "icon": t["icon"], "questions": len(t["questions"]), "region": t["region"],
+             "titles": {lang: v["title"] for lang, v in template_translations(k).items()},
+             "examples": {lang: v["items"][0]["q"] for lang, v in template_translations(k).items()},
              "example": t["questions"][0]["q"] if isinstance(t["questions"][0], dict) else t["questions"][0][0]}
             for k, t in TEMPLATES.items()]
 
@@ -140,6 +313,51 @@ def templates(request: Request, prof: dict = Gamer) -> list[dict]:
 @router.post("/quizzes")
 def quiz_create(body: QuizIn, request: Request, prof: dict = Gamer) -> dict:
     return {"id": _run(app_of(request).community.save_quiz, body.model_dump(), prof)}
+
+
+# ---------------------------------------------------------------- who begins a turn-based game (cardgames.apply_starter)
+class BeginIn(BaseModel):
+    starter: str | None = None       # with the setting «choose»: the player the leader picked
+
+
+@router.get("/starter")
+def game_starter(request: Request, prof: dict = Gamer) -> dict:
+    from ..cardgames import starter_mode
+    return {"mode": starter_mode(app_of(request).db)}
+
+
+class QuizImportIn(BaseModel):
+    text: str                        # the file: a quiz (or a list) in the Family Quest quiz format
+
+
+@router.post("/quizzes/import")
+def quiz_import(body: QuizImportIn, request: Request, prof: dict = Gamer) -> dict:
+    if prof["role"] == "guest":
+        raise HTTPException(403, "Guests cannot add quizzes")
+    if len(body.text) > 1_000_000:
+        raise HTTPException(400, "The file is too large")
+    return {"ids": _run(app_of(request).community.import_quizzes, prof, body.text)}
+
+
+def _quiz_file(doc: dict, name: str) -> Response:
+    import json as _json
+    return Response(_json.dumps(doc, ensure_ascii=False, indent=2), media_type="application/json; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@router.get("/quizzes/export")
+def quiz_export_all(request: Request, prof: dict = Gamer) -> Response:
+    if prof["role"] == "guest":
+        raise HTTPException(403, "Guests cannot export quizzes")
+    return _quiz_file(app_of(request).community.export_quizzes(), "family-quest-quizzes.json")
+
+
+@router.get("/quizzes/{quiz_id}/export")
+def quiz_export(quiz_id: int, request: Request, prof: dict = Gamer) -> Response:
+    if prof["role"] == "guest":
+        raise HTTPException(403, "Guests cannot export quizzes")
+    doc = _run(app_of(request).community.export_quizzes, quiz_id)
+    return _quiz_file(doc, f"family-quest-quiz-{quiz_id}.json")
 
 
 @router.post("/quizzes/from-template")
@@ -162,6 +380,32 @@ def quiz_delete(quiz_id: int, request: Request, prof: dict = Gamer) -> dict:
 def quiz_start(body: StartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _run(fq.community.start, body.quiz_id, prof["id"], body.count, body.shuffle)
+    return fq.community.state(prof["id"])
+
+
+class FactsIn(BaseModel):
+    count: int = 10                  # number of questions
+    focus: str = "mixed"            # week | all | mixed
+    lang: str | None = None         # the starter's app language (de-CH / de-DE … – the base language of the questions)
+
+
+@router.get("/quizzes/facts")
+def quiz_facts_info(request: Request, prof: dict = Gamer) -> dict:
+    """The special quiz «Family Quest Facts» (facts.py): on or off, the choices of the start dialog."""
+    from .. import facts
+    return facts.info(app_of(request))
+
+
+@router.post("/quiz/facts/start")
+def quiz_facts_start(body: FactsIn, request: Request, prof: dict = Gamer) -> dict | None:
+    """Start «Family Quest Facts»: questions made now from the family's data (fresh every game)."""
+    from .. import facts
+    fq = app_of(request)
+    if prof.get("role") not in ("kid", "parent"):
+        raise HTTPException(403, "Only the family can start this quiz")
+    if not facts.enabled(fq.db):
+        raise HTTPException(403, "The quiz «Family Quest Facts» is switched off")
+    _run(facts.start, fq, prof["id"], body.count, body.focus, body.lang)
     return fq.community.state(prof["id"])
 
 
@@ -322,6 +566,7 @@ def poker_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/poker/start")
 def poker_start(body: PokerStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    _no_bots(fq, prof, "poker", body.solo)
     rules = body.model_dump(exclude={"solo", "bots", "level", "bot_ids"})
     bots = None
     if body.solo:
@@ -339,10 +584,10 @@ def poker_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/poker/begin")
-def poker_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def poker_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _poker_lead(fq, prof)
-    _run(fq.poker.begin, prof["id"])
+    _run(fq.poker.begin, prof["id"], (body or BeginIn()).starter)
     return fq.poker.state(prof["id"])
 
 
@@ -432,12 +677,16 @@ def cards_rules(kind: str, request: Request, prof: dict = Gamer) -> dict:
 @router.post("/cards/{kind}/start")
 def cards_start(kind: str, body: CardStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    forced = _no_bots(fq, prof, _kind(kind), body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         n = body.bots if body.bots is not None else fq.cards.default_rules(_kind(kind)).get("bots", 2)
         bots = fq.bots.pick(prof["id"], body.bot_ids, max(1 if body.solo else 0, min(5, n)), body.level or "normal", BOTS)
-    _run(fq.cards.start, _kind(kind), prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, _kind(kind), forced):
+        _run(fq.cards.start, _kind(kind), prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.cards.state(kind, prof["id"])
 
 
@@ -449,11 +698,11 @@ def cards_join(kind: str, request: Request, prof: dict = Playing) -> dict | None
 
 
 @router.post("/cards/{kind}/begin")
-def cards_begin(kind: str, request: Request, prof: dict = Gamer) -> dict | None:
+def cards_begin(kind: str, request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     if not fq.cards.may_lead(_kind(kind), prof):
         raise HTTPException(403, "Only who started the game (or a parent) leads it")
-    _run(fq.cards.begin, kind, prof["id"])
+    _run(fq.cards.begin, kind, prof["id"], (body or BeginIn()).starter)
     return fq.cards.state(kind, prof["id"])
 
 
@@ -524,12 +773,16 @@ def domino_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/domino/start")
 def domino_start(body: DominoStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    forced = _no_bots(fq, prof, "domino", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         n = body.bots if body.bots is not None else fq.domino.default_rules().get("bots", 3)
         bots = fq.bots.pick(prof["id"], body.bot_ids, max(1 if body.solo else 0, min(5, n)), body.level or "normal", BOTS)
-    _run(fq.domino.start, "domino", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "domino", forced):
+        _run(fq.domino.start, "domino", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.domino.state("domino", prof["id"])
 
 
@@ -611,12 +864,16 @@ def pairhunt_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/paarjagd/start")
 def pairhunt_start(body: PairhuntStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    forced = _no_bots(fq, prof, "paarjagd", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         n = body.bots if body.bots is not None else fq.paarjagd.default_rules().get("bots", 2)
         bots = fq.bots.pick(prof["id"], body.bot_ids, max(1 if body.solo else 0, min(5, n)), body.level or "normal", BOTS)
-    _run(fq.paarjagd.start, "paarjagd", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "paarjagd", forced):
+        _run(fq.paarjagd.start, "paarjagd", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.paarjagd.state("paarjagd", prof["id"])
 
 
@@ -628,10 +885,10 @@ def pairhunt_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/paarjagd/begin")
-def pairhunt_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def pairhunt_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_pairhunt(fq, prof)
-    _run(fq.paarjagd.begin, "paarjagd", prof["id"])
+    _run(fq.paarjagd.begin, "paarjagd", prof["id"], (body or BeginIn()).starter)
     return fq.paarjagd.state("paarjagd", prof["id"])
 
 
@@ -693,10 +950,10 @@ def whoami_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/werbinich/begin")
-def whoami_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def whoami_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_whoami(fq, prof)
-    _run(fq.werbinich.begin, "werbinich", prof["id"])
+    _run(fq.werbinich.begin, "werbinich", prof["id"], (body or BeginIn()).starter)
     return fq.werbinich.state("werbinich", prof["id"])
 
 
@@ -805,6 +1062,7 @@ def kartenlauf_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/kartenlauf/start")
 def kartenlauf_start(body: KartenlaufStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    _no_bots(fq, prof, "kartenlauf", body.solo or body.bot_ids)
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -821,10 +1079,10 @@ def kartenlauf_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/kartenlauf/begin")
-def kartenlauf_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def kartenlauf_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_kartenlauf(fq, prof)
-    _run(fq.kartenlauf.begin, "kartenlauf", prof["id"])
+    _run(fq.kartenlauf.begin, "kartenlauf", prof["id"], (body or BeginIn()).starter)
     return fq.kartenlauf.state("kartenlauf", prof["id"])
 
 
@@ -1015,11 +1273,15 @@ def wuerfel_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/wuerfel/start")
 def wuerfel_start(body: WuerfelStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    forced = _no_bots(fq, prof, "wuerfel", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
-    _run(fq.wuerfel.start, "wuerfel", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "wuerfel", forced):
+        _run(fq.wuerfel.start, "wuerfel", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.wuerfel.state("wuerfel", prof["id"])
 
 
@@ -1103,11 +1365,15 @@ def heimwaerts_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/heimwaerts/start")
 def heimwaerts_start(body: HeimwaertsStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    forced = _no_bots(fq, prof, "heimwaerts", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 3, body.level or "normal", BOTS)
-    _run(fq.heimwaerts.start, "heimwaerts", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "heimwaerts", forced):
+        _run(fq.heimwaerts.start, "heimwaerts", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.heimwaerts.state("heimwaerts", prof["id"])
 
 
@@ -1119,10 +1385,10 @@ def heimwaerts_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/heimwaerts/begin")
-def heimwaerts_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def heimwaerts_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_heimwaerts(fq, prof)
-    _run(fq.heimwaerts.begin, "heimwaerts", prof["id"])
+    _run(fq.heimwaerts.begin, "heimwaerts", prof["id"], (body or BeginIn()).starter)
     return fq.heimwaerts.state("heimwaerts", prof["id"])
 
 
@@ -1183,11 +1449,15 @@ def jump_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/jump/start")
 def jump_start(body: JumpStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    forced = _no_bots(fq, prof, "jump", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
-    _run(fq.jump.start, "jump", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "jump", forced):
+        _run(fq.jump.start, "jump", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.jump.state("jump", prof["id"])
 
 
@@ -1219,6 +1489,243 @@ def jump_end(request: Request, prof: dict = Gamer) -> dict | None:
     _lead_jump(fq, prof)
     fq.jump.end("jump", prof["id"])
     return fq.jump.state("jump", prof["id"])
+
+
+# ---------------------------------------------------------------- «Star Runner» (familyquest/sternlauf.py)
+class SternlaufStartIn(BaseModel):
+    solo: bool = False                   # alone (private) – optionally with practice bots
+    bots: int | None = None              # 0–7 bots
+    level: str | None = None             # easy | normal | hard
+    lives: int | None = None             # 1 | 3 | 5
+    minutes: int | None = None           # 2 | 3 | 5
+    bot_ids: list[int | str] = []
+
+
+class SternlaufSyncIn(BaseModel):
+    # the app's own new inputs: [game time (s), "l" | "r" | "u" | "d"] – the server replays them on the course
+    inputs: list[tuple[float, str]] = Field(default_factory=list, max_length=40)
+
+
+def _lead_sternlauf(fq, prof: dict) -> None:
+    if not fq.sternlauf.may_lead("sternlauf", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/sternlauf")
+def sternlauf_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).sternlauf.state("sternlauf", prof["id"])
+
+
+@router.get("/sternlauf/rules")
+def sternlauf_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).sternlauf.rules_info()
+
+
+@router.post("/sternlauf/start")
+def sternlauf_start(body: SternlaufStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    if _no_bots(fq, prof, "sternlauf", body.bot_ids or (body.bots or 0) > 0):
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 7, body.level or "normal", BOTS)
+    _run(fq.sternlauf.start, "sternlauf", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.sternlauf.state("sternlauf", prof["id"])
+
+
+@router.post("/sternlauf/join")
+def sternlauf_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.sternlauf.join, "sternlauf", prof["id"])
+    return fq.sternlauf.state("sternlauf", prof["id"])
+
+
+@router.post("/sternlauf/begin")
+def sternlauf_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_sternlauf(fq, prof)
+    _run(fq.sternlauf.begin, "sternlauf", prof["id"])
+    return fq.sternlauf.state("sternlauf", prof["id"])
+
+
+@router.post("/sternlauf/sync")
+def sternlauf_sync(body: SternlaufSyncIn, request: Request, prof: dict = Playing) -> dict | None:
+    """The app reports its own inputs (only its own runner) and gets everybody's progress back."""
+    fq = app_of(request)
+    return _run(fq.sternlauf.report, prof["id"], body.inputs)
+
+
+@router.post("/sternlauf/end")
+def sternlauf_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_sternlauf(fq, prof)
+    fq.sternlauf.end("sternlauf", prof["id"])
+    return fq.sternlauf.state("sternlauf", prof["id"])
+
+
+# ---------------------------------------------------------------- «Snack Rush» (familyquest/snack.py)
+class SnackStartIn(BaseModel):
+    solo: bool = False                   # alone (private) – optionally with practice bots
+    bots: int | None = None              # 0–5 bots
+    level: str | None = None             # easy | normal | hard
+    mode: str | None = None              # t3 | t5 | t8 (minutes)
+    limit: int | None = None             # 0 (off) | 3 | 5 | 8 angry customers: out
+    foods: str | None = Field(default=None, max_length=200)    # "burger,fries,…"
+    bot_ids: list[int | str] = []
+
+
+class SnackSyncIn(BaseModel):
+    t: float | None = None                                               # the game time of the app (seconds)
+    serves: list[list[float]] = Field(default_factory=list, max_length=30)   # [customer index, game time]
+    angry: list[int] = Field(default_factory=list, max_length=30)            # customers that left angry
+    spent: float | None = None                                           # money spent on ingredients so far
+
+
+def _lead_snack(fq, prof: dict) -> None:
+    if not fq.snack.may_lead("snack", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/snack")
+def snack_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).snack.state("snack", prof["id"])
+
+
+@router.get("/snack/rules")
+def snack_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).snack.rules_info()
+
+
+@router.post("/snack/start")
+def snack_start(body: SnackStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    forced = _no_bots(fq, prof, "snack", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
+    with _bots_not_remembered(fq, "snack", forced):
+        _run(fq.snack.start, "snack", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.snack.state("snack", prof["id"])
+
+
+@router.post("/snack/join")
+def snack_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.snack.join, "snack", prof["id"])
+    return fq.snack.state("snack", prof["id"])
+
+
+@router.post("/snack/begin")
+def snack_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_snack(fq, prof)
+    _run(fq.snack.begin, "snack", prof["id"])
+    return fq.snack.state("snack", prof["id"])
+
+
+@router.post("/snack/sync")
+def snack_sync(body: SnackSyncIn, request: Request, prof: dict = Playing) -> dict | None:
+    """The app reports its own serves, angry customers and spent money (only its own stand) and gets the others back."""
+    fq = app_of(request)
+    return _run(fq.snack.report, prof["id"], body.t, body.serves, body.angry, body.spent)
+
+
+@router.post("/snack/end")
+def snack_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_snack(fq, prof)
+    fq.snack.end("snack", prof["id"])
+    return fq.snack.state("snack", prof["id"])
+
+
+# ---------------------------------------------------------------- «Traffic Cadet» (familyquest/verkehr.py)
+class VerkehrStartIn(BaseModel):
+    solo: bool = False                   # alone (private) – optionally with practice bots
+    bots: int | None = None              # 0–5 bots
+    level: str | None = None             # the bots: easy | normal | hard
+    difficulty: str | None = None        # the traffic: easy | normal | hard
+    worlds: int | None = None            # 1–5
+    bot_ids: list[int | str] = []
+
+
+class VerkehrSyncIn(BaseModel):
+    t: float | None = None                                   # the game time of the app (seconds)
+    events: list[list[int]] = Field(default_factory=list, max_length=40)   # new switches: [global tick, group, 1 green / 0 red]
+
+
+def _lead_verkehr(fq, prof: dict) -> None:
+    if not fq.verkehr.may_lead("verkehr", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/verkehr")
+def verkehr_state(request: Request, mine: bool = False, prof: dict = Playing) -> dict | None:
+    """The table – with mine=1 also my map as the server has it (the app starts its own map from it)."""
+    return app_of(request).verkehr.state("verkehr", prof["id"], mine=mine)
+
+
+@router.get("/verkehr/worlds")
+def verkehr_worlds(request: Request, prof: dict = Playing) -> dict | None:
+    """The worlds of my game: street layouts and cars (the same for everybody)."""
+    return app_of(request).verkehr.worlds(prof["id"])
+
+
+@router.get("/verkehr/rules")
+def verkehr_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).verkehr.rules_info()
+
+
+@router.post("/verkehr/start")
+def verkehr_start(body: VerkehrStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    forced = _no_bots(fq, prof, "verkehr", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
+    with _bots_not_remembered(fq, "verkehr", forced):
+        _run(fq.verkehr.start, "verkehr", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.verkehr.state("verkehr", prof["id"], mine=True)
+
+
+@router.post("/verkehr/join")
+def verkehr_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.verkehr.join, "verkehr", prof["id"])
+    return fq.verkehr.state("verkehr", prof["id"])
+
+
+@router.post("/verkehr/begin")
+def verkehr_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_verkehr(fq, prof)
+    _run(fq.verkehr.begin, "verkehr", prof["id"])
+    return fq.verkehr.state("verkehr", prof["id"], mine=True)
+
+
+@router.post("/verkehr/sync")
+def verkehr_sync(body: VerkehrSyncIn, request: Request, mine: bool = False, prof: dict = Playing) -> dict | None:
+    """The app reports its own light switches (only its own map) and gets everybody's stats back – rejected switches
+    («rej») come with my map as the server has it."""
+    fq = app_of(request)
+    out = _run(fq.verkehr.report, prof["id"], body.t, body.events)
+    if mine and out and out.get("phase") == "play" and "my" not in out:
+        out = {**fq.verkehr.state("verkehr", prof["id"], mine=True), "rej": out.get("rej", [])}
+    return out
+
+
+@router.post("/verkehr/end")
+def verkehr_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_verkehr(fq, prof)
+    fq.verkehr.end("verkehr", prof["id"])
+    return fq.verkehr.state("verkehr", prof["id"])
 
 
 # ---------------------------------------------------------------- «Klatsch den Beat» (familyquest/klatsch.py)
@@ -1253,11 +1760,15 @@ def klatsch_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/klatsch/start")
 def klatsch_start(body: KlatschStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    forced = _no_bots(fq, prof, "klatsch", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 7, body.level or "normal", BOTS)
-    _run(fq.klatsch.start, "klatsch", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "klatsch", forced):
+        _run(fq.klatsch.start, "klatsch", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.klatsch.state("klatsch", prof["id"])
 
 
@@ -1344,10 +1855,10 @@ def zeichnen_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/zeichnen/begin")
-def zeichnen_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def zeichnen_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_zeichnen(fq, prof)
-    _run(fq.zeichnen.begin, "zeichnen", prof["id"])
+    _run(fq.zeichnen.begin, "zeichnen", prof["id"], (body or BeginIn()).starter)
     return fq.zeichnen.state("zeichnen", prof["id"])
 
 
@@ -1442,10 +1953,10 @@ def verboten_mix(request: Request, prof: dict = Gamer) -> dict | None:
 
 
 @router.post("/verboten/begin")
-def verboten_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def verboten_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_verboten(fq, prof)
-    _run(fq.verboten.begin, "verboten", prof["id"])
+    _run(fq.verboten.begin, "verboten", prof["id"], (body or BeginIn()).starter)
     return fq.verboten.state("verboten", prof["id"])
 
 
@@ -1479,6 +1990,104 @@ def verboten_end(request: Request, prof: dict = Gamer) -> dict | None:
     _lead_verboten(fq, prof)
     fq.verboten.end("verboten", prof["id"])
     return fq.verboten.state("verboten", prof["id"])
+
+
+# ---------------------------------------------------------------- «Escape Room» (familyquest/escape.py)
+class EscapeStartIn(BaseModel):
+    rooms: int | None = None             # 1 – 5
+    level: str | None = None             # easy | medium | hard | mixed
+    types: list[str] | None = Field(default=None, max_length=20)   # kinds of riddles (escape_riddles.TYPES)
+    mode: str | None = None              # together | teams
+    time: int | None = None              # minutes: 0 (none) | 15 | 30 | 45
+
+
+class EscapeKeyIn(BaseModel):
+    key: str = Field(max_length=12)      # the riddle: "<room>.<number>"
+
+
+class EscapeAnswerIn(BaseModel):
+    key: str | None = Field(default=None, max_length=12)     # the riddle (none: the door)
+    answer: list[int] | int | str | None = None              # text / number, a choice, or a list (order, moves …)
+
+
+def _lead_escape(fq, prof: dict) -> None:
+    if not fq.escape.may_lead("escape", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/escape")
+def escape_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).escape.state("escape", prof["id"])
+
+
+@router.get("/escape/rules")
+def escape_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).escape.rules_info()
+
+
+@router.post("/escape/start")
+def escape_start(body: EscapeStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _run(fq.escape.start, "escape", prof["id"], body.model_dump())
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/join")
+def escape_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.escape.join, "escape", prof["id"])
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/mix")
+def escape_mix(request: Request, prof: dict = Gamer) -> dict | None:
+    """Who leads mixes the seats (and so the teams) in the lobby."""
+    fq = app_of(request)
+    _lead_escape(fq, prof)
+    _run(fq.escape.mix, prof["id"])
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/begin")
+def escape_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_escape(fq, prof)
+    _run(fq.escape.begin, "escape", prof["id"])
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/answer")
+def escape_answer(body: EscapeAnswerIn, request: Request, prof: dict = Playing) -> dict:
+    """An answer for a riddle of the own team's room – or (without key) the code of the door. {"ok": …, "state": …}"""
+    fq = app_of(request)
+    a = body.answer
+    if (isinstance(a, str) and len(a) > 60) or (isinstance(a, list) and len(a) > 400):
+        raise HTTPException(400, "This answer is too long")
+    ok = _run(fq.escape.door, prof["id"], a) if body.key is None else _run(fq.escape.answer, prof["id"], body.key, a)
+    return {"ok": bool(ok), "state": fq.escape.state("escape", prof["id"])}
+
+
+@router.post("/escape/hint")
+def escape_hint(body: EscapeKeyIn, request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.escape.hint, prof["id"], body.key)
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/peek")
+def escape_peek(body: EscapeKeyIn, request: Request, prof: dict = Playing) -> dict | None:
+    """A memory riddle: its picture for a few seconds."""
+    fq = app_of(request)
+    _run(fq.escape.peek, prof["id"], body.key)
+    return fq.escape.state("escape", prof["id"])
+
+
+@router.post("/escape/end")
+def escape_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_escape(fq, prof)
+    fq.escape.end("escape", prof["id"])
+    return fq.escape.state("escape", prof["id"])
 
 
 # ---------------------------------------------------------------- «Jass» – Schieber (familyquest/jass.py)
@@ -1524,6 +2133,7 @@ def jass_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/jass/start")
 def jass_start(body: JassStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    _no_bots(fq, prof, "jass", body.solo or body.bot_ids)
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
@@ -1596,6 +2206,7 @@ class WerwolfRulesIn(BaseModel):
     hunter: bool | None = None
     amor: bool | None = None
     talk: int | None = None              # seconds to talk during the day: 60 | 120 | 180 | 300 | 600
+    fill: int | None = None              # bots fill the table up to this number of players: 5 – 12
 
 
 class WerwolfActIn(BaseModel):
@@ -1717,6 +2328,7 @@ def schach_start(body: SchachStartIn, request: Request, prof: dict = Gamer) -> d
     fq = app_of(request)
     if prof["role"] == "guest":
         raise HTTPException(403, "Only who started the game (or a parent) leads it")
+    _no_bots(fq, prof, "schach", body.mode == "bot")
     gid = _run(fq.schach.start, prof["id"], body.model_dump(exclude={"opponent"}), body.opponent)
     return _run(fq.schach.state, gid, prof["id"])
 
@@ -1799,6 +2411,7 @@ class DorfmarktActIn(BaseModel):
     action: str = Field(max_length=20)   # roll | buy | skip | bid | end_turn | build | sell | mortgage | unmortgage | bail | use_card | liquidate | give_up | offer | answer | cancel
     field: int | None = Field(default=None, ge=0, le=35)
     amount: int | None = Field(default=None, ge=0, le=1_000_000)
+    step: int | None = Field(default=None, ge=0, le=1000)     # bid: +10 / +25 / +50 over the current price
     to: str | None = Field(default=None, max_length=20)
     give: list[int] = Field(default=[], max_length=36)
     give_money: int = Field(default=0, ge=0, le=1_000_000)
@@ -1832,11 +2445,15 @@ def dorfmarkt_rules(request: Request, prof: dict = Gamer) -> dict:
 @router.post("/dorfmarkt/start")
 def dorfmarkt_start(body: DorfmarktStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
+    forced = _no_bots(fq, prof, "dorfmarkt", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
     bots = None
     if body.bot_ids:
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
-    _run(fq.dorfmarkt.start, "dorfmarkt", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    with _bots_not_remembered(fq, "dorfmarkt", forced):
+        _run(fq.dorfmarkt.start, "dorfmarkt", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
     return fq.dorfmarkt.state("dorfmarkt", prof["id"])
 
 
@@ -1848,10 +2465,10 @@ def dorfmarkt_join(request: Request, prof: dict = Playing) -> dict | None:
 
 
 @router.post("/dorfmarkt/begin")
-def dorfmarkt_begin(request: Request, prof: dict = Gamer) -> dict | None:
+def dorfmarkt_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_dorfmarkt(fq, prof)
-    _run(fq.dorfmarkt.begin, "dorfmarkt", prof["id"])
+    _run(fq.dorfmarkt.begin, "dorfmarkt", prof["id"], (body or BeginIn()).starter)
     return fq.dorfmarkt.state("dorfmarkt", prof["id"])
 
 
@@ -1906,10 +2523,10 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
-                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "klatsch": fq.klatsch, "verboten": fq.verboten,
-                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt}.get(body.game, fq.cards)
+                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
+                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:
         game = {"quiz": fq.community, "bingo": fq.bingo, "poker": fq.poker, "song": fq.songs}.get(body.game)
@@ -2068,6 +2685,84 @@ def poll_delete(poll_id: int, request: Request, prof: dict = Learner) -> dict:
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- FamilyTime: game wishes, the vote, a game bought with coins
+class FtWishIn(BaseModel):
+    game: str | None = None              # a family game of the app (key) …
+    title: str | None = Field(default=None, max_length=200)    # … or a board game typed in (max. 60 letters kept)
+
+
+class FtVoteIn(BaseModel):
+    choice: str = Field(max_length=200)
+
+
+class FtSetIn(BaseModel):
+    game: str | None = None
+    title: str | None = Field(default=None, max_length=200)
+    choice: str | None = Field(default=None, max_length=200)   # one of the wishes
+    random: bool = False                 # 🎲 among the leaders of a tie (or all wishes)
+
+
+@router.get("/familytime")
+def familytime(request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.state, prof)
+
+
+@router.post("/familytime/{eid}/wish")
+def familytime_wish(eid: int, body: FtWishIn, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.wish, prof, eid, body.game, body.title)
+    return {"ok": True}
+
+
+@router.delete("/familytime/{eid}/wish")
+def familytime_unwish(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.unwish, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/vote")
+def familytime_vote(eid: int, body: FtVoteIn, request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.vote, prof, eid, body.choice)
+
+
+@router.post("/familytime/{eid}/buy")
+def familytime_buy(eid: int, body: FtWishIn, request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).familytime.buy, prof, eid, body.game, body.title)
+
+
+@router.post("/familytime/{eid}/start")
+def familytime_start(eid: int, request: Request, prof: dict = Learner) -> dict:
+    return {"status": _run(app_of(request).familytime.start_vote, prof, eid)}
+
+
+@router.post("/familytime/{eid}/end")
+def familytime_end(eid: int, request: Request, prof: dict = Learner) -> dict:
+    return {"status": _run(app_of(request).familytime.end_vote, prof, eid)}
+
+
+@router.post("/familytime/{eid}/set")
+def familytime_set(eid: int, body: FtSetIn, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.set_game, prof, eid, body.game, body.title, body.choice, body.random)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/skip")
+def familytime_skip(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.skip, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/remove")
+def familytime_remove(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.remove_game, prof, eid)
+    return {"ok": True}
+
+
+@router.post("/familytime/{eid}/clear")
+def familytime_clear(eid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).familytime.clear, prof, eid)
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------- personal history
 @router.get("/history")
 def history(request: Request, profile_id: int | None = None, prof: dict = Learner) -> list[dict]:
@@ -2120,7 +2815,7 @@ def duel_state(request: Request, me: dict = Gamer) -> dict | None:
 def duel_invite(body: DuelIn, request: Request, me: dict = Gamer) -> dict:
     fq = app_of(request)
     game = "pingpong" if body.kind == "pong" else "ttt"
-    if not fq.games_allowed(me, game):
+    if not fq.games_allowed(me, game) and not _corner_try(fq, me, game):
         raise HTTPException(403, "This game is switched off")
     opp = fq.db.q1("SELECT * FROM profile WHERE id=? AND archived=0", body.opponent)
     if not opp or not fq.games_allowed(opp, game):
@@ -2222,6 +2917,7 @@ def pong4_create(body: Pong4In, request: Request, me: dict = Gamer) -> dict:
     if not isinstance(body.seats, dict):
         raise HTTPException(400, "Fill all three seats")
     _p4_check(fq, body.seats)
+    _no_bots(fq, me, "pingpong", any(isinstance(x, dict) and x.get("bot") is not None for x in body.seats.values()))
     return _p4(lambda: fq.pong4.create(me["id"], body.seats, body.to))
 
 
@@ -2230,6 +2926,7 @@ def pong4_seat(request: Request, body: dict = Body(...), me: dict = Gamer) -> di
     fq = app_of(request)
     spec = {k: body[k] for k in ("pid", "bot") if body.get(k) is not None}
     _p4_check(fq, {"x": spec})
+    _no_bots(fq, me, "pingpong", spec.get("bot") is not None)
     return _p4(lambda: fq.pong4.seat(me["id"], str(body.get("seat", "")), spec))
 
 
@@ -2405,4 +3102,55 @@ def wichteln_create(body: WichtelIn, request: Request, prof: dict = Learner) -> 
 @router.delete("/wichteln/{wid}")
 def wichteln_delete(wid: int, request: Request, prof: dict = Learner) -> dict:
     _run(app_of(request).wichteln.delete, prof, wid)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- bulletin boards (boards.py) – the whole family, never guests
+class BoardIn(BaseModel):
+    title: str = Field(max_length=200)
+    emoji: str = Field(default="📌", max_length=32)
+
+
+class BoardEditIn(BaseModel):
+    title: str | None = Field(default=None, max_length=200)
+    emoji: str | None = Field(default=None, max_length=32)
+    archived: bool | None = None
+
+
+class BoardSyncIn(BaseModel):
+    since: int = 0
+    ops: list[dict[str, Any]] = Field(default=[], max_length=200)
+    presence: dict[str, Any] | None = None
+
+
+@router.get("/boards")
+def boards_list(request: Request, prof: dict = Learner) -> list[dict]:
+    return app_of(request).boards.list(prof)
+
+
+@router.post("/boards")
+def boards_create(body: BoardIn, request: Request, prof: dict = Learner) -> dict:
+    return {"id": _run(app_of(request).boards.create, prof, body.title, body.emoji)}
+
+
+@router.put("/boards/{bid}")
+def boards_edit(bid: int, body: BoardEditIn, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).boards.update, prof, bid, body.title, body.emoji, body.archived)
+    return {"ok": True}
+
+
+@router.delete("/boards/{bid}")
+def boards_delete(bid: int, request: Request, prof: dict = Learner) -> dict:
+    _run(app_of(request).boards.delete, prof, bid)
+    return {"ok": True}
+
+
+@router.post("/boards/{bid}/sync")
+def boards_sync(bid: int, body: BoardSyncIn, request: Request, prof: dict = Learner) -> dict:
+    return _run(app_of(request).boards.sync, prof, bid, body.since, body.ops, body.presence)
+
+
+@router.post("/boards/{bid}/leave")
+def boards_leave(bid: int, request: Request, prof: dict = Learner) -> dict:
+    app_of(request).boards.leave(prof, bid)
     return {"ok": True}

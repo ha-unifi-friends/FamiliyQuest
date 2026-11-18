@@ -43,8 +43,8 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
 | **Jass** – the Swiss card game with bots as partners or opponents | **Chess** – against bots or each other, games can be paused | **Dorfmarkt** – trading board game in a Swiss village |
 | ![Heimwärts](docs/screenshots/game-heimwaerts.png) | ![Guests via QR code](docs/screenshots/guests.png) | ![Shop and pranks](docs/screenshots/shop.png) |
 | **Heimwärts** – race board game for 2–4 | **Guests welcome** – grandparents, aunts and godparents join with a QR code, also from the guest Wi-Fi | **Shop** – avatar items and pranks like the ink bomb |
-| ![Pets](docs/screenshots/pets.png) | ![Internet time with UniFi](docs/screenshots/internet.png) | ![My devices](docs/screenshots/devices.png) |
-| **Pets** – feed, play, wash; pet sitting and babies | **Internet time** – directly integrated with UniFi: the child starts and pauses its own online time | **My devices** – the child switches and dims the lights of its own room |
+| ![Pets](docs/screenshots/pets.png) | ![Me: points, tasks, internet time](docs/screenshots/internet.png) | ![My devices](docs/screenshots/devices.png) |
+| **Pets** – feed, play, wash; pet sitting and babies | **Me** – points, open tasks, the internet time (directly integrated with UniFi: one button to start and pause) and the lights at a glance | **My devices** – the child switches and dims the lights of its own room |
 | ![Family council](docs/screenshots/council.png) | ![Polls](docs/screenshots/polls.png) | ![Wichteln](docs/screenshots/wichteln.png) |
 | **Family council** – anybody can bring up a topic, everybody adds ideas, then the family votes secretly | **Polls** – ask the family something, everybody answers on their own phone | **Wichteln** – secret gift giving: who gives to whom is drawn, everybody sees only their own |
 | ![My card box](docs/screenshots/cardbox.png) | | |
@@ -68,8 +68,10 @@ one place. No ads, no account, no cloud: all data stays in Home Assistant.
   arithmetic trainer with endless generated tasks.
 - **My card box:** every child has its own flash card decks. From any lesson or unit one tap puts the words into
   the personal card box – repeated with the same Leitner boxes as the lessons.
-- **Learning material made with your favourite AI:** give ChatGPT, Claude, Gemini or any other AI the Family Quest
-  pack format (the example under *Parent area › Packs › Import*, details in [docs/pakete.md](docs/pakete.md)) and ask
+- **Learning material made with your favourite AI:** templates and exports are **JSON files that explain
+  themselves to an AI** – English instructions, a guide to every field and an example are built into the file
+  ([ai_format.py](family_quest/app/familyquest/ai_format.py)). Download the template under *Parent area › Packs ›
+  Import* (or export an existing pack), give it to ChatGPT, Claude, Gemini or any other AI and ask
   for exactly what your child needs – «French vocabulary, 5th grade, unit 3», «multiplication word problems for 3rd
   grade». Upload the file, check the draft, publish it and assign it to the children – content that fits their school
   year and their textbook.
@@ -125,6 +127,10 @@ guest page of the game, nothing else of Family Quest or your home.
 - **Wichteln:** secret gift giving – who gives a present to whom is drawn (optionally no parent–parent or kid–kid
   pairs), everybody sees only their own, with a date and «present ready».
 - **Family quiz:** live on everybody's phone; kids create quizzes too, templates for cantons, capitals, flags …
+  Quizzes are imported and exported in the same self-describing JSON (*New quiz › Import / Download template /
+  Export all*, «Export» per quiz): an AI can write new quizzes or change, extend and translate existing ones –
+  with every question type, mixed: text or flag answers, pictures (flags, emoji, own SVG drawings, canton outline /
+  map / coat of arms), estimation and map questions.
 - **Kiosk dashboard:** a read-only family screen for any browser – clock, crown, weather, learning progress, coins,
   open chores, family goal, Planer to-dos and calendar events.
 

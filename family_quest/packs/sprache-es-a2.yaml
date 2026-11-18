@@ -9,6 +9,14 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇪🇸"
 beschreibung: "Spanisch für den Alltag: einkaufen, reisen, Wetter, Gesundheit, Freizeit, Perfekt und Zukunft mit ir a."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "Spanish for everyday life: shopping, travelling, weather, health, free time, the perfect tense and the future with ir a."
+  fr: "L'espagnol au quotidien : courses, voyages, météo, santé, loisirs, le passé composé et le futur avec ir a."
+  it: "Lo spagnolo di tutti i giorni: spesa, viaggi, tempo, salute, tempo libero, il passato prossimo e il futuro con ir a."
+  nl: "Spaans voor elke dag: boodschappen, reizen, weer, gezondheid, vrije tijd, de voltooide tijd en de toekomst met ir a."
+  pl: "Hiszpański na co dzień: zakupy, podróże, pogoda, zdrowie, czas wolny, czas przeszły i przyszłość z ir a."
+  pt: "Espanhol para o dia a dia: compras, viagens, tempo, saúde, lazer, o pretérito perfeito e o futuro com ir a."
+  sv: "Spanska i vardagen: handla, resa, väder, hälsa, fritid, perfekt och framtid med ir a."
 pfad: true
 standard: false
 selbst: true

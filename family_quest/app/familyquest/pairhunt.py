@@ -18,7 +18,7 @@ import json
 import random
 import time
 
-from .cardgames import BOTS, BOT_DELAY, CardGames, bot_delay
+from .cardgames import BOTS, BOT_DELAY, CardGames, bot_delay, apply_starter, starter_mode
 from .community import CommunityError
 
 KIND = "paarjagd"
@@ -300,6 +300,8 @@ class Pairhunt(CardGames):
             self.db.set_setting(f"game_rules.{KIND}", r)
             players = [self._person(host)]
             n_bots = r["bots"] if not solo else max(1, r["bots"])
+            if n_bots and self.bots_off(KIND, [host]):
+                raise CommunityError("Playing with bots is switched off for this game")
             if bots is None:
                 bots = [{"name": n, "emoji": e} for n, e in random.sample(BOTS, len(BOTS))[:n_bots]]
             for i, b in enumerate(bots[:n_bots]):
@@ -315,7 +317,7 @@ class Pairhunt(CardGames):
                 self._save(row, st)
             return gid
 
-    def begin(self, kind: str, viewer: int) -> None:
+    def begin(self, kind: str, viewer: int, starter=None) -> None:
         with self.lock:
             row = self._row(KIND, viewer)
             if not row:
@@ -325,6 +327,7 @@ class Pairhunt(CardGames):
                 raise CommunityError("The game has already started")
             if len(st["players"]) < 2:
                 raise CommunityError("Add a bot or wait for a second player")
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (parent area › Games)
             self._deal(st)
             self._save(row, st)
 
@@ -371,7 +374,7 @@ class Pairhunt(CardGames):
                     "place": (st.get("places") or {}).get(p["id"]), "coins": coins.get(p["id"], 0)}
                    for p in st["players"]]
         people = sum(1 for p in st["players"] if not p.get("bot") and not p.get("guest"))
-        return {"game": row["id"], "kind": KIND, "title": TITLE, "status": row["status"], "phase": st["phase"],
+        return {"game": row["id"], "starter": st.get("starter"), "kind": KIND, "title": TITLE, "status": row["status"], "phase": st["phase"],
                 "solo": bool(row["solo"]), "host": row["host_id"], "rules": st["rules"], "players": players,
                 "joined": any(p["id"] == me for p in st["players"]), "crest": st.get("crest"),
                 "count": len(cards), "faces": faces, "items": items, "found": found, "open": opened,

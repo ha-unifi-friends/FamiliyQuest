@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from .. import loginlog, symbols, themes
@@ -204,7 +204,7 @@ def courses(request: Request, prof: dict = Learner) -> list[dict]:
     for p in fq.packs.all(status="active", kind="pack"):
         s = p.summary()
         if s.get("self_service"):
-            out.append({k: s.get(k) for k in ("id", "title", "subject", "level", "lang", "src_lang", "icon", "color", "description")}
+            out.append({k: s.get(k) for k in ("id", "title", "subject", "level", "lang", "src_lang", "icon", "color", "description", "descriptions")}
                        | {"units": len(s.get("units") or []), "cards": sum(u["count"] for u in s.get("units") or []), "on": p.id in mine})
     return out
 
@@ -276,6 +276,13 @@ def redeem(body: RedeemIn, request: Request, prof: dict = Learner) -> dict:
 
 
 # ---------------------------------------------------------------- avatar
+def new_xp_left(fq, pid: int) -> int:
+    """New XP not yet used for XP items (backgrounds …) – the XP account itself is never touched by them."""
+    used = int(fq.db.val("SELECT SUM(new_xp) FROM unlock WHERE profile_id=?", pid, default=0) or 0) \
+        + int(fq.db.val("SELECT n FROM xp_spent WHERE profile_id=?", pid, default=0) or 0)     # also for unlocks gone again
+    return max(0, int(fq.rewards.new_xp(pid)) - used)
+
+
 @router.get("/me/avatar")
 def avatar(request: Request, prof: dict = Learner) -> dict:
     fq = app_of(request)
@@ -291,7 +298,8 @@ def avatar(request: Request, prof: dict = Learner) -> dict:
     return {"avatar": {**a, "pet": pet} if pet else a, **cat,
             "mood_text": json.loads(prof["settings"] or "{}").get("mood_text") or "",
             "mood": json.loads(prof["settings"] or "{}").get("mood") or "",
-            "coins": fq.rewards.balance(prof["id"], "coins"), "level": level}
+            "coins": fq.rewards.balance(prof["id"], "coins"), "level": level,
+            "new_xp": new_xp_left(fq, prof["id"])}
 
 
 @router.get("/dashboard")
@@ -357,9 +365,23 @@ def save_avatar(body: AvatarIn, request: Request, prof: dict = Learner) -> dict:
 @router.post("/me/avatar/buy")
 def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
     fq = app_of(request)
-    rule = av.ITEMS[body.item][2] if body.item in av.ITEMS else {}
+    rule = av.rule_of(body.item) if body.item in av.ITEMS else {}
+    if rule.get("off"):
+        raise HTTPException(400, "This item is not in the shop")
     if "cost" not in rule and body.item in fq.pets.lost_kinds(prof["id"]):
         rule = {"cost": REBUY_COST}
+    if "xp" in rule:                                   # XP backgrounds: paid with new XP, the XP account stays as it is
+        with fq.db.tx():
+            if fq.db.q1("SELECT 1 FROM unlock WHERE profile_id=? AND item=?", prof["id"], body.item):
+                return {"ok": True}
+            if new_xp_left(fq, prof["id"]) < rule["xp"]:
+                raise HTTPException(400, "Not enough yet")
+            fq.db.x("INSERT INTO unlock(profile_id,item,new_xp) VALUES(?,?,?)", prof["id"], body.item, int(rule["xp"]))
+        if body.item in PET_KINDS:
+            fq.pets.adopt(prof["id"], body.item)
+        if fq.ha:
+            fq.ha.profile_changed(prof["id"])
+        return {"ok": True}
     if "cost" not in rule:
         raise HTTPException(400, "This item cannot be bought")
     cost = float(rule["cost"])
@@ -368,7 +390,8 @@ def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
             return {"ok": True}
         if fq.rewards.balance(prof["id"], "coins") < cost:
             raise HTTPException(400, "Not enough yet")
-        fq.rewards.book(prof["id"], "coins", -cost, "avatar", av.ITEMS[body.item][0], f"avatar:{body.item}")
+        if cost > 0:                                   # price 0 (parent area › Shop): free – nothing to book
+            fq.rewards.book(prof["id"], "coins", -cost, "avatar", av.ITEMS[body.item][0], f"avatar:{body.item}")
         fq.db.x("INSERT INTO unlock(profile_id,item) VALUES(?,?)", prof["id"], body.item)
     if body.item in PET_KINDS:
         fq.pets.adopt(prof["id"], body.item)           # a new pet: a baby from today
@@ -503,11 +526,136 @@ def pet_home(pet_id: int, body: PetHomeIn, request: Request, prof: dict = Learne
     return {"pet": _pet(fq.pets.home, prof["id"], pet_id, body.house, body.furniture), "shop": fq.pets.shop(prof["id"])}
 
 
+# ---------------------------------------------------------------- daily game time (timelimits.py)
+@router.post("/me/playtime")
+def playtime(request: Request, prof: dict = Learner) -> dict:
+    """Heartbeat of the game corner (games on this device only) every minute: counts the minute as game time.
+    ok False: no game may be played now (switched off, OfflineTime, game time of today used up) – the corner closes."""
+    from .. import timelimits
+    from ..gamepasses import ARCADE
+    fq = app_of(request)
+    ok = fq.games_allowed(prof) or any((fq.game_trial(prof, g, time=True) or {}).get("active") for g in ARCADE)  # a free try
+    if ok and prof.get("role") == "kid" and not fq.party_lifts(prof):           # a party that lifts the limits: not counted
+        timelimits.touch(fq.db, prof["id"])
+    return {"ok": ok, "time_left": fq.time_left(prof)}
+
+
+# ---------------------------------------------------------------- games with a price (gamepasses.py): kid shop «Unlock games»
+GAME_TITLES = {"quiz": "Family quiz", "bingo": "Bingo", "song": "Guess the song", "poker": "Texas Hold'em", "ttt": "Tic-Tac-Toe",
+               "sudoku": "Sudoku", "patience": "Patience", "pingpong": "Ping-Pong", "slots": "One-armed bandit", "cube": "Cube solver"}
+
+
+def _game_title(game: str) -> str:
+    from ..running import TITLES
+    return GAME_TITLES.get(game) or TITLES.get(game) or game
+
+
+class GamePassIn(BaseModel):
+    game: str
+    kind: Literal["buy", "rent"]
+    until: str | None = None          # rent: the end the app showed («» = none) – a second tap does not book twice
+
+
+@router.get("/me/games/shop")
+def games_shop(request: Request, prof: dict = Learner) -> dict:
+    """The priced games this child may play once bought or rented – with what it has (bought, rented until)."""
+    fq = app_of(request)
+    return {"games": fq.game_offers(prof), "coins": fq.rewards.balance(prof["id"], "coins")}
+
+
+@router.post("/me/games/buy")
+def games_buy(body: GamePassIn, request: Request, prof: dict = Learner) -> dict:
+    from ..gamepasses import PassError
+    fq = app_of(request)
+    if prof.get("role") != "kid":
+        raise HTTPException(400, "Parents always play for free")
+    if body.game not in fq.GAMES or body.game not in fq.games_open_to(prof):
+        raise HTTPException(403, "This game is switched off for you")
+    a = fq.games_access()[body.game]
+    try:
+        if body.kind == "buy":
+            fq.passes.buy(prof["id"], body.game, a, _game_title(body.game))
+        else:
+            fq.passes.rent(prof["id"], body.game, a, _game_title(body.game), body.until if body.until is not None else None)
+    except PassError as e:
+        raise HTTPException(400, str(e)) from None
+    return games_shop(request, prof)
+
+
+class GameTryIn(BaseModel):
+    game: str
+    join: bool = False                # opened to answer a duel / doubles invitation of somebody else: no battery segment
+
+
+EMPTY = "Your game battery is empty – recharge it or join a table of somebody else"
+
+
+def _corner_charge(fq, prof: dict, body: GameTryIn) -> tuple[str | None, int | None]:
+    """Opening a game of the game corner costs a battery segment (battery.py) – not when the child answers an
+    invitation (a duel or a doubles table of somebody else waiting for it)."""
+    if body.join and body.game in ("ttt", "pingpong"):
+        duel = fq.duels.state(prof["id"])
+        if (duel and {"ttt": "ttt", "pong": "pingpong"}.get(duel.get("kind") or "ttt") == body.game) or \
+                (body.game == "pingpong" and fq.pong4.busy(prof["id"])):
+            return "free", None
+    used = fq.use_charge(prof, body.game)
+    if not used[0]:
+        raise HTTPException(403, EMPTY)
+    return used
+
+
+@router.post("/me/games/try")
+def games_try(body: GameTryIn, request: Request, prof: dict = Learner) -> dict:
+    """Opening a game of the game corner. It costs a segment of the game battery (battery.py; a second call right after
+    – double tap, another device – is the same start). A locked game (gamepasses.py `preview`): a free try – the app
+    opens the game once; the one-armed bandit counts each spin instead (nothing used here). Family games use a try and
+    a segment when the child starts a table (api/community.py)."""
+    from ..gamepasses import ARCADE
+    fq = app_of(request)
+    if body.game not in ARCADE:
+        raise HTTPException(400, "Start or join a table to use a free try")
+    t = fq.game_trial(prof, body.game, time=True)
+    if not t:
+        if fq.games_allowed(prof, body.game):
+            _corner_charge(fq, prof, body)
+            return {"ok": True, "tries_left": 0, "open": True, "battery": fq.battery.state(prof)}
+        raise HTTPException(403, "This game is switched off for you")
+    used = _corner_charge(fq, prof, body)
+    if (t["left"] <= 0 if body.game == "slots" else not fq.use_game_try(prof, body.game)):
+        if used[0] == "new":
+            fq.battery.give_back(prof["id"], used[1])
+        raise HTTPException(403, "No free tries left – buy or rent the game")
+    return {"ok": True, "tries_left": fq.passes.tries_left(prof["id"], body.game, fq.games_access()[body.game]), "open": False,
+            "battery": fq.battery.state(prof)}
+
+
+# ---------------------------------------------------------------- game battery (battery.py)
+@router.get("/me/battery")
+def battery_state(request: Request, prof: dict = Learner) -> dict | None:
+    return app_of(request).battery.state(prof)
+
+
+@router.post("/me/battery/recharge")
+def battery_recharge(request: Request, prof: dict = Learner) -> dict:
+    """Recharge the game battery to full for coins (one transaction; a double tap finds it full and books nothing)."""
+    from ..battery import BatteryError
+    fq = app_of(request)
+    try:
+        st = fq.battery.recharge(prof)
+    except BatteryError as e:
+        raise HTTPException(400, str(e)) from None
+    if fq.ha:
+        fq.ha.profile_changed(prof["id"])
+    return {"battery": st, "coins": fq.rewards.balance(prof["id"], "coins")}
+
+
 # ---------------------------------------------------------------- game corner: one-armed bandit (slots.py)
-def _slots(request: Request, prof: dict, fn, *args):
+def _slots(request: Request, prof: dict, fn, *args, paid: bool = True):
     from ..slots import SlotError
     fq = app_of(request)
-    if not fq.games_allowed(prof, "slots"):
+    # not paid: the machine before buying it – switched on for the child, no block time, game time not used up
+    unpaid_ok = "slots" in fq.games_open_to(prof) and (prof.get("role") == "parent" or not fq._games_blocked(prof))
+    if not (fq.games_allowed(prof, "slots") if paid else unpaid_ok):
         raise HTTPException(403, "This game is switched off")
     try:
         return fn(*args)
@@ -517,17 +665,19 @@ def _slots(request: Request, prof: dict, fn, *args):
 
 @router.get("/me/slots")
 def slots_state(request: Request, prof: dict = Learner) -> dict:
-    return _slots(request, prof, app_of(request).slots.state, prof["id"])
+    return _slots(request, prof, app_of(request).slots.state, prof["id"], paid=False)
 
 
 @router.post("/me/slots/buy")
 def slots_buy(request: Request, prof: dict = Learner) -> dict:
-    return _slots(request, prof, app_of(request).slots.buy, prof["id"])
+    """Older apps: buying the machine – now the standard purchase (gamepasses.py)."""
+    games_buy(GamePassIn(game="slots", kind="buy"), request, prof)
+    return app_of(request).slots.state(prof["id"])
 
 
 @router.post("/me/slots/spin")
 def slots_spin(request: Request, prof: dict = Learner) -> dict:
-    return _slots(request, prof, app_of(request).slots.spin, prof["id"])
+    return _slots(request, prof, app_of(request).slots.spin, prof["id"], paid=False)     # not bought: 400 «buy first»
 
 
 class PetMoreIn(BaseModel):
@@ -642,3 +792,16 @@ def pranks_pending(request: Request, prof: dict = Learner) -> dict:
 @router.post("/me/pranks/{prank_id}/clean")
 def pranks_clean(prank_id: int, request: Request, prof: dict = Learner) -> dict:
     return app_of(request).pranks.cleaned(prof["id"], prank_id)
+
+
+# ---------------------------------------------------------------- templates for an AI (learning packs, quizzes)
+@router.get("/ai-template/{kind}")
+def ai_template(kind: str) -> Response:
+    """The template for an AI: self-describing JSON (instructions, field guide, example) – ai_format.py."""
+    import json as _json
+    from .. import ai_format
+    if kind not in ("pack", "quiz"):
+        raise HTTPException(404)
+    doc = ai_format.quiz_document([], template=True) if kind == "quiz" else ai_format.pack_document([], template=True)
+    return Response(_json.dumps(doc, ensure_ascii=False, indent=2), media_type="application/json; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="family-quest-{kind}-template.json"'})

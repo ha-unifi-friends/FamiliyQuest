@@ -4,7 +4,7 @@
 "use strict";
 
 const WB_ICON = "🎭";
-const wbName = () => I18N.tr(T("Wer bin ich?"));
+const wbName = () => I18N.tr(T("Who am I?"));
 const wbCoins = list => list.join(" / ") + " 🪙";
 // the category titles in the language of the app (the characters themselves are content and stay as they are)
 const WB_CATS = { tiere: T("Animals"), berufe: T("Jobs"), essen: T("Food & fruit"), laender: T("Countries"), schweiz: T("Swiss places & mountains"),
@@ -76,7 +76,6 @@ function werbinichLive(box, me, back) {
   }
   const player = id => (st.players || []).find(p => p.id === id) || {};
   const who = id => player(id).name || "?";
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
   const medal = n => ["🥇", "🥈", "🥉"][n - 1] || n + ".";
   const fill = (key, ...xs) => { let s = I18N.tr(key); xs.forEach((x, i) => { s = s.replace("{" + i + "}", x); }); return s; };
 
@@ -128,26 +127,34 @@ function werbinichLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+
+    turnCue("werbinich", st && st.my_turn);
     const sig = JSON.stringify(st);
     if (sig === lastSig && !force) return;
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", WB_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", WB_ICON), h("h2", T("No game right now")), noTableActions("werbinich", back)));
     events();
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", WB_ICON, " ", wbName()), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => openModal(werbinichRulesView(st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜"),
-      h("span.chip", st.category.emoji, " ", wbCat(st.category))));
     const q = st.question;
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { disabled: st.players.length < 2, onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("werbinich") }, "👥 ", T("Invite guests")) : null,
-      st.phase === "play" && q && q.asker !== myId && (q.yes + q.no + q.unknown) > 0 ? h("button.btn.ghost.small", { onclick: () => act("close") }, T("Close question")) : null,
-      st.phase === "play" ? h("button.btn.ghost.small", { title: T("Next player (e.g. somebody left)"),
-        onclick: () => { if (confirm(I18N.tr(T("Skip {0}?")).replace("{0}", who(st.turn)))) act("skip"); } }, "⏭") : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end"); } }, T("End"))) : null;
-    if (!host && !me.guest && st.status !== "done") host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("werbinich") }, "👥 ", T("Invite guests")));
+    // ☰: rules, guests (everybody of the family), close question / skip / end for whoever leads, language
+    const lead = isHost() && st.status !== "done";
+    const menu = gameMenu({ rules: () => werbinichRulesView(st.coins_on ? st.rewards : null),
+      invite: !me.guest && st.status !== "done" ? "werbinich" : null,
+      actions: [
+        { ic: "✔", label: T("Close question"), hidden: !lead || st.phase !== "play" || !q || q.asker === myId || (q.yes + q.no + q.unknown) === 0, onclick: () => act("close") },
+        { ic: "⏭", label: T("Skip"), hidden: !lead || st.phase !== "play",
+          onclick: () => { if (confirm(I18N.tr(T("Skip {0}?")).replace("{0}", who(st.turn)))) act("skip"); } },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game?"), onclick: () => act("end") }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", WB_ICON, " ", wbName())), h("div.row",
+      h("span.chip", st.category.emoji, " ", wbCat(st.category))));
+    // only the main action stays as a big button – everything else is in ☰
+    const host = lead && st.phase === "lobby" ? h("div.row.center.host-bar",
+      h("button.btn", { disabled: st.players.length < 2, onclick: async () => {
+        try { const r = await beginGame("community/werbinich/begin", st.players); if (r) { st = r; draw(true); } } catch (e) { toast(e.message, "bad"); } } }, "▶ ", T("Start"))) : null;
+    if (st.phase !== "lobby") starterBanner(st.starter, "werbinich");
     if (st.phase === "done") return show(head, result());
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), host);

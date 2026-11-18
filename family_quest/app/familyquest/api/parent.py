@@ -339,6 +339,13 @@ def _check_profile(body: ProfileIn) -> None:
             body.settings["internet_plan"] = clean_plan(body.settings["internet_plan"])
         except InternetError as e:
             raise HTTPException(400, str(e)) from None
+    from ..timelimits import KINDS, LimitError, clean_limit
+    for key in KINDS.values():                         # daily time for games / learning (None = unlimited)
+        if key in body.settings:
+            try:
+                body.settings[key] = clean_limit(body.settings[key])
+            except LimitError as e:
+                raise HTTPException(400, str(e)) from None
     svc = str(body.settings.get("notify_service") or "").strip()
     if svc and not re.fullmatch(r"notify\.[a-z0-9_]+", svc):
         raise HTTPException(400, "Notify service: e.g. notify.mobile_app_phone")
@@ -546,11 +553,34 @@ def packs(request: Request, me: dict = Parent) -> dict:
     for r in fq.db.q("SELECT pack_id, profile_id FROM pack_profile"):
         act.setdefault(r["pack_id"], []).append(r["profile_id"])
     out = []
+    own = fq.db.get_setting("pack_rewards", {}) or {}
     for p in fq.packs.all():
         s = p.summary()
         s["profiles"] = act.get(p.id, [])
+        s["rewards"] = own.get(p.id) or {}
         out.append(s)
     return {"packs": out}
+
+
+class PackRewardsIn(BaseModel):
+    xp: int | None = None                # None: the family rule (Rewards › Rules «Lesson finished»)
+    coins: int | None = None
+
+
+@router.post("/packs/{pack_id}/rewards")
+def pack_rewards(pack_id: str, body: PackRewardsIn, request: Request, me: dict = Parent) -> dict:
+    """XP and coins per finished lesson of this pack – overrides the family rule for this pack."""
+    fq = app_of(request)
+    if not fq.packs.get(pack_id):
+        raise HTTPException(404, "Unknown pack")
+    own = dict(fq.db.get_setting("pack_rewards", {}) or {})
+    val = {k: max(0, min(10000, v)) for k, v in (("xp", body.xp), ("coins", body.coins)) if v is not None}
+    if val:
+        own[pack_id] = val
+    else:
+        own.pop(pack_id, None)
+    fq.db.set_setting("pack_rewards", own)
+    return {"rewards": val}
 
 
 @router.post("/packs/activate")
@@ -588,6 +618,9 @@ def pack_raw(pack_id: str, request: Request, me: dict = Parent) -> dict:
             "summary": info.summary() if info else None}
 
 
+IMPORTED_SOURCES = ("upload", "import", "ai")
+
+
 @router.put("/packs/{pack_id}/raw")
 def pack_save(pack_id: str, body: RawIn, request: Request, me: dict = Parent) -> dict:
     """Save an edited pack (cards edited in the editor or YAML)."""
@@ -599,8 +632,9 @@ def pack_save(pack_id: str, body: RawIn, request: Request, me: dict = Parent) ->
         raise HTTPException(400, str(e)) from None
     if p.id != pack_id:
         raise HTTPException(400, "The id cannot be changed here")
-    row = fq.db.q1("SELECT status FROM pack WHERE id=?", pack_id)
-    fq.packs.upsert(p, "edited", status=row["status"] if row else "draft", force=True)
+    row = fq.db.q1("SELECT status, source FROM pack WHERE id=?", pack_id)
+    source = row["source"] if row and row["source"] in IMPORTED_SOURCES else "edited"   # an imported pack stays «imported»
+    fq.packs.upsert(p, source, status=row["status"] if row else "draft", force=True)
     # photos uploaded in the editor but no longer used by any card
     folder = fq.settings.media_dir / pack_id
     if folder.is_dir():
@@ -656,7 +690,8 @@ def packs_export_all(request: Request, status: str | None = None, me: dict = Par
     """All packs and level packs as one JSON file ({"pakete": [...]}) – importable again as a whole."""
     fq = app_of(request)
     data = [fq.packs.raw(p.id) for p in fq.packs.all(status=status)]
-    body = json.dumps({"format": "family-quest-packs", "version": 1, "pakete": data}, ensure_ascii=False, indent=1)
+    from ..ai_format import pack_document           # self-describing: instructions for an AI + the packs
+    body = json.dumps(pack_document(data), ensure_ascii=False, indent=1)
     return Response(body, media_type="application/json; charset=utf-8",
                     headers={"Content-Disposition": 'attachment; filename="family-quest-packs.json"'})
 
@@ -669,7 +704,8 @@ def pack_export(pack_id: str, request: Request, format: str = "zip", me: dict = 
     if data is None:
         raise HTTPException(404, "Unknown pack")
     if format == "json":
-        return Response(json.dumps(data, ensure_ascii=False, indent=1), media_type="application/json; charset=utf-8",
+        from ..ai_format import pack_document
+        return Response(json.dumps(pack_document([data]), ensure_ascii=False, indent=1), media_type="application/json; charset=utf-8",
                         headers={"Content-Disposition": f'attachment; filename="{pack_id}.json"'})
     if format == "yaml":
         return Response(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), media_type="application/yaml; charset=utf-8",
@@ -795,6 +831,44 @@ def delete_rule(rid: int, request: Request, me: dict = Parent) -> dict:
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- shop: the avatar items (lock, price, coins or new XP)
+class ShopItemIn(BaseModel):
+    off: bool = False
+    price: int | None = None             # None: the price of the app
+    currency: str | None = None          # coins | xp (new XP) – None: as in the app
+
+
+@router.get("/shop/items")
+def shop_items(request: Request, me: dict = Parent) -> dict:
+    """All avatar items of the shop with the app's rule and the family's changes."""
+    from ..rewards import avatar as av
+    out = []
+    for iid, (name, slot, base) in av.ITEMS.items():
+        out.append({"id": iid, "name": name, "slot": slot, "base": base, "rule": av.rule_of(iid),
+                    "override": av.OVERRIDES.get(iid) or {}})
+    return {"items": out, "slots": av.SLOTS}
+
+
+@router.put("/shop/items/{item_id}")
+def shop_item_save(item_id: str, body: ShopItemIn, request: Request, me: dict = Parent) -> dict:
+    from ..rewards import avatar as av
+    fq = app_of(request)
+    if item_id not in av.ITEMS:
+        raise HTTPException(404, "Unknown item")
+    if body.currency is not None and body.currency not in av.CURRENCIES:
+        raise HTTPException(400, "Unknown currency")
+    o = {k: v for k, v in (("off", bool(body.off) or None), ("price", None if body.price is None else max(0, min(100000, body.price))),
+                           ("currency", body.currency)) if v is not None}
+    all_ = dict(fq.db.get_setting("shop_items", {}) or {})
+    if o:
+        all_[item_id] = o
+    else:
+        all_.pop(item_id, None)
+    fq.db.set_setting("shop_items", all_)
+    av.set_overrides(all_)
+    return {"id": item_id, "rule": av.rule_of(item_id), "override": o}
+
+
 @router.get("/rewards")
 def rewards(request: Request, me: dict = Parent) -> list[dict]:
     return app_of(request).rewards.rewards(active_only=False)
@@ -879,6 +953,7 @@ class ChoreIn(BaseModel):
     confirm: bool = True
     active: bool = True
     sort: int = 0
+    energy: int = 0                  # battery segments charged when done (battery.py)
 
 
 class ChoreDecideIn(BaseModel):
@@ -948,7 +1023,13 @@ def delete_goal(gid: int, request: Request, me: dict = Parent) -> dict:
 # ---------------------------------------------------------------- settings
 @router.get("/settings")
 def settings(request: Request, me: dict = Parent) -> dict:
-    return app_of(request).db.all_settings()
+    return _public_settings(app_of(request))
+
+
+def _public_settings(fq) -> dict:
+    s = fq.db.all_settings()
+    s.pop("ha_integration", None)        # token hash: only through /api/parent/integration
+    return s
 
 
 @router.put("/settings")
@@ -984,13 +1065,15 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         if isinstance(v, list):
             return all(finite(x) for x in v)
         return True
+    if "game_starter" in body and body["game_starter"] not in ("dice", "leader", "choose"):
+        raise HTTPException(400, "Unknown setting")
     for k, v in body.items():
         if k in DEFAULT_SETTINGS and not finite(v):
             raise HTTPException(400, "Invalid number")
     for k, v in body.items():
         if k in DEFAULT_SETTINGS:
             fq.db.set_setting(k, v)
-    return fq.db.all_settings()
+    return _public_settings(fq)
 
 
 # ---------------------------------------------------------------- behaviour weather
@@ -1152,8 +1235,14 @@ def _cal(fn):
 @router.get("/calendar")
 def calendar_events(start: str, end: str, request: Request, me: dict = Parent) -> dict:
     """Own events and the chosen Home Assistant calendars (read-only) between start and end (ISO dates)."""
-    cal = app_of(request).calendar
-    return {"events": _cal(lambda: cal.range(start, end)), "settings": cal.settings(), "sources": cal.sources()}
+    fq = app_of(request)
+    cal = fq.calendar
+    events = _cal(lambda: cal.range(start, end))
+    games = fq.familytime.games_for_events([e["id"] for e in events if not e.get("readonly") and e.get("kind") == "familytime"])
+    for e in events:                            # FamilyTime: the game on its agenda (familytime.py)
+        if not e.get("readonly") and e.get("id") in games:
+            e["game"] = games[e["id"]]
+    return {"events": events, "settings": cal.settings(), "sources": cal.sources()}
 
 
 @router.post("/calendar")
@@ -1216,17 +1305,110 @@ def calendar_delete_source(source: str, request: Request, me: dict = Parent) -> 
 class GamesIn(BaseModel):
     mode: str | None = None         # older form: one switch for all games – all | some | off
     profiles: list[int] = []
-    access: dict | None = None      # per game: {"bingo": {"mode": "some", "profiles": [2, 3]}, …}
+    access: dict | None = None      # per game: {"bingo": {"mode": "some", "profiles": [2, 3], "bots": False}, …}
 
 
 @router.get("/games")
 def games_get(request: Request, me: dict = Parent) -> dict:
-    return {"access": app_of(request).games_access()}
+    fq = app_of(request)
+    return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
+
+
+# ---------------------------------------------------------------- game battery and party mode (battery.py)
+class BatteryIn(BaseModel):
+    on: bool | None = None
+    cap: int | None = None
+    cost: int | None = None
+    unlimited: str | None = None     # off | forever | day | week | month | keep (per child also «family»)
+    goal: str | None = None          # family only: off | full | plus
+    goal_plus: int | None = None
+
+
+def _battery(fq) -> dict:
+    return fq.battery.overview(fq.kids())
+
+
+def _battery_run(fn, *args):
+    from ..battery import BatteryError
+    try:
+        return fn(*args)
+    except BatteryError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.get("/battery")
+def battery_get(request: Request, me: dict = Parent) -> dict:
+    """The family default, every child (own values, charge now) and the party mode."""
+    return _battery(app_of(request))
+
+
+@router.put("/battery")
+def battery_family(body: BatteryIn, request: Request, me: dict = Parent) -> dict:
+    fq = app_of(request)
+    _battery_run(fq.battery.save_family, body.model_dump(exclude_none=True))
+    return _battery(fq)
+
+
+@router.put("/battery/{pid}")
+def battery_kid(pid: int, request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    """Own values of a child – a value null is «as the family» (unlimited: "family")."""
+    fq = app_of(request)
+    p = fq.db.q1("SELECT * FROM profile WHERE id=? AND role='kid' AND archived=0", pid)
+    if not p:
+        raise HTTPException(404, "Unknown profile")
+    body = {k: v for k, v in body.items() if k in ("on", "cap", "cost", "unlimited")}
+    _battery_run(fq.battery.save_own, p, body)
+    return _battery(fq)
+
+
+@router.post("/battery/{pid}/recharge")
+def battery_parent_recharge(pid: int, request: Request, me: dict = Parent) -> dict:
+    """A parent recharges a child's battery to full (free, a gift)."""
+    fq = app_of(request)
+    if not fq.db.q1("SELECT 1 FROM profile WHERE id=? AND role='kid' AND archived=0", pid):
+        raise HTTPException(404, "Unknown profile")
+    fq.battery.add(pid, None, "parent", f"parent:{time.time_ns()}")
+    return _battery(fq)
+
+
+@router.get("/party")
+def party_get(request: Request, me: dict = Parent) -> dict | None:
+    return app_of(request).battery.party.config()
+
+
+@router.post("/party")
+def party_start(request: Request, body: dict = Body(...), me: dict = Parent) -> dict | None:
+    """Switch the party mode on: for whom (all / chosen children), what (unlock, battery, limits), how long."""
+    fq = app_of(request)
+    p = _battery_run(fq.battery.party.start, body, [k["id"] for k in fq.kids()])
+    _party_changed(fq)
+    return p
+
+
+@router.delete("/party")
+def party_stop(request: Request, me: dict = Parent) -> dict:
+    fq = app_of(request)
+    fq.battery.party.stop()
+    _party_changed(fq)
+    return {"ok": True}
+
+
+def _party_changed(fq) -> None:
+    if fq.ha:
+        for k in fq.kids():
+            fq.ha.profile_changed(k["id"])
+
+
+def _slots_returns() -> dict:
+    """One-armed bandit: luck 1–10 → coins back per coin bet on average (the hint at the slider)."""
+    from ..slots import target_return
+    return {i: round(target_return(i) * 100) for i in range(1, 11)}
 
 
 @router.put("/games")
 def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
-    """Which games are open – for everybody, for chosen children or for nobody; parents can always play."""
+    """Which games are open – for everybody, for chosen children or for nobody – and per game with or without bots
+    («bots»: false – only games that can be played with bots); parents can always play."""
     fq = app_of(request)
     if body.access is None:
         if body.mode not in ("all", "some", "off"):
@@ -1236,12 +1418,35 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
     for g, a in body.access.items():
         if g not in fq.GAMES or not isinstance(a, dict) or a.get("mode") not in ("all", "some", "off"):
             raise HTTPException(400, "Unknown setting")
-        acc[g] = {"mode": a["mode"], "profiles": sorted({int(x) for x in a.get("profiles") or []})}
+        bots = a.get("bots", acc[g].get("bots", True))
+        if not isinstance(bots, bool) or (bots is False and g not in fq.BOT_GAMES):
+            raise HTTPException(400, "This game has no bots")
+        try:
+            profiles = sorted({int(x) for x in a.get("profiles") or []})
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Unknown setting") from None
+        from ..gamepasses import PERIODS, PassError, clean_preview, clean_price
+        from ..slots import clean_luck
+        try:            # what a child pays for the game and the free tries (gamepasses.py): kept when not sent – stored
+            price, rent = clean_price(a.get("price"), acc[g]["price"]), clean_price(a.get("rent"), acc[g]["rent"])
+            preview = clean_preview(a.get("preview"), acc[g]["preview"])      # as shown, so a 0 stays 0 (no default)
+        except PassError as e:
+            raise HTTPException(400, str(e)) from None
+        period = a.get("period") or acc[g]["period"]
+        if period not in PERIODS:
+            raise HTTPException(400, "Unknown setting")
+        luck = acc[g].get("luck")
+        acc[g] = {"mode": a["mode"], "profiles": profiles, "bots": bots, "price": price, "rent": rent, "period": period, "preview": preview}
+        if g == "slots":
+            try:
+                acc[g]["luck"] = clean_luck(a.get("luck", luck))
+            except ValueError:
+                raise HTTPException(400, "Win chance: 1 to 10") from None
     fq.db.set_setting("games_access", acc)
-    return {"access": acc}
+    return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
 
 
-REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt")       # live games with coins for places 1–3 (game_rewards)
+REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verkehr", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape")       # live games with coins for places 1–3 (game_rewards)
 
 
 @router.get("/game-rewards")
@@ -1386,7 +1591,7 @@ def backup_sizes(request: Request, me: dict = Parent) -> dict:
 async def backup_inspect(request: Request, file: UploadFile = File(...), me: dict = Parent) -> dict:
     from .. import backup
     try:
-        return {"manifest": backup.inspect(await file.read())}
+        return {"manifest": backup.check(await file.read(), app_of(request).settings.version)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -1441,7 +1646,7 @@ async def backup_inspect_upload(request: Request, body: dict = Body(...), me: di
     from .. import backup
     _path, raw = _uploaded(request, body)
     try:
-        return {"manifest": backup.inspect(raw)}
+        return {"manifest": backup.check(raw, app_of(request).settings.version)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 

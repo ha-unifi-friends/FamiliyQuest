@@ -99,6 +99,7 @@ async function dominoStartDialog(solo, onStarted) {
         bots: Math.max(+bots.value, picker.ids().length), level: level.value, bot_ids: picker.ids(), bot_ms: picker.ms() };
       try { await api("community/domino/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("domino", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function dominoLive(box, me, back) {
@@ -148,24 +149,28 @@ function dominoLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+
+    turnCue("domino", st && st.phase === "play" && st.my_turn);
     const sig = JSON.stringify(st && [st.phase, st.turn, st.line.length, st.hand, st.round, st.joined, st.players.map(p => [p.tiles, p.passed]),
       (st.sheet || []).length, Math.ceil((st.next_ms || 0) / 1000)]) + choose;
     if (sig === lastSig && !force) return;
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", "🁫"), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", "🁫"), h("h2", T("No game right now")), noTableActions("domino", back)));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", "🁫 Domino"), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => openModal(dominoRulesView(st.rules)), title: T("Rules") }, "📜"),
+    // ☰: rules, guests (everybody of the family at a family table), end for whoever leads, language
+    const menu = gameMenu({ rules: () => dominoRulesView(st.rules),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "domino" : null,
+      actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
+        onclick: () => act("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", "🁫 Domino")), h("div.row",
       st.round ? h("button.btn.small.ghost", { onclick: () => openModal(sheetView()), title: T("Score sheet") }, "📊") : null,
       st.round ? h("span.chip", I18N.tr(T("Round {0}")).replace("{0}", st.round)) : null));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Deal")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("domino") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    // everybody of the family who plays may invite guests – not only who leads the game
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("domino") }, "👥 ", T("Invite guests")));
+    // only the main action stays as a big button – everything else is in ☰ (domino: the highest double begins)
+    const host = isHost() && st.phase === "lobby" && st.status !== "done" ? h("div.row.center.host-bar",
+      h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Deal"))) : null;
     if (st.phase === "done") return show(head, result());
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), host);
@@ -183,7 +188,7 @@ function dominoLive(box, me, back) {
       h("h2", "🏆 ", C(sideName(st.winner))),
       st.pollona ? h("p.small", T("Won while the others have 0 points.")) : null,
       h("ol.pk-rank", ...sides.map(s => h("li", ...s.members.map(id => seatIcon(player(id), 30)), C(sideName(s.id), "strong.grow"),
-        h("span", I18N.tr(T("{0} points")).replace("{0}", s.score))))),
+        h("span", I18N.tr(s.score === 1 ? T("1 point") : T("{0} points")).replace("{0}", s.score))))),
       h("div.row.center", h("button.btn.ghost", { onclick: () => openModal(sheetView()) }, "📊 ", T("Score sheet")), h("button.btn", { onclick: back }, T("Back"))));
   }
 
@@ -285,6 +290,6 @@ async function dominoFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("domino") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Lay matching tiles – simple or Cuban, in teams of two. First to 100 points!")),
-         h("div.row.wrap", h("button.btn", { onclick: () => dominoStartDialog(true, () => go("domino")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("domino") ? h("button.btn", { onclick: () => dominoStartDialog(true, () => go("domino")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => dominoStartDialog(false, () => go("domino")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

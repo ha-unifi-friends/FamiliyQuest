@@ -48,6 +48,17 @@ label.check input { width: 20px; height: 20px; }
 .pack { display: grid; gap: 8px; margin-bottom: 10px; }
 .pack.draft { border: 2px dashed var(--warn); }
 .pack .units { display: flex; flex-wrap: wrap; }
+.pack-head { align-items: flex-start; flex-wrap: nowrap; }
+.pack-head > .grow { min-width: 0; overflow-wrap: anywhere; }
+.pack-acts { gap: 6px; }
+/* «⋯»: export and delete of a pack */
+.more-menu { position: relative; flex: none; }
+.more-menu > summary { list-style: none; cursor: pointer; font-size: 1.2rem; line-height: 1; min-width: 40px; }
+.more-menu > summary::-webkit-details-marker { display: none; }
+.more-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; display: grid; gap: 2px; min-width: 220px; padding: 6px;
+  border-radius: 12px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 10px 28px rgba(0, 0, 0, .2); }
+.more-pop .btn { justify-content: flex-start; text-align: left; width: 100%; border-color: transparent; }
+.danger-text { color: var(--bad); }
 .act { display: flex; flex-wrap: wrap; gap: 4px 14px; padding-top: 6px; border-top: 1px solid var(--line); }
 .unit-ed { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
 .unit-title { font-weight: 800; font-size: 1.05rem; flex: 1; }
@@ -233,12 +244,31 @@ details.fold[open] > summary { margin-bottom: 10px; }
 
 #poster .poster-crest { width: 46mm; margin: 0 auto; }
 
-/* games per game and person */
-.games-tbl { display: grid; gap: 6px; }
-.game-row { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--hover); }
-.game-row.off { opacity: .6; }
-.game-row .game-kids { grid-column: 2 / -1; gap: 4px 14px; }
-@media (max-width: 600px) { .game-row { grid-template-columns: 2.2rem minmax(0, 1fr); } .game-row .pin-kind { grid-column: 1 / -1; } }
+/* parent area › Games: per game active / without bots / inactive and for whom */
+.game-status { display: grid; gap: 6px; margin: 0 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--hover); }
+.game-status .game-kids { gap: 4px 14px; }
+.game-status p { margin: 0; }
+.sec:has(> .game-status.off) > :not(.sec-head):not(.game-status) { opacity: .55; }
+/* Games page: each game folded; play first, the settings set apart below */
+details.game-sec > summary { cursor: pointer; list-style: none; margin-bottom: 0; }
+details.game-sec > summary::-webkit-details-marker { display: none; }
+details.game-sec > summary h2::before { content: "▸"; color: var(--muted); display: inline-block; margin-right: 8px; }
+details.game-sec[open] > summary { margin-bottom: 10px; }
+details.game-sec[open] > summary h2::before { content: "▾"; }
+.run-chip { margin-left: 8px; font-size: .75rem; padding: 2px 8px; background: var(--good-bg, #d3f9d8); color: var(--good); vertical-align: middle; }
+.game-play { display: grid; gap: 8px; margin-bottom: 14px; }
+.game-settings { display: grid; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.game-settings-h { font-weight: 700; }
+/* game price for children (parent.js gamePriceBox) */
+.gp-box { display: grid; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.gp-box .field { margin: 0; }
+.gp-box input[type=number] { max-width: 140px; }
+.gp-periods button:disabled { opacity: .45; cursor: not-allowed; }
+.gp-luck { width: 100%; }
+.game-settings .game-status { margin: 0; }
+.game-sec:has(.game-status.off) > .game-play { opacity: .55; }
+.games-general summary { cursor: pointer; }
+.games-general[open] summary { margin-bottom: 10px; }
 
 /* foot of the menu: one item per line */
 .side-foot { display: grid; gap: 2px; }
@@ -263,3 +293,47 @@ details.fold[open] > summary { margin-bottom: 10px; }
   animation: fq-spin .8s linear infinite; }
 @keyframes fq-spin { to { transform: rotate(360deg); } }
 .page-error { text-align: center; }
+
+/* Shop: avatar items per slot (parent.js shopSettingsView) */
+.shop-slot { margin: 6px 0; }
+.shop-slot > summary { cursor: pointer; padding: 6px 0; }
+.shop-tbl tr.off td { opacity: .5; }
+.shop-tbl input[type=number] { width: 90px; }
+.draft-box { border-bottom: 1px solid var(--line, rgba(127,127,127,.2)); padding: 6px 0; }
+.draft-assign { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 0 52px; }
+.pack-search { width: 100%; max-width: 420px; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; font-size: 1rem; }
+.pj-photos > summary { cursor: pointer; padding: 6px 0; }
+.pj-photos[open] { margin-bottom: 10px; }
+
+/* phones: tables with class «stack» (Rewards › accounts and rules) as stacked cards, the internal key hidden */
+@media (max-width: 640px) {
+  .tbl.stack thead { display: none; }
+  .tbl.stack, .tbl.stack tbody { display: block; }
+  .tbl.stack tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; padding: 10px; margin-bottom: 10px;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  .tbl.stack td { display: grid; gap: 2px; padding: 0; border: 0; min-width: 0; text-align: left; }
+  .tbl.stack td[data-label]::before { content: attr(data-label); font-size: .75rem; color: var(--muted); }
+  .tbl.stack td input:not([type=checkbox]), .tbl.stack td select { width: 100%; min-width: 0; }
+  .tbl.stack td.c { justify-items: start; }
+  .tbl.stack .key-col { display: none; }
+}
+
+/* 🏅 pack rewards: XP and coins side by side */
+.reward-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.reward-nums .field > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* game battery (familyquest/battery.py) and party mode */
+.bat-settings .bat-form { margin: 8px 0; }
+.bat-kids li { gap: 10px; }
+.party-card { margin-bottom: 14px; }
+.party-card h2 { margin: 0; }
+.party-card.on { background: linear-gradient(110deg, #ff3cac1f, #784ba02e, #2b86c52e); border: 2px solid #ff3cac66; }
+.switch-wrap { position: relative; display: inline-flex; flex: none; cursor: pointer; }
+.switch-wrap input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.switch-ui { width: 58px; height: 32px; border-radius: 16px; background: var(--line); position: relative; transition: background .2s; }
+.switch-ui::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s; }
+.switch-wrap input:checked + .switch-ui { background: #d6338c; }
+.switch-wrap input:checked + .switch-ui::after { transform: translateX(26px); }
+.switch-wrap input:focus-visible + .switch-ui { outline: 3px solid var(--accent); outline-offset: 2px; }
+.party-dialog h3 { margin-top: 6px; }

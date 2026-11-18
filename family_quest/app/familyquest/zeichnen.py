@@ -33,7 +33,7 @@ import re
 import time
 import unicodedata
 
-from .cardgames import CardGames
+from .cardgames import CardGames, apply_starter, starter_mode
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
 from .zeichnen_data import CATEGORIES, DEFAULT
@@ -481,7 +481,7 @@ class Zeichnen(CardGames):
             st = {"kind": KIND, "rules": r, "players": [self._person(host)], "phase": "lobby", "solo": False}
             return self.db.x("INSERT INTO card_game(kind, host_id, solo, state) VALUES(?,?,?,?)", KIND, host, 0, json.dumps(st))
 
-    def begin(self, kind: str, viewer: int) -> None:
+    def begin(self, kind: str, viewer: int, starter=None) -> None:
         with self.lock:
             row = self._row(KIND, viewer)
             if not row:
@@ -491,6 +491,7 @@ class Zeichnen(CardGames):
                 raise CommunityError("The game has already started")
             if len(st["players"]) < MIN_PLAYERS:
                 raise CommunityError("Wait for a second player")
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (parent area › Games)
             self.table(st).begin()
             self._save(row, st)
 
@@ -576,7 +577,7 @@ class Zeichnen(CardGames):
         joined = any(p["id"] == me for p in st["players"])
         sees = ph in ("reveal", "done") or (ph == "draw" and (me == drawer or me in found))
         people = sum(1 for p in st["players"] if not p.get("bot") and not p.get("guest"))
-        out = {"game": row["id"], "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph, "solo": False,
+        out = {"game": row["id"], "starter": st.get("starter"), "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph, "solo": False,
                "host": row["host_id"], "rules": st["rules"],
                "category": {"key": st["rules"].get("category"), "title": cat["title"], "emoji": cat["emoji"]},
                "players": players, "joined": joined, "turn": st.get("turn", -1) if ph != "lobby" else None,

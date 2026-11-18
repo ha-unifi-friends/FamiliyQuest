@@ -36,7 +36,7 @@ import time
 from functools import lru_cache
 from pathlib import Path
 
-from .cardgames import CardGames
+from .cardgames import CardGames, apply_starter, starter_mode
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
 
@@ -118,13 +118,17 @@ class Table:
         return min(int(self.r.get("rounds") or 1), max(0, self.st.get("turn", 0)) // per + 1)
 
     # ---------- the game
-    def begin(self) -> None:
+    def begin(self, seats: list[str] | None = None) -> None:
+        """seats: the seat order of the lobby (the teams: every second seat) – the player list itself may be turned
+        round by the starter (cardgames.apply_starter); the starter's team then explains first, the teams stay."""
         order = self.order()
         teams = bool(self.r.get("teams")) and len(order) >= MIN_TEAMS
         rounds = int(self.r.get("rounds") or 1)
         if teams:
-            team_of = {p: str(i % 2) for i, p in enumerate(order)}
-            a, b = [p for p in order if team_of[p] == "0"], [p for p in order if team_of[p] == "1"]
+            seats = [p for p in (seats or []) if p in order] + [p for p in order if p not in (seats or [])]
+            team_of = {p: str(seats.index(p) % 2) for p in order}
+            first = team_of[order[0]]                                   # the starter's team explains first
+            a, b = [p for p in order if team_of[p] == first], [p for p in order if team_of[p] != first]
             schedule = []
             for i in range(rounds * max(len(a), len(b))):          # the teams take turns, members in turn
                 schedule += [a[i % len(a)], b[i % len(b)]]
@@ -391,19 +395,21 @@ class Verboten(CardGames):
             st = json.loads(row["state"])
             if st["phase"] != "lobby":
                 raise CommunityError("The game has already started")
-            fn(st)
+            fn(st, row)
             self._save(row, st)
 
-    def begin(self, kind: str, viewer: int) -> None:
-        def go(st):
+    def begin(self, kind: str, viewer: int, starter=None) -> None:
+        def go(st, row):
             if len(st["players"]) < MIN_PLAYERS:
                 raise CommunityError("Wait for a second player")
-            self.table(st).begin()
+            seats = [p["id"] for p in st["players"]]          # the teams as shown in the lobby
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])   # only who explains first
+            self.table(st).begin(seats)
         self._lobby(viewer, go)
 
     def mix(self, viewer: int) -> None:
         """Who leads mixes the seats in the lobby (the teams: every second seat)."""
-        self._lobby(viewer, lambda st: (self.rng or random).shuffle(st["players"]))
+        self._lobby(viewer, lambda st, row: (self.rng or random).shuffle(st["players"]))
 
     def _act(self, pid: int, fn):
         with self.lock:
@@ -491,7 +497,7 @@ class Verboten(CardGames):
             return {"n": e["n"], "explainer": e["explainer"], "side": e.get("side"), "points": e["points"], "skipped": e.get("skipped", False),
                     "cards": [{"word": (card(c["key"]) or {}).get("word", "?"), "res": c["res"], "pts": c["pts"], "by": c.get("by")} for c in e["cards"]],
                     "open": (card(e["open"]) or {}).get("word") if e.get("open") else None}
-        out = {"game": row["id"], "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph, "solo": False,
+        out = {"game": row["id"], "starter": st.get("starter"), "kind": KIND, "title": TITLE, "status": row["status"], "phase": ph, "solo": False,
                "host": row["host_id"], "rules": st["rules"], "players": players, "joined": joined,
                "teams": bool(team_of), "scores": dict(st.get("scores") or {}) if ph != "lobby" else {},
                "my_team": team_of.get(me), "turn": st.get("turn", -1) if ph != "lobby" else None,

@@ -41,7 +41,8 @@ header shows the clock and the buttons of the page you are on (e.g. «+ New deck
 scheduled every year: spring, summer, autumn, winter, **Halloween** (20.10.–1.11.) and **Christmas** (1.12.–26.12.);
 events win over the seasons. In the parent area under **Settings › 🎨 Season designs** you switch them on or off,
 move their dates and add **own designs** (name, icon, colour, scene, from – to; e.g. a birthday week) – own designs
-come first. Children can switch the scene off on their device in the ☰ menu.
+come first. Children can switch the scene off on their device in the ☰ menu. During a **🎉 party** the children's app
+shows the **🪩 Disco** design (see Party mode).
 
 ## Points and rewards
 
@@ -132,6 +133,33 @@ Calendar › **+ 👨‍👩‍👧 FamilyTime** / **+ 📵 OfflineTime** (or th
 - **OfflineTime** can switch off, for all or chosen children: the **internet** (a running internet time stops, it
   cannot be started) and the **games of the app** (learning stays open). Without a tick it is only a notice.
 
+### FamilyTime games: wishes, vote, fix a game for coins
+
+Which game do we play at the next FamilyTime? In the app on the **Family** page (and in the parent area › Family) the
+section **🎲 FamilyTime games** lists the FamilyTime events of the next 60 days:
+- **Wishes**: every family member (children and parents – never guests) wishes **one** game per FamilyTime: one of the
+  app's family games (the ones this person may play, parent area › Games) or a **board game** typed in (free text, max.
+  60 letters, e.g. «Monopoly»). The wish can be changed or taken back until the wishes close. The start page shows
+  «Wish a game for FamilyTime on Saturday!» until you wished.
+- **The wishes close** when a parent taps **Start the vote**, or by themselves *N* hours before the start (setting,
+  default 24 h). Only one game wished (also when several people wished the same): it is **set directly**.
+- **The vote**: one vote per family member, it can be changed. It ends when everybody voted, when a parent taps **End
+  the vote**, or when the FamilyTime starts. The start page shows **Vote now!** until you voted. A **tie**: the parents
+  choose one of the leaders or tap **🎲 Random**; a tie still open when the FamilyTime starts is drawn at random.
+- **Parents** can also **set a game** directly (one of the wishes or any game), **skip the vote** (no game from the
+  wishes this time – they can still set one, a child can still buy one), **clear the wishes** (start over) and
+  **remove the game**.
+- **Fix a game for 150 coins**: a child pays the price (setting, default 150, 0 = off) and sets the game of a
+  FamilyTime that has **no game yet** firmly – the wishes and the vote of that FamilyTime end. Refused when a game is
+  set already. If a parent removes a bought game (or deletes the FamilyTime, or makes it an ordinary event), the child
+  gets the coins back (ledger events `familytime_game` / `familytime_refund`).
+- The game shows on the FamilyTime: «🎲 Game: Tschau Sepp – chosen by vote / bought by Mia / set by Papa» in the
+  calendar of the parent area, in the planner's calendar row, on the FamilyTime banner of the start page (from 24 h
+  before) and in the section. Everybody of the family gets a history entry when the game is set.
+- **Settings** (parent area › Family › FamilyTime games › ⚙️, and the same under Settings › FamilyTime games):
+  switch the whole feature on/off (off: children see nothing of it), the coin price, the hours before the start when
+  the wishes close.
+
 ## Kiosk dashboard
 
 Parent area → **🖥️ Dashboard**: a read-only page for a wall tablet, TV or old phone – any browser, no login.
@@ -149,6 +177,7 @@ chores the full points. With *Parents confirm* a ticked-off chore waits for *OK*
 (back to open). The week plan shows who does what on each day; the rule *All chores of the week done* gives a bonus
 (20 coins by default). In *Settings* a chore reminder time announces open chores (via the Family Planer announcement
 queue) and fires `family_quest_aemtli_erinnerung`. Chores from the Family Planer appear on the dashboard next to them.
+A chore can also carry an **⚡ Energy bonus** – segments of the child's game battery (see Game battery).
 
 ## Shopping list (Bring!)
 
@@ -178,6 +207,59 @@ Events: `family_quest_lektion_fertig`, `family_quest_aemtli_erledigt`, `family_q
 (each with `profile` and `profile_id`). The sensors are written through the REST API, so they are recreated when the app
 starts and do not have a unique id.
 
+### Family Quest HA integration (own devices and entities)
+
+For real entities (unique id, one device per child, editable in Home Assistant, with history and areas) Family Quest
+brings its own Home Assistant integration (custom component `familyquest`). It is **off by default** – nothing is
+copied into the Home Assistant configuration until a parent switches it on.
+
+1. Parent area › Settings › **🏠 Family Quest HA integration** › switch it on. Family Quest
+   - makes an **integration token** and shows it **once** (📋 Copy) – only a hash is stored; *🔄 New token* makes a
+     new one (the old one stops working, Home Assistant then asks for the new one),
+   - copies the integration to `/config/custom_components/familyquest` (and again at every start of the app while it
+     is on, so an update of the app updates the integration; *⬇️ Install again* does it by hand). For this the app
+     maps the Home Assistant configuration writable (`homeassistant_config:rw`); its AppArmor profile allows writing
+     only in `custom_components/familyquest` – everything else (e.g. the Family Planer import) stays read-only.
+2. **Restart Home Assistant** (Settings › System › Restart).
+3. Settings › Devices & services › **Add integration** › *Family Quest*: keep the suggested address
+   (`http://<add-on hostname>:8099`, the app on the internal Supervisor network) and paste the token.
+
+Switched off, the API refuses the token (Home Assistant shows the integration as failed / asks to re-authenticate);
+the button *🗑️ Remove from Home Assistant* deletes the folder again (delete the integration under Devices & services
+first, then restart Home Assistant). The integration asks the app every **30 seconds** and right after every action.
+The API (`/api/integration/state`, `/api/integration/action`, header `Authorization: Bearer <token>`) answers inside
+Home Assistant OS only to Home Assistant Core on the Supervisor network – not through ingress, not from the home
+network; wrong tokens are limited like wrong PINs.
+
+**Devices and entities** (names follow the language of Home Assistant – English and German included):
+
+| Device | Entity | |
+| --- | --- | --- |
+| each child | sensor *XP today* | attribute `daily_goal` |
+| | sensor *Total XP*, *Level*, *Streak* (days) | level: attribute `next_level_at` |
+| | sensor *Daily goal progress* (%) | |
+| | sensor per spendable account, e.g. *Coins*, *Internet minutes* | balance |
+| | sensor *Open chores* | attributes `chores`, `waiting_for_approval` |
+| | sensor *Lessons today* | attribute `learning_minutes_today` |
+| | sensor *Internet minutes left* | only with internet time managed by Family Quest; ∞ = state *unknown* + `unlimited: true` |
+| | sensor *Game time left today*, *Learning time left today* (min) | ∞ = state *unknown* + `unlimited: true`; `used_today` |
+| | binary sensor *Daily goal met*, *Game time used up*, *OfflineTime* | OfflineTime: calendar OfflineTime or a block time of the internet plan |
+| | binary sensor *Internet blocked* | internet time not running (attributes `block_until`, `can_start`) |
+| | **switch** *Internet* | on = the internet time runs. Off pauses it; on starts it with the child's minutes – same rules as in the app (no minutes, block time or OfflineTime: refused) |
+| Family Quest (family) | sensor *Family total XP*, *Family XP today*, *Running games*, *Open votes and polls* | votes: family council votes + open polls |
+| | sensor *Waiting for approval* | chores + rewards; attributes `chores` (`task_id`), `rewards` (`redemption_id`) |
+
+**Actions** (Developer tools › Actions; with `return_response` they answer with the result):
+
+- `familyquest.add_points` – `child` (name or id), `account` (default `coins`), `amount` (−10000 … 10000, not 0),
+  `reason`: like *Book points* in the parent area (shown in the child's history).
+- `familyquest.approve_chore` – `task_id`, `approve` (`false` = «again»).
+- `familyquest.approve_reward` – `redemption_id`, `approve` (`false` = reject).
+
+Nothing else can be changed from Home Assistant (no profiles, settings, PINs or deletions). The sensors above
+(`sensor.family_quest_…` without unique id) are still written as before, so existing automations keep working;
+with the integration you can hide or ignore them.
+
 ### Family Planer
 
 Family Quest reads the persons and their chore lists (`todo.*`) from the Family Planer's entity registry. Link a profile
@@ -197,12 +279,35 @@ set to «blocked»; running sessions continue. Sensor: `sensor.family_quest_<nam
 **Budget entity (optional):** minutes bought in the shop can also be written to an `input_number` in Home Assistant,
 e.g. for your own automations.
 
+### Time per day: games, learning, internet
+
+In the profile of a child (parent area › ✏️ › **⏱️ Time per day**) three sliders stand on top of each other:
+🎮 **Games per day**, 📚 **Learning per day** and 🌐 **Internet**. A slider starts in minutes (0, 5, 10 … 45 min)
+and goes on in hours (1 h … 12 h); far right is **∞ = not limited** – the default for games and learning.
+
+- **📅 Days** next to a slider opens the 7 weekdays (Mon – Sun) below it, each with its own slider. A weekday is
+  *docked* (🔗, pale): it moves with the slider above. Move a weekday slider yourself and it is *undocked* (🔓, in
+  colour) with its own time; move it back to the value of the slider above and it docks again (or tap 🔓). The number
+  on the Days button counts the undocked days; the days open by themselves when one has its own time.
+- **Games:** every minute in which a child uses a family game (any game request, also waiting in a running game) or
+  the game corner (a heartbeat every minute) counts once – several games at the same time do not count twice. When the
+  time is used up the child can start or join no new game, the game corner closes and the Games page says «Game time
+  for today is used up – see you tomorrow!». A game already running may be played to the end.
+- **Learning:** the learning time of today (finished lessons) counts. When it is used up no new lesson starts; a
+  lesson already running can be finished.
+- The kid app shows the minutes left today («🎮 25 min left today») on the Games page, the start page / the subject
+  page (learning) and in the tiles of «Me». Parents are never limited. A new day starts at midnight.
+- **Internet:** the slider is the free budget of the internet time (needs the UniFi rule above); with **per week**
+  it is the weekly budget (other steps, no weekdays). **0** = no free budget, only minutes from the shop or rewards
+  (the behaviour without a plan); **∞** = the internet may run the whole period (block times and OfflineTime still
+  apply).
+
 ### Internet budget and block times
 
-In the profile of a child (parent area › ✏️ › Internet minutes) **Internet budget and block times**:
+Below the internet settings of the child (parent area › ✏️ › Internet minutes) **Internet budget and block times**:
 
-- **Default budget:** minutes per day or per week and when it starts again (time; for a week also the weekday).
-- **Other budget on these days:** e.g. 120 minutes on Saturday and Sunday (empty = default budget).
+- **Reset:** when the budget starts again (time; for a week also the weekday). The budget itself is the 🌐 slider
+  under *Time per day*.
 - **Block times:** days and a time from – to (also over midnight, e.g. Mon–Fri 20:00–07:00). The internet stays off
   and you choose what Family Quest still allows: *works normally*, *without games*, or *only a message: OfflineTime*
   (the app shows a full-screen message with a countdown until the block time ends).
@@ -264,15 +369,36 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
   stricter – from which the parent area may be opened (e.g. only the parents' network). Empty = every network.
   A list that would lock out the device you are saving from is refused.
 
-## Community: family quiz and family council
+## Family (parent area, formerly «Community»): family quiz and family council
 
-- **Family quiz** (learning app › Family › Quizzes, or parent area › Community): everybody – children too – makes
+- **Family quiz** (learning app › Family › Quizzes, or parent area › Games): everybody – children too – makes
   quizzes (2–4 answers, one right, time per question) or copies a template (Swiss waters, geography of Europe,
   capitals of Europe and the world, flags, food of the world, Swiss specialities, cantons, animals, space,
   inventions, Switzerland). Whoever starts a game leads it (a parent may always step in); everybody joins on their
   own device. Quick right answers give more points (1000 down to 500). Places go into everybody's history; the
   reward events *Played the family quiz* and *Won the family quiz* can give coins (Rewards › Rules).
-- **Bingo** (learning app › Family, or parent area › Community): whoever starts sets the rules (speed, one line /
+- **Family Quest Facts** (special quiz – «New quiz» › 📊 at the top, for children and parents): the questions come
+  from the family's own Family Quest data and are made new at every start – a random choice in a random order, at most
+  one question per kind. Before the start: the number of questions (5 / 10 / 15 / 20) and the focus (this week, all
+  time or mixed). It is played like every family quiz (multiple choice and estimates, the same points and rewards)
+  and is multilingual: the questions come in the starter's language (German: Swiss German with «Ämtli» or Standard
+  German with «Aufgaben», like the app) and everybody can switch to another language in the game.
+  About 60 kinds of questions: chores today / this week / last week / of all time (who of the children, how many),
+  XP, levels, streaks, coins earned this week, badges, learning time and lessons, games played this week / last week /
+  in the last 7 days / in all, the most popular game, who wins the most games (also «a guest»), family quiz and chess
+  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice), the
+  slot machine, the shop (things bought, coins spent, the shopping queen or king, the favourite reward, avatar
+  items, pranks), pets (how many, who has the most, who lost the most, the oldest, the most common kind, babies, coins
+  of the hamsters, whose pets are cared for best – the average of the care bars of the pets at home), bulletin board
+  notes, polls, family council, quizzes, Wichteln, FamilyTime, the next birthday in the calendar, guests, own flash
+  cards. A question is only asked when its data is there and the answer is clear: «who of the children» needs at
+  least two children, a tie is never asked. Wrong answers are the other family members (or nearby numbers);
+  estimates go from 0 to a round number above the answer.
+  Privacy: only things the family sees of each other anyway – nothing from the parent area (no internet times or
+  logs, no mood or behaviour weather, no login log). XP, levels, coins and learning time only when the family view
+  shows «Everything» (Settings › Family view). Parents switch the special quiz off in parent area › Games › Family
+  quiz › Settings (on by default).
+- **Bingo** (learning app › Family, or parent area › Games): whoever starts sets the rules (speed, one line /
   two lines / full card – the rules used last are the default); everybody joins with a 5 × 5 card (B-I-N-G-O, 1–75,
   free star). A ball carousel spins, stops and shows the new ball for about 5 seconds. Players mark the numbers
   themselves and press «BINGO!» – the app checks it; a false «Bingo!» blocks the button for 10 seconds. Everybody can
@@ -286,6 +412,29 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
 Below the family council: **📊 Polls** – a question with 2 to 12 answers, one or several answers allowed,
 anonymous or with names, optionally with a closing time. Everybody sees the result after answering; who asked (or a
 parent) can close or remove the poll. A banner on the start page reminds who has not answered yet.
+
+### Bulletin boards (Schwarzes Brett)
+Under the polls: **📌 Bulletin boards** – endless pin boards, one per topic («Summer holidays», «Birthday party», …).
+Everybody of the family makes boards (title + emoji) and works on every board; guests (QR invitation) never see them.
+Who made a board, or a parent, renames, **archives** (still readable, no more changes) or removes it with **⋯**.
+
+A board opens full screen (✕ closes it):
+- **Pan** with one finger or the mouse on an empty spot, **zoom** with two fingers, the mouse wheel or **+ / −**
+  from 5 % to 400 %; **⤢** shows everything. The last view of each board is remembered on the device.
+- **🗒️ Sticky note** in 8 colours: choose a colour, tap the board, write. **🔤 Text** in 8 ink colours (A− / A+ for
+  the size). **✏️ Pen** with 8 colours and 3 widths, **🔷 shapes** (rectangle, ellipse, arrow, line), **🧽 eraser**
+  (wipe over lines and shapes).
+- **👆** moves items, a tap selects one (write, colour, bring to front, remove, the round handle resizes notes and
+  texts), a double tap writes. Every note shows who made it. **↶** undoes the own last steps (also Ctrl+Z; Delete
+  removes the selected item).
+- **Live:** changes of the others appear within about a second; the avatars at the top show who is on the board (tap
+  one to jump to what they see), their pointer appears with their name, and an item somebody is moving or writing has
+  an outline in their colour. Last change wins per item.
+- A badge «New: n» on the board list and a banner on the start page show what the others changed since you last
+  looked.
+
+Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
+to 600 points. Everything is in the database, so the backup contains the boards.
 
 ### Wichteln (secret gift giving)
 Under the polls, everybody can start a **Wichteln**: enter the occasion (e.g. «Christmas 2026»), choose who takes part
@@ -317,7 +466,7 @@ their cards and the pot odds; easy bots bluff and call more often. When you have
 
 ### Errate den Song
 
-Family › **🎵 Guess the song** (or parent area › Community): the game leader chooses a **speaker** of Home Assistant
+Family › **🎵 Guess the song** (or parent area › Games): the game leader chooses a **speaker** of Home Assistant
 (a media player that already has a playlist) and the rules – what who buzzes says (artist and title, artist or
 title, only one of them), the others judge by majority or unanimous, points to win (e.g. 10) and songs at most (e.g.
 40). The app switches shuffle on and only steers the speaker: play, pause, next song.
@@ -348,11 +497,132 @@ seats are filled with the animal bots.
 The button ☀️ / 🌙 (top right in the app, next to the language in the parent area) switches between light and dark and
 is remembered on the device; without a choice the system (or the Home Assistant theme) decides.
 
-### Games per game and person
+### Games per game and person (parent area › 🎲 Games)
 
-Settings › **Games**: every game on its own – *for everybody*, *only chosen children* (tick the children) or *off*:
-family quiz, bingo, Tschau Sepp, Kartenkarussell, Domino, Texas Hold'em and each game of the game corner. Parents can always
-play; the family council and polls stay open for everybody. Switched-off games disappear from the children's app.
+The parent area has two pages: **Family** (family council, polls, bulletin boards, Wichteln, history) and **🎲 Games** (every game:
+the family quiz, bingo, guess the song, all live games with their start buttons, coins and photo sets, the running
+games, and the game corner). A **search field** at the top filters the games by name; «⚙️ For all games» holds
+*All on / All off*, who begins a game and whether guests may join.
+
+Every game has a **status**: *active*, *active without bots* or *inactive* (= off), and while active *for everybody* or
+*only chosen children* (tick the children). Parents can always play – and are not bound by «without bots» either.
+Switched-off games disappear from the children's app.
+
+**Active without bots** is offered for the games that can be played with bots: Texas Hold'em, Tschau Sepp,
+Kartenkarussell, Domino, Paarjagd, Kartenlauf, Fünf Würfel, Heimwärts, Jump, Snack Rush, Klatsch den Beat, Jass, Werwölfe, Chess,
+Dorfmarkt, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
+the games against the app, and the server refuses every start with bots («Playing with bots is switched off for this
+game»): family tables get no bots (Kartenlauf plays with the people there, Jass needs 4 people, Werwölfe needs 5), chess
+only against the family or two on one device, Ping-Pong doubles only with people. Jump, Snack Rush and Klatsch den Beat can still be
+played alone, without practice bots. A table where a parent plays along may still be filled with bots.
+Stored per game in the setting `games_access` (`{"mode", "profiles", "bots"}`, `PUT /api/parent/games`).
+
+**Price for children** (each game's «⚙️ Settings» block, below the status): a game can cost coins for the children –
+parents always play for free.
+
+- **Defaults** (where the parents never set a value for that game): the **quick games for in between** (Pair Hunt, Five
+  Dice, Jump, Klatsch den Beat, Star Runner, Snack Rush, Traffic Cadet) rent for **100 coins per week**, the games of
+  the **game corner** (Tic-Tac-Toe, Sudoku, Patience, Ping-Pong, Cube solver, One-armed bandit) for **20 coins per
+  day**; the one-armed bandit can also be bought for 250 coins; every other game is free. The fields show these values;
+  saving the Games page stores what is shown – a 0 set by the parents stays 0 (also after updates).
+- **Price for children (coins)** – default 0. With a price, a child buys the game once in the shop and keeps it for
+  good, also when the parents change the price later. Back to 0 (and no rent price): free again for everybody.
+- **Rent price (coins)** with **Day / Week / Month** (the three are greyed out while the rent price is 0): renting opens
+  the game for that child for 1 day, 7 days or 1 calendar month from the moment it pays (31 January + 1 month = end of
+  February). Renting again before the end **adds** the period after the current end. Buying makes a rent unnecessary –
+  a bought game stays, a running rent is no longer shown. A rent price alone (price 0) means: rent only.
+- **The kid shop** has a section **🎮 Unlock games** with every game that has a price and that the parents switched on
+  for this child: «Buy: 300 🪙», «Rent: 20 🪙 per week», «bought ✓» or «rented – 3 days left». A confirmation comes
+  first; the coins are booked in the ledger (events `game_buy` / `game_rent`) in the same database transaction as
+  the unlock – a second tap books nothing (a rent sends the end the app showed; when it changed meanwhile nothing is
+  booked). On the **Games page** and in the **game corner** a locked game is a tile with 🔒 and its price; a tap opens
+  buying / renting.
+- **🎁 Free tries before buying** (0–20, default 1 – only matters with a price or a rent): how often a child may play
+  a locked game for free first. A locked tile shows «🎁 1 free try»; the tap offers **Try for free** besides buying and
+  renting, the shop lists the tries left. A try is used when the child **starts or joins a table** of a family game
+  (alone or with the family; a rematch / «again» is a new try) – once seated, the table can be played to the end and its
+  result seen. A game of the **game corner** uses a try when it opens on the try (`POST /api/me/games/try`); closed, it is
+  locked again. On the **one-armed bandit** a try is **one spin** (the bet of 1 coin still counts). A second start
+  within 10 seconds (double tap, second device) is the same try; the count is checked in one database transaction, so
+  parallel requests never use more tries than there are; a start that fails gives the try back. Joining a table a
+  parent opened uses no try. After the tries the game is locked as before. Every child starts with 0 tries used.
+- **Tables a parent opened**: when a **parent** opens a family table (not alone) of a game that is locked for a child –
+  switched off, not bought, rent run out – the child may still **join and play that table**: it shows in the running
+  banners, the note «somebody opened a table» and the game's tile («Join»). Starting an own table, alone, a rematch
+  stay locked. The daily game time, OfflineTime and block times still count.
+
+Stored in `games_access` per game (`price`, `rent`, `period`, `preview`; `luck` for the one-armed bandit) and per child
+and game in the table `game_pass` (`bought`, `rent_until`, `previews_used`, `preview_at`). API: `GET /api/me/games/shop`, `POST /api/me/games/buy`
+(`{"game", "kind": "buy" | "rent", "until"}`).
+
+### 🔋 Game battery
+
+Every child has a **game battery** with charge segments – rechargeable, not a tank. Defaults: **5 segments**, every
+child (also the existing ones) starts **full**, recharging costs **50 coins**. Parents have no battery and never see it.
+
+- **Starting a game costs one segment**: an own table of a family game (`…/start` – a family table, alone against bots,
+  a new round / rematch, a chess game against the family or the bot) and **opening a game of the game corner**
+  (Tic-Tac-Toe, Sudoku, Patience, Ping-Pong, cube solver, the one-armed bandit – one segment per opening, not per spin;
+  `POST /api/me/games/try`). A duel or a doubles table started inside an opened Tic-Tac-Toe / Ping-Pong costs nothing
+  more; **answering an invitation** (a duel, a doubles table) is free.
+- **Joining a table somebody else opened is free** – also with an empty battery – and a started game can always be
+  played to the end. The family quiz a parent starts costs the children nothing.
+- A second start of the same game within 10 seconds (double tap, a second device) is the same start; the charge is
+  checked and used in one database transaction, so parallel requests never use more than there is; a start that fails
+  (no table opened) gives the segment back.
+- **Empty** 🪫: own starts are refused («Your game battery is empty – recharge it or join a table of somebody else»).
+  The kid app shows the battery empty and offers **⚡ Recharge · 50 🪙** (a confirmation first): the battery is full
+  again, the coins are booked in the same transaction (ledger event `energy_recharge`); not enough coins → an error;
+  a second tap finds it full and books nothing.
+- **Kid app**: the battery (segments green → orange → red, empty dashed) sits in the header of the Games page with a
+  strip «3 of 5 charged · Starting a game costs 🔋1 – joining a table is free», in the game corner and on top of every
+  game's card. Unlimited shows «∞ until …». Chores with an energy bonus show «🔋+2».
+- **Parent area › Games › 🔋 Game battery** (family default): on/off, capacity (1–20), cost of a recharge (0–10000 coins,
+  0 = free), **unlimited energy**: off / permanent / for 1 day / 1 week / 1 month (stored as an until time, shown as
+  «∞ until …», **End** stops it), what **reaching the daily goal** does: nothing / battery full / **+N segments**
+  (default **+1**), and every child's charge now with **🎁 Recharge** (a free gift of the parents).
+- **Per child** (profile dialog › 🔋 Game battery): the same values; an empty field / «as family» uses the family
+  default. A child's own unlimited period wins while it lasts (then the family value counts again); «Off» there means
+  «not unlimited» even when the family is.
+- **⚡ Energy bonus per chore** (chore editor, 0–20 segments, default 0): charged when the chore is done (or approved by
+  the parents) – the same moment as its coins –, once per chore task and never above the capacity. The chores of the
+  built-in Family Planer have their own model (points only) and no energy bonus.
+- Daily goal and chore bonus never go above the capacity; each goal day and each chore task charges once (unique refs
+  in `battery_log`).
+
+Stored: setting `battery` (`on`, `cap`, `cost`, `unlimited`, `goal`, `goal_plus`), per child `battery` in the profile
+settings (only the values set), the charge in the table `battery` (`charge` NULL = full) and every change in
+`battery_log`; `chore.energy`. API: `GET /api/me` → `battery` {`on`, `charge`, `cap`, `cost`, `unlimited`, `forever`,
+`until`, `party`, `free`}, `GET /api/me/battery`, `POST /api/me/battery/recharge`; parents `GET/PUT /api/parent/battery`,
+`PUT /api/parent/battery/{id}` (`null` / `"family"` = as the family), `POST /api/parent/battery/{id}/recharge`.
+
+### 🎉 Party mode
+
+A switch on top of the parent area's **Games** page and the **overview**. Switching it on opens a chooser:
+
+- **For whom**: all children or chosen children;
+- **What**: **🔓 Unlock all games** (every game playable – price, rent and «inactive» do not count, no free try is
+  used), **🔋 Unlimited battery** (starting costs nothing) and **⏱️ Also lift limits** (on by default): the daily game
+  time, the **game** block times of the internet plan and the game lock of OfflineTime do not apply to games for these
+  children (no game minutes are counted meanwhile). The internet itself, learning limits and a block time of the whole
+  app stay as they are. Without «also lift limits» every limit stays.
+- **How long**: until switched off, 1 h, 3 h, until midnight or 1 day – stored as an until time; it **ends by itself**.
+
+Nothing is bought, rented or charged during a party – when it ends (by itself or with the switch) everything is as
+before. The children see a festive banner «🎉 Party mode until 21:00» on the start page and the Games page, the tiles
+are unlocked and the battery shows ∞. **🪩 Disco design**: while the party runs for a child, its app switches to the
+Disco design – dark background, neon accents, a disco ball in the header and slow, soft coloured light spots (no
+flashing; static with «reduce motion»); afterwards the chosen / season design is back by itself. Parents can also
+pick the «disco» scene for an own season design. Stored in the setting `party`; API `GET/POST/DELETE /api/parent/party`
+(`{"kids": "all" | [ids], "unlock", "battery", "limits", "for": "forever" | "1h" | "3h" | "midnight" | "day"}`); the kid
+app gets `party` in `GET /api/me`.
+
+**The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
+(icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,
+Kartenlauf, Werwölfe, Escape Room, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
+Bingo, Chess) and **⚡ Quick games for in between** (Paarjagd, Fünf Würfel, Jump, Klatsch den Beat, Star Runner, Snack
+Rush, Traffic Cadet, duels for two), and the game corner at the end. A tile with a running table has a pulsing dot; a
+tap opens the game's card in a sheet with its usual buttons (family table, alone against bots, join, rules).
 
 ### Family council: new topic
 
@@ -404,7 +674,7 @@ one). On your turn you turn two cards: a **pair** is yours and you go again; **n
 for a moment, then they turn back and the next player goes. When all pairs are found the most pairs win – a tie
 shares the place. The board always fits the screen, also on a phone.
 
-**Coins for places 1–3:** the parents set them in Community › Paarjagd («🪙 Coins for place 1 / 2 / 3», default
+**Coins for places 1–3:** the parents set them in Games › Paarjagd («🪙 Coins for place 1 / 2 / 3», default
 10 / 5 / 2). They are paid once at the end of a game, and only at a **family table with at least two people of the
 family**: no coins alone against bots, none for guests and none for bots. The result shows «+10 🪙» next to the place.
 The existing Pairs game in the game corner (one device, take turns) stays as it is.
@@ -434,7 +704,7 @@ questions with their answers. The game ends when everybody is finished; who lead
 somebody left) or end the game at any time – then all characters are shown and only who found theirs has a place.
 The result shows every character, the places and the coins.
 
-**Coins for places 1–3:** set by the parents in Community › Wer bin ich? (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Wer bin ich? (default 10 / 5 / 2), paid once, only at a
 table with **at least two people of the family** – never to guests. Every person gets a history entry (place, players,
 their character).
 
@@ -468,7 +738,7 @@ along the ring» opens a small menu); the jack asks for the second marble; the 7
 (step counter, «−» per marble, then «Play»); the joker first asks which card it stands for. Moves are animated along
 the track; the last move, the played card and the dealer are shown.
 
-**Coins for places 1–3:** set by the parents in Community › Kartenlauf (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Kartenlauf (default 10 / 5 / 2), paid once, only at a
 family table with **at least two people of the family** – never alone against bots, to guests or to bots. With teams
 both winners get place 1, the other team place 2. Every person gets a history entry.
 
@@ -500,7 +770,7 @@ answers of the round); after the last round the result shows the ranking (a tie 
 the winner. Who leads can end the game any time: the rounds so far count (a round in its review is scored as it stands,
 a round still being written is dropped).
 
-**Coins for places 1–3:** set by the parents in Community › Stadt-Land-Fluss (default 10 / 5 / 2), paid once, only at
+**Coins for places 1–3:** set by the parents in Games › Stadt-Land-Fluss (default 10 / 5 / 2), paid once, only at
 a table with **at least two people of the family** and only when at least one round was played – never to guests.
 Every person of the family gets a history entry (place, points, rounds).
 
@@ -530,7 +800,7 @@ ends when everybody found it or the time is up; the word is shown to all for 3 s
 can **skip** a turn (the points so far stay) and **end** the game (a drawing in progress counts as it stands). After the
 last turn the result shows the ranking (a tie shares the place) with confetti for the winner and the list of words.
 
-**Coins for places 1–3:** set by the parents in Community › Zeichnen & Raten (default 10 / 5 / 2), paid once, only at a
+**Coins for places 1–3:** set by the parents in Games › Zeichnen & Raten (default 10 / 5 / 2), paid once, only at a
 table with **at least two people of the family** and only when at least one turn was played and somebody scored – never to guests. Every
 person of the family gets a history entry (place, points, words drawn).
 
@@ -559,7 +829,7 @@ House rule (start dialog, on by default): **+50 for every further Fünfling** wh
 The highest total wins (a tie shares the place); the result shows the ranking with confetti and every sheet. Who
 leads may **end** the game early: the sheets count as they stand, but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Fünf Würfel (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Fünf Würfel (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. Every person of the family gets a history entry (place, points).
 
@@ -594,7 +864,7 @@ Bots: easy moves mostly at random, normal prefers hitting, coming out and the le
 fields and the danger from pieces up to 6 fields behind. Who leads may **end** the game early: ranked as it stands,
 but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Heimwärts (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Heimwärts (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. Every person of the family gets a history entry (place, pieces home).
 
@@ -609,23 +879,174 @@ or open a **family table** (1 to 6 players, optionally with bots; guests via QR 
 - **Same obstacles for everybody:** the server picks a seed, every app builds the same course from it, and all lanes
   run on the same game clock (a 3-second countdown after the start).
 - **It gets faster:** the speed grows steadily (the maximum after about 2 ½ minutes); from medium speed there are also
-  double obstacles, at high speed long hedges.
-- **Lives:** everybody starts with 3 (start dialog: 1 / 3 / 5). Hitting an obstacle costs a life, then you blink for a
-  moment (invulnerable). Without lives you are out – the lane shows how far you came.
+  double crates, at high speed long hedges.
+- **Crates are safe to land on:** come down on top of a crate and you stand on it and run along (you can jump on from
+  there, or just walk off its end). Only running into its **side** costs a life (a little landing grace: feet a bit
+  below the top still land on it).
+- **Cacti** (green, with spikes and a flower) and hedges sting: touching one – also landing on it – costs a life.
+- **Cloud parcours:** after about **45 seconds** (and then again about a minute after the end of the last one) a
+  signpost and a blinking banner «Cloud course ahead!» announce it (about 3 seconds of free ground before it). Then
+  come 4–6 crates floating on clouds (heights a little above a normal jump over a crate, never more than a small step
+  up or down from one to the next), a short jump apart, over a **dense cactus field**: jump from crate to crate.
+  Falling down onto the cacti costs a life (one per piece of the field, then you hop up and blink – you can jump back up
+  onto the next cloud crate from the ground). After the last crate there is free ground to land on, then the normal
+  course goes on. The jumps are fair for children: about half a second of good jump times for each crate.
+- **Jumping:** only from the ground or a crate (no double jumps in the air); a jump just after walking off an edge
+  still counts.
+- **Lives:** everybody starts with 3 (start dialog: 1 / 3 / 5). Every hit costs a life, then you hop up a little and
+  blink for a moment (invulnerable). Without lives you are out – the lane shows how far you came.
 - **The others:** their jumps and lives show in their lanes – drawn a moment late, from the jump times their apps report.
 - **The end:** at a family table the **last one still running wins** (the game ends when one is left or no person is
   left); alone you run until you are out. Places: who stayed in longest; the distance (m) is the score.
-- **Bots** (easy / normal / hard) jump with a small timing error and now and then forget to jump – the faster the game,
-  the more they miss.
+- **Bots** (easy / normal / hard) run the same physics: they look ahead for the jump times that get them past the next
+  danger (over a cactus, onto a crate, onto the next cloud crate) and aim for the middle with a small timing error, and
+  now and then forget to jump – the faster the game, the more they miss.
 
-The jump physics run in the app (no waiting for the network); the app reports its jumps and hits to the server, which
-keeps the lives and the state per player and checks only sane values (a time near the game clock, an obstacle that
-really passes then, one life per obstacle). An app that stays silent for 12 seconds is out (left the game). Who leads
+The jump physics run in the app (no waiting for the network), step by step 120 times a second – the same code in the
+app and on the server (for the bots), so every app draws the others' lanes exactly from their jump times. The app
+reports its jumps and hits to the server, which keeps the lives and the state per player and checks only sane values (a
+time near the game clock, an obstacle that really passes then – never a cloud crate –, one life per obstacle). An app that stays silent for 12 seconds is out (left the game). Who leads
 may **end** the game early: ranked as it stands (the ones still running by their lives), but without coins.
 
-**Coins for places 1–3:** set by the parents in Community › Jump (default 10 / 5 / 2), paid once, only for a game played
+**Coins for places 1–3:** set by the parents in Games › Jump (default 10 / 5 / 2), paid once, only for a game played
 to the end at a family table with **at least two people of the family** – never alone, to guests or to bots. Every
 person of the family gets a history entry (place, distance, new personal best).
+
+### Star Runner
+
+Games → **🌠 Star Runner** (Sternschnuppen-Lauf): a live endless runner with its own little story – at night the big
+lantern of the village went out; the children run as forest messengers along a forest path and catch the falling
+**star sparks ✨** to light it again. The path has **three lanes**; you run with **your own avatar** (face, hair,
+outfit and worn items on running legs), seen from the front, the village with its lantern on the horizon – the more
+sparks you catch, the brighter it glows.
+
+- **Controls:** swipe **left / right** to change the lane, **up** to jump, **down** to duck. On a computer the arrow
+  keys or W A S D (space jumps); four buttons ◀ ▲ ▼ ▶ below the path work everywhere.
+- **On the path:** fallen **logs** and **puddles** (jump), **low branches** with hanging vines (duck), **rocks** and
+  **tree stumps** that block a lane (change the lane), sparks on the ground and high above some logs (jump for them).
+  Every row of obstacles leaves at least one lane open; the speed grows (the maximum after about 2 minutes), the rows
+  come closer together.
+- **Everybody at the same time:** alone (high score, optionally with 1–7 practice bots) or at a **family table** (1 to
+  8 players, optionally with bots; guests via QR code). Everybody runs the **same course** (a seed of the server) on
+  their own device; the others run along as **translucent ghosts** with their avatars and name tags – the ones with
+  more sparks a little ahead, a player who is out stays behind. Ghosts never collide with you. Above the path a live
+  **mini ranking** (points, 💥 for who is out).
+- **Lives:** 3 (start dialog: 1 / 3 / 5); a hit costs one, then you blink for a moment. **Time:** 2 / 3 / 5 minutes
+  (default 3). The run ends when no person is running any more or the time is up.
+- **Points:** every metre 1, every spark 10. Places by points (the same points share the place). Personal best (points)
+  is kept.
+- **Bots** (easy / normal / hard) play by the same rules: they plan their swipes a moment ahead with a timing error and
+  now and then a mistake (forget to jump or duck, swerve too late) – the faster, the more mistakes.
+
+**What the server decides:** the app runs the game at 60 fps by itself, but reports only its **inputs** (each swipe with
+its game time). The server replays them on the course with the same rules and decides **itself** which obstacle hit
+and which spark was caught – an app cannot report a distance, sparks or "no hit". An input counts only when it arrives
+in time: not before the previous one, not ahead of the server's clock and not for a part of the course the server
+already settled (1.5 s behind the game clock), so nobody can dodge afterwards. An app that stays silent for 10 seconds
+is out. Who leads may **end** the game early: ranked as it stands, without coins.
+
+**Coins for places 1–3:** set by the parents in Games › Star Runner (default 10 / 5 / 2), paid once, only for a game
+played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots.
+The winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, metres, sparks, new
+personal best). In the parent area › Games the runner can be active, active without bots or inactive.
+
+### Snack Rush
+
+Games → **🍔 Snack Rush** (German «Imbiss-Express»): a live snack-stand race. Every player runs their **own snack stand**
+on their own device, all at the same time, and **all stands get the same customers**. Play **alone** (high score: your
+**personal best** till is kept; optionally with 1–5 practice bots) or open a **family table** (1 to 6 players,
+optionally with bots; guests via QR code).
+
+The screen (one phone screen, no scrolling): on top the **till 💰**, your stars ⭐, angry customers 😡 and the time left;
+below it a chip for every other player with **their till and their angry customers** (updated about every second);
+then the **counter** with up to 4 customers (their order, their mood 😊 → 😐 → 😠 → 😡 and a patience bar; more customers
+wait in the line «+2 🚶»), the **shelf** with the ready food and the **bin**, and the **kitchen** with its stations.
+
+- **Foods and steps** (each step takes its time – a ring runs round; the stations have 2 places, the prep counter 3):
+  burger = grill 4 s → assemble 2 s · hot dog = pot 3 s → into the bun 1.5 s · fries = fryer 5 s → salt 1 s ·
+  drink = fill 3 s · pizza = oven 6 s · ice cream = machine 2 s. Who opens the table chooses the foods on the menu.
+- **Playing:** tap an empty place of a station to start its food; tap the done food to move it on (to the prep
+  counter, or onto the shelf). **Take it off in time:** grill and fryer burn it 4 s after it is done, the oven after
+  5 s, the ice cream melts after 6 s – tap it into the bin. Tap a **customer** to hand over what they ordered from the
+  shelf (or tap a food on the shelf: it goes to the customer who has waited longest for it). When the whole order is
+  there, the customer pays.
+- **Money (the game's own pretend money 💰, not the coins of the app):** every step costs its ingredients when it starts
+  (burger 2 + 1, hot dog 2 + 1, fries 1, drink 1, pizza 3, ice cream 1 – half on «easy»). A served customer pays the
+  prices (burger 8, hot dog 6, fries 4, drink 3, pizza 7, ice cream 4) plus a **tip** for fast service: 3 stars (more
+  than 60 % patience left) +3, 2 stars +1, 1 star nothing. The till = earnings − ingredients.
+- **Angry customers** walk away without paying. What was already handed to them goes back onto the shelf for the next
+  customer who wants it. Food on the shelf gets **cold after 25 seconds** and goes into the bin (the money is lost –
+  the app shows «🗑️ −💰…»).
+- **It gets harder:** customers come more often, order more (1 → 3 foods) and are less patient – the full rush after
+  about 4 minutes. Level easy / normal / hard: how often customers come and how patient they are.
+- **Duration:** 3, 5 (default) or 8 minutes – the **most money in the till wins** (then more served customers, more
+  stars, fewer angry ones; the same shares the place). Optional «Out after angry customers» (off by default, or 3 / 5 /
+  8): with that many angry customers you are out (your till stays); the game ends early when no person is left in.
+- **Bots** (easy / normal / hard, the level of the table) work through the customers in order: a reaction time, some
+  seconds of work per food, sometimes they forget a part (costs time and ingredients) and they let hopeless customers
+  go – so they fall behind when it gets busy.
+
+The kitchen runs in the app (no waiting for the network). The server makes the customer stream from a secret seed (the
+apps only get the customers of the next seconds), and the app reports its serves, the customers it saw leave angry and
+the money spent. The server checks every serve: each customer only once, not before they came, not after their patience
+ran out, not in the future – and the stand must have been able to make the food: every serve books its foods step by
+step on the earliest free place of each station (food made ahead at most 90 seconds before), the last step must be done
+by the serve. A customer without a valid serve is angry – the server decides that itself 4 seconds after the patience
+ran out. The money spent counts at least the ingredients of every served food. When «Out» is on, an app that stays silent
+for 20 seconds is out. Who leads may **end** the game early: ranked as it stands, but without coins.
+
+**Coins for places 1–3:** set by the parents in Games › Snack Rush (default 10 / 5 / 2), paid once, only for a game
+played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots. The
+winners get the «No. 1» hat. Every person of the family gets a history entry (place, till, served customers, new
+personal best). In Games the parents can switch the game on, off or to «active without bots».
+
+### Traffic Cadet (Verkehrskadett)
+
+Games › **🚦 Traffic Cadet**: a live traffic game. Every player regulates the traffic lights of **their own map** on
+their own device – all maps get the **same streets and the same cars** (from the server). Alone (optionally with
+practice bots), at the family table (1–6 players, bots fill up, guests via QR code).
+
+- **Switching:** tap a traffic light on the map (or its big button below the map) – it switches its whole group (e.g.
+  «1 ↓↑» = north and south together): green → **amber** (1.5 s) → red, red → green at once. At the start of every
+  world all lights are red.
+- **The cars:** cars, buses (slower, longer), bikes (slow) and now and then an ambulance 🚑. They stop at red (and at
+  amber when they still can), go at green, keep their gap and turn as their route says. Cars queue outside the map when
+  there is no room («+3» at the edge).
+- **Accidents 💥:** two cars of crossing or merging routes in the junction at the same time crash; both block the way
+  for 4 seconds (the others wait), then they are towed away. So: switch one direction red, wait until the crossing is
+  empty, then the other green.
+- **Moods:** waiting makes drivers annoyed (😐 → 😠) and then angry 😡 (difficulty normal: after 10 / 20 seconds of
+  waiting; easy 12 / 24, hard 7 / 14). The ambulance is in a hurry: angry after 6 seconds. Angry drivers honk.
+- **Out:** too many accidents or angry drivers, counted over all worlds – easy 5 / 15, normal 3 / 10, hard 3 / 8. Who
+  is out watches the others' live stats.
+- **Worlds** (start dialog: 1–5), each 5 s intro («World 2: T-junction») + 90 s of traffic, the traffic grows during a
+  world: 1 **simple crossing** (only straight on, 2 groups) → 2 **T-junction** with a left-turn lane (3 groups) →
+  3 **crossing with turning lanes** (straight/right and left separately, 4 groups) → 4 **two connected crossings** (the
+  road between them can fill up and block the crossing behind) → 5 **roundabout** (the drivers yield to the ring by
+  themselves; you have a stop/go light at every entry to give the others a gap). Everybody still in moves on together.
+- **Difficulty** (easy / normal / hard): how many cars come, how patient the drivers are, how many accidents / angry
+  drivers put you out.
+- **Live bar:** at the top every other player's accidents 💥, annoyed 😠 and angry 😡 drivers and cars through 🚗
+  (updated about every second), below my own stats, the world and the time left in it.
+- **Points:** every car through 1 (bus 2, ambulance 3), minus 5 per accident and 2 per angry driver. **Places:** who is
+  still in after the last world by points; who is out after them (who lasted longer first). At a family table the
+  game ends when only **one is left standing**. Alone your best points are kept.
+- **Bots** (easy / normal / hard) run the same simulation on the server: they give green to the set of groups with the
+  most waiting cars, switch with a clearance pause (amber, then until the crossing is empty) – easier bots forget the
+  pause more often (crash risk) and leave a direction green too long.
+
+The map is simulated in the app (10 steps per second, integer arithmetic only) from the server's world (layout + the
+stream of cars from the game's seed) and the player's switches; the app reports only its switches (with their tick).
+The server runs **the same simulation** about 1.5 s behind (identical in Python and JavaScript – tested) and its result
+counts: accidents, angry drivers, cars through, out. A switch for a moment the server simulated already is refused and
+the app rebuilds its map from the server's snapshot. An app silent for 15 seconds is out. Who leads may **end** the
+game early: ranked as it stands, no coins. Parents › Games: active, active without bots (no practice bots, no bots at
+the table) or inactive.
+
+**Coins for places 1–3:** set by the parents in Games › Traffic Cadet (default 10 / 5 / 2), paid once, only for a game
+played to the end at a family table with **at least two people of the family** – never alone, to guests or to bots;
+the winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, cars, accidents, angry
+drivers).
 
 ### Klatsch den Beat
 
@@ -655,7 +1076,7 @@ practice bots) or open a **family table** (1 to 8 players, optionally with bots;
 Who leads may **end** the game early: the rounds already played count, ranked as it stands, but without coins. The
 accuracy of a game played to the end is your **personal best** (alone or at a table).
 
-**Coins for places 1–3:** set by the parents in Community › Klatsch den Beat (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Klatsch den Beat (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone, to guests or to
 bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, points, accuracy).
 
@@ -692,7 +1113,7 @@ ready. Who leads can **skip** a turn (e.g. the explainer left) and **end** the g
 stands). The result shows the ranking (a team shares its place, a tie shares the place), confetti for the winners and
 every card of the game.
 
-**Coins for places 1–3:** set by the parents in Community › Verbotene Wörter (default 10 / 5 / 2), paid once, only at
+**Coins for places 1–3:** set by the parents in Games › Verbotene Wörter (default 10 / 5 / 2), paid once, only at
 a table with **at least two people of the family** and only when at least one turn was played and somebody scored –
 never to guests. Every person of the family gets a history entry (place, points, team, cards explained); the winners
 get the «No. 1» hat.
@@ -742,7 +1163,7 @@ hard counts the cards, pulls trumps, gives points («schmieren») when the partn
 the strength of its hand and pushes a weak hand. Who leads may **end** the game early: ranked as it stands, but without
 coins.
 
-**Coins:** the members of the **winning team** get the coins for place 1 (set by the parents in Community › Jass,
+**Coins:** the members of the **winning team** get the coins for place 1 (set by the parents in Games › Jass,
 default 10), paid once, only for a game played to the end at a family table with **at least two people of the family**
 – never alone against bots, to guests or to bots. Every person of the family gets a history entry (won / lost, the
 points, the partner); the winners get the «No. 1» hat (not on a tie).
@@ -750,14 +1171,26 @@ points, the partner); the winners get the «No. 1» hat (not on a tie).
 ### Werwölfe
 
 Games → **🐺 Werwölfe**: the classic social deduction party game, played in **one room** – the app is the game
-master. Everybody has the app on their own phone (the family and guests via QR code, **no bots** – it is a talking
-game), **5 to 12 players**. Who opens the **family table** chooses (remembered; also changeable in the lobby once
-everybody is there):
+master. Everybody has the app on their own phone (the family and guests via QR code), **2 to 12 people** – a game
+has 5 to 12 players: with **fewer than 5 at the table, bots fill it up to 5** when who leads begins (the animal bots
+of the card games, with their emoji). Who opens the **family table** chooses (remembered; also changeable in the lobby
+once everybody is there):
 
 - **the roles**: *by the number of players* (recommended) – 5: 1 werewolf + seer · 6: + witch · 7: 2 werewolves ·
   8: + hunter · 9–10: + Amor · 11–12: 3 werewolves – or by hand: 1–3 werewolves and seer / witch / hunter / Amor on or
   off (fewer werewolves than half of the players); everybody else is a villager;
-- **time to talk by day**: 1, 2, 3 (default), 5 or 10 minutes.
+- **time to talk by day**: 1, 2, 3 (default), 5 or 10 minutes;
+- **fill with bots up to**: 5 (default) to 12 players – more bots for a bigger game (no bots when enough people are
+  there).
+
+**Bots** play every role and act by themselves after a short «thinking» time (at night 4–10 seconds, so the length of
+a step does not give away who holds the role; in the vote one after the other): Amor links two random players, a bot
+werewolf bites the choice of a human werewolf (else a random non-werewolf – the bot werewolves always agree), the
+seer looks at a random player, the witch heals the victim about every second time and rarely poisons somebody, the
+hunter shoots a random player; in the vote a bot werewolf votes for a non-werewolf, the other bots for a random
+player – a bot seer votes for a werewolf she saw, and while she lives the other village bots lean the same way. A
+bot's role stays as secret as a person's. The talk timer runs as before; who leads still lets the night fall and
+opens the vote.
 
 | Role | Power |
 |---|---|
@@ -789,10 +1222,10 @@ plays a sound at every step; it also reads it aloud with the voice of the device
 leads can **move on** when somebody is idle (every step has a default: no lovers, the most werewolf votes, no look,
 no potion, no shot, close the vote) and **end** the game (no winner, no coins).
 
-**Coins:** set by the parents in Community › Werwölfe (the amount of place 1, default 10): every person of the
+**Coins:** set by the parents in Games › Werwölfe (the amount of place 1, default 10): every person of the
 family on the **winning side** – only at a table with **at least two people of the family**, only for a game played
-to the end, paid once, never to guests. The winners get the «No. 1» hat; every person of the family gets a history
-entry (won or lost, the role).
+to the end, paid once, never to guests or bots. The winners get the «No. 1» hat; every person of the family gets a
+history entry (won or lost, the role) – bots none.
 
 ### Schach (chess)
 
@@ -823,10 +1256,10 @@ clearly worse; on one device the draw is agreed at once), or time.
 **Pausing:** either player taps **⏸ Pause** – the clock stops, nobody can move, the game waits in the database
 (also over a restart) until a player taps **▶ Continue**. Several games per person at a time (up to 12 unfinished).
 A game alone (bot or one device) with a clock pauses by itself when you leave it. Who started a game or a parent
-can **delete** a paused game (🗑) or an open invitation. The parent area lists every chess game (Community › Chess)
+can **delete** a paused game (🗑) or an open invitation. The parent area lists every chess game (Games › Chess)
 and **Running games** lists them too (paused ones marked ⏸) – «End» there ends a game without a result, no coins.
 
-**Coins:** set by the parents in Community › Chess (three numbers, default 10 / 5 / 2): the winner of a game
+**Coins:** set by the parents in Games › Chess (three numbers, default 10 / 5 / 2): the winner of a game
 between **two people of the family** / a win against the **hard bot** / against the **normal bot**. Only the winner,
 only after at least **10 own moves**, paid once – never against the easy bot, never on one device, never against
 guests. The winner of a game between two people of the family gets the «No. 1» hat; everybody of the family who
@@ -869,9 +1302,69 @@ price, mortgaged at half + buildings). The game is always over when only one pla
 the start: 1000 / 1500 / 2000. Who leads may **pause** the game (nothing moves, the time stops) and **end** it early
 (ranked as it stands, without coins). The whole game is stored in the database and survives a restart of the add-on.
 
-**Coins for places 1–3:** set by the parents in Community › Dorfmarkt (default 10 / 5 / 2), paid once, only for a
+**Coins for places 1–3:** set by the parents in Games › Dorfmarkt (default 10 / 5 / 2), paid once, only for a
 game played to the end at a family table with **at least two people of the family** – never alone against bots, to
 guests or to bots. The winners get the «No. 1» hat; every person of the family gets a history entry (place, worth).
+
+### Escape Room
+
+Games → **🗝️ Escape Room**: the live riddle game for the family – solve the riddles of every room to find the door
+code and get out. Everybody plays on their own device (the family and guests via QR code, **no bots**). Every room is
+a world of its own with its own look (the wizard's tower, the pirate cabin, the space station, the treehouse, the clock
+workshop, the ice castle, the jungle temple, the dragon's cave): its **objects hide riddles** – tap one to open its
+riddle – and a little animal has a tip. Who opens the **family table** chooses (remembered):
+
+- **rooms**: 1 to 5;
+- **difficulty**: easy (2 riddles per room), medium, hard (3 riddles per room) or **mixed** – the rooms get harder one
+  after the other (2 or 3 riddles);
+- **kinds of riddles** (several): logic & codes, words & letters, pictures & observation, patterns & sequences, maths,
+  memory, maps & directions, mechanical puzzles, knowledge – with the number of riddles not played yet per kind;
+- **play**: all together (one team, everybody sees the same room and may try) or **two teams** (every second seat;
+  who leads can mix the seats in the lobby);
+- **time limit**: none, 15, 30 or 45 minutes.
+
+**The combined lock:** every solved riddle reveals a part of the door code, shown to the whole team – a digit with a
+symbol (⭐ 3), a number, or a coloured gem with its position (🔴 #2). The door needs all parts together: the digits in
+the order of the symbols shown on the door, the sum of all numbers, or the gems in the order of their positions. Then
+the next room opens; after the last door the team is out.
+
+**Hints and time:** up to 3 hints per riddle (the whole team sees them); a hint costs **60 seconds**, a wrong answer
+(also at the door) **10 seconds**. The team's time is the real time plus these seconds. Memory riddles show their
+picture only for a moment after «Peek» (as often as you like). Mechanical puzzles (rune lamps, sliding tiles, turning
+rings, water pipes, lever board) are played on the device; the moves go to the server, which checks them.
+
+**Two teams** play the same rooms with the same riddles, each with its own progress; you see the other team only as a
+progress bar. The first team out wins – counting its hint and error seconds: the game ends as soon as the other team
+cannot be faster any more. With a time limit the game ends when the time is up (then nobody escaped). Who leads (or a
+parent, also in Games › running games) can end the game – then nobody escapes.
+
+**The riddles** are made new for every game by the server (random numbers, words, pictures) – the app never gets a
+solution, the server checks every answer. 56 riddle kinds (level in brackets: e easy, m medium, h hard):
+
+| Kind | Riddles |
+|---|---|
+| Logic & codes | The clue lock (m h) · Number detective (e m) · Three chests (m h) · The animal bench (m h) · The big scales (e m h) · The number square (m h) |
+| Words & letters | Mixed-up letters (e m h) · Secret writing (m h) · Rune alphabet (m h) · The worn-out sign (e m) · Mirror writing (e) · Hidden animal (m h) · Letters as numbers (m h) · The vowel thief (h) |
+| Pictures & observation | Count carefully (e m) · The odd one (e m) · Two pictures (m h) · The stopped clock (e m) · The book shelf (e m) · Coloured candles (m) · The magic mirror (m h) |
+| Patterns & sequences | Number row (e m h) · The bead necklace (e m) · The tile floor (m h) · Growing towers (e m) · Letter row (m h) · The cuckoo clock (m h) · Turning arrows (e m) |
+| Maths | Fruit sums (e m h) · The coin purse (e m) · The magic square (m h) · Story sums (e m) · Number pyramid (m h) · The dice tower (e m) · The number machine (m h) |
+| Memory | Glowing crystals (e m h) · The magic tray (m h) · Where was it? (e m) · Flashing numbers (m h) · Past the window (e m) |
+| Maps & directions | The treasure map (e m) · The compass (e m) · Bridges and paths (m h) · The robot program (m h) |
+| Mechanical puzzles | Rune lamps (e m h) · Sliding tiles (m h) · Turning rings (m h) · Water pipes (m h) · The lever board (e m) · Gear chain (e m h) |
+| Knowledge | Counting legs (e m) · Mixing paint (e m) · The planets (e m) · Eggs or not? (e m) · The calendar (e m) · Corners (e m) |
+
+The **word riddles** use 45 words in all 9 languages of the app (and English): every device shows the riddle in its
+own language, the answer counts in any of them (without accents).
+
+**Already played:** the family keeps a counter per riddle kind (setting `escape_played`). A new game takes the kinds
+played least – the fresh ones first – so every kind comes once before one comes again; the **round** (shown in the
+start dialog and in Games › Escape Room, e.g. «32 of 56 riddles not played yet – round 2») is the lowest counter + 1.
+With few chosen kinds (e.g. only memory, 5 rooms) a kind can come twice in one game – with other numbers.
+
+**Coins:** set by the parents in Games › Escape Room (default 10): every person of the family in the team that escaped
+and won gets them (together: everybody, when out; two teams: the winning team) – only at a table with **at least two
+people of the family**, never to guests, paid once. Every person of the family gets a history entry (out or not, rooms,
+time, hints, team); the winners get the «No. 1» hat.
 
 ### Game corner
 
@@ -895,9 +1388,36 @@ the server; best times stay in this browser), shown when family games are on for
 - **Pairs** – turn over two cards and find the pairs: animals, fruit, vehicles, sea animals or **your own photo
   sets**; alone (fewest moves), against the app (it remembers more or less well) or 2–4 players on one device.
   Card back: four patterns or the **family crest**.
+- **🧊 Cube solver** – helps to bring a mixed-up puzzle cube back to one colour per side. Choose **2×2** or **3×3**
+  (4×4 is shown as «coming later»), then paint the colours you see on a **3D cube**: drag it with a finger or the
+  mouse, or jump to a side with the six side buttons; pick a colour and tap a sticker. On small phones the flat
+  **net** (▦) is easier. The 3×3 centres are fixed – hold the cube with **yellow on top and green in front**. 🧽 clears
+  everything, ✨ fills in a solved cube, 🎲 mixes one to try it out. The colours stay in this browser, so a refresh
+  loses nothing. **Solve** first checks the colours and says in plain words what is wrong – a colour used too often,
+  stickers without colour, «This corner cannot exist: white-yellow-red», two colours of a corner swapped, a piece
+  that is there twice (the stickers blink), or «one corner is twisted / one edge is flipped / two pieces are
+  swapped» (a cube that cannot be solved like this – usually one sticker is painted wrong). Then a **step-by-step
+  guide**: the move in standard notation (U D L R F B, ' = anticlockwise, 2 = twice) plus a sentence and an arrow
+  («Turn the RIGHT side up ↑»), the 3D cube turns the layer and shows the result; ◀ Back, Next ▶, 🔁 show again,
+  «Step 12 of 110», the next moves, and confetti at the end. The 3×3 is solved **layer by layer** like in the
+  beginner's method, in seven phases with a short explanation each (white cross, white corners, middle layer,
+  yellow cross, yellow edges, yellow corners to their place, turn the yellow corners) – about 135 moves on average,
+  never more than about 200; the cube is never turned as a whole. The 2×2 is solved the **shortest way** (at most
+  11 moves); the corner at the back, bottom left never moves. Everything runs on the device (the search in a Web
+  Worker); nothing is sent to the server. Parents switch it on or off in Settings › Games like the other games.
 
-**Photo sets and family crest** (parent area › Settings › Pairs game): upload photos into named sets (every photo
-becomes a pair; a set needs at least 3 photos), and design the family crest – name, an emoji, two colours and a
+- **🎰 One-armed bandit** – a slot machine with three reels: pull the lever for 1 coin, three times a day; three alike
+  win (7️⃣ 100, ⭐ 40, 🔔 20, 🍊 10, 🍋 8, 🍒 5 coins), two cherries anywhere 2, one cherry gives the coin back. The
+  reels are drawn on the server. It uses the **standard game price**: by default a child buys it once for **250
+  coins** or rents it for 20 coins a day (a free try = one spin); the parents can change the price and the rent or set 0 (free). Whoever bought it before (for 150 coins) keeps
+  it. **Win chance** (slider 1–10 in its settings, default 5) sets what comes back on average: 5 ≈ 92 % like a typical
+  casino machine, 10 ≈ 120 %, 1 ≈ 60 % (straight steps in between; the hint under the slider shows the value). The pay
+  table stays; the server draws the outcome first with the win chances of the reels scaled to that return, then shows
+  reels that fit it.
+
+**Photo sets** (parent area › Games › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
+photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**
+(parent area › Settings): design the family crest – name, an emoji, two colours and a
 pattern (plain, split, quartered, diagonal band, chevron). Photos no set uses any more are deleted when you save.
 
 ### Guests

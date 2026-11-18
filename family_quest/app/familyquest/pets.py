@@ -357,6 +357,10 @@ class Pets:
                       t.isoformat(), t.isoformat(), pet["id"])
             others = self.db.val("SELECT COUNT(*) FROM pet WHERE profile_id=? AND kind=? AND dead_at IS NULL", pid, kind, default=0)
             if not others:                     # the last of its kind: the unlock goes (another of the kind keeps it)
+                spent = int(self.db.val("SELECT new_xp FROM unlock WHERE profile_id=? AND item=?", pid, kind, default=0) or 0)
+                if spent > 0:                  # new XP paid for it stay spent (they do not come back with the death)
+                    self.db.x("""INSERT INTO xp_spent(profile_id, n) VALUES(?,?)
+                                 ON CONFLICT(profile_id) DO UPDATE SET n=n+excluded.n""", pid, spent)
                 self.db.x("DELETE FROM unlock WHERE profile_id=? AND item=?", pid, kind)
             self.db.x("DELETE FROM pet_item WHERE pet_id=?", pet["id"])          # outfits, house, furniture go with it
             p = self.db.q1("SELECT avatar FROM profile WHERE id=?", pid)
@@ -520,7 +524,7 @@ class Pets:
 
     # ---------------------------------------------------------------- more pets of one kind, babies
     def price(self, kind: str) -> int:
-        rule = av.ITEMS.get(kind, ("", "", {}))[2]
+        rule = av.rule_of(kind) if kind in av.ITEMS else {}
         return int(rule.get("cost", REBUY_COST))
 
     def _count(self, pid: int, kind: str) -> int:

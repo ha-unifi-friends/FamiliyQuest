@@ -8,7 +8,7 @@ const KL_COLORS = ["#e03131", "#1c7ed6", "#2f9e44", "#f08c00"];            // se
 const KL_RANKS = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"];
 const KL_SUITS = { s: "♠︎", h: "♥︎", d: "♦︎", c: "♣︎" };
 const KL_HINT = { A: "1 · 11 · ▶", K: "13 · ▶", Q: "12", J: "⇄", 4: "± 4", 7: "7 ✂", X: "★" };
-const klName = () => "Kartenlauf";
+const klName = () => I18N.tr(T("Card Race"));
 const klCoins = list => list.join(" / ") + " 🪙";
 const klRank = c => String(c || "").split(":")[1] || "";
 
@@ -97,7 +97,8 @@ async function kartenlaufStartDialog(solo, onStarted) {
       h("span.muted", T("Coins only at a family table with at least two people of the family – not alone against bots, not for guests or bots."))) : null;
   const m = modal(h("div.form", h("h2", KL_ICON, " ", klName(), solo ? " – " + I18N.tr(T("alone against bots")) : ""),
     h("div.grid2", h("label.field", T("Players"), seats), h("label.field", T("Bots play"), level)),
-    h("p.small.muted", solo ? T("Bots take the other seats.") : T("Free seats are taken by bots when the game starts.")),
+    h("p.small.muted", solo ? T("Bots take the other seats.") : botsOn("kartenlauf") ? T("Free seats are taken by bots when the game starts.")
+      : T("Without bots only the people at the table play (2 to 4).")),
     h("div.cards-rules", teamLbl, sevenLbl, h("label.check", joker, T("The joker may be the card that wins"))),
     picker.el,
     coins,
@@ -107,6 +108,7 @@ async function kartenlaufStartDialog(solo, onStarted) {
         level: level.value, bot_ids: picker.ids(), bot_ms: picker.ms() };
       try { await api("community/kartenlauf/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("kartenlauf", null, level, picker.el);          // parent area › Games: without bots
 }
 
 function kartenlaufLive(box, me, back) {
@@ -135,7 +137,6 @@ function kartenlaufLive(box, me, back) {
   const who = id => player(id).name || "?";
   const seatOf = id => player(id).seat ?? 0;
   const colorOf = id => KL_COLORS[seatOf(id)];
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
   const marble = id => (st.marbles || []).find(m => m.id === id);
 
   // ---------- the board: built once per game, the marbles move (animated along the track)
@@ -282,6 +283,13 @@ function kartenlaufLive(box, me, back) {
       h("div.kl-opts", ...opts.map(o => h("button.btn.big", { onclick: () => { m.close(); play(o); } }, ...label(o).flat()))),
       h("button.btn.ghost", { onclick: () => { m.close(); sel = { ...sel, marble: null }; draw(true); } }, T("Cancel"))));
   }
+  async function begin() {
+    if (busy) return;
+    busy = true;
+    try { const r = await beginGame("community/kartenlauf/begin", st.players); if (r) { st = r; sel = null; draw(true); } }
+    catch (e) { toast(e.message, "bad"); }
+    finally { busy = false; }
+  }
   function play(mv) {
     const body = { card: mv.card, kind: mv.kind, marble: mv.marble, steps: mv.steps, home: mv.home, target: mv.target, split: mv.split };
     if (mv.as || (sel && sel.as)) body.as = mv.as || sel.as;
@@ -292,24 +300,28 @@ function kartenlaufLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+    turnCue("kartenlauf", st && st.phase !== "exchange" && st.my_turn);
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.hand, st.round, st.joined, st.players.length, st.gave,
       st.last && st.last.t, st.players.map(p => p.gave), Math.ceil((st.next_ms || 0) / 1000)]) + JSON.stringify(sel);
     if (sig === lastSig && !force) return;
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", KL_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", KL_ICON), h("h2", T("No game right now")), noTableActions("kartenlauf", back)));
     if (sel && st.phase !== "exchange" && !st.my_turn) sel = null;
     if (sel && !(st.hand || []).includes(sel.card)) sel = null;
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", KL_ICON, " ", klName()), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => openModal(kartenlaufRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜"),
+    // ☰: rules, guests, End (whoever leads), language – only the main action (Start) stays as a big button
+    const menu = gameMenu({ rules: () => kartenlaufRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "kartenlauf" : null,
+      actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
+        onclick: () => act("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", KL_ICON, " ", klName())), h("div.row",
       st.round ? h("span.chip", I18N.tr(T("Round {0}")).replace("{0}", st.round)) : null));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("kartenlauf") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("kartenlauf") }, "👥 ", T("Invite guests")));
+    const host = isHost() && st.status !== "done" && st.phase === "lobby" ? h("div.row.center.host-bar",
+      h("button.btn", { onclick: begin }, "▶ ", T("Start"))) : null;
+    if (st.phase !== "lobby") starterBanner(st.starter, "kartenlauf");
     if (st.phase === "done" && st.marbles) { buildBoard(); updateMarbles(); return show(head, result()); }
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       st.phase === "lobby" ? h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")) : h("p.muted", T("The game has already started"))), lobbySeats(), host);
@@ -428,6 +440,6 @@ async function kartenlaufFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("kartenlauf") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Race your marbles around the board with cards – kick the others back to the kennel, play in teams. Places 1 to 3 win coins at the family table!")),
-         h("div.row.wrap", h("button.btn", { onclick: () => kartenlaufStartDialog(true, () => go("kartenlauf")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("kartenlauf") ? h("button.btn", { onclick: () => kartenlaufStartDialog(true, () => go("kartenlauf")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => kartenlaufStartDialog(false, () => go("kartenlauf")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

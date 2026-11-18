@@ -77,6 +77,7 @@ function pokerLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
+    turnCue("poker", st && st.to_act === me.id);
     const sig = JSON.stringify(st && [st.phase, st.hand_no, st.street, st.to_act, st.pot, st.board, st.paused, st.requests,
       st.players.map(p => [p.chips, p.bet, p.folded, p.last, p.out]), Math.ceil((st.turn_ms || 0) / 1000), Math.ceil((st.next_ms || 0) / 1000)]);
     if (sig === lastSig && !force) return;
@@ -86,17 +87,23 @@ function pokerLive(box, me, back) {
     if (!st) return show(h("section.card.center", h("div.big-ic", "🃏"), h("h2", T("No poker table right now")),
       h("p.muted", T("Open a table – everybody plays on their own device.")), h("button.btn", { onclick: back }, T("Back"))));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head", h("h1", "🃏 Texas Hold'em"), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => { const m = modal(h("div", pokerRules(st.rules), h("button.btn", { onclick: () => m.close() }, T("Close")))); } }, "📜 ", T("Rules")),
+    // ☰: rules, guests (everybody of the family at a family table), pause / end for whoever leads, language
+    const lead = isHost() && st.status !== "done";
+    const menu = gameMenu({ rules: () => pokerRules(st.rules),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "poker" : null,
+      actions: [
+        { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Go on") : T("Pause"), hidden: !lead || st.phase === "lobby", onclick: () => act("pause", { on: !st.paused }) },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game?"), onclick: () => act("end") }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🃏 Texas Hold'em")), h("div.row",
       st.hand_no ? h("span.chip", "#" + st.hand_no) : null,
       h("span.chip", I18N.tr(T("Blinds {0} / {1}")).replace("{0}", st.blinds[0]).replace("{1}", st.blinds[1]))));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { disabled: st.players.length < 2, onclick: () => act("begin") }, "▶ ", T("Deal")) :
-        h("button.btn.small", { onclick: () => act("pause", { on: !st.paused }) }, st.paused ? "▶ " + I18N.tr(T("Go on")) : "⏸ " + I18N.tr(T("Pause"))),
-      !me.guest && !st.solo ? h("button.btn.ghost.small", { onclick: () => guestInvite("poker") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end"); } }, T("End"))) : null;
-    // everybody of the family who plays may invite guests – not only who leads the game
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("poker") }, "👥 ", T("Invite guests")));
+    // only the main action stays as a big button – everything else is in ☰ (while paused: «Go on» too)
+    const host = lead && (st.phase === "lobby" || st.paused) ? h("div.row.center.host-bar",
+      st.phase === "lobby" ? h("button.btn", { disabled: st.players.length < 2, onclick: async () => {
+        try { const r = await beginGame("community/poker/begin", st.players); if (r) { st = r; draw(true); } } catch (e) { toast(e.message, "bad"); } } }, "▶ ", T("Deal"))
+        : h("button.btn", { onclick: () => act("pause", { on: false }) }, "▶ ", T("Go on"))) : null;
+    if (st.phase !== "lobby") starterBanner(st.starter, "poker", true);          // the starter gets the dealer button
     if (st.phase === "done") {
       const rank = st.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99));
       if (rank[0] && rank[0].id === me.id) { confetti(); try { Sound.play("done"); } catch {} }
@@ -184,7 +191,7 @@ async function pokerFamilyCard() {
     p ? [h("p", p.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("poker") }, "🙋 ", p.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Poker with play chips – everybody on their own device.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => pokerSoloDialog(() => go("poker")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("poker") ? h("button.btn", { onclick: () => pokerSoloDialog(() => go("poker")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => pokerStartDialog(() => go("poker")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }
 

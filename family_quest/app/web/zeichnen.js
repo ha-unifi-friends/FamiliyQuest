@@ -5,7 +5,7 @@
 "use strict";
 
 const ZR_ICON = "🎨";
-const zrName = () => I18N.tr(T("Zeichnen & Raten"));
+const zrName = () => I18N.tr(T("Draw & Guess"));
 const zrCoins = list => list.join(" / ") + " 🪙";
 // the category titles in the language of the app (the words themselves are German content)
 const ZR_CATS = { tiere: T("Animals"), berufe: T("Jobs"), essen: T("Food & fruit"), gegenstaende: T("Things at home"), sport: T("Sports"), gemischt: T("Mixed") };
@@ -174,7 +174,6 @@ function zeichnenLive(box, me, back) {
   const who = id => player(id).name || "?";
   const medal = n => ["🥇", "🥈", "🥉"][n - 1] || n + ".";
   const fill = (key, ...xs) => { let s = I18N.tr(key); xs.forEach((x, i) => { s = s.replace("{" + i + "}", x); }); return s; };
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
 
   // ---------- sending the strokes: one request at a time, in order
   function flushStrokes() {
@@ -201,8 +200,9 @@ function zeichnenLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", ZR_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", ZR_ICON), h("h2", T("No game right now")), noTableActions("zeichnen", back)));
     sounds();
+    if (st.phase !== "lobby") starterBanner(st.starter, "zeichnen");
     if (st.phase === "draw" || st.phase === "reveal") return turnView();
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     if (st.phase === "done") return show(head(), result());
@@ -222,16 +222,26 @@ function zeichnenLive(box, me, back) {
     }
     if (st.phase !== lastPhase) {
       if (st.phase === "reveal" && lastPhase === "draw" && !st.me_drawer && !st.found_me && st.joined) { try { Sound.play("wrong"); } catch {} }
-      if (st.phase === "choose" && st.me_drawer) { try { Sound.play("right"); } catch {} }
+      if (st.phase === "choose" && st.me_drawer) { try { Sound.play("turn"); navigator.vibrate && navigator.vibrate([60, 40, 60]); } catch {} }
       lastPhase = st.phase;
     }
     lastFound = found;
   }
 
+  // ☰: rules, guests, Skip / End (whoever leads), language – in the header and in the drawing view
+  function menu() {
+    const lead = isHost() && st.status !== "done";
+    const playing = ["choose", "draw", "reveal"].includes(st.phase);
+    return gameMenu({ rules: () => zeichnenRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !me.guest && st.status !== "done" ? "zeichnen" : null,
+      actions: [
+        { ic: "⏭", label: T("Skip"), hidden: !lead || !playing, confirm: I18N.tr(T("Skip the turn of {0}?")).replace("{0}", who(st.drawer)), onclick: () => act("skip") },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game? The points so far count."), onclick: () => act("end") }],
+      onLeave: st.status !== "done" ? () => { stop(); back(); } : null });
+  }
   function head() {
-    return h("div.quiz-head.dm-head.zr-head", h("h1", ZR_ICON, " ", zrName()), h("div.row",
-      st.phase !== "lobby" && st.phase !== "done" ? h("span.chip", fill(T("Round {0} of {1}"), st.round, st.rounds)) : null,
-      h("button.btn.small.ghost", { onclick: () => openModal(zeichnenRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜")));
+    return h("div.quiz-head.dm-head.zr-head", h("div.row.head-title", menu(), h("h1", ZR_ICON, " ", zrName())), h("div.row",
+      st.phase !== "lobby" && st.phase !== "done" ? h("span.chip", fill(T("Round {0} of {1}"), st.round, st.rounds)) : null));
   }
 
   function ruleChips() {
@@ -240,17 +250,18 @@ function zeichnenLive(box, me, back) {
       h("span.chip", st.rules.hints ? "💡 " : "🚫 ", st.rules.hints ? T("Hints on") : T("Hints off")));
   }
 
+  // only the main action (Start) stays as a big button – Skip, End and guests are in ☰
   function hostBar() {
-    const lead = isHost() && st.status !== "done";
-    const inv = !me.guest && st.status !== "done" ? h("button.btn.ghost.small", { onclick: () => guestInvite("zeichnen") }, "👥 ", T("Invite guests")) : null;
-    if (!lead) return inv ? h("div.row.center.host-bar", inv) : null;
-    const playing = ["choose", "draw", "reveal"].includes(st.phase);
+    if (!isHost() || st.status === "done" || st.phase !== "lobby") return null;
     return h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { disabled: st.players.length < 2, onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      inv,
-      playing ? h("button.btn.ghost.small", { title: T("Skip this turn (e.g. somebody left)"),
-        onclick: () => { if (confirm(I18N.tr(T("Skip the turn of {0}?")).replace("{0}", who(st.drawer)))) act("skip"); } }, "⏭ ", T("Skip")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game? The points so far count.")))) act("end"); } }, T("End")));
+      h("button.btn", { disabled: st.players.length < 2, onclick: begin }, "▶ ", T("Start")));
+  }
+  async function begin() {
+    if (busy) return;
+    busy = true;
+    try { const r = await beginGame("community/zeichnen/begin", st.players); if (r) { st = r; draw(true); } }
+    catch (e) { toast(e.message, "bad"); }
+    finally { busy = false; }
   }
 
   function seats() {
@@ -302,7 +313,8 @@ function zeichnenLive(box, me, back) {
     const wordBox = h("div.zr-wordbox");
     const chat = h("div.zr-chat", { "aria-live": "polite" });
     const close = h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕");
-    const top = h("div.zr-top", wordBox, timeBox);
+    const menuSlot = h("span.zr-menuslot");
+    const top = h("div.zr-top", menuSlot, wordBox, timeBox);
     let tools = null, input = null, form = null;
     if (drawer) tools = buildTools(canvas, painter);
     else if (st.joined) {
@@ -321,7 +333,7 @@ function zeichnenLive(box, me, back) {
     }
     const host = h("div.zr-hostslot"), strip_ = h("div.zr-stripslot");
     const root = h("div.zr-turn" + (drawer ? ".drawing" : ""), top, wrap, tools, form, chat, strip_);
-    V = { key, turn: st.turn, root, canvas, painter, overlay, secs, bar, wordBox, chat, input, form, tools, host, strip: strip_, chatSig: "", wordSig: "" };
+    V = { key, turn: st.turn, root, menuSlot, canvas, painter, overlay, secs, bar, wordBox, chat, input, form, tools, host, strip: strip_, chatSig: "", wordSig: "" };
     box.replaceChildren(close, root, host);
     requestAnimationFrame(() => painter.resize());
     painter.resize();
@@ -372,6 +384,7 @@ function zeichnenLive(box, me, back) {
     }
     V.strip.replaceChildren(strip());
     V.host.replaceChildren(...[hostBar()].filter(Boolean));
+    V.menuSlot.replaceChildren(menu());
     clock();
   }
 

@@ -26,7 +26,7 @@ import re
 import time
 import unicodedata
 
-from .cardgames import CardGames
+from .cardgames import CardGames, apply_starter, starter_mode
 from .community import CommunityError
 from .pairhunt import rewards_of as _rewards_of
 from .whoami_data import CATEGORIES, DEFAULT
@@ -348,7 +348,7 @@ class Whoami(CardGames):
             st = {"kind": KIND, "rules": r, "players": [self._person(host)], "phase": "lobby", "solo": False}
             return self.db.x("INSERT INTO card_game(kind, host_id, solo, state) VALUES(?,?,?,?)", KIND, host, 0, json.dumps(st))
 
-    def begin(self, kind: str, viewer: int) -> None:
+    def begin(self, kind: str, viewer: int, starter=None) -> None:
         with self.lock:
             row = self._row(KIND, viewer)
             if not row:
@@ -358,6 +358,7 @@ class Whoami(CardGames):
                 raise CommunityError("The game has already started")
             if len(st["players"]) < 2:
                 raise CommunityError("Wait for a second player")
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])     # who begins (parent area › Games)
             Table(st).deal()
             self._save(row, st)
 
@@ -445,7 +446,7 @@ class Whoami(CardGames):
         log = st.get("log") or []
         people = sum(1 for p in st["players"] if not p.get("bot") and not p.get("guest"))
         playing = st["phase"] == "play" and row["status"] != "done"
-        return {"game": row["id"], "kind": KIND, "title": TITLE, "status": row["status"], "phase": "done" if over and st["phase"] != "lobby" else st["phase"],
+        return {"game": row["id"], "starter": st.get("starter"), "kind": KIND, "title": TITLE, "status": row["status"], "phase": "done" if over and st["phase"] != "lobby" else st["phase"],
                 "solo": False, "host": row["host_id"], "rules": st["rules"],
                 "category": {"key": st["rules"].get("category"), "title": cat["title"], "emoji": cat["emoji"]},
                 "players": players, "joined": any(p["id"] == me for p in st["players"]),

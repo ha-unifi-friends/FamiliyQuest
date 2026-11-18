@@ -85,6 +85,7 @@ class Pack(BaseModel):
     farbe: str = ""
     icon: str = ""
     beschreibung: str = ""
+    beschreibung_i18n: dict[str, str] | None = None   # {"en": "…", "fr": "…"}: the description in other app languages
     quelle: str = ""
     privat: bool = False
     pfad: bool = False              # False = every unit open (default), True = units unlock one after the other

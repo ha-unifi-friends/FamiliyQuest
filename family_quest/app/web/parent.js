@@ -3,8 +3,8 @@
 
 const P = { info: null, meta: null, tab: "overview", profiles: [], accounts: [] };
 const app = $("#app");
-const TABS = [["overview", "📊", T("Overview")], ["calendar", "📅", T("Calendar")], ["packs", "📦", T("Packs")],
-  ["chores", "🧹", T("Chores")], ["community", "🎲", T("Community")], ["rewards", "🎁", T("Rewards")], ["goals", "🎯", T("Goals")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
+const TABS = [["overview", "📊", T("Overview")], ["calendar", "📅", T("Calendar")], ["packs", "📦", T("Learning packs")],
+  ["chores", "🧹", T("Chores")], ["community", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["goals", "🎯", T("Goals")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
 const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes: T("Internet minutes"), planer_points: T("Family Planer points"),
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
@@ -53,14 +53,18 @@ async function haLogin() {
   } catch {}
 })();
 
+// the parent session ran out (30 minutes): Home Assistant logs in again – else the PIN login (shared/ui.js api)
+window.FQ_ON_401 = async () => {
+  const r = await haLogin();
+  if (r && r.parent_token) return true;
+  Auth.parent = ""; loginView();
+  return false;
+};
+
 async function call(path, opts) {
   try { return await api(path, opts); }
   catch (e) {
-    if (e.status === 401) {
-      const r = await haLogin();
-      if (r && r.parent_token) return api(path, opts);          // session ran out – Home Assistant logs in again
-      Auth.parent = ""; loginView();
-    }
+    if (e.status === 401 && Auth.parent) { Auth.parent = ""; loginView(); }       // could not be renewed (api did try)
     toast(e.message, "bad");
     throw e;
   }
@@ -197,7 +201,7 @@ function render() {
     h("button.icon-btn.mob-menu", { "aria-label": T("Menu"), title: T("Menu"), onclick: () => { nav.classList.add("open"); back.classList.add("open"); } }, "☰"),
     h("span.mob-ic", cur[1]), h("strong.mob-title", cur[2]), h("span.grow"), refreshBtn());
   app.replaceChildren(h("div.layout", nav, back, h("div.main-wrap", mob, main)));
-  const views = { dashboard: dashboardView, community: communityView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, goals: goalsView, settings: settingsView };
+  const views = { dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, goals: goalsView, settings: settingsView };
   // a page that cannot load shows why and offers to try again – instead of an empty or broken page
   views[P.tab](main).catch(e => {
     if (!main.isConnected) return;                 // another page was opened meanwhile
@@ -272,7 +276,7 @@ async function overviewView(main) {
   main.append(pageHead(T("Overview"),
       P.meta.planer ? h("button.btn.ghost", { onclick: importPersons }, "📅 ", T("Take over from Family Planer")) : null,
       h("button.btn.ghost", { onclick: () => profileDialog(null, persons, "parent") }, "+ ", T("Add parent")),
-      h("button.btn", { onclick: () => profileDialog(null, persons, "kid") }, "+ ", T("Add child"))), pend || (chorePend ? null : h("p.muted", "✓ ", T("No open approvals."))), chorePend, failBox, weatherBox("set"),
+      h("button.btn", { onclick: () => profileDialog(null, persons, "kid") }, "+ ", T("Add child"))), d.kids.length ? partyCard() : null, pend || (chorePend ? null : h("p.muted", "✓ ", T("No open approvals."))), chorePend, failBox, weatherBox("set"),
     d.family_goal ? section("🤝 " + I18N.tr(T("Family goal")), h("div.row", C(d.family_goal.title, "strong.grow"), h("b", fmt(d.family_goal.value) + " / " + fmt(d.family_goal.target))),
       bar(d.family_goal.value, d.family_goal.target, "var(--good)")) : null,
     ...(kids.length ? kids : [h("div.card", h("p", T("No child profile yet.")))]),
@@ -297,7 +301,7 @@ function petsBox(k, render) {
         toast(paused ? T("Holiday care ended") : T("Holiday care is on"), "good"); render();
       } }, paused ? "▶ " : "⏸ ", paused ? T("End holiday care") : T("Holiday care"))),
     h("div.pet-mini-list", ...k.pets.map(p => h("div.pet-mini" + (p.dying ? ".dying" : ""),
-      h("span.pet-mini-ic", petIcon(p.kind, 34, p.emoji)), h("div.grow", h("div", C(p.name, "strong"), h("span.small.muted", " · " + I18N.tr(T("{0} days old")).replace("{0}", p.age))),
+      h("span.pet-mini-ic", petIcon(p.kind, 34, p.emoji)), h("div.grow", h("div", C(p.name, "strong"), h("span.small.muted", " · " + I18N.tr(p.age === 1 ? T("1 day old") : T("{0} days old")).replace("{0}", p.age))),
         h("div.pet-mini-bars", ...[["hunger", "🍖"], ["mood", "😊"], ["clean", "🫧"]].map(([b, ic]) => h("span.pet-mini-bar", { title: ic + " " + p[b] }, ic,
           bar(p[b], 100, p[b] < 25 ? "var(--bad)" : p[b] < 50 ? "var(--warn)" : "var(--good)")))),
         p.dying ? h("div.small.warn-text", "🆘 ", I18N.tr(T("All bars empty – dies in {0} days")).replace("{0}", Math.max(0, Math.ceil(p.days_left)))) : null)))));
@@ -389,17 +393,96 @@ function entitySelect(current, domains) {
   return sel;
 }
 
-/** Internet budget of a child: minutes per day / week, other weekdays, reset time and block times. */
+// ---------------------------------------------------------------- time sliders (games, learning, internet per day)
+// positions of the slider → minutes: minutes first, then hours; the last position (far right) is ∞ = unlimited
+const LIMIT_STEPS = [0, 5, 10, 15, 20, 30, 45, 60, 75, 90, 120, 150, 180, 240, 300, 360, 480, 600, 720];
+const LIMIT_STEPS_WEEK = [0, 30, 60, 90, 120, 180, 240, 300, 360, 420, 480, 600, 720, 900, 1080, 1200, 1500, 1800, 2400];
+
+/** A master slider with a «Days» button: 7 weekday sliders (Mon … Sun) docked to it – they move with the master
+ *  until one is moved on its own (undocked: own limit); moved back to the master's value it docks again.
+ *  value {all: minutes|null, days: {"0".."6": minutes|null}} – null = ∞, days only the undocked ones. */
+function limitSlider({ icon, label, value, steps = LIMIT_STEPS, extra = null }) {
+  const v = Object.assign({ all: null, days: {} }, value || {});
+  let master = v.all;                                         // minutes or null (∞)
+  const own = {};                                             // undocked weekdays: own minutes or null
+  for (const [k, x] of Object.entries(v.days || {})) if (/^[0-6]$/.test(k) && x !== master) own[k] = x;
+  const INF = () => steps.length;                            // index of ∞
+  const toMin = i => i >= INF() ? null : steps[i];
+  const toIdx = m => {                                       // the nearest position (a value between steps stays as it is until moved)
+    if (m == null) return INF();
+    let best = 0;
+    steps.forEach((x, i) => { if (Math.abs(x - m) < Math.abs(steps[best] - m)) best = i; });
+    return best;
+  };
+  const paint = (inp, m) => { const i = toIdx(m); inp.max = INF(); inp.value = i; inp.style.setProperty("--p", (i / INF() * 100) + "%");
+    inp.setAttribute("aria-valuetext", fmtMinutes(m)); };
+  const masterOut = h("output.lim-val");
+  const masterIn = h("input.lim-range", { type: "range", min: 0, step: 1, "aria-label": label });
+  const scale = h("div.lim-scale", { "aria-hidden": "true" });
+  const drawScale = () => scale.replaceChildren(...[0, Math.round(INF() * .37), Math.round(INF() * .63), INF()]
+    .map(i => h("span", { style: { "--p": i / INF() } }, i === INF() ? "∞" : fmtMinutes(steps[i]))));
+  const dayRows = WEEKDAYS.map((d, i) => {
+    const k = String(i);
+    const inp = h("input.lim-range.lim-day-range", { type: "range", min: 0, step: 1, "aria-label": label + " – " + d });
+    const out = h("output.lim-val");
+    const pin = h("button.lim-pin", { type: "button", onclick: () => { delete own[k]; draw(); } });
+    const row = h("div.lim-day", h("span.lim-dname", d), inp, out, pin);
+    inp.addEventListener("input", () => {
+      const m = toMin(+inp.value);
+      if (+inp.value === toIdx(master)) delete own[k]; else own[k] = m;     // back on the master's value: docked again
+      draw();
+    });
+    return { k, row, inp, out, pin };
+  });
+  const week = h("div.lim-week", { hidden: true }, ...dayRows.map(r => r.row));
+  const daysBtn = h("button.btn.small.ghost.lim-days", { type: "button", "aria-expanded": "false",
+    onclick: () => { week.hidden = !week.hidden; draw(); } }, "📅 ", T("Days"));
+  masterIn.addEventListener("input", () => { master = toMin(+masterIn.value); draw(); });
+  function draw() {
+    paint(masterIn, master);
+    masterOut.textContent = fmtMinutes(master);
+    masterIn.classList.toggle("inf", master == null);
+    const n = Object.keys(own).length;
+    daysBtn.setAttribute("aria-expanded", String(!week.hidden));
+    daysBtn.classList.toggle("on", !week.hidden);
+    daysBtn.replaceChildren(...["📅 ", I18N.tr(T("Days")), n ? h("span.lim-badge", String(n)) : ""].filter(Boolean));
+    for (const r of dayRows) {
+      const docked = !(r.k in own), m = docked ? master : own[r.k];
+      paint(r.inp, m);
+      r.out.textContent = fmtMinutes(m);
+      r.row.classList.toggle("own", !docked);
+      r.pin.textContent = docked ? "🔗" : "🔓";
+      r.pin.title = I18N.tr(docked ? T("Moves with the slider above") : T("Own time – tap to dock again"));
+      r.pin.disabled = docked;
+    }
+  }
+  drawScale();
+  if (Object.keys(own).length) week.hidden = false;         // a weekday with its own time: the days are open
+  draw();
+  const el = h("div.lim", h("div.lim-head", h("span.lim-ic", icon), h("b.grow", label), masterOut, extra, daysBtn),
+    h("div.lim-master", masterIn, scale), week);
+  return {
+    el,
+    value: () => ({ all: master, days: daysBtn.hidden ? {} : Object.fromEntries(Object.entries(own).filter(([, x]) => x !== master)) }),
+    /** per week: no weekday sliders; other steps */
+    setMode(withDays, newSteps) {
+      daysBtn.hidden = !withDays;
+      if (!withDays) week.hidden = true;
+      if (newSteps && newSteps !== steps) { steps = newSteps; drawScale(); }
+      draw();
+    },
+  };
+}
+
+/** Internet budget of a child: the slider (minutes per day / week, own minutes per weekday) for the time sliders,
+ *  reset time and block times. A budget of 0 without weekdays and block times = no plan (only earned minutes). */
 function internetPlanEditor(cur) {
   const p = Object.assign({ budget: 0, period: "day", reset: "00:00", reset_day: 0, days: {}, blocks: [] }, cur || {});
-  const on = h("input", { type: "checkbox", checked: !!cur });
-  const budget = h("input", { type: "number", min: 0, max: 10080, value: p.budget });
-  const period = h("select", h("option", { value: "day", selected: p.period === "day" }, T("per day")), h("option", { value: "week", selected: p.period === "week" }, T("per week")));
+  const period = h("select.lim-period", { "aria-label": T("Internet") }, h("option", { value: "day", selected: p.period === "day" }, T("per day")), h("option", { value: "week", selected: p.period === "week" }, T("per week")));
+  const slider = limitSlider({ icon: "🌐", label: T("Internet"), value: { all: p.budget, days: p.period === "day" ? p.days : {} },
+    steps: p.period === "week" ? LIMIT_STEPS_WEEK : LIMIT_STEPS, extra: period });
   const reset = h("input", { type: "time", value: p.reset });
   const resetDay = h("select", ...WEEKDAYS.map((d, i) => h("option", { value: i, selected: +p.reset_day === i }, d)));
-  const dayInputs = WEEKDAYS.map((d, i) => h("input", { type: "number", min: 0, max: 1440, placeholder: "–", value: p.days[String(i)] ?? "" }));
-  const daysRow = h("div.field", h("b", T("Other budget on these days")), h("div.plan-days", ...WEEKDAYS.map((d, i) => h("label", d, dayInputs[i]))),
-    h("span.hint", T("Empty = the default budget.")));
   const resetDayField = h("label.field", T("Reset on"), resetDay);
   const blocks = p.blocks.map(b => Object.assign({}, b));
   const blockBox = h("div.plan-blocks");
@@ -413,21 +496,20 @@ function internetPlanEditor(cur) {
       h("button.icon-btn", { type: "button", title: T("Delete"), onclick: () => { blocks.splice(bi, 1); drawBlocks(); } }, "🗑️")))),
     h("button.btn.small.ghost", { type: "button", onclick: () => { blocks.push({ days: [0, 1, 2, 3, 4], from: "20:00", to: "07:00", mode: "internet" }); drawBlocks(); } }, "+ ", T("Block time")));
   drawBlocks();
-  const body = h("div.plan-body");
-  const sync = () => { body.hidden = !on.checked; daysRow.hidden = period.value !== "day"; resetDayField.hidden = period.value !== "week"; };
-  on.onchange = sync; period.onchange = sync;
-  body.append(
-    h("div.grid2", h("label.field", T("Default budget (minutes)"), h("div.row", budget, period)),
-      h("div.row.wrap", resetDayField, h("label.field", T("Reset at"), reset))),
-    daysRow,
-    h("div.field", h("b", T("Block times")), h("span.hint", T("The internet is off – and you choose what Family Quest still allows.")), blockBox),
-    h("p.small.muted", T("Minutes from the shop or rewards come on top; the budget is used first and starts again at the reset.")));
+  const sync = () => { resetDayField.hidden = period.value !== "week"; slider.setMode(period.value === "day", period.value === "week" ? LIMIT_STEPS_WEEK : LIMIT_STEPS); };
+  period.onchange = sync;
   sync();
   return {
-    el: h("div.plan", h("label.check", on, h("b", T("Internet budget and block times"))), body),
-    value: () => on.checked ? { budget: +budget.value || 0, period: period.value, reset: reset.value || "00:00", reset_day: +resetDay.value,
-      days: Object.fromEntries(dayInputs.map((x, i) => [String(i), x.value]).filter(([, v]) => v !== "")),
-      blocks: blocks.filter(b => b.days.length) } : null,
+    slider,
+    el: h("div.plan", h("b", T("Internet budget and block times")),
+      h("div.row.wrap", resetDayField, h("label.field", T("Reset at"), reset)),
+      h("div.field", h("b", T("Block times")), h("span.hint", T("The internet is off – and you choose what Family Quest still allows.")), blockBox),
+      h("p.small.muted", T("Minutes from the shop or rewards come on top; the budget is used first and starts again at the reset."))),
+    value: () => {
+      const sv = slider.value(), bl = blocks.filter(b => b.days.length);
+      if (sv.all === 0 && !Object.keys(sv.days).length && !bl.length) return null;      // no plan: only earned minutes
+      return { budget: sv.all, period: period.value, reset: reset.value || "00:00", reset_day: +resetDay.value, days: sv.days, blocks: bl };
+    },
   };
 }
 
@@ -462,6 +544,14 @@ async function profileDialog(p, persons, role = "kid") {
   if (P.meta.ha) call("parent/ha/entities?domain=notify").then(l => notifyList.replaceChildren(...l.map(e => h("option", { value: e.entity_id })))).catch(() => {});
   const ents = null;
   const plan = internetPlanEditor(s.internet_plan);
+  // daily time: games, learning, internet – three sliders, each with its weekdays (children only)
+  const gameLimit = limitSlider({ icon: "🎮", label: T("Games per day"), value: s.game_limit });
+  const learnLimit = limitSlider({ icon: "📚", label: T("Learning per day"), value: s.learn_limit });
+  const timePart = h("div.form.lim-box", h("h3", "⏱️ ", T("Time per day")),
+    h("p.small.muted", T("Far right ∞ = not limited. 📅 Days: own times per weekday – a weekday moves with the slider above until you move it yourself.")),
+    gameLimit.el, learnLimit.el, plan.slider.el,
+    h("p.small.muted", T("Games: family games and the game corner – a game already running may be finished. Internet: the free minutes of the internet budget (needs the UniFi firewall rule below); 0 = only minutes from the shop.")));
+  const batteryPart = !isNew && p.role === "kid" ? kidBatteryBox(p.id) : null;
   const kidPart = h("div.form", h("h3", T("Internet minutes")),
     h("p.small.muted", T("Optional. Family Quest manages the internet time itself with the UniFi firewall rule; an input_number can also receive the minutes.")),
     h("div.grid2", h("label.field", T("UniFi firewall rule (switch)"), f.internet_rule, ruleList,
@@ -558,7 +648,7 @@ async function profileDialog(p, persons, role = "kid") {
         : T("Children: 4 digits, optional. Parents: 4–8 digits, required."))));
     } else pinArea.replaceChildren(h("p.small.muted", kid ? T("The child logs in without a PIN.") : T("No login in the app – the parent area opens with the Home Assistant user.")));
   };
-  const syncRole = () => { kidPart.hidden = f.role.value !== "kid"; parentPart.hidden = f.role.value !== "parent"; haPart.hidden = f.role.value !== "parent" || !P.meta.ha; drawPin(); };
+  const syncRole = () => { kidPart.hidden = timePart.hidden = f.role.value !== "kid"; if (batteryPart) batteryPart.hidden = f.role.value !== "kid"; parentPart.hidden = f.role.value !== "parent"; haPart.hidden = f.role.value !== "parent" || !P.meta.ha; drawPin(); };
   f.role.addEventListener("change", syncRole); syncRole();
   const m = modal(h("div.form",
     h("h2", isNew ? (p.role === "parent" ? T("New parent") : T("New child")) : T("Edit profile")),
@@ -571,6 +661,7 @@ async function profileDialog(p, persons, role = "kid") {
       h("label.field", T("New cards per lesson"), f.new_per_lesson),
       h("label.field", T("Learning hours"), f.learning_hours, h("span.hint", T("Empty = always. Example: 07:00-20:00"))),
       h("label.field", T("Log out after minutes without touch"), f.auto_logout_min, h("span.hint", T("0 = never")))),
+    timePart, batteryPart,
     P.meta.ha ? h("h3", "🏠 ", T("Devices")) : null, P.meta.ha ? devBox : null,
     kidPart, parentPart,
     persons.length ? h("label.field", T("Person in the Family Planer"), f.planer, h("span.hint", T("Shows the chores of this person and counts them."))) : null,
@@ -594,6 +685,7 @@ async function profileDialog(p, persons, role = "kid") {
         learning_hours: f.learning_hours.value.trim(), auto_logout_min: +f.auto_logout_min.value, internet_entity: f.internet_entity.value,
         internet_daily_limit: +f.internet_daily_limit.value, notify_service: f.notify_service.value.trim(),
         internet_rule: f.internet_rule.value, internet_rule_blocks: f.internet_rule_blocks.checked, internet_plan: plan.value(),
+        ...(isParent ? {} : { game_limit: gameLimit.value(), learn_limit: learnLimit.value() }),
         ...(P.meta.ha ? { devices: [...devSel] } : {}) } };
     if (isParent && !body.ha_user_id && (pin === "" || (!p.has_pin && !body.pin))) {
       if (P.meta.ha) { haUser.focus(); return toast(T("Parents need a Home Assistant user or a PIN"), "bad"); }
@@ -608,28 +700,57 @@ async function profileDialog(p, persons, role = "kid") {
 }
 
 // ---------------------------------------------------------------- packs
+// a search that finds nothing: say so, with a link that clears the search
+function noMatch(text, reset) {
+  return h("p.muted.no-match", { hidden: true }, "🔍 ", text, " · ",
+    h("a", { href: "#", onclick: e => { e.preventDefault(); reset(); } }, T("Reset search")));
+}
+
+// an open «⋯» menu closes with a tap anywhere else
+document.addEventListener("click", e => document.querySelectorAll("details.more-menu[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
+
 async function packsView(main) {
   const [d, profiles] = await Promise.all([call("parent/packs"), call("parent/profiles")]);
   const kids = profiles.filter(p => p.role === "kid");
   const drafts = d.packs.filter(p => p.status === "draft");
+  const imported = p => !["builtin", "share"].includes(p.source);      // own packs: imported, made with the AI or edited – shown on top
+  const importedPacks = d.packs.filter(p => p.status !== "draft" && imported(p));
   const bundles = d.packs.filter(p => p.kind === "bundle" && p.status !== "draft");
   const packs = d.packs.filter(p => p.kind === "pack" && p.status !== "draft");
   const actRow = p => h("div.act", ...kids.map(k => h("label.check", h("input", { type: "checkbox", checked: p.profiles.includes(k.id),
-    onchange: async e => { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: p.id, on: e.target.checked } }); if (p.kind === "bundle") render(); } }),
+    onchange: async e => {
+      try { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: p.id, on: e.target.checked } }); toast(T("Saved"), "good"); }
+      catch { e.target.checked = !e.target.checked; return; }   // call() showed the error
+      if (p.kind === "bundle") render();
+    } }),
     C(k.name))));
-  const card = p => h("div.card.pack" + (p.status === "draft" ? ".draft" : ""),
-    h("div.row", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
+  const byId = Object.fromEntries(d.packs.map(p => [p.id, p]));
+  // «⋯»: the rarely used actions (export, delete) – the row keeps room for the title
+  const moreMenu = p => h("details.more-menu",
+    h("summary.btn.small.ghost", { title: T("More"), "aria-label": T("More") }, "⋯"),
+    h("div.more-pop",
+      h("button.btn.small.ghost", { title: T("Export as ZIP (with pictures)"), onclick: e => { e.target.closest("details").open = false; download(p.id, "zip"); } }, "⬇️ ", T("Export as ZIP (with pictures)")),
+      h("button.btn.small.ghost", { onclick: e => { e.target.closest("details").open = false; download(p.id, "json"); } }, "⬇️ ", T("Export as JSON")),
+      h("button.btn.small.ghost.danger-text", { onclick: e => { e.target.closest("details").open = false; del(p); } }, "🗑️ ", T("Delete"))));
+  const card = p => h("div.card.pack" + (p.status === "draft" ? ".draft" : ""), { "data-find": [p.id, p.title, p.level, p.subject && I18N.tr(p.subject.name), ...(p.units || []).map(u => u.title)].filter(Boolean).join(" ") },
+    h("div.row.pack-head", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
       h("div.small.muted", p.kind === "bundle" ? T("Level pack") : subjectName(p.subject.key), p.level ? h("span", { translate: "no" }, " · " + p.level) : null, " · ",
-        STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : "")),
-      p.kind === "pack" ? h("button.btn.small.ghost", { onclick: () => packEditor(p.id) }, "✏️ ", T("Edit")) : null,
-      h("button.btn.small.ghost", { title: T("Export as ZIP (with pictures)"), onclick: () => download(p.id, "zip") }, "⬇️ ZIP"),
-      h("button.btn.small.ghost", { title: T("Export as JSON"), onclick: () => download(p.id, "json") }, "⬇️ JSON"),
+        STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : "")), moreMenu(p)),
+    h("div.row.wrap.pack-acts",
+      // a draft is checked, then published – the same two verbs as on the import page
+      p.kind === "pack" ? h("button.btn.small.ghost", { onclick: () => packEditor(p.id) }, "✏️ ", p.status === "draft" ? T("Check") : T("Edit")) : null,
+      p.kind === "pack" ? h("button.btn.small.ghost", { title: T("XP and coins per finished lesson of this pack"), onclick: () => packRewards(p) },
+        "🏅 ", p.rewards && (p.rewards.xp != null || p.rewards.coins != null)
+          ? [p.rewards.xp != null ? p.rewards.xp + " XP" : "", p.rewards.xp != null && p.rewards.coins != null ? " · " : "", p.rewards.coins != null ? p.rewards.coins + " 🪙" : ""]
+          : T("Rewards")) : null,
+      p.kind === "pack" ? h("button.btn.small.ghost", { title: T("Opens the pack in the app in a new tab – parents can try every pack"), onclick: () => openInApp("pack/" + encodeURIComponent(p.id)) }, "▶ ", T("Try in the app")) : null,
       p.status === "draft" ? h("button.btn.small.good", { onclick: () => setStatus(p.id, "active") }, "✓ ", T("Publish"))
-        : h("button.btn.small.ghost", { onclick: () => setStatus(p.id, p.status === "active" ? "disabled" : "active") }, p.status === "active" ? T("Switch off") : T("Switch on")),
-      h("button.btn.small.ghost", { title: T("Delete"), onclick: () => del(p) }, "🗑️")),
+        : h("button.btn.small.ghost", { onclick: () => setStatus(p.id, p.status === "active" ? "disabled" : "active") }, p.status === "active" ? T("Switch off") : T("Switch on"))),
     p.kind === "pack" ? h("div.small.units", ...p.units.map(u => chip([u.icon ? u.icon + " " : "", C(u.title), " · " + u.count]))) :
-      h("div.small", ...(p.semesters || []).map(s => h("div", C(s.titel || s.id, "strong"), ": ", C(s.pakete.join(", ") || "–")))),
-    p.status !== "draft" && kids.length ? actRow(p) : null);
+      // level pack: its packs by title (the internal ids mean nothing to parents)
+      h("div.small", ...(p.semesters || []).map(s => h("div", C(s.titel || s.id, "strong"), ": ",
+        C(s.pakete.map(id => byId[id] ? byId[id].title : id).join(", ") || "–")))),
+    kids.length ? (p.status === "draft" ? h("div", h("div.small.muted", "👧 ", T("Assign now – the child sees it as soon as you publish it:")), actRow(p)) : actRow(p)) : null);
   // switch: sorted by packs (which children have a pack) or grouped by children (which packs a child has)
   let mode = "packs"; try { mode = localStorage.getItem("fq.packs.view") || "packs"; } catch {}
   if (!kids.length) mode = "packs";
@@ -655,15 +776,50 @@ async function packsView(main) {
         h("button.btn.small.ghost", { title: T("Remove"), onclick: () => toggle(k, p, false) }, "✕")))) : h("p.muted", T("No packs yet.")),
       others.length ? add : null);
   });
-  main.append(pageHead(T("Packs"), seg,
+  // search: filters the pack cards (title, subject, level, units, id) – remembered while the page is open
+  const search = h("input.pack-search", { type: "search", placeholder: "🔍 " + I18N.tr(T("Search packs …")), value: P.packSearch || "",
+    "aria-label": T("Search packs …"), oninput: () => { P.packSearch = search.value; filterPacks(); } });
+  const noPacks = noMatch(T("No packs found"), () => { search.value = ""; P.packSearch = ""; filterPacks(); });
+  const filterPacks = () => {
+    const q = (search.value || "").trim().toLowerCase();
+    const all = [...main.querySelectorAll(".card.pack, .pack-mini")];
+    all.forEach(c => { c.hidden = !!q && !((c.dataset.find || c.textContent).toLowerCase().includes(q)); });
+    noPacks.hidden = !q || all.some(c => !c.hidden);
+    main.querySelectorAll("section.sec, section.card.sec").forEach(sec => {
+      const cards = sec.querySelectorAll(".card.pack, .pack-mini");
+      if (cards.length) sec.hidden = !!q && [...cards].every(c => c.hidden) && !sec.classList.contains("kid-packs");
+    });
+  };
+  setTimeout(filterPacks);
+  main.append(pageHead(T("Learning packs"), seg,
     h("button.btn.ghost", { title: T("All packs in one JSON file"), onclick: () => download(null, "json") }, "⬇️ ", T("Export all")),
     h("button.btn", { onclick: () => { P.tab = "import"; render(); } }, "📥 ", T("Import"))));
+  main.append(search, noPacks);
   if (mode === "kids") return main.append(...byKid(),
     drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null);
+  const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
-    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
-    bundles.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...bundles.map(card)) : null,
-    section("📚 " + I18N.tr(T("Packs")), ...packs.map(card)));
+    drafts.length ? section("📝 " + I18N.tr(T("Imported as draft – to check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
+    importedPacks.length ? section("⭐ " + I18N.tr(T("Own packs")), ...importedPacks.map(card)) : null,
+    levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
+    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
+  function packRewards(p) {
+    const r = p.rewards || {};
+    const xp = h("input", { type: "number", min: 0, max: 10000, value: r.xp ?? "", placeholder: "–", inputmode: "numeric" });
+    const coins = h("input", { type: "number", min: 0, max: 10000, value: r.coins ?? "", placeholder: "–", inputmode: "numeric" });
+    const num = el => el.value === "" ? null : Math.max(0, parseInt(el.value, 10) || 0);
+    const save = async () => {
+      try { await call(`parent/packs/${encodeURIComponent(p.id)}/rewards`, { method: "POST", body: { xp: num(xp), coins: num(coins) } }); m.close(); toast(T("Saved"), "good"); render(); }
+      catch (e) { toast(e.message, "bad"); }
+    };
+    const m = modal(h("div.form", h("h2", "🏅 ", C(p.title)),
+      h("p.small.muted", T("What a finished lesson of this pack gives. Empty: the family rule (Rewards › Rules «Lesson finished»). The daily limit of the rule still applies.")),
+      // both numbers side by side, the icon inline in the label; empty = the family rule, «Reset» empties both
+      h("div.reward-nums", h("label.field", { title: T("XP per finished lesson") }, h("span", "⭐ XP"), xp),
+        h("label.field", { title: T("Coins per finished lesson") }, h("span", "🪙 ", T("Coins")), coins)),
+      h("p.small.muted", T("Empty = family rule"), " · ", h("a", { href: "#", onclick: e => { e.preventDefault(); xp.value = ""; coins.value = ""; } }, T("Reset"))),
+      h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  }
   async function setStatus(id, status) { await call(`parent/packs/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } }); render(); }
   async function del(p) { if (!confirm(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
 }
@@ -807,7 +963,6 @@ async function packEditor(id, { afterSave } = {}) {
 // ---------------------------------------------------------------- import
 async function importView(main) {
   const file = h("input", { type: "file", accept: ".yaml,.yml,.json,.zip,.csv,.tsv,.xlsx" + (P.meta.ai ? ",.pdf,.png,.jpg,.jpeg,.webp" : "") });
-  const url = h("input", { type: "url", placeholder: "https://…/pack.yaml" });
   const out = h("div");
   const drop = h("label.drop", file, h("span.big-ic", "📄"), h("strong", T("Choose or drop a file")),
     h("span.small.muted", P.meta.ai ? T("YAML, JSON, ZIP, CSV, Excel, PDF or photo") : T("YAML, JSON, ZIP, CSV or Excel")));
@@ -815,25 +970,15 @@ async function importView(main) {
   ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove("over")));
   drop.addEventListener("drop", e => { e.preventDefault(); if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]); });
   file.addEventListener("change", () => file.files[0] && upload(file.files[0]));
-  main.append(pageHead(T("Import"), h("button.btn.ghost", { onclick: () => { P.tab = "packs"; location.hash = "packs"; render(); } }, "← ", T("Packs"))),
+  main.append(pageHead(T("Import"), h("button.btn.ghost", { onclick: () => { P.tab = "packs"; location.hash = "packs"; render(); } }, "← ", T("Learning packs"))),
+    out,                                        // the imported drafts: on top, right where you look after the upload
     section(T("From a file"), drop,
       h("p.small.muted", T("Everything imported becomes a draft first. You check it, then publish it for the children.")),
       P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: the AI of Home Assistant reads it and makes a draft. Packs from school material stay private.")) :
         h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
-    section(T("From a link"), h("div.row", url, h("button.btn", { onclick: fromUrl }, T("Load")))),
-    section(T("Format"), h("pre.small.example", { translate: "no" }, `id: franz-5kl-einheit-3
-titel: "Französisch 5. Klasse – Einheit 3"
-fach: franzoesisch
-stufe: 5. Klasse
-sprache: fr
-einheiten:
-  - id: zimmer
-    titel: Zimmer im Haus
-    karten:
-      - {de: das Haus, fr: la maison, emoji: "🏠"}
-      - {de: die Küche, fr: la cuisine}
-    uebungen: [auswahl, eintippen, paare, hoeren]`)),
-    out);
+    section("🤖 " + I18N.tr(T("Made with your AI")),
+      h("p", T("Learning material that fits your child's school year and textbook: the template – and every JSON export of a pack – is a JSON file that explains itself to an AI (instructions and every field). Give it to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3», «the words on this photo» or «add 10 cards». Save the answer as a .json file and upload it above. Then check the draft, publish it and assign it to your children.")),
+      aiTemplateButtons("pack")));
   async function upload(f) {
     const fd = new FormData(); fd.append("file", f);
     out.replaceChildren(h("p", "⏳ ", T("Reading…")));
@@ -842,21 +987,23 @@ einheiten:
     if (r.table) return tableMapping(r.table, out);
     showDrafts(r.drafts, out);
   }
-  async function fromUrl() {
-    if (!url.value) return url.focus();
-    out.replaceChildren(h("p", "⏳ ", T("Loading…")));
-    try { showDrafts((await call("parent/import/url", { method: "POST", body: { url: url.value } })).drafts, out); } catch { out.replaceChildren(); }
-  }
 }
 
-function showDrafts(drafts, out) {
-  out.replaceChildren(section("✓ " + I18N.tr(T("Imported as draft")), ...drafts.map(d => h("div.row.draft-row",
+async function showDrafts(drafts, out) {
+  setTimeout(() => out.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  let kids = [];
+  try { kids = (await call("parent/profiles")).filter(p => p.role === "kid"); } catch {}
+  const assign = d => kids.length ? h("div.act.draft-assign", h("span.small.muted", "👧 ", T("For:")), ...kids.map(k => h("label.check",
+    h("input", { type: "checkbox", onchange: async e => { try { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: d.id, on: e.target.checked } }); toast(T("Saved"), "good"); } catch (err) { toast(err.message, "bad"); } } }),
+    C(k.name)))) : null;
+  out.replaceChildren(section("✓ " + I18N.tr(T("Imported as draft")), ...drafts.map(d => h("div.draft-box", h("div.row.draft-row",
     h("span.big-ic", d.kind === "bundle" ? "🎒" : (d.icon || "📚")), h("div.grow", C(d.title, "strong"),
       h("div.small.muted", d.units ? d.units.map(u => u.title + " (" + u.count + ")").join(", ") : ""),
       d.replaces ? h("div.small.warn-text", T("Replaces the existing pack with the same id.")) : null,
       d.uncertain && d.uncertain.length ? h("div.small.warn-text", T("Not readable for sure:"), " ", C(d.uncertain.join(", "))) : null),
     d.kind !== "bundle" ? h("button.btn.small", { onclick: () => packEditor(d.id, { afterSave: () => { P.tab = "packs"; render(); } }) }, "✏️ ", T("Check")) : null,
-    h("button.btn.small.good", { onclick: async () => { await call(`parent/packs/${encodeURIComponent(d.id)}/status`, { method: "POST", body: { status: "active" } }); toast(T("Published"), "good"); P.tab = "packs"; render(); } }, "✓ ", T("Publish"))))));
+    h("button.btn.small.good", { onclick: async () => { await call(`parent/packs/${encodeURIComponent(d.id)}/status`, { method: "POST", body: { status: "active" } }); toast(T("Published"), "good"); P.tab = "packs"; render(); } }, "✓ ", T("Publish"))),
+    assign(d)))));
 }
 
 function tableMapping(t, out) {
@@ -881,7 +1028,8 @@ function tableMapping(t, out) {
     h("h3", T("Pack")),
     h("div.grid3", h("label.field", T("Title"), meta.titel), h("label.field", T("Subject"), meta.fach), h("label.field", T("Level"), meta.stufe),
       h("label.field", T("Language learnt"), meta.sprache), h("label.check", meta.privat, T("Private (from school material, never share)"))),
-    h("button.btn", { onclick: build }, T("Create draft"))));
+    h("div.row", h("button.btn", { onclick: build }, T("Create draft")),
+      h("button.btn.ghost", { onclick: () => out.replaceChildren() }, T("Cancel")))));
   async function build() {
     const c = {}; for (const [k, s] of Object.entries(cols)) if (s.value !== "") c[k] = +s.value;
     const m = { titel: meta.titel.value, fach: meta.fach.value, stufe: meta.stufe.value, sprache: meta.sprache.value, privat: meta.privat.checked };
@@ -1103,7 +1251,7 @@ async function choresView(main) {
           c.frequency === "weekdays" ? " (" + c.weekdays.map(i => I18N.tr(WEEKDAYS[i])).join(", ") + ")" : "",
           c.frequency === "once" ? " " + fmtDate(c.date) : "", " · ",
           c.assign === "rotate" ? I18N.tr(T("rotating")) : I18N.tr(T("fixed")), ": ", C(c.profiles.map(kidName).join(", ")), " · ",
-          c.kind === "duty" ? I18N.tr(T("duty")) : I18N.tr(T("bonus")), " · +" + fmt(c.points),
+          c.kind === "duty" ? I18N.tr(T("duty")) : I18N.tr(T("bonus")), " · +" + fmt(c.points), c.energy ? " · 🔋+" + c.energy : "",
           c.confirm ? " · 👪 " + I18N.tr(T("parents confirm")) : "", c.active ? "" : " · " + I18N.tr(T("switched off")))),
       h("button.btn.small.ghost", { onclick: () => choreDialog(c, kids) }, "✏️ ", T("Edit")))))));
 }
@@ -1125,6 +1273,7 @@ function choreDialog(c, kids) {
     kind: h("select", h("option", { value: "bonus", selected: c.kind === "bonus" }, T("Bonus chore (full points)")),
       h("option", { value: "duty", selected: c.kind === "duty" }, T("Duty (few or no points)"))),
     confirm: h("input", { type: "checkbox", checked: !!c.confirm }), active: h("input", { type: "checkbox", checked: !!c.active }),
+    energy: h("input", { type: "number", min: 0, max: 20, step: 1, inputmode: "numeric", value: c.energy || 0 }),
   };
   const days = WEEKDAYS.map((n, i) => h("label.check", h("input", { type: "checkbox", value: i, checked: c.weekdays.includes(i) }), n));
   const who = kids.map(k => h("label.check", h("input", { type: "checkbox", value: k.id, checked: c.profiles.includes(k.id) }), C(k.name)));
@@ -1135,6 +1284,7 @@ function choreDialog(c, kids) {
     h("h2", isNew ? T("New chore") : T("Edit chore")),
     h("div.row", f.icon, h("label.field.grow", T("Name"), f.name)),
     h("div.grid3", h("label.field", T("Points"), f.points), h("label.field", T("Account"), f.account), h("label.field", T("Type"), f.kind)),
+    h("label.field", h("span", "⚡ ", T("Energy bonus")), f.energy, h("span.hint", T("Segments of the game battery the child gets when the chore is done (0 = none). Never more than the battery holds."))),
     h("div.grid3", h("label.field", T("How often"), f.frequency), dateRow, h("label.field", T("Assignment"), f.assign), rotRow), dayRow,
     h("div", h("strong", T("Who")), h("div.row", ...who)),
     h("label.check", f.confirm, T("Parents confirm before points are booked")), h("label.check", f.active, T("Active")),
@@ -1144,7 +1294,7 @@ function choreDialog(c, kids) {
     const body = { name: f.name.value, icon: f.icon.value || "🧹", points: +f.points.value, account: f.account.value, frequency: f.frequency.value,
       weekdays: days.map(l => l.querySelector("input")).filter(x => x.checked).map(x => +x.value), date: f.date.value || null,
       assign: f.assign.value, rotate_every: f.rotate_every.value, profiles: who.map(l => l.querySelector("input")).filter(x => x.checked).map(x => +x.value),
-      kind: f.kind.value, confirm: f.confirm.checked, active: f.active.checked, sort: c.sort || 0 };
+      kind: f.kind.value, confirm: f.confirm.checked, active: f.active.checked, sort: c.sort || 0, energy: Math.max(0, Math.min(20, Math.round(+f.energy.value || 0))) };
     await call(isNew ? "parent/chores" : `parent/chores/${c.id}`, { method: isNew ? "POST" : "PUT", body });
     m.close(); toast(T("Saved"), "good"); render();
   }
@@ -1155,18 +1305,27 @@ function choreDialog(c, kids) {
 }
 
 // ---------------------------------------------------------------- rewards: accounts, rules, shop
-async function rewardsView(main) {
+// phones: a table with class «stack» shows each row as a small card – every cell gets its column name (also rows added later)
+function stackTable(table) {
+  const names = [...table.querySelectorAll("thead th")].map(th => I18N.tr(th.textContent.trim()));
+  const label = tr => [...tr.children].forEach((td, i) => { if (names[i]) td.dataset.label = names[i]; });
+  table.querySelectorAll("tbody tr").forEach(label);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeName === "TR") label(n); }))).observe(table.tBodies[0], { childList: true });
+  return table;
+}
+
+async function rewardsView(main, opts = {}) {
   const [accounts, rules, rewards] = await Promise.all([call("parent/accounts"), call("parent/rules"), call("parent/rewards")]);
   P.accounts = accounts;
   const accOpts = sel => accounts.map(a => h("option", { value: a.key, selected: a.key === sel }, (a.icon || "") + " " + I18N.tr(a.name)));
 
   const accRows = accounts.map(a => {
-    const f = { name: h("input", { type: "text", value: a.name }), unit: h("input", { type: "text", value: a.unit }), icon: h("input", { type: "text", value: a.icon }),
+    const f = { name: h("input", { type: "text", value: I18N.tr(a.name) }), unit: h("input", { type: "text", value: a.unit }), icon: h("input", { type: "text", value: a.icon }),
       spendable: h("input", { type: "checkbox", checked: !!a.spendable, disabled: a.key === "xp" }), active: h("input", { type: "checkbox", checked: !!a.active, disabled: a.key === "xp" }) };
     const save = () => call("parent/accounts", { method: "PUT", body: { key: a.key, name: f.name.value, unit: f.unit.value, icon: f.icon.value,
       spendable: f.spendable.checked, active: f.active.checked, sort: a.sort } }).then(() => toast(T("Saved"), "good"));
     Object.values(f).forEach(x => x.addEventListener("change", save));
-    return h("tr", h("td", { translate: "no" }, h("code", a.key)), h("td", f.icon), h("td", f.name), h("td", f.unit), h("td.c", f.spendable), h("td.c", f.active));
+    return h("tr", h("td.key-col", { translate: "no" }, h("code", a.key)), h("td", f.icon), h("td", f.name), h("td", f.unit), h("td.c", f.spendable), h("td.c", f.active));
   });
   const newAcc = h("input", { type: "text", placeholder: T("key, e.g. stars") });
 
@@ -1174,7 +1333,7 @@ async function rewardsView(main) {
   function ruleRow(r) {
     const f = { event: h("select", ...Object.entries(P.meta.events).map(([k, n]) => h("option", { value: k, selected: k === r.event }, n))),
       account: h("select", ...accOpts(r.account)), amount: h("input", { type: "number", value: r.amount, step: "1" }),
-      daily_limit: h("input", { type: "number", value: r.daily_limit ?? "", placeholder: "–" }), label: h("input", { type: "text", value: r.label }),
+      daily_limit: h("input", { type: "number", value: r.daily_limit ?? "", placeholder: "–" }), label: h("input", { type: "text", value: I18N.tr(r.label || "") }),
       active: h("input", { type: "checkbox", checked: !!r.active }) };
     const save = () => call(r.id ? `parent/rules/${r.id}` : "parent/rules", { method: r.id ? "PUT" : "POST", body: { event: f.event.value, account: f.account.value,
       amount: +f.amount.value, daily_limit: f.daily_limit.value === "" ? null : +f.daily_limit.value, condition: r.condition || {}, label: f.label.value, active: f.active.checked } })
@@ -1187,7 +1346,7 @@ async function rewardsView(main) {
 
   const rewardCards = rewards.map(r => rewardCard(r));
   function rewardCard(r) {
-    const f = { icon: h("input.icon-in", { type: "text", value: r.icon }), name: h("input", { type: "text", value: r.name }),
+    const f = { icon: h("input.icon-in", { type: "text", value: r.icon }), name: h("input", { type: "text", value: I18N.tr(r.name) }),   // built-in names are English keys – show (and save) the translation the children see
       kind: h("select", ...Object.entries(KIND_NAMES).map(([k, n]) => h("option", { value: k, selected: k === r.kind }, n))),
       account: h("select", ...accOpts(r.account)), cost: h("input", { type: "number", min: 0, value: r.cost }),
       approval: h("input", { type: "checkbox", checked: !!r.approval }), weekly_limit: h("input", { type: "number", min: 0, value: r.weekly_limit ?? "", placeholder: "–" }),
@@ -1221,12 +1380,73 @@ async function rewardsView(main) {
         newAcc.focus();
       } }, "+ ", T("Add account")),
       h("p.small.muted", T("XP shows progress and is never spent. Spendable accounts can be used in the shop.")),
-      h("div.scroll", h("table.tbl", h("thead", h("tr", h("th", T("Key")), h("th", "Icon"), h("th", T("Name")), h("th", T("Unit")), h("th", T("Spendable")), h("th", T("Active")))), h("tbody", ...accRows)))),
+      h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th.key-col", T("Key")), h("th", "Icon"), h("th", T("Name")), h("th", T("Unit")), h("th", T("Spendable")), h("th", T("Active")))), h("tbody", ...accRows))))),
     sectionAdd(T("Rules: which action gives how much on which account"),
       h("button.btn.small", { onclick: () => rulesBody.append(ruleRow({ event: "lesson_done", account: "coins", amount: 5, daily_limit: null, label: "", active: 1, condition: {} })) }, "+ ", T("Add rule")),
-      h("div.scroll", h("table.tbl", h("thead", h("tr", h("th", T("Event")), h("th", T("Amount")), h("th", T("Account")), h("th", T("Daily limit")), h("th", T("Label")), h("th", T("Active")), h("th"))), rulesBody))),
-    sectionAdd(T("Shop"), h("button.btn.small", { onclick: () => rewardBox.prepend(rewardCard({ name: "", kind: "voucher", account: "coins", cost: 50, approval: 1, weekly_limit: null, icon: "🎁", config: {}, active: 1 })) }, "+ ", T("Add reward")),
-      rewardBox));
+      h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th", T("Event")), h("th", T("Amount")), h("th", T("Account")), h("th", T("Daily limit")), h("th", T("Label")), h("th", T("Active")), h("th"))), rulesBody)))),
+    section("🛍️ " + I18N.tr(T("Shop")), h("p.small.muted", T("Own rewards, avatar items and their prices are set in the menu Shop.")),
+      h("button.btn.small", { onclick: () => { P.tab = "shop"; location.hash = "shop"; render(); } }, "🛍️ ", T("Open the shop settings"))));
+  if (opts.onlyShop) { main.replaceChildren(); return { rewardBox, rewardCard }; }
+}
+
+// ---------------------------------------------------------------- shop: own rewards on top, then every avatar item
+async function shopSettingsView(main) {
+  const scratch = h("div");
+  const { rewardBox, rewardCard } = await rewardsView(scratch, { onlyShop: true });
+  const d = await call("parent/shop/items");
+  const SLOT_NAMES = { background: T("Background"), hat: T("Hat"), hairclip: T("Hair clip"), eyewear: T("Glasses"), face: T("Face"), teeth: T("Teeth"),
+    ear: T("Ears"), neck: T("Neck"), suit: T("Clothes"), figure: T("Figure"), back: T("On the back"), hand: T("In the hand"), pet: T("Pet") };
+  const howText = b => b.free ? T("free") : b.level ? I18N.tr(T("From level {0}")).replace("{0}", b.level) : b.badge ? T("With a badge")
+    : b.season ? T("Only in season") : b.xp ? b.xp + " " + I18N.tr(T("new XP")) : b.cost != null ? b.cost + " 🪙" : "";
+  const row = it => {
+    const o = it.override || {};
+    const base = it.base, baseCur = base.xp ? "xp" : "coins", basePrice = base.xp ?? base.cost ?? null;
+    const f = { on: h("input", { type: "checkbox", checked: !o.off }),
+      price: h("input", { type: "number", min: 0, max: 100000, value: o.price ?? "", placeholder: basePrice != null ? String(basePrice) : "–" }),
+      cur: h("select", h("option", { value: "" }, I18N.tr(T("as in the app")) + " (" + (baseCur === "xp" ? "✨ XP" : "🪙") + ")"),
+        h("option", { value: "coins", selected: o.currency === "coins" }, "🪙 " + I18N.tr(T("Coins"))),
+        h("option", { value: "xp", selected: o.currency === "xp" }, "✨ " + I18N.tr(T("new XP")))) };
+    const tr = h("tr" + (o.off ? ".off" : ""));
+    const save = async () => {
+      try {
+        const r = await call(`parent/shop/items/${encodeURIComponent(it.id)}`, { method: "PUT",
+          body: { off: !f.on.checked, price: f.price.value === "" ? null : +f.price.value, currency: f.cur.value || null } });
+        tr.classList.toggle("off", !f.on.checked); toast(T("Saved"), "good"); it.override = r.override;
+      } catch (e) { toast(e.message, "bad"); }
+    };
+    Object.values(f).forEach(x => x.addEventListener("change", save));
+    tr.append(h("td", avatarSvg({ ...DEFAULT_AV, items: { [it.slot]: it.id } }, 44)), h("td", C(I18N.tr(it.name), "strong"), h("div.small.muted", SLOT_NAMES[it.slot] || it.slot)),
+      h("td.small.muted", howText(base)), h("td.c", f.on), h("td.num", f.price), h("td", f.cur));
+    return tr;
+  };
+  const DEFAULT_AV = { skin: "#f1c27d", hair: "short", hairColor: "#6b3e1f", eyes: "round", mouth: "smile", outfit: "tshirt", outfitColor: "#4f8cff", items: {} };
+  const bySlot = d.slots.map(sl => [sl, d.items.filter(i => i.slot === sl)]).filter(([, l]) => l.length);
+  // search: own rewards (name) and avatar items (name, kind) – matching groups open, the others hide
+  const search = h("input.pack-search", { type: "search", placeholder: "🔍 " + I18N.tr(T("Search the shop …")), value: P.shopSearch || "",
+    "aria-label": T("Search the shop …"), oninput: () => { P.shopSearch = search.value; filterShop(); } });
+  const noShop = noMatch(T("Nothing found in the shop"), () => { search.value = ""; P.shopSearch = ""; filterShop(); });
+  const filterShop = () => {
+    const q = (search.value || "").trim().toLowerCase();
+    main.querySelectorAll(".reward-ed").forEach(c => { c.hidden = !!q && ![...c.querySelectorAll("input")].some(i => (i.value || "").toLowerCase().includes(q)); });
+    main.querySelectorAll("details.shop-slot").forEach(dt => {
+      const rows = [...dt.querySelectorAll("tbody tr")];
+      rows.forEach(r => { r.hidden = !!q && !r.textContent.toLowerCase().includes(q) && !dt.querySelector("summary").textContent.toLowerCase().includes(q); });
+      const any = rows.some(r => !r.hidden);
+      dt.hidden = !!q && !any;
+      if (q && any) dt.open = true;
+    });
+    noShop.hidden = !q || [...main.querySelectorAll(".reward-ed, details.shop-slot")].some(x => !x.hidden);
+  };
+  setTimeout(filterShop);
+  main.append(pageHead(T("Shop")), search, noShop,
+    sectionAdd("🎁 " + I18N.tr(T("Own rewards")), h("button.btn.small", { onclick: () => rewardBox.prepend(rewardCard({ name: "", kind: "voucher", account: "coins", cost: 50, approval: 1, weekly_limit: null, icon: "🎁", config: {}, active: 1 })) }, "+ ", T("Add reward")),
+      h("p.small.muted", T("Your own rewards come first in the children's shop.")), rewardBox),
+    section("🧑‍🎨 " + I18N.tr(T("Avatar items")),
+      h("p.small.muted", T("Switch items off (they leave the shop – who has one keeps it), set your own price, or let them be paid with new XP: XP earned from now on – the XP account and the level stay as they are.")),
+      ...bySlot.map(([sl, list]) => h("details.shop-slot", { open: sl === "background" },
+        h("summary", h("strong", SLOT_NAMES[sl] || sl), h("span.small.muted", " · " + list.length)),
+        h("div.scroll", h("table.tbl.shop-tbl", h("thead", h("tr", h("th"), h("th", T("Item")), h("th", T("In the app")), h("th", T("In the shop")), h("th", T("Price")), h("th", T("Paid with")))),
+          h("tbody", ...list.map(row))))))));
 }
 
 // ---------------------------------------------------------------- goals
@@ -1305,33 +1525,202 @@ async function printPoster(link) {
   setTimeout(() => window.print(), 300);       // the translations of the poster texts need a moment
 }
 
-// ---------------------------------------------------------------- family games on / off
-async function gamesSection(s) {
-  const kids = (await call("parent/profiles")).filter(p => p.role === "kid");
-  let acc = (await call("parent/games")).access;
-  const GAMES = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", "Kartenkarussell"], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Paarjagd")], ["werbinich", "🎭", T("Wer bin ich?")],
-    ["kartenlauf", "🏁", "Kartenlauf"], ["stadtland", "🏙️", T("Stadt-Land-Fluss")], ["zeichnen", "🎨", T("Zeichnen & Raten")], ["wuerfel", "🎲", T("Fünf Würfel")], ["heimwaerts", "🏠", T("Heimwärts")], ["jump", "🦘", "Jump"], ["klatsch", "👏", T("Klatsch den Beat")], ["verboten", "🚫", T("Verbotene Wörter")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werwölfe")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Dorfmarkt")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")],
+// ---------------------------------------------------------------- the games of the app (parent area › Games)
+const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", T("Card Carousel")], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Pair Hunt")], ["werbinich", "🎭", T("Who am I?")],
+    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["snack", "🍔", T("Snack Rush")], ["verkehr", "🚦", T("Traffic Cadet")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["escape", "🗝️", T("Escape Room")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")], ["cube", "🧊", T("Cube solver")],
     ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
-  const box = h("div.games-tbl");
-  const save = async () => { try { acc = (await call("parent/games", { method: "PUT", body: { access: acc } })).access; toast(T("Saved"), "good"); } catch {} draw(); };
-  const draw = () => box.replaceChildren(...GAMES.map(([k, ic, name]) => {
-    const a = acc[k] || { mode: "all", profiles: [] };
-    return h("div.game-row" + (a.mode === "off" ? ".off" : ""),
-      h("span.big-ic", ic), h("strong.grow", I18N.tr(name)),
-      h("div.pin-kind", ...[["all", T("For everybody")], ["some", T("Only chosen children")], ["off", T("Off")]].map(([m, n]) =>
-        h("button.btn.small" + (a.mode === m ? "" : ".ghost"), { onclick: () => { acc[k] = { ...a, mode: m }; save(); } }, n))),
-      a.mode === "some" ? h("div.row.game-kids", ...kids.map(kid => h("label.check", h("input", { type: "checkbox", checked: a.profiles.includes(kid.id),
-        onchange: e => { const set = new Set(a.profiles); e.target.checked ? set.add(kid.id) : set.delete(kid.id); acc[k] = { ...a, profiles: [...set] }; save(); } }), C(kid.name)))) : null);
-  }));
+// the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
+const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
+  sudoku: T("Every number once in each row, column and box. From 4×4 to 9×9."), patience: T("Sort all cards by suit onto the four piles."),
+  slots: T("Pull the lever for 1 coin – three times a day. Three alike win, cherries too.") };
+
+// per game: active / active without bots (only games with bots) / inactive – and for whom (everybody or chosen children)
+// ---------------------------------------------------------------- game battery and party mode (familyquest/battery.py)
+const UNL_CHOICES = () => [["off", T("Off")], ["forever", T("Permanent")], ["day", T("For 1 day")], ["week", T("For 1 week")], ["month", T("For 1 month")]];
+const unlRunning = v => v && v !== "forever" && new Date(v.replace(" ", "T")) > new Date();
+
+/** The values of the game battery – the family default (`own` null) or one child's own values («as the family»). */
+function batteryForm(values, own, onSave) {
+  const fam = values, kid = own != null;
+  const has = k => kid && Object.prototype.hasOwnProperty.call(own, k);
+  const num = (k, min, max, hint) => {
+    const inp = h("input", { type: "number", min, max, step: 1, inputmode: "numeric", value: kid ? (has(k) ? own[k] : "") : fam[k],
+      placeholder: kid ? I18N.tr(T("as family")) + " (" + fam[k] + ")" : "",
+      onchange: () => onSave({ [k]: inp.value === "" ? (kid ? null : fam[k]) : Math.max(min, Math.min(max, Math.round(+inp.value || 0))) }) });
+    return [inp, hint ? h("span.hint", hint) : null];
+  };
+  const on = kid ? h("select", { onchange: () => onSave({ on: on.value === "" ? null : on.value === "1" }) },
+      h("option", { value: "", selected: !has("on") }, I18N.tr(T("as family")) + " (" + I18N.tr(fam.on ? T("On") : T("Off")) + ")"),
+      h("option", { value: "1", selected: has("on") && own.on }, T("On")), h("option", { value: "0", selected: has("on") && !own.on }, T("Off")))
+    : h("input", { type: "checkbox", checked: fam.on, onchange: () => onSave({ on: on.checked }) });
+  const cur = kid ? (has("unlimited") ? own.unlimited : null) : fam.unlimited;
+  const running = unlRunning(cur);
+  const unl = h("select", { onchange: () => onSave({ unlimited: unl.value }) },
+    kid ? h("option", { value: "family", selected: !has("unlimited") }, T("as family")) : null,
+    running ? h("option", { value: "keep", selected: true }, "∞ " + untilWhen(cur)) : null,
+    ...UNL_CHOICES().map(([v, n]) => h("option", { value: v, selected: !running && (v === "forever" ? cur === "forever" : v === "off" && (kid ? has("unlimited") && cur === "" : !cur)) }, n)));
+  return h("div.form.bat-form",
+    kid ? h("label.field", h("span", "🔋 ", T("Game battery")), on) : h("label.check", on, h("span", "🔋 ", T("Game battery on – starting a game costs a segment"))),
+    h("div.grid2", h("label.field", h("span", T("Capacity (segments)")), ...num("cap", 1, 20, T("1 to 20 – starts full."))),
+      h("label.field", h("span", "⚡ ", T("Recharging costs (coins)")), ...num("cost", 0, 10000, T("0 = recharging is free.")))),
+    h("label.field", h("span", "∞ ", T("Unlimited energy")), unl,
+      running || cur === "forever" ? h("button.btn.small.ghost", { type: "button", onclick: () => onSave({ unlimited: kid ? "family" : "off" }) }, "⏹ ", T("End")) : null));
+}
+
+/** Parent area › Games: the family default of the game battery, the daily goal, every child's charge now. */
+function batterySettingsCard() {
+  const box = h("details.card.sec.bat-settings", h("summary", h("b", "🔋 ", T("Game battery"))));
+  const draw = d => {
+    const save = async v => { try { draw(await call("parent/battery", { method: "PUT", body: v })); toast(T("Saved"), "good"); } catch {} };
+    const fam = d.family;
+    const goal = h("select", { onchange: () => save({ goal: goal.value }) }, ...[["off", T("Nothing")], ["full", T("Battery full")], ["plus", T("Extra segments")]]
+      .map(([v, n]) => h("option", { value: v, selected: fam.goal === v }, n)));
+    const plus = h("input", { type: "number", min: 1, max: 20, step: 1, value: fam.goal_plus, inputmode: "numeric", onchange: () => save({ goal_plus: +plus.value }) });
+    box.replaceChildren(box.firstChild,
+      h("p.small.muted", T("Every child has a game battery. Starting a game (an own table, alone against bots, a game of the game corner) costs one segment – joining a table of somebody else is free and a started game can be finished. Empty: the child recharges for coins. Parents play without a battery.")),
+      batteryForm(fam, null, save),
+      h("div.grid2", h("label.field", h("span", "🎯 ", T("Daily goal reached")), goal), fam.goal === "plus" ? h("label.field", h("span", T("Extra segments")), plus) : h("span")),
+      h("p.small.muted", T("Chores can give an energy bonus too (chore plan › ⚡ Energy bonus). Each child's own values: profile › Game battery.")),
+      h("ul.list.bat-kids", ...d.kids.map(k => h("li.row", k.state ? batteryIcon(k.state) : null, C(k.name, "strong.grow"),
+        h("span.small.muted", k.state && k.state.free ? (k.state.party ? "🎉 " : "∞ ") + (k.state.until ? untilWhen(k.state.until) : "") : k.state ? k.state.charge + " / " + k.state.cap : ""),
+        k.state && !k.state.free && k.state.charge < k.state.cap ? h("button.btn.small.ghost", { onclick: async () => { draw(await call(`parent/battery/${k.id}/recharge`, { method: "POST" })); toast(T("Battery recharged"), "good"); } }, "🎁 ", T("Recharge")) : null))));
+  };
+  call("parent/battery").then(draw).catch(() => {});
+  return box;
+}
+
+/** Profile dialog of a child: its own battery values (empty = as the family). */
+function kidBatteryBox(pid) {
+  const box = h("div.form.lim-box", h("h3", "🔋 ", T("Game battery")), h("p.small.muted", "…"));
+  const draw = d => {
+    const k = d.kids.find(x => x.id === pid);
+    if (!k) return box.replaceChildren();
+    const save = async v => { try { draw(await call(`parent/battery/${pid}`, { method: "PUT", body: v })); toast(T("Saved"), "good"); } catch {} };
+    box.replaceChildren(box.firstChild,
+      k.state ? h("div.row", batteryIcon(k.state, true), h("span.grow", k.state.party ? "🎉 " + I18N.tr(T("Party mode")) : k.state.free ? "∞" + (k.state.until ? " " + untilWhen(k.state.until) : "") : k.state.charge + " / " + k.state.cap),
+        !k.state.free && k.state.charge < k.state.cap ? h("button.btn.small.ghost", { type: "button", onclick: async () => { draw(await call(`parent/battery/${pid}/recharge`, { method: "POST" })); } }, "🎁 ", T("Recharge")) : null) : null,
+      h("p.small.muted", T("Empty fields: as the family (parent area › Games › Game battery).")),
+      batteryForm(d.family, k.own, save));
+  };
+  call("parent/battery").then(draw).catch(() => box.replaceChildren());
+  return box;
+}
+
+/** 🎉 Party mode: a switch with a chooser – for whom, what, how long (Games page and overview). */
+function partyCard() {
+  const box = h("section.card.sec.party-card");
+  const draw = async () => {
+    let p = null, kids = [];
+    try { [p, kids] = await Promise.all([call("parent/party"), call("parent/profiles").then(l => l.filter(x => x.role === "kid"))]); } catch { return; }
+    const sw = h("input.party-switch", { type: "checkbox", role: "switch", checked: !!p, "aria-label": T("Party mode"),
+      onchange: async () => {
+        if (sw.checked) { sw.checked = false; return partyDialog(kids, draw); }
+        if (!confirm(I18N.tr(T("End the party mode?")))) { sw.checked = true; return; }
+        await call("parent/party", { method: "DELETE" }); toast(T("Party mode ended"), "good"); draw();
+      } });
+    const who = p ? (p.kids === "all" ? I18N.tr(T("all children")) : p.kids.map(id => (kids.find(k => k.id === id) || {}).name || "?").join(", ")) : "";
+    const what = p ? [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean).map(t => I18N.tr(t)).join(" · ") : "";
+    box.classList.toggle("on", !!p);
+    box.replaceChildren(h("div.row", h("span.big-ic", "🎉"), h("div.grow", h("h2", T("Party mode")),
+        p ? h("div.small", h("b", p.until ? untilWhen(p.until) : I18N.tr(T("until switched off"))), " · ", C(who), what ? h("div.small.muted", what) : null)
+          : h("div.small.muted", T("Every game open, no battery, no time limit – for a party or a game night."))),
+      h("label.switch-wrap", sw, h("span.switch-ui"))));
+  };
   draw();
-  const allTo = mode => { for (const [k] of GAMES) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; save(); };
-  const guests = h("input", { type: "checkbox", checked: s.games_guests !== false, onchange: async () => {
-    await call("parent/settings", { method: "PUT", body: { games_guests: guests.checked } }); toast(T("Saved"), "good"); } });
-  return section("🎲 " + I18N.tr(T("Games")),
-    h("p.small.muted", T("Every game on its own: for everybody, only for chosen children or off. Parents can always play; the family council and polls stay open for everybody.")),
-    h("div.row", h("button.btn.small.ghost", { onclick: () => allTo("all") }, "✓ ", T("All on")), h("button.btn.small.ghost", { onclick: () => allTo("off") }, "✕ ", T("All off"))),
-    box,
-    h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
+  return box;
+}
+
+function partyDialog(kids, after) {
+  const all = h("input", { type: "radio", name: "pk", checked: true }), some = h("input", { type: "radio", name: "pk" });
+  const picks = kids.map(k => h("label.check", h("input", { type: "checkbox", value: k.id, checked: true }), C(k.name)));
+  const pickRow = h("div.row", { hidden: true }, ...picks);
+  all.onchange = some.onchange = () => { pickRow.hidden = !some.checked; };
+  const chk = (label, hint) => { const i = h("input", { type: "checkbox", checked: true }); return [i, h("label.check", i, h("span", label, hint ? h("span.small.muted", " – ", hint) : null))]; };
+  const [unlock, unlockL] = chk("🔓 " + I18N.tr(T("Unlock all games")), T("price, rent and «inactive» do not count"));
+  const [batt, battL] = chk("🔋 " + I18N.tr(T("Unlimited battery")), null);
+  const [lim, limL] = chk("⏱️ " + I18N.tr(T("Also lift limits")), T("daily game time, game block times and the OfflineTime game lock – internet and learning stay as they are"));
+  let dur = "forever";
+  const durs = h("div.pin-kind.party-durs");
+  const drawDur = () => durs.replaceChildren(...[["forever", T("Until switched off")], ["1h", "1 h"], ["3h", "3 h"], ["midnight", T("Until midnight")], ["day", T("1 day")]]
+    .map(([v, n]) => h("button.btn.small" + (dur === v ? "" : ".ghost"), { type: "button", "aria-pressed": String(dur === v), onclick: () => { dur = v; drawDur(); } }, n)));
+  drawDur();
+  const m = modal(h("div.form.party-dialog", h("h2", "🎉 ", T("Party mode")),
+    h("h3", T("For whom")), h("div.row", h("label.check", all, T("All children")), h("label.check", some, T("Chosen children"))), pickRow,
+    h("h3", T("What")), unlockL, battL, limL,
+    h("h3", T("How long")), durs,
+    h("p.small.muted", T("Nothing is bought or used during the party – when it ends, everything is as before. The children's app turns to the 🪩 Disco design.")),
+    h("div.row", h("button.btn", { onclick: async () => {
+      const body = { kids: all.checked ? "all" : picks.map(l => l.querySelector("input")).filter(i => i.checked).map(i => +i.value),
+        unlock: unlock.checked, battery: batt.checked, limits: lim.checked, for: dur };
+      try { await call("parent/party", { method: "POST", body }); } catch { return; }
+      m.close(); confetti(); toast(T("Party mode on – have fun!"), "good"); after();
+    } }, "🎉 ", T("Start the party")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+}
+
+function gameAccess(kids, data) {
+  let acc = data.access, returns = data.slots_returns || {};
+  const botGames = new Set(data.bot_games || []), bars = {};
+  const save = async k => {
+    try { const r = await call("parent/games", { method: "PUT", body: { access: k ? { [k]: acc[k] } : acc } }); acc = r.access; returns = r.slots_returns || returns; toast(T("Saved"), "good"); } catch {}
+    Object.keys(bars).forEach(draw);
+  };
+  const draw = k => {
+    const a = acc[k] || { mode: "all", profiles: [], bots: true }, bar = bars[k];
+    const state = a.mode === "off" ? "off" : a.bots === false ? "nobots" : "on";
+    const set = v => { acc[k] = v === "off" ? { ...a, mode: "off" } : { ...a, mode: a.mode === "off" ? "all" : a.mode, bots: v === "on" }; save(k); };
+    bar.classList.toggle("off", state === "off");                  // the section is dimmed (parent.css)
+    bar.replaceChildren(...[
+      h("div.pin-kind.game-state", ...[["on", "✓ ", T("Active")], botGames.has(k) ? ["nobots", "🚫 ", T("Active without bots")] : null, ["off", "✕ ", T("Inactive")]].filter(Boolean)
+        .map(([v, ic, n]) => h("button.btn.small" + (state === v ? (v === "off" ? ".bad" : "") : ".ghost"), { "aria-pressed": String(state === v), onclick: () => set(v) }, ic, n))),
+      state === "off" ? null : h("div.pin-kind", ...[["all", T("For everybody")], ["some", T("Only chosen children")]].map(([m, n]) =>
+        h("button.btn.small" + (a.mode === m ? "" : ".ghost"), { onclick: () => { acc[k] = { ...a, mode: m }; save(k); } }, n))),
+      state !== "off" && a.mode === "some" ? h("div.row.game-kids", ...kids.map(kid => h("label.check", h("input", { type: "checkbox", checked: a.profiles.includes(kid.id),
+        onchange: e => { const ids = new Set(a.profiles); e.target.checked ? ids.add(kid.id) : ids.delete(kid.id); acc[k] = { ...a, profiles: [...ids] }; save(k); } }), C(kid.name)))) : null,
+      state === "nobots" ? h("p.small.muted", T("No «alone against bots», no bots at the table, no games against the app – only people play. Parents are not bound.")) : null,
+      state === "off" ? null : gamePriceBox(k, a, v => { acc[k] = { ...a, ...v }; save(k); }, returns)].filter(Boolean));
+  };
+  return {
+    bar: k => { if (!bars[k]) { bars[k] = h("div.game-status"); setTimeout(() => draw(k)); } return bars[k]; },
+    allTo: mode => { for (const [k] of GAME_LIST) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; return save(null); },
+  };
+}
+
+// what a child pays for a game (familyquest/gamepasses.py): buy once, or rent per day / week / month – 0 and 0 = free;
+// the fields show the defaults (quick games 100 a week, game corner 20 a day) – saving stores them as shown; free tries;
+// the one-armed bandit also gets its luck (1–10, what comes back on average). Parents always play for free.
+function gamePriceBox(k, a, set, returns) {
+  const num = (v, max = 100000) => Math.max(0, Math.min(max, Math.round(+v || 0)));
+  const price = h("input", { type: "number", min: 0, max: 100000, step: 1, inputmode: "numeric", value: a.price || 0,
+    onchange: () => set({ price: num(price.value) }) });
+  const rent = h("input", { type: "number", min: 0, max: 100000, step: 1, inputmode: "numeric", value: a.rent || 0,
+    oninput: () => periods.querySelectorAll("button").forEach(b => { b.disabled = !num(rent.value); }),
+    onchange: () => set({ rent: num(rent.value) }) });
+  const periods = h("div.pin-kind.gp-periods", ...[["day", T("Day")], ["week", T("Week")], ["month", T("Month")]].map(([v, n]) =>
+    h("button.btn.small" + ((a.period || "week") === v ? "" : ".ghost"), { disabled: !(a.rent > 0), "aria-pressed": String((a.period || "week") === v),
+      onclick: () => set({ period: v }) }, n)));
+  // free tries before buying / renting (default 1) – only with a price or a rent
+  const preview = h("input.gp-preview", { type: "number", min: 0, max: 20, step: 1, inputmode: "numeric", value: a.preview ?? 1,
+    onchange: () => set({ preview: num(preview.value, 20) }) });
+  let luck = null;
+  if (k === "slots") {
+    const pct = v => I18N.tr(T("≈ {0} % comes back on average")).replace("{0}", returns[v] ?? "?");
+    const hint = h("span.hint", pct(a.luck || 5));
+    const range = h("input.gp-luck", { type: "range", min: 1, max: 10, step: 1, value: a.luck || 5,
+      oninput: () => { hint.textContent = pct(range.value); val.textContent = range.value; }, onchange: () => set({ luck: +range.value }) });
+    const val = h("b", String(a.luck || 5));
+    luck = h("label.field", h("span", "🍀 ", T("Win chance"), " ", val, " / 10"), range, hint,
+      h("span.hint", T("5 = like a typical casino machine. Higher: better odds for the children, lower: worse.")));
+  }
+  return h("div.gp-box",
+    h("label.field", h("span", "🪙 ", T("Price for children (coins)")), price,
+      h("span.hint", T("0 = free. Bought once, the game stays the child's for good – also when you change the price."))),
+    h("label.field", h("span", "🔁 ", T("Rent price (coins)")), rent,
+      h("span.hint", T("0 = no renting. Renting opens the game for one day, week or month; renting again adds the time."))),
+    periods,
+    h("label.field", h("span", "🎁 ", T("Free tries before buying")), preview,
+      h("span.hint", T("How often a child may play the game for free before buying or renting it. Only matters with a price or a rent."))),
+    h("p.small.muted", T("With a price the children buy or rent the game in the shop. Parents always play for free.")),
+    luck);
 }
 
 // ---------------------------------------------------------------- pairs game: own photo sets and the family crest
@@ -1535,6 +1924,62 @@ function haLoginSection(s) {
     } }, "💾 ", T("Save")));
 }
 
+// ---------------------------------------------------------------- Family Quest HA integration (custom component)
+// on: a token (shown once) and the component in /config/custom_components/familyquest; off: the token is refused
+async function integrationSection() {
+  const box = h("section.card.sec");
+  let st, token = "";
+  try { st = await call("parent/integration"); } catch { return null; }
+  const copyField = (value, label) => {
+    const inp = h("input", { type: "text", readonly: true, value, spellcheck: false, translate: "no", onfocus: e => e.target.select() });
+    return h("label.field", label, h("div.row", h("span.grow", inp), h("button.btn.small", { onclick: async () => {
+      try { await navigator.clipboard.writeText(value); toast(T("Copied"), "good"); } catch { inp.focus(); inp.select(); }
+    } }, "📋 ", T("Copy"))));
+  };
+  const apply = r => { st = r; if (r.token) token = r.token; draw(); };
+  async function switchTo(on) {
+    try { apply(await call("parent/integration", { method: "PUT", body: { enabled: on } })); toast(T("Saved"), "good"); }
+    catch { draw(); }
+    if (st.install_error) toast(st.install_error, "bad");
+  }
+  function draw() {
+    const comp = st.component || {};
+    const on = h("input", { type: "checkbox", checked: st.enabled, onchange: () => switchTo(on.checked) });
+    box.replaceChildren(...[h("h2", "🏠 ", T("Family Quest HA integration")),
+      h("p.small.muted", T("Shows the most important numbers of every child (XP, coins, chores, time left, internet …) as sensors in Home Assistant – with a switch for the internet time and actions to book points and to approve chores and rewards.")),
+      h("label.check", on, h("strong", T("Family Quest HA integration"))),
+      !st.config_writable ? h("p.warn-text", T("The Home Assistant configuration folder cannot be written – the component cannot be copied (update the app).")) : null,
+      st.enabled ? [
+        token ? h("div.card.note",
+          h("p", h("strong", "🔑 ", T("Integration token")), " – ", T("shown only now. Copy it and keep it until Home Assistant asks for it.")),
+          copyField(token, T("Token"))) : null,
+        copyField(st.url, T("Address of Family Quest (for Home Assistant)")),
+        h("p.small", comp.installed ? ["✓ ", I18N.tr(T("Installed in {0} (version {1})")).replace("{0}", comp.path).replace("{1}", comp.version || "?")]
+          : h("span.warn-text", T("Not installed in Home Assistant yet."))),
+        h("h3", T("Next steps")),
+        h("ol.small",
+          h("li", T("Restart Home Assistant (Settings › System › Restart).")),
+          h("li", T("Settings › Devices & services › Add integration › Family Quest.")),
+          h("li", T("Keep the suggested address and paste the token."))),
+        st.last_poll ? h("p.small.muted", I18N.tr(T("Home Assistant last asked: {0}")).replace("{0}", st.last_poll.replace("T", " "))) : null,
+        h("div.row.wrap",
+          h("button.btn.small.ghost", { onclick: async () => {
+            if (!confirm(I18N.tr(T("Make a new token? Home Assistant asks for the new one; the old token stops working.")))) return;
+            apply(await call("parent/integration/token", { method: "POST" }));
+          } }, "🔄 ", T("New token")),
+          h("button.btn.small.ghost", { onclick: async () => { apply(await call("parent/integration/install", { method: "POST" })); toast(T("Copied to Home Assistant – restart Home Assistant"), "good"); } },
+            "⬇️ ", T("Install again")))]
+      : [h("p.small.muted", T("Off: Home Assistant gets no data and the token does not work.")),
+        comp.installed ? h("div.row.wrap", h("span.small.grow", I18N.tr(T("Still installed in {0}")).replace("{0}", comp.path)),
+          h("button.btn.small.ghost", { onclick: async () => {
+            if (!confirm(I18N.tr(T("Remove the component from Home Assistant? Delete the integration under Devices & services first, then restart Home Assistant.")))) return;
+            apply(await call("parent/integration/component", { method: "DELETE" })); toast(T("Removed – restart Home Assistant"), "good");
+          } }, "🗑️ ", T("Remove from Home Assistant"))) : null]].flat(2).filter(x => x != null));
+  }
+  draw();
+  return box;
+}
+
 // IPv4 helpers for the range editor (IPv6 entries stay as written)
 const ip2n = ip => { const m = String(ip).trim().match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/); if (!m || m.slice(1).some(x => +x > 255)) return null; return ((+m[1] << 24) >>> 0) + (+m[2] << 16) + (+m[3] << 8) + +m[4]; };
 const n2ip = n => [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".");
@@ -1656,10 +2101,67 @@ function runningGamesBox() {
   return box;
 }
 
-// ---------------------------------------------------------------- community: family quiz, family council, history
+// ---------------------------------------------------------------- community: family council, polls, Wichteln, history (the games: gamesView)
 async function communityView(main) {
   const me = P.meta.me;
-  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div");
+  const profiles = await call("parent/profiles");
+  const who = h("select", ...profiles.map(p => h("option", { value: p.id }, p.name)));
+  const hist = h("div");
+  const drawHist = async () => hist.replaceChildren(await historySection(+who.value, null));   // the list only – the section has the heading
+  who.onchange = drawHist;
+  main.append(h("h1", T("Family")),
+    h("p.muted", T("Family council, polls and Wichteln – children can open topics and vote too. The games are on their own page «Games».")),
+    await familyTimeSection(me, { settings: redraw => familyTimeSettings(redraw, true) }),
+    await councilSection(me), await pollsSection(me),
+    await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }),
+    await wichtelnSection(me),
+    section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
+  drawHist();
+}
+
+// FamilyTime games (community.js familyTimeSection): on/off, the coin price of «fix a game», when the wishes close –
+// in the «Family» tab (`inBox`: a small ⚙️ box at the end of the section) and in «Settings» (own section)
+function familyTimeSettings(after = null, inBox = false) {
+  const box = h("div" + (inBox ? ".game-settings.ftg-settings" : ""), h("p.small.muted", "…"));
+  call("parent/settings").then(s => {
+    const on = h("input", { type: "checkbox", checked: s.familytime_wishes !== false });
+    const price = h("input", { type: "number", min: 0, max: 10000, value: s.familytime_game_price ?? 150 });
+    const hours = h("input", { type: "number", min: 0, max: 336, value: s.familytime_vote_hours ?? 24 });
+    const save = async () => {
+      await call("parent/settings", { method: "PUT", body: { familytime_wishes: on.checked,
+        familytime_game_price: Math.max(0, Math.min(10000, Math.round(+price.value || 0))),
+        familytime_vote_hours: Math.max(0, Math.min(336, Math.round(+hours.value || 0))) } });
+      toast(T("Saved"), "good"); if (after) after();
+    };
+    box.replaceChildren(inBox ? h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")) : null,
+      h("label.check", on, T("Game wishes for FamilyTime (wishes, vote, buying a game)")),
+      h("div.grid2",
+        h("label.field", h("span", "🪙 ", T("Fix a game: price in coins")), price, h("span.hint", T("A child pays this to set the game of a FamilyTime that has none yet. 0 = buying is off."))),
+        h("label.field", h("span", "⏰ ", T("Wishes close (hours before)")), hours, h("span.hint", T("Then the vote starts by itself – one wish is set directly.")))),
+      h("button.btn.small", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
+  }).catch(() => box.replaceChildren());
+  return box;
+}
+
+// ---------------------------------------------------------------- games: per game active / without bots / inactive, start, coins, running tables
+async function gamesView(main) {
+  const me = P.meta.me;
+  const [s, profiles, data] = await Promise.all([call("parent/settings"), call("parent/profiles"), call("parent/games")]);
+  const access = gameAccess(profiles.filter(p => p.role === "kid"), data);
+  // every game folded (the page is long on phones) – open: games running now and the ones opened before;
+  // inside: first what to play, then – set apart – its settings (status, coins)
+  const runningNow = new Set((await call("parent/games/running").catch(() => [])).map(g => g.game));
+  P.openGames = P.openGames || new Set();
+  const gsec = (k, title, actions, ...content) => {
+    const flat = content.flat(Infinity).filter(x => x != null && x !== false);
+    const settings = flat.filter(x => x.classList && x.classList.contains("pj-rewards")), play = flat.filter(x => !settings.includes(x));
+    return h("details.card.sec.game-sec", { open: runningNow.has(k) || P.openGames.has(k), "data-game": k,
+        ontoggle: e => e.currentTarget.open ? P.openGames.add(k) : P.openGames.delete(k) },
+      h("summary.sec-head", h("h2", title, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null), h("div.head-actions", ...[].concat(actions))),
+      play.length ? h("div.game-play", ...play) : null,
+      h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
+  };
+  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), verkehr = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div"), escape = h("div");
   let quizHead = null;
   const showLive = async () => {
     let st = null; try { st = await call("community/quiz"); } catch {}
@@ -1676,8 +2178,8 @@ async function communityView(main) {
       showLive();
     };
     live.replaceChildren(sectionAdd("🎯 " + I18N.tr(T("Running quiz")), appBtn("quiz"),
-      h("div.row.wrap", C("«" + (st.title || "") + "»", "strong.grow"),
-        h("span.small.muted", I18N.tr(T("{0} playing")).replace("{0}", (st.players || []).length)),
+      h("div.row.wrap", C("«" + quizTitle(st.title, st.langs) + "»", "strong.grow"),
+        h("span.small.muted", I18N.tr((st.players || []).length === 1 ? T("1 playing") : T("{0} playing")).replace("{0}", (st.players || []).length)),
         h("button.btn.small", { onclick: open }, "▶ ", T("Open")),
         h("button.btn.small.ghost", { onclick: end }, "⏹ ", T("End")))));
   };
@@ -1685,7 +2187,7 @@ async function communityView(main) {
   const showBingo = async () => {
     let b = null; try { b = await call("community/bingo"); } catch {}
     const open = () => { const box = h("div.bingo-live"); bingo.replaceChildren(box); bingoLive(box, me, () => render()); };
-    bingo.replaceChildren(sectionAdd("🎱 Bingo", appBtn("bingo"), b && b.status !== "done"
+    bingo.replaceChildren(gsec("bingo", "🎱 Bingo", appBtn("bingo"), b && b.status !== "done"
       ? h("button.btn", { onclick: open }, b.card ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("Everybody gets a card, the balls come by themselves – mark your numbers and shout «Bingo!».")),
          h("button.btn", { onclick: () => bingoStartDialog(open) }, "▶ ", T("Start bingo"))]));
@@ -1693,7 +2195,7 @@ async function communityView(main) {
   const showPoker = async () => {
     let g = null; try { g = await call("community/poker"); } catch {}
     const open = () => { const box = h("div.poker-live"); poker.replaceChildren(box); pokerLive(box, me, () => render()); };
-    poker.replaceChildren(sectionAdd("🃏 Texas Hold'em", appBtn("poker"), g && g.status !== "done"
+    poker.replaceChildren(gsec("poker", "🃏 Texas Hold'em", appBtn("poker"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("Poker with play chips – everybody on their own device.")),
          h("button.btn", { onclick: () => pokerStartDialog(open) }, "▶ ", T("Open a table"))]));
@@ -1702,7 +2204,7 @@ async function communityView(main) {
   const showSong = async () => {
     let g = null; try { g = await call("community/song"); } catch {}
     const open = () => { const b = h("div.song-live"); song.replaceChildren(b); songLive(b, me, () => render()); };
-    song.replaceChildren(sectionAdd("🎵 " + I18N.tr(T("Guess the song")), appBtn("song"), g && g.status !== "done"
+    song.replaceChildren(gsec("song", "🎵 " + I18N.tr(T("Guess the song")), appBtn("song"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("A speaker plays songs – who buzzes first and knows artist and title gets a point.")),
          h("button.btn", { onclick: () => songStartDialog(open) }, "▶ ", T("Open the game"))]));
@@ -1711,7 +2213,7 @@ async function communityView(main) {
     let g = null; try { g = await call("community/cards/" + kind); } catch {}
     const box = cardBoxes[kind];
     const open = () => { const b = h("div.cards-live"); box.replaceChildren(b); cardsLive(b, me, () => render(), kind); };
-    box.replaceChildren(sectionAdd(CARD_GAMES[kind].icon + " " + CARD_GAMES[kind].title, appBtn(kind), g && g.status !== "done"
+    box.replaceChildren(gsec(kind, CARD_GAMES[kind].icon + " " + CARD_GAMES[kind].title, appBtn(kind), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : h("div.row.wrap", h("button.btn", { onclick: () => cardsStartDialog(kind, false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
           h("button.btn.ghost", { onclick: () => cardsStartDialog(kind, true, open) }, "🤖 ", T("Alone against bots")))));
@@ -1719,7 +2221,7 @@ async function communityView(main) {
   const showDomino = async () => {
     let g = null; try { g = await call("community/domino"); } catch {}
     const open = () => { const b = h("div.dm-live"); domino.replaceChildren(b); dominoLive(b, me, () => render()); };
-    domino.replaceChildren(sectionAdd("🁫 Domino", appBtn("domino"), g && g.status !== "done"
+    domino.replaceChildren(gsec("domino", "🁫 Domino", appBtn("domino"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : h("div.row.wrap", h("button.btn", { onclick: () => dominoStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
           h("button.btn.ghost", { onclick: () => dominoStartDialog(true, open) }, "🤖 ", T("Alone against bots")))));
@@ -1727,7 +2229,7 @@ async function communityView(main) {
   const showPaarjagd = async () => {
     let g = null; try { g = await call("community/paarjagd"); } catch {}
     const open = () => { const b = h("div.pj-live"); paarjagd.replaceChildren(b); paarjagdLive(b, me, () => render()); };
-    paarjagd.replaceChildren(sectionAdd("🧠 " + I18N.tr(T("Paarjagd")), appBtn("paarjagd"), g && g.status !== "done"
+    paarjagd.replaceChildren(gsec("paarjagd", "🧠 " + I18N.tr(T("Pair Hunt")), appBtn("paarjagd"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : h("div.row.wrap", h("button.btn", { onclick: () => paarjagdStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
           h("button.btn.ghost", { onclick: () => paarjagdStartDialog(true, open) }, "🤖 ", T("Alone against bots"))),
@@ -1736,7 +2238,7 @@ async function communityView(main) {
   const showWerbinich = async () => {
     let g = null; try { g = await call("community/werbinich"); } catch {}
     const open = () => { const b = h("div.wb-live"); werbinich.replaceChildren(b); werbinichLive(b, me, () => render()); };
-    werbinich.replaceChildren(sectionAdd("🎭 " + I18N.tr(T("Wer bin ich?")), appBtn("werbinich"), g && g.status !== "done"
+    werbinich.replaceChildren(gsec("werbinich", "🎭 " + I18N.tr(T("Who am I?")), appBtn("werbinich"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("Everybody gets a secret character and finds out with yes/no questions – everybody on their own device, guests via QR code.")),
          h("button.btn", { onclick: () => werbinichStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1745,7 +2247,7 @@ async function communityView(main) {
   const showKartenlauf = async () => {
     let g = null; try { g = await call("community/kartenlauf"); } catch {}
     const open = () => { const b = h("div.kl-live"); kartenlauf.replaceChildren(b); kartenlaufLive(b, me, () => render()); };
-    kartenlauf.replaceChildren(sectionAdd("🏁 Kartenlauf", appBtn("kartenlauf"), g && g.status !== "done"
+    kartenlauf.replaceChildren(gsec("kartenlauf", "🏁 Kartenlauf", appBtn("kartenlauf"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The race board game with cards: bring your four marbles home – alone or in teams of two, with bots and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => kartenlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -1755,7 +2257,7 @@ async function communityView(main) {
   const showStadtland = async () => {
     let g = null; try { g = await call("community/stadtland"); } catch {}
     const open = () => { const b = h("div.sl-live"); stadtland.replaceChildren(b); stadtlandLive(b, me, () => render()); };
-    stadtland.replaceChildren(sectionAdd("🏙️ " + I18N.tr(T("Stadt-Land-Fluss")), appBtn("stadtland"), g && g.status !== "done"
+    stadtland.replaceChildren(gsec("stadtland", "🏙️ " + I18N.tr(T("City, Country, River")), appBtn("stadtland"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The word game: a letter, 3 to 8 categories, the clock runs – everybody writes on their own device, guests via QR code.")),
          h("button.btn", { onclick: () => stadtlandStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1764,7 +2266,7 @@ async function communityView(main) {
   const showZeichnen = async () => {
     let g = null; try { g = await call("community/zeichnen"); } catch {}
     const open = () => { const b = h("div.zr-live"); zeichnen.replaceChildren(b); zeichnenLive(b, me, () => render()); };
-    zeichnen.replaceChildren(sectionAdd("🎨 " + I18N.tr(T("Zeichnen & Raten")), appBtn("zeichnen"), g && g.status !== "done"
+    zeichnen.replaceChildren(gsec("zeichnen", "🎨 " + I18N.tr(T("Draw & Guess")), appBtn("zeichnen"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("One draws, the others guess – live on every device, guests via QR code.")),
          h("button.btn", { onclick: () => zeichnenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1773,7 +2275,7 @@ async function communityView(main) {
   const showWuerfel = async () => {
     let g = null; try { g = await call("community/wuerfel"); } catch {}
     const open = () => { const b = h("div.fw-live"); wuerfel.replaceChildren(b); wuerfelLive(b, me, () => render()); };
-    wuerfel.replaceChildren(sectionAdd("🎲 " + I18N.tr(T("Fünf Würfel")), appBtn("wuerfel"), g && g.status !== "done"
+    wuerfel.replaceChildren(gsec("wuerfel", "🎲 " + I18N.tr(T("Five Dice")), appBtn("wuerfel"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The dice game with five dice: everybody rolls at the same time on their own device and fills the score sheet – with bots and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => wuerfelStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -1783,7 +2285,7 @@ async function communityView(main) {
   const showHeimwaerts = async () => {
     let g = null; try { g = await call("community/heimwaerts"); } catch {}
     const open = () => { const b = h("div.hw-live"); heimwaerts.replaceChildren(b); heimwaertsLive(b, me, () => render()); };
-    heimwaerts.replaceChildren(sectionAdd("🏠 " + I18N.tr(T("Heimwärts")), appBtn("heimwaerts"), g && g.status !== "done"
+    heimwaerts.replaceChildren(gsec("heimwaerts", "🏠 " + I18N.tr(T("Homeward")), appBtn("heimwaerts"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The classic race board game: roll the die, bring your 4 pieces home and send the others back to their yard – with bots and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => heimwaertsStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -1793,17 +2295,47 @@ async function communityView(main) {
   const showJump = async () => {
     let g = null; try { g = await call("community/jump"); } catch {}
     const open = () => { const b = h("div.ju-live"); jump.replaceChildren(b); jumpLive(b, me, () => render()); };
-    jump.replaceChildren(sectionAdd("🦘 Jump", appBtn("jump"), g && g.status !== "done"
+    jump.replaceChildren(gsec("jump", "🦘 Jump", appBtn("jump"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("A jumping race on every device: the obstacles come from the left, jump over them – the last one running wins. Alone for a high score, with practice bots or at the family table.")),
          h("div.row.wrap", h("button.btn", { onclick: () => jumpStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => jumpStartDialog(true, open) }, JU_ICON, " ", T("Alone")))],
       await gameRewardsRow("jump")));
   };
+  const showSternlauf = async () => {
+    let g = null; try { g = await call("community/sternlauf"); } catch {}
+    const open = () => { const b = h("div.sr-live"); sternlauf.replaceChildren(b); sternlaufLive(b, me, () => render()); };
+    sternlauf.replaceChildren(gsec("sternlauf", "🌠 " + I18N.tr(T("Star Runner")), appBtn("sternlauf"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("An endless runner on a forest path at night: swipe to change the lane, jump and duck, catch falling star sparks for the village lantern. Everybody runs the same course at the same time on their own device – alone, with practice bots or at the family table.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => sternlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => sternlaufStartDialog(true, open) }, SR_ICON, " ", T("Alone")))],
+      await gameRewardsRow("sternlauf")));
+  };
+  const showSnack = async () => {
+    let g = null; try { g = await call("community/snack"); } catch {}
+    const open = () => { const b = h("div.sn-live"); snack.replaceChildren(b); snackLive(b, me, () => render()); };
+    snack.replaceChildren(gsec("snack", "🍔 " + I18N.tr(T("Snack Rush")), appBtn("snack"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("A snack stand on every device: everybody serves the same customers – cook, fry and fill at the same time, serve before they get angry. Most money in the till wins. Alone for a high score, with practice bots or at the family table.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => snackStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => snackStartDialog(true, open) }, SN_ICON, " ", T("Alone")))],
+      await gameRewardsRow("snack")));
+  };
+  const showVerkehr = async () => {
+    let g = null; try { g = await call("community/verkehr"); } catch {}
+    const open = () => { const b = h("div.vk-live"); verkehr.replaceChildren(b); vkLive(b, me, () => render()); };
+    verkehr.replaceChildren(gsec("verkehr", "🚦 " + I18N.tr(T("Traffic Cadet")), appBtn("verkehr"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("Everybody switches the traffic lights of their own map – the same streets and cars for all, from a simple crossing to a roundabout. No accidents, no angry drivers: the last one standing or the most points wins. Alone, with practice bots or at the family table.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => vkStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => vkStartDialog(true, open) }, VK_ICON, " ", T("Alone")))],
+      await gameRewardsRow("verkehr")));
+  };
   const showKlatsch = async () => {
     let g = null; try { g = await call("community/klatsch"); } catch {}
     const open = () => { const b = h("div.kb-live"); klatsch.replaceChildren(b); klatschLive(b, me, () => render()); };
-    klatsch.replaceChildren(sectionAdd("👏 " + I18N.tr(T("Klatsch den Beat")), appBtn("klatsch"), g && g.status !== "done"
+    klatsch.replaceChildren(gsec("klatsch", "👏 " + I18N.tr(T("Clap the Beat")), appBtn("klatsch"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("A rhythm game on every device: listen to a beat, then everybody claps it back at the same time – the server judges the timing. Alone for a personal best, with practice bots or at the family table.")),
          h("div.row.wrap", h("button.btn", { onclick: () => klatschStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -1813,7 +2345,7 @@ async function communityView(main) {
   const showVerboten = async () => {
     let g = null; try { g = await call("community/verboten"); } catch {}
     const open = () => { const b = h("div.vw-live"); verboten.replaceChildren(b); verbotenLive(b, me, () => render()); };
-    verboten.replaceChildren(sectionAdd("🚫 " + I18N.tr(T("Verbotene Wörter")), appBtn("verboten"), g && g.status !== "done"
+    verboten.replaceChildren(gsec("verboten", "🚫 " + I18N.tr(T("Forbidden Words")), appBtn("verboten"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("Explain the word without the forbidden words – the others guess aloud. In teams or everybody for themselves, guests via QR code.")),
          h("button.btn", { onclick: () => verbotenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
@@ -1822,7 +2354,7 @@ async function communityView(main) {
   const showJass = async () => {
     let g = null; try { g = await call("community/jass"); } catch {}
     const open = () => { const b = h("div.ja-live"); jass.replaceChildren(b); jassLive(b, me, () => render()); };
-    jass.replaceChildren(sectionAdd("♣️ " + I18N.tr(T("Jass")), appBtn("jass"), g && g.status !== "done"
+    jass.replaceChildren(gsec("jass", "♣️ " + I18N.tr(T("Jass")), appBtn("jass"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The Swiss card game Schieber: 2 against 2 with Trumpf, Obenabe and Undeufe, Weis and Stöck – with bots, the family and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => jassStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -1832,39 +2364,85 @@ async function communityView(main) {
   const showWerwolf = async () => {
     let g = null; try { g = await call("community/werwolf"); } catch {}
     const open = () => { const b = h("div.ww-live"); werwolf.replaceChildren(b); werwolfLive(b, me, () => render()); };
-    werwolf.replaceChildren(sectionAdd("🐺 " + I18N.tr(T("Werwölfe")), appBtn("werwolf"), g && g.status !== "done"
+    werwolf.replaceChildren(gsec("werwolf", "🐺 " + I18N.tr(T("Werewolves")), appBtn("werwolf"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The classic party game for 5 to 12 players in one room: the app is the game master, everybody gets a secret role on their phone – find the werewolves!")),
+      : [h("p.muted", T("The classic party game for 2 to 12 players in one room (bots fill the table up to 5): the app is the game master, everybody gets a secret role on their phone – find the werewolves!")),
          h("button.btn", { onclick: () => werwolfStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("werwolf")));
   };
   const showSchach = async () => {
     const open = id => { const b = h("div.ch-live"); schach.replaceChildren(b); schachLive(b, me, () => render(), id); };
-    schach.replaceChildren(sectionAdd("♟️ " + I18N.tr(T("Chess")), appBtn("schach"),
+    schach.replaceChildren(gsec("schach", "♟️ " + I18N.tr(T("Chess")), appBtn("schach"),
       h("p.muted", T("Chess with the full rules: against the bot (easy / normal / hard), against somebody of the family on two devices (guests via QR code) or two on one device. Games can be paused and continued later; here you see all games and can delete paused ones.")),
       await schachPanel(me, open), await gameRewardsRow("schach")));
   };
   const showDorfmarkt = async () => {
     let g = null; try { g = await call("community/dorfmarkt"); } catch {}
     const open = () => { const b = h("div.mk-live"); dorfmarkt.replaceChildren(b); dorfmarktLive(b, me, () => render()); };
-    dorfmarkt.replaceChildren(sectionAdd("🏘️ " + I18N.tr(T("Dorfmarkt")), appBtn("dorfmarkt"), g && g.status !== "done"
+    dorfmarkt.replaceChildren(gsec("dorfmarkt", "🏘️ " + I18N.tr(T("Village Market")), appBtn("dorfmarkt"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The property-trading board game in a Swiss village: buy shops, build market stands, collect rent and trade – with bots and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => dorfmarktStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => dorfmarktStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
       await gameRewardsRow("dorfmarkt")));
   };
-  const profiles = await call("parent/profiles");
-  const who = h("select", ...profiles.map(p => h("option", { value: p.id }, p.name)));
-  const hist = h("div");
-  const drawHist = async () => hist.replaceChildren(await historySection(+who.value, I18N.tr(T("History"))));
-  who.onchange = drawHist;
-  main.append(h("h1", T("Community")),
-    h("p.muted", T("Family quiz and family council – children can make quizzes, open topics and vote too.")),
-    await councilSection(me), await pollsSection(me), await wichtelnSection(me),
-    runningGamesBox(), live, (quizHead = sectionAdd("🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes)), bingo, song, cardBoxes.tschau, cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel, heimwaerts, jump, klatsch, verboten, jass, werwolf, schach, dorfmarkt, poker,
-    section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
-  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); drawHist();
+  const showEscape = async () => {
+    let g = null; try { g = await call("community/escape"); } catch {}
+    const open = () => { const b = h("div.er-live"); escape.replaceChildren(b); escapeLive(b, me, () => render()); };
+    let info = null; try { info = (await call("community/escape/rules")).played; } catch {}
+    escape.replaceChildren(gsec("escape", "🗝️ " + I18N.tr(T("Escape Room")), appBtn("escape"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("Solve riddles together and find the way out of every room – all together or in two teams.")),
+         info ? h("p.small", "🧩 ", I18N.tr(T("{0} of {1} riddles not played yet – round {2}")).replace("{0}", info.new).replace("{1}", info.total).replace("{2}", info.round)) : null,
+         h("button.btn", { onclick: () => escapeStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      await gameRewardsRow("escape")));
+  };
+  // the small games of the game corner: only the status (they run on the device)
+  const arcade = ["ttt", "pingpong", "sudoku", "patience", "slots"].map(k => {
+    const [, ic, name] = GAME_LIST.find(g => g[0] === k);
+    return h("div", gsec(k, ic + " " + I18N.tr(name), appBtn("arcade/" + k), h("p.muted", ARCADE_TEXTS[k])));
+  });
+  // the special quiz «Family Quest Facts» (questions from the family's data) – on by default
+  const factsOn = h("input", { type: "checkbox", checked: s.quiz_facts !== false, onchange: async () => {
+    await call("parent/settings", { method: "PUT", body: { quiz_facts: factsOn.checked } }); toast(T("Saved"), "good"); } });
+  const factsSet = h("div.pj-rewards", h("label.check", factsOn, h("span", "📊 ", T("Special quiz «Family Quest Facts»: questions from our own data (chores, games, records, shop, pets) – nothing from the parent area"))));
+  const quiz = h("div", live, (quizHead = gsec("quiz", "🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes, factsSet)));
+  const blocks = { quiz, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
+    heimwaerts, jump, sternlauf, snack, verkehr, klatsch, verboten, jass, werwolf, schach, dorfmarkt, escape, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
+  for (const [k, el] of Object.entries(blocks)) {
+    const g = GAME_LIST.find(x => x[0] === k);
+    el.classList.add("game-block");
+    el.dataset.find = [k, g ? I18N.tr(g[2]) : "", g ? g[2] : ""].join(" ").toLowerCase();
+  }
+  // search: filters the games by name – remembered while the page is open
+  const search = h("input.pack-search", { type: "search", placeholder: "🔍 " + I18N.tr(T("Search games …")), value: P.gameSearch || "",
+    "aria-label": T("Search games …"), oninput: () => { P.gameSearch = search.value; filter(); } });
+  const none = noMatch(T("No game found."), () => { search.value = ""; P.gameSearch = ""; filter(); });
+  const filter = () => {
+    const q = (search.value || "").trim().toLowerCase();
+    let shown = 0;
+    for (const el of Object.values(blocks)) {
+      el.hidden = !!q && !el.dataset.find.includes(q); if (!el.hidden) shown++;
+      if (q && !el.hidden) el.querySelectorAll("details.game-sec").forEach(d => { d.open = true; });   // a game searched for opens
+    }
+    none.hidden = !q || shown > 0;
+  };
+  // for every game: who begins, guests, all on / off
+  const starter = h("select", { onchange: async () => { await call("parent/settings", { method: "PUT", body: { game_starter: starter.value } }); toast(T("Saved"), "good"); } },
+    ...[["dice", "🎲 " + I18N.tr(T("The dice decides"))], ["leader", "👑 " + I18N.tr(T("Whoever leads the game"))], ["choose", "👉 " + I18N.tr(T("Whoever leads chooses a player"))]]
+      .map(([k, n]) => h("option", { value: k, selected: (s.game_starter || "dice") === k }, n)));
+  const guests = h("input", { type: "checkbox", checked: s.games_guests !== false, onchange: async () => {
+    await call("parent/settings", { method: "PUT", body: { games_guests: guests.checked } }); toast(T("Saved"), "good"); } });
+  const general = h("details.card.sec.games-general", h("summary", h("b", "⚙️ ", T("For all games"))),
+    h("div.row", h("button.btn.small.ghost", { onclick: async () => { await access.allTo("all"); render(); } }, "✓ ", T("All on")),
+      h("button.btn.small.ghost", { onclick: async () => { await access.allTo("off"); render(); } }, "✕ ", T("All off"))),
+    h("label.field", T("Who begins a game (card and board games)"), starter),
+    h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
+  main.append(h("h1", T("Games")), partyCard(),
+    h("p.muted", T("Every game on its own: active, active without bots (only people play) or inactive – for everybody or only for chosen children. Parents can always play.")),
+    search, general, batterySettingsCard(), runningGamesBox(), none, ...Object.values(blocks));
+  filter();
+  showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
 }
 
@@ -1875,7 +2453,7 @@ async function gameRewardsRow(game) {
   try { r = await call("parent/game-rewards"); } catch {}
   const cur = r[game] || [10, 5, 2];
   const inputs = cur.map(v => h("input.pj-reward", { type: "number", min: 0, max: 1000, step: 1, value: v, inputmode: "numeric" }));
-  if (game === "jass") {
+  if (game === "jass" || game === "escape") {
     const save1 = async () => {
       const v = Number(inputs[0].value);
       if (!Number.isInteger(v) || v < 0 || v > 1000) return toast(T("Three numbers of coins (0 to 1000) are needed"), "bad");
@@ -1883,7 +2461,8 @@ async function gameRewardsRow(game) {
     };
     return h("div.pj-rewards", h("b", "🪙 ", T("Coins for each person of the family in the winning team")),
       h("div.row", inputs[0], h("button.btn.small", { onclick: save1 }, T("Save"))),
-      h("p.small.muted", T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
+      h("p.small.muted", game === "escape" ? T("Only when the team escaped (together: everybody; two teams: the team out first) – at a family table with at least two people of the family, not for guests.")
+        : T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
   }
   const save = async () => {
     const vals = inputs.map(i => Number(i.value));
@@ -1899,11 +2478,10 @@ async function gameRewardsRow(game) {
   if (game !== "paarjagd") return h("div.pj-rewards", ...row,
     h("p.small.muted", T("Coins only at a table with at least two people of the family – not for guests.")));
   // own pictures: the photo sets (shared with the pairs game) – every photo becomes a pair, choose the set when starting
-  const photos = h("div.pj-photos", h("b", "📷 ", T("Own pictures")),
+  // the photo sets live here (moved from the settings) – shared with the pairs game of the game corner
+  const photos = h("details.pj-photos", h("summary", h("b", "📷 ", T("Own pictures: photo sets"))),
     h("p.small.muted", T("Upload photo sets (e.g. the family, the holidays) – every photo becomes a pair. Choose the set when starting a Paarjagd.")),
-    h("button.btn.small.ghost", { onclick: async () => {
-      const m = modal(h("div", await memorySection(), h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Close")))), { wide: true });
-    } }, "📷 ", T("Manage photo sets")));
+    await memorySection());
   return h("div.pj-rewards", photos, ...row,
     h("p.small.muted", T("Coins only at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
 }
@@ -1993,7 +2571,14 @@ function backupSection() {
     info.replaceChildren(h("div.card.restore-box",
       h("p", h("strong", T("Backup from {0}").replace("{0}", when)), " · Family Quest " + (m.app_version || "?")),
       m.counts ? h("p.small.muted", T("Profiles"), ": ", String(m.counts.profile ?? "–"), " · ", T("Packs"), ": ", String(m.counts.pack ?? "–")) : null,
+      m.compat && m.compat.status === "older" ? h("div.card.warn-box",
+        h("p", h("strong", "⚠️ ", T("This backup comes from an older version")), " ",
+          I18N.tr(T("(Family Quest {0} – now {1})")).replace("{0}", m.compat.from).replace("{1}", m.compat.to)),
+        h("p.small", "✓ ", T("Checked: the backup is not damaged, and the update of its data to the current version worked on a test copy.")),
+        h("p.small", T("Things that are new since then start with their standard settings. Please check the profiles, points and packs after restoring.")))
+        : h("p.small.muted", "✓ ", T("Checked: the backup is not damaged and fits this version.")),
       h("p.warn-text", T("Restoring replaces ALL current data (profiles, learning progress, points, chores, planner, packs).")),
+      h("p.small.muted", "🛟 ", T("Before restoring, the current data are saved once more as before-restore.zip in the data folder of the app.")),
       h("div.row", h("button.btn.bad", { onclick: async e => {
         if (!confirm(I18N.tr(T("Really replace all data with this backup?")))) return;
         const btn = e.currentTarget; btn.disabled = true;
@@ -2147,8 +2732,8 @@ async function calendarView(main) {
   const time = e => e.all_day ? "" : fmtTime(e.start) + " ";
   const open = e => e.readonly ? toast("🔒 " + I18N.tr(T("From Home Assistant – read only"))) : eventDialog(e);
   const chip = e => h("button.cal-ev" + (e.readonly ? ".ro" : "") + (e.kind ? "." + e.kind : ""), {
-    title: (e.readonly ? "🔒 " + e.calendar + " · " : "") + e.title, onclick: ev => { ev.stopPropagation(); open(e); } },
-    e.icon ? e.icon + " " : "", time(e), C(e.title));
+    title: (e.readonly ? "🔒 " + e.calendar + " · " : "") + e.title + (e.game ? " · " + ftGameLine(e.game) : ""), onclick: ev => { ev.stopPropagation(); open(e); } },
+    e.icon ? e.icon + " " : "", time(e), C(e.title), e.game ? h("span.cal-game", " · " + e.game.icon + " ", C(ftTitle(e.game))) : null);
   const today = isoDay(new Date());
   const go = (v, date) => { P.calView = v; P.calDate = date ? isoDay(date) : P.calDate; render(); };
   const step = n => {
@@ -2210,7 +2795,8 @@ async function calendarView(main) {
   } else {
     const list = sorted(evs).sort((a, b) => a.start.localeCompare(b.start));
     body = h("ul.cal-list", ...list.map(e => h("li.row", { onclick: () => open(e) },
-      h("span.cal-when", fmtRange(e)), h("span.grow", e.icon ? e.icon + " " : "", C(e.title)), e.readonly ? h("span.small.muted", "🔒 ", C(e.calendar)) : null)),
+      h("span.cal-when", fmtRange(e)), h("span.grow", e.icon ? e.icon + " " : "", C(e.title),
+        e.game ? [h("br"), h("span.small.ftg-line", e.game.icon + " ", C(ftGameLine(e.game)))] : null), e.readonly ? h("span.small.muted", "🔒 ", C(e.calendar)) : null)),
       !list.length ? h("li.muted", T("No events this month.")) : null);
   }
   main.append(
@@ -2270,6 +2856,7 @@ function eventDialog(e) {
     h("div.grid2", h("label.field", T("From"), from), h("label.field", T("To"), to)),
     h("label.field", T("Symbol"), h("div.row.wrap", icon, ...EVENT_ICONS.map(ic => h("button.icon-btn", { type: "button", onclick: () => { icon.value = ic; } }, ic)))),
     offBox, note,
+    e.game ? h("p.small.ftg-line", e.game.icon + " ", C(ftGameLine(e.game)), " · ", h("button.link.small", { type: "button", onclick: () => { m.close(); P.tab = "community"; location.hash = "community"; render(); } }, T("FamilyTime games ›"))) : null,
     h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")), h("span.grow"),
       !isNew ? h("button.btn.small.bad", { onclick: async () => { if (!confirm(I18N.tr(T("Delete this event?")))) return; await call(`parent/calendar/${e.id}`, { method: "DELETE" }); m.close(); render(); } }, "🗑 ", T("Delete")) : null)));
   title.focus();
@@ -2472,13 +3059,14 @@ async function settingsView(main) {
         h("span.hint", T("Outfits, houses and furniture for the pets. XP spent there do not lower the level.")))),
     section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels)),
     h("button.btn.big", { onclick: save }, "💾 ", T("Save")),
-    await gamesSection(s),
+    section("👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), familyTimeSettings(),
+      h("button.link.small", { onclick: () => { P.tab = "community"; location.hash = "community"; render(); } }, T("Wishes and votes: tab «Family» ›"))),
     await crestSection(),
-    await memorySection(),
     linkSection(),
     themesSection(),
     weatherBox("config"),
     haLoginSection(s),
+    await integrationSection(),
     await firewallSection(s),
     await translationsSection(),
     backupSection(),

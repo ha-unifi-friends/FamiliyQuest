@@ -39,6 +39,8 @@ async function route() {
   const as = hash.match(/^as\/([A-Za-z0-9_.\-]+)\/?(.*)$/);
   if (as) { Auth.kid = as[1]; history.replaceState(null, "", "#/" + as[2]); return route(); }
   const [view, arg] = hash.split("/");
+  if (S.sheet) S.sheet.close();                          // a game card opened from its tile (gamesView)
+  if (tableNote.box) closeTableNote();                  // «somebody opened a table»: gone on every navigation (also into that table)
   document.body.classList.remove("quiz-open");          // a full-screen game left by the back button of the browser
   if (!Auth.kid) return profilesView();
   try { await loadMe(); } catch (e) {
@@ -52,6 +54,7 @@ async function route() {
   if (view === "shop") return shopView();
   if (view === "avatar") return avatarView();
   if (view === "family") return familyView();
+  if (view === "board" && arg) return boardView(+arg);
   if (view === "games") return gamesView();
   if (view === "quiz") return quizView();
   if (view === "quizzes") return quizzesView();
@@ -69,12 +72,16 @@ async function route() {
   if (view === "wuerfel") return wuerfelView();
   if (view === "heimwaerts") return heimwaertsView();
   if (view === "jump") return jumpView();
+  if (view === "sternlauf") return sternlaufView();
+  if (view === "snack") return snackView();
+  if (view === "verkehr") return verkehrView();
   if (view === "klatsch") return klatschView();
   if (view === "verboten") return verbotenView();
   if (view === "jass") return jassView();
   if (view === "werwolf") return werwolfView();
   if (view === "schach") return schachView(arg);
   if (view === "dorfmarkt") return dorfmarktView();
+  if (view === "escape") return escapeView();
   if (view === "arcade") return arcadeView(arg);
   if (view === "deck") return arg ? deckView(+arg) : decksView();
   return dashboardView();
@@ -116,12 +123,128 @@ function specialBanners(list) {
     const what = off ? [x.options.internet ? T("no internet") : null, x.options.games ? T("no games in the app") : null].filter(Boolean).map(t => I18N.tr(t)).join(" · ") : "";
     return h("section.card.banner.special-banner." + x.kind + (x.active ? ".now" : ""),
       h("span.big-ic", x.icon || (off ? "📵" : "👨‍👩‍👧")),
-      h("span.grow", h("strong", C(x.title)), h("br"), txt, what ? [h("br"), h("span.small.muted", what)] : null));
+      h("span.grow", h("strong", C(x.title)), h("br"), txt, what ? [h("br"), h("span.small.muted", what)] : null,
+        x.game ? [h("br"), h("span.small.ftg-line", x.game.icon + " ", C(ftGameLine(x.game)))] : null));     // FamilyTime: its game (community.js)
   });
 }
 
-// which games this child may play (parent area › Settings › Games – per game and person)
+// which games this child may play (parent area › Games – per game and person; a game with a price once bought / rented)
 const canPlay = game => !!(S.me && (S.me.games_list || []).includes(game));
+// locked for this child, but a parent opened a family table of it – that table can be joined (familyquest/services.parent_tables)
+const tableOnly = game => !!(S.me && (S.me.games_tables || []).includes(game));
+// a game with a price this child has not bought / rented (yet): {game, price, rent, period, …} (familyquest/gamepasses.py)
+const lockedGame = game => ((S.me && S.me.games_locked) || []).find(g => g.game === game) || null;
+// locked, but free tries are left (or the child sits at a table on a try): {left, member} (familyquest/services.trial_games)
+const trialGame = game => (S.me && S.me.games_trial && S.me.games_trial[game]) || null;
+const triesText = n => I18N.tr(n === 1 ? T("1 free try") : T("{0} free tries")).replace("{0}", n);
+
+// ---------------------------------------------------------------- game battery (familyquest/battery.py) and party mode
+// starting a game costs one charge segment – joining a table of somebody else is free; empty: recharge for coins
+const battery = () => (S.me && S.me.battery) || null;
+const batteryShown = () => { const b = battery(); return !!(b && (b.on || b.party)); };
+const batteryEmpty = () => { const b = battery(); return !!(b && !b.free && b.charge <= 0); };
+const partyOn = () => !!(S.me && S.me.party);
+
+/** The battery strip (games page, game corner, the card of a game): segments, what a start costs, «Recharge». */
+function batteryBar(compact = false) {
+  const b = battery();
+  if (!batteryShown()) return null;
+  let text, sub = null, btn = null;
+  if (b.party) { text = ["🎉 ", T("Party: starting games costs nothing")]; }
+  else if (b.free) { text = b.forever || !b.until ? ["🔋 ", T("Unlimited game energy")] : ["🔋 ", I18N.tr(T("Unlimited game energy")) + " · " + untilWhen(b.until)]; }
+  else if (b.charge <= 0) {
+    text = ["🪫 ", T("Battery empty")];
+    sub = T("You can still join a table of somebody else. To start a game yourself, recharge your battery.");
+  } else {
+    text = [I18N.tr(T("{0} of {1} charged")).replace("{0}", b.charge).replace("{1}", b.cap)];
+    sub = compact ? T("Starting costs 🔋1") : T("Starting a game costs 🔋1 – joining a table is free.");
+  }
+  if (!b.free && b.charge < b.cap) btn = h("button.btn.small" + (b.charge <= 0 ? "" : ".ghost") + ".bat-recharge", { onclick: rechargeBattery },
+    "⚡ ", T("Recharge"), b.cost > 0 ? " · " + b.cost + " 🪙" : "");
+  return h("div.bat-bar" + (b.charge <= 0 && !b.free ? ".empty" : "") + (compact ? ".compact" : ""), batteryIcon(b, !compact),
+    h("div.grow.bat-text", h("strong", ...text), sub ? h("div.small.muted", sub) : null), btn);
+}
+
+/** Recharge the battery to full for coins – a confirm dialog first. */
+function rechargeBattery() {
+  const b = battery();
+  if (!b) return;
+  const coins = Math.floor(((S.me && S.me.balances) || {}).coins || 0), short = b.cost > coins;
+  const m = modal(h("div.form.center.bat-dialog", h("h2", "⚡ ", T("Recharge your game battery")), batteryIcon(b, true),
+    h("p", b.cost > 0 ? I18N.tr(T("Recharge to full ({0} segments) for {1} coins?")).replace("{0}", b.cap).replace("{1}", b.cost)
+      : I18N.tr(T("Recharge to full ({0} segments) – it costs nothing.")).replace("{0}", b.cap)),
+    h("p.small.muted", "🪙 ", I18N.tr(T("You have {0} coins")).replace("{0}", coins)),
+    short ? h("p.bad", T("Not enough coins")) : null,
+    h("div.row.center", h("button.btn.big", { disabled: short, onclick: async () => {
+      m.close();
+      try {
+        const r = await api("me/battery/recharge", { method: "POST" });
+        S.me.battery = r.battery;
+        if (S.me.balances) S.me.balances.coins = r.coins;
+        Sound.play("done"); toast(T("Game battery recharged"), "good");
+      } catch (e) { toast(e.message, "bad"); }
+      try { S.me = await api("me"); } catch {}
+      route();
+    } }, "⚡ ", T("Recharge")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+}
+// a start refused because the battery is empty (familyquest/api: 403): offer to recharge right away
+window.FQ_BATTERY_EMPTY = async () => { try { S.me = await api("me"); } catch {} if (batteryEmpty() && !document.querySelector(".bat-dialog")) rechargeBattery(); };
+
+/** Party mode of the parents: a festive banner on the start page and the games page. */
+function partyBanner() {
+  const p = S.me && S.me.party;
+  if (!p) return null;
+  const what = [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean);
+  return h("section.card.banner.party-banner", h("span.big-ic", "🎉"),
+    h("div.grow", h("strong", T("Party mode"), p.until ? " " + untilWhen(p.until) : ""), what.length ? h("div.small", what.map(t => I18N.tr(t)).join(" · ")) : null),
+    h("span.big-ic.party-ball", "🪩"));
+}
+// the Disco design while the party runs for this child (or an own design of the parents with the disco look)
+const discoTheme = () => (S.me && S.me.party && S.me.party.theme) || (S.info && S.info.season && S.info.season.vis === "disco" && seasonOn() ? S.info.season : null);
+
+// somebody opened a family table: a note slides into the header (not while a game or a lesson fills the screen)
+const tableNote = { seen: null, box: null, timer: null };
+function tablesSeen() {
+  if (!tableNote.seen) { try { tableNote.seen = JSON.parse(localStorage.getItem("fq.tables.seen." + S.me.profile.id)) || []; } catch { tableNote.seen = []; } }
+  return tableNote.seen;
+}
+function closeTableNote() {
+  const box = tableNote.box; clearTimeout(tableNote.timer); tableNote.box = null;
+  if (box) { box.classList.remove("on"); setTimeout(() => box.remove(), 300); }
+}
+function showTableNote(t) {
+  tableNote.box?.remove(); clearTimeout(tableNote.timer);
+  const close = closeTableNote;
+  // one compact line below the header – ☰, the clock and the title stay visible
+  const box = h("div.table-note", { role: "status", "data-route": t.route },
+    h("span.table-note-ic", t.icon),
+    // short enough for one line on a phone: «Werewolves · Mia» – the whole sentence as tooltip / for screen readers
+    h("span.table-note-txt", { title: I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)),
+      "aria-label": I18N.tr(T("{0} opened a table: {1}")).replace("{0}", t.host || "?").replace("{1}", I18N.tr(t.title)) },
+      h("strong", I18N.tr(t.title)), " · ", C(t.host || "?")),
+    // «Join» seats the child at once – the game opens already joined, without asking again
+    h("button.btn.small", { onclick: async () => {
+      close();
+      if (t.join) { try { await api(t.join, { method: "POST" }); } catch (e) { toast(e.message, "bad"); } }
+      go(t.route);
+    } }, "▶ ", T("Join")),
+    h("button.icon-btn", { title: T("Close"), "aria-label": T("Close"), onclick: close }, "✕"));
+  const top = document.querySelector(".top");
+  box.style.top = Math.max(8, Math.round(top ? top.getBoundingClientRect().bottom : 0) + 6) + "px";
+  document.body.append(box); tableNote.box = box;
+  requestAnimationFrame(() => box.classList.add("on"));
+  try { Sound.play("turn"); if (Sound.on && navigator.vibrate) navigator.vibrate([80, 60, 80]); } catch {}
+  tableNote.timer = setTimeout(close, 10000);
+}
+setInterval(async () => {
+  if (!Auth.kid || !S.me || S.lesson || document.hidden || document.querySelector(".quiz-full, .arcade-full")) return;
+  let list; try { list = await api("community/tables"); } catch { return; }
+  const seen = tablesSeen(), fresh = list.filter(t => !seen.includes(t.key));
+  if (!fresh.length) return;
+  seen.push(...fresh.map(t => t.key)); seen.splice(0, Math.max(0, seen.length - 60));
+  try { localStorage.setItem("fq.tables.seen." + S.me.profile.id, JSON.stringify(seen)); } catch {}
+  if (!location.hash.includes(fresh[0].route)) showTableNote(fresh[0]);
+}, 8000);
 
 // invitations to a duel (Tic-Tac-Toe or Ping-Pong on two devices) pop up wherever the child is in the app
 let duelSeen = 0;
@@ -134,7 +257,7 @@ setInterval(async () => {
   const other = d.names.X, pong = d.kind === "pong";
   const m = modal(h("div.form.center", h("h2", pong ? "🏓 " : "⭕ ", pong ? T("Ping-Pong") : T("Tic-Tac-Toe")),
     h("p", I18N.tr(pong ? T("{0} invites you to Ping-Pong") : T("{0} invites you to Tic-Tac-Toe")).replace("{0}", other)),
-    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/duel/accept", { method: "POST" }); } catch {} go(pong ? "arcade/pingpong" : "arcade/ttt"); } }, "▶ ", T("Play")),
+    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/duel/accept", { method: "POST" }); } catch {} S.arcadeJoin = pong ? "pingpong" : "ttt"; go(pong ? "arcade/pingpong" : "arcade/ttt"); } }, "▶ ", T("Play")),
       h("button.btn.ghost", { onclick: async () => { m.close(); try { await api("community/duel/decline", { method: "POST" }); } catch {} } }, T("No thanks")))));
 }, 5000);
 // invitations to a Ping-Pong doubles table (familyquest/pong4.py) – same popup as for a duel
@@ -148,7 +271,7 @@ setInterval(async () => {
   const m = modal(h("div.form.center", h("h2", "🏓 ", T("Doubles (2 against 2)")),
     h("p", I18N.tr(T("{0} invites you to Ping-Pong doubles")).replace("{0}", d.seats.A1.name)),
     h("p.small.muted", I18N.tr(d.team === "A" ? T("You play in the team of the host.") : T("You play against the host."))),
-    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/pong4/accept", { method: "POST" }); } catch {} S.pong4Online = true; go("arcade/pingpong"); } }, "▶ ", T("Play")),
+    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/pong4/accept", { method: "POST" }); } catch {} S.pong4Online = true; S.arcadeJoin = "pingpong"; go("arcade/pingpong"); } }, "▶ ", T("Play")),
       h("button.btn.ghost", { onclick: async () => { m.close(); try { await api("community/pong4/decline", { method: "POST" }); } catch {} } }, T("No thanks")))));
 }, 5000);
 
@@ -165,7 +288,11 @@ function idleReset() {
 function seasonOn() { try { return localStorage.getItem("fq.season") !== "0"; } catch { return true; } }
 
 let _seasonCss = false;
+function discoScene() {
+  return h("div.scn.disco-scn", { "aria-hidden": "true" }, h("span.disco-ball", "🪩"), h("i.spot.s1"), h("i.spot.s2"), h("i.spot.s3"));
+}
 function seasonScene() {
+  if (discoTheme()) return discoScene();
   const se = S.info && S.info.season;
   if (!se || !seasonOn() || !window.FPSEASON) return null;
   if (!_seasonCss) { _seasonCss = true; document.head.append(h("style", FPSEASON.CSS)); }
@@ -179,7 +306,7 @@ function seasonScene() {
 }
 
 function seasonLabel() {
-  const se = S.info && S.info.season;
+  const se = discoTheme() || (S.info && S.info.season);
   return se ? h("span.slab", se.icon, " ", se.builtin ? T(se.name) : C(se.name)) : null;
 }
 
@@ -198,10 +325,10 @@ function headClock() {
 
 function topBar(active, opts = {}) {
   const me = S.me;
-  const se = S.info && S.info.season;
-  const head = h("header.top.fq-head" + (se && seasonOn() ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
+  const se = discoTheme() || (S.info && S.info.season);
+  const head = h("header.top.fq-head" + (se && (seasonOn() || discoTheme()) ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
     seasonScene(),
-    h("div.head-row",
+    h("div.head-row" + (opts.back ? ".has-back" : ""),
       h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰"),
       // load everything anew (e.g. a pet just bought, a game somebody opened)
       h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: () => location.reload() }, "⟳"),
@@ -226,6 +353,7 @@ function openDrawer(active) {
 /** screen(active, [{back, actions}], ...content) – the optional options object sets the header of this module. */
 function screen(active, ...content) {
   const opts = content[0] && content[0].constructor === Object ? content.shift() : {};
+  document.body.classList.toggle("disco", !!discoTheme());      // party mode: the Disco design (shared/base.css)
   app.replaceChildren(h("div.screen", topBar(active, opts), h("main.content", ...content)));
   if (S.keepScroll != null) { window.scrollTo(0, S.keepScroll); S.keepScroll = null; } else window.scrollTo(0, 0);
   watchCommunity(active);
@@ -301,6 +429,26 @@ function login(p) {
     } })));
 }
 
+// the subjects (packs) of a profile as tiles: tap = the pack with its path, ▶ = go on with the next unit right away.
+// Parents see every pack – drafts and switched-off ones marked – to try them out.
+const STATUS_BADGE = { draft: () => "📝 " + I18N.tr(T("Draft")), disabled: () => "⏸ " + I18N.tr(T("Switched off")) };
+function subjectGrid(me, withStart = false) {
+  if (!me.subjects.length) return h("p.muted", T("No subjects active yet – a parent can switch on packs."));
+  return h("div.subject-grid", ...me.subjects.map(s => {
+    const tile = h("button.subject" + (s.status && s.status !== "active" ? ".trial" : ""), { style: { "--c": s.color }, onclick: () => go("pack/" + encodeURIComponent(s.pack)) },
+      h("span.subject-ic", s.icon),
+      h("span.subject-body",
+        C(s.title, "strong"),
+        STATUS_BADGE[s.status] ? h("span.small.status-badge", STATUS_BADGE[s.status]()) : null,
+        h("span.row.small", stars(Math.round(5 * s.stars / Math.max(1, s.max_stars))), h("span.muted", s.percent + " %")),
+        s.next ? h("span.small.next", T("Next:"), " ", C(s.next.title)) : h("span.small.next", "🏆 ", T("All done!")),
+        s.due ? h("span.due", s.due + " " + T("to repeat")) : null));
+    if (!withStart) return tile;
+    return h("div.subject-wrap", tile, h("button.btn.small.subject-go", { style: { "--c": s.color }, title: T("Start"),
+      onclick: () => startLesson({ mode: "path", pack: s.pack, unit: s.next ? s.next.id : undefined }) }, "▶ ", s.next ? T("Continue") : T("Repeat")));
+  }));
+}
+
 // ---------------------------------------------------------------- dashboard
 function dashboardView() {
   const me = S.me;
@@ -308,31 +456,23 @@ function dashboardView() {
   const met = xp >= goal;
   const today = h("section.card.today",
     ring(xp, goal, { size: 132, stroke: 14, color: met ? "var(--good)" : "var(--accent)",
-      label: h("span", h("b.big", fmt(xp)), h("br"), h("span.small.muted", "/ " + fmt(goal) + " XP")) }),
+      label: h("span", h("b.big", fmt(xp)), h("br"), h("span.small.muted", "/ " + fmt(goal) + " XP"),
+        h("br"), h("span.small.xp-total", { title: T("All XP so far") }, I18N.tr(T("Total {0} XP")).replace("{0}", fmt(me.level.xp)))) }),
     h("div.today-text",
       h("h2", met ? T("Daily goal reached! 🎉") : T("Today's goal")),
-      h("p.muted", met ? T("Everything extra counts for your level.") : T("A short lesson mixes repetitions and new words.")),
-      h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Daily lesson"))));
+      h("p.muted", met ? T("Everything extra counts for your level.") : I18N.tr(T("Collect {0} XP today – every lesson and every right answer counts.")).replace("{0}", fmt(goal))),
+      learnUp() ? null : h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Daily lesson"))));
 
   const subjects = h("section",
     h("div.row", h("h2.grow", T("Subjects")), h("button.btn.small.ghost", { onclick: () => go("courses") }, "🌍 ", T("Language courses & more"))),
-    me.subjects.length
-      ? h("div.subject-grid", ...me.subjects.map(s => h("button.subject", { style: { "--c": s.color }, onclick: () => go("pack/" + encodeURIComponent(s.pack)) },
-          h("span.subject-ic", s.icon),
-          h("span.subject-body",
-            C(s.title, "strong"),
-            h("span.row.small", stars(Math.round(5 * s.stars / Math.max(1, s.max_stars))), h("span.muted", s.percent + " %")),
-            s.next ? h("span.small.next", T("Next:"), " ", C(s.next.title)) : h("span.small.next", "🏆 ", T("All done!")),
-            s.due ? h("span.due", s.due + " " + T("to repeat")) : null))))
-      : h("p.muted", T("No subjects active yet – a parent can switch on packs.")));
-
+    subjectGrid(me));
   const sections = [...(me.profile.crown ? [h("section.card.banner.crown-banner", h("span.big-ic", "👑"), h("strong", T("Today you wear the crown!")))] : []),
     ...(me.weather ? [h("section.card.banner.weather-banner", h("span.weather-big", me.weather.icon),
       h("div", h("div.small.muted", T("Your weather today")), me.weather.name ? h("strong", I18N.tr(me.weather.name)) : null))] : []),
     ...(me.weather_alarm && me.weather_alarm.hints.length ? [h("section.card.banner.alarm-banner",
       h("span.big-ic", me.weather_alarm.now ? me.weather_alarm.now.icon : "🌂"),
       h("div.grow", ...me.weather_alarm.hints.map(x => h("div", x.icon, " ", C(I18N.tr(x.text), "strong")))))] : []),
-    ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today];
+    partyBanner(), ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today, timeLeftCard("learn")].filter(Boolean);
   if (me.profile && me.has_devices) sections.push(devicesCard());
   if (me.chores) sections.push(choresCard(me.chores));
   sections.push(subjects, deckHomeCard(), pointsCard());
@@ -371,7 +511,8 @@ function internetCard(st) {
   const clock = h("b.net-clock");
   const fmtClock = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   let left = st.seconds_left || 0;
-  const draw = () => { clock.textContent = st.running ? fmtClock(Math.max(0, left)) : fmt(st.minutes) + " min"; };
+  const unlimited = !!(st.budget && st.budget.unlimited);       // the parents set the internet budget to ∞
+  const draw = () => { clock.textContent = st.running ? (unlimited ? "∞" : fmtClock(Math.max(0, left))) : unlimited ? "∞" : fmt(st.minutes) + " min"; };
   draw();
   if (st.running) {
     netTimer = setInterval(() => {
@@ -391,10 +532,29 @@ function internetCard(st) {
     h("div.grow", h("h2", T("Internet time")), clock,
       h("div.small.muted", st.block ? T("Block time – the internet is off until {0}.").replace("{0}", fmtTime(st.block.until))
         : st.running ? T("Internet is on – the time runs.") : st.minutes >= 1 ? T("Start when you want to go online.") : T("No minutes left – earn some in the shop.")),
-      st.budget ? h("div.small.muted", "📅 ", I18N.tr(T("Budget: {0} of {1} min left")).replace("{0}", fmt(st.budget.left)).replace("{1}", fmt(st.budget.total)),
+      st.budget && !unlimited ? h("div.small.muted", "📅 ", I18N.tr(T("Budget: {0} of {1} min left")).replace("{0}", fmt(st.budget.left)).replace("{1}", fmt(st.budget.total)),
         st.extra ? " · ➕ " + fmt(st.extra) + " min" : "", " · ", I18N.tr(T("new from {0}")).replace("{0}", fmtDate(st.budget.reset_at, { weekday: "short" }) + " " + fmtTime(st.budget.reset_at))) : null),
     st.running ? h("button.btn.big.bad", { onclick: () => act("stop") }, "⏸ ", T("Pause"))
       : h("button.btn.big.good", { disabled: !st.can_start, onclick: () => act("start") }, "▶ ", T("Start")));
+}
+
+// «Me»: at the top everything about me at a glance – points, open tasks, internet time (one button: start / pause)
+// and my lights; the avatar, moods and pets follow below
+function meSummary() {
+  const me = S.me;
+  const accs = (me.accounts || []).filter(a => a.spendable);
+  const open = (me.chores || []).filter(c => !c.done && !c.pending);
+  const tile = (ic, value, label) => h("div.me-tile", h("span.me-ic", ic), h("b", value), h("span.small.muted", label));
+  const stats = h("section.card.me-sum",
+    h("div.me-tiles",
+      tile("⭐", "Level " + me.level.level, fmt(me.xp_today) + " / " + fmt(me.daily_goal) + " XP " + I18N.tr(T("today"))),
+      tile("🔥", String(me.streak), T("Days in a row")),
+      ...[["games", "🎮", T("Games left today")], ["learn", "📚", T("Learning left today")]]
+        .filter(([k]) => me.time_left && me.time_left[k] != null).map(([k, ic, label]) => tile(ic, fmtMinutes(me.time_left[k]), label)),
+      ...accs.map(a => tile(a.icon || "🪙", fmt(me.balances[a.key], 1), I18N.tr(a.name))),
+      tile(open.length ? "🧹" : "✅", String(open.length), open.length ? T("open tasks") : T("All done!"))),
+    me.internet ? internetCard(me.internet) : null);
+  return [stats, open.length ? choresCard(me.chores) : null, me.has_devices ? devicesCard() : null];
 }
 
 function badgesCard(badges) {
@@ -438,7 +598,8 @@ function choresCard(chores) {
         c.pending ? h("span.chore-note", T("waiting for confirmation")) : null,
         c.redo && !c.done && !c.pending ? h("span.chore-note.redo", T("Please do it once more")) : null,
         c.weekly ? h("span.chore-note", T("this week")) : null),
-      c.points ? h("span.chore-pts", accIcon(c.account) + " " + fmt(c.points)) : null))) : h("p.muted", T("No chores today.")),
+      c.points ? h("span.chore-pts", accIcon(c.account) + " " + fmt(c.points)) : null,
+      c.energy && batteryShown() ? h("span.chore-pts.chore-energy", { title: T("Energy bonus") }, "🔋+" + c.energy) : null))) : h("p.muted", T("No chores today.")),
     open.length === 0 && chores.length ? h("p.good-text", T("All chores done – thank you!")) : null);
 }
 
@@ -493,16 +654,30 @@ async function packView(packId) {
   }));
   screen("home", { back: () => go("") },
     h("section.pack-head", { style: { "--c": p.color } },
-      h("span.pack-ic", p.icon), h("div", C(p.title, "h1"), h("span.small", prog.percent + " % · " + prog.stars + " / " + prog.max_stars + " ★"))),
-    h("div.row.pack-actions",
+      h("span.pack-ic", p.icon), h("div", C(p.title, "h1"), STATUS_BADGE[p.status] ? h("span.small.status-badge", STATUS_BADGE[p.status]()) : null, " ", h("span.small", prog.percent + " % · " + prog.stars + " / " + prog.max_stars + " ★"))),
+    timeLeftCard("learn"),
+    h("div.row.pack-actions", { hidden: learnUp() },
       h("button.btn", { onclick: () => startLesson({ mode: "path", pack: p.id, unit: prog.next || undefined }), disabled: !prog.next }, "▶ ", T("Continue")),
       h("button.btn.ghost", { onclick: () => startLesson({ mode: "quiz", pack: p.id }), disabled: !learned }, "⚡ ", T("Quiz round")),
       p.units.some(u => u.kind === "cards") ? h("button.btn.ghost", { onclick: () => startLesson({ mode: "cards", pack: p.id }) }, "🃏 ", T("Flash cards")) : null),
     cardBox, path);
 }
 
+// ---------------------------------------------------------------- daily time (parent area › profile, timelimits.py)
+const learnUp = () => !!(S.me && S.me.time_left && S.me.time_left.learn === 0);
+/** «🎮 25 min left today» – at 0 a friendly stop. kind: games | learn; nothing without a limit. */
+function timeLeftCard(kind) {
+  const m = S.me && S.me.time_left ? S.me.time_left[kind] : null;
+  if (m == null) return null;
+  const up = m <= 0, ic = kind === "games" ? "🎮" : "📚";
+  return h("section.card.time-left" + (up ? ".up" : ""), h("span.big-ic", up ? "🌙" : ic),
+    h("strong.grow", up ? (kind === "games" ? T("Game time for today is used up – see you tomorrow!") : T("Learning time for today is used up – see you tomorrow!"))
+      : I18N.tr(T("{0} left today")).replace("{0}", fmtMinutes(m))));
+}
+
 // ---------------------------------------------------------------- lesson player
 async function startLesson(opts) {
+  if (learnUp()) return toast(T("Learning time for today is used up – see you tomorrow!"), "bad");
   let s;
   try { s = await api("me/session", { method: "POST", body: opts }); }
   catch (e) { return toast(e.message, "bad"); }
@@ -608,7 +783,7 @@ function resultView(res, back) {
     h("p.big", res.right + " / " + res.total + " " + T("correct")),
     h("div.chips", ...gained.map(([k, v]) => h("span.chip", accIcon(k) + " +" + fmt(v, 1) + " ", accName(k)))),
     res.goal_met ? h("p.good-text", "🎯 ", T("Daily goal reached!")) : null,
-    res.streak ? h("p", "🔥 ", T("Streak: {0} days").replace("{0}", res.streak)) : null,
+    res.streak ? h("p", "🔥 ", I18N.tr(res.streak === 1 ? T("Streak: 1 day") : T("Streak: {0} days")).replace("{0}", res.streak)) : null,
     ...(res.units || []).map(u => h("div.unit-result", C(u.title, "span.grow"), stars(u.stars),
       u.before != null && u.stars > u.before ? h("span.chip.good", "+" + (u.stars - u.before) + " ★") : null)),
     res.badges && res.badges.length ? h("div.card.new-badges", h("h2", T("New badge!")),
@@ -911,6 +1086,10 @@ function mathStep(step, submit) {
 }
 
 // ---------------------------------------------------------------- shop
+// a progress bar with the numbers under it («120 / 500 XP») – how far it still is
+const barCount = (have, total, unit = "") => h("div.bar-count", bar(Math.min(have, total), total),
+  h("span.small.muted", fmt(Math.min(have, total)) + " / " + fmt(total) + (unit ? " " + unit : "")));
+
 async function shopView() {
   let d;
   try { d = await api("me/shop"); } catch (e) { return toast(e.message, "bad"); }
@@ -925,8 +1104,10 @@ async function shopView() {
       h("div.price", accIcon(o.account) + " " + fmt(o.cost)),
       o.approval ? h("span.small.muted", "👪 ", T("Parents confirm")) : null,
       o.can ? h("button.btn", { onclick: () => redeem(o) }, T("Redeem")) : h("div.small.muted.reason", o.reason),
-      !o.can && o.missing > 0 ? bar(o.cost - o.missing, o.cost) : null))) : h("p.muted", T("The shop is still empty.")),
+      !o.can && o.missing > 0 ? barCount(o.cost - o.missing, o.cost, accIcon(o.account)) : null))) : h("p.muted", T("The shop is still empty.")),
+    await unlockGamesSection(),
     await avatarSpecials(),
+    await xpBackgrounds(),
     await pranksCard(),
     d.history.length ? h("section.card", h("h2", T("My wishes")), h("ul.history", ...d.history.map(r =>
       h("li", h("span", r.icon + " "), h("span.grow", r.name), h("span.small.status." + r.status, status[r.status] || r.status))))) : null);
@@ -945,7 +1126,7 @@ async function shopView() {
 async function avatarSpecials() {
   let d;
   try { d = await api("me/avatar"); } catch { return null; }
-  const items = d.items.filter(i => i.rule && i.rule.cost);
+  const items = d.items.filter(i => i.rule && i.rule.cost != null && !i.rule.off);
   if (!items.length) return null;
   const a = d.avatar;
   const wear = async i => {
@@ -954,7 +1135,7 @@ async function avatarSpecials() {
     catch (e) { toast(e.message, "bad"); }
   };
   const buy = async i => {
-    if (!confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) return;
+    if (i.rule.cost > 0 && !confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) return;   // price 0: free, one tap
     try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
     catch (e) { toast(e.message, "bad"); }
   };
@@ -964,7 +1145,36 @@ async function avatarSpecials() {
       return h("div.offer.card" + (i.unlocked || d.coins >= i.rule.cost ? "" : ".cant"),
         avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
         i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
-          : [h("div.price", "🪙 " + i.rule.cost), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, T("Buy")) : bar(d.coins, i.rule.cost)]);
+          : [h("div.price", i.rule.cost > 0 ? "🪙 " + i.rule.cost : T("Free")), d.coins >= i.rule.cost ? h("button.btn.small", { onclick: () => buy(i) }, i.rule.cost > 0 ? T("Buy") : T("Unlock")) : barCount(d.coins, i.rule.cost, "🪙")]);
+    })));
+}
+
+// backgrounds for new XP: every 500 XP earned from now on unlock one – the XP account stays as it is
+async function xpBackgrounds() {
+  let d;
+  try { d = await api("me/avatar"); } catch { return null; }
+  const items = d.items.filter(i => i.rule && i.rule.xp != null && !i.rule.off);      // price 0 = free
+  if (!items.length) return null;
+  const a = d.avatar, have = d.new_xp || 0;
+  const wear = async i => {
+    const next = { ...a, items: { ...(a.items || {}), [i.slot]: i.id } };
+    try { await api("me/avatar", { method: "POST", body: { avatar: next } }); Sound.play("right"); toast(T("Your avatar wears it now"), "good"); shopView(); }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  const get = async i => {
+    if (i.rule.xp > 0 && !confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) return;
+    try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
+    catch (e) { toast(e.message, "bad"); }
+  };
+  return h("section.card", h("h2", "✨ ", T("For new XP")),
+    h("p.small.muted", T("Paid with the XP you earn from now on – your XP and your level stay as they are.")),
+    h("p", h("strong", "✨ " + fmt(have) + " "), T("new XP to use")),
+    h("div.shop-grid", ...items.map(i => {
+      const worn = (a.items || {})[i.slot] === i.id;
+      return h("div.offer.card" + (i.unlocked || have >= i.rule.xp ? "" : ".cant"),
+        avatarSvg({ ...a, items: { ...(a.items || {}), [i.slot]: i.id } }, 84), h("strong", T(i.name)),
+        i.unlocked ? (worn ? h("span.small.muted", "✓ ", T("You wear it")) : h("button.btn.small", { onclick: () => wear(i) }, T("Put on")))
+          : [h("div.price", i.rule.xp > 0 ? "✨ " + i.rule.xp + " XP" : T("Free")), have >= i.rule.xp ? h("button.btn.small", { onclick: () => get(i) }, T("Unlock")) : barCount(have, i.rule.xp, "XP")]);
     })));
 }
 
@@ -1095,8 +1305,9 @@ async function avatarView() {
   let tab = "skin";
   const tabs = h("div.av-tabs");
   const panel = h("div.av-panel");
-  const ruleText = r => r.level ? T("From level {0}").replace("{0}", r.level)
-    : r.badge ? T("With a badge") : r.cost ? T("Buy for {0} coins").replace("{0}", r.cost)
+  const ruleText = r => r.off ? T("Not in the shop") : r.level ? T("From level {0}").replace("{0}", r.level)
+    : r.badge ? T("With a badge") : r.cost != null ? (r.cost > 0 ? T("Buy for {0} coins").replace("{0}", r.cost) : T("Free"))
+    : r.xp != null ? (r.xp > 0 ? I18N.tr(T("For {0} new XP")).replace("{0}", r.xp) : T("Free"))
     : r.season ? T("Only in season") : "";
   const drawTabs = () => tabs.replaceChildren(...TABS.map(([k, n]) => h("button" + (tab === k ? ".on" : ""), { onclick: () => { tab = k; drawTabs(); drawPanel(); } }, n)));
   const drawPanel = () => {
@@ -1121,7 +1332,12 @@ async function avatarView() {
   };
   async function pickItem(i) {
     if (!i.unlocked) {
-      if (i.rule.cost && confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) {
+      if (i.rule.off) return toast(ruleText(i.rule));
+      // price 0 (parent area › Shop): free – one tap, no question
+      if (i.rule.cost != null && (i.rule.cost <= 0 || confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost)))) {
+        try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
+        catch (e) { return toast(e.message, "bad"); }
+      } else if (i.rule.cost == null && i.rule.xp != null && (i.rule.xp <= 0 || confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp)))) {
         try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
         catch (e) { return toast(e.message, "bad"); }
       } else return toast(ruleText(i.rule));
@@ -1142,7 +1358,7 @@ async function avatarView() {
     h("label.feel", h("span", T("Today I feel …")), feel),
     h("span.small.muted", "🔒 ", T("Only your parents see this.")));
   draw(); drawTabs(); drawPanel();
-  screen("avatar", h("h1", "🧑‍🎨 ", T("Me")), moods, petsSection(), h("div.av-editor", preview, h("div.av-side", tabs, panel)),
+  screen("avatar", h("h1", "🧑‍🎨 ", T("Me")), ...meSummary(), moods, petsSection(), h("div.av-editor", preview, h("div.av-side", tabs, panel)),
     h("div.row.center", h("button.btn.big", { onclick: save }, "💾 ", T("Save"))),
     h("div.row.center", h("button.btn.ghost", { onclick: changePin }, "🔑 ", T("Change my PIN"))),
     S.me.games ? botsSection() : null);
@@ -1339,8 +1555,8 @@ function petCardCare(p, cost, reload, d) {
   return h("div.pet-card.stage-" + p.stage + (p.dying ? ".dying" : ""),
     petScene(p, emo),
     p.owner ? h("div.pet-name", C(p.name, "strong")) : h("button.pet-name", { onclick: rename, title: T("Rename") }, C(p.name, "strong"), " ✏️"),
-    h("div.small.muted", petText(T("{0} days old"), p.age), " · ", I18N.tr(PET_STAGE[p.stage])),
-    p.dying ? h("div.pet-sos", "🆘 ", petText(T("Still {0} days – please look after {1}!"), Math.max(0, Math.ceil(p.days_left)), p.name)) : null,
+    h("div.small.muted", petText(p.age === 1 ? T("1 day old") : T("{0} days old"), p.age), " · ", I18N.tr(PET_STAGE[p.stage])),
+    p.dying ? h("div.pet-sos", "🆘 ", petText(Math.ceil(p.days_left) === 1 ? T("Still 1 day – please look after {1}!") : T("Still {0} days – please look after {1}!"), Math.max(0, Math.ceil(p.days_left)), p.name)) : null,
     h("div.pet-bars", ...PET_BARS.map(([k, ic, label]) => h("div.pet-bar" + (p[k] < 25 ? ".low" : ""), { title: label },
       h("span.pet-bar-ic", ic), bar(p[k], 100, p[k] < 25 ? "var(--bad)" : p[k] < 50 ? "var(--warn)" : "var(--good)"), h("span.small", p[k])))),
     h("div.pet-actions",
@@ -1543,17 +1759,147 @@ async function familyView() {
         m.chores && m.chores.reliability != null ? [h("dt", "🧹 " + I18N.tr(T("Chores"))), h("dd", fmt(m.chores.reliability) + " %")] : null,
         showAll && m.level ? [h("dt", "Level"), h("dd", String(m.level))] : null)))) : null,
     h("p.small.muted.center", T("Compared is the effort towards each one's own goal – not the raw points.")),
-    await councilSection(), await pollsSection(), await wichtelnSection(), await historySection());
+    await familyTimeSection(), await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
+}
+
+// ---------------------------------------------------------------- games with a price: buy or rent (familyquest/gamepasses.py)
+const GAME_INFO = { quiz: ["🎯", T("Family quiz")], bingo: ["🎱", "Bingo"], song: ["🎵", T("Guess the song")], poker: ["🃏", "Texas Hold'em"],
+  tschau: ["🂡", "Tschau Sepp"], karussell: ["🎠", T("Card Carousel")], domino: ["🁫", "Domino"], paarjagd: ["🧠", T("Pair Hunt")], werbinich: ["🎭", T("Who am I?")],
+  kartenlauf: ["🏁", T("Card Race")], stadtland: ["🏙️", T("City, Country, River")], zeichnen: ["🎨", T("Draw & Guess")], wuerfel: ["🎲", T("Five Dice")],
+  heimwaerts: ["🏠", T("Homeward")], jump: ["🦘", "Jump"], sternlauf: ["🌠", T("Star Runner")], snack: ["🍔", T("Snack Rush")], verkehr: ["🚦", T("Traffic Cadet")],
+  klatsch: ["👏", T("Clap the Beat")], verboten: ["🚫", T("Forbidden Words")], jass: ["♣️", T("Jass")], werwolf: ["🐺", T("Werewolves")], schach: ["♟️", T("Chess")],
+  dorfmarkt: ["🏘️", T("Village Market")], escape: ["🗝️", T("Escape Room")], ttt: ["⭕", T("Tic-Tac-Toe")], sudoku: ["🔢", T("Sudoku")], patience: ["🃏", T("Patience")],
+  pingpong: ["🏓", T("Ping-Pong")], slots: ["🎰", T("One-armed bandit")], cube: ["🧊", T("Cube solver")] };
+const gameInfo = k => GAME_INFO[k] || ["🎮", k];
+const rentText = o => I18N.tr({ day: T("Rent: {0} 🪙 per day"), week: T("Rent: {0} 🪙 per week"), month: T("Rent: {0} 🪙 per month") }[o.period] || T("Rent: {0} 🪙 per week")).replace("{0}", o.rent);
+const buyText = o => I18N.tr(T("Buy: {0} 🪙")).replace("{0}", o.price);
+function passStatus(o) {
+  if (o.bought) return I18N.tr(T("bought ✓"));
+  if (!o.rent_until) return "";
+  const d = Math.ceil(o.left_s / 86400), hr = Math.ceil(o.left_s / 3600);
+  return o.left_s <= 23 * 3600 ? I18N.tr(hr === 1 ? T("rented – 1 hour left") : T("rented – {0} hours left")).replace("{0}", hr)
+    : I18N.tr(d === 1 ? T("rented – 1 day left") : T("rented – {0} days left")).replace("{0}", d);
+}
+// buy or rent after a confirmation – the coins are booked on the server (once: a second tap books nothing)
+async function gamePass(o, kind, after) {
+  const name = I18N.tr(gameInfo(o.game)[1]);
+  const q = kind === "buy" ? I18N.tr(T("Buy {0} for {1} coins? It stays yours for good.")).replace("{0}", name).replace("{1}", o.price)
+    : I18N.tr(o.rent_until ? T("Rent {0} for {1} coins more? The time is added to the end.") : T("Rent {0} for {1} coins?")).replace("{0}", name).replace("{1}", o.rent);
+  if (!confirm(q)) return;
+  try {
+    await api("me/games/buy", { method: "POST", body: { game: o.game, kind, until: kind === "rent" ? (o.rent_until || "") : null } });
+    Sound.play("done"); confetti(); toast(kind === "buy" ? T("Game unlocked – have fun!") : T("Game rented – have fun!"), "good");
+  } catch (e) { toast(e.message, "bad"); }
+  try { S.me = await api("me"); } catch {}
+  if (after) after();
+}
+function gamePassButtons(o, coins, after) {
+  const btn = (kind, cost, text) => coins >= cost ? h("button.btn.small", { onclick: () => gamePass(o, kind, after) }, text)
+    : h("button.btn.small.ghost", { disabled: true, title: T("Not enough coins") }, text);
+  return h("div.row.wrap.gp-buttons", o.price > 0 && !o.bought ? btn("buy", o.price, buyText(o)) : null,
+    o.rent > 0 && !o.bought ? btn("rent", o.rent, rentText(o)) : null);
+}
+const cheapest = o => Math.min(...[o.price, o.rent].filter(x => x > 0));
+// a locked tile (games page, game corner): what it costs and the buttons in a sheet
+// `card`: the game's card (family games) – a free try opens it; starting or joining a table there uses the try
+async function gamePassDialog(o, card) {
+  let coins = 0;
+  try { const d = await api("me/games/shop"); coins = d.coins; o = d.games.find(g => g.game === o.game) || o; } catch {}
+  const [ic, name] = gameInfo(o.game);
+  if (S.sheet) S.sheet.close();
+  const arcade = typeof ARCADE !== "undefined" && !!ARCADE[o.game];
+  const tryIt = async () => {
+    if (arcade) {             // the game corner: the try (and a battery segment) is used when the game opens (minigames.js arcadeView)
+      S.trial = o.game; m.close(); go("arcade/" + o.game);
+    } else if (card) { m.close(); openGameSheet(card); }
+  };
+  const canTry = o.tries_left > 0 && (arcade || card);
+  const m = modal(h("div.game-sheet.gp-sheet", h("section.card", h("h2", ic, " ", I18N.tr(name), " 🔒"),
+      h("p", T("Your parents put a price on this game. Buy it once and it stays yours – or rent it for a while.")),
+      canTry ? [h("p.gp-try", "🎁 ", triesText(o.tries_left), " – ", T("try it before you buy or rent it.")),
+        arcade ? null : h("p.small.muted", T("Starting or joining a table uses a free try. Once you sit at the table you can play it to the end.")),
+        h("button.btn.big.gp-try-btn", { onclick: tryIt }, "🎁 ", T("Try for free"))] : null,
+      h("p.small.muted", "🪙 ", I18N.tr(T("You have {0} coins")).replace("{0}", Math.floor(coins))),
+      gamePassButtons(o, coins, () => { m.close(); route(); }), coins < cheapest(o) ? barCount(coins, cheapest(o), "🪙") : null),
+    h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))), { onClose: () => { if (S.sheet === m) S.sheet = null; } });
+  S.sheet = m;
+}
+// kid shop: «🎮 Unlock games» – every game with a price this child may play
+async function unlockGamesSection() {
+  let d;
+  try { d = await api("me/games/shop"); } catch { return null; }
+  if (!d.games.length) return null;
+  return h("section.card.gp-shop", h("h2", "🎮 ", T("Unlock games")),
+    h("p.small.muted", T("Buy a game once and it stays yours – or rent it for a while.")),
+    h("div.gp-list", ...d.games.map(o => {
+      const [ic, name] = gameInfo(o.game);
+      return h("div.gp-item" + (o.open ? ".open" : ""), h("span.big-ic", ic),
+        h("div.grow", h("strong", I18N.tr(name)), o.open ? h("div.small.gp-status", passStatus(o))
+          : o.tries_left > 0 ? h("div.small.gp-status", "🎁 ", triesText(o.tries_left)) : null),
+        o.bought ? null : gamePassButtons(o, d.coins, () => shopView()));
+    })));
 }
 
 // ---------------------------------------------------------------- the games (own menu item)
 async function gamesView() {
-  const cards = [canPlay("quiz") ? await quizCard() : null, canPlay("bingo") ? await bingoCard() : null, canPlay("song") ? await songFamilyCard() : null,
-    canPlay("tschau") ? await cardsFamilyCard("tschau") : null, canPlay("karussell") ? await cardsFamilyCard("karussell") : null,
-    canPlay("domino") ? await dominoFamilyCard() : null, canPlay("paarjagd") ? await paarjagdFamilyCard() : null,
-    canPlay("werbinich") ? await werbinichFamilyCard() : null, canPlay("kartenlauf") ? await kartenlaufFamilyCard() : null,
-    canPlay("stadtland") ? await stadtlandFamilyCard() : null, canPlay("zeichnen") ? await zeichnenFamilyCard() : null, canPlay("wuerfel") ? await wuerfelFamilyCard() : null, canPlay("heimwaerts") ? await heimwaertsFamilyCard() : null, canPlay("jump") ? await jumpFamilyCard() : null, canPlay("klatsch") ? await klatschFamilyCard() : null, canPlay("verboten") ? await verbotenFamilyCard() : null, canPlay("jass") ? await jassFamilyCard() : null, canPlay("werwolf") ? await werwolfFamilyCard() : null, canPlay("schach") ? await schachFamilyCard() : null, canPlay("dorfmarkt") ? await dorfmarktFamilyCard() : null, canPlay("poker") ? await pokerFamilyCard() : null, (canPlay("ttt") || canPlay("pingpong")) ? tttDuelCard() : null, arcadeCard()].filter(Boolean);
-  screen("games", h("h1", "🎲 ", T("Games")), ...cards);
+  S.trial = null;             // a game of the game corner opened on a free try: locked again once closed
+  const quiz = canPlay("quiz") || tableOnly("quiz") || (trialGame("quiz") && trialGame("quiz").member) ? await quizCard() : null;
+  // longer table games for a game night, then short games for in between (only the games this child may play) –
+  // each one a small tile; a tap opens its card (the same actions as before: family table, bots, join, rules);
+  // a game with a price not bought yet: a 🔒 tile that opens buying / renting; locked, but a parent's table is open: its card
+  // locked with free tries left: the 🔒 tile also offers the try (its card); seated at a table on a try: the normal tile
+  const pick = async list => (await Promise.all(list.map(async ([k, ok, make]) => ok || tableOnly(k) || (trialGame(k) && trialGame(k).member) ? [k, await make()]
+    : lockedGame(k) ? [k, trialGame(k) ? await make() : null, lockedGame(k)] : null))).filter(x => x && (x[1] || x[2]));
+  const night = await pick([["tschau", canPlay("tschau"), () => cardsFamilyCard("tschau")], ["karussell", canPlay("karussell"), () => cardsFamilyCard("karussell")], ["domino", canPlay("domino"), dominoFamilyCard],
+    ["jass", canPlay("jass"), jassFamilyCard], ["poker", canPlay("poker"), pokerFamilyCard], ["dorfmarkt", canPlay("dorfmarkt"), dorfmarktFamilyCard], ["heimwaerts", canPlay("heimwaerts"), heimwaertsFamilyCard],
+    ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
+    ["verboten", canPlay("verboten"), verbotenFamilyCard], ["zeichnen", canPlay("zeichnen"), zeichnenFamilyCard], ["stadtland", canPlay("stadtland"), stadtlandFamilyCard], ["song", canPlay("song"), songFamilyCard],
+    ["bingo", canPlay("bingo"), bingoCard], ["schach", canPlay("schach"), schachFamilyCard]]);
+  if (!quiz && lockedGame("quiz")) night.unshift(["quiz", trialGame("quiz") ? await quizCard() : null, lockedGame("quiz")]);
+  const quick = await pick([["paarjagd", canPlay("paarjagd"), paarjagdFamilyCard], ["wuerfel", canPlay("wuerfel"), wuerfelFamilyCard], ["jump", canPlay("jump"), jumpFamilyCard], ["klatsch", canPlay("klatsch"), klatschFamilyCard],
+    ["sternlauf", canPlay("sternlauf"), sternlaufFamilyCard], ["snack", canPlay("snack"), snackFamilyCard], ["verkehr", canPlay("verkehr"), verkehrFamilyCard], ["duel", canPlay("ttt") || canPlay("pingpong"), tttDuelCard]]);
+  // the games running just now on top – the same pulsing banners as on the start page
+  const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
+  screen("games", h("div.row.games-head", h("h1.grow", "🎲 ", T("Games")), batteryShown() ? h("button.bat-chip", { onclick: () => battery().free || battery().charge >= battery().cap ? null : rechargeBattery(),
+      title: T("Game battery") }, batteryIcon(battery())) : null),
+    partyBanner(), batteryShown() ? h("section.card.bat-card", batteryBar()) : null, timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
+    gameGroup("🎲", T("For a game night"), night), gameGroup("⚡", T("Quick games for in between"), quick), arcadeCard());
+}
+
+/** A group of family games as small tiles (icon + name, a pulsing dot while a table runs); a tap opens the game's card. */
+function gameGroup(ic, title, items) {
+  if (!items.length) return null;
+  const com = (S.me && S.me.community) || {};
+  return h("section.card.game-group", h("h2", ic, " ", title),
+    h("div.arcade-grid.game-tiles", ...items.map(([k, card, lock]) => {
+      if (lock) return lockedTile(k, lock, card);
+      const head = card.querySelector("h2");
+      const text = (head ? head.textContent : k).trim(), sp = text.indexOf(" ");
+      const icon = sp > 0 ? text.slice(0, sp) : "🎲", name = sp > 0 ? text.slice(sp + 1) : text;
+      const running = k === "duel" ? com.duel || com.pong4 : com[k];
+      return h("button.arcade-tile.game-tile" + (running ? ".live" : ""), { onclick: () => openGameSheet(card) },
+        running ? h("i.live-dot", { title: T("running now") }) : null, h("span.big-ic", icon), h("strong", name));
+    })));
+}
+
+/** A tile of a game with a price not bought yet: 🔒 and the price – a tap opens buying / renting. */
+function lockedTile(k, o, card) {
+  const [ic, name] = gameInfo(k);
+  return h("button.arcade-tile.game-tile.gp-locked", { onclick: () => gamePassDialog(o, card), title: T("Unlock games") },
+    h("span.big-ic", ic), h("strong", I18N.tr(name)),
+    h("span.gp-price", "🔒 ", o.price > 0 ? o.price + " 🪙" : o.rent + " 🪙/" + I18N.tr({ day: T("Day"), week: T("Week"), month: T("Month") }[o.period] || T("Week"))),
+    o.tries_left > 0 ? h("span.gp-try-tag", "🎁 ", triesText(o.tries_left)) : null);
+}
+
+// the card of a game in a sheet: closes itself when the app goes to another page (a game opened, a table joined)
+function openGameSheet(card) {
+  if (S.sheet) S.sheet.close();
+  card.classList.add("in-sheet");
+  const m = modal(h("div.game-sheet", batteryShown() ? h("div.card.bat-sheet", batteryBar(true)) : null, card, h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))),
+    { onClose: () => { window.removeEventListener("hashchange", off); if (S.sheet === m) S.sheet = null; } });
+  const off = () => m.close();
+  window.addEventListener("hashchange", off);
+  S.sheet = m;
 }
 
 // ---------------------------------------------------------------- my devices (Home Assistant)
@@ -1578,6 +1924,12 @@ function devicesCard() {
 }
 
 // ---------------------------------------------------------------- course catalogue (language courses, general knowledge)
+// the course description in the app language (packs may carry beschreibung_i18n), else in the language of the pack
+function courseText(c) {
+  const d = c.descriptions || {}, l = I18N.lang, b = String(I18N.base || l).split("-")[0];
+  return d[l] || d[b] || (b !== (c.src_lang || "de") && b !== "de" && d.en) || c.description;
+}
+
 async function coursesView() {
   let list = [];
   try { list = await api("me/courses"); } catch (e) { return toast(e.message, "bad"); }
@@ -1589,13 +1941,25 @@ async function coursesView() {
     catch (e) { return toast(e.message, "bad"); }
     if (on) { Sound.play("done"); go("pack/" + encodeURIComponent(c.id)); } else coursesView();
   };
-  screen("courses", { back: () => go("") }, h("h1", "🌍 ", T("Language courses & more")),
+  try { S.me = await api("me"); } catch {}
+  const me = S.me, isParent = me.profile && me.profile.role === "parent";
+  screen("courses", { back: () => go("") },
+    h("h1", "📚 ", T("Learning")),
+    h("section.card.learn-start",
+      h("div.grow", h("strong", T("Daily lesson")), h("div.small.muted", T("A short lesson mixes repetitions and new words."))),
+      h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Start"))),
+    h("section", h("h2", T("Subjects")),
+      isParent ? h("p.small.muted", "👀 ", T("As a parent you see all packs to try them out – also drafts. Children only see the packs switched on for them.")) : null,
+      subjectGrid(me, true)),
+    h("h2", "🌍 ", T("Language courses & more")),
     h("p.muted", T("Choose a language and your level – the units unlock one after the other. Everybody can learn: children and adults.")),
     list.length ? [...groups.values()].map(cs => h("section.card.course", { style: { "--c": cs[0].subject.color } },
       h("h2", cs[0].subject.icon + " ", I18N.tr(cs[0].subject.name)),
-      h("div.course-levels", ...cs.sort((a, b) => String(a.level).localeCompare(String(b.level))).map(c => h("div.course-level" + (c.on ? ".on" : ""),
+      h("div.course-levels", ...cs.sort((a, b) => String(a.level).localeCompare(String(b.level)) || String(a.title).localeCompare(String(b.title))).map(c => h("div.course-level" + (c.on ? ".on" : ""),
         h("strong", { translate: "no" }, c.level), LEVELS[c.level] ? h("span.small", I18N.tr(LEVELS[c.level])) : null,
-        C(c.description || c.title, "span.small.muted"),
+        // two packs of one subject with the same level («für alle»): the pack title tells them apart
+        cs.filter(x => x.level === c.level).length > 1 ? h("b.course-title", { translate: "no" }, c.title) : null,
+        C(courseText(c) || c.title, "span.small.muted"),
         h("span.small.muted", c.units + " " + I18N.tr(T("units")) + " · " + c.cards + " " + I18N.tr(T("cards"))),
         c.on ? h("div.row", h("button.btn.small", { onclick: () => go("pack/" + encodeURIComponent(c.id)) }, "▶ ", T("Continue")),
                  h("button.btn.small.ghost", { onclick: () => toggle(c, false) }, T("Remove")))

@@ -7,7 +7,7 @@
 
 const HW_ICON = "🏠";
 const HW_COLORS = ["#f2545b", "#2f8fdd", "#33a852", "#f2b705"];          // seat 0..3 (coral, sky, leaf, sun)
-const hwName = () => I18N.tr(T("Heimwärts"));
+const hwName = () => I18N.tr(T("Homeward"));
 const hwCoins = list => list.join(" / ") + " 🪙";
 const HW_PIPS = { 1: [[50, 50]], 2: [[28, 28], [72, 72]], 3: [[26, 26], [50, 50], [74, 74]], 4: [[28, 28], [72, 28], [28, 72], [72, 72]],
   5: [[26, 26], [74, 26], [50, 50], [26, 74], [74, 74]], 6: [[28, 24], [72, 24], [28, 50], [72, 50], [28, 76], [72, 76]] };
@@ -111,6 +111,7 @@ async function heimwaertsStartDialog(solo, onStarted) {
         bot_ids: picker.ids(), bot_ms: picker.ms() };
       try { await api("community/heimwaerts/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("heimwaerts", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function heimwaertsLive(box, me, back) {
@@ -125,7 +126,6 @@ function heimwaertsLive(box, me, back) {
   const player = id => (st && st.players || []).find(p => p.id === id) || {};
   const who = id => player(id).name || "?";
   const ms = () => st.my_seat ?? 0;
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
   const act = async (path, body) => {
     if (busy) return null;
     busy = true;
@@ -217,6 +217,13 @@ function heimwaertsLive(box, me, back) {
     }
     if (best) move(best.piece);
   }
+  async function begin() {
+    if (busy) return;
+    busy = true;
+    try { const r = await beginGame("community/heimwaerts/begin", st.players); if (r) st = r; }
+    catch (e) { toast(e.message, "bad"); }
+    finally { busy = false; draw(true); }
+  }
   async function move(piece) {
     clearTimeout(autoTimer);
     const res = await act("move", { piece });
@@ -271,21 +278,25 @@ function heimwaertsLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
+    turnCue("heimwaerts", st && st.my_turn && st.stage === "roll");
     if (rolling) return;
     const sig = JSON.stringify(st && [st.phase, st.status, st.turn, st.stage, st.roll_seq, st.joined, st.players.map(p => [p.id, p.pieces, p.place]), st.last && st.last.seq]);
     if (sig === lastSig && !force) return;
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) return show(h("section.card.center", h("div.big-ic", HW_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
+    if (!st) return show(h("section.card.center", h("div.big-ic", HW_ICON), h("h2", T("No game right now")), noTableActions("heimwaerts", back)));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const head = h("div.quiz-head.dm-head", h("h1", HW_ICON, " ", hwName()), h("div.row",
-      h("button.btn.small.ghost", { onclick: () => openModal(heimwaertsRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜")));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("heimwaerts") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { stop(); back(); }); } }, T("End"))) : null;
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("heimwaerts") }, "👥 ", T("Invite guests")));
+    // ☰: rules, guests, End (whoever leads), language – only the main action (Start) stays as a big button
+    const menu = gameMenu({ rules: () => heimwaertsRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "heimwaerts" : null,
+      actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
+        onclick: () => act("end").then(() => { stop(); back(); }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", HW_ICON, " ", hwName())));
+    const host = isHost() && st.status !== "done" && st.phase === "lobby" ? h("div.row.center.host-bar",
+      h("button.btn", { onclick: begin }, "▶ ", T("Start"))) : null;
+    if (st.phase !== "lobby") starterBanner(st.starter, "heimwaerts");
     if (st.phase === "done" && st.players[0] && st.players[0].pieces) { buildBoard(); updatePieces(); return show(head, result()); }
     if (st.phase === "done" || st.phase === "lobby" || !st.joined) {
       if (!st.joined && st.phase !== "lobby" && st.phase !== "done") { buildBoard(); show(close, head, seats(), h("div.hw-mid", board), h("p.muted.center", T("The game has already started")), host); updatePieces(); return; }
@@ -377,6 +388,6 @@ async function heimwaertsFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("heimwaerts") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Roll the die and race your 4 pieces home – send the others back to their yard! Places 1 to 3 win coins at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => heimwaertsStartDialog(true, () => go("heimwaerts")) }, "🤖 ", T("Alone against bots")),
+         h("div.row.wrap", botsOn("heimwaerts") ? h("button.btn", { onclick: () => heimwaertsStartDialog(true, () => go("heimwaerts")) }, "🤖 ", T("Alone against bots")) : null,
            h("button.btn.ghost", { onclick: () => heimwaertsStartDialog(false, () => go("heimwaerts")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
 }

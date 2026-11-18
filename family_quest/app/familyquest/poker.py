@@ -27,6 +27,7 @@ import time
 from collections import Counter
 
 from .community import CommunityError
+from .cardgames import apply_starter, starter_mode
 
 RANKS = "23456789TJQKA"
 SUITS = "shdc"
@@ -564,7 +565,7 @@ class Poker:
                                   "chips": st["rules"]["start_chips"], "buyins": 1})
             self._save(row, st)
 
-    def begin(self, pid: int | None = None) -> None:
+    def begin(self, pid: int | None = None, starter=None) -> None:
         with self.lock:
             row = self._row(pid)
             if not row:
@@ -575,6 +576,7 @@ class Poker:
             if len(st["players"]) < 2:
                 raise CommunityError("Poker needs at least two players")
             st["started"] = time.time()
+            apply_starter(st, starter_mode(self.db), starter, leader=row["host_id"])      # who deals first
             t.deal()
             self._save(row, st)
 
@@ -688,7 +690,7 @@ class Poker:
                             "cards": res.get("shown", {}).get(pid), "hand": (res.get("hands") or {}).get(pid, {}).get("category"),
                             "won": (res.get("winners") or {}).get(pid, 0)})
         pot = sum((h.get("contrib") or {}).values())
-        return {"game": row["id"], "status": row["status"], "phase": st["phase"], "host": row["host_id"], "rules": st["rules"],
+        return {"game": row["id"], "starter": st.get("starter"), "status": row["status"], "phase": st["phase"], "host": row["host_id"], "rules": st["rules"],
                 "paused": bool(st.get("paused")), "hand_no": h.get("no", 0), "street": h.get("street"),
                 "board": h.get("board", []), "pot": pot, "current_bet": h.get("current_bet", 0),
                 "to_act": (int(h["to_act"]) if h["to_act"].isdigit() else h["to_act"]) if h.get("to_act") else None, "solo": bool(st.get("solo")),

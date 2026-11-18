@@ -73,7 +73,7 @@ def test_deck_and_deal_6_5_4_3_2(monkeypatch):
         clock.t += kl.BETWEEN + 1
         t.tick()
     assert sizes == [6, 5, 4, 3, 2, 6, 5]
-    assert dealers == ["1", "2", "3", "4", "1", "2", "3"]
+    assert dealers == ["4", "1", "2", "3", "4", "1", "2"]                 # the seat before the starter deals round 1
     # a fresh deck with every 6: 110 − 24 cards
     assert t.st["round"] == 8 and len(t.st["deck"]) == 110 - 6 * 4 - 5 * 4 - 4 * 4      # a fresh deck with every 6
 
@@ -299,6 +299,23 @@ def test_no_legal_move_throws_cards_away():
     assert any(e.get("fold") for e in t.st["log"])
     t.play("2", {"card": "s:5", "marble": "2:0"})
     assert t.st["phase"] == "between"                                # all cards played: the round is over
+
+
+@pytest.mark.parametrize("teams", [False, True])
+def test_the_starter_plays_first(monkeypatch, teams):
+    """apply_starter puts the starter first – they must also get the first turn (not the player after them)."""
+    from familyquest.cardgames import apply_starter
+    monkeypatch.setattr(kl.Table, "has_move", lambda self, p: True)
+    for chosen in ("1", "3"):
+        players = [{"id": str(i), "name": f"P{i}"} for i in range(1, 5)]
+        st = {"kind": "kartenlauf", "rules": {**kl.DEFAULTS, "teams": teams, "bot_ms": 0}, "players": players, "phase": "lobby"}
+        apply_starter(st, "choose", chosen, leader="1")
+        t = kl.Table(st, random.Random(1), now=Clock())
+        t.setup()
+        if teams:
+            for p in t.order():
+                t.give(p, t.st["hands"][p][0])
+        assert t.st["turn"] == chosen and st["starter"]["id"] == chosen
 
 
 def test_card_exchange_in_teams(monkeypatch):

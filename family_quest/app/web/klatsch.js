@@ -10,7 +10,7 @@
 "use strict";
 
 const KB_ICON = "👏";
-const kbName = () => T("Klatsch den Beat");
+const kbName = () => T("Clap the Beat");
 const kbCoins = list => list.join(" / ") + " 🪙";
 const KB_PERFECT = 0.06, KB_GOOD = 0.13;     // the same windows as klatsch.py (the server judges, the app shows)
 
@@ -189,6 +189,7 @@ async function klatschStartDialog(solo, onStarted) {
       const body = { solo, bots: +bots.value, level: level.value, rounds: +rounds.value, bot_ids: picker.ids() };
       try { await api("community/klatsch/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  withoutBots("klatsch", bots, level, picker.el);          // parent area › Games: without bots
 }
 
 function klatschLive(box, me, back) {
@@ -206,7 +207,6 @@ function klatschLive(box, me, back) {
     window.removeEventListener("keydown", onKey);
   };
   window.addEventListener("hashchange", stop, { once: true });
-  const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
   const nowS = () => performance.now() / 1000;
   const gameT = (p = nowS()) => (st && offset != null ? p + offset - st.t0 : -99);
   const perfOf = g => g + st.t0 - offset;
@@ -406,17 +406,21 @@ function klatschLive(box, me, back) {
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
-    if (!st) { el = {}; return show(h("section.card.center", h("div.big-ic", KB_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back")))); }
+    if (!st) { el = {}; return show(h("section.card.center", h("div.big-ic", KB_ICON), h("h2", T("No game right now")), noTableActions("klatsch", back))); }
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
-    const mute = h("button.btn.small.ghost", { title: T("Sound"), onclick: e => { KbAudio.muted = !KbAudio.muted; e.currentTarget.textContent = KbAudio.muted ? "🔇" : "🔊"; } }, KbAudio.muted ? "🔇" : "🔊");
-    const head = h("div.quiz-head.dm-head", h("h1", KB_ICON, " ", kbName()), h("div.row",
-      st.phase === "done" ? null : h("button.btn.small.ghost", { onclick: () => klatschCalibrate(), title: T("Calibrate") }, "🎚️"), st.phase === "done" ? null : mute,
-      h("button.btn.small.ghost", { onclick: () => openModal(klatschRulesView(st.rules, st.coins_on ? st.rewards : null)), title: T("Rules") }, "📜")));
-    let host = isHost() && st.status !== "done" ? h("div.row.center.host-bar",
-      st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start")) : null,
-      !st.solo && !me.guest ? h("button.btn.ghost.small", { onclick: () => guestInvite("klatsch") }, "👥 ", T("Invite guests")) : null,
-      h("button.btn.ghost.small", { onclick: () => { if (confirm(I18N.tr(T("End the game?")))) act("end").then(() => { if (!st || st.phase !== "done") { stop(); back(); } }); } }, T("End"))) : null;
-    if (!host && !me.guest && st.status !== "done" && !st.solo) host = h("div.row.center.host-bar", h("button.btn.ghost.small", { onclick: () => guestInvite("klatsch") }, "👥 ", T("Invite guests")));
+    // ☰: rules, guests, calibrate, the beat's sound, End (whoever leads), language – only Start stays as a big button
+    const menu = gameMenu({ rules: () => klatschRulesView(st.rules, st.coins_on ? st.rewards : null),
+      invite: !st.solo && !me.guest && st.status !== "done" ? "klatsch" : null,
+      actions: [
+        { ic: "🎚️", label: T("Calibrate"), hidden: st.phase === "done", onclick: () => klatschCalibrate() },
+        { get ic() { return KbAudio.muted ? "🔇" : "🔊"; }, get label() { return KbAudio.muted ? T("Beat sound off") : T("Beat sound on"); },
+          hidden: st.phase === "done", onclick: () => { KbAudio.muted = !KbAudio.muted; } },
+        { ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
+          onclick: () => act("end").then(() => { if (!st || st.phase !== "done") { stop(); back(); } }) }],
+      onLeave: running ? () => { stop(); back(); } : null });
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", KB_ICON, " ", kbName())));
+    const host = isHost() && st.status !== "done" && st.phase === "lobby" ? h("div.row.center.host-bar",
+      h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start"))) : null;
     if (st.phase === "done") { el = {}; return show(head, result()); }
     const calHint = KbLat.get() == null ? h("p.small.center", h("button.btn.ghost.small", { onclick: () => klatschCalibrate() }, "🎚️ ", T("Calibrate")), " ",
       h("span.muted", T("Not calibrated yet."))) : null;

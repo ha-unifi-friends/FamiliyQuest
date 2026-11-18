@@ -384,6 +384,8 @@ def test_family_flow_coins_once_history_hat_and_guests(client):
     assert r["rewards"] == [7, 3, 1] and r["talks"] == [60, 120, 180, 300, 600] and r["presets"]["5"]["wolves"] == 1
     client.post("/api/community/werwolf/start", json={}, headers=hm)
     assert client.post("/api/community/werwolf/start", json={}, headers=heads[str(ids[1])]).status_code == 400
+    r = client.post("/api/community/werwolf/begin", headers=hm)
+    assert r.status_code == 400 and r.json()["detail"] == "At least 2 players are needed"      # alone: not even with bots
     # a guest via the invitation
     inv = client.post("/api/community/guests", json={"game": "werwolf"}, headers=heads[str(ids[1])]).json()["invite"]
     assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Werwölfe"
@@ -392,7 +394,6 @@ def test_family_flow_coins_once_history_hat_and_guests(client):
     gid = str(g["profile"]["id"])
     for path in ("start", "begin", "end", "next", "rules"):
         assert client.post("/api/community/werwolf/" + path, json={}, headers=hg).status_code in (401, 403), path
-    assert client.post("/api/community/werwolf/begin", headers=hm).status_code == 400        # only 2 players
     for pid in ids[1:]:
         client.post("/api/community/werwolf/join", headers=heads[str(pid)])
     # the leader changes the roles in the lobby
@@ -484,9 +485,212 @@ def test_twelve_players_no_more_and_running_list_end(client):
     assert v["phase"] == "roles" and v["deck"]["wolves"] == 3 and len(v["players"]) == 12
     games = client.get("/api/parent/games/running", headers=phd).json()
     g = next(x for x in games if x["game"] == "werwolf")
-    assert g["icon"] == "🐺" and g["title"] == "Werwölfe" and g["players"] == 12 and g["host"] == "Mia"
+    assert g["icon"] == "🐺" and g["title"] == "Werewolves" and g["players"] == 12 and g["host"] == "Mia"
     client.post("/api/parent/games/end", json={"key": g["key"]}, headers=phd)
     v = get(client, hm)
     assert v["phase"] == "done" and v["winner"] is None
     assert fq.db.val("SELECT status FROM card_game WHERE kind='werwolf'") == "done"
     assert client.get("/api/me", headers=hm).json()["community"]["werwolf"] is None
+
+
+# ---------------------------------------------------------------- bots fill the table (from 2 people)
+def bot_table(roles, bots, clock=None, seed=1, **rules):
+    """Fixed roles for players "1", "2", …; the players in `bots` (ids) are bots."""
+    players = [{"id": str(i), "name": f"P{i}", **({"bot": True, "emoji": "🦊"} if str(i) in bots else {})}
+               for i in range(1, len(roles) + 1)]
+    st = {"kind": "werwolf", "rules": {**ww.DEFAULTS, **rules}, "players": players, "phase": "lobby"}
+    t = ww.Table(st, random.Random(seed), now=clock or Clock())
+    t.begin()
+    st["roles"] = {str(i): x for i, x in enumerate(roles, 1)}
+    return t
+
+
+def test_bots_act_in_every_night_step_after_thinking():
+    c = Clock()
+    # people: 1 (villager), 8 (wolf) – the rest are bots
+    t = bot_table(["villager", "hunter", "amor", "wolf", "seer", "witch", "villager", "wolf"], {"2", "3", "4", "5", "6", "7"}, c)
+    assert not t.tick()                                          # roles: the leader lets the night fall
+    t.advance()
+    assert t.st["step"] == "amor"
+    wait = t.bot_wait()
+    assert ww.BOT_NIGHT <= wait < ww.BOT_NIGHT + ww.BOT_NIGHT_SPREAD
+    c.t += wait - 0.5
+    assert not t.tick() and t.st["lovers"] is None              # still thinking
+    c.t += 0.5
+    assert t.tick()
+    lv = t.st["lovers"]
+    assert len(lv) == 2 and lv[0] != lv[1] and t.st["step"] == "wolves"
+    # the bot wolf first chooses at random – then follows the human wolf
+    c.t += t.bot_wait()
+    t.tick()
+    first = t.st["wolf_votes"]["4"]
+    assert t.role(first) != "wolf" and t.st["step"] == "wolves"
+    other = next(p for p in t.living() if t.role(p) != "wolf" and p != first)
+    t.act("8", "bite", other)
+    assert t.st["step"] == "wolves"
+    assert t.tick() and t.st["victim"] == other and t.st["step"] == "seer"
+    # the seer looks and closes her eyes, the witch decides
+    c.t += t.bot_wait()
+    assert t.tick() and t.st["looked"] and len(t.st["seen"]) == 1 and t.st["seen"][0]["id"] != "5"
+    assert t.st["step"] == "witch"
+    c.t += t.bot_wait()
+    assert t.tick() and t.st["phase"] in ("day", "hunter", "done")
+
+
+def test_bot_wolves_agree_and_bot_hunter_shoots_and_bots_vote():
+    c = Clock()
+    t = bot_table(["villager", "villager", "wolf", "wolf", "hunter", "villager"], {"3", "4", "5", "6"}, c, auto=False,
+                  wolves=2, seer=False, witch=False, hunter=True, amor=False)
+    t.advance()
+    assert t.st["step"] == "wolves"
+    c.t += t.bot_wait()
+    assert t.tick()
+    assert t.st["phase"] in ("day", "hunter") and t.st["night"] == 1 and len(t.st["dead"]) >= 1
+    v = t.st["deaths"][0]["id"]
+    assert t.role(v) != "wolf"
+    # the day: the talk timer opens the vote, the bots vote one after the other
+    if t.st["phase"] == "hunter":                                # the hunter (a bot) was bitten: he shoots
+        c.t += t.bot_wait()
+        assert t.tick() and t.st["phase"] in ("day", "done")
+    if t.st["phase"] == "done":
+        return
+    c.t += 180
+    assert t.tick() and t.st["phase"] == "vote"
+    assert t.st["votes"] == {}
+    c.t += ww.BOT_VOTE
+    t.tick()
+    assert len(t.st["votes"]) == 1
+    c.t += ww.BOT_STAGGER * 4
+    t.tick()
+    bots = [p for p in t.living() if t.is_bot(p)]
+    assert all(p in t.st["votes"] for p in bots)
+    for b in bots:
+        target = t.st["votes"][b]
+        assert target != b and t.alive(target)
+        if t.role(b) == "wolf":
+            assert t.role(target) != "wolf"
+    for p in t.living():
+        if not t.is_bot(p):
+            t.act(p, "vote", "")
+    assert t.st["phase"] in ("verdict", "hunter", "done")
+
+
+def test_bot_seer_witch_hunter_and_the_seer_votes_for_the_wolf():
+    c = Clock()
+    t = bot_table(["wolf", "villager", "seer", "witch", "hunter", "villager"], {"3", "4", "5", "6"}, c, seed=3)
+    t.advance()
+    assert t.st["step"] == "wolves" and t.actors() == ["1"]
+    c.t += 60
+    assert not t.tick()                                          # a person's step: the bots do not move it on
+    t.act("1", "bite", "5")                                      # the hunter (a bot)
+    assert t.st["step"] == "seer"
+    c.t += t.bot_wait()
+    assert t.tick() and t.st["step"] == "witch" and t.st["seen"][0]["id"] in ("1", "2", "4", "5", "6")
+    t.st["potions"]["heal"] = False                              # no healing left: the hunter dies
+    c.t += t.bot_wait()
+    assert t.tick() and t.st["phase"] == "hunter" and t.st["hunter"] == "5"
+    assert t.st["deaths"][0] == {"id": "5", "role": "hunter", "cause": "wolves"}
+    c.t += t.bot_wait()
+    assert t.tick() and [d["cause"] for d in t.st["deaths"]].count("shot") == 1
+    assert t.st["phase"] in ("day", "done")
+    # a bot seer that saw a wolf votes for it (mostly)
+    hits = 0
+    for seed in range(40):
+        t2 = bot_table(["villager", "villager", "wolf", "seer", "villager"], {"3", "4", "5"}, Clock(), seed=seed)
+        t2.st["seen"] = [{"night": 1, "id": "3", "role": "wolf"}]
+        hits += t2._bot_vote("4") == "3"
+    assert hits > 25
+
+
+def play_out(t, c, rng):
+    """The leader moves on whenever nobody else can – people act at random, the bots by themselves."""
+    for _ in range(400):
+        ph = t.st["phase"]
+        if ph == "done":
+            return
+        c.t += 30
+        t.tick()
+        ph = t.st["phase"]
+        if ph == "done":
+            return
+        people = [p for p in t.actors() if not t.is_bot(p)]
+        if ph in ("roles", "day", "verdict"):
+            t.advance()
+        elif ph == "vote":
+            for p in people:
+                if p not in t.st["votes"] and t.st["phase"] == "vote":
+                    t.act(p, "vote", rng.choice([x for x in t.living() if x != p]))
+        elif people:
+            t.advance()                                          # a person is idle at night: the leader moves on
+    raise AssertionError("the game did not end")
+
+
+def test_full_games_with_bots_reach_the_end():
+    ends = set()
+    for seed in range(30):
+        c = Clock()
+        players = [{"id": "1", "name": "A"}, {"id": "2", "name": "B"}] + [
+            {"id": f"bot{i}", "name": f"B{i}", "bot": True} for i in range(1, 4 + seed % 6)]
+        st = {"kind": "werwolf", "rules": dict(ww.DEFAULTS), "players": players, "phase": "lobby"}
+        t = ww.Table(st, random.Random(seed), now=c)
+        t.begin()
+        play_out(t, c, random.Random(seed))
+        assert st["phase"] == "done" and st["winner"] in ("village", "wolves", "lovers") and st["winners"]
+        ends.add(st["winner"])
+    assert {"village", "wolves"} <= ends
+
+
+def test_two_people_begin_with_three_bots_over_the_api(client):
+    phd, ids, heads = family(client, 2)
+    fq = client.app.state.fq
+    c = Clock(5000.0)
+    fq.werwolf.now = c
+    fq.werwolf.rng = random.Random(7)
+    assert client.put("/api/parent/game-rewards", json={"werwolf": [7, 3, 1]}, headers=phd).status_code == 200
+    hm, hl = heads[str(ids[0])], heads[str(ids[1])]
+    assert client.get("/api/community/werwolf/rules", headers=hm).json()["min_humans"] == 2
+    v = client.post("/api/community/werwolf/start", json={"talk": 60}, headers=hm).json()
+    assert v["bots"] == 4 and v["min_humans"] == 2 and v["rules"]["fill"] == 5
+    v = client.post("/api/community/werwolf/join", headers=hl).json()
+    assert v["bots"] == 3 and v["deck"] == ww.preset(5) and len(v["players"]) == 2
+    v = client.post("/api/community/werwolf/rules", json={"fill": 99}, headers=hm).json()
+    assert v["rules"]["fill"] == 12 and v["bots"] == 10 and v["deck"] == ww.preset(12)
+    v = client.post("/api/community/werwolf/rules", json={"fill": 5}, headers=hm).json()
+    v = client.post("/api/community/werwolf/begin", headers=hm).json()
+    assert v["phase"] == "roles" and len(v["players"]) == 5 and v["bots"] is None
+    bots = [p for p in v["players"] if p["bot"]]
+    assert len(bots) == 3 and all(p["emoji"] and p["id"].startswith("bot") for p in bots)
+    assert len({p["name"] for p in bots}) == 3
+    # secrecy: a bot's role is only shown like a person's
+    for h in (hm, hl):
+        x = get(client, h)
+        mine = x["my_role"]
+        for p in x["players"]:
+            if p["id"] != x["me"]:
+                assert p["role"] is None or (mine == "wolf" and p["role"] == "wolf")
+    # play it out over the API: every state request moves the bots
+    row = fq.db.q1("SELECT * FROM card_game WHERE kind='werwolf' AND status!='done'")
+    rng = random.Random(3)
+    for _ in range(300):
+        c.t += 30
+        v = get(client, hm)
+        if v["phase"] == "done":
+            break
+        ph = v["phase"]
+        mine = {str(ids[0]): v, str(ids[1]): get(client, hl)}
+        acted = False
+        for pid, x in mine.items():
+            if x["my_turn"] and ph == "vote":
+                live = [p["id"] for p in x["players"] if p["alive"] and p["id"] != pid]
+                act(client, heads[pid], action="vote", target=rng.choice(live))
+                acted = True
+        if ph in ("roles", "day", "verdict") or (ph in ("night", "hunter") and any(x["my_turn"] for x in mine.values())):
+            client.post("/api/community/werwolf/next", headers=hm)
+        elif ph == "vote" and not acted and v["voted"] is not None and len(v["voted"]) == len([p for p in v["players"] if p["alive"]]):
+            raise AssertionError("the vote should have closed")
+    v = get(client, hm)
+    assert v["phase"] == "done" and v["winner"]
+    s = json.loads(fq.db.q1("SELECT state FROM card_game WHERE id=?", row["id"])["state"])
+    assert all(not p.startswith("bot") for p in s["coins"])                         # bots never get coins
+    assert fq.db.val("SELECT COUNT(*) FROM history WHERE kind='werwolf'") == 2      # only the two people
+    assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE 'werwolf:%bot%'") == 0

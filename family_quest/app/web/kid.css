@@ -28,6 +28,7 @@
 .level-chip { font-size: .8rem; font-weight: 800; color: var(--accent); }
 .streak { font-size: 1.15rem; padding: 4px 12px; border-radius: 99px; background: var(--card); box-shadow: var(--shadow); }
 .content { max-width: 1100px; margin: 0 auto; padding: 10px 16px 24px; display: grid; gap: 18px; }
+.content > * { min-width: 0; }     /* a long word or a wide row must not make the page scroll sideways */
 /* nav.bottom: shared/base.css (also on the planer page) */
 
 /* ---------- dashboard ---------- */
@@ -42,6 +43,13 @@
 .subject-ic { font-size: 2.2rem; width: 54px; height: 54px; display: grid; place-items: center; border-radius: 16px;
   background: color-mix(in srgb, var(--c) 16%, transparent); flex: none; }
 .subject-body { display: grid; gap: 4px; min-width: 0; }
+.subject.trial { outline: 2px dashed color-mix(in srgb, var(--c) 60%, transparent); outline-offset: -2px; }
+.status-badge { justify-self: start; padding: 1px 8px; border-radius: 99px; background: var(--chip, rgba(127,127,127,.15)); font-weight: 600; }
+/* Learning page: «▶ Continue» sits inside the card, bottom right (it is its own button – a button cannot hold another one) */
+.subject-wrap { position: relative; display: grid; }
+.subject-wrap .subject { width: 100%; height: 100%; padding-bottom: 64px; }
+.subject-go { position: absolute; right: 12px; bottom: 12px; }
+.learn-start { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .subject .next { color: var(--muted); }
 .due { display: inline-block; width: fit-content; font-size: .78rem; font-weight: 800; color: #fff; background: var(--warn);
   border-radius: 99px; padding: 1px 9px; }
@@ -221,6 +229,17 @@
 .offer-ic { font-size: 3rem; }
 .price { font-size: 1.3rem; font-weight: 900; }
 .offer .bar { width: 100%; }
+.bar-count { display: grid; gap: 2px; width: 100%; justify-items: center; }
+.offer .btn { min-height: 44px; }
+/* phones: two columns of smaller cards (one column of big cards made the shop very long) */
+@media (max-width: 480px) {
+  .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .shop-grid .offer { padding: 10px 8px; gap: 4px; }
+  .shop-grid .offer svg { width: 64px; height: 64px; }
+  .shop-grid .offer strong { font-size: .9rem; overflow-wrap: anywhere; }
+  .shop-grid .price { font-size: 1.05rem; }
+  .shop-grid .offer-ic { font-size: 2.2rem; }
+}
 .history { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .history li { display: flex; gap: 8px; align-items: center; }
 .status.approved { color: var(--good); } .status.rejected, .status.failed { color: var(--bad); } .status.pending { color: var(--warn); }
@@ -285,6 +304,7 @@
 /* internet time */
 .net { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .net.on { box-shadow: 0 0 0 4px var(--good), var(--shadow); }
+.net-inline.on { box-shadow: inset 0 0 0 3px var(--good); }   /* inside a card: the frame stays inside */
 .net-inline { margin: 12px 0; padding: 14px; border-radius: 16px; background: var(--soft, rgba(127,127,127,.08)); }
 .net-inline .net-ic { font-size: 2rem; } .net-inline h2 { font-size: 1.05rem; margin: 0; } .net-inline .net-clock { font-size: 1.8rem; }
 .net-ic { font-size: 2.6rem; }
@@ -438,4 +458,35 @@
   .fq-head .streak { padding: 4px 8px; font-size: 1.05rem; }
   .fq-head .me, .fq-head .clk { padding: 4px 7px; }
   .fq-head .clk .tl { gap: 5px; }
+  .fq-head .slab { display: none; }     /* the season label would push the clock into a second row */
 }
+@media (max-width: 380px) {
+  .fq-head .has-back { gap: 3px; padding-inline: 6px; }
+  .fq-head .has-back .me, .fq-head .has-back .clk, .fq-head .has-back .streak { padding-inline: 5px; }
+}
+/* «Me»: the summary at the top (meSummary) */
+.me-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.me-tile { display: grid; justify-items: center; gap: 2px; padding: 10px 6px; border-radius: 14px; background: var(--hover); text-align: center; }
+.me-tile .me-ic { font-size: 1.5rem; line-height: 1.1; }
+.me-tile b { font-size: 1.25rem; }
+.me-sum .net { margin-top: 12px; }
+.today .ring .xp-total { display: inline-block; margin-top: 3px; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-size: .72rem; }
+/* ⟳ in the app: light purple (lila) of the colour scheme */
+.refresh-btn { background: color-mix(in srgb, var(--accent) 22%, var(--card)); color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.refresh-btn:hover { background: color-mix(in srgb, var(--accent) 32%, var(--card)); }
+/* «somebody opened a table»: a note that slides into the header (kid.js showTableNote) */
+.table-note { position: fixed; z-index: 940; left: 50%; top: 64px; width: min(520px, calc(100vw - 16px));
+  transform: translate(-50%, -12px); opacity: 0; pointer-events: none; transition: transform .25s ease, opacity .25s ease;
+  display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; border-radius: 99px; font-size: .9rem;
+  background: var(--card); color: var(--fg); border: 2px solid var(--accent); box-shadow: 0 6px 18px rgba(0, 0, 0, .25); }
+.table-note.on { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.table-note-ic { font-size: 1.3rem; flex: none; }
+.table-note-txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.table-note .btn.small { flex: none; }
+.table-note .icon-btn { flex: none; }
+/* children: tap targets of at least 44 px (Continue, + Start, Buy, quiz tabs, ⟳, avatar tabs) */
+.screen .course-level .btn.small, .screen .btn.subject-go, .screen .offer .btn, .screen .inst-filter button, .screen .av-tabs button, .screen .quiz-running .btn, .screen .learn-start .btn { min-height: 44px; }
+.fq-head .icon-btn { min-width: 44px; min-height: 44px; }
+.inst-item > summary { min-height: 44px; }
+.screen .inst-filter button { padding: 6px 10px; }

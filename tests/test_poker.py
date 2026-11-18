@@ -200,3 +200,19 @@ def test_solo_all_in_does_not_end_the_hand():
         t.tick()
     assert st["phase"] in ("between", "done") and st["hand"]["result"] is not None
     assert sum(p["chips"] for p in st["players"]) == 3000   # the pot was paid out
+
+
+def test_the_starter_gets_the_dealer_button(client):
+    """The chosen starter deals the first hand (the banner in web/poker.js says «… deals!») – with 4 players the first
+    to act is left of the big blind, not the starter."""
+    from test_api import setup_family
+    ph, mia, leo = setup_family(client)
+    kids = [leo] + [client.post("/api/parent/profiles", json={"name": n}, headers=ph).json()["id"] for n in ("Ben", "Lea")]
+    client.put("/api/parent/settings", json={"game_starter": "choose"}, headers=ph)
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    client.post("/api/community/poker/start", json={}, headers=hm)
+    for pid in kids:
+        client.post("/api/community/poker/join", headers={"X-FQ-Token": client.post("/api/login", json={"profile_id": pid}).json()["token"]})
+    st = client.post("/api/community/poker/begin", json={"starter": str(leo)}, headers=hm).json()
+    assert st["starter"]["id"] == str(leo) and next(p["id"] for p in st["players"] if p["dealer"]) == leo
+    assert st["to_act"] != leo

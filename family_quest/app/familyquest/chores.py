@@ -24,6 +24,17 @@ class ChoreError(ValueError):
     pass
 
 
+def _energy(v) -> int:
+    """Energy bonus of a chore: battery segments (battery.py) charged when it is done – 0 to 20."""
+    try:
+        n = int(v or 0)
+    except (TypeError, ValueError):
+        raise ChoreError("Energy bonus: 0 to 20 segments") from None
+    if not 0 <= n <= 20:
+        raise ChoreError("Energy bonus: 0 to 20 segments")
+    return n
+
+
 def monday(d: date) -> date:
     return d - timedelta(days=d.weekday())
 
@@ -62,16 +73,16 @@ class Chores:
                 json.dumps(days), data.get("date") or None, data.get("assign") if data.get("assign") in ("fixed", "rotate") else "fixed",
                 data.get("rotate_every") if data.get("rotate_every") in ("day", "week") else "week", json.dumps(profiles),
                 data.get("kind") if data.get("kind") in ("duty", "bonus") else "bonus", int(bool(data.get("confirm", True))),
-                int(bool(data.get("active", True))), int(data.get("sort", 0)))
+                int(bool(data.get("active", True))), int(data.get("sort", 0)), _energy(data.get("energy")))
         if chore_id:
             self.db.x("""UPDATE chore SET name=?,icon=?,points=?,account=?,frequency=?,weekdays=?,date=?,assign=?,rotate_every=?,
-                         profiles=?,kind=?,confirm=?,active=?,sort=? WHERE id=?""", *vals, chore_id)
+                         profiles=?,kind=?,confirm=?,active=?,sort=?,energy=? WHERE id=?""", *vals, chore_id)
             # open tasks of today and later follow the new plan
             self.db.x("DELETE FROM chore_task WHERE chore_id=? AND status='open' AND period>=?", chore_id,
                       monday(today()).isoformat() if freq == "weekly" else today().isoformat())
             return chore_id
         return self.db.x("""INSERT INTO chore(name,icon,points,account,frequency,weekdays,date,assign,rotate_every,profiles,kind,
-                            confirm,active,sort) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", *vals)
+                            confirm,active,sort,energy) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", *vals)
 
     def delete(self, chore_id: int) -> None:
         with self.db.tx():
@@ -119,7 +130,7 @@ class Chores:
         d = d or today()
         self.ensure(d)
         periods = [d.isoformat(), monday(d).isoformat()]
-        sql = """SELECT t.*, c.name, c.icon, c.points, c.account, c.kind, c.confirm, c.frequency, p.name AS profile_name
+        sql = """SELECT t.*, c.name, c.icon, c.points, c.account, c.kind, c.confirm, c.frequency, c.energy, p.name AS profile_name
                  FROM chore_task t JOIN chore c ON c.id=t.chore_id JOIN profile p ON p.id=t.profile_id
                  WHERE c.active=1 AND ((c.frequency='weekly' AND t.period=?) OR (c.frequency!='weekly' AND t.period=?))"""
         args: list = [periods[1], periods[0]]
@@ -132,7 +143,7 @@ class Chores:
         """Today's chores of a child in the shape the dashboard uses (same as Family Planer chores)."""
         return [{"uid": f"fq:{t['id']}", "summary": t["name"], "icon": t["icon"], "done": t["status"] == "done",
                  "pending": t["status"] == "pending", "redo": bool(t["redo"]), "points": t["points"], "account": t["account"],
-                 "kind": t["kind"], "weekly": t["frequency"] == "weekly", "source": "fq"} for t in self.tasks(pid=pid)]
+                 "kind": t["kind"], "weekly": t["frequency"] == "weekly", "source": "fq", "energy": t["energy"] or 0} for t in self.tasks(pid=pid)]
 
     def week(self, start: date | None = None) -> dict:
         """Who does what on each day of a week (for the parent plan view)."""

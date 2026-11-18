@@ -9,6 +9,14 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇪🇸"
 beschreibung: "Erste Schritte auf Spanisch: begrüssen, zählen, Familie, Essen, Farben und die Verben ser, estar und tener."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "First steps in Spanish: greeting, counting, family, food, colours and the verbs ser, estar and tener."
+  fr: "Premiers pas en espagnol : saluer, compter, la famille, la nourriture, les couleurs et les verbes ser, estar et tener."
+  it: "Primi passi in spagnolo: salutare, contare, famiglia, cibo, colori e i verbi ser, estar e tener."
+  nl: "Eerste stappen in het Spaans: begroeten, tellen, familie, eten, kleuren en de werkwoorden ser, estar en tener."
+  pl: "Pierwsze kroki w hiszpańskim: powitania, liczenie, rodzina, jedzenie, kolory i czasowniki ser, estar i tener."
+  pt: "Primeiros passos em espanhol: cumprimentar, contar, família, comida, cores e os verbos ser, estar e tener."
+  sv: "Första stegen på spanska: hälsa, räkna, familj, mat, färger och verben ser, estar och tener."
 pfad: true
 standard: false
 selbst: true

@@ -45,7 +45,20 @@ const Auth = {
 
 class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
 
-async function api(path, { method = "GET", body, form, parent = false } = {}) {
+// a 401 in the parent area: the page may set window.FQ_ON_401 (renew the session – true: try again once)
+let renewing = null;
+const NO_RENEW = /^parent\/(login|ha-login|refresh|meta)\b/;
+async function api(path, opts = {}) {
+  try { return await apiOnce(path, opts); }
+  catch (e) {
+    if (e.status !== 401 || opts._again || !window.FQ_ON_401 || NO_RENEW.test(path.replace(/^\//, ""))) throw e;
+    renewing = renewing || Promise.resolve(window.FQ_ON_401()).finally(() => { setTimeout(() => { renewing = null; }, 0); });
+    if (await renewing) return apiOnce(path, { ...opts, _again: true });
+    throw new ApiError(401, I18N.tr(T("Session expired – please log in again")));
+  }
+}
+
+async function apiOnce(path, { method = "GET", body, form, parent = false } = {}) {
   const headers = {};
   // the parent area acts as the parent – a child still logged in on this device must not be used there
   if (Auth.kid && !window.FQ_PARENT_AREA) headers["X-FQ-Token"] = Auth.kid;
@@ -59,6 +72,8 @@ async function api(path, { method = "GET", body, form, parent = false } = {}) {
   if (ct.includes("json")) data = await r.json().catch(() => null);
   if (!r.ok) {
     const msg = data && (typeof data.detail === "string" ? data.detail : Array.isArray(data.detail) ? data.detail.map(d => d.msg).join(", ") : "") || ("HTTP " + r.status);
+    // the game battery is empty (familyquest/battery.py): the kid app offers to recharge it (kid.js)
+    if (r.status === 403 && window.FQ_BATTERY_EMPTY && /^Your game battery is empty/.test(msg)) setTimeout(window.FQ_BATTERY_EMPTY, 300);
     throw new ApiError(r.status, msg);
   }
   return data;
@@ -82,16 +97,29 @@ const Sound = {
     if (!this.on) return;
     try {
       this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
-      const notes = { right: [660, 880], wrong: [300, 220], done: [523, 659, 784, 1046], tap: [500] }[kind] || [440];
+      const notes = { right: [660, 880], wrong: [300, 220], done: [523, 659, 784, 1046], tap: [500], turn: [784, 1046, 1318],
+        ding: [1318, 1760], sizzle: [170, 150, 130], trash: [240, 160] }[kind] || [440];
       notes.forEach((f, i) => {
         const o = this.ctx.createOscillator(), g = this.ctx.createGain(), t = this.ctx.currentTime + i * 0.11;
-        o.type = kind === "wrong" ? "triangle" : "sine"; o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        o.type = { wrong: "triangle", sizzle: "sawtooth", trash: "square" }[kind] || "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(kind === "sizzle" || kind === "trash" ? 0.06 : 0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
         o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + 0.2);
       });
     } catch {}
   },
 };
+
+// «Your turn» cue: a short chime (and a buzz on phones) when it becomes my turn – only on the change, not on every redraw
+const _turnState = {};
+function turnCue(key, mine) {
+  mine = !!mine;
+  const was = _turnState[key];
+  _turnState[key] = mine;
+  if (mine && was === false) {
+    Sound.play("turn");
+    try { if (Sound.on && navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch {}
+  }
+}
 
 function speak(text, lang) {
   try {
@@ -118,11 +146,32 @@ function confetti(root = document.body) {
 }
 
 const fmt = (n, d = 0) => Number(n || 0).toLocaleString(I18N.locale, { maximumFractionDigits: d });
+// a time span in minutes: «45 min», «2 h», «2 h 30» – null = unlimited «∞»
+const fmtMinutes = m => m == null ? "∞" : m < 60 ? fmt(m) + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + String(m % 60).padStart(2, "0") : "");
 /** Dates and times always in the format of the chosen language. Accepts "2026-12-24", "2026-12-24 18:30" or ISO. */
 const _when = v => v instanceof Date ? v : new Date(/^\d{4}-\d\d-\d\d$/.test(String(v)) ? v + "T12:00" : String(v).replace(" ", "T"));
 const fmtDate = (v, o = { day: "numeric", month: "numeric", year: "numeric" }) => v ? _when(v).toLocaleDateString(I18N.locale, o) : "";
 const fmtTime = v => v ? _when(v).toLocaleTimeString(I18N.locale, { hour: "2-digit", minute: "2-digit" }) : "";
 const fmtDateTime = v => v ? fmtDate(v) + " " + fmtTime(v) : "";
+
+// «until 21:00» today, else «until Tue, 21:00» / a date further away (party mode, unlimited game battery)
+function untilWhen(v) {
+  if (!v) return "";
+  const d = _when(v), now = new Date(), days = (d - now) / 864e5;
+  const when = d.toDateString() === now.toDateString() ? fmtTime(d)
+    : days < 6 ? d.toLocaleDateString(I18N.locale, { weekday: "short" }) + ", " + fmtTime(d) : fmtDate(d) + " " + fmtTime(d);
+  return I18N.tr(T("until {0}")).replace("{0}", when);
+}
+
+/** The game battery (familyquest/battery.py) as a small battery with charge segments: green → orange → red, empty
+ * dashed red, ∞ while unlimited. b: {charge, cap, free} */
+function batteryIcon(b, big = false) {
+  const cap = Math.max(1, Math.min(20, b.cap || 5)), n = Math.max(0, Math.min(cap, b.charge || 0)), r = n / cap;
+  const lvl = b.free ? "inf" : n <= 0 ? "empty" : r <= .25 ? "low" : r <= .5 ? "mid" : "full";
+  const label = b.free ? "∞" : n + " / " + cap;
+  return h("span.bat." + lvl + (big ? ".big" : ""), { role: "img", "aria-label": I18N.tr(T("Game battery")) + " " + label, title: I18N.tr(T("Game battery")) + " " + label },
+    h("span.bat-body", b.free ? h("b.bat-inf", "∞") : Array.from({ length: cap }, (_, i) => h("i" + (i < n ? ".on" : "")))), h("span.bat-tip"));
+}
 
 // SVG progress ring
 function ring(value, max, { size = 120, stroke = 12, color = "var(--accent)", label = "" } = {}) {
@@ -366,6 +415,98 @@ function crestSvg(c, { ribbon = true } = {}) {
 const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learning")], ["deck", "📇", T("My card box")], ["shop", "🛍️", T("Shop")],
   ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]];
 
+// ---------------------------------------------------------------- ☰ in a running game: rules, guests, actions, language
+// gameMenu({ rules, invite, actions, onLeave }) → the ☰ button for the header of a live game.
+//   rules:   a view (or a function returning one) shown in a popup – e.g. cardsRulesView(st.rules)
+//   invite:  game key or [game, gid] → guestInvite (only for family members, not at solo tables)
+//   actions: [{ ic, label, onclick, confirm, danger, hidden }] – the actions of whoever leads (skip, mix, pause, end …)
+//   onLeave: leave the game screen (like ✕)
+function gameMenu({ rules = null, invite = null, actions = [], onLeave = null } = {}) {
+  return h("button.icon-btn.game-menu-btn", { title: T("Menu"), "aria-label": T("Menu"),
+    onclick: () => openGameMenu({ rules, invite, actions, onLeave }) }, "☰");
+}
+
+function openGameMenu({ rules, invite, actions, onLeave }) {
+  const close = () => { back.remove(); document.removeEventListener("keydown", esc); window.removeEventListener("hashchange", close); };
+  const esc = e => { if (e.key === "Escape") close(); };
+  window.addEventListener("hashchange", close);              // another page: the menu of the game goes away
+  const item = (ic, label, fn, cls = "") => h("button.drawer-item" + cls, { onclick: () => { close(); fn(); } }, h("span.foot-ic", ic), h("span", label));
+  const showRules = () => { const view = typeof rules === "function" ? rules() : rules;
+    const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
+  const soundItem = h("button.foot-item", { onclick: () => { Sound.on = !Sound.on; drawSound(); } });
+  const drawSound = () => soundItem.replaceChildren(h("span.foot-ic", Sound.on ? "🔊" : "🔇"), h("span", Sound.on ? T("Sound on") : T("Sound off")));
+  drawSound();
+  const acts = (actions || []).filter(a => a && !a.hidden);
+  const drawer = h("nav.drawer.game-drawer", { role: "dialog", "aria-label": T("Menu") },
+    h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", T("Game"))),
+    rules ? item("📜", T("Rules"), showRules) : null,
+    invite ? item("👥", T("Invite guests"), () => guestInvite(...[].concat(invite))) : null,
+    ...acts.map(a => item(a.ic || "▶", a.label, () => { if (a.confirm && !confirm(I18N.tr(a.confirm))) return; a.onclick(); }, a.danger ? ".danger" : "")),
+    h("hr"),
+    footLang(), footTheme(), soundItem,
+    onLeave ? item("🚪", T("Leave the game"), onLeave) : null);
+  const back = h("div.drawer-back.game-menu-back", { onclick: e => { if (e.target === back) close(); } }, drawer);
+  document.body.append(back);
+  document.addEventListener("keydown", esc);
+  requestAnimationFrame(() => back.classList.add("open"));
+}
+
+// who begins (parent area › Games): «choose» → the leader picks a player when starting the game.
+// beginGame(path, players) posts to path (e.g. "community/cards/tschau/begin") – with {starter} when chosen.
+let _starterMode = null;
+async function beginGame(path, players, body = {}) {
+  if (_starterMode === null) { try { _starterMode = (await api("community/starter")).mode; } catch { _starterMode = "dice"; } }
+  if (_starterMode !== "choose" || !(players || []).length) return api(path, { method: "POST", body });
+  const pick = await new Promise(resolve => {
+    const m = modal(h("div.form.center", h("h2", "👉 ", T("Who begins?")),
+      h("div.starter-pick", ...players.map(p => h("button.starter-btn", { onclick: () => { resolve(p.id); m.close(); } },
+        p.bot ? h("span.starter-emoji", p.emoji || "🤖") : avatarSvg(p.avatar || {}, 52), C(p.name, "strong")))),
+      h("button.btn.ghost", { onclick: () => { m.close(); resolve(undefined); } }, T("Cancel"))), { onClose: () => resolve(undefined) });
+  });
+  if (pick === undefined) return null;
+  return api(path, { method: "POST", body: { ...body, starter: String(pick) } });
+}
+
+// «🎲 Mia begins!» – once per game on every device (st.starter from cardgames.apply_starter)
+// deals: the starter gets the dealer button (poker) – the first to act sits left of the big blind, so «… deals!»
+function starterBanner(starter, key, deals) {
+  if (!starter || !starter.id) return;
+  const k = "fq.starter." + key + "." + (starter.at || "");
+  try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch {}
+  if (starter.at && Date.now() / 1000 - starter.at > 120) return;           // an old game: no banner any more
+  const text = I18N.tr(deals ? (starter.how === "dice" ? T("The dice decided: {0} deals!") : T("{0} deals!"))
+    : starter.how === "dice" ? T("The dice decided: {0} begins!") : T("{0} begins!")).replace("{0}", starter.name);
+  const b = h("div.starter-banner" + (starter.how === "dice" ? ".dice" : ""), h("span.starter-die", starter.how === "dice" ? "🎲" : "👉"), h("span", text));
+  document.body.append(b);
+  setTimeout(() => b.classList.add("gone"), 2600);
+  setTimeout(() => b.remove(), 3200);
+}
+
+// «Made with your AI»: the English instructions + format for an AI (familyquest/ai_format.py: self-describing JSON) – download or copy
+// a file from the API (with the login of this device) as a download
+async function downloadApi(path, name) {
+  const headers = {};
+  if (Auth.kid && !window.FQ_PARENT_AREA) headers["X-FQ-Token"] = Auth.kid;
+  if (Auth.parent) headers["X-FQ-Parent"] = Auth.parent;
+  try {
+    const r = await fetch("api/" + path, { headers });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || "HTTP " + r.status);
+    const url = URL.createObjectURL(await r.blob());
+    const a = h("a", { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (e) { toast(e.message, "bad"); }
+}
+
+function aiTemplateButtons(kind) {
+  const url = `api/ai-template/${kind}`;
+  return h("div.row.wrap",
+    h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: url, download: `family-quest-${kind}-template.json` }, "⬇️ ", T("Template for the AI")),
+    h("button.btn.small.ghost", { onclick: async () => {
+      try { await navigator.clipboard.writeText(await (await fetch(url)).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
+      catch { toast(T("Copying did not work – use the download"), "bad"); }
+    } }, "📋 ", T("Copy for the AI")));
+}
+
 // link to the parent area: when it is only offered in Home Assistant, straight to the Family Quest panel there
 let _parentHref = null;
 async function parentAreaHref() {
@@ -402,4 +543,19 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   document.body.append(back);
   document.addEventListener("keydown", esc);
   requestAnimationFrame(() => back.classList.add("open"));
+}
+
+// a game page opened directly (link, bookmark) while no table is open: in the app the child can open one right here –
+// the start dialog of the game, then the page shows the new table. Elsewhere (parent area, guests) only «Back».
+function noTableActions(game, back) {
+  const backBtn = h("button.btn.ghost", { onclick: back }, T("Back"));
+  if (window.FQ_PARENT_AREA || typeof canPlay !== "function" || !canPlay(game) || typeof route !== "function") return h("div.row.center", h("button.btn", { onclick: back }, T("Back")));
+  const again = () => route();
+  const fn = { tschau: () => cardsStartDialog("tschau", false, again), karussell: () => cardsStartDialog("karussell", false, again),
+    domino: () => dominoStartDialog(false, again), dorfmarkt: () => dorfmarktStartDialog(false, again), heimwaerts: () => heimwaertsStartDialog(false, again),
+    jass: () => jassStartDialog(false, again), kartenlauf: () => kartenlaufStartDialog(false, again), klatsch: () => klatschStartDialog(false, again),
+    paarjagd: () => paarjagdStartDialog(false, again), song: () => songStartDialog(again), stadtland: () => stadtlandStartDialog(again),
+    verboten: () => verbotenStartDialog(again), werwolf: () => werwolfStartDialog(again), werbinich: () => werbinichStartDialog(again),
+    wuerfel: () => wuerfelStartDialog(false, again), zeichnen: () => zeichnenStartDialog(again) }[game];
+  return h("div.row.center.wrap", fn ? h("button.btn", { onclick: () => fn() }, "👨‍👩‍👧 ", T("Open a family table")) : null, backBtn);
 }

@@ -61,10 +61,13 @@ def parse_yaml(text: str) -> list[Pack | Bundle]:
 
 def parse_json(text: str) -> list[Pack | Bundle]:
     """A pack, a level pack, a list of them, or {"pakete": [...]} as JSON."""
+    from ..jsonish import loads             # also JSON as AIs write it (code fence, comments, trailing commas)
     try:
-        data = json.loads(text)
+        data = loads(text)
     except ValueError as e:
         raise PackError(f"JSON: {e}") from None
+    from ..ai_format import strip_meta
+    data = strip_meta(data)                 # the explanations of a template / export ("_…" keys)
     if isinstance(data, dict) and isinstance(data.get("pakete"), list) and "stufenpaket" not in data and "id" not in data:
         data = data["pakete"]
     docs = data if isinstance(data, list) else [data]
@@ -74,7 +77,10 @@ def parse_json(text: str) -> list[Pack | Bundle]:
 
 
 def parse_text(name: str, text: str) -> list[Pack | Bundle]:
-    return parse_json(text) if name.lower().endswith(".json") else parse_yaml(text)
+    low = name.lower()
+    if low.endswith(".json") or (low.endswith((".txt", ".md")) and text.lstrip().startswith(("{", "[", "```"))):
+        return parse_json(text)
+    return parse_yaml(text)
 
 
 def parse_zip(data: bytes) -> tuple[list[Pack | Bundle], dict[str, bytes]]:

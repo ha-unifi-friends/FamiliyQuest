@@ -91,3 +91,59 @@ def test_restore_in_pieces_for_big_backups(client):
     assert client.post("/api/parent/restore-upload", json={"upload": up}, headers=h).status_code == 400    # used up
     assert client.post("/api/parent/backup/chunk?upload=../x&index=0", content=b"x", headers=h).status_code == 400
     assert client.post(f"/api/parent/backup/chunk?upload={up}&index=0", content=b"x").status_code == 401    # parents only
+
+
+def _older_backup(schema: int) -> bytes:
+    """A backup as an older Family Quest made it: the database only up to migration `schema`."""
+    import io, json, sqlite3, tempfile, zipfile
+    from pathlib import Path
+    from familyquest.db import MIGRATIONS
+    with tempfile.TemporaryDirectory() as tmp:
+        p = Path(tmp) / "old.db"
+        c = sqlite3.connect(p)
+        for i, sql in enumerate(MIGRATIONS[:schema], start=1):
+            c.executescript("BEGIN;" + sql + f";PRAGMA user_version={i};COMMIT;")
+        c.execute("INSERT INTO profile(name, role) VALUES('Oma', 'parent')")
+        c.execute("INSERT INTO profile(name) VALUES('Anna')")
+        c.commit(); c.close()
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as z:
+            z.write(p, "family_quest.db")
+            z.writestr("manifest.json", json.dumps({"format": "family-quest-backup", "version": 1, "app_version": "0.3.0",
+                                                    "created": "2026-01-01T10:00:00"}))
+        return buf.getvalue()
+
+
+def test_older_backups_are_checked_and_restored(client):
+    from familyquest import backup
+    from familyquest.db import MIGRATIONS
+    fq = client.app.state.fq
+    ph = {"X-FQ-Parent": client.post("/api/setup", json={"name": "Papa", "pin": "1234"}).json()["parent_token"]}
+    raw = _older_backup(21)
+    m = backup.check(raw, "1.0.0")
+    assert m["compat"] == {"status": "older", "schema": 21, "current": len(MIGRATIONS), "from": "0.3.0", "to": "1.0.0"}
+    r = client.post("/api/parent/backup/inspect", files={"file": ("old.zip", raw, "application/zip")}, headers=ph)
+    assert r.status_code == 200 and r.json()["manifest"]["compat"]["status"] == "older"
+    r = client.post("/api/parent/restore", files={"file": ("old.zip", raw, "application/zip")}, headers=ph)
+    assert r.status_code == 200, r.text
+    assert r.json()["manifest"]["safety"] == "before-restore.zip" and (fq.settings.data_dir / "before-restore.zip").is_file()
+    assert fq.db.val("PRAGMA user_version") == len(MIGRATIONS)                     # updated to the current version
+    assert sorted(x["name"] for x in fq.db.q("SELECT name FROM profile")) == ["Anna", "Oma"]
+    # the safety copy holds the data from before («Papa») and can be restored again
+    back = (fq.settings.data_dir / "before-restore.zip").read_bytes()
+    assert backup.check(back, "1.0.0")["compat"]["status"] == "same"
+
+
+def test_a_backup_that_cannot_be_updated_is_refused_before_anything_changes(client, monkeypatch):
+    import pytest
+    from familyquest import backup, db as dbmod
+    fq = client.app.state.fq
+    client.post("/api/setup", json={"name": "Papa", "pin": "1234"})
+    raw = _older_backup(21)
+    broken = list(dbmod.MIGRATIONS)
+    broken[21] = "THIS IS NOT SQL;"
+    monkeypatch.setattr(dbmod, "MIGRATIONS", broken)
+    with pytest.raises(backup.BackupError):
+        backup.restore(fq, raw)
+    monkeypatch.undo()
+    assert [x["name"] for x in fq.db.q("SELECT name FROM profile")] == ["Papa"]          # nothing replaced
