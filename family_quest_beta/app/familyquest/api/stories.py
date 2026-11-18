@@ -61,7 +61,8 @@ class TurnIn(BaseModel):
 
 
 class SvgIn(BaseModel):
-    svg: str = Field(max_length=40_000)
+    svg: str = Field(max_length=200_000)
+    use: str = Field(default="bg", max_length=8)      # «bg» a scene (page, room) · «art» a thing (transparent)
 
 
 class SampleIn(BaseModel):
@@ -118,7 +119,7 @@ def ai_template(type: str = "adventure") -> Response:
 
 
 class ImportIn(BaseModel):
-    text: str = Field(max_length=1_000_000)
+    text: str = Field(max_length=4_000_000)
 
 
 @router.post("/import")
@@ -138,8 +139,8 @@ def settings_put(body: dict[str, Any], request: Request, me: dict = Parent) -> d
 
 @router.post("/svg")
 def svg(body: SvgIn, request: Request, prof: dict = Learner) -> dict:
-    """An own SVG picture for a picture book: cleaned (what the book will show) – or 400 with the reason."""
-    return {"svg": _run(app_of(request).stories.check_svg, prof, body.svg)}
+    """An own drawing (drawing editor or SVG code) for any book type: cleaned (what the book will keep) – or 400 with the reason."""
+    return {"svg": _run(app_of(request).stories.check_svg, prof, body.svg, body.use)}
 
 
 @router.put("/samples/{key}")

@@ -4,7 +4,8 @@ A picture book is a cover and a list of pages, read page by page (no choices). A
 on top, the text below), «full» (the picture fills the page, the text lies on it) or «text» (text only) – a text and a
 picture:
 - {"k": "lib", "v": key}   one of the shipped SVG scenes (web/img/stories/<key>.svg, stories.BACKGROUNDS)
-- {"k": "svg", "v": "<svg …>"}  an SVG drawing inside the book – strictly cleaned (svgsafe.py), shown as an <img>
+- {"k": "svg", "v": "<svg …>"}  an own drawing (drawing editor web/svgpaint.js, 800×600) or pasted SVG code inside the
+  book – strictly cleaned (svgsafe.py, max. BG_MAX), shown as an <img>
 - {"k": "img", "v": name, "src": "draw" | "photo"}  an own drawing or a photo (the upload rules of the adventure books)
 - {"k": "emoji", "v": "🐻"}  one big emoji
 Reading progress per reader: the last page read (0 = the cover) and how often the book was read to the end.
@@ -19,12 +20,12 @@ from pathlib import Path
 
 from .community import CommunityError
 from .i18n import _t
-from .svgsafe import SVG_MAX, safe_svg
+from .svgsafe import BG_MAX, safe_svg
 
 LAYOUTS = ("top", "full", "text")
 MAX_PAGES = 60
 TEXT = 600                      # characters of one page
-MAX_BYTES = 900_000             # JSON of one book (inline SVG pictures included)
+MAX_BYTES = 2_000_000           # JSON of one book (inline SVG pictures included)
 MSG = {
     "title": _t("Give the book a title"),
     "empty": _t("The book has no pages yet"),
@@ -44,9 +45,11 @@ def clean_pic(p, folder: Path | None) -> dict | None:
     if p.get("k") == "lib":
         return {"k": "lib", "v": p["v"]} if p.get("v") in BACKGROUNDS else None
     if p.get("k") == "svg":
-        svg = safe_svg(p.get("v"))
+        svg = safe_svg(p.get("v"), BG_MAX)
         return {"k": "svg", "v": svg} if svg else None
-    return story_pic(p, folder)
+    if p.get("k") == "emoji" or p.get("k") == "img":
+        return story_pic(p, folder)
+    return None
 
 
 def clean(data, folder: Path | None = None) -> dict:
@@ -107,18 +110,6 @@ _LAYOUT_OUT = {"top": "picture_top", "full": "full_picture", "text": "text_only"
 _LAYOUT_IN = {v: k for k, v in _LAYOUT_OUT.items()} | {k: k for k in LAYOUTS} | {
     "picture_on_top": "top", "image_top": "top", "full_page": "full", "full_page_picture": "full", "fullpage": "full",
     "overlay": "full", "text": "text", "textonly": "text"}
-SVG_RULES = [
-    "An own picture is ONE <svg> element as a JSON string: start with <svg xmlns='http://www.w3.org/2000/svg' "
-    "viewBox='0 0 400 300'> (landscape 4:3 – always give a viewBox) and use single quotes inside it so the JSON stays valid.",
-    f"Max. {SVG_MAX // 1000} KB per picture after cleaning – simple, flat shapes look best: path, circle, ellipse, rect, line, "
-    "polyline, polygon, g, defs with linearGradient / radialGradient / clipPath. Attributes: fill, stroke, stroke-width, "
-    "opacity, transform, gradient stops; colours as #hex or names.",
-    "Not allowed (removed, or the picture is refused): script, foreignObject, image, use, style elements and style "
-    "attributes, links (href), events (onload, onclick …), external files or fonts, DOCTYPE, CSS.",
-    "Paint a full background (sky, room, cave …) as the first shape so the picture works on light and dark screens. "
-    "Avoid text in pictures – the story text is on the page; at most a word or two.",
-    "Keep the characters the same on every page (same colours, same hat, same clothes) so the reader recognises them.",
-]
 AI_INSTRUCTIONS = [
     "This file belongs to Family Quest, a family app in Home Assistant. Children (about 3–12) and adults write and read "
     "picture books with it: pages with a picture and a short text, read page by page.",
@@ -161,7 +152,7 @@ def export_pic(p: dict | None) -> dict | None:
         return {"library": p["v"]}
     if p["k"] == "emoji":
         return {"emoji": p["v"]}
-    return None                                  # own drawings and photos are files of this family
+    return None                                  # photos (and old painted PNG drawings) are files of this family
 
 
 def export_book(title: str, emoji: str, lang: str, data: dict) -> dict:
@@ -182,8 +173,9 @@ def document(books: list[dict], example: bool = False) -> dict:
     if example:
         s = sample("dwarf", "en")
         books = [export_book(s["title"], s["emoji"], s["lang"], s["data"])]
-    return {"_format": FORMAT, "_ai_instructions": AI_INSTRUCTIONS, "_svg_rules": SVG_RULES, "_field_guide": AI_GUIDE,
-            "_library": BACKGROUNDS, "_note": "Own drawings and photos are not part of the file – SVG, library and emoji pictures are.",
+    from .stories import svg_rules
+    return {"_format": FORMAT, "_ai_instructions": AI_INSTRUCTIONS, "_svg_rules": svg_rules("picture"), "_field_guide": AI_GUIDE,
+            "_library": BACKGROUNDS, "_note": "Own drawings (SVG), library scenes and emoji are part of the file, photos are not.",
             "books": books}
 
 

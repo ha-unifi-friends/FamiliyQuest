@@ -505,16 +505,46 @@ Visibility (🔒 / 🧒 / 👨‍👩‍👧), approval, rewards, ⭐ ratings, r
 the same for every type. **+ New book** first asks for the type; a new book of any type is for the **👨‍👩‍👧 whole family**
 (changeable right there and in the editor – with approval on it still waits for a parent once published).
 
+#### 🎨 Own drawings (the drawing editor)
+Every book type draws its own pictures with one **vector drawing editor** (`web/svgpaint.js`) – the pictures are
+**SVG**, not pixels, so they stay sharp on every screen and stay small:
+- **Tools:** 👆 select & move · ✏️ pen (smoothed strokes, 4 widths, stylus pressure) · ╱ line · shapes (▭ rectangle,
+  ⬭ ellipse, ◯ circle, △ triangle, ⬠ polygon – tap the corners, tap the first one again to close) · stamps (⭐ star,
+  ❤️ heart, 🌳 tree, ☁️ cloud, ☀️ sun, 🏠 house, 🚪 door, 🪟 window – drawn as paths) · 🔤 a word of text · 🪣 fill (the
+  tapped shape gets the colour; tapping the background colours it) · 🌄 background (white paper, sky, meadow, grass,
+  sea, beach, night, sunset, room, cave, snow, space – gradients – or see-through). 16 colours plus an own colour,
+  outline on / off for shapes.
+- **A selected shape** has handles: the big corner scales, the side handles stretch, the yellow one above rotates
+  (snaps to 45°); drag to move. The floating bar: 🗑 remove, ⧉ duplicate, ⬆ ⬇ layer, ↻ straighten. ↶ ↷ undo / redo
+  (also Ctrl+Z / Ctrl+Y, Delete). Picking a colour with 👆 recolours the selected shape.
+- **Finger and stylus:** one finger draws, **two fingers zoom and move the picture** (never the page; ⤢ shows the whole
+  picture again). The toolbar is compact (phone 390×740 without scrolling, tablets with a larger picture), light and
+  dark mode.
+- **Two kinds:** a **scene** that fills a page or a room (viewBox 800×600, 4:3, max. **60 KB**) and a **thing / a
+  character** (200×200 with a see-through background – it stands in the scene; max. **20 KB**). A meter shows the size;
+  ✓ *Use picture* sends it to the server, which cleans it (`svgsafe.py`) and gives back what the book keeps.
+- **Editing again:** the SVG is its own shape model – every shape is one element with `translate() rotate() scale()`
+  and the picture is marked `id="fq-draw"`, so ✏️ *Change drawing* opens it shape by shape. A picture from somewhere
+  else (SVG code, an AI) opens as one locked layer to draw on top of.
+- **Stored in the book:** a drawing is cleaned SVG text inside the book data (`{"k": "svg", "v": "<svg …>"}`), not a
+  separate file – so it has exactly the privacy of its book (a 🔒 private book's drawings reach nobody else, parents
+  neither: no endpoint returns them), it is part of every backup (the database), and it goes along in the export.
+- **Where:** 📖 page picture (thing) and page background (scene); 📕 page pictures and the cover (scenes); 🗝️ room
+  backgrounds and variant pictures (scenes), hotspot and item pictures (things, placed on the room like the shipped
+  assets); the shelf shows drawn covers (the first page, the cover, the start room).
+- **Older painted pictures** (PNG files of the earlier painter) are still shown everywhere and can be replaced by a new
+  drawing; photos stay files as before.
+
 #### 📕 Books (picture books)
 - A **cover** (picture, title, author – the title and the colour are set in ⚙️) and up to **60 pages**. Every page has a
   **layout**: 🖼️ *picture on top* (text below), 🌄 *full-page picture* (the whole picture edge to edge, the text lies on
   its lower edge – on tablets on the picture) or 📝 *text only* – and a text (max. 600 characters).
 - **Picture** per page: 🏞️ one of the 24 shipped scenes (`web/img/stories`), 😀 an emoji, 🎨 an own drawing (the
-  painter of the adventure books), 📷 a photo (same upload rules, max. 2 MB) or **</> SVG code** (e.g. from an AI).
+  drawing editor, a scene), 📷 a photo (same upload rules, max. 2 MB) or **</> SVG code** (e.g. from an AI).
   SVG pictures are **cleaned strictly on the server** (`svgsafe.py`): only drawing elements (path, circle, rect,
   polygon, g, gradients, clip paths, short text) and presentation attributes survive; `script`, `foreignObject`,
   `image`, `use`, `style`, links/`href`, `on…` handlers, external `url(…)` references are removed, a DOCTYPE / entity or a
-  file that is not an `<svg>` with a viewBox is refused; max. 12 KB per picture. The app shows them only as an image
+  file that is not an `<svg>` with a viewBox is refused; max. 60 KB per picture. The app shows them only as an image
   (`<img>` data URL), where nothing can run.
 - The editor (phone and tablet): cards for the cover and every page with the layout switch, ↑ ↓ to move, 🗑, a
   character counter; the checker lists pages without text or without picture. ▶ reads the draft.
@@ -534,7 +564,7 @@ app languages, Swiss German in Zürich dialect).
 
 **Building** (the editor, phone and tablet; tabs 🗺️ Map · 🚪 Rooms · 🎒 Things · 💬 Dialogues · ⚙️ Rules):
 - **Rooms:** a picture – one of 10 own room scenes (tower room, library, stone hall, hallway, dark room, spaceship cabin /
-  corridor / bridge, engine room, storage room) or the 24 scenes of the books, an own drawing (painter), a photo or SVG
+  corridor / bridge, engine room, storage room) or the 24 scenes of the books, an own drawing (drawing editor), a photo or SVG
   code (cleaned like the picture books) – and a description. ⭐ marks the start room; ▶ tests from any room.
   **🔀 Changes when …**: up to 3 variants with another text / picture while a condition holds («the light is on»).
 - **Hotspots** (max. 30 per room): ✏️ *Draw hotspot*, choose the kind and drag a rectangle over the thing on the
@@ -542,8 +572,8 @@ app languages, Swiss German in Zürich dialect).
   positions are percent of the picture, so they fit every screen. The sheet below: kind, name, a picture on the
   hotspot (39 own SVG things and characters – doors, keys, chest, lever, lamp, candle, book, potion, rope, stick,
   ladder, crystal, magnet, battery, cable, key card, button, screen, cauldron, bookshelf, table, bed, box, plant, well,
-  magic wand; wizard, robot, cat, dragon, ghost, knight, pirate, alien, owl – an emoji, an own drawing with see-through
-  white, or invisible over the room picture), the look text, «Visible only when» (conditions) and the use rules.
+  magic wand; wizard, robot, cat, dragon, ghost, knight, pirate, alien, owl – an emoji, an own drawing (a thing with a
+  see-through background), or invisible over the room picture), the look text, «Visible only when» (conditions) and the use rules.
   - 🚪 **Door:** leads to a room or straight to an ending; optionally «Opens only when» (an item, a switch) with a
     locked text. «＋ New room» makes the room with a door back.
   - 📦 **Object:** can be taken (becomes an item; it disappears – or 📦 *stays in the room* and gives its item once,
@@ -580,12 +610,13 @@ hidden hotspots, rules or the solution, moves are checked), every player's game 
 Phone 390×740 without scrolling, tablets with a larger picture.
 
 **Import / export:** `family-quest-adventuregame/1` (instructions and a field guide for an AI, the background and asset
-ids, rules for SVG backgrounds and the wizard tower as a full example). Readable ids in the file (`room1`, `spot3`,
+ids, `_svg_rules` for own drawings and the wizard tower as a full example – with a drawn room and a drawn item). Readable ids in the file (`room1`, `spot3`,
 `item2` …), conditions as `item:key` / `!flag:light`, actions as `{"give": "key"}`. The import is tolerant (code
 fences and sentences around the JSON, comments, trailing commas, items and switches only named in a hotspot, other
-spellings of actions) and checks everything again; games come in as private drafts, own drawings and photos stay out
-of the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200 dialogue lines, 6 answers, 200 rules,
-20 endings, 900 KB per game.
+spellings of actions) and checks everything again; games come in as private drafts. Own drawings go along as inline SVG
+(`"background": {"svg": "<svg …>"}`, `"picture"` / `"icon": {"svg": …}`), cleaned again on import; photos stay out of
+the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200 dialogue lines, 6 answers, 200 rules,
+20 endings, 2 MB per game.
 
 #### 📖 Adventure books
 
@@ -596,12 +627,13 @@ of the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200
   In the target list of a choice «＋ New scene / good ending / bad ending» makes the page right away. Every page carries
   its **number in a purple circle** (page cards and map), and next to the target list of a choice the same purple
   circle shows the number of the page it leads to.
-- **Picture** per page: an emoji, an **own drawing** (painter for finger and stylus: pen in 4 sizes with stylus pressure,
-  14 colours, rubber, fill bucket, undo) or a **photo** (made smaller in the browser, max. 2 MB per picture).
-- **🏞️ Background** per page: 24 own scenes (jungle, beach, deep sea, space, haunted castle, enchanted forest, snowy
-  mountains, desert, pirate ship, crystal cave, city at night, village, dragon's lair, candy land, dinosaur valley,
-  volcano, North Pole, mine, castle in the clouds, train station, school, kids' room, attic, laboratory – small SVG
-  files in `web/img/stories`) or none; the picture sits on top of it, the text stays on the paper below.
+- **Picture** per page: an emoji, an **own drawing** (the drawing editor above – a thing with a see-through
+  background) or a **photo** (made smaller in the browser, max. 2 MB per picture).
+- **🏞️ Background** per page: 🎨 an **own drawn background** (a scene of the drawing editor), one of 24 own scenes
+  (jungle, beach, deep sea, space, haunted castle, enchanted forest, snowy mountains, desert, pirate ship, crystal cave,
+  city at night, village, dragon's lair, candy land, dinosaur valley, volcano, North Pole, mine, castle in the clouds,
+  train station, school, kids' room, attic, laboratory – small SVG files in `web/img/stories`) or none; the picture
+  sits on top of it, the text stays on the paper below.
 - **🎒 Items:** a scene can give one item («🍌 Banana»); a choice can need one – readers only see it when they have it.
 - **🃏 Pages / 🗺️ Map:** the map shows every page as a box (rows by distance from the first page) with arrows for the
   choices; dashed arrows need an item, red stubs are choices without a target, orange boxes need work, dashed boxes
@@ -626,18 +658,21 @@ books: 🔒):
 - **👨‍👩‍👧 Whole family** – children and parents.
 
 **Import / export of picture books:** the same, with the format `family-quest-picturebook/1` (instructions for an AI,
-`_svg_rules` – how to draw safe inline SVG: viewBox 400×300, simple flat shapes, own background, max. 12 KB, no scripts or
-external files, little text –, the library ids and the sample book as an example). Pictures go along as SVG, library id
-or emoji; own drawings and photos stay out. A file may contain picture books and adventure books together; every book
+`_svg_rules` – how to draw safe inline SVG: viewBox 800×600, simple flat shapes, own background, max. 60 KB, no scripts or
+external files, little text –, the library ids and the sample book as an example). Pictures go along as SVG (own drawings
+included), library id or emoji; photos stay out. A file may contain picture books and adventure books together; every book
 comes in as a private draft.
 
 **Import / export** (same idea as the quiz and pack files for an AI): ⚙️ › **Export as a file** saves a book as
-self-describing JSON (`family-quest-story/1`: instructions and field guide for an AI, the background ids, the book with
-pages, choices, endings, items, emoji pictures and backgrounds – own drawings and photos stay out). **📥 Import** on
+self-describing JSON (`family-quest-story/1`: instructions, field guide and `_svg_rules` for an AI, the background ids,
+the book with pages, choices, endings, items, emoji pictures, own drawings as inline SVG (`"picture": {"svg": …}`,
+`"background": {"svg": …}`) and backgrounds – photos stay out; the template shows a drawn page background and a drawn
+thing as examples). **📥 Import** on
 the shelf: copy the **template for the AI** into any AI chat, describe the idea, paste the answer (sentences and code
 fences around the JSON are fine) or choose a file. Every book comes in as a private draft of whoever imports it (ids,
-authors and anything else from the file are not taken over), the checker shows what is still missing. Max. 1 MB, 5
-books per file.
+authors and anything else from the file are not taken over), the checker shows what is still missing. Every drawing
+is cleaned again (`svgsafe.py`); a drawing that is too large (things 20 KB, scenes 60 KB) or not usable is left out.
+Max. 4 MB, 5 books per file.
 
 **Single-language books:** a book is written in one language (a language tag, chosen when it is made, changeable in ⚙️)
 – there are no translations inside a book. The templates come in every app language.
@@ -651,8 +686,9 @@ read it – not for private books) and per reader who is somebody else and reach
 own.
 
 Limits: 300 books (sample books not counted), 200 pages per adventure book, 60 per picture book, 40 rooms per game (600 characters per
-page, SVG pictures 12 KB each); adventure books: 1500 characters per page, 120 per choice, 40 per item, 80 per title, pictures
-max. 2 MB each and 300 MB together (in `media/_stories`, part of the backup; pictures no book uses are removed).
+page); own drawings and SVG pictures: scenes 60 KB, things 20 KB each, 2 MB per book with everything; adventure books: 1500
+characters per page, 120 per choice, 40 per item, 80 per title; photos max. 2 MB each and 300 MB together (in
+`media/_stories`, part of the backup; pictures no book uses are removed).
 
 ### Wichteln (secret gift giving)
 Under the polls, everybody can start a **Wichteln**: enter the occasion (e.g. «Christmas 2026»), choose who takes part
