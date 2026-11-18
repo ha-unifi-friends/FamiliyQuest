@@ -295,12 +295,12 @@ async function storyShelf(box, opts = {}) {
     const one = types.length === 1 ? types[0] : null;       // a shelf of one type: no filter chips, import / new for that type
     sbSet(box,
       pend.length ? h("section.sb-sec.sb-wait", h("h2", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
-      h("section.sb-sec", h("div.sec-head", h("h2", one ? [T_[one][0], " ", T_[one][2]] : ["📚 ", T("Family bookshelf")]),
+      h("section.sb-sec", h("div.sec-head", h("h2", one ? ["📚 ", T("On the shelf")] : ["📚 ", T("Family bookshelf")]),
         (d.creatable || []).length ? h("div.head-actions", h("button.btn.ghost", { onclick: () => storyImportDialog(done, one, types) }, "📥 ", T("Import")),
           h("button.btn", { onclick: () => storyNewDialog(done, d.creatable, one) }, "+ ", one ? T("New") : T("New book"))) : null),
         one ? null : filters,
         live.length ? h("div.sb-shelf", ...live.map(cover))
-          : h("p.muted", filter === "all" ? T("No books on the shelf yet – write the first one!") : T("No books of this type on the shelf yet."))),
+          : h("p.muted", one === "game" ? T("No adventure games on the shelf yet – make the first one!") : filter === "all" ? T("No books on the shelf yet – write the first one!") : T("No books of this type on the shelf yet."))),
       h("section.sb-sec", h("h2", "✏️ ", one === "game" ? T("My adventure games") : T("My books")),
         mine.length ? h("div.sb-rows", ...mine.map(row))
           : h("p.small.muted", one === "game" ? T("Make your own adventure game – or start with a template.") : T("Write your own book or adventure – or start with a template.")),
@@ -369,9 +369,10 @@ function storyNewDialog(done, creatable = ["picture", "adventure", "game"], fixe
     : ["📚", T("New book")];
   const m = modal(h("div.form.sb-new", h("h2", heading[0], " ", heading[1]),
     fixedType ? null : h("div.field", h("b", T("What kind of book?")), types),
+    fixedType ? tplField : null,                         // one type only: the templates first
     h("label.field", T("Title"), title, titleHint),
     h("label.field", T("Language of the book"), lang),
-    tplField,
+    fixedType ? null : tplField,
     h("div.field", h("b", T("Who can read it?")), sbVisPicker(visibility, v => { visibility = v; })),
     h("div.row", h("button.btn", { onclick: create }, "✏️ ", T("Start writing")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
 }
