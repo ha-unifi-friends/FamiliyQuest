@@ -365,6 +365,17 @@ class Facts:
             if len(same) == 1:                          # one winner (not a team)
                 out += self.who("last_winner", "week", (_t("Who won the last family game ({0})?"), self.game_title(last["game"])),
                                 {self.person(last["profile_id"]): 1}, guests=True)
+        # «Beat the Bureaucracy»: the most referrals in one game, the fastest permit (family only)
+        refs, fast = {}, {}
+        for r in h:
+            if r["game"] == "stempeljagd" and r["profile_id"] in self.name:
+                d = r["data"]
+                refs[r["profile_id"]] = max(refs.get(r["profile_id"], 0), int(d.get("referrals") or 0))
+                if d.get("won") and d.get("complete") and d.get("seconds") is not None and not d.get("admin"):
+                    fast[r["profile_id"]] = max(fast.get(r["profile_id"], 0), 100000 - int(d["seconds"]))
+        title = self.game_title("stempeljagd")
+        out += self.who("stempeljagd_referrals", "all", (_t("Who was sent to another counter the most times in one game of {0}?"), title), refs)
+        out += self.who("stempeljagd_fastest", "all", (_t("Who got the building permit the fastest in {0}?"), title), fast)
         dice = {}
         for r in h:
             if r["game"] == "wuerfel" and self.person(r["profile_id"]) is not None:

@@ -79,7 +79,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -2635,6 +2635,113 @@ def dorfmarkt_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.dorfmarkt.state("dorfmarkt", prof["id"])
 
 
+# ---------------------------------------------------------------- «Beat the Bureaucracy» (familyquest/stempeljagd.py)
+class StempeljagdStartIn(BaseModel):
+    solo: bool = False                   # alone against bots (private)
+    bots: int | None = None              # 0–3 bot teams
+    level: str | None = None             # easy | normal | hard
+    bot_ms: int | None = None            # reaction time of the bots in ms (0 = at once)
+    length: str | None = None            # short | normal | long (5 / 7 / 9 stamps)
+    mode: str | None = None              # teams | admin (one team plays the administration)
+    admin: str | None = Field(default=None, max_length=12)    # admin mode: "bot" or "host"
+    minigames: bool | None = None        # absurd forms, stamping, bureaucratic speak
+    projects: str | None = None          # pick | random
+    bot_ids: list[int | str] = []
+
+
+class StempeljagdActIn(BaseModel):
+    action: str = Field(max_length=20)   # project | play | go | appt | argue | queue | react | mini | defend | end_turn | admin_card | admin_toggle
+    key: str | None = Field(default=None, max_length=20)
+    trick: str | None = Field(default=None, max_length=20)
+    target: str | None = Field(default=None, max_length=20)
+    counter: str | None = Field(default=None, max_length=20)
+    yes: bool = False
+    use: bool = False
+    idx: int | None = Field(default=None, ge=0, le=9)
+    ticked: int | None = Field(default=None, ge=0, le=20)
+    answer: int | None = Field(default=None, ge=0, le=9)
+
+
+class StempeljagdAdminIn(BaseModel):
+    who: str = Field(max_length=20)      # "teams" (no administration), "bot" or the id of a seated person
+
+
+def _lead_stempeljagd(fq, prof: dict) -> None:
+    if not fq.stempeljagd.may_lead("stempeljagd", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/stempeljagd")
+def stempeljagd_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.get("/stempeljagd/rules")
+def stempeljagd_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).stempeljagd.rules_info()
+
+
+@router.post("/stempeljagd/start")
+def stempeljagd_start(body: StempeljagdStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    forced = _no_bots(fq, prof, "stempeljagd", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 3, body.level or "normal", BOTS)
+    with _bots_not_remembered(fq, "stempeljagd", forced):
+        _run(fq.stempeljagd.start, "stempeljagd", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/join")
+def stempeljagd_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.stempeljagd.join, "stempeljagd", prof["id"])
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/admin")
+def stempeljagd_admin(body: StempeljagdAdminIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_stempeljagd(fq, prof)
+    _run(fq.stempeljagd.set_admin, prof["id"], body.who)
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/begin")
+def stempeljagd_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_stempeljagd(fq, prof)
+    _run(fq.stempeljagd.begin, "stempeljagd", prof["id"], (body or BeginIn()).starter)
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/act")
+def stempeljagd_act(body: StempeljagdActIn, request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.stempeljagd.act, prof["id"], body.action, body.model_dump(exclude={"action"}))
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/nudge")
+def stempeljagd_nudge(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_stempeljagd(fq, prof)
+    _run(fq.stempeljagd.nudge, prof["id"])
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/end")
+def stempeljagd_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_stempeljagd(fq, prof)
+    fq.stempeljagd.end("stempeljagd", prof["id"])
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
 # ---------------------------------------------------------------- guests
 class InviteIn(BaseModel):
     game: str                       # quiz | bingo
@@ -2662,10 +2769,10 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape", "stempeljagd"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
                  "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "langstrecke": fq.langstrecke, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
-                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}.get(body.game, fq.cards)
+                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape, "stempeljagd": fq.stempeljagd}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:
         game = {"quiz": fq.community, "bingo": fq.bingo, "poker": fq.poker, "song": fq.songs}.get(body.game)

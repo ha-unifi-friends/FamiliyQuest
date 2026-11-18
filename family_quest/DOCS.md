@@ -511,7 +511,7 @@ Switched-off games disappear from the children's app.
 
 **Active without bots** is offered for the games that can be played with bots: Texas Hold'em, Tschau Sepp,
 Kartenkarussell, Domino, Paarjagd, Kartenlauf, Fünf Würfel, Heimwärts, Jump, Snack Rush, Klatsch den Beat, Jass, Werwölfe, Chess,
-Dorfmarkt, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
+Dorfmarkt, Beat the Bureaucracy, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
 the games against the app, and the server refuses every start with bots («Playing with bots is switched off for this
 game»): family tables get no bots (Kartenlauf plays with the people there, Jass needs 4 people, Werwölfe needs 5), chess
 only against the family or two on one device, Ping-Pong doubles only with people. Jump, Snack Rush and Klatsch den Beat can still be
@@ -620,7 +620,7 @@ app gets `party` in `GET /api/me`.
 
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
 (icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,
-24h Endurance, Kartenlauf, Werwölfe, Escape Room, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
+24h Endurance, Kartenlauf, Werwölfe, Escape Room, Beat the Bureaucracy, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
 Bingo, Chess) and **⚡ Quick games for in between** (Paarjagd, Fünf Würfel, Jump, Klatsch den Beat, Star Runner, Snack
 Rush, Traffic Cadet, duels for two), and the game corner at the end. A tile with a running table has a pulsing dot; a
 tap opens the game's card in a sheet with its usual buttons (family table, alone against bots, join, rules).
@@ -1416,6 +1416,87 @@ With few chosen kinds (e.g. only memory, 5 rooms) a kind can come twice in one g
 and won gets them (together: everybody, when out; two teams: the winning team) – only at a table with **at least two
 people of the family**, never to guests, paid once. Every person of the family gets a history entry (out or not, rooms,
 time, hints, team); the winners get the «No. 1» hat.
+
+### Beat the Bureaucracy
+
+Games → **🏛️ Beat the Bureaucracy** (de «Besiege die Bürokratie», de-CH «Bsieg d Bürokratie», fr «Vaincre la
+bureaucratie» …): a light-hearted family party game in the wonderfully complicated town hall of an invented town
+(«Little Red-Tapington» – every language has its own funny name, e.g. «Bürokratingen», «Paperasse-sur-Tampon»). An own
+parody with own texts: no real country, authority, law, person or brand. 2 to 4 teams – one device per team (one or
+more people around it), the family on their own devices, guests via QR code, bots (easy / normal / hard) – or a child
+alone against bot teams. About 20–30 minutes, from about 7 years.
+
+**Goal:** every team wants its building project approved (it picks one of 8 – tree house with a rope ladder, garage
+with a water slide, pizza oven in the garden, hamster palace, a pond for exactly one duck, lemonade stand with a
+drive-through, igloo with a doorbell, garden shed shaped like a rocket – or they are drawn at random). The permit
+needs 5, 7 or 9 stamps (game length short / normal / long); the first team with all stamps wins, the others are
+ranked by their stamps.
+
+**The town hall** (a cross-section on the screen, with a display board «Now serving 047 → Counter 2» that goes
+«ding-dong»): Counter 1 «General information» (knows nothing, kindly refers you on), 2 «Office for Building Matters»
+(open only on Tuesdays and at new moon – one round is one day of a Monday–Friday week, the moon goes round in 8
+rounds), 3 «Office for Green Spaces» (asks whether the tree agrees), 4 «Commission for Slowness» (meets every 3
+rounds; in between your application goes on the pile and is decided at the next meeting – 70 % approved), the
+archive in the basement (fetches the missing document – sometimes first the form you need for the form) and the
+coffee kitchen (a trick card, a rumour and better relations). The clerks chat with each other in speech bubbles
+(weekend plans, the coffee machine, the plastic plant …) while the queue waits.
+
+**A turn:** optionally play a trick card, then tap a counter. At counters 1–4 the **scene** comes first (decided per
+counter and round, the same for everybody; the first contact with a counter is always the appointment question):
+- «Do you have an appointment?» – «Yes» only with a 📅 appointment card. «No»: «We are fully booked for the next 9
+  months» (in a completely empty waiting room) – then one argument: insist politely, «it's urgent», «only a tiny
+  question», 🥐 croissants or 🤝 «my cousin works here». The clerk's mood (grumpy, sleepy, chatty, cheerful) changes
+  the chance. If it works, the clerk phones a colleague with a sigh («I have a citizen here who seems to be very
+  important …») and you get an audience; if not, come back another day.
+- A huge queue (the display does not move while the clerks chat): wait patiently (50 %: it is your turn – else your
+  place is kept for your next turn) or try one of three tricks (back from the toilet, «only a signature», delivery
+  person, a big official folder, a stroller with a doll, croissants for the queue) – each with its own chance and a
+  funny consequence when caught: back to the end of the queue, the queue complains (−1 relation) or the clerk closes
+  the counter for the day.
+- Nobody there: straight to the audience.
+
+At the audience you hand in a missing document (a stamp) – or an **authority card** of that counter is revealed
+(about 40 cards): a stamp, two stamps, a referral («Not responsible – go to counter 4»; the next turn must go there,
+ping-pong between counters is counted), a document is needed («Form B-12 in triplicate, blue only», «a certified copy
+of the original» – in the folder: a stamp, else it is missing until fetched from the archive), lunch break (miss the
+next turn), holiday («so is the substitute»), a grumpy clerk, a trick card, the tree, or a **mini-game**: an absurd
+form (tick the boxes before they slide away), stamping yourself at the right moment, bureaucratic speak («according
+to article 7, paragraph 3, item pancake …» – which item was it?). The server checks every mini-game (the stamp timing
+by its own clock); with mini-games switched off, and for bots, a chance decides.
+
+**Trick cards** (at most 4 in the hand, 2 at the start): 📅 appointment, 🥐 croissants (opens almost every door, and
+the clerk's good mood draws two cards – the better one counts), 🤝 connections (a sure way in, or cancel a
+referral), 💌 small gift (+2 stamps – but the 🕵️ order inspector catches it with 35 %: a fine stamp −1 and back to
+counter 1; the rules say playfully that this is only a joke in the game and that friendliness and patience work much
+better in real life), 📎 complete folder (protects once against «something is missing»), 🗣️ stay friendly (the next
+grumpy clerk melts: a stamp), ⚖️ objection and 📣 talk to the mayor (+1 stamp, referrals and waiting forgotten – every
+team once per game).
+
+**Objections ⚖️** («The pizza oven casts a shadow on our garden gnome», «The slide does not fit the townscape», «The
+tree house is far too cheerful» …): the other team defends with an expert report (a document from the folder –
+always works), neighbours' signatures (45 % + 15 % per relation) or a compromise (75 %; the project gets a funny
+condition, e.g. «We paint the slide beige», printed on the permit). A successful objection costs a stamp.
+
+**Events** at the start of a round (from round 2, 30 %): 📜 new regulation (all documents in the folders are invalid),
+💻 system migration (this round the counters give no stamps – «computer says no»), 🎉 open day (all counters open,
+no queues, no appointments).
+
+**Mode «The Administration»:** one seat plays the administration – a person (who opens the table, or whoever the
+leader picks in the lobby) or a bot («family against the administration»). It plays once per round, last: an
+authority card on a builder team (referral, lunch break, new regulation, an absurd form to fill in first, a stamp
+revoked) or opens / closes a counter (at most two closed). The builders defend automatically with 🤝 / 🗣️ / 📎. The
+administration wins when nobody has the permit after 10 / 15 / 22 rounds (short / normal / long).
+
+**The end:** the building permit certificate with all stamps (office and day) and the condition of a compromise, the
+ranking and the **funniest moments** («Leo was sent to counter 4 six times», «Mia heard «fully booked for 9 months»
+3 times», …). Who leads can help a team that does not act (☰ › Help the team on turn: its step is done as a bot
+would) and end the game. The whole game is in the database – it survives a restart and reconnects.
+
+**Coins for places 1–3:** set by the parents in Games › Beat the Bureaucracy (default 10 / 5 / 2), paid once, only
+for a game played to the end at a family table with at least two people of the family – never alone against bots,
+never for guests or bots. Everybody of the family gets a history entry (with referrals and the time to the permit:
+the special quiz «Family Quest Facts» asks who was sent to another counter most often in one game and who got the
+permit the fastest).
 
 ### Game corner
 

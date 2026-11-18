@@ -33,7 +33,7 @@ GAMES = {"quiz": ("🎯", _t("Family quiz")), "bingo": ("🎱", "Bingo"), "song"
          "stadtland": ("🏙️", _t("City, Country, River")), "zeichnen": ("🎨", _t("Draw & Guess")), "wuerfel": ("🎲", _t("Five Dice")),
          "heimwaerts": ("🏠", _t("Homeward")), "jump": ("🦘", "Jump"), "langstrecke": ("🏎️", _t("24h Endurance")), "klatsch": ("👏", _t("Clap the Beat")),
          "verboten": ("🚫", _t("Forbidden Words")), "jass": ("♣️", _t("Jass")), "werwolf": ("🐺", _t("Werewolves")),
-         "schach": ("♟️", _t("Chess")), "dorfmarkt": ("🏘️", _t("Village Market")), "poker": ("🃏", "Texas Hold'em"),
+         "schach": ("♟️", _t("Chess")), "dorfmarkt": ("🏘️", _t("Village Market")), "stempeljagd": ("🏛️", _t("Beat the Bureaucracy")), "poker": ("🃏", "Texas Hold'em"),
          "ttt": ("⭕", _t("Tic-Tac-Toe")), "pingpong": ("🏓", _t("Ping-Pong"))}
 BOARD_ICON = "🎲"
 

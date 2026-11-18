@@ -92,6 +92,9 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.escape) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("escape") },
     h("span.big-ic", "🗝️"), h("span.grow", h("strong", T("Escape Room")), h("br"),
       h("span.small", c.escape.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.stempeljagd) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("stempeljagd") },
+    h("span.big-ic", "🏛️"), h("span.grow", h("strong", T("Beat the Bureaucracy")), h("br"),
+      h("span.small", c.stempeljagd.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.dorfmarkt) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("dorfmarkt") },
     h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Village Market")), h("br"),
       h("span.small", c.dorfmarkt.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -822,6 +825,9 @@ function historyText(e) {
     + " · " + I18N.tr(chReason(d.reason)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.result === "win" ? "🏆" : ""];
   if (e.kind === "escape") return ["🗝️", (d.out ? I18N.tr(T("Escape Room: out after {0} rooms in {1}")) : I18N.tr(T("Escape Room: {0} of {1} rooms"))).replace("{0}", d.rooms).replace("{1}", d.out ? Math.floor((d.time || 0) / 60) + ":" + String((d.time || 0) % 60).padStart(2, "0") : d.of)
     + (d.teams ? " · " + I18N.tr(d.won ? T("our team won") : T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.won ? "🏆" : ""];
+  if (e.kind === "stempeljagd") return ["🏛️", (d.admin ? I18N.tr(T("Beat the Bureaucracy: played the administration – place {0} of {1}")).replace("{0}", d.place).replace("{1}", d.players)
+    : I18N.tr(T("Beat the Bureaucracy: place {0} of {1} · {2} of {3} stamps")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.stamps).replace("{3}", d.target))
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   if (e.kind === "dorfmarkt") return ["🏘️", I18N.tr(T("Dorfmarkt: place {0} of {1} · {2} Taler")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", Number(d.worth || 0).toLocaleString("de-CH"))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
   return ["•", e.kind, ""];

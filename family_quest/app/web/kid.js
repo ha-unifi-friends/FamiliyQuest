@@ -83,6 +83,7 @@ async function route() {
   if (view === "schach") return schachView(arg);
   if (view === "dorfmarkt") return dorfmarktView();
   if (view === "escape") return escapeView();
+  if (view === "stempeljagd") return stempeljagdView();
   if (view === "arcade") return arcadeView(arg);
   if (view === "deck") return arg ? deckView(+arg) : decksView();
   return dashboardView();
@@ -1769,7 +1770,7 @@ const GAME_INFO = { quiz: ["🎯", T("Family quiz")], bingo: ["🎱", "Bingo"], 
   kartenlauf: ["🏁", T("Card Race")], stadtland: ["🏙️", T("City, Country, River")], zeichnen: ["🎨", T("Draw & Guess")], wuerfel: ["🎲", T("Five Dice")],
   heimwaerts: ["🏠", T("Homeward")], jump: ["🦘", "Jump"], sternlauf: ["🌠", T("Star Runner")], snack: ["🍔", T("Snack Rush")], verkehr: ["🚦", T("Traffic Cadet")],
   klatsch: ["👏", T("Clap the Beat")], verboten: ["🚫", T("Forbidden Words")], jass: ["♣️", T("Jass")], werwolf: ["🐺", T("Werewolves")], schach: ["♟️", T("Chess")],
-  dorfmarkt: ["🏘️", T("Village Market")], escape: ["🗝️", T("Escape Room")], ttt: ["⭕", T("Tic-Tac-Toe")], sudoku: ["🔢", T("Sudoku")], patience: ["🃏", T("Patience")],
+  dorfmarkt: ["🏘️", T("Village Market")], escape: ["🗝️", T("Escape Room")], stempeljagd: ["🏛️", T("Beat the Bureaucracy")], ttt: ["⭕", T("Tic-Tac-Toe")], sudoku: ["🔢", T("Sudoku")], patience: ["🃏", T("Patience")],
   pingpong: ["🏓", T("Ping-Pong")], slots: ["🎰", T("One-armed bandit")], cube: ["🧊", T("Cube solver")] };
 GAME_INFO.langstrecke = ["🏎️", T("24h Endurance")];
 const gameInfo = k => GAME_INFO[k] || ["🎮", k];
@@ -1855,7 +1856,7 @@ async function gamesView() {
   const night = await pick([["tschau", canPlay("tschau"), () => cardsFamilyCard("tschau")], ["karussell", canPlay("karussell"), () => cardsFamilyCard("karussell")], ["domino", canPlay("domino"), dominoFamilyCard],
     ["jass", canPlay("jass"), jassFamilyCard], ["poker", canPlay("poker"), pokerFamilyCard], ["dorfmarkt", canPlay("dorfmarkt"), dorfmarktFamilyCard], ["heimwaerts", canPlay("heimwaerts"), heimwaertsFamilyCard],
     ["langstrecke", canPlay("langstrecke"), langstreckeFamilyCard],
-    ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
+    ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["stempeljagd", canPlay("stempeljagd"), stempeljagdFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
     ["verboten", canPlay("verboten"), verbotenFamilyCard], ["zeichnen", canPlay("zeichnen"), zeichnenFamilyCard], ["stadtland", canPlay("stadtland"), stadtlandFamilyCard], ["song", canPlay("song"), songFamilyCard],
     ["bingo", canPlay("bingo"), bingoCard], ["schach", canPlay("schach"), schachFamilyCard]]);
   if (!quiz && lockedGame("quiz")) night.unshift(["quiz", trialGame("quiz") ? await quizCard() : null, lockedGame("quiz")]);

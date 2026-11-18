@@ -35,7 +35,7 @@ async function start() {
   name.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
   screen(h("section.card.center.guest-join",
     h("img", { src: "img/icon.svg", alt: "", width: 64, height: 64 }),
-    h("h1", { bingo: "🎱 Bingo", poker: "🃏 Texas Hold'em", tschau: "🂡 Tschau Sepp", karussell: "🎠 Kartenkarussell", song: "🎵 Errate den Song", domino: "🁫 Domino", paarjagd: "🧠 " + I18N.tr(T("Pair Hunt")), werbinich: "🎭 " + I18N.tr(T("Who am I?")), kartenlauf: "🏁 Kartenlauf", stadtland: "🏙️ " + I18N.tr(T("City, Country, River")), zeichnen: "🎨 " + I18N.tr(T("Draw & Guess")), wuerfel: "🎲 " + I18N.tr(T("Five Dice")), heimwaerts: "🏠 " + I18N.tr(T("Homeward")), jump: "🦘 Jump", sternlauf: "🌠 " + I18N.tr(T("Star Runner")), snack: "🍔 " + I18N.tr(T("Snack Rush")), verkehr: "🚦 " + I18N.tr(T("Traffic Cadet")), langstrecke: "🏎️ " + I18N.tr(T("24h Endurance")), klatsch: "👏 " + I18N.tr(T("Clap the Beat")), verboten: "🚫 " + I18N.tr(T("Forbidden Words")), jass: "♣️ " + I18N.tr(T("Jass")), werwolf: "🐺 " + I18N.tr(T("Werewolves")), schach: "♟️ " + I18N.tr(T("Chess")), dorfmarkt: "🏘️ " + I18N.tr(T("Village Market")), escape: "🗝️ " + I18N.tr(T("Escape Room")) }[info.game] || "🎯 ", info.game === "quiz" ? C(info.title) : null),
+    h("h1", { bingo: "🎱 Bingo", poker: "🃏 Texas Hold'em", tschau: "🂡 Tschau Sepp", karussell: "🎠 Kartenkarussell", song: "🎵 Errate den Song", domino: "🁫 Domino", paarjagd: "🧠 " + I18N.tr(T("Pair Hunt")), werbinich: "🎭 " + I18N.tr(T("Who am I?")), kartenlauf: "🏁 Kartenlauf", stadtland: "🏙️ " + I18N.tr(T("City, Country, River")), zeichnen: "🎨 " + I18N.tr(T("Draw & Guess")), wuerfel: "🎲 " + I18N.tr(T("Five Dice")), heimwaerts: "🏠 " + I18N.tr(T("Homeward")), jump: "🦘 Jump", sternlauf: "🌠 " + I18N.tr(T("Star Runner")), snack: "🍔 " + I18N.tr(T("Snack Rush")), verkehr: "🚦 " + I18N.tr(T("Traffic Cadet")), langstrecke: "🏎️ " + I18N.tr(T("24h Endurance")), klatsch: "👏 " + I18N.tr(T("Clap the Beat")), verboten: "🚫 " + I18N.tr(T("Forbidden Words")), jass: "♣️ " + I18N.tr(T("Jass")), werwolf: "🐺 " + I18N.tr(T("Werewolves")), schach: "♟️ " + I18N.tr(T("Chess")), dorfmarkt: "🏘️ " + I18N.tr(T("Village Market")), escape: "🗝️ " + I18N.tr(T("Escape Room")), stempeljagd: "🏛️ " + I18N.tr(T("Beat the Bureaucracy")) }[info.game] || "🎯 ", info.game === "quiz" ? C(info.title) : null),
     h("p", T("You are invited to play along! What is your name?")),
     name, h("button.btn.big", { onclick: go }, "🙋 ", T("Join")),
     h("div.row.center", langPicker())));
@@ -43,7 +43,7 @@ async function start() {
 }
 
 function play(me, game) {
-  const box = h("div" + ({ bingo: ".bingo-live", poker: ".poker-live", tschau: ".cards-live", karussell: ".cards-live", domino: ".dm-live", paarjagd: ".pj-live", werbinich: ".wb-live", kartenlauf: ".kl-live", stadtland: ".sl-live", zeichnen: ".zr-live", wuerfel: ".fw-live", heimwaerts: ".hw-live", jump: ".ju-live", sternlauf: ".sr-live", snack: ".sn-live", verkehr: ".vk-live", klatsch: ".kb-live", verboten: ".vw-live", jass: ".ja-live", werwolf: ".ww-live", schach: ".ch-live", dorfmarkt: ".mk-live", escape: ".er-live" }[game] || ".quiz-live"));
+  const box = h("div" + ({ bingo: ".bingo-live", poker: ".poker-live", tschau: ".cards-live", karussell: ".cards-live", domino: ".dm-live", paarjagd: ".pj-live", werbinich: ".wb-live", kartenlauf: ".kl-live", stadtland: ".sl-live", zeichnen: ".zr-live", wuerfel: ".fw-live", heimwaerts: ".hw-live", jump: ".ju-live", sternlauf: ".sr-live", snack: ".sn-live", verkehr: ".vk-live", klatsch: ".kb-live", verboten: ".vw-live", jass: ".ja-live", werwolf: ".ww-live", schach: ".ch-live", dorfmarkt: ".mk-live", escape: ".er-live", stempeljagd: ".sj-live" }[game] || ".quiz-live"));
   screen(box);
   const back = () => screen(h("section.card.center", h("div.big-ic", "👋"), h("h2", T("Thanks for playing!")),
     h("button.btn", { onclick: () => location.reload() }, T("Back"))));
@@ -68,6 +68,7 @@ function play(me, game) {
   if (game === "schach") return schachLive(box, me, back);
   if (game === "dorfmarkt") return dorfmarktLive(box, me, back);
   if (game === "escape") return escapeLive(box, me, back);
+  if (game === "stempeljagd") return stempeljagdLive(box, me, back);
   ({ bingo: bingoLive, poker: pokerLive, song: songLive }[game] || quizLive)(box, me, back);
 }
 
