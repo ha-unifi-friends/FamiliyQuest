@@ -738,6 +738,12 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(story_id, profile_id)
     );
     """,
+    # 40 – book types on the shelf (stories.py, picturebooks.py): 📕 picture books, 📖 adventure books, 🗝️ adventure games
+    # (reserved, not built yet); `sample` marks the ready-made sample books of the app (texts in every language)
+    """
+    ALTER TABLE story ADD COLUMN type TEXT NOT NULL DEFAULT 'adventure';   -- picture | adventure | game
+    ALTER TABLE story ADD COLUMN sample TEXT;                               -- key of a shipped sample book (author: Family Quest)
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [

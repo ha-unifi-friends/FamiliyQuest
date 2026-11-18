@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1-beta.5
+
+- Word games in every language: the words of Draw & Guess (259), Who am I? (327 characters) and Forbidden Words (372 cards) are in the translation registry; everybody sees them in their own language and guesses count in the languages at the table
+- Bookshelf «My books» with types: new picture books (pages with picture and text, layouts, safe SVG pictures, AI import/export) next to the adventure books
+- Sample picture book «Klonk, the Laziest Dwarf in the Mountain» in all languages – parents can hide it
+
 ## 1.1.1-beta.4
 
 - New: My adventure books – children and parents write branching stories with scenes, 2–4 choices, good and bad endings and items; emoji, drawings or photos, 24 page backgrounds; card and map editor with a checker; four templates in all languages

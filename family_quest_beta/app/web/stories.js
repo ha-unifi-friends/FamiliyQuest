@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------- My adventure books (familyquest/stories.py)
 // Children and parents write branching stories (scenes with 2–4 choices, good and bad endings, items), the family reads
-// them on the shelf. storyShelf(box) draws the shelf (kid app #/stories, parent area › Family), storyReader() reads a book
-// (on the server – or a try-out of the working copy right here), storyEditor() writes one (cards and a map).
+// them on the shelf. storyShelf(box) draws the family bookshelf with every book type (📕 picture books: picturebook.js,
+// 📖 adventure books, 🗝️ adventure games – reserved) and the sample books (kid app #/stories, parent area › Family),
+// storyReader() reads a book (on the server – or a try-out of the working copy right here), storyEditor() writes one.
 "use strict";
 
 const SB_COVERS = ["linear-gradient(135deg,#5b5bd6,#8f6bf0)", "linear-gradient(135deg,#e8590c,#f59f00)", "linear-gradient(135deg,#d6336c,#f783ac)",
@@ -92,14 +93,14 @@ const sbIssueText = i => sbFmt(i.msg, ...i.args);
 // ---------------------------------------------------------------- kid app: #/stories
 async function storiesView() {
   const box = h("div.sb-wrap");
-  screen("stories", { back: () => go("") }, h("h1", "📖 ", T("My adventure books")), box);
+  screen("stories", { back: () => go("") }, h("h1", "📚 ", T("My books")), box);
   await storyShelf(box);
 }
 
 // the card on the Family page of the kid app
 function storiesCard() {
-  return h("section.card.sb-famcard", h("div.row", h("span.sb-famic", "📖"),
-    h("div.grow", h("strong", T("My adventure books")), h("div.small.muted", T("Write your own choose-your-path stories and read the books of the family."))),
+  return h("section.card.sb-famcard", h("div.row", h("span.sb-famic", "📚"),
+    h("div.grow", h("strong", T("My books")), h("div.small.muted", T("Picture books and adventure books: write your own and read the books of the family."))),
     h("button.btn", { onclick: () => go("stories") }, T("Open"))));
 }
 
@@ -107,10 +108,10 @@ function storiesCard() {
 async function storiesSection() {
   const sec = h("section.card.sec.sb-psec");
   const box = h("div.sb-wrap");
-  const set = h("details.sb-settings", h("summary", "⚙️ ", T("Settings for the adventure books")));
+  const set = h("details.sb-settings", h("summary", "⚙️ ", T("Settings for the bookshelf")));
   set.addEventListener("toggle", () => { if (set.open && !set.dataset.done) { set.dataset.done = "1"; storiesSettings(set); } });
-  sec.append(h("h2", "📖 ", T("My adventure books")),
-    h("p.small.muted", T("Children and parents write choose-your-path stories, the whole family reads them. Parents can edit, unpublish and remove every book.")),
+  sec.append(h("h2", "📚 ", T("My books")),
+    h("p.small.muted", T("Children and parents write picture books and choose-your-path stories, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones.")),
     box, set);
   await storyShelf(box);
   return sec;
@@ -124,16 +125,18 @@ async function storiesSettings(box) {
   kids = kids.filter(p => p.role !== "parent");
   const on = kids.map(k => [k.id, h("input", { type: "checkbox", checked: !s.off.includes(k.id) })]);
   const appr = h("input", { type: "checkbox", checked: !!s.approval });
+  const sample = h("input", { type: "checkbox", checked: !(s.samples_off || []).includes("dwarf") });
   const num = v => h("input", { type: "number", min: 0, max: 10000, value: v, inputmode: "numeric" });
   const f = { write_coins: num(s.write_coins), write_xp: num(s.write_xp), read_coins: num(s.read_coins), read_xp: num(s.read_xp) };
   const save = async () => {
-    const out = { off: on.filter(([, c]) => !c.checked).map(([id]) => id), approval: appr.checked };
+    const out = { off: on.filter(([, c]) => !c.checked).map(([id]) => id), approval: appr.checked, samples_off: sample.checked ? [] : ["dwarf"] };
     for (const [k, el] of Object.entries(f)) out[k] = Math.max(0, Math.min(10000, Math.round(+el.value || 0)));
     try { await api("stories/settings", { method: "PUT", body: out }); toast(T("Saved"), "good"); } catch (e) { toast(e.message, "bad"); }
   };
-  sbSet(body, 
-    h("div.field", h("b", T("Adventure books for")), kids.length ? h("div.row.wrap", ...on.map(([id, c]) => h("label.check", c, " ", C(kids.find(k => k.id === id).name)))) : h("span.small.muted", T("No child profile yet"))),
+  sbSet(body,
+    h("div.field", h("b", T("Bookshelf for")), kids.length ? h("div.row.wrap", ...on.map(([id, c]) => h("label.check", c, " ", C(kids.find(k => k.id === id).name)))) : h("span.small.muted", T("No child profile yet"))),
     h("label.check", appr, " ", T("Books need a parent's approval before the family sees them")),
+    h("label.check", sample, " ", T("Show the sample picture book of Family Quest on the shelf")),
     h("div.sb-rew", h("b", T("Reward for every published book")),
       h("label.field", h("span", "🪙 ", T("Coins")), f.write_coins), h("label.field", h("span", "⭐ XP"), f.write_xp)),
     h("div.sb-rew", h("b", T("Reward when somebody else reads it to an end (once per reader)")),
@@ -141,62 +144,111 @@ async function storiesSettings(box) {
     h("button.btn", { onclick: save }, "💾 ", T("Save")));
 }
 
-// ---------------------------------------------------------------- the shelf
+// ---------------------------------------------------------------- the shelf: 📕 picture books, 📖 adventure books, 🗝️ adventure games (later)
+// book types (stories.py TYPES): icon, name, plural, what it is
+const SB_TYPES = () => ({
+  picture: ["📕", T("Picture book"), T("Picture books"), T("Pages with a picture and a text, read page by page.")],
+  adventure: ["📖", T("Adventure book"), T("Adventure books"), T("Choose-your-path: choices, good and bad endings.")],
+  game: ["🗝️", T("Adventure game"), T("Adventure games"), T("Coming soon")] });
+const sbType = b => SB_TYPES()[b.type] || SB_TYPES().adventure;
+const sbOpen = (b, onClose) => b.type === "picture" ? pictureReader(pbServerEngine(b.id), { onClose }) : storyReader(sbServerEngine(b.id), { onClose });
+const sbEdit = (id, type, onClose) => type === "picture" ? pictureEditor(id, onClose) : storyEditor(id, onClose);
+
 async function storyShelf(box) {
+  let filter = "all";
+  try { filter = localStorage.getItem("fq.sb.type") || "all"; } catch {}
   const draw = async () => {
     let d;
-    try { d = await api("stories"); } catch (e) { return sbSet(box, h("p.bad", e.message)); }
-    const books = d.books, live = books.filter(b => b.live), mine = books.filter(b => b.mine);
+    try { d = await api("stories?lang=" + encodeURIComponent(sbAppLang())); } catch (e) { return sbSet(box, h("p.bad", e.message)); }
+    const books = d.books, samples = d.samples || [];
+    if (!SB_TYPES()[filter]) filter = "all";
+    const ofType = b => filter === "all" || b.type === filter;
+    const onShelf = [...books.filter(b => b.live), ...samples.filter(b => !b.hidden)];
+    const live = onShelf.filter(ofType), mine = books.filter(b => b.mine);
     const others = d.oversee ? books.filter(b => !b.mine && !b.live) : [];
     const pend = d.oversee ? books.filter(b => b.pending) : [];
-    const read = b => storyReader(sbServerEngine(b.id), { onClose: draw });
+    const read = b => sbOpen(b, draw);
     const visBadge = b => { const [ic, n] = SB_VIS()[b.visibility] || SB_VIS().me; return h("span.sb-vis", { title: n, "aria-label": n }, ic); };
-    const cover = b => h("button.sb-book", { onclick: () => read(b), style: { "--sb-c": SB_COVERS[b.color] || SB_COVERS[0] } },
+    const typeBadge = b => h("span.sb-type", { title: sbType(b)[1], "aria-label": sbType(b)[1] }, sbType(b)[0]);
+    const author = b => b.sample ? h("span.sb-by", h("span.sb-fq", "✨"), C(b.author.name)) : h("span.sb-by", avatarSvg(b.author.avatar, 22), C(b.author.name));
+    const progress = b => b.type === "picture"
+      ? h("span.sb-found" + (b.finished ? ".all" : ""), b.finished ? ["✅ ", T("Read")] : b.at ? ["📄 ", sbFmt(T("Page {0} of {1}"), b.at, b.pages)] : ["📄 ", sbFmt(T("Pages: {0}"), b.pages)])
+      : h("span.sb-found" + (b.found && b.found === b.endings ? ".all" : ""), "🏁 ", sbFmt(T("{0} of {1} endings found"), b.found, b.endings));
+    const coverArt = b => b.type === "picture"
+      ? (b.cover ? pbPic(b.cover, ".pb-cimg") : h("span.sb-cemo", { translate: "no" }, b.emoji))
+      : (b.cover ? sbPic(b.cover) : h("span.sb-cemo", { translate: "no" }, b.emoji));
+    const cover = b => h("button.sb-book.t-" + b.type, { onclick: () => read(b), style: { "--sb-c": SB_COVERS[b.color] || SB_COVERS[0] } },
       h("span.sb-cover", { style: b.cover_bg && !b.cover ? { backgroundImage: `url(${sbBgUrl(b.cover_bg)})` } : null },
-        b.cover ? sbPic(b.cover) : h("span.sb-cemo", { translate: "no" }, b.emoji),
-        b.reading ? h("span.sb-cont", "▶ ", T("Continue")) : null, visBadge(b)),
-      h("span.sb-binfo", C(b.title, "strong.sb-btitle"),
-        h("span.sb-by", avatarSvg(b.author.avatar, 22), C(b.author.name)),
-        h("span.sb-found" + (b.found && b.found === b.endings ? ".all" : ""), "🏁 ", sbFmt(T("{0} of {1} endings found"), b.found, b.endings)),
+        coverArt(b), b.reading ? h("span.sb-cont", "▶ ", T("Continue")) : null, typeBadge(b), b.sample ? null : visBadge(b)),
+      h("span.sb-binfo", C(b.title, "strong.sb-btitle"), author(b), progress(b),
         b.rating ? h("span.sb-rate", { title: sbFmt(T("Ratings: {0}"), b.votes) }, stars(Math.round(b.rating)), " ", fmt(b.rating, 1)) : null));
     const status = b => [!b.live && !b.pending ? h("span.sb-st", "📝 ", T("Draft")) : null,
       b.pending ? h("span.sb-st.wait", "⏳ ", T("Waiting for approval")) : null,
       b.live ? h("span.sb-st.ok", "✅ ", T("On the shelf")) : null,
       b.changed ? h("span.sb-st", "✏️ ", T("Changes not published yet")) : null,
       h("span.sb-st", SB_VIS()[b.visibility][0], " ", SB_VIS()[b.visibility][1])];
+    const rowIcon = b => h("span.sb-rowic", { style: { background: SB_COVERS[b.color] || SB_COVERS[0] }, translate: "no" }, b.emoji, h("span.sb-rowtype", sbType(b)[0]));
     const row = b => h("div.sb-row",
-      h("span.sb-rowic", { style: { background: SB_COVERS[b.color] || SB_COVERS[0] }, translate: "no" }, b.emoji),
+      rowIcon(b),
       h("div.grow.sb-rowtt", C(b.title, "strong"), h("div.sb-chips", ...status(b),
-        h("span.small.muted", sbFmt(T("Pages: {0}"), b.pages), b.mine ? "" : [" · ", C(b.author.name)]))),
-      h("div.sb-rowbtn", b.live ? h("button.btn.small.ghost", { title: T("Read"), onclick: () => read(b) }, "📖") : null,
-        b.edit ? h("button.btn.small", { onclick: () => storyEditor(b.id, draw) }, "✏️ ", T("Edit")) : null));
+        h("span.small.muted", sbType(b)[1], " · ", sbFmt(T("Pages: {0}"), b.pages), b.mine ? "" : [" · ", C(b.author.name)]))),
+      h("div.sb-rowbtn", b.live ? h("button.btn.small.ghost", { title: T("Read"), onclick: () => read(b) }, sbType(b)[0]) : null,
+        b.edit ? h("button.btn.small", { onclick: () => sbEdit(b.id, b.type, draw) }, "✏️ ", T("Edit")) : null));
     // a private book of somebody else (parent area only): that it exists – no title, no content
     const privRow = b => h("div.sb-row.sb-priv",
-      h("span.sb-rowic", "🔒"),
-      h("div.grow.sb-rowtt", h("strong", T("Private adventure book")), h("div.sb-chips",
+      h("span.sb-rowic", "🔒", h("span.sb-rowtype", (SB_TYPES()[b.type] || SB_TYPES().adventure)[0])),
+      h("div.grow.sb-rowtt", h("strong", b.type === "picture" ? T("Private picture book") : T("Private adventure book")), h("div.sb-chips",
         h("span.sb-by", avatarSvg(b.author.avatar, 22), C(b.author.name)),
         h("span.small.muted", sbFmt(T("Pages: {0}"), b.pages), " · ", fmtDate(b.updated_at)))));
+    const preview = async b => {
+      try {
+        const e = await api("stories/" + b.id), book = { ...e, data: e.pending || e.data };
+        if (e.type === "picture") pictureReader(pbLocalEngine(book), { preview: true }); else storyReader(sbLocalEngine(book), { preview: true });
+      } catch (er) { toast(er.message, "bad"); }
+    };
     const approveRow = b => h("div.sb-row.sb-pend",
-      h("span.sb-rowic", { style: { background: SB_COVERS[b.color] || SB_COVERS[0] }, translate: "no" }, b.emoji),
+      rowIcon(b),
       h("div.grow.sb-rowtt", C(b.title, "strong"), h("div.sb-chips", h("span.small.muted", C(b.author.name)), visBadge(b))),
       h("div.sb-rowbtn",
-        h("button.btn.small.ghost", { onclick: async () => {
-          try { const e = await api("stories/" + b.id); storyReader(sbLocalEngine({ ...e, data: e.pending || e.data }), { preview: true }); } catch (er) { toast(er.message, "bad"); } } }, "👀 ", T("Read")),
+        h("button.btn.small.ghost", { onclick: () => preview(b) }, "👀 ", T("Read")),
         h("button.btn.small.good", { onclick: () => act(`stories/${b.id}/approve`, T("Approved – the others can read it now")) }, "✓ ", T("Approve")),
         h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Send the book back as a draft?"))) && act(`stories/${b.id}/reject`, T("Back to a draft")) }, "✗")));
+    // parent area: the sample books of the app – take them off the shelf or put them back
+    const sampleRow = b => h("div.sb-row" + (b.hidden ? ".sb-hidden" : ""),
+      rowIcon(b),
+      h("div.grow.sb-rowtt", C(b.title, "strong"), h("div.sb-chips", h("span.sb-st", "✨ ", T("Sample book")),
+        b.hidden ? h("span.sb-st", "🙈 ", T("Hidden")) : h("span.sb-st.ok", "✅ ", T("On the shelf")))),
+      h("div.sb-rowbtn", h("button.btn.small.ghost", { title: T("Read"), onclick: () => read(b) }, sbType(b)[0]),
+        h("button.btn.small" + (b.hidden ? "" : ".ghost"), { onclick: async () => {
+          try { await api("stories/samples/" + b.sample, { method: "PUT", body: { hidden: !b.hidden } }); draw(); } catch (e) { toast(e.message, "bad"); } } },
+        b.hidden ? ["👀 ", T("Show again")] : ["🙈 ", T("Hide")])));
     const act = async (path, msg) => { try { await api(path, { method: "POST" }); toast(msg, "good"); draw(); } catch (e) { toast(e.message, "bad"); } };
+    const chip = (k, ic, label, n, off = false) => h("button.sb-tchip" + (filter === k ? ".on" : "") + (off ? ".soon" : ""), { type: "button", disabled: off,
+      title: off ? I18N.tr(T("Coming soon")) : null, onclick: () => { filter = k; try { localStorage.setItem("fq.sb.type", k); } catch {} draw(); } },
+      h("span", { translate: "no" }, ic), " ", label, off ? h("small", " · ", T("soon")) : h("small.sb-tn", String(n)));
+    const count = k => onShelf.filter(b => k === "all" || b.type === k).length;
+    const T_ = SB_TYPES();
+    const filters = h("div.sb-tfilter", { role: "group", "aria-label": T("Book types") },
+      chip("all", "📚", T("All"), count("all")),
+      ...["picture", "adventure"].map(k => chip(k, T_[k][0], T_[k][2], count(k))),
+      chip("game", T_.game[0], T_.game[2], 0, !(d.creatable || []).includes("game")));
     sbSet(box,
       pend.length ? h("section.sb-sec.sb-wait", h("h2", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
       h("section.sb-sec", h("div.sec-head", h("h2", "📚 ", T("Family bookshelf")),
-        h("div.head-actions", h("button.btn.ghost", { onclick: () => storyImportDialog(id => storyEditor(id, draw)) }, "📥 ", T("Import")),
-          h("button.btn", { onclick: () => storyNewDialog(id => storyEditor(id, draw)) }, "+ ", T("New book")))),
-        live.length ? h("div.sb-shelf", ...live.map(cover)) : h("p.muted", T("No books on the shelf yet – write the first one!"))),
+        h("div.head-actions", h("button.btn.ghost", { onclick: () => storyImportDialog((id, type) => sbEdit(id, type, draw)) }, "📥 ", T("Import")),
+          h("button.btn", { onclick: () => storyNewDialog((id, type) => sbEdit(id, type, draw), d.creatable) }, "+ ", T("New book")))),
+        filters,
+        live.length ? h("div.sb-shelf", ...live.map(cover))
+          : h("p.muted", filter === "all" ? T("No books on the shelf yet – write the first one!") : T("No books of this type on the shelf yet."))),
       h("section.sb-sec", h("h2", "✏️ ", T("My books")),
         mine.length ? h("div.sb-rows", ...mine.map(row))
-          : h("p.small.muted", T("Write your own adventure: pages with choices, good and bad endings – or start with a template.")),
+          : h("p.small.muted", T("Write your own picture book or adventure – or start with a template.")),
         d.rewards.write_coins || d.rewards.write_xp ? h("p.small.muted.sb-rewhint", "🎁 ", sbFmt(T("Every book the others can read: {0}"),
           [d.rewards.write_coins ? d.rewards.write_coins + " 🪙" : "", d.rewards.write_xp ? d.rewards.write_xp + " XP" : ""].filter(Boolean).join(" + "))) : null),
       others.length ? h("section.sb-sec", h("h2", "📝 ", T("Drafts of the family")), h("div.sb-rows", ...others.map(row))) : null,
+      d.oversee && samples.length ? h("section.sb-sec", h("h2", "✨ ", T("Sample books")),
+        h("p.small.muted", T("Ready-made books of Family Quest for the whole family, in the language of the app. Hide them if you do not want them on the shelf.")),
+        h("div.sb-rows", ...samples.map(sampleRow))) : null,
       (d.private || []).length ? h("section.sb-sec", h("h2", "🔒 ", T("Private books")),
         h("p.small.muted", T("Only their authors can read these books – parents neither. You see only that they exist.")),
         h("div.sb-rows", ...d.private.map(privRow))) : null);
@@ -215,12 +267,25 @@ function sbVisPicker(value, onPick) {
   return box;
 }
 
-function storyNewDialog(done) {
-  let tpl = null, emoji = "📖", color = 0, visibility = "me";
-  const title = h("input", { type: "text", maxlength: 80, placeholder: I18N.tr(T("e.g. The secret cave")) });
+function storyNewDialog(done, creatable = ["picture", "adventure"]) {
+  let type = "picture", tpl = null, emoji = "📖", color = 0, visibility = "me";
+  try { type = localStorage.getItem("fq.sb.newtype") === "adventure" ? "adventure" : "picture"; } catch {}
+  const title = h("input", { type: "text", maxlength: 80 });
   const lang = h("select", ...I18N.LANGS.filter(([k]) => k !== "auto").map(([k, n]) => h("option", { value: k, translate: "no", selected: k === sbAppLang() }, n)));
-  const tiles = h("div.sb-tpls");
+  const types = h("div.sb-newtypes"), tiles = h("div.sb-tpls"), tplField = h("div.field", h("b", T("Start with")), tiles);
+  const titleHint = h("span.hint", T("With a template you may leave it empty – the template has one."));
+  const drawTypes = () => {
+    sbSet(types, ...Object.entries(SB_TYPES()).map(([k, [ic, n, , what]]) => {
+      const off = !creatable.includes(k);
+      return h("button.sb-newtype" + (type === k ? ".on" : "") + (off ? ".soon" : ""), { type: "button", disabled: off,
+        onclick: () => { type = k; tpl = null; try { localStorage.setItem("fq.sb.newtype", k); } catch {} drawTypes(); drawTiles(); } },
+        h("span.sb-newic", { translate: "no" }, ic), h("span.sb-newtx", h("b", n), h("span.small.muted", what)));
+    }));
+    tplField.hidden = type !== "adventure"; titleHint.hidden = type !== "adventure";
+    title.placeholder = I18N.tr(type === "picture" ? T("e.g. The bear who could not sleep") : T("e.g. The secret cave"));
+  };
   const drawTiles = async () => {
+    if (type !== "adventure") return;
     let list = [];
     try { list = await api("stories/templates?lang=" + encodeURIComponent(lang.value)); } catch {}
     const tile = (key, ic, name, c) => h("button.sb-tpl" + (tpl === key ? ".on" : ""), { type: "button", style: { "--sb-c": SB_COVERS[c] },
@@ -228,42 +293,53 @@ function storyNewDialog(done) {
     sbSet(tiles, tile(null, "📄", T("Empty book"), 0), ...list.map(t => tile(t.key, t.emoji, t.title, t.color)));
   };
   lang.onchange = drawTiles;
-  drawTiles();
+  drawTypes(); drawTiles();
   const create = async () => {
-    if (!tpl && !title.value.trim()) return title.focus();
+    if (!(type === "adventure" && tpl) && !title.value.trim()) return title.focus();
     try {
-      const r = await api("stories", { method: "POST", body: { title: title.value.trim(), lang: lang.value, template: tpl, emoji, color, visibility } });
-      m.close(); done(r.id);
+      const r = await api("stories", { method: "POST", body: { title: title.value.trim(), lang: lang.value, template: type === "adventure" ? tpl : null,
+        emoji: type === "picture" ? "📕" : emoji, color, visibility, type } });
+      m.close(); done(r.id, type);
     } catch (e) { toast(e.message, "bad"); }
   };
-  const m = modal(h("div.form.sb-new", h("h2", "📖 ", T("New book")),
-    h("label.field", T("Title"), title, h("span.hint", T("With a template you may leave it empty – the template has one."))),
+  const m = modal(h("div.form.sb-new", h("h2", "📚 ", T("New book")),
+    h("div.field", h("b", T("What kind of book?")), types),
+    h("label.field", T("Title"), title, titleHint),
     h("label.field", T("Language of the book"), lang),
-    h("div.field", h("b", T("Start with")), tiles),
+    tplField,
     h("div.field", h("b", T("Who can read it?")), sbVisPicker(visibility, v => { visibility = v; })),
     h("div.row", h("button.btn", { onclick: create }, "✏️ ", T("Start writing")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
 }
 
-// import: a file or the answer of an AI (paste) – becomes a private draft
+// import: a file or the answer of an AI (paste) – becomes a private draft (picture books and adventure books)
 function storyImportDialog(done) {
+  let type = "picture";
+  try { type = localStorage.getItem("fq.sb.newtype") === "adventure" ? "adventure" : "picture"; } catch {}
   const text = h("textarea.sb-imptext", { rows: 8, placeholder: I18N.tr(T("Paste the answer of the AI here …")) });
   const file = h("input", { type: "file", accept: ".json,.txt,application/json,text/plain" });
   file.onchange = async () => { const f = file.files[0]; if (!f) return; if (f.size > 1e6) return toast(I18N.tr(T("The file is too large")), "bad"); text.value = await f.text(); };
-  const tplUrl = "api/stories/ai-template";
+  const tplUrl = () => "api/stories/ai-template" + (type === "picture" ? "?type=picture" : "");
+  const tplName = () => type === "picture" ? "family-quest-picturebook-template.json" : "family-quest-story-template.json";
   const go = async () => {
     try {
       const r = await api("stories/import", { method: "POST", body: { text: text.value } });
-      m.close(); toast(I18N.tr(T("Imported as a private draft")), "good"); done(r.ids[0]);
+      m.close(); toast(I18N.tr(T("Imported as a private draft")), "good");
+      const e = await api("stories/" + r.ids[0]);
+      done(r.ids[0], e.type);
     } catch (e) { toast(e.message, "bad"); }
   };
+  const tpls = h("div.row.wrap");
+  const drawTpl = () => sbSet(tpls,
+    h("div.sb-segs", ...["picture", "adventure"].map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", onclick: () => { type = k; drawTpl(); } },
+      SB_TYPES()[k][0], " ", SB_TYPES()[k][1]))),
+    h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: tplUrl(), download: tplName() }, "⬇️ ", T("Template for the AI")),
+    h("button.btn.small.ghost", { onclick: async () => {
+      try { await navigator.clipboard.writeText(await (await fetch(tplUrl())).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
+      catch { toast(T("Copying did not work – use the download"), "bad"); } } }, "📋 ", T("Copy for the AI")));
+  drawTpl();
   const m = modal(h("div.form.sb-imp", h("h2", "📥 ", T("Import a book")),
     h("p.small", T("1. Copy the template for the AI and paste it into any AI chat. 2. Describe your story idea. 3. Paste the answer here – or choose a book file that was exported.")),
-    h("div.row.wrap",
-      h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: tplUrl, download: "family-quest-story-template.json" }, "⬇️ ", T("Template for the AI")),
-      h("button.btn.small.ghost", { onclick: async () => {
-        try { await navigator.clipboard.writeText(await (await fetch(tplUrl)).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
-        catch { toast(T("Copying did not work – use the download"), "bad"); } } }, "📋 ", T("Copy for the AI"))),
-    text, h("label.field", T("…or a file"), file),
+    tpls, text, h("label.field", T("…or a file"), file),
     h("p.small.muted", "🔒 ", T("The book comes in as a private draft – the checker shows what is still missing. Own drawings and photos are not part of the file.")),
     h("div.row", h("button.btn", { onclick: go }, "📥 ", T("Import")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
 }
