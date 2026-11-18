@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1-beta.4
+
+- New: My adventure books – children and parents write branching stories with scenes, 2–4 choices, good and bad endings and items; emoji, drawings or photos, 24 page backgrounds; card and map editor with a checker; four templates in all languages
+- Visibility per book: only me (also parents can't read it), other children or the whole family; optional parent approval; rewards for shared books; endings collected and stars per reader
+- Adventure books can be exported and imported in the AI-friendly JSON format (template for your AI)
+
 ## 1.1.1-beta.3
 
 - New: Deals – children trade with each other and with parents: coins, chores (once or several times, chore swaps), bought avatar items, pets and games, or any free deal; offer, counter-offer and accept like a chat; promised coins and things are reserved; taken-over chores pay out on parent approval (XP always to the one who did it)
