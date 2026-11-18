@@ -92,18 +92,26 @@ def nice_max(n: float) -> int:
         k *= 10
 
 
-def near_numbers(n: int, k: int = 3) -> list[int]:
-    """Plausible wrong numbers around n (never negative, never n)."""
+def near_numbers(n: int, k: int = 3, hi: int | None = None) -> list[int]:
+    """Plausible wrong numbers around n (never negative, never n, never above `hi`)."""
     n = int(n)
     step = max(1, round(abs(n) * 0.25))
     pool = [n - 2 * step, n - step, n + step, n + 2 * step, n + 3 * step]
-    pool = [x for x in dict.fromkeys(pool) if x >= 0 and x != n]
+    pool = [x for x in dict.fromkeys(pool) if x >= 0 and x != n and (hi is None or x <= hi)]
     random.shuffle(pool)
     out = pool[:k]
-    extra = n + 4 * step
+    extra, down = n + 4 * step, n - 3 * step
     while len(out) < k:
-        out.append(extra)
-        extra += step
+        if hi is None or extra <= hi:
+            out.append(extra)
+            extra += step
+        elif down >= 0 and down not in out:
+            out.append(down)
+            down -= step
+        else:
+            down -= 1
+            if down < 0:
+                break
     return out
 
 
@@ -379,7 +387,7 @@ class Facts:
             title = self.game_title(kind)
             top = max(best.values())
             q = [{"gen": "record_" + kind, "scope": "all", "q": (_t("What is the family record in {0}?"), title),
-                  "right": f"{top}{unit}", "wrong": [f"{x}{unit}" for x in near_numbers(top) if not unit or x <= 100]}]
+                  "right": f"{top}{unit}", "wrong": [f"{x}{unit}" for x in near_numbers(top, hi=100 if unit else None)]}]
             if len(q[0]["wrong"]) >= 1:
                 out += q
             out += self.who("record_who_" + kind, "all", (_t("Who holds the record in {0}?"), title), best)
