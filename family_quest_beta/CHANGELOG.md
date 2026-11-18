@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.7
+
+- New in the Library: 🗝️ adventure games – point & click with rooms, doors, things to look at and take, characters with dialogues, an inventory with «use with» and combining, switches and endings; the server checks that a game can be won
+- Editor with hotspots drawn on the room picture, room map, dialogue and rule editors, test play; 39 own pictures of things and characters and 10 extra room backgrounds; three templates in all languages; AI import/export
+
 ## 1.1.1-beta.6
 
 - «24h Endurance» and «Beat the Bureaucracy» moved to the new Family Quest Dev add-on (too complex – they will be reworked)
