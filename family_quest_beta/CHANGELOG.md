@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0-beta.15
+
+- Game battery: every child has a rechargeable battery with 5 charges; starting a game uses one, recharging costs 50 coins (all values can be changed per family or per child, including unlimited charge for a day, week, month or for good)
+- The daily goal and chores (new energy bonus per chore) charge the battery
+- Party mode for parents: unlock all games and/or unlimited battery for all or chosen children, optionally lifting game time limits, for a set time – the kids' app switches to a Disco theme
+
 ## 1.1.0-beta.14
 
 - Quick games now rent for 100 coins per week and game-corner games for 20 coins per day by default (parents can change every value)

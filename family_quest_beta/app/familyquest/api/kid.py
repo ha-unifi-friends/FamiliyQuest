@@ -535,7 +535,7 @@ def playtime(request: Request, prof: dict = Learner) -> dict:
     from ..gamepasses import ARCADE
     fq = app_of(request)
     ok = fq.games_allowed(prof) or any((fq.game_trial(prof, g, time=True) or {}).get("active") for g in ARCADE)  # a free try
-    if ok and prof.get("role") == "kid":
+    if ok and prof.get("role") == "kid" and not fq.party_lifts(prof):           # a party that lifts the limits: not counted
         timelimits.touch(fq.db, prof["id"])
     return {"ok": ok, "time_left": fq.time_left(prof)}
 
@@ -584,13 +584,32 @@ def games_buy(body: GamePassIn, request: Request, prof: dict = Learner) -> dict:
 
 class GameTryIn(BaseModel):
     game: str
+    join: bool = False                # opened to answer a duel / doubles invitation of somebody else: no battery segment
+
+
+EMPTY = "Your game battery is empty – recharge it or join a table of somebody else"
+
+
+def _corner_charge(fq, prof: dict, body: GameTryIn) -> tuple[str | None, int | None]:
+    """Opening a game of the game corner costs a battery segment (battery.py) – not when the child answers an
+    invitation (a duel or a doubles table of somebody else waiting for it)."""
+    if body.join and body.game in ("ttt", "pingpong"):
+        duel = fq.duels.state(prof["id"])
+        if (duel and {"ttt": "ttt", "pong": "pingpong"}.get(duel.get("kind") or "ttt") == body.game) or \
+                (body.game == "pingpong" and fq.pong4.busy(prof["id"])):
+            return "free", None
+    used = fq.use_charge(prof, body.game)
+    if not used[0]:
+        raise HTTPException(403, EMPTY)
+    return used
 
 
 @router.post("/me/games/try")
 def games_try(body: GameTryIn, request: Request, prof: dict = Learner) -> dict:
-    """A free try of a locked game of the game corner (gamepasses.py `preview`): the app opens the game once. A second
-    call right after (double tap, another device) is the same try. The one-armed bandit counts each spin instead
-    (nothing used here); family games use a try when the child starts or joins a table."""
+    """Opening a game of the game corner. It costs a segment of the game battery (battery.py; a second call right after
+    – double tap, another device – is the same start). A locked game (gamepasses.py `preview`): a free try – the app
+    opens the game once; the one-armed bandit counts each spin instead (nothing used here). Family games use a try and
+    a segment when the child starts a table (api/community.py)."""
     from ..gamepasses import ARCADE
     fq = app_of(request)
     if body.game not in ARCADE:
@@ -598,11 +617,36 @@ def games_try(body: GameTryIn, request: Request, prof: dict = Learner) -> dict:
     t = fq.game_trial(prof, body.game, time=True)
     if not t:
         if fq.games_allowed(prof, body.game):
-            return {"ok": True, "tries_left": 0, "open": True}
+            _corner_charge(fq, prof, body)
+            return {"ok": True, "tries_left": 0, "open": True, "battery": fq.battery.state(prof)}
         raise HTTPException(403, "This game is switched off for you")
+    used = _corner_charge(fq, prof, body)
     if (t["left"] <= 0 if body.game == "slots" else not fq.use_game_try(prof, body.game)):
+        if used[0] == "new":
+            fq.battery.give_back(prof["id"], used[1])
         raise HTTPException(403, "No free tries left – buy or rent the game")
-    return {"ok": True, "tries_left": fq.passes.tries_left(prof["id"], body.game, fq.games_access()[body.game]), "open": False}
+    return {"ok": True, "tries_left": fq.passes.tries_left(prof["id"], body.game, fq.games_access()[body.game]), "open": False,
+            "battery": fq.battery.state(prof)}
+
+
+# ---------------------------------------------------------------- game battery (battery.py)
+@router.get("/me/battery")
+def battery_state(request: Request, prof: dict = Learner) -> dict | None:
+    return app_of(request).battery.state(prof)
+
+
+@router.post("/me/battery/recharge")
+def battery_recharge(request: Request, prof: dict = Learner) -> dict:
+    """Recharge the game battery to full for coins (one transaction; a double tap finds it full and books nothing)."""
+    from ..battery import BatteryError
+    fq = app_of(request)
+    try:
+        st = fq.battery.recharge(prof)
+    except BatteryError as e:
+        raise HTTPException(400, str(e)) from None
+    if fq.ha:
+        fq.ha.profile_changed(prof["id"])
+    return {"battery": st, "coins": fq.rewards.balance(prof["id"], "coins")}
 
 
 # ---------------------------------------------------------------- game corner: one-armed bandit (slots.py)

@@ -100,6 +100,9 @@ class FamilyQuest:
         self.pets = Pets(self.db, self.rewards)
         from .gamepasses import GamePasses
         self.passes = GamePasses(self.db, self.rewards)          # games with a price for children (gamepasses.py)
+        from .battery import Battery
+        self.battery = Battery(self.db, self.rewards)              # game battery of the children, party mode (battery.py)
+        self.rewards.listeners.append(self.battery.on_reward)    # daily goal / chore done: charge segments
         from .slots import Slots
         self.slots = Slots(self.db, self.rewards)
         self.slots.settings = lambda: self.games_access()["slots"]       # price, rent, luck (parent area › Games)
@@ -242,18 +245,43 @@ class FamilyQuest:
             return False
         return True
 
+    # ---------------------------------------------------------------- party mode (battery.py, Party)
+    def party_for(self, prof: dict) -> dict | None:
+        """The party mode for this child just now ({"unlock", "battery", "limits", "until", …}) – None: not in party."""
+        return self.battery.party.for_kid(prof)
+
+    def party_unlocks(self, prof: dict) -> bool:
+        p = self.party_for(prof)
+        return bool(p and p["unlock"])
+
+    def party_lifts(self, prof: dict) -> bool:
+        """Party mode with «also lift limits»: the daily game time, game block times and the OfflineTime game lock do
+        not count for games."""
+        p = self.party_for(prof)
+        return bool(p and p["limits"])
+
+    def game_used_up(self, prof: dict) -> bool:
+        """The daily game time of this child is used up (not during a party that lifts the limits)."""
+        return timelimits.used_up(self.db, prof, "game") and not self.party_lifts(prof)
+
+    def use_charge(self, prof: dict, game: str) -> tuple[str | None, int | None]:
+        """Starting a game costs a segment of the game battery (battery.py): "free", "same", "new" (+ log id) or None."""
+        return self.battery.use(prof, game)
+
     def _games_blocked(self, prof: dict, time: bool = True) -> bool:
-        """No game at all just now for this child: game time of today used up (`time`), OfflineTime, block time."""
-        if time and timelimits.used_up(self.db, prof, "game"):
+        """No game at all just now for this child: game time of today used up (`time`), OfflineTime, block time.
+        A party with «also lift limits» lifts all of it for games – except a block time of the whole app."""
+        lift = prof.get("role") == "kid" and self.party_lifts(prof)
+        if time and not lift and timelimits.used_up(self.db, prof, "game"):
             return True
-        if self.calendar.blocks(prof["id"], "games"):              # OfflineTime: the games of the app are locked
+        if not lift and self.calendar.blocks(prof["id"], "games"):  # OfflineTime: the games of the app are locked
             return True
         blk = self.internet.block(prof)                            # block time of the internet plan: games or the whole app
-        return bool(blk and blk["mode"] in ("games", "app"))
+        return bool(blk and (blk["mode"] == "app" or (blk["mode"] == "games" and not lift)))
 
     def games_open_to(self, prof: dict) -> list[str]:
         """The games the parents switched on for this profile (parent area › Games) – price, time and blocks aside."""
-        if prof["role"] == "parent":
+        if prof["role"] == "parent" or self.party_unlocks(prof):     # party mode «unlock all games»
             return list(self.GAMES)
         return [g for g, a in self.games_access().items() if a["mode"] == "all" or (a["mode"] == "some" and prof["id"] in a["profiles"])]
 
@@ -265,20 +293,24 @@ class FamilyQuest:
             return list(self.GAMES)
         if self._games_blocked(prof, time):
             return []
+        if self.party_unlocks(prof):
+            return list(self.GAMES)
         acc = self.games_access()
         paid = self.passes.unlocked_set(prof["id"], acc)
         return [g for g in self.games_open_to(prof) if g in paid]
 
     def game_unlocked(self, pid: int, game: str) -> bool:
-        """Parents always; a child when the game has no price or the child bought / rented it."""
-        p = self.db.q1("SELECT role FROM profile WHERE id=?", pid)
+        """Parents always; a child when the game has no price or the child bought / rented it (or in party mode)."""
+        p = self.db.q1("SELECT * FROM profile WHERE id=?", pid)
         if not p or p["role"] == "parent":
             return bool(p)
+        if self.party_unlocks(p):
+            return True
         return game in self.passes.unlocked_set(pid, {game: self.games_access()[game]})
 
     def game_offers(self, prof: dict) -> list[dict]:
         """The priced games this child may play once bought or rented (kid shop, locked tiles) – with what it has."""
-        if prof["role"] == "parent":
+        if prof["role"] == "parent" or self.party_unlocks(prof):
             return []
         return self.passes.offers(prof["id"], self.games_access(), self.games_open_to(prof))
 
@@ -449,13 +481,22 @@ class FamilyQuest:
             "weather_alarm": self.kiosk.weather_alarm() if self.kiosk.config().get("kids_alarm") else None,
             "pending": [r for r in self.shop.list("pending", pid)],
             "pets": self.pets.summary(pid),
+            "battery": self.battery.state(prof),              # game battery (battery.py) – None for parents
+            "party": self.party_public(prof),                 # party mode for this child (banner, disco theme)
         }
+
+    def party_public(self, prof: dict) -> dict | None:
+        p = self.party_for(prof)
+        if not p:
+            return None
+        from .themes import DISCO
+        return {"until": p["until"], "unlock": p["unlock"], "battery": p["battery"], "limits": p["limits"], "theme": DISCO}
 
     def time_left(self, prof: dict) -> dict:
         """Minutes left today: family games, learning, internet – None = unlimited (parents always)."""
         net = self.internet.state(prof) if prof.get("role") == "kid" else None
         unlimited = not net or (net.get("budget") or {}).get("unlimited")
-        return {"games": timelimits.left(self.db, prof, "game"), "learn": timelimits.left(self.db, prof, "learn"),
+        return {"games": None if self.party_lifts(prof) else timelimits.left(self.db, prof, "game"), "learn": timelimits.left(self.db, prof, "learn"),
                 "internet": None if unlimited else net["minutes"]}
 
     def _offline_lock(self, prof: dict) -> dict | None:

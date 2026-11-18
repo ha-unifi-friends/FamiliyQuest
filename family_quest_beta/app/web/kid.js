@@ -138,6 +138,70 @@ const lockedGame = game => ((S.me && S.me.games_locked) || []).find(g => g.game 
 const trialGame = game => (S.me && S.me.games_trial && S.me.games_trial[game]) || null;
 const triesText = n => I18N.tr(n === 1 ? T("1 free try") : T("{0} free tries")).replace("{0}", n);
 
+// ---------------------------------------------------------------- game battery (familyquest/battery.py) and party mode
+// starting a game costs one charge segment – joining a table of somebody else is free; empty: recharge for coins
+const battery = () => (S.me && S.me.battery) || null;
+const batteryShown = () => { const b = battery(); return !!(b && (b.on || b.party)); };
+const batteryEmpty = () => { const b = battery(); return !!(b && !b.free && b.charge <= 0); };
+const partyOn = () => !!(S.me && S.me.party);
+
+/** The battery strip (games page, game corner, the card of a game): segments, what a start costs, «Recharge». */
+function batteryBar(compact = false) {
+  const b = battery();
+  if (!batteryShown()) return null;
+  let text, sub = null, btn = null;
+  if (b.party) { text = ["🎉 ", T("Party: starting games costs nothing")]; }
+  else if (b.free) { text = b.forever || !b.until ? ["🔋 ", T("Unlimited game energy")] : ["🔋 ", I18N.tr(T("Unlimited game energy")) + " · " + untilWhen(b.until)]; }
+  else if (b.charge <= 0) {
+    text = ["🪫 ", T("Battery empty")];
+    sub = T("You can still join a table of somebody else. To start a game yourself, recharge your battery.");
+  } else {
+    text = [I18N.tr(T("{0} of {1} charged")).replace("{0}", b.charge).replace("{1}", b.cap)];
+    sub = compact ? T("Starting costs 🔋1") : T("Starting a game costs 🔋1 – joining a table is free.");
+  }
+  if (!b.free && b.charge < b.cap) btn = h("button.btn.small" + (b.charge <= 0 ? "" : ".ghost") + ".bat-recharge", { onclick: rechargeBattery },
+    "⚡ ", T("Recharge"), b.cost > 0 ? " · " + b.cost + " 🪙" : "");
+  return h("div.bat-bar" + (b.charge <= 0 && !b.free ? ".empty" : "") + (compact ? ".compact" : ""), batteryIcon(b, !compact),
+    h("div.grow.bat-text", h("strong", ...text), sub ? h("div.small.muted", sub) : null), btn);
+}
+
+/** Recharge the battery to full for coins – a confirm dialog first. */
+function rechargeBattery() {
+  const b = battery();
+  if (!b) return;
+  const coins = Math.floor(((S.me && S.me.balances) || {}).coins || 0), short = b.cost > coins;
+  const m = modal(h("div.form.center.bat-dialog", h("h2", "⚡ ", T("Recharge your game battery")), batteryIcon(b, true),
+    h("p", b.cost > 0 ? I18N.tr(T("Recharge to full ({0} segments) for {1} coins?")).replace("{0}", b.cap).replace("{1}", b.cost)
+      : I18N.tr(T("Recharge to full ({0} segments) – it costs nothing.")).replace("{0}", b.cap)),
+    h("p.small.muted", "🪙 ", I18N.tr(T("You have {0} coins")).replace("{0}", coins)),
+    short ? h("p.bad", T("Not enough coins")) : null,
+    h("div.row.center", h("button.btn.big", { disabled: short, onclick: async () => {
+      m.close();
+      try {
+        const r = await api("me/battery/recharge", { method: "POST" });
+        S.me.battery = r.battery;
+        if (S.me.balances) S.me.balances.coins = r.coins;
+        Sound.play("done"); toast(T("Game battery recharged"), "good");
+      } catch (e) { toast(e.message, "bad"); }
+      try { S.me = await api("me"); } catch {}
+      route();
+    } }, "⚡ ", T("Recharge")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+}
+// a start refused because the battery is empty (familyquest/api: 403): offer to recharge right away
+window.FQ_BATTERY_EMPTY = async () => { try { S.me = await api("me"); } catch {} if (batteryEmpty() && !document.querySelector(".bat-dialog")) rechargeBattery(); };
+
+/** Party mode of the parents: a festive banner on the start page and the games page. */
+function partyBanner() {
+  const p = S.me && S.me.party;
+  if (!p) return null;
+  const what = [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean);
+  return h("section.card.banner.party-banner", h("span.big-ic", "🎉"),
+    h("div.grow", h("strong", T("Party mode"), p.until ? " " + untilWhen(p.until) : ""), what.length ? h("div.small", what.map(t => I18N.tr(t)).join(" · ")) : null),
+    h("span.big-ic.party-ball", "🪩"));
+}
+// the Disco design while the party runs for this child (or an own design of the parents with the disco look)
+const discoTheme = () => (S.me && S.me.party && S.me.party.theme) || (S.info && S.info.season && S.info.season.vis === "disco" && seasonOn() ? S.info.season : null);
+
 // somebody opened a family table: a note slides into the header (not while a game or a lesson fills the screen)
 const tableNote = { seen: null, box: null, timer: null };
 function tablesSeen() {
@@ -193,7 +257,7 @@ setInterval(async () => {
   const other = d.names.X, pong = d.kind === "pong";
   const m = modal(h("div.form.center", h("h2", pong ? "🏓 " : "⭕ ", pong ? T("Ping-Pong") : T("Tic-Tac-Toe")),
     h("p", I18N.tr(pong ? T("{0} invites you to Ping-Pong") : T("{0} invites you to Tic-Tac-Toe")).replace("{0}", other)),
-    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/duel/accept", { method: "POST" }); } catch {} go(pong ? "arcade/pingpong" : "arcade/ttt"); } }, "▶ ", T("Play")),
+    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/duel/accept", { method: "POST" }); } catch {} S.arcadeJoin = pong ? "pingpong" : "ttt"; go(pong ? "arcade/pingpong" : "arcade/ttt"); } }, "▶ ", T("Play")),
       h("button.btn.ghost", { onclick: async () => { m.close(); try { await api("community/duel/decline", { method: "POST" }); } catch {} } }, T("No thanks")))));
 }, 5000);
 // invitations to a Ping-Pong doubles table (familyquest/pong4.py) – same popup as for a duel
@@ -207,7 +271,7 @@ setInterval(async () => {
   const m = modal(h("div.form.center", h("h2", "🏓 ", T("Doubles (2 against 2)")),
     h("p", I18N.tr(T("{0} invites you to Ping-Pong doubles")).replace("{0}", d.seats.A1.name)),
     h("p.small.muted", I18N.tr(d.team === "A" ? T("You play in the team of the host.") : T("You play against the host."))),
-    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/pong4/accept", { method: "POST" }); } catch {} S.pong4Online = true; go("arcade/pingpong"); } }, "▶ ", T("Play")),
+    h("div.row.center", h("button.btn.big", { onclick: async () => { m.close(); try { await api("community/pong4/accept", { method: "POST" }); } catch {} S.pong4Online = true; S.arcadeJoin = "pingpong"; go("arcade/pingpong"); } }, "▶ ", T("Play")),
       h("button.btn.ghost", { onclick: async () => { m.close(); try { await api("community/pong4/decline", { method: "POST" }); } catch {} } }, T("No thanks")))));
 }, 5000);
 
@@ -224,7 +288,11 @@ function idleReset() {
 function seasonOn() { try { return localStorage.getItem("fq.season") !== "0"; } catch { return true; } }
 
 let _seasonCss = false;
+function discoScene() {
+  return h("div.scn.disco-scn", { "aria-hidden": "true" }, h("span.disco-ball", "🪩"), h("i.spot.s1"), h("i.spot.s2"), h("i.spot.s3"));
+}
 function seasonScene() {
+  if (discoTheme()) return discoScene();
   const se = S.info && S.info.season;
   if (!se || !seasonOn() || !window.FPSEASON) return null;
   if (!_seasonCss) { _seasonCss = true; document.head.append(h("style", FPSEASON.CSS)); }
@@ -238,7 +306,7 @@ function seasonScene() {
 }
 
 function seasonLabel() {
-  const se = S.info && S.info.season;
+  const se = discoTheme() || (S.info && S.info.season);
   return se ? h("span.slab", se.icon, " ", se.builtin ? T(se.name) : C(se.name)) : null;
 }
 
@@ -257,8 +325,8 @@ function headClock() {
 
 function topBar(active, opts = {}) {
   const me = S.me;
-  const se = S.info && S.info.season;
-  const head = h("header.top.fq-head" + (se && seasonOn() ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
+  const se = discoTheme() || (S.info && S.info.season);
+  const head = h("header.top.fq-head" + (se && (seasonOn() || discoTheme()) ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
     seasonScene(),
     h("div.head-row" + (opts.back ? ".has-back" : ""),
       h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰"),
@@ -285,6 +353,7 @@ function openDrawer(active) {
 /** screen(active, [{back, actions}], ...content) – the optional options object sets the header of this module. */
 function screen(active, ...content) {
   const opts = content[0] && content[0].constructor === Object ? content.shift() : {};
+  document.body.classList.toggle("disco", !!discoTheme());      // party mode: the Disco design (shared/base.css)
   app.replaceChildren(h("div.screen", topBar(active, opts), h("main.content", ...content)));
   if (S.keepScroll != null) { window.scrollTo(0, S.keepScroll); S.keepScroll = null; } else window.scrollTo(0, 0);
   watchCommunity(active);
@@ -403,7 +472,7 @@ function dashboardView() {
     ...(me.weather_alarm && me.weather_alarm.hints.length ? [h("section.card.banner.alarm-banner",
       h("span.big-ic", me.weather_alarm.now ? me.weather_alarm.now.icon : "🌂"),
       h("div.grow", ...me.weather_alarm.hints.map(x => h("div", x.icon, " ", C(I18N.tr(x.text), "strong")))))] : []),
-    ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today, timeLeftCard("learn")].filter(Boolean);
+    partyBanner(), ...specialBanners(me.special_times), ...communityBanners(me.community), ...petBanners(me.pets), today, timeLeftCard("learn")].filter(Boolean);
   if (me.profile && me.has_devices) sections.push(devicesCard());
   if (me.chores) sections.push(choresCard(me.chores));
   sections.push(subjects, deckHomeCard(), pointsCard());
@@ -529,7 +598,8 @@ function choresCard(chores) {
         c.pending ? h("span.chore-note", T("waiting for confirmation")) : null,
         c.redo && !c.done && !c.pending ? h("span.chore-note.redo", T("Please do it once more")) : null,
         c.weekly ? h("span.chore-note", T("this week")) : null),
-      c.points ? h("span.chore-pts", accIcon(c.account) + " " + fmt(c.points)) : null))) : h("p.muted", T("No chores today.")),
+      c.points ? h("span.chore-pts", accIcon(c.account) + " " + fmt(c.points)) : null,
+      c.energy && batteryShown() ? h("span.chore-pts.chore-energy", { title: T("Energy bonus") }, "🔋+" + c.energy) : null))) : h("p.muted", T("No chores today.")),
     open.length === 0 && chores.length ? h("p.good-text", T("All chores done – thank you!")) : null);
 }
 
@@ -1739,10 +1809,7 @@ async function gamePassDialog(o, card) {
   if (S.sheet) S.sheet.close();
   const arcade = typeof ARCADE !== "undefined" && !!ARCADE[o.game];
   const tryIt = async () => {
-    if (arcade) {             // the game corner: the try is used when the game opens (the one-armed bandit: per spin)
-      if (o.game !== "slots") {
-        try { await api("me/games/try", { method: "POST", body: { game: o.game } }); } catch (e) { return toast(e.message, "bad"); }
-      }
+    if (arcade) {             // the game corner: the try (and a battery segment) is used when the game opens (minigames.js arcadeView)
       S.trial = o.game; m.close(); go("arcade/" + o.game);
     } else if (card) { m.close(); openGameSheet(card); }
   };
@@ -1793,7 +1860,9 @@ async function gamesView() {
     ["sternlauf", canPlay("sternlauf"), sternlaufFamilyCard], ["snack", canPlay("snack"), snackFamilyCard], ["verkehr", canPlay("verkehr"), verkehrFamilyCard], ["duel", canPlay("ttt") || canPlay("pingpong"), tttDuelCard]]);
   // the games running just now on top – the same pulsing banners as on the start page
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
-  screen("games", h("h1", "🎲 ", T("Games")), timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
+  screen("games", h("div.row.games-head", h("h1.grow", "🎲 ", T("Games")), batteryShown() ? h("button.bat-chip", { onclick: () => battery().free || battery().charge >= battery().cap ? null : rechargeBattery(),
+      title: T("Game battery") }, batteryIcon(battery())) : null),
+    partyBanner(), batteryShown() ? h("section.card.bat-card", batteryBar()) : null, timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
     gameGroup("🎲", T("For a game night"), night), gameGroup("⚡", T("Quick games for in between"), quick), arcadeCard());
 }
 
@@ -1826,7 +1895,7 @@ function lockedTile(k, o, card) {
 function openGameSheet(card) {
   if (S.sheet) S.sheet.close();
   card.classList.add("in-sheet");
-  const m = modal(h("div.game-sheet", card, h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))),
+  const m = modal(h("div.game-sheet", batteryShown() ? h("div.card.bat-sheet", batteryBar(true)) : null, card, h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))),
     { onClose: () => { window.removeEventListener("hashchange", off); if (S.sheet === m) S.sheet = null; } });
   const off = () => m.close();
   window.addEventListener("hashchange", off);

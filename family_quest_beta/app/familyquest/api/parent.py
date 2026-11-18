@@ -953,6 +953,7 @@ class ChoreIn(BaseModel):
     confirm: bool = True
     active: bool = True
     sort: int = 0
+    energy: int = 0                  # battery segments charged when done (battery.py)
 
 
 class ChoreDecideIn(BaseModel):
@@ -1311,6 +1312,91 @@ class GamesIn(BaseModel):
 def games_get(request: Request, me: dict = Parent) -> dict:
     fq = app_of(request)
     return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
+
+
+# ---------------------------------------------------------------- game battery and party mode (battery.py)
+class BatteryIn(BaseModel):
+    on: bool | None = None
+    cap: int | None = None
+    cost: int | None = None
+    unlimited: str | None = None     # off | forever | day | week | month | keep (per child also «family»)
+    goal: str | None = None          # family only: off | full | plus
+    goal_plus: int | None = None
+
+
+def _battery(fq) -> dict:
+    return fq.battery.overview(fq.kids())
+
+
+def _battery_run(fn, *args):
+    from ..battery import BatteryError
+    try:
+        return fn(*args)
+    except BatteryError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.get("/battery")
+def battery_get(request: Request, me: dict = Parent) -> dict:
+    """The family default, every child (own values, charge now) and the party mode."""
+    return _battery(app_of(request))
+
+
+@router.put("/battery")
+def battery_family(body: BatteryIn, request: Request, me: dict = Parent) -> dict:
+    fq = app_of(request)
+    _battery_run(fq.battery.save_family, body.model_dump(exclude_none=True))
+    return _battery(fq)
+
+
+@router.put("/battery/{pid}")
+def battery_kid(pid: int, request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    """Own values of a child – a value null is «as the family» (unlimited: "family")."""
+    fq = app_of(request)
+    p = fq.db.q1("SELECT * FROM profile WHERE id=? AND role='kid' AND archived=0", pid)
+    if not p:
+        raise HTTPException(404, "Unknown profile")
+    body = {k: v for k, v in body.items() if k in ("on", "cap", "cost", "unlimited")}
+    _battery_run(fq.battery.save_own, p, body)
+    return _battery(fq)
+
+
+@router.post("/battery/{pid}/recharge")
+def battery_parent_recharge(pid: int, request: Request, me: dict = Parent) -> dict:
+    """A parent recharges a child's battery to full (free, a gift)."""
+    fq = app_of(request)
+    if not fq.db.q1("SELECT 1 FROM profile WHERE id=? AND role='kid' AND archived=0", pid):
+        raise HTTPException(404, "Unknown profile")
+    fq.battery.add(pid, None, "parent", f"parent:{time.time_ns()}")
+    return _battery(fq)
+
+
+@router.get("/party")
+def party_get(request: Request, me: dict = Parent) -> dict | None:
+    return app_of(request).battery.party.config()
+
+
+@router.post("/party")
+def party_start(request: Request, body: dict = Body(...), me: dict = Parent) -> dict | None:
+    """Switch the party mode on: for whom (all / chosen children), what (unlock, battery, limits), how long."""
+    fq = app_of(request)
+    p = _battery_run(fq.battery.party.start, body, [k["id"] for k in fq.kids()])
+    _party_changed(fq)
+    return p
+
+
+@router.delete("/party")
+def party_stop(request: Request, me: dict = Parent) -> dict:
+    fq = app_of(request)
+    fq.battery.party.stop()
+    _party_changed(fq)
+    return {"ok": True}
+
+
+def _party_changed(fq) -> None:
+    if fq.ha:
+        for k in fq.kids():
+            fq.ha.profile_changed(k["id"])
 
 
 def _slots_returns() -> dict:

@@ -630,6 +630,28 @@ MIGRATIONS: list[str] = [
     ALTER TABLE game_pass ADD COLUMN previews_used INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE game_pass ADD COLUMN preview_at TEXT;
     """,
+    # 37 – game battery (battery.py): charge per child (NULL = full – everybody starts full), the last start (a second
+    # start of the same game right after it is the same start), a log of every change (unique refs: a goal or a chore
+    # charges once); per chore an energy bonus (charge segments when it is done)
+    """
+    CREATE TABLE battery(
+        profile_id INTEGER PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE,
+        charge INTEGER,                          -- NULL = full (whatever the capacity is)
+        last_game TEXT,
+        last_at TEXT
+    );
+    CREATE TABLE battery_log(
+        id INTEGER PRIMARY KEY,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        delta INTEGER NOT NULL,
+        kind TEXT NOT NULL,                      -- start | recharge | goal | chore | parent
+        game TEXT,
+        ref TEXT,
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        UNIQUE(profile_id, ref)
+    );
+    ALTER TABLE chore ADD COLUMN energy INTEGER NOT NULL DEFAULT 0;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -685,6 +707,8 @@ DEFAULT_SETTINGS = {
     "translations": None,                # own texts and languages (translations.py)
     "weather": None,                     # behaviour weather – None = defaults (weather.DEFAULT)
     "themes": None,                      # season designs of the app header – None = defaults (themes.clean)
+    "battery": None,                     # game battery of the children (battery.py) – None = defaults (battery.DEFAULT)
+    "party": None,                       # party mode (battery.py, Party): None = off
     "pet_food_cost": 2,                  # coins for feeding a pet once (pets.py)
     "pet_hotel_cost": 10,                # Family Quest pet hotel: coins per day (pets.py)
     "hamster_coins_per_day": 15,         # the hamster mines (default: 5 more than a day in the pet hotel) this many coins per day while it is healthy (pets.py)
