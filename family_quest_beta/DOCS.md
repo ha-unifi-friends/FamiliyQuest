@@ -386,7 +386,8 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
   About 60 kinds of questions: chores today / this week / last week / of all time (who of the children, how many),
   XP, levels, streaks, coins earned this week, badges, learning time and lessons, games played this week / last week /
   in the last 7 days / in all, the most popular game, who wins the most games (also «a guest»), family quiz and chess
-  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice), the
+  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice, 24h Endurance: most laps and the
+  fastest pit stop), the
   slot machine, the shop (things bought, coins spent, the shopping queen or king, the favourite reward, avatar
   items, pranks), pets (how many, who has the most, who lost the most, the oldest, the most common kind, babies, coins
   of the hamsters, whose pets are cared for best – the average of the care bars of the pets at home), bulletin board
@@ -510,7 +511,7 @@ Switched-off games disappear from the children's app.
 
 **Active without bots** is offered for the games that can be played with bots: Texas Hold'em, Tschau Sepp,
 Kartenkarussell, Domino, Paarjagd, Kartenlauf, Fünf Würfel, Heimwärts, Jump, Snack Rush, Klatsch den Beat, Jass, Werwölfe, Chess,
-Dorfmarkt, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
+Dorfmarkt, Beat the Bureaucracy, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
 the games against the app, and the server refuses every start with bots («Playing with bots is switched off for this
 game»): family tables get no bots (Kartenlauf plays with the people there, Jass needs 4 people, Werwölfe needs 5), chess
 only against the family or two on one device, Ping-Pong doubles only with people. Jump, Snack Rush and Klatsch den Beat can still be
@@ -619,7 +620,7 @@ app gets `party` in `GET /api/me`.
 
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
 (icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,
-Kartenlauf, Werwölfe, Escape Room, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
+24h Endurance, Kartenlauf, Werwölfe, Escape Room, Beat the Bureaucracy, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
 Bingo, Chess) and **⚡ Quick games for in between** (Paarjagd, Fünf Würfel, Jump, Klatsch den Beat, Star Runner, Snack
 Rush, Traffic Cadet, duels for two), and the game corner at the end. A tile with a running table has a pulsing dot; a
 tap opens the game's card in a sheet with its usual buttons (family table, alone against bots, join, rules).
@@ -1048,6 +1049,56 @@ played to the end at a family table with **at least two people of the family** �
 the winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, cars, accidents, angry
 drivers).
 
+### 24h Endurance (24-Stunden-Rennen)
+
+Games › For a game night › **🏎️ 24h Endurance**: a live **team endurance race** on the fictional **Circuit des Tannes**.
+Every team is a racing stable (colour, name, start number) with **one car**; the family splits into 1–4 teams at the
+table (2–5 people per team, guests via QR code join a team too), **bot teams** bring traffic. Alone you race against
+bot teams. A family table needs at least two cars (without bots: two teams of people).
+
+- **24 race hours in 10 / 15 / 20 minutes** (default 15). The race clock starts at 15:00 and runs through the **night**
+  (dusk around 21:00, headlights, a shorter view, fog banks) into the next afternoon. Optional **rain** (1–2 showers).
+  The **final two race hours** get a fanfare and the gaps pulse. **Winner: the most laps** (then the longer distance).
+- **Intro:** the drivers (their avatars) stand beside the track opposite their cars, run across, jump in, the doors
+  close, the engines roar and five red lights go out → **GO!** (about 8 s; a tap skips to the lights; with «reduce
+  motion» a still picture with the countdown).
+- **Roles** on their own phones, rotating at **every pit stop**: alone you drive and do the pit jobs yourself one after
+  the other; 2–3 people: driver + pit crew; 4–5: also a **race engineer**. A driver may drive at most **2 stints in a
+  row** (at the box: «Driver change» or once «Stay in»), so everybody gets to drive.
+- **Driver:** the car from behind on three lanes – swipe or ←/→ to change the lane, the **throttle lever** on the right
+  (0–10, ↑/↓ or a vertical swipe). On the track: gravel and oil (slow, tyres), debris (tyres, the wing at speed) and
+  **slow cars** (a fast hit breaks the wing). **Engine temperature:** pushing heats it – yellow = hot, **red = lift off**
+  within 3 s of pushing (junior 6 s), else **engine damage** (limp to the pits); ignoring the red a second time and
+  the **team retires** (keeps its laps). Pushing also costs **fuel** (an empty tank crawls to the pits) and **tyres**
+  (less grip). Slicks slide in the rain, rain tyres wear twice as fast in the dry.
+- **📦 Box:** the car stops at the line. The stopwatch runs while the crew plays the jobs **at the same time**:
+  **tyres** (choose slicks / rain tyres, tap the glowing wheel nut and **hold until tight** – 4 in the shown order; a
+  loose nut costs that wheel half a lap later), **fuel** (hold the nozzle, let go in the **green zone**; too little may
+  run dry, an overflow costs +3 s) and after damage a **repair** (connect the cables by colour – a wrong try +2 s – or
+  turn the screws straight). A driver change takes at least 2 s. A job nobody does is done by the garage after 30 s.
+- **Race engineer / crew** (pit wall): the team's car on a TV, telemetry (engine, fuel, tyres, damage, best lap, stops),
+  the **rain radar** (the next 2 race hours) and the live gaps; **radio calls** shown big on the driver's screen:
+  «Box this lap!», «Save the engine», «Push!», «Rain tyres?», «Slicks?».
+- **Safety car** after an engine failure, a retirement or a fast crash into a slow car: 20 s at a limited speed for
+  everybody, the track is cleared, no overtaking – a cheap moment for a pit stop (at most 2–3 per race, 60 s apart).
+- **Difficulty:** junior (fewer things on the track, slower overheating, more time in the red) or normal. **Bots**
+  (easy / normal / hard) dodge what they see (easier ones miss more), manage the temperature and box for fuel, tyres,
+  damage, the weather and under the safety car. A driver whose app is silent for 6 s gets the **autopilot** until the
+  app is back.
+
+The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for
+a smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane,
+throttle, box) with their game time; a late input is applied at the next step, never in the past. Pit jobs are
+checked on the server (the order of the nuts, hold times that must fit into the time since the stop began, the repair
+answer); a job counts at the server's time. Who leads may end the race early: ranked as it stands, no coins. Parents ›
+Games › 24h Endurance: the defaults (race length, weather, difficulty, people per team), active / without bots /
+inactive, the coins.
+
+**Coins for places 1–3:** default 10 / 5 / 2 for every person of the family in that team, paid once, only for a race
+run to the end at a family table with **at least two people of the family** – not alone, not for guests or bots; the
+winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (also questions in
+«Family Quest Facts»). Every person of the family gets a history entry (place, laps, team, best pit stop, stints).
+
 ### Klatsch den Beat
 
 Games → **👏 Klatsch den Beat**: a live rhythm game – **everybody plays at the same time**, each on their own device.
@@ -1365,6 +1416,87 @@ With few chosen kinds (e.g. only memory, 5 rooms) a kind can come twice in one g
 and won gets them (together: everybody, when out; two teams: the winning team) – only at a table with **at least two
 people of the family**, never to guests, paid once. Every person of the family gets a history entry (out or not, rooms,
 time, hints, team); the winners get the «No. 1» hat.
+
+### Beat the Bureaucracy
+
+Games → **🏛️ Beat the Bureaucracy** (de «Besiege die Bürokratie», de-CH «Bsieg d Bürokratie», fr «Vaincre la
+bureaucratie» …): a light-hearted family party game in the wonderfully complicated town hall of an invented town
+(«Little Red-Tapington» – every language has its own funny name, e.g. «Bürokratingen», «Paperasse-sur-Tampon»). An own
+parody with own texts: no real country, authority, law, person or brand. 2 to 4 teams – one device per team (one or
+more people around it), the family on their own devices, guests via QR code, bots (easy / normal / hard) – or a child
+alone against bot teams. About 20–30 minutes, from about 7 years.
+
+**Goal:** every team wants its building project approved (it picks one of 8 – tree house with a rope ladder, garage
+with a water slide, pizza oven in the garden, hamster palace, a pond for exactly one duck, lemonade stand with a
+drive-through, igloo with a doorbell, garden shed shaped like a rocket – or they are drawn at random). The permit
+needs 5, 7 or 9 stamps (game length short / normal / long); the first team with all stamps wins, the others are
+ranked by their stamps.
+
+**The town hall** (a cross-section on the screen, with a display board «Now serving 047 → Counter 2» that goes
+«ding-dong»): Counter 1 «General information» (knows nothing, kindly refers you on), 2 «Office for Building Matters»
+(open only on Tuesdays and at new moon – one round is one day of a Monday–Friday week, the moon goes round in 8
+rounds), 3 «Office for Green Spaces» (asks whether the tree agrees), 4 «Commission for Slowness» (meets every 3
+rounds; in between your application goes on the pile and is decided at the next meeting – 70 % approved), the
+archive in the basement (fetches the missing document – sometimes first the form you need for the form) and the
+coffee kitchen (a trick card, a rumour and better relations). The clerks chat with each other in speech bubbles
+(weekend plans, the coffee machine, the plastic plant …) while the queue waits.
+
+**A turn:** optionally play a trick card, then tap a counter. At counters 1–4 the **scene** comes first (decided per
+counter and round, the same for everybody; the first contact with a counter is always the appointment question):
+- «Do you have an appointment?» – «Yes» only with a 📅 appointment card. «No»: «We are fully booked for the next 9
+  months» (in a completely empty waiting room) – then one argument: insist politely, «it's urgent», «only a tiny
+  question», 🥐 croissants or 🤝 «my cousin works here». The clerk's mood (grumpy, sleepy, chatty, cheerful) changes
+  the chance. If it works, the clerk phones a colleague with a sigh («I have a citizen here who seems to be very
+  important …») and you get an audience; if not, come back another day.
+- A huge queue (the display does not move while the clerks chat): wait patiently (50 %: it is your turn – else your
+  place is kept for your next turn) or try one of three tricks (back from the toilet, «only a signature», delivery
+  person, a big official folder, a stroller with a doll, croissants for the queue) – each with its own chance and a
+  funny consequence when caught: back to the end of the queue, the queue complains (−1 relation) or the clerk closes
+  the counter for the day.
+- Nobody there: straight to the audience.
+
+At the audience you hand in a missing document (a stamp) – or an **authority card** of that counter is revealed
+(about 40 cards): a stamp, two stamps, a referral («Not responsible – go to counter 4»; the next turn must go there,
+ping-pong between counters is counted), a document is needed («Form B-12 in triplicate, blue only», «a certified copy
+of the original» – in the folder: a stamp, else it is missing until fetched from the archive), lunch break (miss the
+next turn), holiday («so is the substitute»), a grumpy clerk, a trick card, the tree, or a **mini-game**: an absurd
+form (tick the boxes before they slide away), stamping yourself at the right moment, bureaucratic speak («according
+to article 7, paragraph 3, item pancake …» – which item was it?). The server checks every mini-game (the stamp timing
+by its own clock); with mini-games switched off, and for bots, a chance decides.
+
+**Trick cards** (at most 4 in the hand, 2 at the start): 📅 appointment, 🥐 croissants (opens almost every door, and
+the clerk's good mood draws two cards – the better one counts), 🤝 connections (a sure way in, or cancel a
+referral), 💌 small gift (+2 stamps – but the 🕵️ order inspector catches it with 35 %: a fine stamp −1 and back to
+counter 1; the rules say playfully that this is only a joke in the game and that friendliness and patience work much
+better in real life), 📎 complete folder (protects once against «something is missing»), 🗣️ stay friendly (the next
+grumpy clerk melts: a stamp), ⚖️ objection and 📣 talk to the mayor (+1 stamp, referrals and waiting forgotten – every
+team once per game).
+
+**Objections ⚖️** («The pizza oven casts a shadow on our garden gnome», «The slide does not fit the townscape», «The
+tree house is far too cheerful» …): the other team defends with an expert report (a document from the folder –
+always works), neighbours' signatures (45 % + 15 % per relation) or a compromise (75 %; the project gets a funny
+condition, e.g. «We paint the slide beige», printed on the permit). A successful objection costs a stamp.
+
+**Events** at the start of a round (from round 2, 30 %): 📜 new regulation (all documents in the folders are invalid),
+💻 system migration (this round the counters give no stamps – «computer says no»), 🎉 open day (all counters open,
+no queues, no appointments).
+
+**Mode «The Administration»:** one seat plays the administration – a person (who opens the table, or whoever the
+leader picks in the lobby) or a bot («family against the administration»). It plays once per round, last: an
+authority card on a builder team (referral, lunch break, new regulation, an absurd form to fill in first, a stamp
+revoked) or opens / closes a counter (at most two closed). The builders defend automatically with 🤝 / 🗣️ / 📎. The
+administration wins when nobody has the permit after 10 / 15 / 22 rounds (short / normal / long).
+
+**The end:** the building permit certificate with all stamps (office and day) and the condition of a compromise, the
+ranking and the **funniest moments** («Leo was sent to counter 4 six times», «Mia heard «fully booked for 9 months»
+3 times», …). Who leads can help a team that does not act (☰ › Help the team on turn: its step is done as a bot
+would) and end the game. The whole game is in the database – it survives a restart and reconnects.
+
+**Coins for places 1–3:** set by the parents in Games › Beat the Bureaucracy (default 10 / 5 / 2), paid once, only
+for a game played to the end at a family table with at least two people of the family – never alone against bots,
+never for guests or bots. Everybody of the family gets a history entry (with referrals and the time to the permit:
+the special quiz «Family Quest Facts» asks who was sent to another counter most often in one game and who got the
+permit the fastest).
 
 ### Game corner
 

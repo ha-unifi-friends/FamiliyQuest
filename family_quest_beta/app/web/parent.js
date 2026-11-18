@@ -138,7 +138,8 @@ async function loginView(auto = true) {
 async function releaseNotes() {
   let text = "";
   try { text = (await api("parent/changelog")).text; } catch (e) { return toast(e.message, "bad"); }
-  const out = h("div.release-notes");
+  // the release notes exist in English only: shown as they are (single words translated in between would mix two languages)
+  const out = h("div.release-notes", { translate: "no", lang: "en" });
   let ul = null, li = null;
   // **bold** as <strong>, everything else as plain text
   const md = t => t.split(/\*\*(.+?)\*\*/).map((x, i) => i % 2 ? h("strong", x) : x);
@@ -152,7 +153,8 @@ async function releaseNotes() {
   api("parent/update-info").then(u => {
     if (u.version) upd.replaceChildren(u.update ? h("b", "🆕 ", I18N.tr(T("Update available: {0}")).replace("{0}", u.latest)) : "✓ " + I18N.tr(T("Up to date ({0})")).replace("{0}", u.version));
   }).catch(() => {});
-  const m = modal(h("div", h("h2", "📝 ", T("Release notes")), upd, out.childNodes.length ? out : h("p.muted", T("No release notes found.")),
+  const m = modal(h("div", h("h2", "📝 ", T("Release notes")), upd,
+    I18N.base !== "en" && out.childNodes.length ? h("p.small.muted", T("The release notes are written in English.")) : null, out.childNodes.length ? out : h("p.muted", T("No release notes found.")),
     h("div.row.wrap",
       // the add-ons page of Home Assistant: the store is checked there and the update is one click
       P.info.via_ha ? h("a.btn.ghost", { href: "/config/apps/installed", target: "_blank", rel: "noopener" }, "🔄 ", T("Check for updates")) : null,
@@ -232,7 +234,7 @@ async function overviewView(main) {
   async function decide(id, approve) { await call(`parent/redemptions/${id}`, { method: "POST", body: { approve } }); toast(approve ? T("Approved") : T("Declined"), "good"); render(); }
   const chorePend = d.chores_pending.length ? section("🧹 " + I18N.tr(T("Chores to confirm")), choreConfirmList(d.chores_pending, render)) : null;
   const kids = d.kids.map(k => h("section.card.kid",
-    h("div.row", avatarSvg(k.profile.avatar, 56), h("div.grow", C(k.profile.name, "h2"), h("span.muted", "Level " + k.level.level + " · 🔥 " + k.streak),
+    h("div.row", avatarSvg(k.profile.avatar, 56), h("div.grow", C(k.profile.name, "h2"), h("span.muted", I18N.tr(T("Level {0}")).replace("{0}", k.level.level) + " · 🔥 " + k.streak),
       k.sad_since ? h("div.mood-note", "😢 ", T("feels sad"), " (", T("since"), " ",
         new Date(k.sad_since).toLocaleString(I18N.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }), ")") : null,
       k.mood_text || k.mood ? h("div.mood-text", h("span.mood-emoji", k.mood || "💬"), " ", T("Today I feel …"), " ", k.mood_text ? C("«" + k.mood_text + "»", "strong") : null,
@@ -423,7 +425,7 @@ function limitSlider({ icon, label, value, steps = LIMIT_STEPS, extra = null }) 
     .map(i => h("span", { style: { "--p": i / INF() } }, i === INF() ? "∞" : fmtMinutes(steps[i]))));
   const dayRows = WEEKDAYS.map((d, i) => {
     const k = String(i);
-    const inp = h("input.lim-range.lim-day-range", { type: "range", min: 0, step: 1, "aria-label": label + " – " + d });
+    const inp = h("input.lim-range.lim-day-range", { type: "range", min: 0, step: 1, "aria-label": I18N.tr(label) + " – " + I18N.tr(d) });
     const out = h("output.lim-val");
     const pin = h("button.lim-pin", { type: "button", onclick: () => { delete own[k]; draw(); } });
     const row = h("div.lim-day", h("span.lim-dname", d), inp, out, pin);
@@ -1527,8 +1529,9 @@ async function printPoster(link) {
 
 // ---------------------------------------------------------------- the games of the app (parent area › Games)
 const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"], ["song", "🎵", T("Guess the song")], ["tschau", "🂡", "Tschau Sepp"], ["karussell", "🎠", T("Card Carousel")], ["domino", "🁫", "Domino"], ["paarjagd", "🧠", T("Pair Hunt")], ["werbinich", "🎭", T("Who am I?")],
-    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["snack", "🍔", T("Snack Rush")], ["verkehr", "🚦", T("Traffic Cadet")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["escape", "🗝️", T("Escape Room")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")], ["cube", "🧊", T("Cube solver")],
+    ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["snack", "🍔", T("Snack Rush")], ["verkehr", "🚦", T("Traffic Cadet")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["escape", "🗝️", T("Escape Room")], ["stempeljagd", "🏛️", T("Beat the Bureaucracy")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")], ["cube", "🧊", T("Cube solver")],
     ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
+GAME_LIST.splice(GAME_LIST.findIndex(g => g[0] === "verkehr") + 1, 0, ["langstrecke", "🏎️", T("24h Endurance")]);
 // the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
 const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
   sudoku: T("Every number once in each row, column and box. From 4×4 to 9×9."), patience: T("Sort all cards by suit onto the four piles."),
@@ -1852,7 +1855,7 @@ async function crestSection() {
     h("button.btn.small.ghost", { onclick: () => Photos.fromHa(true, setImage) }, "🏠 ", T("From Home Assistant Media")),
     crest.image ? h("button.btn.small.ghost", { onclick: () => { crest.image = null; drawCrest(); drawPictureRow(); } }, "✕ ", T("Remove picture")) : null].filter(Boolean)); };
   const crestForm = h("div.form",
-    h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: "Muster" })),
+    h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: T("e.g. Miller") })),
     h("div.field", h("span", T("Own picture as crest")), h("p.small.muted", T("A photo or drawing of your crest – it is shown in the shield. Without a picture the crest is drawn from colours, pattern and symbol.")), pictureRow),
     drawnFields);
   const onOff = h("input", { type: "checkbox", checked: useCrest, onchange: e => { useCrest = e.target.checked; crestForm.hidden = !useCrest; drawCrest(); } });
@@ -2161,7 +2164,8 @@ async function gamesView(main) {
       play.length ? h("div.game-play", ...play) : null,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
   };
-  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), verkehr = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div"), escape = h("div");
+  const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), verkehr = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div"), escape = h("div"), stempeljagd = h("div");
+  const langstrecke = h("div");
   let quizHead = null;
   const showLive = async () => {
     let st = null; try { st = await call("community/quiz"); } catch {}
@@ -2332,6 +2336,24 @@ async function gamesView(main) {
            h("button.btn.ghost", { onclick: () => vkStartDialog(true, open) }, VK_ICON, " ", T("Alone")))],
       await gameRewardsRow("verkehr")));
   };
+  const showLangstrecke = async () => {
+    let g = null; try { g = await call("community/langstrecke"); } catch {}
+    let r = {}; try { r = await call("community/langstrecke/rules"); } catch {}
+    const open = () => { const b = h("div.le-live"); langstrecke.replaceChildren(b); langstreckeLive(b, me, () => render()); };
+    const f = { minutes: leMinutes(r.minutes), weather: leWeather(r.weather ?? 1), difficulty: leDiff(r.difficulty), team_size: leSize(r.team_size) };
+    const defaults = h("div.pj-rewards", h("b", "⚙️ ", T("Race defaults")),
+      h("div.grid2", h("label.field", T("Race length"), f.minutes), h("label.field", T("Weather"), f.weather),
+        h("label.field", T("Difficulty"), f.difficulty), h("label.field", T("People per team"), f.team_size)),
+      h("div.row", h("button.btn.small", { onclick: async () => {
+        try { await call("community/langstrecke/rules", { method: "PUT", body: { minutes: +f.minutes.value, weather: +f.weather.value, difficulty: f.difficulty.value, team_size: +f.team_size.value } }); toast(T("Saved"), "good"); } catch (e) { toast(e.message, "bad"); }
+      } }, T("Save"))));
+    langstrecke.replaceChildren(gsec("langstrecke", "🏎️ " + I18N.tr(T("24h Endurance")), appBtn("langstrecke"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("Racing stables, one car each: drive, change tyres, refuel and repair as a team – 24 race hours, day and night.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => langstreckeStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => langstreckeStartDialog(true, open) }, LE_ICON, " ", T("Alone")))],
+      defaults, await gameRewardsRow("langstrecke")));
+  };
   const showKlatsch = async () => {
     let g = null; try { g = await call("community/klatsch"); } catch {}
     const open = () => { const b = h("div.kb-live"); klatsch.replaceChildren(b); klatschLive(b, me, () => render()); };
@@ -2397,6 +2419,16 @@ async function gamesView(main) {
          h("button.btn", { onclick: () => escapeStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("escape")));
   };
+  const showStempeljagd = async () => {
+    let g = null; try { g = await call("community/stempeljagd"); } catch {}
+    const open = () => { const b = h("div.sj-live"); stempeljagd.replaceChildren(b); stempeljagdLive(b, me, () => render()); };
+    stempeljagd.replaceChildren(gsec("stempeljagd", "🏛️ " + I18N.tr(T("Beat the Bureaucracy")), appBtn("stempeljagd"), g && g.status !== "done"
+      ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
+      : [h("p.muted", T("The family party game in a wonderfully complicated town hall: every team needs all stamps for its building project – despite appointments, queues, referrals and lunch breaks. Teams against teams or the family against the administration, with bots and guests.")),
+         h("div.row.wrap", h("button.btn", { onclick: () => stempeljagdStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+           h("button.btn.ghost", { onclick: () => stempeljagdStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
+      await gameRewardsRow("stempeljagd")));
+  };
   // the small games of the game corner: only the status (they run on the device)
   const arcade = ["ttt", "pingpong", "sudoku", "patience", "slots"].map(k => {
     const [, ic, name] = GAME_LIST.find(g => g[0] === k);
@@ -2408,7 +2440,8 @@ async function gamesView(main) {
   const factsSet = h("div.pj-rewards", h("label.check", factsOn, h("span", "📊 ", T("Special quiz «Family Quest Facts»: questions from our own data (chores, games, records, shop, pets) – nothing from the parent area"))));
   const quiz = h("div", live, (quizHead = gsec("quiz", "🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes, factsSet)));
   const blocks = { quiz, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
-    heimwaerts, jump, sternlauf, snack, verkehr, klatsch, verboten, jass, werwolf, schach, dorfmarkt, escape, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
+    langstrecke,
+    heimwaerts, jump, sternlauf, snack, verkehr, klatsch, verboten, jass, werwolf, schach, dorfmarkt, escape, stempeljagd, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
   for (const [k, el] of Object.entries(blocks)) {
     const g = GAME_LIST.find(x => x[0] === k);
     el.classList.add("game-block");
@@ -2443,6 +2476,7 @@ async function gamesView(main) {
     search, general, batterySettingsCard(), runningGamesBox(), none, ...Object.values(blocks));
   filter();
   showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
+  showLangstrecke(); showStempeljagd();
   quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
 }
 

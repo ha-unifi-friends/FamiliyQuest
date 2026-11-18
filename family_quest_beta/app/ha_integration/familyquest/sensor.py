@@ -124,6 +124,9 @@ class FamilySensor(FamilyQuestEntity, SensorEntity):
         return fn(self.family) if fn and self.family else None
 
 
+BUILTIN_ACCOUNTS = {"coins": "Coins", "internet": "Internet minutes"}   # default names (English source) of the add-on
+
+
 class BalanceSensor(FamilyQuestEntity, SensorEntity):
     """Balance of a spendable account (coins, internet minutes, own accounts of the parents)."""
 
@@ -134,7 +137,11 @@ class BalanceSensor(FamilyQuestEntity, SensorEntity):
     def __init__(self, coordinator, child_id: int, account: dict) -> None:
         super().__init__(coordinator, child_id, f"balance_{account['key']}")
         self.account = account["key"]
-        self._attr_translation_placeholders = {"account": account["name"]}
+        if BUILTIN_ACCOUNTS.get(self.account) == account["name"]:
+            # the built-in accounts with their unchanged default name: in the language of Home Assistant
+            self._attr_translation_key = f"balance_{self.account}"
+        else:
+            self._attr_translation_placeholders = {"account": account["name"]}
         self._attr_native_unit_of_measurement = account.get("unit") or None
 
     @property

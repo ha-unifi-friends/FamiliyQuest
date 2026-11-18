@@ -74,6 +74,8 @@ class FamilyQuest:
         self.snack = Snack(self.db, self.community.add_history, self.rewards)
         from .verkehr import Verkehr
         self.verkehr = Verkehr(self.db, self.community.add_history, self.rewards)
+        from .langstrecke import Langstrecke
+        self.langstrecke = Langstrecke(self.db, self.community.add_history, self.rewards)
         from .klatsch import Klatsch
         self.klatsch = Klatsch(self.db, self.community.add_history, self.rewards)
         from .verboten import Verboten
@@ -88,9 +90,11 @@ class FamilyQuest:
         self.dorfmarkt = Dorfmarkt(self.db, self.community.add_history, self.rewards)
         from .escape import Escape
         self.escape = Escape(self.db, self.community.add_history, self.rewards)
+        from .stempeljagd import Stempeljagd
+        self.stempeljagd = Stempeljagd(self.db, self.community.add_history, self.rewards)   # «Beat the Bureaucracy»
         # games without bots (parent area › Games): the engines ask before bots take a seat (cardgames.CardGames.bots_off)
-        for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.snack, self.verkehr, self.klatsch,
-                    self.jass, self.werwolf, self.dorfmarkt):
+        for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.snack, self.verkehr, self.langstrecke, self.klatsch,
+                    self.jass, self.werwolf, self.dorfmarkt, self.stempeljagd):
             eng.no_bots = self.table_without_bots
         from .songquiz import SongQuiz
         self.lan_base = None      # http://<Home Assistant IP>:<port of the direct access> – for sounds on speakers
@@ -172,8 +176,8 @@ class FamilyQuest:
 
     # the games that can be played with bots (alone against bots, bots at the table, chess / Tic-Tac-Toe / Ping-Pong
     # against the computer, Werwölfe filled up with bots) – the parents can switch the bots off per game
-    BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "pingpong")
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
+    BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "stempeljagd", "ttt", "pingpong")
+    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -399,6 +403,7 @@ class FamilyQuest:
         out["sternlauf"] = self.sternlauf.summary("sternlauf", pid) if "sternlauf" in ok else None
         out["snack"] = self.snack.summary("snack", pid) if "snack" in ok else None
         out["verkehr"] = self.verkehr.summary("verkehr", pid) if "verkehr" in ok else None
+        out["langstrecke"] = self.langstrecke.summary("langstrecke", pid) if "langstrecke" in ok else None
         out["klatsch"] = self.klatsch.summary("klatsch", pid) if "klatsch" in ok else None
         out["verboten"] = self.verboten.summary("verboten", pid) if "verboten" in ok else None
         out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None
@@ -406,6 +411,7 @@ class FamilyQuest:
         out["schach"] = self.schach.summary("schach", pid) if "schach" in ok else None
         out["dorfmarkt"] = self.dorfmarkt.summary("dorfmarkt", pid) if "dorfmarkt" in ok else None
         out["escape"] = self.escape.summary("escape", pid) if "escape" in ok else None
+        out["stempeljagd"] = self.stempeljagd.summary("stempeljagd", pid) if "stempeljagd" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
         out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
         out["boards_new"] = self.boards.new_count(pid)       # bulletin boards: not a game, for everybody of the family

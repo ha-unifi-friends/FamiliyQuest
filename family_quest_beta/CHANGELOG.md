@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1-beta.1
+
+- New team game «24h Endurance»: racing stables with driver, pit crew and race engineer, pit stops (tyres, fuel, repairs), engine overheating, day and night, rain, safety car, a running-start intro and a podium
+- New party game «Beat the Bureaucracy»: get your building permit stamped in a town hall full of indifferent clerks – appointments, queues, referrals, trick cards, objections, absurd forms; teams against teams or against the administration
+- French pass of the parent area: remaining English and German texts translated, server error messages translatable, release notes shown untouched in English
+- Home Assistant integration translated into all 9 languages; coin and internet balances named in the HA language
+- Family Quest Facts: percent records always get three wrong answers
+
 ## 1.1.0-beta.15
 
 - Game battery: every child has a rechargeable battery with 5 charges; starting a game uses one, recharging costs 50 coins (all values can be changed per family or per child, including unlimited charge for a day, week, month or for good)
