@@ -871,8 +871,9 @@ async function quizzesView() {
 }
 
 // list of quizzes with start / edit / delete, templates, editor – for profile `me`
-// `actions`: the head row of the section the «+ New quiz» button goes into
-async function quizzesPanel(box, me, onStarted, { actions } = {}) {
+// `actions`: the head row of the section the «+ New quiz» button goes into – `withImport`: also «📥 Import» (a quiz file)
+// next to it, «+ New» (parent area › Games › Custom games); `onCount(n)`: the number of quizzes
+async function quizzesPanel(box, me, onStarted, { actions, withImport = false, onCount = null } = {}) {
   let quizzes = [], templates = [], live = null, facts = null;
   try { [quizzes, templates, live, facts] = await Promise.all([api("community/quizzes"), api("community/templates"), api("community/quiz").catch(() => null),
     api("community/quizzes/facts").catch(() => null)]); }
@@ -887,7 +888,8 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
         catch (e) { toast(e.message, "bad"); }
       } }, "▶ ", T("Start")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   };
-  const reload = () => quizzesPanel(box, me, onStarted, { actions });
+  const reload = () => quizzesPanel(box, me, onStarted, { actions, withImport, onCount });
+  if (onCount) onCount(quizzes.length);
   // «Family Quest Facts»: a special quiz – the server makes new questions from the family's own data at every start
   const factsStart = () => {
     const count = h("select", ...(facts.counts || [5, 10, 15, 20]).map(n => h("option", { value: n, selected: n === 10 }, String(n))));
@@ -945,8 +947,18 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
       h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
     drawTemplates();
   };
-  const newBtn = h("button.btn", { onclick: newQuiz }, "+ ", T("New quiz"));
-  if (actions) actions.replaceChildren(...[...actions.children].filter(x => !x.classList.contains("new-quiz")), Object.assign(newBtn, { className: newBtn.className + " new-quiz" }));
+  const newBtn = h("button.btn", { onclick: newQuiz }, "+ ", withImport ? T("New") : T("New quiz"));
+  // «📥 Import»: a quiz file (an export or the answer of an AI) – the same as «With an AI or from a file» in «New quiz»
+  const impFile = h("input.new-quiz", { type: "file", accept: ".json,.txt,.md,application/json,text/plain", hidden: true, onchange: async () => {
+    const f = impFile.files[0]; if (!f) return;
+    try {
+      const r = await api("community/quizzes/import", { method: "POST", body: { text: await f.text() } });
+      toast(I18N.tr(T("{0} quizzes imported")).replace("{0}", r.ids.length), "good"); reload();
+    } catch (e) { toast(e.message, "bad"); }
+    impFile.value = "";
+  } });
+  const impBtn = withImport ? [h("button.btn.ghost.new-quiz", { onclick: () => impFile.click() }, "📥 ", T("Import")), impFile] : [];
+  if (actions) actions.replaceChildren(...[...actions.children].filter(x => !x.classList.contains("new-quiz")), ...impBtn, Object.assign(newBtn, { className: newBtn.className + " new-quiz" }));
   const del = async q => {
     if (!confirm(I18N.tr(T("Delete this quiz?")))) return;
     try { await api(`community/quizzes/${q.id}`, { method: "DELETE" }); reload(); } catch (e) { toast(e.message, "bad"); }

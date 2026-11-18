@@ -97,13 +97,29 @@ const sbTargetNum = n => h("span.sb-pnum.sb-tnum" + (n ? "" : ".none"), { title:
 async function storiesView() {
   const box = h("div.sb-wrap");
   screen("stories", { back: () => go("") }, h("h1", "📚 ", T("Library")), box);
-  await storyShelf(box);
+  await storyShelf(box, { types: LIBRARY_TYPES });
+}
+// the library: books and adventure books – the adventure games are a game of their own (kid app › Games, parent area › Games)
+const LIBRARY_TYPES = ["picture", "adventure"];
+
+// kid app #/advgames: the shelf of the adventure games (from the games page)
+async function adventureGamesView() {
+  const box = h("div.sb-wrap");
+  screen("advgames", { back: () => go("games") }, h("h1", "🗝️ ", T("Adventure games")), box);
+  await storyShelf(box, { types: ["game"] });
+}
+
+// the card on the games page of the kid app
+function adventureGamesCard() {
+  return h("section.card.sb-famcard.sb-gamecard", h("div.row", h("span.sb-famic", "🗝️"),
+    h("div.grow", h("strong", T("Adventure games")), h("div.small.muted", T("Point & click: rooms, things to find, riddles – play the games of the family or make your own."))),
+    h("button.btn", { onclick: () => go("advgames") }, T("Open"))));
 }
 
 // the card on the Family page of the kid app
 function storiesCard() {
   return h("section.card.sb-famcard", h("div.row", h("span.sb-famic", "📚"),
-    h("div.grow", h("strong", T("Library")), h("div.small.muted", T("Books, adventure books and adventure games: write your own and read the books of the family."))),
+    h("div.grow", h("strong", T("Library")), h("div.small.muted", T("Books and adventure books: write your own and read the books of the family."))),
     h("button.btn", { onclick: () => go("stories") }, T("Open"))));
 }
 
@@ -114,9 +130,9 @@ async function storiesSection() {
   const set = h("details.sb-settings", h("summary", "⚙️ ", T("Settings for the bookshelf")));
   set.addEventListener("toggle", () => { if (set.open && !set.dataset.done) { set.dataset.done = "1"; storiesSettings(set); } });
   sec.append(h("h2", "📚 ", T("Library")),
-    h("p.small.muted", T("Children and parents write books, choose-your-path stories and adventure games, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones.")),
+    h("p.small.muted", T("Children and parents write books and choose-your-path stories, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones. The adventure games are under Games.")),
     box, set);
-  await storyShelf(box, { byType: true });          // one box per type, each with its own import / new
+  await storyShelf(box, { byType: true, types: LIBRARY_TYPES });   // one box per type, each with its own import / new
   return sec;
 }
 
@@ -165,8 +181,12 @@ async function storyShelf(box, opts = {}) {
   const draw = async () => {
     let d;
     try { d = await api("stories?lang=" + encodeURIComponent(sbAppLang())); } catch (e) { return sbSet(box, h("p.bad", e.message)); }
-    const books = d.books, samples = d.samples || [];
-    if (!SB_TYPES()[filter]) filter = "all";
+    // `opts.types`: only these book types (the library: books and adventure books; the games: adventure games)
+    const types = (opts.types || ["picture", "adventure", "game"]).filter(k => (d.types || ["picture", "adventure", "game"]).includes(k));
+    const ofTypes = b => types.includes(b.type);
+    const books = d.books.filter(ofTypes), samples = (d.samples || []).filter(ofTypes);
+    d = { ...d, creatable: (d.creatable || []).filter(k => types.includes(k)), private: (d.private || []).filter(ofTypes) };
+    if (!SB_TYPES()[filter] || !types.includes(filter) || types.length === 1) filter = "all";
     const ofType = b => filter === "all" || b.type === filter;
     const onShelf = [...books.filter(b => b.live), ...samples.filter(b => !b.hidden)];
     const live = onShelf.filter(ofType), mine = books.filter(b => b.mine);
@@ -236,7 +256,7 @@ async function storyShelf(box, opts = {}) {
     const T_ = SB_TYPES();
     const filters = h("div.sb-tfilter", { role: "group", "aria-label": T("Book types") },
       chip("all", "📚", T("All"), count("all")),
-      ...["picture", "adventure", "game"].map(k => chip(k, T_[k][0], T_[k][2], count(k), !(d.creatable || []).includes(k))));
+      ...types.map(k => chip(k, T_[k][0], T_[k][2], count(k), !(d.creatable || []).includes(k))));
     const done = (id, type) => sbEdit(id, type, draw);
     // parent area: a box per type – 📕 books, 📖 adventure books, 🗝️ adventure games – each with its own import and new
     const typeBox = k => {
@@ -252,26 +272,38 @@ async function storyShelf(box, opts = {}) {
         own.length ? [h("h3.sb-sub", "✏️ ", T("Mine")), h("div.sb-rows", ...own.map(row))] : null,
         fam.length ? [h("h3.sb-sub", "📝 ", T("Drafts of the family")), h("div.sb-rows", ...fam.map(row))] : null);
     };
+    // parent area › Games › Adventure games: Import / New in `opts.actions`, then one list – waiting, every game, private ones
+    if (opts.actions) {
+      const on = (d.creatable || []).includes(types[0]);
+      sbSet(opts.actions, on ? [h("button.btn.ghost", { onclick: () => storyImportDialog(done, types[0]) }, "📥 ", T("Import")),
+        h("button.btn", { onclick: () => storyNewDialog(done, d.creatable, types[0]) }, "+ ", T("New"))] : null);
+      const all = [...onShelf, ...mine, ...others].filter((b, i, a) => !b.sample && a.indexOf(b) === i);
+      if (opts.onCount) opts.onCount(all.length + d.private.length);
+      return sbSet(box,
+        pend.length ? h("section.sb-sec.sb-wait", h("h3.sb-sub", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
+        all.length || d.private.length ? h("div.sb-rows", ...all.map(row), ...d.private.map(privRow)) : h("p.small.muted.sb-empty", T("Nothing here yet – start with «+ New».")));
+    }
     if (opts.byType) return sbSet(box,
       pend.length ? h("section.sb-sec.sb-wait", h("h2", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
-      ...["picture", "adventure", "game"].map(typeBox),
+      ...types.map(typeBox),
       d.oversee && samples.length ? h("section.sb-sec", h("h2", "✨ ", T("Sample books")),
         h("p.small.muted", T("Ready-made books of Family Quest for the whole family, in the language of the app. Hide them if you do not want them on the shelf.")),
         h("div.sb-rows", ...samples.map(sampleRow))) : null,
       (d.private || []).length ? h("section.sb-sec", h("h2", "🔒 ", T("Private books")),
         h("p.small.muted", T("Only their authors can read these books – parents neither. You see only that they exist.")),
         h("div.sb-rows", ...d.private.map(privRow))) : null);
+    const one = types.length === 1 ? types[0] : null;       // a shelf of one type: no filter chips, import / new for that type
     sbSet(box,
       pend.length ? h("section.sb-sec.sb-wait", h("h2", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
-      h("section.sb-sec", h("div.sec-head", h("h2", "📚 ", T("Family bookshelf")),
-        h("div.head-actions", h("button.btn.ghost", { onclick: () => storyImportDialog((id, type) => sbEdit(id, type, draw)) }, "📥 ", T("Import")),
-          h("button.btn", { onclick: () => storyNewDialog((id, type) => sbEdit(id, type, draw), d.creatable) }, "+ ", T("New book")))),
-        filters,
+      h("section.sb-sec", h("div.sec-head", h("h2", one ? ["📚 ", T("On the shelf")] : ["📚 ", T("Family bookshelf")]),
+        (d.creatable || []).length ? h("div.head-actions", h("button.btn.ghost", { onclick: () => storyImportDialog(done, one, types) }, "📥 ", T("Import")),
+          h("button.btn", { onclick: () => storyNewDialog(done, d.creatable, one) }, "+ ", one ? T("New") : T("New book"))) : null),
+        one ? null : filters,
         live.length ? h("div.sb-shelf", ...live.map(cover))
-          : h("p.muted", filter === "all" ? T("No books on the shelf yet – write the first one!") : T("No books of this type on the shelf yet."))),
-      h("section.sb-sec", h("h2", "✏️ ", T("My books")),
+          : h("p.muted", one === "game" ? T("No adventure games on the shelf yet – make the first one!") : filter === "all" ? T("No books on the shelf yet – write the first one!") : T("No books of this type on the shelf yet."))),
+      h("section.sb-sec", h("h2", "✏️ ", one === "game" ? T("My adventure games") : T("My books")),
         mine.length ? h("div.sb-rows", ...mine.map(row))
-          : h("p.small.muted", T("Write your own book or adventure – or start with a template.")),
+          : h("p.small.muted", one === "game" ? T("Make your own adventure game – or start with a template.") : T("Write your own book or adventure – or start with a template.")),
         d.rewards.write_coins || d.rewards.write_xp ? h("p.small.muted.sb-rewhint", "🎁 ", sbFmt(T("Every book the others can read: {0}"),
           [d.rewards.write_coins ? d.rewards.write_coins + " 🪙" : "", d.rewards.write_xp ? d.rewards.write_xp + " XP" : ""].filter(Boolean).join(" + "))) : null),
       others.length ? h("section.sb-sec", h("h2", "📝 ", T("Drafts of the family")), h("div.sb-rows", ...others.map(row))) : null,
@@ -306,7 +338,7 @@ function storyNewDialog(done, creatable = ["picture", "adventure", "game"], fixe
   const types = h("div.sb-newtypes"), tiles = h("div.sb-tpls"), tplField = h("div.field", h("b", T("Start with")), tiles);
   const titleHint = h("span.hint", T("With a template you may leave it empty – the template has one."));
   const drawTypes = () => {
-    sbSet(types, ...Object.entries(SB_TYPES()).map(([k, [ic, n, , what]]) => {
+    sbSet(types, ...Object.entries(SB_TYPES()).filter(([k]) => creatable.includes(k)).map(([k, [ic, n, , what]]) => {
       const off = !creatable.includes(k);
       return h("button.sb-newtype" + (type === k ? ".on" : "") + (off ? ".soon" : ""), { type: "button", disabled: off,
         onclick: () => { type = k; tpl = null; try { localStorage.setItem("fq.sb.newtype", k); } catch {} drawTypes(); drawTiles(); } },
@@ -337,17 +369,19 @@ function storyNewDialog(done, creatable = ["picture", "adventure", "game"], fixe
     : ["📚", T("New book")];
   const m = modal(h("div.form.sb-new", h("h2", heading[0], " ", heading[1]),
     fixedType ? null : h("div.field", h("b", T("What kind of book?")), types),
+    fixedType ? tplField : null,                         // one type only: the templates first
     h("label.field", T("Title"), title, titleHint),
     h("label.field", T("Language of the book"), lang),
-    tplField,
+    fixedType ? null : tplField,
     h("div.field", h("b", T("Who can read it?")), sbVisPicker(visibility, v => { visibility = v; })),
     h("div.row", h("button.btn", { onclick: create }, "✏️ ", T("Start writing")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
 }
 
 // import: a file or the answer of an AI (paste) – becomes a private draft (picture books and adventure books)
-function storyImportDialog(done, fixedType = null) {
+function storyImportDialog(done, fixedType = null, kinds = ["picture", "adventure", "game"]) {
   let type = "picture";
   try { type = ["adventure", "game"].includes(localStorage.getItem("fq.sb.newtype")) ? localStorage.getItem("fq.sb.newtype") : "picture"; } catch {}
+  if (!kinds.includes(type)) type = kinds[0];
   if (fixedType) type = fixedType;                       // parent area: the box of a type – its template only
   const text = h("textarea.sb-imptext", { rows: 8, placeholder: I18N.tr(T("Paste the answer of the AI here …")) });
   const file = h("input", { type: "file", accept: ".json,.txt,application/json,text/plain" });
@@ -365,7 +399,7 @@ function storyImportDialog(done, fixedType = null) {
   };
   const tpls = h("div.row.wrap");
   const drawTpl = () => sbSet(tpls,
-    fixedType ? null : h("div.sb-segs.sb-impsegs", ...["picture", "adventure", "game"].map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", title: SB_TYPES()[k][1],
+    fixedType ? null : h("div.sb-segs.sb-impsegs", ...kinds.map(k => h("button.sb-seg" + (type === k ? ".on" : ""), { type: "button", title: SB_TYPES()[k][1],
       onclick: () => { type = k; drawTpl(); } }, SB_TYPES()[k][0], h("span.sb-hide-s", " ", SB_TYPES()[k][1])))),
     h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: tplUrl(), download: tplName() }, "⬇️ ", T("Template for the AI")),
     h("button.btn.small.ghost", { onclick: async () => {

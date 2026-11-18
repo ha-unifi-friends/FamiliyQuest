@@ -239,3 +239,63 @@ def relink_ha_copies(fq) -> int:
             except OSError:
                 pass
     return len(found)
+
+
+# ---------------------------------------------------------------- a photo set as a ZIP file (parent area › Games › Pair Hunt)
+PHOTO_MAX = 5 * 1024 * 1024             # one photo, like an upload (api/parent.py PHOTO_MAX)
+ZIP_MAX = 60 * 1024 * 1024              # the whole ZIP file
+
+
+def import_zip(fq, raw: bytes) -> list[str]:
+    """The pictures of a ZIP file (JPEG, PNG, WebP, GIF – checked by their first bytes, max. 5 MB each, at most
+    MAX_PHOTOS) copied into the photo folder: their names, like after an upload, sorted by the names in the ZIP."""
+    import io
+    import zipfile
+    try:
+        z = zipfile.ZipFile(io.BytesIO(raw))
+    except (zipfile.BadZipFile, ValueError):
+        raise MemoryError_("This is not a ZIP file") from None
+    folder = fq.settings.media_dir / FOLDER
+    folder.mkdir(parents=True, exist_ok=True)
+    names = []
+    for info in sorted(z.infolist(), key=lambda i: i.filename.lower()):
+        base = info.filename.rsplit("/", 1)[-1]
+        if info.is_dir() or base.startswith(".") or "__MACOSX" in info.filename or Path(base).suffix.lower() not in PICTURE_EXT:
+            continue
+        if info.file_size > PHOTO_MAX:          # the size the ZIP says – and read at most that much (no ZIP bomb)
+            raise MemoryError_(f"The picture «{base}» is too large (max. 5 MB)")
+        with z.open(info) as f:
+            data = f.read(PHOTO_MAX + 1)
+        ext = picture_kind(data)
+        if not ext or len(data) > PHOTO_MAX:
+            continue
+        name = "foto-" + hashlib.sha1(data).hexdigest()[:12] + ext
+        (folder / name).write_bytes(data)
+        if name not in names:
+            names.append(name)
+        if len(names) >= MAX_PHOTOS:
+            break
+    if not names:
+        raise MemoryError_("No pictures found in the ZIP file (JPEG, PNG, WebP, GIF)")
+    return names
+
+
+def export_zip(fq, sid: str) -> tuple[str, bytes]:
+    """A photo set as a ZIP file (its name, the bytes): the photos numbered in their order – also the ones that stay
+    in Home Assistant Media."""
+    import io
+    import zipfile
+    s = next((x for x in get(fq).get("sets") or [] if x.get("id") == sid), None)
+    if not s:
+        raise MemoryError_("Unknown photo set")
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as z:     # photos are compressed already
+        for i, p in enumerate(s["photos"], 1):
+            try:
+                f = ha_media_path(fq.settings.ha_media_dir, p[len(HA):]) if p.startswith(HA) else fq.settings.media_dir / FOLDER / p
+                if f.is_file():
+                    z.writestr(f"{i:02d}{f.suffix.lower()}", f.read_bytes())
+            except (MemoryError_, OSError):
+                continue
+    safe = re.sub(r"[^A-Za-z0-9_-]+", "-", s["name"]).strip("-") or "photos"
+    return f"family-quest-photos-{safe}.zip", buf.getvalue()

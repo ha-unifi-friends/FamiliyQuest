@@ -1532,6 +1532,10 @@ const GAME_LIST = [["quiz", "🎯", T("Family quiz")], ["bingo", "🎱", "Bingo"
     ["kartenlauf", "🏁", T("Card Race")], ["stadtland", "🏙️", T("City, Country, River")], ["zeichnen", "🎨", T("Draw & Guess")], ["wuerfel", "🎲", T("Five Dice")], ["heimwaerts", "🏠", T("Homeward")], ["jump", "🦘", "Jump"], ["sternlauf", "🌠", T("Star Runner")], ["snack", "🍔", T("Snack Rush")], ["verkehr", "🚦", T("Traffic Cadet")], ["klatsch", "👏", T("Clap the Beat")], ["verboten", "🚫", T("Forbidden Words")], ["jass", "♣️", T("Jass")], ["werwolf", "🐺", T("Werewolves")], ["schach", "♟️", T("Chess")], ["dorfmarkt", "🏘️", T("Village Market")], ["escape", "🗝️", T("Escape Room")], ["stempeljagd", "🏛️", T("Beat the Bureaucracy")], ["poker", "🃏", "Texas Hold'em"], ["ttt", "⭕", T("Tic-Tac-Toe")], ["sudoku", "🔢", T("Sudoku")], ["patience", "🃏", T("Patience")], ["cube", "🧊", T("Cube solver")],
     ["pingpong", "🏓", T("Ping-Pong")], ["slots", "🎰", T("One-armed bandit")]];
 GAME_LIST.splice(GAME_LIST.findIndex(g => g[0] === "verkehr") + 1, 0, ["langstrecke", "🏎️", T("24h Endurance")]);
+GAME_LIST.push(["adventuregame", "🗝️", T("Adventure games")]);
+// 🛠️ Custom games: the games with the family's own content (quizzes, photo sets, adventure games) – on top of the page
+const CUSTOM_GAMES = ["quiz", "paarjagd", "adventuregame"];
+const FREE_GAMES = new Set(["adventuregame"]);             // no price, no rent (services.py FREE_GAMES)
 // the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
 const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
   sudoku: T("Every number once in each row, column and box. From 4×4 to 9×9."), patience: T("Sort all cards by suit onto the four piles."),
@@ -1680,7 +1684,7 @@ function gameAccess(kids, data) {
       state !== "off" && a.mode === "some" ? h("div.row.game-kids", ...kids.map(kid => h("label.check", h("input", { type: "checkbox", checked: a.profiles.includes(kid.id),
         onchange: e => { const ids = new Set(a.profiles); e.target.checked ? ids.add(kid.id) : ids.delete(kid.id); acc[k] = { ...a, profiles: [...ids] }; save(k); } }), C(kid.name)))) : null,
       state === "nobots" ? h("p.small.muted", T("No «alone against bots», no bots at the table, no games against the app – only people play. Parents are not bound.")) : null,
-      state === "off" ? null : gamePriceBox(k, a, v => { acc[k] = { ...a, ...v }; save(k); }, returns)].filter(Boolean));
+      state === "off" || FREE_GAMES.has(k) ? null : gamePriceBox(k, a, v => { acc[k] = { ...a, ...v }; save(k); }, returns)].filter(Boolean));
   };
   return {
     bar: k => { if (!bars[k]) { bars[k] = h("div.game-status"); setTimeout(() => draw(k)); } return bars[k]; },
@@ -1868,8 +1872,10 @@ async function crestSection() {
     h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save"))));
 }
 
-// photo sets of the pairs game and the Paarjagd
-async function memorySection() {
+// photo sets of the pairs game and the Paarjagd (parent area › Games › Custom games › Pair Hunt): the list of the sets,
+// «+ New» starts with a preset (an empty set with a name), «📥 Import» takes photos or a ZIP file, ⬇️ a set as ZIP
+const PHOTO_PRESETS = () => [["👨‍👩‍👧", T("Family")], ["🐾", T("Pets")], ["🏖️", T("Holidays")], ["🎂", T("Birthdays")], ["👵", T("Grandparents")], ["🏠", T("Our home")]];
+async function photoSets(onCount = null) {
   let d = { sets: [] };
   try { d = await call("parent/memory"); } catch {}
   const setsBox = h("div.mm-sets");
@@ -1888,8 +1894,11 @@ async function memorySection() {
     catch (e) { toast(e.message, "bad"); }
   };
   const addTo = st => async names => { st.photos.push(...names.filter(n => !st.photos.includes(n))); drawSets(); await save(true); toast(I18N.tr(T("{0} photos added")).replace("{0}", names.length), "good"); };
-  const drawSets = () => setsBox.replaceChildren(...d.sets.map((st, i) => h("div.card.qe",
+  const drawSets = () => {
+    if (onCount) onCount(d.sets.length);
+    setsBox.replaceChildren(...(d.sets.length ? [] : [h("p.small.muted.sb-empty", T("Nothing here yet – start with «+ New»."))]), ...d.sets.map((st, i) => h("div.card.qe",
     h("div.row", h("input.grow", { type: "text", maxlength: 60, value: st.name, placeholder: I18N.tr(T("e.g. Our holidays")), oninput: e => { st.name = e.target.value; } }),
+      st.id && st.photos.length ? h("button.icon-btn", { title: T("Export as ZIP file"), onclick: () => downloadApi(`parent/memory/sets/${st.id}/export`, "family-quest-photos.zip") }, "⬇️") : null,
       h("button.icon-btn", { title: T("Delete"), onclick: () => { if (confirm(I18N.tr(T("Delete the photo set «{0}»?")).replace("{0}", st.name || "–"))) { d.sets.splice(i, 1); drawSets(); save(true); } } }, "🗑️")),
     h("div.mm-thumbs", ...st.photos.map((ph, j) => h("div.mm-thumb", h("img", { src: memPhotoUrl(ph), alt: "", loading: "lazy" }),
       h("button", { title: T("Remove photo"), onclick: () => { st.photos.splice(j, 1); drawSets(); } }, "✕")))),
@@ -1897,14 +1906,55 @@ async function memorySection() {
       h("button.btn.ghost.small", { onclick: () => Photos.fromHa(false, addTo(st)) }, "🏠 ", T("From Home Assistant Media")),
       h("button.btn.ghost.small", { onclick: () => Photos.pick(true, addTo(st)) }, "📷 ", T("Add photos"))),
     h("p.small.muted", I18N.tr(T("Photos: {0}")).replace("{0}", st.photos.length), st.photos.length < 3 ? [" – ", T("at least 3 photos for a game")] : null))));
+  };
+  const free = name => { const taken = new Set(d.sets.map(x => x.name)); let n = name, i = 2; while (taken.has(n)) n = name + " " + i++; return n; };
+  const add = async (name, photos = []) => {
+    if (d.sets.length >= 20) return toast(T("At most 20 photo sets – delete one first"), "bad");
+    d.sets.unshift({ name: free(name), photos }); drawSets(); await save(true);
+    toast(photos.length ? I18N.tr(T("{0} photos added")).replace("{0}", photos.length) : T("Photo set added – now add photos"), "good");
+  };
+  // «+ New»: a preset (an empty set with its name) or an empty set without a name
+  const newDialog = () => {
+    const tile = (ic, name, go) => h("button.mm-preset", { onclick: () => { m.close(); go(); } }, h("span.big-ic", ic), h("strong", name));
+    const m = modal(h("div.form", h("h2", "🧠 ", T("New photo set")),
+      h("p.small.muted", T("Start with a preset – then add photos from this device or from Home Assistant Media. Every photo becomes a pair.")),
+      h("div.mm-presets", tile("📄", T("Empty set"), () => { d.sets.unshift({ name: "", photos: [] }); drawSets(); setsBox.querySelector("input").focus(); }),
+        ...PHOTO_PRESETS().map(([ic, n]) => tile(ic, n, () => add(ic + " " + I18N.tr(n))))),
+      h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
+  };
+  // «📥 Import»: photos (several at once) or a ZIP file with photos (e.g. an exported set) – becomes a new set
+  const importDialog = () => {
+    const name = h("input", { type: "text", maxlength: 60, placeholder: I18N.tr(T("e.g. Our holidays")) });
+    const file = h("input", { type: "file", multiple: true, accept: "image/*,.heic,.heif,.zip,application/zip" });
+    const go = async () => {
+      const files = [...file.files];
+      if (!files.length) return toast(T("Choose photos or a ZIP file"), "bad");
+      btn.disabled = true; btn.textContent = "⏳ " + I18N.tr(T("Uploading …"));
+      let names = [];
+      for (const z of files.filter(f => /\.zip$/i.test(f.name) || f.type === "application/zip")) {
+        const fd = new FormData(); fd.append("file", z, z.name);
+        try { names.push(...(await api("parent/memory/import", { method: "POST", form: fd })).names); } catch (e) { toast(`${z.name}: ${e.message}`, "bad"); }
+      }
+      names.push(...await Photos.uploadAll(files.filter(f => !(/\.zip$/i.test(f.name) || f.type === "application/zip"))));
+      names = [...new Set(names)].slice(0, 40);
+      m.close();
+      if (!names.length) return;
+      const zip = files.find(f => /\.zip$/i.test(f.name));
+      await add(name.value.trim() || (zip ? zip.name.replace(/\.zip$/i, "").replace(/^family-quest-photos-/, "") : I18N.tr(T("Photos {0}")).replace("{0}", d.sets.length + 1)), names);
+    };
+    const btn = h("button.btn", { onclick: go }, "📥 ", T("Import"));
+    const m = modal(h("div.form", h("h2", "📥 ", T("Import a photo set")),
+      h("label.field", T("Name"), name),
+      h("label.field", T("Photos or a ZIP file"), file, h("span.hint", T("Up to 40 photos (JPEG, PNG, WebP, GIF), max. 5 MB each – a ZIP file like the export of a set."))),
+      h("div.row", btn, h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  };
   drawSets();
-  return sectionAdd("🧩 " + I18N.tr(T("Pairs game: photo sets")),
-    h("button.btn.small", { onclick: () => { d.sets.unshift({ name: "", photos: [] }); drawSets(); } }, "+ ", T("New photo set")),
+  return { newDialog, importDialog, el: h("div.mm-box",
     h("p.small.muted", T("In the game corner the children find pairs – with animals, fruit … or with your own photos. Every photo becomes a pair.")),
     h("p.small.muted", T("Take the photos from Home Assistant Media (Media → My media) or upload them from this device. Chosen photos are copied into Family Quest right away.")),
     h("div.row.wrap", haMediaOpenBtn()),
     setsBox,
-    h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save"))));
+    h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save")))) };
 }
 
 // ---------------------------------------------------------------- mini firewall: allowed networks
@@ -2152,22 +2202,32 @@ async function gamesView(main) {
   const me = P.meta.me;
   const [s, profiles, data] = await Promise.all([call("parent/settings"), call("parent/profiles"), call("parent/games")]);
   const access = gameAccess(profiles.filter(p => p.role === "kid"), data);
-  // every game folded (the page is long on phones) – open: games running now and the ones opened before;
-  // inside: first what to play, then – set apart – its settings (status, coins)
+  // every game folded, always (the page is long on phones; a search opens the games found) – a game running now
+  // shows «● running now»; inside: first what to play, then – set apart – its settings (status, coins)
   const runningNow = new Set((await call("parent/games/running").catch(() => [])).map(g => g.game));
-  P.openGames = P.openGames || new Set();
   const gsec = (k, title, actions, ...content) => {
     const flat = content.flat(Infinity).filter(x => x != null && x !== false);
     const settings = flat.filter(x => x.classList && x.classList.contains("pj-rewards")), play = flat.filter(x => !settings.includes(x));
-    return h("details.card.sec.game-sec", { open: runningNow.has(k) || P.openGames.has(k), "data-game": k,
-        ontoggle: e => e.currentTarget.open ? P.openGames.add(k) : P.openGames.delete(k) },
+    return h("details.card.sec.game-sec", { "data-game": k },
       h("summary.sec-head", h("h2", title, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null), h("div.head-actions", ...[].concat(actions))),
       play.length ? h("div.game-play", ...play) : null,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
   };
+  // 🛠️ Custom games: the same structure for each – what it is and how many, «📥 Import» and «+ New» (templates first),
+  // the own content (quizzes, photo sets, adventure games), then the settings (status, coins)
+  const csec = (k, desc, head, ...settings) => {
+    const [, ic, name] = GAME_LIST.find(g => g[0] === k);
+    const count = h("span.chip.cg-count", "…"), actions = h("div.row.wrap.cg-actions"), list = h("div.cg-list");
+    if (head) actions.append(Object.assign(head, { className: head.className + " cg-app" }));      // «↗ Open in the app»: at the end of the row
+    const el = h("details.card.sec.game-sec.cg-sec", { "data-game": k },
+      h("summary.sec-head", h("h2", ic, " ", I18N.tr(name), " ", count, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null),
+        h("p.small.muted.cg-desc", desc)),
+      actions, list,
+      h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
+    return { el, actions, list, count: n => { count.textContent = String(n); } };
+  };
   const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), verkehr = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div"), escape = h("div"), stempeljagd = h("div");
   const langstrecke = h("div");
-  let quizHead = null;
   const showLive = async () => {
     let st = null; try { st = await call("community/quiz"); } catch {}
     if (!st || st.status === "done") return live.replaceChildren();
@@ -2231,14 +2291,22 @@ async function gamesView(main) {
       : h("div.row.wrap", h("button.btn", { onclick: () => dominoStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
           h("button.btn.ghost", { onclick: () => dominoStartDialog(true, open) }, "🤖 ", T("Alone against bots")))));
   };
+  // Pair Hunt: play, then its own content – the photo sets (shared with the pairs game of the game corner)
+  const pjPlay = h("div.game-play"), pjSets = h("div"), pjRewards = h("div");
+  const cPair = csec("paarjagd", T("Find the pairs – with animals, fruit … or your own photo sets. Every photo becomes a pair."), appBtn("paarjagd"), pjRewards);
+  cPair.list.append(pjPlay, pjSets);
+  paarjagd.append(cPair.el);
   const showPaarjagd = async () => {
     let g = null; try { g = await call("community/paarjagd"); } catch {}
     const open = () => { const b = h("div.pj-live"); paarjagd.replaceChildren(b); paarjagdLive(b, me, () => render()); };
-    paarjagd.replaceChildren(gsec("paarjagd", "🧠 " + I18N.tr(T("Pair Hunt")), appBtn("paarjagd"), g && g.status !== "done"
+    pjPlay.replaceChildren(g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : h("div.row.wrap", h("button.btn", { onclick: () => paarjagdStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
-          h("button.btn.ghost", { onclick: () => paarjagdStartDialog(true, open) }, "🤖 ", T("Alone against bots"))),
-      await gameRewardsRow("paarjagd")));
+          h("button.btn.ghost", { onclick: () => paarjagdStartDialog(true, open) }, "🤖 ", T("Alone against bots"))));
+    pjRewards.replaceChildren(await gameRewardsRow("paarjagd"));
+    const ps = await photoSets(cPair.count);
+    cPair.actions.prepend(h("button.btn.ghost", { onclick: ps.importDialog }, "📥 ", T("Import")), h("button.btn", { onclick: ps.newDialog }, "+ ", T("New")));
+    pjSets.replaceChildren(h("h3.cg-sub", "📷 ", T("Photo sets")), ps.el);
   };
   const showWerbinich = async () => {
     let g = null; try { g = await call("community/werbinich"); } catch {}
@@ -2439,12 +2507,20 @@ async function gamesView(main) {
   const factsOn = h("input", { type: "checkbox", checked: s.quiz_facts !== false, onchange: async () => {
     await call("parent/settings", { method: "PUT", body: { quiz_facts: factsOn.checked } }); toast(T("Saved"), "good"); } });
   const factsSet = h("div.pj-rewards", h("label.check", factsOn, h("span", "📊 ", T("Special quiz «Family Quest Facts»: questions from our own data (chores, games, records, shop, pets) – nothing from the parent area"))));
-  const quiz = h("div", live, (quizHead = gsec("quiz", "🎯 " + I18N.tr(T("Family quiz")), appBtn("quiz"), quizzes, factsSet)));
-  const blocks = { quiz, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
+  const cQuiz = csec("quiz", T("Your own quizzes and the templates – everybody plays on their own device."), appBtn("quiz"), factsSet);
+  cQuiz.list.append(live, quizzes);
+  const quiz = h("div", cQuiz.el);
+  // adventure games: the ones of the family (stories.js storyShelf, type «game») – approve, edit, import, new
+  const cAdv = csec("adventuregame", T("Point & click: rooms, things to find, riddles and characters – made by the family or from a template."), null);
+  const adventuregame = h("div", cAdv.el);
+  const blocks = { quiz, adventuregame, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
     langstrecke,
     heimwaerts, jump, sternlauf, snack, verkehr, klatsch, verboten, jass, werwolf, schach, dorfmarkt, escape, stempeljagd, poker, ...Object.fromEntries(["ttt", "pingpong", "sudoku", "patience", "slots"].map((k, i) => [k, arcade[i]])) };
   // only the games of this app's channel: the server leaves out games still in development (channel.py DEV_GAMES)
   for (const k of Object.keys(blocks)) if (!(k in data.access)) delete blocks[k];
+  const custom = h("section.cg-group", h("h2.cg-title", "🛠️ ", T("Custom games")),
+    h("p.small.muted", T("Games with your own content: quizzes, photo sets and adventure games – import them or make new ones from a template.")),
+    ...CUSTOM_GAMES.filter(k => blocks[k]).map(k => blocks[k]));
   for (const [k, el] of Object.entries(blocks)) {
     const g = GAME_LIST.find(x => x[0] === k);
     el.classList.add("game-block");
@@ -2462,6 +2538,7 @@ async function gamesView(main) {
       if (q && !el.hidden) el.querySelectorAll("details.game-sec").forEach(d => { d.open = true; });   // a game searched for opens
     }
     none.hidden = !q || shown > 0;
+    custom.hidden = CUSTOM_GAMES.every(k => !blocks[k] || blocks[k].hidden);
   };
   // for every game: who begins, guests, all on / off
   const starter = h("select", { onchange: async () => { await call("parent/settings", { method: "PUT", body: { game_starter: starter.value } }); toast(T("Saved"), "good"); } },
@@ -2476,12 +2553,13 @@ async function gamesView(main) {
     h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
   main.append(h("h1", T("Games")), partyCard(),
     h("p.muted", T("Every game on its own: active, active without bots (only people play) or inactive – for everybody or only for chosen children. Parents can always play.")),
-    search, general, batterySettingsCard(), runningGamesBox(), none, ...Object.values(blocks));
+    search, general, batterySettingsCard(), runningGamesBox(), custom, none, ...Object.entries(blocks).filter(([k]) => !CUSTOM_GAMES.includes(k)).map(([, el]) => el));
   filter();
   showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
   if (blocks.langstrecke) showLangstrecke();
   if (blocks.stempeljagd) showStempeljagd();
-  quizzesPanel(quizzes, me, showLive, { actions: quizHead.querySelector(".head-actions") });
+  quizzesPanel(quizzes, me, showLive, { actions: cQuiz.actions, withImport: true, onCount: cQuiz.count });
+  if (blocks.adventuregame) storyShelf(cAdv.list, { types: ["game"], actions: cAdv.actions, onCount: cAdv.count });
 }
 
 // live games (Paarjagd, «Wer bin ich?», Kartenlauf, Stadt-Land-Fluss, «Zeichnen & Raten», «Fünf Würfel», «Verbotene Wörter»): coins for places 1 / 2 / 3 (only family tables with at least two people of the family)
@@ -2515,12 +2593,8 @@ async function gameRewardsRow(game) {
     h("p.small.muted", T("Werwölfe: everybody of the family on the winning side gets the coins of place 1 – only at a table with at least two people of the family, only for a game played to the end, not for guests.")));
   if (game !== "paarjagd") return h("div.pj-rewards", ...row,
     h("p.small.muted", T("Coins only at a table with at least two people of the family – not for guests.")));
-  // own pictures: the photo sets (shared with the pairs game) – every photo becomes a pair, choose the set when starting
-  // the photo sets live here (moved from the settings) – shared with the pairs game of the game corner
-  const photos = h("details.pj-photos", h("summary", h("b", "📷 ", T("Own pictures: photo sets"))),
-    h("p.small.muted", T("Upload photo sets (e.g. the family, the holidays) – every photo becomes a pair. Choose the set when starting a Paarjagd.")),
-    await memorySection());
-  return h("div.pj-rewards", photos, ...row,
+  // the photo sets of the Paarjagd: in its section of «Custom games» (photoSets)
+  return h("div.pj-rewards", ...row,
     h("p.small.muted", T("Coins only at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
 }
 
