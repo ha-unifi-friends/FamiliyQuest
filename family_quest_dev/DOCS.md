@@ -485,11 +485,19 @@ A board opens full screen (✕ closes it):
 Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
 to 600 points. Everything is in the database, so the backup contains the boards.
 
-### 📚 Library: the family bookshelf (books, adventure books, adventure games)
+### 📚 Library: the family bookshelf (books, adventure books) – and the adventure games
 In the app menu **📚 Library** (formerly «My books»; also a card on the Family page) and in the parent area under **Family**: children and
-parents write books, the whole family reads them. Guests never see them. The shelf holds three **book types**, shown as
-a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Books · 📖 Adventure books ·
-🗝️ Adventure games):
+parents write books, the whole family reads them. Guests never see them. The library shows two **book types**, shown as
+a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Books · 📖 Adventure books). The third
+type, the **🗝️ adventure games**, is stored the same way (table `story`, type `game`, same API `/api/stories`) but lives
+under **Games**: in the kids' app a card «🗝️ Adventure games» on the games page (below the family quiz) opens their own
+shelf (`#/advgames`: play, continue, own drafts, 📥 Import and + New with the templates); in the parent area under
+**Games › 🛠️ Custom games › 🗝️ Adventure games**. They are a game of their own in the games settings (key
+`adventuregame`: active / inactive, for everybody or chosen children – no bots, no price): switched off for a child (or
+while the child may play no games: game time used up, OfflineTime, block time), the server hides the adventure games
+from its shelf and refuses reading, playing, writing, creating and importing them («Adventure games are switched off
+for you»); parents are never bound. A family that never set it keeps them open after the update (not switched off like
+a really new game).
 - **📕 Book** (picture book) – pages with a picture and a text, read page by page (below).
 - **📖 Adventure book** – choose-your-path stories with choices, good and bad endings and items (below).
 - **🗝️ Adventure game** – point & click games: rooms, hotspots, items, switches, dialogues and endings (below).
@@ -519,7 +527,7 @@ the same for every type. **+ New book** first asks for the type; a new book of a
   progress and ratings stay.
 
 #### 🗝️ Adventure games
-Point & click games that the family builds and plays (`adventuregame.py`, `web/adventure.js`). **+ New book** › 🗝️:
+Point & click games that the family builds and plays (`adventuregame.py`, `web/adventure.js`). **+ New** (Games › 🗝️ Adventure games) – the templates first:
 an empty game or a template – 🧙 «Escape from the wizard tower», 📦 «The secret of the attic», 🚀 «Lost in the
 spaceship» (4–5 rooms each, small and solvable, with items, a dialogue, a combination and a funny 💀 ending; in all
 app languages, Swiss German in Zürich dialect).
@@ -711,8 +719,24 @@ is remembered on the device; without a choice the system (or the Home Assistant 
 
 The parent area has two pages: **Family** (family council, polls, bulletin boards, Wichteln, history) and **🎲 Games** (every game:
 the family quiz, bingo, guess the song, all live games with their start buttons, coins and photo sets, the running
-games, and the game corner). A **search field** at the top filters the games by name; «⚙️ For all games» holds
-*All on / All off*, who begins a game and whether guests may join.
+games, and the game corner). A **search field** at the top filters the games by name (and opens the games found); «⚙️ For all games» holds
+*All on / All off*, who begins a game and whether guests may join. Every game is a folded section – always folded when
+the page opens (a game running just now shows «● running now»).
+
+Right below the running games comes the group **🛠️ Custom games**: the games with the family's own content, all built
+the same way – head (icon, name, what it is, how many), a row **📥 Import** and **+ New** (starting with the templates),
+the list of what the family has, then «⚙️ Settings» (status, coins …):
+- **🎯 Family quiz** – the quizzes (play, edit, delete, export); Import = a quiz file (export or the answer of an AI);
+  New = the «New quiz» dialog with the templates and the «Family Quest Facts» card.
+- **🧠 Pair Hunt** – the start buttons and the **photo sets** (also used by the pairs game of the game corner); New =
+  a preset (👨‍👩‍👧 Family, 🐾 Pets, 🏖️ Holidays, 🎂 Birthdays, 👵 Grandparents, 🏠 Our home – an empty set with that
+  name) or an empty set; Import = photos (several at once) or a **ZIP file** (`POST /api/parent/memory/import`: JPEG,
+  PNG, WebP, GIF checked by their first bytes, max. 5 MB each, 40 per set, ZIP max. 60 MB) as a new set; ⬇️ on a set
+  exports it as ZIP (`GET /api/parent/memory/sets/{id}/export`, also the photos kept in Home Assistant Media).
+- **🗝️ Adventure games** – every adventure game of the family as a row (title, author, status draft / on the shelf /
+  waiting, who can see it), the ones waiting for approval with 👀 / ✓ / ✗ like in the library, private ones of others
+  only as «🔒 Private adventure game» with the author; Import / New like the library (the template for the AI, the
+  game templates); the status *active / inactive* (no bots, no price).
 
 Every game has a **status**: *active*, *active without bots* or *inactive* (= off), and while active *for everybody* or
 *only chosen children* (tick the children). Parents can always play – and are not bound by «without bots» either.
@@ -878,7 +902,7 @@ Won while the other side still has 0 points: **🏆 Pollona!** – highlighted i
 
 Games → **🧠 Paarjagd**: the pairs game live – everybody turns the cards on their own device. Play **alone against
 bots** or open a **family table** (bots and guests via QR code like Domino). Who starts chooses (remembered): the
-cards (the emoji sets or the parents' photo sets from Settings › Pairs game), **6, 8, 12 or 18 pairs**, the bots and
+cards (the emoji sets or the parents' photo sets from Games › Custom games › Pair Hunt), **6, 8, 12 or 18 pairs**, the bots and
 how well they remember cards (easy / normal / hard) and the **card back** (tap one; the family crest when there is
 one). On your turn you turn two cards: a **pair** is yours and you go again; **no pair**: everybody sees both cards
 for a moment, then they turn back and the next player goes. When all pairs are found the most pairs win – a tie
@@ -1763,7 +1787,7 @@ the server; best times stay in this browser), shown when family games are on for
   table stays; the server draws the outcome first with the win chances of the reels scaled to that return, then shows
   reels that fit it.
 
-**Photo sets** (parent area › Games › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
+**Photo sets** (parent area › Games › 🛠️ Custom games › 🧠 Pair Hunt): upload photos into named sets (every
 photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**
 (parent area › Settings): design the family crest – name, an emoji, two colours and a
 pattern (plain, split, quartered, diagonal band, chevron). Photos no set uses any more are deleted when you save.
