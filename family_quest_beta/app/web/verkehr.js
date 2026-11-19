@@ -668,6 +668,5 @@ async function verkehrFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("verkehr") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Switch the traffic lights of your own crossing – no accidents, no angry drivers. Everybody gets the same streets and cars; who keeps the traffic flowing best wins.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => vkStartDialog(true, () => go("verkehr")) }, VK_ICON, " ", T("Alone")),
-           h("button.btn.ghost", { onclick: () => vkStartDialog(false, () => go("verkehr")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(() => vkStartDialog(true, () => go("verkehr")), () => vkStartDialog(false, () => go("verkehr")))]);
 }

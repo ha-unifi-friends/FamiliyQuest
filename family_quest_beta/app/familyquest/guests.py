@@ -96,6 +96,10 @@ class Guests:
         name = " ".join(str(name or "").split())[:20]
         if not name:
             raise GuestError("Please type your name")
+        if info["game"] == "quiz":
+            from .facts import is_facts
+            if is_facts((self.fq.community._game() or {}).get("quiz")):
+                raise GuestError("Guests cannot join «Family Quest Facts» – its questions are about the family")
         taken = {r["name"].lower() for r in self.db.q("SELECT name FROM profile WHERE archived IN (0, 2)")}
         base, n = name, 2
         while name.lower() in taken:

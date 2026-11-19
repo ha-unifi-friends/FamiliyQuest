@@ -11,6 +11,7 @@ icon: "🇫🇷"
 beschreibung: "Erste Schritte auf Französisch: grüssen, zählen, Familie, Essen, Farben und einfache Sätze für den Alltag."
 beschreibung_i18n:   # the description in the language of the app (shown in the course list)
   en: "First steps in French: greeting, counting, family, food, colours and simple everyday sentences."
+  fr: "Premiers pas en français : saluer, compter, la famille, la nourriture, les couleurs et des phrases simples du quotidien."
   it: "Primi passi in francese: salutare, contare, famiglia, cibo, colori e frasi semplici di tutti i giorni."
   es: "Primeros pasos en francés: saludar, contar, familia, comida, colores y frases sencillas del día a día."
   nl: "Eerste stappen in het Frans: begroeten, tellen, familie, eten, kleuren en eenvoudige zinnen voor elke dag."

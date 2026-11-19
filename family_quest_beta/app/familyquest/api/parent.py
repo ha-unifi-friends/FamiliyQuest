@@ -16,7 +16,7 @@ import httpx
 import yaml
 from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from ..weather import WeatherError
 from ..dashboard import DashboardError
@@ -80,7 +80,12 @@ class AccountIn(BaseModel):
     sort: int = 0
 
 
-class RuleIn(BaseModel):
+class FiniteIn(BaseModel):
+    """Amounts and costs: JSON may carry Infinity / NaN (or 1e999) – refused (422), a ledger sum would break."""
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
+class RuleIn(FiniteIn):
     event: str
     account: str
     amount: float
@@ -90,7 +95,7 @@ class RuleIn(BaseModel):
     active: bool = True
 
 
-class RewardIn(BaseModel):
+class RewardIn(FiniteIn):
     name: str
     kind: str = "voucher"
     account: str = "coins"
@@ -108,7 +113,7 @@ class DecideIn(BaseModel):
     note: str = ""
 
 
-class GoalIn(BaseModel):
+class GoalIn(FiniteIn):
     profile_id: int | None = None
     kind: str = "unit"
     title: str = ""
@@ -119,7 +124,7 @@ class GoalIn(BaseModel):
     active: bool = True
 
 
-class BookIn(BaseModel):
+class BookIn(FiniteIn):
     profile_id: int
     account: str
     amount: float
@@ -521,6 +526,9 @@ def delete_profile(pid: int, request: Request, name: str = "", mode: str = "arch
     if mode == "archive":
         fq.db.x("UPDATE profile SET archived=1 WHERE id=?", pid)
     else:
+        fq.deals.profile_removed(pid)                   # open deals end, chores taken over go back
+        fq.stories.author_removed(pid)                  # its books (private ones too) – never inherited by a new profile
+        fq.db.x("UPDATE pet SET sitter_id=NULL, sit_until=NULL WHERE sitter_id=?", pid)
         for t in fq.db.q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):
             cols = {c["name"] for c in fq.db.q(f"PRAGMA table_info({t['name']})")}
             if "profile_id" in cols and t["name"] != "profile":
@@ -941,7 +949,7 @@ def ledger(pid: int, request: Request, me: dict = Parent) -> list[dict]:
 
 
 # ---------------------------------------------------------------- chore plan (Ämtliplan)
-class ChoreIn(BaseModel):
+class ChoreIn(FiniteIn):
     name: str
     icon: str = "🧹"
     points: float = 10
@@ -1032,6 +1040,7 @@ def settings(request: Request, me: dict = Parent) -> dict:
 def _public_settings(fq) -> dict:
     s = fq.db.all_settings()
     s.pop("ha_integration", None)        # token hash: only through /api/parent/integration
+    s.pop("ha_integration_poll", None)
     return s
 
 

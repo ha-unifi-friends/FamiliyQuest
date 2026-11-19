@@ -256,7 +256,7 @@ async function storyShelf(box, opts = {}) {
       h("div.sb-rowbtn",
         h("button.btn.small.ghost", { onclick: () => preview(b) }, "👀 ", T("Read")),
         h("button.btn.small.good", { onclick: () => act(`stories/${b.id}/approve`, T("Approved – the others can read it now")) }, "✓ ", T("Approve")),
-        h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Send the book back as a draft?"))) && act(`stories/${b.id}/reject`, T("Back to a draft")) }, "✗")));
+        h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Send the book back as a draft?")))) && act(`stories/${b.id}/reject`, T("Back to a draft")) }, "✗")));
     // parent area: the sample books of the app – take them off the shelf or put them back
     const sampleRow = b => h("div.sb-row" + (b.hidden ? ".sb-hidden" : ""),
       rowIcon(b),
@@ -713,9 +713,9 @@ async function storyEditor(id, onClose = null) {
     text.value = p.text || "";
     text.oninput = () => { p.text = text.value; changed(); };
     const kinds = h("div.sb-kinds", ...Object.entries(K).map(([k, [ic, label]]) => h("button.sb-kind" + (p.kind === k ? ".on" : ""), { title: label, "aria-label": label,
-      onclick: () => {
+      onclick: async () => {
         if (p.kind === k) return;
-        if (k !== "scene" && (p.choices || []).some(c => c.t || c.to) && !confirm(I18N.tr(T("An ending has no choices – remove them?")))) return;
+        if (k !== "scene" && (p.choices || []).some(c => c.t || c.to) && !(await confirmDialog(I18N.tr(T("An ending has no choices – remove them?"))))) return;
         p.kind = k;
         if (k === "scene") { if (!(p.choices || []).length) { p.choices = []; p.next = p.next || null; } p.give = p.give || null; }
         else { delete p.choices; delete p.give; delete p.next; }
@@ -723,8 +723,8 @@ async function storyEditor(id, onClose = null) {
       } }, ic, h("span.sb-hide-s", " ", label))));
     const card = h("section.card.sb-pcard.k-" + p.kind, { id: "sbp-" + p.id, "data-id": p.id },
       h("div.sb-phead", h("span.sb-pnum", String(i + 1)), kinds, p.id === data.start ? h("span.sb-startchip", "⭐ ", T("First page")) : null, h("span.grow"),
-        h("button.icon-btn.sb-del", { title: T("Remove page"), "aria-label": T("Remove page"), onclick: () => {
-          if (data.pages.length > 1 && !confirm(I18N.tr(T("Remove this page?")))) return;
+        h("button.icon-btn.sb-del", { title: T("Remove page"), "aria-label": T("Remove page"), onclick: async () => {
+          if (data.pages.length > 1 && !(await confirmDialog(I18N.tr(T("Remove this page?"))))) return;
           data.pages.splice(data.pages.indexOf(p), 1);
           data.pages.forEach(x => { (x.choices || []).forEach(c => { if (c.to === p.id) c.to = null; }); if (x.next === p.id) x.next = null; });
           if (data.start === p.id) data.start = (data.pages[0] || {}).id || null;
@@ -755,9 +755,9 @@ async function storyEditor(id, onClose = null) {
     give.onchange = () => changed(true);
     // goes on to one page – or a branch point with 2–4 choices
     const mode = h("div.sb-segs.ib-mode", { role: "group", "aria-label": T("How does the story go on?") },
-      h("button.sb-seg" + (lin ? ".on" : ""), { type: "button", onclick: () => {
+      h("button.sb-seg" + (lin ? ".on" : ""), { type: "button", onclick: async () => {
         if (lin) return;
-        if ((p.choices || []).some(c => (c.t || "").trim()) && !confirm(I18N.tr(T("Remove the choices?")))) return;
+        if ((p.choices || []).some(c => (c.t || "").trim()) && !(await confirmDialog(I18N.tr(T("Remove the choices?"))))) return;
         p.next = ((p.choices || []).find(c => c.to) || {}).to || null; p.choices = []; changed(true);
       } }, "➡️ ", T("Goes on")),
       h("button.sb-seg" + (!lin ? ".on" : ""), { type: "button", onclick: () => {
@@ -942,9 +942,9 @@ async function storyEditor(id, onClose = null) {
       h("div.row.wrap", h("button.btn.small.ghost", { onclick: async () => { await save(); downloadApi(`stories/${id}/export`, `family-quest-book-${id}.json`); } }, "⬇️ ", T("Export as a file")),
         h("span.small.muted", T("For a backup, another family or an AI – own drawings go along, photos stay out."))),
       h("div.sb-danger.row.wrap",
-        ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Take the book off the shelf? It stays here as a draft."))) &&
+        ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Take the book off the shelf? It stays here as a draft.")))) &&
           run(`stories/${id}/unpublish`, "POST", T("The book is a draft again"), async () => { ed = await api("stories/" + id); drawHead(); }) }, "📥 ", T("Unpublish")) : null,
-        h("button.btn.small.bad", { onclick: () => confirm(I18N.tr(T("Remove this book for good? This cannot be undone."))) &&
+        h("button.btn.small.bad", { onclick: async () => (await confirmDialog(I18N.tr(T("Remove this book for good? This cannot be undone.")))) &&
           run(`stories/${id}`, "DELETE", T("Removed"), () => { closed = true; dirty = false; clearTimeout(timer); window.removeEventListener("hashchange", close); full.remove();
             if (!document.querySelector(".sb-full")) document.body.classList.remove("quiz-open"); onClose && onClose(); }) }, "🗑 ", T("Remove book")))), { wide: true });
   };

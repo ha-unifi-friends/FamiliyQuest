@@ -3,18 +3,21 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import re
 from html import escape as html_escape
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
 from .api import stories as stories_api
-from . import loginlog, netfilter
+from . import loginlog, memo, netfilter
 from .channel import hidden_games
 from .api import deals as deals_api
 from .api.auth import INGRESS_IP
@@ -73,6 +76,19 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
             await client.close()
 
     app = FastAPI(title="Family Quest", version=settings.version, lifespan=lifespan, docs_url=None, redoc_url=None)
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_body(request: Request, exc: RequestValidationError) -> JSONResponse:
+        """422 like FastAPI's own – but a refused Infinity / NaN in the body must not break the answer itself."""
+        def finite(v):
+            if isinstance(v, float) and not math.isfinite(v):
+                return str(v)
+            if isinstance(v, dict):
+                return {k: finite(x) for k, x in v.items()}
+            if isinstance(v, (list, tuple)):
+                return [finite(x) for x in v]
+            return v
+        return JSONResponse(status_code=422, content={"detail": finite(jsonable_encoder(exc.errors()))})
     app.state.fq = fq or FamilyQuest(settings)
 
     @app.middleware("http")
@@ -113,6 +129,16 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["Referrer-Policy"] = "same-origin"
         return resp
+
+    @app.middleware("http")
+    async def request_memo(request: Request, call_next):
+        """Around everything (added last = outermost): one memo per request (memo.py) – settings, the games access,
+        the running tables … are read once per request instead of dozens of times."""
+        token = memo.begin()
+        try:
+            return await call_next(request)
+        finally:
+            memo.end(token)
 
     app.include_router(kid.router)
     app.include_router(parent.router)

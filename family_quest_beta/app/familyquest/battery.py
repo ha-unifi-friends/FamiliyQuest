@@ -343,6 +343,8 @@ class Party:
         if kids != "all":
             if not isinstance(kids, list):
                 raise BatteryError("Choose the children")
+            if not all((isinstance(x, int) and not isinstance(x, bool)) or (isinstance(x, str) and x.isdecimal()) for x in kids):
+                raise BatteryError("Choose the children")
             kids = sorted({int(x) for x in kids if int(x) in kid_ids})
             if not kids:
                 raise BatteryError("Choose the children")

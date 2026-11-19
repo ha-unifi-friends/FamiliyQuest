@@ -479,10 +479,9 @@ class Schach:
         st["paid"], st["coins"] = True, coins
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
         for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
+            if self.rewards:
                 try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND), ref=ref)
+                    self.rewards.book_once(int(pid), "coins", amount, "game_win", win_reason(KIND), ref=f"{KIND}:{row['id']}:{pid}")
                 except Exception:  # noqa: BLE001
                     pass
         res = st["result"]

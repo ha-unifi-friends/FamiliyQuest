@@ -1142,7 +1142,7 @@ class Stempeljagd(CardGames):
         out["level"] = out["level"] if out["level"] in LEVELS else "normal"
         out["length"] = out["length"] if out["length"] in LENGTHS else "normal"
         out["mode"] = out["mode"] if out["mode"] in MODES else "teams"
-        out["admin"] = out["admin"] if out["admin"] in ("bot", "host") or out["admin"].isdigit() else "bot"
+        out["admin"] = out["admin"] if out["admin"] in ("bot", "host") or out["admin"].isdecimal() else "bot"
         out["projects"] = out["projects"] if out["projects"] in ("pick", "random") else "pick"
         return out
 
@@ -1162,13 +1162,7 @@ class Stempeljagd(CardGames):
         coins = self.coins_for(st)
         st["paid"], st["coins"] = True, coins
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND, st['places'][pid]), ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND, st["places"][pid]))
         self._champion(st, [p for p, n in (st.get("places") or {}).items() if n == 1])
         if self.add_history:
             teams = st.get("teams") or {}

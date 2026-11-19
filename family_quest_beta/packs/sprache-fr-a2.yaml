@@ -11,6 +11,7 @@ icon: "🇫🇷"
 beschreibung: "Französisch für den Alltag: einkaufen, reisen, Wetter, Gesundheit, Hobbys und über Vergangenes und Pläne sprechen."
 beschreibung_i18n:   # the description in the language of the app (shown in the course list)
   en: "French for everyday life: shopping, travelling, weather, health, hobbies and talking about the past and plans."
+  fr: "Le français au quotidien : courses, voyages, météo, santé, loisirs, parler du passé et de ses projets."
   it: "Il francese di tutti i giorni: spesa, viaggi, tempo, salute, hobby e parlare del passato e dei progetti."
   es: "Francés para el día a día: compras, viajes, el tiempo, la salud, aficiones y hablar del pasado y de planes."
   nl: "Frans voor elke dag: boodschappen, reizen, weer, gezondheid, hobby's en praten over vroeger en plannen."

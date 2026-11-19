@@ -388,6 +388,5 @@ async function heimwaertsFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("heimwaerts") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Roll the die and race your 4 pieces home – send the others back to their yard! Places 1 to 3 win coins at the family table.")),
-         h("div.row.wrap", botsOn("heimwaerts") ? h("button.btn", { onclick: () => heimwaertsStartDialog(true, () => go("heimwaerts")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => heimwaertsStartDialog(false, () => go("heimwaerts")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("heimwaerts") ? () => heimwaertsStartDialog(true, () => go("heimwaerts")) : null, () => heimwaertsStartDialog(false, () => go("heimwaerts")))]);
 }

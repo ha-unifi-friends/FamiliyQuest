@@ -88,8 +88,8 @@ function werbinichLive(box, me, back) {
     if (!text) { gInput.focus(); return toast(I18N.tr(T("Type who you are")), "bad"); }
     if (await act("guess", { text })) gInput.value = "";
   }
-  function giveUp() {
-    if (confirm(I18N.tr(T("Give up and see who you are?")))) act("giveup");
+  async function giveUp() {
+    if ((await confirmDialog(I18N.tr(T("Give up and see who you are?"))))) act("giveup");
   }
 
   // ---------- what just happened: a short reveal, sounds
@@ -146,7 +146,7 @@ function werbinichLive(box, me, back) {
       actions: [
         { ic: "✔", label: T("Close question"), hidden: !lead || st.phase !== "play" || !q || q.asker === myId || (q.yes + q.no + q.unknown) === 0, onclick: () => act("close") },
         { ic: "⏭", label: T("Skip"), hidden: !lead || st.phase !== "play",
-          onclick: () => { if (confirm(I18N.tr(T("Skip {0}?")).replace("{0}", who(st.turn)))) act("skip"); } },
+          onclick: async () => { if ((await confirmDialog(I18N.tr(T("Skip {0}?")).replace("{0}", who(st.turn))))) act("skip"); } },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game?"), onclick: () => act("end") }],
       onLeave: running ? () => { stop(); back(); } : null });
     const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", WB_ICON, " ", wbName())), h("div.row",

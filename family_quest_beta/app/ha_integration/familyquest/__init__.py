@@ -1,5 +1,9 @@
 """Family Quest: the KPIs of the Family Quest add-on as Home Assistant entities, plus a few safe actions.
 
+The actions (add_points, approve_chore, approve_reward) are admin services: only Home Assistant administrators and
+automations / scripts may call them. The internet switch of a child follows the same rules as the app (minutes left,
+block times) – every Home Assistant user who sees the entity can switch it; hide it from dashboards of other users.
+
 Installed by the add-on into /config/custom_components/familyquest (parent area › Settings ›
 «Family Quest HA integration»). Talks only to the add-on API /api/integration/… with the integration token.
 """
@@ -9,7 +13,7 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import ServiceValidationError, Unauthorized, UnknownUser
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
@@ -59,6 +63,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         return entries[0].runtime_data
 
     async def handle(call: ServiceCall) -> ServiceResponse:
+        # admin services (like helpers.service.async_register_admin_service, which cannot return a response): coins and
+        # approvals are a parent's decision – a non-admin Home Assistant user may not call them (automations may: no user)
+        if call.context.user_id:
+            user = await hass.auth.async_get_user(call.context.user_id)
+            if user is None:
+                raise UnknownUser(context=call.context)
+            if not user.is_admin:
+                raise Unauthorized(context=call.context)
         data = {k: v for k, v in call.data.items() if k != ATTR_ENTRY}
         result = await coordinator_for(call).async_action(call.service, **data)
         return result if call.return_response else None
