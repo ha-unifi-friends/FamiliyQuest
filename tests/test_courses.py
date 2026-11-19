@@ -24,7 +24,12 @@ def test_courses_are_chosen_by_the_learner(client):
     assert not any(p.startswith("sprache-") for p in subjects) and "allgemeinwissen" not in subjects   # not switched on by default
     courses = client.get("/api/me/courses", headers=h).json()
     ids = {c["id"] for c in courses}
-    assert {"sprache-fr-a1", "sprache-es-b1", "sprache-de-a2", "allgemeinwissen"} <= ids
+    assert {"sprache-fr-a1", "sprache-es-b1", "sprache-de-a2"} <= ids
+    assert "allgemeinwissen" not in ids                       # German questions only: «More packs» in the parent area
+    assert client.post("/api/parent/packs/install", json={"ids": ["allgemeinwissen"]}, headers=ph).json()["done"] == ["allgemeinwissen"]
+    courses = client.get("/api/me/courses", headers=h).json()
+    ids = {c["id"] for c in courses}
+    assert "allgemeinwissen" in ids
     fr = next(c for c in courses if c["id"] == "sprache-fr-a1")
     assert fr["level"] == "A1" and fr["lang"] == "fr" and fr["cards"] > 50 and not fr["on"]
     assert client.post("/api/me/courses/sprache-fr-a1", json={"on": True}, headers=h).json()["on"]

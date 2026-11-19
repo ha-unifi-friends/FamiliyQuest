@@ -1,7 +1,17 @@
 import json
 from datetime import date
 
+import pytest
+
 from familyquest.learning.leitner import next_state, stars
+
+
+@pytest.fixture
+def kid(fq, kid):
+    """Mia also learns with the German-only packs (optional: Parent area › Learning packs › More packs)."""
+    for pid in ("deutsch-5kl", "geo-tg", "tg-5-klasse"):
+        fq.packs.activate(kid, pid)
+    return kid
 
 
 def _solve(fq, sid):

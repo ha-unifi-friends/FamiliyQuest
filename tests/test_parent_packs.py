@@ -20,7 +20,7 @@ def test_parent_sees_and_tries_all_packs_children_do_not(client):
     assert st["probe-draft"] == "draft" and st["mathe-5kl"] == "disabled"
     assert list(st.values())[0] == "active"                       # active packs first
     fq = client.app.state.fq
-    assert len(st) == fq.db.val("SELECT COUNT(*) FROM pack WHERE kind='pack'")
+    assert len(st) == fq.db.val("SELECT COUNT(*) FROM pack WHERE kind='pack' AND status<>'available'")   # not «More packs»
     d = client.get("/api/me/packs/probe-draft", headers=ph).json()
     assert all(u["unlocked"] for u in d["progress"]["units"])     # nothing is locked for parents
     s = client.post("/api/me/session", json={"mode": "path", "pack": "probe-draft", "unit": "b"}, headers=ph)
@@ -54,7 +54,7 @@ def test_a_pack_can_override_xp_and_coins_per_finished_lesson(client):
         return {r["account"]: r["amount"] for r in fq.db.q("SELECT account, amount FROM ledger WHERE ref=? AND event='lesson_done'", s["id"])}
 
     assert lesson("mathe-5kl") == {"xp": 33}                       # 0 coins: no coin booking
-    other = lesson("deutsch-5kl")
+    other = lesson("engl-5kl-unit-1")
     assert other.get("xp") == 10 and other.get("coins") == 10      # the family rule
     client.post("/api/parent/packs/mathe-5kl/rewards", json={}, headers=ph)
     assert lesson("mathe-5kl").get("xp") == 10
