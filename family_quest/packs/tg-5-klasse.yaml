@@ -6,6 +6,8 @@ stufe: 5. Klasse
 kanton: TG
 lehrplan: Lehrplan Volksschule Thurgau (Lehrplan 21)
 version: 1
+optional: true        # German content only: not installed by default – Parent area › Learning packs › More packs
+sprachen: [de]
 faecher: [deutsch, mathematik, nmg, englisch, franzoesisch]
 semester:
   - id: s1

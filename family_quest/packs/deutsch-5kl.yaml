@@ -5,6 +5,8 @@ fach: deutsch
 stufe: 5. Klasse
 version: 1
 quelle: Family Quest (CC0)
+optional: true        # German content only: not installed by default – Parent area › Learning packs › More packs
+sprachen: [de]
 einheiten:
   - id: artikel
     titel: der, die oder das?

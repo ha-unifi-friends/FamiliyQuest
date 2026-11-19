@@ -414,6 +414,26 @@ Home Assistant with a login). With it the parent area opens in the HA sidebar wi
 only the login in the app, e.g. to join a game or learn along on another device; a parent without PIN does not
 appear in the app's profile list. Without Home Assistant parents need a PIN as before.
 
+**Children and their Home Assistant user (option):** children who have their own Home Assistant user can open their
+app in the Home Assistant sidebar without PIN. Switch on Settings › *Log in with Home Assistant* › *Children may sign
+in with their Home Assistant user* (off by default) and choose the child's Home Assistant user in its profile
+(Profiles › edit › *Home Assistant user*). One Home Assistant user belongs to at most one profile – parent or child.
+- It only works through Home Assistant (ingress): the user is only trusted on requests from the Supervisor proxy; on
+  the app port (tablets) the child logs in with its PIN as before.
+- The child only gets the children's app – never the parent area. *Parent area* from there asks for the parent PIN.
+- *Log out* (or the automatic log-out after a break) ends the login in that tab without logging in again right away;
+  the profile screen then offers *Log in as …* for the child's Home Assistant user. Reloading keeps the tab logged
+  out; opening Family Quest anew (a new tab) logs the child in again.
+- Archived or deleted children, block times, OfflineTime and the network filter apply as with a PIN login.
+
+**The panel for every Home Assistant user:** the Family Quest panel in the sidebar is visible to all Home Assistant
+users, not only administrators (`panel_admin: false`), so children with their own (non-admin) user can open it. What
+opens depends on the user: the parent area for parents linked with their Home Assistant user and for Home Assistant
+administrators; for everybody else (not linked, not an administrator) the children's app with the normal profile
+and PIN screen – a linked child (option above) is logged in there directly. The parent area itself still needs the
+parent PIN or a linked parent Home Assistant user. If Home Assistant cannot tell whether a user is an administrator,
+the children's app opens; *Parent area* there leads to the PIN login.
+
 - **Overview › Failed logins:** every wrong PIN of the last 30 days with time, profile, IP address, MAC address and
   device name (from the UniFi device trackers in Home Assistant, when available) and who normally logs in
   successfully from that address. Requests refused by the network filter are listed as well.

@@ -18,6 +18,8 @@ beschreibung_i18n:   # the description in the language of the app (shown in the 
   sv: "Frågesportfrågor för hela familjen: uppfinningar, byggnader, historia, natur, rymden, kultur, sport och länder."
 standard: false
 selbst: true
+optional: true        # German content only: not installed by default – Parent area › Learning packs › More packs
+sprachen: [de]
 einheiten:
   - id: erfindungen
     titel: Erfindungen & Entdeckungen

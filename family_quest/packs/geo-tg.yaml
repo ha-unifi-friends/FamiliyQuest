@@ -7,6 +7,8 @@ fach: nmg
 stufe: 5. Klasse
 version: 2
 quelle: Family Quest (CC0) – Bezirkszuteilung gemäss Gebietsreform 2011, bitte prüfen
+optional: true        # German content only: not installed by default – Parent area › Learning packs › More packs
+sprachen: [de]
 einheiten:
   - id: bezirke
     titel: "1 · Die fünf Bezirke"
