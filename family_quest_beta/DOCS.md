@@ -25,7 +25,7 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 
 | Option | Meaning |
 | --- | --- |
-| `direct_access` | Also serve the app in the home network on port 8099 (Family Quest Beta: 8098, Family Quest Dev: 8097; can be changed under *Network*). Without it only Home Assistant ingress can reach the app. Parent area › Settings shows the link as a QR code. |
+| `direct_access` | On by default (new installations). Also serve the app in the home network on port 8099 (Family Quest Beta: 8098, Family Quest Dev: 8097; can be changed under *Network*). Without it only Home Assistant ingress can reach the app. Parent area › Settings shows the link as a QR code. |
 | `log_level` | Log detail. |
 
 ## Data

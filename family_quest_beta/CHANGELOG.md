@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.16
+
+- «Family Quest App» dialog: without direct access it shows only how to switch it on (no QR code that cannot work)
+- Direct access (the app in the home network) is now on by default for new installations
+
 ## 1.1.1-beta.15
 
 - Language courses in the learner's own language: English, French, Spanish and German (A1–B1 and the year-5 units) ask in the app language of the child – progress is kept when the language changes; a course in your own language isn't offered
