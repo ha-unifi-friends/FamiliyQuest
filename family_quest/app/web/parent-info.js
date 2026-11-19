@@ -198,10 +198,7 @@ function decorateInfo(root = document) {
     const key = el.dataset.ik && PARENT_INFO[el.dataset.ik] ? el.dataset.ik : infoKey(title);
     el.dataset.info = key ? "1" : "0";
     if (!key) return;
-    const btn = infoButton(key, title);
-    const box = el.closest(".modal");
-    if (box && box.querySelector("h2") === el) { btn.classList.add("info-corner"); box.append(btn); }
-    else el.append(btn);
+    el.append(infoButton(key, title));          // always right next to the label – also in dialogs
   });
 }
 
