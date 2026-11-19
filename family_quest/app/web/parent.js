@@ -712,7 +712,8 @@ async function profileDialog(p, persons, role = "kid") {
     if (!changing) {
       kindBtns.replaceChildren();
       pinArea.replaceChildren(h("div.row",
-        h("span.small.muted", p.has_pin ? "✓ " + I18N.tr(symbolKind ? T("Picture PIN is set.") : T("Digit PIN is set.")) : I18N.tr(T("No PIN"))),
+        h("span.small.muted", p.has_pin ? "✓ " + I18N.tr(symbolKind ? T("Picture PIN is set.") : T("Digit PIN is set."))
+          : haLinked() ? ["🏠 ", I18N.tr(T("No PIN")), " – ", I18N.tr(T("Sign-in only via Home Assistant login"))] : I18N.tr(T("No PIN"))),
         h("button.btn.small.ghost", { type: "button", onclick: () => { changing = true; drawPin(); } }, "🔑 ", p.has_pin ? T("Change PIN") : T("Set a PIN"))));
       return;
     }

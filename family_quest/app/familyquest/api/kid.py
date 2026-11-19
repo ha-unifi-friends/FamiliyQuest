@@ -131,9 +131,9 @@ def login(body: LoginIn, request: Request) -> dict:
         raise HTTPException(403, "Wrong PIN")
     if p["role"] == "parent" and not p["pin_hash"]:
         raise HTTPException(403, "Parent profile needs a PIN")
-    # no PIN, but linked with a Home Assistant user while «Sign in with Home Assistant» is on: only that way (tablets)
-    if not p["pin_hash"] and not via_ingress(request) and fq.db.get_setting("ha_app_login") \
-            and any(x["id"] == p["id"] for x in haauth.linked_profiles(fq)):
+    # no PIN, but linked with a Home Assistant user: ONLY with the Home Assistant login (sidebar or «Sign in with Home
+    # Assistant» in the app) – never PIN-less on the app port, also when that sign-in is switched off
+    if not p["pin_hash"] and not via_ingress(request) and any(x["id"] == p["id"] for x in haauth.linked_profiles(fq)):
         raise HTTPException(403, "Sign in with Home Assistant")
     fq.throttle.ok(key)
     loginlog.record(fq, request, "profile", p["id"], True)

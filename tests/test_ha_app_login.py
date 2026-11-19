@@ -232,4 +232,16 @@ def test_kid_without_pin_linked_signs_in_only_with_home_assistant(client, fake_h
     assert client.post("/api/login", json={"profile_id": leo}).status_code == 403
     assert next(p for p in client.get("/api/profiles").json() if p["id"] == leo)["ha_login"]
     client.put("/api/parent/settings", json={"ha_app_login": False}, headers=ph)
-    assert client.post("/api/login", json={"profile_id": leo}).status_code == 200          # feature off: as before
+    assert client.post("/api/login", json={"profile_id": leo}).status_code == 403          # feature off: still no PIN-less login
+
+
+def test_linked_kid_without_pin_never_logs_in_pinless_on_the_app_port(client):
+    """A child without PIN but with a Home Assistant user: only the Home Assistant login – also with the sign-in off."""
+    from test_api import setup_family
+    ph, mia, _ = setup_family(client)
+    client.put(f"/api/parent/profiles/{mia}", json={"name": "Mia", "role": "kid", "ha_user_id": "u-mia", "ha_user_name": "Mia", "pin": ""}, headers=ph)
+    fq = client.app.state.fq
+    fq.db.x("UPDATE profile SET pin_hash=NULL WHERE id=?", mia)
+    for on in (True, False):
+        fq.db.set_setting("ha_app_login", on)
+        assert client.post("/api/login", json={"profile_id": mia, "pin": ""}).status_code == 403
