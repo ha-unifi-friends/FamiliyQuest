@@ -17,8 +17,9 @@ Learning in any subject with points, rewards and avatars – for the whole famil
    The last parent profile cannot be removed.
    **PIN for children:** a *picture PIN* comes first – the child picks 4 of 12 symbols in its own order (tap them or
    draw a line; 🔀 brings other symbols). At login the same 12 symbols appear in a new order every time, so a
-   watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN or
-   no PIN can be chosen instead.
+   watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN can
+   be chosen instead – or another sign-in (🔐 *Sign-in*: no sign-in, PIN, Home Assistant only, PIN or Home Assistant,
+   see *Sign-in per profile* below).
 5. **Packs** – every child starts with the built-in packs that work in every language (maths, the English and French
    units of year 5 – no course of the child's own language); switch packs or whole level packs on and off per child.
    Packs whose content exists in German only (German grammar, Thurgau geography, the level pack «5. Klasse Thurgau»,
@@ -428,11 +429,39 @@ works:
    A Home Assistant user that is not linked gets «Your Home Assistant user is not linked with a profile – ask your
    parents». Every attempt is in the login log; the login stays on the device like a PIN login, *Log out* as usual.
 
-Profiles that are linked and have **no PIN** appear in the app's profile list too; tapping them opens the Home
-Assistant login directly (no PIN pad, a PIN login is refused for them while the option is on). Profiles with a PIN
-keep their PIN pad and additionally offer *Sign in with Home Assistant*. In the profile dialog the *Home Assistant
-user* comes first; choosing one fills in the name and switches the PIN to *No PIN* (sign-in only via Home Assistant) –
-a PIN can still be set, then both ways work.
+**🔐 Sign-in per profile:** every profile has exactly one sign-in, chosen in Profiles › edit (top of the *Profile*
+tab) and shown as a chip on the profile cards:
+
+| Sign-in | Who | How | Needs |
+|---|---|---|---|
+| 🪄 **No sign-in – tap the profile** | children only | tap the picture and in | – |
+| 🔢 **PIN** | all | picture or digit PIN (children), 4–8 digits (parents) | a PIN |
+| 🏠 **Home Assistant only** | all | Home Assistant sidebar, *Sign in with Home Assistant* on tablets | a Home Assistant user |
+| 🔢🏠 **PIN or Home Assistant** | all | both ways | a PIN and a Home Assistant user |
+
+The Home Assistant user picker shows only for the two Home Assistant options (picking a user fills in the name), the
+PIN entry only for the two PIN options (an existing PIN stays; *Change PIN* sets a new one). Saving checks it (also
+on the server): Home Assistant options without a user, PIN options without a PIN, and *No sign-in* for a parent are
+refused. What a choice does not use is removed when it is saved – *No sign-in* and *Home Assistant only* delete the
+PIN, *No sign-in* and *PIN* unlink the Home Assistant user – so nothing hidden stays a way in.
+
+The server enforces the choice on every way in: the app's PIN login and tap login, the picture PIN, the parent-area
+PIN, the automatic login in the Home Assistant sidebar (children and parents) and *Sign in with Home Assistant* in the
+app. *Home Assistant only* refuses every PIN (also a PIN left over in an old database), *PIN* refuses every Home
+Assistant login, *No sign-in* exists only for children. A child with *No sign-in* that sets a PIN itself (Me › *Change
+my PIN*) switches to *PIN*; a child with *Home Assistant only* cannot set a PIN itself. Linking or unlinking the own
+Home Assistant user in the parent area (*Link my user* / *Unlink*) switches a parent between *PIN or Home Assistant*
+and *PIN*.
+
+The app's profile list shows a small icon per profile (🔢 / 🏠 / 🔢🏠, nothing for *No sign-in*) and routes the tap:
+*No sign-in* straight in, *PIN* the PIN pad, *Home Assistant only* straight to *Sign in with Home Assistant* (in the
+Home Assistant sidebar: the own Home Assistant user), *PIN or Home Assistant* the PIN pad with the Home Assistant
+button. Parents appear there only when they can sign in on that device.
+
+**Profiles from before** get their sign-in once at the first start of the update, from what they had: PIN and Home
+Assistant user → *PIN or Home Assistant*, PIN → *PIN*, Home Assistant user → *Home Assistant only*, nothing → *No
+sign-in* (children). Nothing else changes. A parent without both (should not exist) gets *PIN* and needs a PIN at
+the next edit.
 
 **Home Assistant address for the sign-in:** the browser of the tablet must reach Home Assistant. Empty = automatic:
 the host of the app with the port of Home Assistant (the add-on runs on the Home Assistant machine, e.g.
@@ -454,10 +483,11 @@ Family Quest (as in the chore planner); opened in Home Assistant it follows the 
 Buttons that add something («+ Add child», «+ New topic», «+ Add account» …) are always top right.
 
 **Parents and their Home Assistant user:** in the profile of a parent you choose the Home Assistant user (all persons of
-Home Assistant with a login). With it the parent area opens in the HA sidebar without PIN. The PIN is optional – it is
-only the login in the app, e.g. to join a game or learn along on another device. A parent without PIN appears in the
-app's profile list only while *Sign in with Home Assistant in the app* is on (tapping it opens the Home Assistant
-login). Without Home Assistant parents need a PIN as before.
+Home Assistant with a login) – sign-in *Home Assistant only* or *PIN or Home Assistant*. With it the parent area
+opens in the HA sidebar without PIN. The PIN (*PIN or Home Assistant*) is the login in the app, e.g. to join a game or
+learn along on another device. A parent with *Home Assistant only* appears in the app's profile list only while *Sign
+in with Home Assistant in the app* is on (tapping it opens the Home Assistant login). Without Home Assistant parents
+need a PIN as before.
 
 **Children and their Home Assistant user:** children who have their own Home Assistant user open their app in the
 Home Assistant sidebar without PIN as soon as the user is chosen in the child's profile (Profiles › edit › *Home

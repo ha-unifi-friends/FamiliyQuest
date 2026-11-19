@@ -724,6 +724,74 @@ def test_pit_records_from_a_real_crew(client):
     assert gens["record_pit"]["right"] == "3.0 s"
 
 
+def _app_js(code: str, data) -> object:
+    """Runs the app's pure part (the car, the clock, the screen) in node with `data` on stdin – answers its JSON."""
+    src = (WEB / "langstrecke.js").read_text(encoding="utf-8").split("// ---------------------------------------------------------------- the rules, the start")[0]
+    prog = "const T = s => s;\n" + src + "\nconst data = JSON.parse(require('fs').readFileSync(0, 'utf8'));\n" + code
+    return json.loads(subprocess.run(["node", "-e", prog], input=json.dumps(data), capture_output=True, text=True, timeout=120, check=True).stdout)
+
+
+def test_two_players_of_a_team_see_the_right_screen_in_every_phase(client):
+    """The bug from a 2-player race: the crew got stuck on the start screen (the intro with the lights) with the jobs
+    below it, also in later laps. Every phase from the server's view of BOTH apps through the app's own leScreen():
+    the start lights for both (the crew without jobs), then exactly one driver and one crew, both in the pits at a
+    stop, the roles swapped after it – and never the intro again after the start."""
+    from test_api import setup_family
+    phd, mia, leo = setup_family(client)
+    fq = client.app.state.fq
+    clock = _clock(fq)
+    hm, hl = login(client, mia, "1111"), login(client, leo)
+    client.post("/api/community/langstrecke/start", json={"bots": 2, "minutes": 5, "teams": 1, "team_size": 2, "weather": 1}, headers=hm)
+    client.post("/api/community/langstrecke/join", headers=hl)
+    st = client.post("/api/community/langstrecke/begin", headers=hm).json()
+    ids = (str(mia), str(leo))
+    slim = lambda v: {"phase": v["phase"], "status": v["status"], "joined": v["joined"], "my_team": v["my_team"],
+                      "teams": [{k: tm.get(k) for k in ("driver", "car", "stop", "members", "next")} for tm in v["teams"]]}
+    steps = []
+    g = -ls.COUNTDOWN + 0.5
+    while g < 110:
+        clock.t = st["t0"] + g
+        views = [client.post("/api/community/langstrecke/sync", json={"inputs": []}, headers=h).json() for h in (hm, hl)]
+        assert all(v["now"] - v["t0"] == pytest.approx(g) for v in views)
+        steps.append([g, [[slim(v), pid, v["now"] - v["t0"]] for v, pid in zip(views, ids)], len(views[0]["teams"][0]["pits"])])
+        g += 0.5
+    screens = _app_js("console.log(JSON.stringify(data.map(([g, vs]) => vs.map(([v, me, t]) => leScreen(v, me, t)))));", steps)
+    roles = []
+    for (g, _, pits), (sm, sl) in zip(steps, screens):
+        if g < 0:                                                          # the start: the lights for both
+            assert sm == {"mode": "drive", "intro": True} and sl == {"mode": "crew", "intro": True}, g
+            continue
+        assert not sm["intro"] and not sl["intro"], g                       # never the start screen again
+        pair = (sm["mode"], sl["mode"])
+        assert pair in {("drive", "crew"), ("crew", "drive"), ("pit", "pit")}, (g, pair)
+        if not roles or roles[-1][0] != pair:
+            roles.append((pair, pits))
+    assert [r for r, _ in roles][:5] == [("drive", "crew"), ("pit", "pit"), ("crew", "drive"), ("pit", "pit"), ("drive", "crew")]
+    assert [p for _, p in roles][:5] == [0, 0, 1, 1, 2]
+    # a reload mid-race: a fresh app (no state yet) lands straight in its role, no intro
+    v = client.get("/api/community/langstrecke", headers=hl).json()
+    assert _app_js("console.log(JSON.stringify(leScreen(data[0], data[1], data[2])));", [v, str(leo), v["now"] - v["t0"]])["intro"] is False
+
+
+def test_the_apps_clock_recovers_when_the_phone_slept():
+    """The app's clock (leClockSample): the best (shortest) round trip wins – but a phone that slept comes back with a
+    performance.now() that stood still, and its requests are slower than the best one from the lobby. A sample that
+    proves the offset wrong replaces it at once (before: the old offset stayed – the start screen for the whole race)."""
+    out = _app_js("""
+const ck0 = leClockSample({ offset: null, rtt: 1e9 }, 1000.010, 5.000, 5.020);              // the lobby: 20 ms
+const same = leClockSample(ck0, 1001.050, 6.000, 6.100);                                   // slower, agrees: kept
+const better = leClockSample(ck0, 1002.008, 7.000, 7.015);                                 // faster: taken
+// the phone slept 40 s: performance.now() stood still, the server's clock did not – slower requests from now on
+const woke = leClockSample(better, 1050.0, 8.000, 8.090);
+const game = ck => 8.09 + ck.offset;                                                       // the server time now as the app sees it
+console.log(JSON.stringify({ ck0, same, better, woke, gameBefore: game(better), gameAfter: game(woke) }));""", None)
+    assert out["ck0"]["offset"] == pytest.approx(995.0) and out["ck0"]["rtt"] == pytest.approx(0.02)
+    assert out["same"]["offset"] == out["ck0"]["offset"] and out["same"]["rtt"] > out["ck0"]["rtt"]       # the best ages a little
+    assert out["better"]["rtt"] == pytest.approx(0.015) and out["better"]["offset"] == pytest.approx(995.0005)
+    assert out["woke"]["offset"] == pytest.approx(1050.0 - 8.045) and out["woke"]["rtt"] == pytest.approx(0.09)
+    assert out["gameBefore"] < 1004 and out["gameAfter"] == pytest.approx(1050.045)
+
+
 def test_lobby_looks_colour_country_and_number_are_validated(client):
     from test_api import setup_family
     phd, mia, leo = setup_family(client)

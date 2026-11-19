@@ -1153,8 +1153,8 @@ function langstreckeLive(box, me, back) {
       mark("eng", rd.engine);
     }
     if (ui.eta) {                                               // how far the car is from the pits
-      const left = LE.L - (((tm.d % LE.L) + LE.L) % LE.L), secs = Math.max(0, left / Math.max(10, tm.v || LE.VLIFT));
-      ui.eta.style.setProperty("--v", Math.min(100, (1 - left / LE.L) * 100) + "%");
+      const left = tm.d < 0 ? LE.L - tm.d : LE.L - (tm.d % LE.L), secs = Math.max(0, left / Math.max(10, tm.v || LE.VLIFT));
+      ui.eta.style.setProperty("--v", Math.max(0, Math.min(100, (1 - left / LE.L) * 100)) + "%");
       ui.etaTxt.textContent = t < 0 ? I18N.tr(T("Get ready!")) : I18N.tr(T("The car is in in about {0} s")).replace("{0}", Math.round(secs));
     }
   }
