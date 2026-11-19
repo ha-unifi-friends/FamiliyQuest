@@ -216,7 +216,7 @@ async function guestInvite(game, gid) {
   try { r = await api("community/guests", { method: "POST", body: { game, on: true, gid } }); } catch (e) { return toast(e.message, "bad"); }
   const a = r.access || {};
   const host = (a.ips && a.ips[0]) || location.hostname;
-  const url = `http://${host}:${a.port || a.default_port || 8099}/gast?c=${encodeURIComponent(r.invite.code)}`;
+  const url = `http://${host}:${a.port || a.default_port || 8099}/guest?c=${encodeURIComponent(r.invite.code)}`;
   const field = h("input", { type: "url", readonly: true, value: url, onfocus: e => e.target.select() });
   const m = modal(h("div.form.center",
     h("h2", "👥 ", T("Invite guests")),

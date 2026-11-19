@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------- ⓘ in the parent area
 // Every box (right of its title), every page (right of the heading) and every pop-up (top right) gets an info button
-// that describes it. The headings are found by their text (English or translated) – no change to the views needed.
+// that describes it. The headings are found by their text (English or translated); a heading whose text is not a
+// key (a sub-section, a fold without a heading) names its entry with `data-ik` – tests/test_parent_info.py checks the cover.
 const PARENT_INFO = {
   [T("Overview")]: T("The start page of the parent area: open approvals, today's weather of each child, the family goal and one card per child with XP, learning time, weak spots and the balance. Add children and parents at the top right."),
   [T("Calendar")]: T("The family calendar: events, FamilyTime and OfflineTime. Switch between list, day, week, month and year; tap a day to add an event. Below: holiday templates, calendar files and calendars from Home Assistant."),
@@ -56,7 +57,6 @@ const PARENT_INFO = {
   [T("Beat the Bureaucracy")]: T("The family party game in a wonderfully complicated town hall, 2 to 4 teams (one device per team, guests via QR code, bots easy / normal / hard): every team needs all stamps (5, 7 or 9) for its building project. At every counter first comes the scene – «Do you have an appointment?» (argue your way in) or a huge queue (wait or try a trick) – then an authority card: a stamp, a referral, a missing document, a lunch break or a mini-game. Trick cards, objections between the teams, events; optionally one team (or a bot) plays the administration. At the end: the permit certificate and the funniest moments."),
   [T("Texas Hold'em")]: T("Poker with play chips – everybody on their own device, or alone against bots. No real money; the chips start again every game."),
   [T("History")]: T("What a profile experienced: quiz places, council decisions, games won. Choose the profile to see its history."),
-  [T("Games")]: T("Which games are switched on: for everybody, only for chosen children, or off. Parents can always play. The family council and polls stay open for everybody."),
   [T("Season designs")]: T("The animated scene in the header of the app: seasons, Halloween and Christmas switch themselves every year. Switch them on or off, move the dates or add your own designs (e.g. a birthday week)."),
   [T("Pairs game: photo sets")]: T("Your own photo sets for the pairs game and the Paarjagd (e.g. family members, holidays) – from Home Assistant Media or uploaded from this device. Every photo becomes a pair."),
   [T("Family crest")]: T("Your family crest – drawn from colours, pattern and symbol, or your own picture. It is shown on the card backs, on the dashboard and on posters."),
@@ -105,10 +105,72 @@ const PARENT_INFO = {
   [T("From a file")]: T("Choose or drop a file: YAML, JSON or ZIP packs, CSV or Excel tables (you assign the columns) or – with an AI in Home Assistant – a photo or PDF of a word list."),
   [T("Made with your AI")]: T("The template is a JSON file that describes itself to an AI: English instructions, a guide to every field and an example. JSON exports carry the same explanations, so an AI can also change, extend or translate existing content. The AI answers with a JSON file – upload it, it becomes a draft you check."),
   [T("From a link")]: T("Load a pack from an address in the internet (YAML, JSON or ZIP). It becomes a draft too."),
-  [T("Format")]: T("An example of how a pack is written in YAML: subject, level, language and units with cards and exercises.")
+  [T("Format")]: T("An example of how a pack is written in YAML: subject, level, language and units with cards and exercises."),
+  [T("Learning packs")]: T("All learning packs of the family: switch each one on or off per child, see the progress, edit, export or remove a pack. «Import» adds your own packs; drafts wait under «To check» until you publish them."),
+  [T("Own packs")]: T("Packs you imported or made yourself. Switch them on per child, edit the cards, export them as a file or delete them."),
+  [T("More packs")]: T("Optional packs of the app that are not in the family yet, e.g. content for one language or region. «Add» puts a pack into the family – then switch it on per child."),
+  [T("Imported as draft – to check")]: T("The packs you just imported are drafts: check every card and publish the pack – only then children see it."),
+  [T("Code Workshop")]: T("Children learn programming with puzzle blocks and draw their own programs. Switch it on per child, set the coins for solved puzzles and look at the progress and the programs of the family."),
+  [T("Today")]: T("Today's chores: what is still open, what waits for your OK and what is done."),
+  [T("Planner settings")]: T("The settings of the built-in planner: persons, points, lists, rewards, holidays and more. Rarely needed – that is why they are folded."),
+  [T("FamilyTime games")]: T("Games for the FamilyTime events of the calendar: children wish a game and the family votes, or a child buys a fixed game with coins. Switch the wishes on or off, set the price and when the wishes close."),
+  [T("Books")]: T("📕 The picture books of the family: pages with a picture and a text, read page by page. Write a new one, change one or import one from a file."),
+  [T("Interactive books")]: T("📖 Books in which the reader decides: on some pages there is a choice and the story goes on differently. Write one yourself or import one."),
+  [T("Sample books")]: T("Books that come with the app – read them, or copy one as the start of your own book."),
+  "sb.settings": T("Which children have the bookshelf, whether books of children need your OK before the family sees them, the sample book, and the coins and XP for writing a book and for reading one to the end."),
+  [T("Party mode")]: T("One switch for a party or a game night: every game open, no battery and no game time limit – for all or chosen children and for as long as you choose. It ends by itself."),
+  "games.general": T("Settings for every game at once: switch all games on or off, choose who begins a card or board game and whether guests may join with a QR code."),
+  [T("Game battery")]: T("Starting a game costs one segment of the child's game battery; recharging costs coins. Set the capacity, the price, unlimited energy and what reaching the daily goal brings. Each child can get its own values (profile › Time & battery)."),
+  [T("Running games")]: T("All game tables that are running right now and who plays. End a table here when it was forgotten."),
+  [T("Adventure games")]: T("Point & click games of the family: rooms, things to find, riddles and characters. Make a new one from a template or import one, edit it, and play it at the family table or alone."),
+  "cg.quiz": T("Your own quizzes and the templates. Tap a quiz to change its questions; start it for the whole family with the buttons above."),
+  "cg.paarjagd": T("Your own photo sets for Pair Hunt and the pairs game – from Home Assistant Media or uploaded from this device. Every photo becomes a pair; «+ New» starts an empty set."),
+  "cg.adventuregame": T("The adventure games of the family. «+ New» starts from a template, «📥 Import» takes a file; tap a game to edit or play it."),
+  [T("Tic-Tac-Toe")]: T("Three in a row in the game corner – against the app or a second player on the same device. Set whether it is active, for whom, and the coins."),
+  [T("Ping-Pong")]: T("Bounce the ball back in the game corner – against the app or face to face on one tablet. Set whether it is active, for whom, and the coins."),
+  [T("Sudoku")]: T("Sudoku in the game corner, from 4×4 to 9×9. Set whether it is active, for whom, and the coins."),
+  [T("Patience")]: T("The card patience of the game corner: sort all cards by suit onto the four piles. Set whether it is active, for whom, and the coins."),
+  [T("One-armed bandit")]: T("The slot machine of the game corner: one pull costs 1 coin, three a day. Set whether it is active, for whom, and the jackpot."),
+  [T("Deals")]: T("Deals between the children and with you: coins, chores, pets, avatar items, bought games and favours. Make an offer yourself, answer deals that wait for your OK and set the rules at the bottom."),
+  [T("Waiting for your OK")]: T("Deals between children that need a parent's OK before they start. Open one to accept or decline it."),
+  [T("My deals")]: T("Your own deals with the children – open one to answer, change or end it."),
+  [T("All running deals")]: T("Every open or running deal of the family: who trades with whom and how far it is."),
+  [T("Finished deals")]: T("Deals that are done, declined or cancelled – the most recent ones."),
+  [T("Deal settings")]: T("Whether trading is on, which children may trade, what can be traded, the most coins per deal and which deals need your approval."),
+  [T("Own rewards")]: T("Rewards you set yourself – vouchers, internet minutes, a Home Assistant script … – with price, account, approval and a weekly limit."),
+  [T("Avatar items")]: T("Everything children can buy for their avatar, sorted by kind. Change the prices or switch items off."),
+  "dash.children": T("Which children the dashboard shows."),
+  "dash.content": T("The tiles of the dashboard: chores, calendar, weather, points, the family goal … Tick what it shows."),
+  "dash.calendars": T("Which calendars the calendar tile of the dashboard shows."),
+  "dash.weather": T("A warning on the dashboard when rain is likely: the weather entity of Home Assistant, how many hours ahead and from which chance of rain."),
+  [T("Learning")]: T("The coins for a perfect lesson and the prices around the pets: food, the pet hotel, the coins of the hamster and how the pet shop is paid."),
+  [T("Family Quest HA integration")]: T("Sensors and actions in Home Assistant (XP, coins, chores, time left …). Switch it on, copy the token, restart Home Assistant and add the integration «Family Quest»."),
+  "ha.app": T("Tablets and phones can sign in with a Home Assistant user instead of a PIN. Switch it on, check the address of Home Assistant with «Test», and link Home Assistant users with profiles (Profiles › edit)."),
+  "net.app": T("The address ranges that may open the app at all. No range = every network."),
+  "net.parent": T("The ranges that may also open the parent area, e.g. only the parents' network. No range = like the whole app."),
+  "net.guest": T("Guest networks: devices there can only join games with a QR invitation – no login, no app, no parent area."),
+  [T("Edit profile")]: T("Everything of one profile in tabs: name, role, sign-in and avatar – for children also learning, time & battery, internet and devices. «Save» at the bottom."),
+  [T("New child")]: T("Add a child: name, colour and how it signs in (nothing, PIN or Home Assistant). Everything else can be set later."),
+  [T("New parent")]: T("Add a parent: name and how they sign in (PIN or Home Assistant)."),
+  "prof.login": T("How this profile signs in: without anything, with a PIN (digits or symbols), with Home Assistant, or with a PIN or Home Assistant."),
+  "prof.time": T("How long the child may play games, learn and use the internet per day – also per weekday. ∞ = no limit."),
+  "prof.internet": T("The internet time of the child through a firewall rule of Home Assistant (e.g. UniFi): the child starts and stops it in the app, the minutes come from the account «Internet minutes»."),
+  "prof.push": T("Approvals of chores and rewards also as a push message to this parent's phone (Companion app), with the buttons OK / No."),
+  "prof.avatar": T("The avatar of the profile: face, hair, clothes and the bought items."),
+  "prof.devices": T("Devices of Home Assistant this profile may switch in the app, e.g. the light in its own room."),
+  [T("Imported as draft")]: T("What the import made: each pack is a draft. Check it with «Edit» and publish it – only then children see it."),
+  [T("Assign the columns")]: T("Tell which column of your table is the question, the answer and the rest, and name the pack. The preview shows the first cards."),
+  [T("Home Assistant Media")]: T("Pictures from the media folder of Home Assistant: open a folder and tap the pictures you want. They stay in Home Assistant and are not copied into the backup."),
+  [T("Cube solver")]: T("In the game corner: paint the colours of your puzzle cube and get the moves to solve it, step by step. Set whether it is active and for whom.")
 };
 
 const _infoNorm = s => String(s || "").replace(/ⓘ/g, "").replace(/^[^\p{L}\p{N}]+/u, "").replace(/\s+/g, " ").trim();
+// the text of a heading without what changes (counters, «● running now», buttons) – «🎯 Family quiz 4» → «Family quiz»
+function infoTitle(el) {
+  const c = el.cloneNode(true);
+  c.querySelectorAll(".chip, .info-btn, button, input, select, .head-actions, .set-status").forEach(x => x.remove());
+  return c.textContent;
+}
 function infoKey(text) {
   const t = _infoNorm(text);
   if (!t) return null;
@@ -124,13 +186,19 @@ function infoButton(key, title) {
   } }, "ⓘ");
 }
 
+// what gets an ⓘ: page titles, the titles of boxes and folds (also the games and the folded settings), the sub-boxes of
+// the library and the custom games, pop-ups – and every element with `data-ik` (the key of PARENT_INFO), e.g. a
+// sub-section (h3) or a fold without a heading
+const INFO_SEL = ["main h1", "section.card > h2", ".sec-head > h2", "details.card > summary > h2", ".set-head > h2", ".cg-group > h2",
+  "section.sb-sec > h2", ".modal h2", "[data-ik]"].join(", ");
 function decorateInfo(root = document) {
-  root.querySelectorAll(".page-head h1, section.card > h2, section.card > .sec-head > h2, .modal h2").forEach(el => {
+  root.querySelectorAll(INFO_SEL).forEach(el => {
     if (el.dataset.info || el.closest(".info-modal")) return;
-    const key = infoKey(el.textContent);
+    const title = infoTitle(el);
+    const key = el.dataset.ik && PARENT_INFO[el.dataset.ik] ? el.dataset.ik : infoKey(title);
     el.dataset.info = key ? "1" : "0";
     if (!key) return;
-    const btn = infoButton(key, el.textContent);
+    const btn = infoButton(key, title);
     const box = el.closest(".modal");
     if (box && box.querySelector("h2") === el) { btn.classList.add("info-corner"); box.append(btn); }
     else el.append(btn);

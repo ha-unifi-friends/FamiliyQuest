@@ -30,7 +30,7 @@ window.FQ_NAV_HOOK = root => {
     btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
     btn.style.cssText = "margin-right:10px;flex:none";
     btn.onclick = e => { e.stopPropagation(); openAppMenu({ active: "planer",
-      onGo: k => { location.href = k === "planer" ? "planer" : "app#/" + (k === "home" ? "" : k); },
+      onGo: k => { location.href = k === "planer" ? "planner" : "app#/" + (k === "home" ? "" : k); },
       onLogout: () => { Auth.kid = ""; Auth.parent = ""; location.href = "app"; } }); };
     left.prepend(btn);
     left.style.display = "flex"; left.style.alignItems = "center";
