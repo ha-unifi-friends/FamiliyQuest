@@ -1,9 +1,10 @@
 // «24h Endurance» (24-Stunden-Rennen) – a short, fast live team race on the fictional «Circuit des Tannes»
 // (familyquest/langstrecke.py). Teams are racing stables with one car each. One short lap, then the car drives into
 // the pits by itself and the next person of the team drives. The driver dodges on three lanes (swipe / arrow keys)
-// and holds the pedal for full speed (it heats the engine); the pit crew – everybody else of the team – prepares the
-// stop on their phones during the lap: lay out the 4 tyres, fill the canister, after an overheat the spare engine.
-// The stop takes longer for every job that was not ready – a stopwatch for the whole team. Sudden rain showers
+// and holds the pedal for full speed (it heats the engine and drains the battery much faster – empty: the emergency
+// drive mode); the pit crew – everybody else of the team – prepares the stop on their phones during the lap: plug the
+// spare battery in (it charges over time – the next driver gets it with whatever charge it has), lay out the 4 tyres,
+// after an overheat the spare engine. The stop takes longer when the tyres were not ready – a stopwatch for the whole team. Sudden rain showers
 // (slicks or rain tyres – the crew chooses), day and night, two chicanes with kerbs, cheering stands at the pits.
 // The server simulates every car (the same step function as below) – the driver's app only reports its inputs and
 // predicts its own car from the server's snapshot for a smooth picture.
@@ -19,8 +20,13 @@ const leLapsTxt = n => n + " " + I18N.tr(n === 1 ? T("lap") : T("laps"));
 const LE = { L: 640, DT: 0.1, VLIFT: 20, VFULL: 30, ACC: 7, BRAKE: 14, COAST: 5, VBRAKE: 8, VLIMP: 13, VSLOW: 10, SLOW_T: 1.2,
   SAFE: 23, SAFE_TRICKY: 18, VOFF: 6, OFF_T: 3,
   HEAT: 2.6, HEAT_JR: 1.7, COOL: 4, TMIN: 60, YELLOW: 85, RED: 100, COUNTDOWN: 6,
-  STOP_BASE: 3, PEN_PREP: 4, ENG_READY: 2, ENG_SWAP: 6, GARAGE: 5, FILL_RATE: 25, GREEN: 80, ENGINE_HOLD: 2,
+  E_FULL: 0.16, E_LIFT: 0.07, REGEN: 0.3, VEMERG: 7,
+  STOP_BASE: 2, BAT_SWAP: 1, PEN_PREP: 4, ENG_READY: 2, ENG_SWAP: 6, GARAGE: 4, CHARGE_RATE: 4, GARAGE_PLUG: 8, ENGINE_HOLD: 2,
   WET_SLICK: 0.8, DRY_RAIN: 0.9, KERB_T: 0.6, KERB_T_WET: 1 };
+// the spare battery's charge at game time `at` (the server's timestamps; the server decides at the stop)
+const leSpare = (sp, at) => (!sp ? 0 : sp.plug == null || at <= sp.plug ? sp.c0 : Math.min(100, sp.c0 + LE.CHARGE_RATE * (at - sp.plug)));
+// what the rest of the lap needs: lifted off all the way / a normal mix of full throttle and lifting
+const leNeed = d => { const left = LE.L - (((d % LE.L) + LE.L) % LE.L); return { lift: left * LE.E_LIFT, mix: left * (LE.E_FULL + LE.E_LIFT) / 2 }; };
 const LE_OIL = 0, LE_CONES = 1, LE_SLOWCAR = 2;
 const LE_CHICANES = [[210, 245, 2, 0], [450, 485, 0, 2]];          // gate a, gate b, kerb lane at a, at b
 const LE_FREE = [[100, 180], [285, 420], [525, 600]];              // the parts of the lap without a chicane
@@ -80,14 +86,22 @@ function leApply(car, c, v) {
 function leStep(car, s, seed, jr, rain = false, dark = false) {
   const ev = [], DT = LE.DT;
   if (car.pit) { car.temp = Math.max(LE.TMIN, car.temp - LE.COOL * DT); return ev; }
-  const full = car.thr > 0 && !car.eng;
+  const emg = car.bat <= 0;                          // the battery is empty: the emergency drive mode
+  const full = car.thr > 0 && !car.eng && !emg;
   let vt = car.eng ? LE.VLIMP : (full ? LE.VFULL : LE.VLIFT) * leGrip(car.tyre, rain);
+  if (emg) vt = Math.min(vt, LE.VEMERG);
   let dec = LE.COAST;
   if (car.thr < 0) { vt = Math.min(vt, LE.VBRAKE); dec = LE.BRAKE; }
   if (car.slow > 0) { vt = Math.min(vt, (car.off || 0) > 0 ? LE.VOFF : LE.VSLOW); dec = LE.BRAKE; car.slow = Math.max(0, car.slow - DT); }
   car.off = Math.max(0, (car.off || 0) - DT);
-  let v = car.v;
-  v = v < vt ? Math.min(vt, v + LE.ACC * DT) : Math.max(vt, v - dec * DT);
+  const v0 = car.v;
+  let v = v0 < vt ? Math.min(vt, v0 + LE.ACC * DT) : Math.max(vt, v0 - dec * DT);
+  if (!emg) {                                        // the battery: by the metre – full throttle much more; braking gives a little back
+    let use = (full ? LE.E_FULL : LE.E_LIFT) * v * DT;
+    if (car.thr < 0 && v < v0) use -= LE.REGEN * (v0 - v);
+    car.bat = Math.max(0, Math.min(100, car.bat - use));
+    if (car.bat <= 0) { car.flat += 1; ev.push("empty"); }
+  }
   const d0 = car.d;
   let d1 = d0 + v * DT;
   if (full) car.temp = Math.min(LE.RED, car.temp + (jr ? LE.HEAT_JR : LE.HEAT) * DT);
@@ -127,7 +141,7 @@ function leStep(car, s, seed, jr, rain = false, dark = false) {
 
 // ---------------------------------------------------------------- the rules, the start
 const LE_PARTS = { base: ["🔄", T("Stop and driver change")], garage: ["🏠", T("The garage prepares")],
-  tyres: ["🛞", T("Tyres")], fuel: ["⛽", T("Fuel")], engine: ["🔧", T("Engine swap")] };
+  tyres: ["🛞", T("Tyres")], battery: ["🔋", T("Battery swap")], engine: ["🔧", T("Engine swap")] };
 // the countries a team can race for (ISO codes, the same list as langstrecke.COUNTRIES), by region
 const LE_COUNTRIES = {
   BE: T("Belgium"), BG: T("Bulgaria"), DK: T("Denmark"), DE: T("Germany"), FI: T("Finland"), FR: T("France"), GR: T("Greece"), GB: T("Great Britain"),
@@ -176,11 +190,13 @@ function langstreckeRulesView(r, rewards) {
     T("A short lap, then the car drives into the pits by itself – and the next person of the team drives."),
     T("Driver: swipe or ◀ ▶ to dodge, hold the pedal for full speed. In the red the engine overheats – it has to be swapped at the stop."),
     T("Brake (🛑) before the two chicanes – the boards show 150 / 100 / 50 m. Too fast and you go off into the gravel. Then change the lane past the kerbs."),
-    T("Pit crew (everybody else): during the lap lay out the 4 tyres and fill the canister – let go in the green. After an overheat also prepare the spare engine."),
-    T("The stop takes 3 s, +4 s for every job not ready, +6 s for an engine swap (+2 s if prepared)."),
+    T("Electric car: full throttle drains the battery much faster than cruising. Empty – emergency drive mode: the car crawls to the pits."),
+    T("Two batteries per team: at every stop the spare goes in with whatever charge it has. Plug the used one in first – it needs about a lap to charge."),
+    T("Pit crew (everybody else): during the lap plug in the spare battery and lay out the 4 tyres. After an overheat also prepare the spare engine."),
+    T("The stop takes 3 s with the battery swap, +4 s if the tyres are not ready, +6 s for an engine swap (+2 s if prepared)."),
     r.weather ?? 1 ? T("Sudden rain showers: the crew picks slicks or rain tyres – watch the forecast. The wrong tyres are slower.") : null,
     T("In the rain and at night the chicanes need slower speed and the kerbs are wider."),
-    T("Alone in a team: the garage prepares, every stop takes 5 s."),
+    T("Alone in a team: the garage prepares, every stop takes 5 s – it plugs the spare battery in only after 8 s."),
     rewards ? I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", leCoins(rewards)) : null,
     T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots."),
   ].filter(Boolean);
@@ -207,7 +223,7 @@ async function langstreckeStartDialog(solo, onStarted) {
   const coins = solo ? h("p.small.muted", "🪙 ", T("Alone against bots there are no coins."))
     : rw.some(x => x > 0) ? h("p.small.pj-coins", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", leCoins(rw))) : null;
   const m = modal(h("div.form", h("h2", LE_ICON, " ", leName(), solo ? " – " + I18N.tr(T("Alone")) : ""),
-    h("p.small.muted", T("Short laps and a pit stop after every lap: one drives, the others get tyres and fuel ready – then the next one drives.")),
+    h("p.small.muted", T("Short laps and a pit stop after every lap: one drives, the others charge the spare battery and get the tyres ready – then the next one drives.")),
     h("div.grid2", h("label.field", T("Race length"), minutes), h("label.field", T("Weather"), weather)),
     h("div.grid2", h("label.field", T("Difficulty"), diff)),
     solo ? null : h("div.grid2", h("label.field", T("Teams of people"), teams), h("label.field", T("People per team"), size)),
@@ -290,13 +306,34 @@ function leCarRear(ctx, x, y, w, col, num, o = {}) {
     ctx.fillStyle = "#111"; ctx.font = "800 " + Math.max(7, Math.round(w * 0.12)) + "px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(String(num), x, y - hgt * 0.49);
   }
-  if (o.hazard) { ctx.fillStyle = "#ffa94d"; ctx.fillRect(x - w * 0.42, y - hgt * 0.62, w * 0.08, hgt * 0.08); ctx.fillRect(x + w * 0.34, y - hgt * 0.62, w * 0.08, hgt * 0.08); }
+  if (o.hazard) {
+    ctx.fillStyle = "#ffa94d"; ctx.fillRect(x - w * 0.42, y - hgt * 0.62, w * 0.08, hgt * 0.08); ctx.fillRect(x + w * 0.34, y - hgt * 0.62, w * 0.08, hgt * 0.08);
+    if (o.emg) {                                                     // the emergency drive mode: big orange hazard lights
+      for (const sx of [-0.38, 0.38]) {
+        const g = ctx.createRadialGradient(x + sx * w, y - hgt * 0.58, 0, x + sx * w, y - hgt * 0.58, w * 0.28);
+        g.addColorStop(0, "rgba(255,169,77,.75)"); g.addColorStop(1, "rgba(255,169,77,0)");
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x + sx * w, y - hgt * 0.58, w * 0.28, 0, 7); ctx.fill();
+      }
+    }
+  }
+  if (o.bat != null && w > 40) leBattery(ctx, x + w * 0.3, y - hgt * 1.42, w * 0.2, w * 0.09, o.bat);   // my battery above the rear wing
   if (o.flag && w > 30) {                                            // the country: a flag (or its code) on the rear
     ctx.font = (o.flag.length > 2 ? "" : "800 ") + Math.round(w * (o.flag.length > 2 ? 0.16 : 0.1)) + "px system-ui, 'Apple Color Emoji', 'Noto Color Emoji'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     if (o.flag.length <= 2) { ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fillRect(x - w * 0.36, y - hgt * 0.9, w * 0.2, hgt * 0.17); ctx.fillStyle = "#111"; }
     ctx.fillText(o.flag, x - w * 0.26, y - hgt * 0.82);
   }
   if (o.smoke) { ctx.fillStyle = "rgba(180,180,180,.5)"; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(x + (k - 1) * w * 0.2, y - hgt * (1.3 + k * 0.2), w * 0.12 * (1 + k * 0.4), 0, 7); ctx.fill(); } }
+  ctx.restore();
+}
+// a battery lying on its side (x, y: the centre, w × hh), filled to pct – green / orange / red; a ⚡ while charging
+function leBattery(ctx, x, y, w, hh, pct, charging) {
+  ctx.save();
+  const p = Math.max(0, Math.min(100, pct)) / 100, lw = Math.max(1, hh * 0.14), x0 = x - w / 2, y0 = y - hh / 2;
+  ctx.fillStyle = "rgba(20,24,30,.85)"; ctx.fillRect(x0, y0, w, hh); ctx.fillRect(x0 + w, y - hh * 0.22, w * 0.07, hh * 0.44);
+  ctx.fillStyle = p >= 0.5 ? "#40c057" : p >= 0.2 ? "#fd7e14" : "#fa5252";
+  ctx.fillRect(x0 + lw, y0 + lw, (w - 2 * lw) * p, hh - 2 * lw);
+  ctx.strokeStyle = "#f1f3f5"; ctx.lineWidth = lw; ctx.strokeRect(x0, y0, w, hh);
+  if (charging && hh > 8) { ctx.fillStyle = "#ffe066"; ctx.font = "900 " + Math.round(hh * 0.8) + "px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⚡", x, y + 1); }
   ctx.restore();
 }
 // trackside advertising (own, invented): «Family Quest», «Home Assistant» with an own simple house, «Snowman Tyres»
@@ -381,7 +418,7 @@ function langstreckeLive(box, me, back) {
   let pend = [], inflight = [], thrLocal = 0;
   const fired = new Set();
   let ui = {}, introSkip = false, introSound = 0, finalCue = false, lastTempWarn = 0, wasDriver = false, stopSeen = null;
-  const local = { tyres: [false, false, false, false], fuelHold: 0, engHold: 0, compound: null };    // my own taps until the server has them
+  const local = { tyres: [false, false, false, false], plug: 0, engHold: 0, compound: null };    // my own taps until the server has them
   const imgs = {};
   const myId = String(me.id);
   box.classList.add("le-live");
@@ -433,7 +470,7 @@ function langstreckeLive(box, me, back) {
     wasDriver = drv;
     if (t.stop && stopSeen !== t.stop.t) {                                     // the car is in: the stopwatch starts
       stopSeen = t.stop.t;
-      local.tyres = [false, false, false, false]; local.fuelHold = 0; local.engHold = 0;
+      local.tyres = [false, false, false, false]; local.plug = 0; local.engHold = 0;
       if (gameT() - t.stop.t < 3) { LeAudio.tone([500, 400], "sine", 0.15, 0.1, 0.12); leBuzz([60, 40, 60]); }
     }
   }
@@ -541,6 +578,7 @@ function langstreckeLive(box, me, back) {
     if (e === "hit" || e === "kerb") { try { Sound.play("wrong"); } catch {} leBuzz(e === "kerb" ? 40 : 70); ui.flash = nowS(); }
     else if (e === "off") { LeAudio.tone([160, 120, 90], "sawtooth", 0.25, 0.08, 0.12); leBuzz([120, 60, 120]); ui.flash = nowS(); ui.offAt = nowS(); }
     else if (e === "blow") { LeAudio.tone([200, 120, 80], "sawtooth", 0.3, 0.12, 0.2); leBuzz([200, 80, 200]); ui.flash = nowS(); }
+    else if (e === "empty") { LeAudio.tone([660, 440, 330, 220], "square", 0.18, 0.08, 0.16); leBuzz([150, 80, 150, 80, 150]); ui.flash = nowS(); }
     else if (e === "lap") { try { Sound.play("tap"); } catch {} }
   }
 
@@ -684,7 +722,8 @@ function langstreckeLive(box, me, back) {
         const goal = mine === 1 ? (o.num % 2 ? 0 : 2) : 1, near = Math.max(0, Math.min(1, (24 - Math.abs(rel)) / 12));
         ln = o.lane + (goal - o.lane) * near;
       }
-      items.push({ z: rel, f: () => leCarRear(ctx, X(ln, rel), Y(rel), LW * sc_(rel) * 0.7, o.color, o.num, { night: dk > 0.4, alpha: 0.95, flag: leFlag(o.country) }) });
+      const haz = o.emg && Math.floor(t * 2.5) % 2 === 0;           // a car in the emergency drive mode: hazard lights
+      items.push({ z: rel, f: () => leCarRear(ctx, X(ln, rel), Y(rel), LW * sc_(rel) * 0.7, o.color, o.num, { night: dk > 0.4, alpha: 0.95, flag: leFlag(o.country), hazard: haz, emg: haz }) });
     }
     items.sort((a, b) => b.z - a.z).forEach(it => it.f());
     if (dk > 0) {                                     // night: dark all around, the headlights light the road ahead
@@ -703,7 +742,9 @@ function langstreckeLive(box, me, back) {
     const xs = cw / 2 + (lp - 1) * LW * sc_(0) * (opts.tv ? 1 : 0.65);
     const shake = car.v > 0 && !leReduced() ? Math.sin(t * 40) * 0.6 : 0;
     const slide = rain && car.tyre !== "r" && car.v > 5 && !leReduced() ? Math.sin(t * 7) * LW * 0.06 : 0;    // slicks in the rain slide
-    leCarRear(ctx, xs + slide, ch * 0.97 + shake, LW * 1.05, team.color, team.num, { brake: !car.thr && car.v > LE.VLIFT + 1, night: dk > 0.4, smoke: !!car.eng, flag: leFlag(team.country) });
+    const emg = car.bat != null && car.bat <= 0 && !car.pit, haz = emg && Math.floor(t * 2.5) % 2 === 0;
+    leCarRear(ctx, xs + slide, ch * 0.97 + shake, LW * 1.05, team.color, team.num, { brake: !car.thr && car.v > LE.VLIFT + 1, night: dk > 0.4, smoke: !!car.eng, flag: leFlag(team.country),
+      hazard: haz, emg: haz, bat: car.bat });
     if (rain) {
       ctx.strokeStyle = "rgba(200,215,235,.55)"; ctx.lineWidth = 1;
       const r = leRand(Math.floor(t * 12));
@@ -796,8 +837,6 @@ function langstreckeLive(box, me, back) {
         ctx.font = Math.round(S * 0.7) + "px system-ui, 'Apple Color Emoji', 'Noto Color Emoji'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText(off[i] ? "🔧" : "🛞", x, y + (off[i] ? Math.sin(t * 30) * 2 : 0));
       });
-      ctx.fillText("⛽", cx + len * 0.62, cy - len * 0.12);
-      ctx.strokeStyle = "#212529"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + len * 0.58, cy - len * 0.06); ctx.quadraticCurveTo(cx + len * 0.45, cy + len * 0.05, cx + len * 0.2, cy - len * 0.02); ctx.stroke();
       if (stp.eng) { ctx.fillText(Math.floor(t * 3) % 2 ? "🏗️" : "⚙️", cx + len * 0.22, cy - len * 0.36); }
       crew.slice(0, 4).forEach((pp, i) => {                     // the crew (their avatars) around the car
         const [dx, side] = spots[i], x = cx + dx * len + (i % 2 ? 1 : -1) * S * 0.9, y = cy + side * (len * 0.42 * 0.5 + S * 0.7);
@@ -805,6 +844,21 @@ function langstreckeLive(box, me, back) {
         if (img && img.complete && img.naturalWidth) ctx.drawImage(img, x - S / 2, y - S / 2 + Math.sin(t * 12 + i) * 1.5, S, S);
       });
     }
+    // the battery swap: the used battery slides out to the charger at the pit wall, the spare slides in
+    const chx = w * 0.9, chy = hh * 0.2, bw = Math.min(46, len * 0.34), bh = bw * 0.42;
+    ctx.fillStyle = "#343a40"; ctx.fillRect(chx - 16, chy - 22, 32, 44);                         // the charger
+    ctx.fillStyle = "#ffe066"; ctx.font = "900 18px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⚡", chx, chy - 4);
+    ctx.fillStyle = "#69db7c"; ctx.fillRect(chx - 10, chy + 12, 20, 4);
+    const sw = Math.max(0, Math.min(1, (el - 0.5) / LE.BAT_SWAP)), slot = [cx + len * 0.05, cy];
+    const outAt = [slot[0] + (chx - 40 - slot[0]) * sw, slot[1] + (hh * 0.82 - slot[1]) * sw];       // out: to the charger (below it)
+    const inAt = [chx - 40 + (slot[0] - chx + 40) * sw, hh * 0.82 - (hh * 0.82 - slot[1]) * sw - (sw > 0 && sw < 1 ? bh * 1.4 : 0)];
+    if (sw > 0) {
+      ctx.save(); ctx.strokeStyle = "#ffd43b"; ctx.lineWidth = 3; ctx.setLineDash([7, 5]); ctx.lineDashOffset = leReduced() ? 0 : -t * 40;   // the cable to the used battery
+      ctx.beginPath(); ctx.moveTo(chx, chy + 22); ctx.quadraticCurveTo(chx, outAt[1] + bh, outAt[0] + bw / 2, outAt[1]); ctx.stroke(); ctx.restore();
+      leBattery(ctx, outAt[0], outAt[1], bw, bh, stp.bat_out ?? 0, sw >= 1);
+    }
+    if (sw < 1) leBattery(ctx, inAt[0], inAt[1], bw, bh, stp.bat_in ?? 100);
+    else if (!done || slideOut < 1) leBattery(ctx, cx + len * 0.05 + slideOut * w * 0.8, cy, bw * 0.7, bh * 0.7, stp.bat_in ?? 100);
     if (done) { ctx.fillStyle = "rgba(64,192,87,.9)"; ctx.font = "900 " + Math.round(Math.min(w * 0.1, 40)) + "px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(I18N.tr(T("GO!")), w / 2, hh / 2); }
   }
   function pitTick(t) {
@@ -855,6 +909,7 @@ function langstreckeLive(box, me, back) {
           car = { ...tm.car || {}, d: tm.d, v: tm.v, lane: tm.lane, pit: tm.pit, thr: (tm.car || {}).thr ?? 1, eng: tm.eng };
           car.d = tm.pit ? tm.d : tm.d + tm.v * Math.max(0, Math.min(1.5, t - simT()));
           car._s = t;
+          if (car.bat == null && tm.emg) car.bat = 0;
         }
         if (car) {
           if (ui.mode === "drive") ui.lanePos = ui.lanePos == null ? car.lane : ui.lanePos + (car.lane - ui.lanePos) * 0.25;
@@ -862,15 +917,26 @@ function langstreckeLive(box, me, back) {
           const big = (txt, sub, col) => {
             const ctx = c.ctx;
             ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineWidth = 6; ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(15,23,42,.75)"; ctx.fillStyle = col || "#fff";
-            ctx.font = "900 " + Math.round(Math.min(c.w * 0.1, c.h * 0.11)) + "px system-ui, sans-serif";
+            let fs = Math.round(Math.min(c.w * 0.1, c.h * 0.11));
+            ctx.font = "900 " + fs + "px system-ui, sans-serif";
+            const tw = ctx.measureText(txt).width;
+            if (tw > c.w * 0.94) { fs = Math.floor(fs * c.w * 0.94 / tw); ctx.font = "900 " + fs + "px system-ui, sans-serif"; }     // a long word fits the screen
             ctx.strokeText(txt, c.w / 2, c.h * 0.4); ctx.fillText(txt, c.w / 2, c.h * 0.4);
-            if (sub) { ctx.font = "700 " + Math.round(Math.min(c.w * 0.045, 18)) + "px system-ui, sans-serif"; ctx.lineWidth = 4; ctx.strokeText(sub, c.w / 2, c.h * 0.4 + 34); ctx.fillText(sub, c.w / 2, c.h * 0.4 + 34); }
+            if (sub) {                                         // the line below – wrapped when it is too long for the screen
+              const ss = Math.round(Math.min(c.w * 0.045, 18)), lines = [];
+              ctx.font = "700 " + ss + "px system-ui, sans-serif"; ctx.lineWidth = 4;
+              for (const w of sub.split(" ")) { const l = lines.length ? lines[lines.length - 1] + " " + w : w; if (lines.length && ctx.measureText(l).width > c.w * 0.92) lines.push(w); else lines[Math.max(0, lines.length - 1)] = l; }
+              lines.forEach((l, i) => { const y = c.h * 0.4 + 34 + i * (ss + 4); ctx.strokeText(l, c.w / 2, y); ctx.fillText(l, c.w / 2, y); });
+            }
           };
           if (t < 1 && ui.mode === "drive") big(I18N.tr(T("GO!")), null, "#69db7c");
           else if (t >= limit()) big("🏁 " + I18N.tr(T("Finish!")));
+          else if (car.bat != null && car.bat <= 0 && !car.pit) big("⚠️ " + I18N.tr(T("Emergency drive mode")), I18N.tr(T("Battery empty – crawling to the pits.")), "#ffa94d");
           else if (car.eng) big("💥 " + I18N.tr(T("Engine overheated!")), I18N.tr(T("Limp to the pits – it gets swapped.")), "#ff8787");
           else if (ui.mode === "drive" && ui.offAt && nowS() - ui.offAt < 2.5) big("🟫 " + I18N.tr(T("Off the track!")), I18N.tr(T("Too fast into the chicane – brake earlier.")), "#ffd8a8");
           else if (ui.mode === "drive" && brakeHint(car, t)) big("🛑 " + I18N.tr(T("Brake!")), I18N.tr(T("Chicane ahead")), "#ff8787");
+          else if (ui.mode === "drive" && car.thr > 0 && car.bat < leNeed(car.d).mix && Math.floor(t * 3) % 2 === 0)
+            big("🔋 " + I18N.tr(T("Save energy!")), I18N.tr(T("Lift off – the battery won't last the lap at full throttle.")), "#ffd43b");
           else if (ui.mode === "drive" && car.temp >= 92 && Math.floor(t * 4) % 2 === 0) big("🔥 " + I18N.tr(T("Let go!")), null, "#ff6b6b");
           if (ui.mode === "drive" && car.temp >= 92 && !car.eng && t - lastTempWarn > 1) { lastTempWarn = t; leBuzz(80); LeAudio.tone([900], "square", 0.08, 0.05); }
           if (ui.mode === "drive") LeAudio.engine(!document.hidden && !car.pit && t < limit(), Math.min(1, car.v / LE.VFULL * 0.7 + car.thr * 0.3));
@@ -909,6 +975,16 @@ function langstreckeLive(box, me, back) {
       hd.tyre.textContent = car.tyre === "r" ? "🌧️" : "☀️";
       hd.tyre.classList.toggle("le-wrong", leGrip(car.tyre, leInWin(st.rain, tt)) < 1);
     }
+    if (hd.bat) {                                              // the battery: green, orange (it won't last the lap flat out), red
+      const b = Math.max(0, car.bat ?? 0), need = leNeed(car.d), lvl = b <= 0 || b < need.lift ? "red" : b < need.mix ? "yellow" : "ok";
+      hd.bat.style.setProperty("--v", Math.min(100, b) + "%");
+      hd.bat.dataset.lvl = lvl;
+      hd.batTxt.textContent = Math.ceil(b) + "%";
+      hd.batTxt.dataset.lvl = lvl;
+      hd.save.hidden = lvl === "ok" || car.pit;
+      hd.save.textContent = b <= 0 ? "⚠️ " + I18N.tr(T("Emergency drive mode")) : "🔋 " + I18N.tr(T("Save energy!"));
+      hd.save.classList.toggle("le-emg", b <= 0);
+    }
     if (hd.cast) hd.cast.textContent = forecast(tt);
     if (hd.crew) drawCrewStrip(tm);
     if (ui.board && (!ui.boardAt || nowS() - ui.boardAt > 0.5)) { ui.boardAt = nowS(); drawBoard(); }
@@ -937,16 +1013,18 @@ function langstreckeLive(box, me, back) {
         h("span.le-gap", o.pit ? "🅿️" : gapText(o, lead)), h("span.le-laps", o.laps + "L"));
     }));
   }
-  // the driver sees what the crew has ready
+  // the driver sees what the crew has ready – and the spare battery charging («spare 🔋 63 %»)
   function drawCrewStrip(tm) {
-    const pr = tm.prep, el = ui.hud.crew;
+    const pr = tm.prep, el = ui.hud.crew, sp = tm.spare;
     if (!pr) return;
-    const sig = JSON.stringify([pr.ready, pr.need_eng, tm.members.length]);
+    const ch = Math.floor(leSpare(sp, gameT())), plugged = !!sp && sp.plug != null;
+    const sig = JSON.stringify([pr.ready.tyres, pr.ready.engine, pr.need_eng, tm.members.length, ch, plugged]);
     if (el.dataset.sig === sig) return;
     el.dataset.sig = sig;
-    if (tm.members.length < 2) { el.replaceChildren(h("span.small.muted", "🏠 ", T("The garage prepares the stop"))); return; }
+    const spare = h("span.le-ready.le-sparechip" + (ch >= 100 ? ".ok" : ""), I18N.tr(T("spare")), " 🔋 ", ch + " %", plugged && ch < 100 ? " ⚡" : !plugged && ch < 100 ? " 🔌?" : "");
+    if (tm.members.length < 2) { el.replaceChildren(h("span.le-ready", "🏠"), spare); return; }
     const chip = (ic, ok) => h("span.le-ready" + (ok ? ".ok" : ""), ic, " ", ok ? "✓" : "…");
-    el.replaceChildren(...[h("span.small.muted", "🔧 "), chip("🛞", pr.ready.tyres), chip("⛽", pr.ready.fuel), pr.need_eng ? chip("⚙️", pr.ready.engine) : null].filter(Boolean));
+    el.replaceChildren(...[spare, chip("🛞", pr.ready.tyres), pr.need_eng ? chip("⚙️", pr.ready.engine) : null].filter(Boolean));
   }
 
   // ---------- the pit crew: the jobs during the lap
@@ -983,23 +1061,23 @@ function langstreckeLive(box, me, back) {
     b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("lostpointercapture", up);
     return b;
   }
-  function jobFuel() {
-    const lvl = h("div.le-can-lvl"), can = h("div.le-can", h("div.le-can-green", { style: { bottom: LE.GREEN + "%", height: (100 - LE.GREEN) + "%" } }), lvl);
-    const val = h("b.le-canval", "0 %");
-    const btn = holdBtn(["⛽ ", I18N.tr(T("Hold"))], ".le-fuelbtn", () => {
-      const tm = myTeam(); if (!tm || tm.prep.ready.fuel) return;
-      local.fuelHold = nowS(); LeAudio.tone([140], "sawtooth", 0.25, 0.04); sendPrep("fuel_on");
-    }, async () => {
-      if (!local.fuelHold) return;
-      const r = await sendPrep("fuel_off");
-      local.fuelHold = 0;
-      if (r && r.spill) { toast("💦 " + I18N.tr(T("Spilled! The canister starts empty again.")), "bad"); leBuzz([80, 40, 80]); }
-      else if (r && r.green) { LeAudio.ok(); leBuzz([30, 30, 60]); }
+  // the spare battery: plug it in (the server keeps the time) – then it charges by itself until the car comes in
+  function jobBattery() {
+    const lvl = h("div.le-bat-lvl"), bat = h("div.le-bat", lvl, h("span.le-bat-zap", "⚡"));
+    const val = h("b.le-batval", "0 %"), status = h("span.le-batst");
+    const cable = h("div.le-cable", { "aria-hidden": "true" });
+    const btn = h("button.le-hold.le-plugbtn", { type: "button", onclick: async () => {
+      const tm = myTeam();
+      if (!tm || tm.car.pit || !tm.spare || tm.spare.plug != null || local.plug) return;
+      local.plug = Math.max(0, gameT()); LeAudio.tone([300, 600], "square", 0.08, 0.06, 0.06); leBuzz(30); crewTick(gameT());
+      const r = await sendPrep("plug");
+      if (!r) local.plug = 0; else { LeAudio.ok(); leBuzz([30, 30, 60]); }
       crewTick(gameT());
-    });
-    ui.job.fuel = { lvl, val, can, btn };
-    return h("div.le-job.le-jfuel", h("div.le-jhead", h("b", "⛽ ", T("Fill the canister")), h("span.le-jok")),
-      h("div.le-fuelrow", can, h("div.le-fuelside", val, btn)), h("div.small.muted.center", T("Let go in the green!")));
+    } }, "🔌 ", T("Plug in"));
+    const row = h("div.le-batrow", bat, h("div.le-batside", val, status, btn), cable);
+    ui.job.battery = { lvl, bat, val, status, btn, row };
+    return h("div.le-job.le-jbattery", h("div.le-jhead", h("b", "🔌 ", T("Charge the spare battery")), h("span.le-jok")), row,
+      h("div.small.muted.center", T("Plug in first – it needs about a lap!")));
   }
   function jobEngine() {
     const bar = h("div.le-engbar", h("i"));
@@ -1028,17 +1106,17 @@ function langstreckeLive(box, me, back) {
       mark("tyres", rd.tyres);
     }
     if (ui.cast) ui.cast.textContent = forecast(Math.max(0, t));
-    if (j.fuel) {
-      let v = pr.fuel;
-      if (local.fuelHold) v += LE.FILL_RATE * (nowS() - local.fuelHold);
-      else if (pr.fuel_on && offset != null) v += LE.FILL_RATE * Math.max(0, t - pr.fuel_on[1]);
-      if (rd.fuel) v = Math.max(v, LE.GREEN);
-      j.fuel.lvl.style.height = Math.min(100, v) + "%";
-      j.fuel.lvl.classList.toggle("spill", v > 100);
-      j.fuel.can.classList.toggle("ok", v >= LE.GREEN && v <= 100);
-      j.fuel.val.textContent = Math.round(Math.min(100, v)) + " %";
-      j.fuel.btn.disabled = !!rd.fuel;
-      mark("fuel", rd.fuel);
+    if (j.battery && tm.spare) {                                // the charge rises from the server's plug-in time
+      const sp = tm.spare, plug = sp.plug != null ? sp.plug : local.plug ? Math.max(local.plug, sp.t) : null;
+      const ch = leSpare({ ...sp, plug }, t), plugged = plug != null, full = ch >= 100 - 1e-9;
+      j.battery.lvl.style.height = ch + "%";
+      j.battery.lvl.dataset.lvl = ch >= 50 ? "ok" : ch >= 20 ? "mid" : "low";
+      j.battery.val.textContent = Math.floor(ch) + " %";
+      j.battery.row.classList.toggle("chg", plugged && !full);
+      j.battery.row.classList.toggle("full", full);
+      j.battery.status.textContent = full ? I18N.tr(T("full")) : plugged ? "⚡ " + I18N.tr(T("charging")) : I18N.tr(T("not plugged in"));
+      j.battery.btn.disabled = plugged || full;
+      mark("battery", full);
     }
     if (j.engine) {
       let v = pr.eng;
@@ -1086,8 +1164,10 @@ function langstreckeLive(box, me, back) {
     ui.board = h("div.le-board");
     const teamTag = tm ? h("span.le-teamtag", { style: { "--tc": tm.color } }, leFlagEl(tm.country), " #" + tm.num, " ", C(tm.name)) : null;
     if (mode === "drive") {
-      Object.assign(ui.hud, { speed: h("b.le-speed"), temp: h("div.le-gauge.le-temp"), crew: h("div.le-crewstrip"), tyre: h("span.le-tyre"), cast: h("span.le-cast") });
-      const gauges = h("div.le-gauges", ui.hud.speed, ui.hud.tyre, h("span.le-g", "🌡️", ui.hud.temp), ui.hud.crew);
+      Object.assign(ui.hud, { speed: h("b.le-speed"), temp: h("div.le-gauge.le-temp"), crew: h("div.le-crewstrip"), tyre: h("span.le-tyre"), cast: h("span.le-cast"),
+        bat: h("div.le-gauge.le-batg"), batTxt: h("b.le-battxt"), save: h("span.le-save", { hidden: true }) });
+      const gauges = h("div.le-gauges", ui.hud.speed, ui.hud.tyre, h("span.le-g", "🌡️", ui.hud.temp), h("span.le-g.le-gb", "🔋", ui.hud.bat, ui.hud.batTxt));
+      wrap.append(ui.hud.crew, ui.hud.save);
       const btn = (c, ic, label) => h("button.le-btn", { type: "button", "aria-label": label, title: label, onpointerdown: e => { e.preventDefault(); input(c); }, onclick: e => { if (e.detail === 0) input(c); } }, ic);
       ui.pedal = h("button.le-btn.le-pedal", { type: "button", "aria-label": I18N.tr(T("Full throttle")) }, "🚀 ", T("Gas"));
       ui.pedal.addEventListener("pointerdown", e => { e.preventDefault(); if (gameT() < 0 && !introSkip) introSkip = true; try { ui.pedal.setPointerCapture(e.pointerId); } catch {} pedal(1); });
@@ -1104,21 +1184,25 @@ function langstreckeLive(box, me, back) {
       ui.watchHand = h("div.le-dial", h("i"));
       ui.parts = stp.parts.map(part => {
         const [ic, label] = LE_PARTS[part[0]] || ["•", part[0]];
-        const val = part[0] === "base" || part[0] === "garage" ? part[1].toFixed(1) + " s" : part[1] ? "+" + part[1].toFixed(0) + " s" : "+0 s";
-        const note = part[0] === "base" || part[0] === "garage" ? "" : part[0] === "engine" ? (part[2] ? I18N.tr(T("prepared")) : I18N.tr(T("not prepared"))) : part[2] ? I18N.tr(T("ready")) : I18N.tr(T("not ready"));
-        return [h("div.le-part" + (part[0] === "base" || part[0] === "garage" ? "" : part[2] ? ".good" : ".bad"), h("span", ic), h("span.grow", I18N.tr(label), note ? h("small", " · ", note) : null), h("b", val)), part];
+        const fixed = part[0] === "base" || part[0] === "garage" || part[0] === "battery";
+        const val = fixed ? part[1].toFixed(1) + " s" : part[1] ? "+" + part[1].toFixed(0) + " s" : "+0 s";
+        const note = part[0] === "base" || part[0] === "garage" ? "" : part[0] === "battery" ? (part[2] ? I18N.tr(T("full")) : I18N.tr(T("{0} % charged")).replace("{0}", Math.floor(stp.bat_in ?? 0)))
+          : part[0] === "engine" ? (part[2] ? I18N.tr(T("prepared")) : I18N.tr(T("not prepared"))) : part[2] ? I18N.tr(T("ready")) : I18N.tr(T("not ready"));
+        const cls = part[0] === "base" || part[0] === "garage" ? "" : part[0] === "battery" ? (part[2] ? ".good" : ".warn") : part[2] ? ".good" : ".bad";
+        return [h("div.le-part" + cls, h("span", ic), h("span.grow", I18N.tr(label), note ? h("small", " · ", note) : null), h("b", val)), part];
       });
       const change = stp.change ? h("div.le-change", "🔄 ", C(pName(stp.prev)), " → ", h("b", C(pName(stp.next))), " 🏎️")
         : h("div.le-change", "🏎️ ", I18N.tr(T("{0} drives on")).replace("{0}", pName(stp.next)));
-      const next = stp.next === myId && stp.change ? h("p.le-next", "🏎️ ", T("You drive next – get ready!")) : null;
+      const low = stp.next === myId && (stp.bat_in ?? 100) < 100 ? h("p.le-next.le-low", "🔋 " + Math.floor(stp.bat_in) + " % – ", T("Save energy!")) : null;
+      const next = low ? null : stp.next === myId && stp.change ? h("p.le-next", "🏎️ ", T("You drive next – get ready!")) : null;
       ui.crowd = crowd(tm);
       show(head, top, ui.board, h("div.le-pithead", h("strong", "🅿️ ", I18N.tr(T("Pit stop {0}")).replace("{0}", stp.n)), h("span.small", leTyreName(stp.tyre)), teamTag),
-        ui.crowd, wrap, h("div.le-watchrow", ui.watchHand, ui.watch), h("div.le-parts", ...ui.parts.map(x => x[0])), change, next);
+        ui.crowd, wrap, h("div.le-watchrow", ui.watchHand, ui.watch), h("div.le-parts", ...ui.parts.map(x => x[0])), change, next, low);
     } else if (mode === "crew") {
       ui.job = {};
       ui.eta = h("div.le-eta"); ui.etaTxt = h("span.small.le-etatxt"); ui.cast = h("span.le-cast");
       const next = tm.next === myId && tm.members.length > 1 ? h("span.le-nextme", "🏎️ ", T("You drive next!")) : null;
-      const jobs = h("div.le-jobs2", jobTyres(), jobFuel());
+      const jobs = h("div.le-jobs2", jobBattery(), jobTyres());
       show(head, top, ui.board, h("div.le-role", "🔧 ", T("Pit crew"), " · ", C(pName(tm.driver), "span.small"), " 🏎️", teamTag),
         wrap, h("div.le-etarow", ui.eta, ui.etaTxt, next), h("div.le-castrow", "📡 ", ui.cast), jobs, tm.prep && tm.prep.need_eng ? jobEngine() : null);
       crewTick(gameT());
@@ -1153,7 +1237,7 @@ function langstreckeLive(box, me, back) {
     const host = isHost() && st.status !== "done" ? h("div.row.center.host-bar", n > 1 ? h("button.btn.ghost", { onclick: () => act("mix") }, "🔀 ", T("Mix teams")) : null,
       h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start"))) : null;
     const story = h("p.small.muted", I18N.tr(T("24 race hours in {0} minutes on the Circuit des Tannes. The most laps wins.")).replace("{0}", st.rules.minutes));
-    const roles = h("p.small", "🔄 ", T("After every lap the car comes into the pits and the next person of the team drives – the others prepare tyres and fuel."));
+    const roles = h("p.small", "🔄 ", T("After every lap the car comes into the pits and the next person of the team drives – the others charge the spare battery and prepare the tyres."));
     return [h("section.card.center", st.joined ? h("h2", T("Waiting for the start …")) : h("p", T("Play along on this device?")), story, roles,
       st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))),
       h("div.le-teams", ...cards), st.bots ? h("p.small.muted.center", "🤖 ", I18N.tr(T("+{0} bot teams")).replace("{0}", st.bots)) : null,
@@ -1207,7 +1291,7 @@ async function langstreckeFamilyCard() {
   return h("section.card.quiz-card", h("h2", LE_ICON, " ", leName()),
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("langstrecke") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
-      : [h("p.muted", T("Short laps and a pit stop after every lap: one drives, the others get tyres and fuel ready – then the next one drives.")),
+      : [h("p.muted", T("Short laps and a pit stop after every lap: one drives, the others charge the spare battery and get the tyres ready – then the next one drives.")),
          h("div.row.wrap", h("button.btn", { onclick: () => langstreckeStartDialog(false, () => go("langstrecke")) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => langstreckeStartDialog(true, () => go("langstrecke")) }, LE_ICON, " ", T("Alone")))]);
 }

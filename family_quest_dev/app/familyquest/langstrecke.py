@@ -18,20 +18,29 @@ The loop – one short lap (about 20–30 s), then the car drives into the pits 
 - the driver (one person of the team) steers on three lanes (swipe / arrow keys) round a few things on the track and
   holds the throttle for full speed. Full throttle heats the engine; at RED it overheats: the car limps on to the pits
   and the engine has to be swapped there.
-- everybody else of the team is the pit crew: during the lap they prepare the stop on their phones – lay out the 4
-  tyres (slicks or rain tyres, tap the 4 spots), fill the fuel canister (hold, let go in the green zone; too much spills and it starts
-  empty again) and, only after an overheat, prepare the spare engine (hold). The server keeps the times of all of it.
-- the stop: STOP_BASE seconds + a penalty for every job that was not ready when the car arrived (tyres / fuel
-  PEN_PREP each, the engine swap ENG_READY prepared or ENG_SWAP not). Shown as a stopwatch to the whole team.
+- the car is electric: its battery (0–100 %) drains by the metre, much faster at full throttle (E_FULL) than lifted
+  (E_LIFT); braking gives a little back (REGEN). Empty: the emergency drive mode – the car crawls (VEMERG) to the pits.
+- every team has exactly TWO batteries: the one in the car and ONE spare. At every stop they are swapped (BAT_SWAP
+  seconds): the spare goes into the car with WHATEVER charge it has, the used one comes out and waits in the pits. It
+  charges only while it is plugged in: CHARGE_RATE % per second from the moment the crew plugged it in (the server's
+  time – never the app's number). Plugged in late (other jobs first): not full at the next stop, the next driver has
+  to save energy.
+- everybody else of the team is the pit crew: during the lap they prepare the stop on their phones – plug the spare
+  battery in, lay out the 4 tyres (slicks or rain tyres, tap the 4 spots) and, only after an overheat, prepare the
+  spare engine (hold). The server keeps the times of all of it.
+- the stop: STOP_BASE seconds + the battery swap BAT_SWAP + a penalty for tyres not ready when the car arrived
+  (PEN_PREP), the engine swap ENG_READY prepared or ENG_SWAP not. Shown as a stopwatch to the whole team.
 - at EVERY stop the driver changes: the next person of the team (in turn) drives, the driver joins the crew. A team of
-  two takes turns; a team of one (or a team whose crew is all offline) gets the garage: a fixed GARAGE seconds.
+  two takes turns; a team of one (or a team whose crew is all offline) gets the garage: a fixed GARAGE seconds (+ the
+  swap), and the garage plugs the spare in only GARAGE_PLUG seconds after the stop (fair, not perfect).
 
 The server decides everything (the same step function runs in web/langstrecke.js for a smooth picture of the own
 car): the driver's app only reports its inputs (lane, throttle) with their game time; the server simulates all cars
 in fixed steps of DT seconds SETTLE seconds behind the clock – a late input is applied at the next step (never in the
-past). Pit jobs are actions on the server (a tyre on a spot, start / stop holding) timed with the server's clock: a
-job counts only if it was finished before the car arrived. A driver whose app is silent for AUTO_AFTER seconds gets
-the autopilot until the app is back. Bots drive by the same rules and prepare their stops (easier bots miss more).
+past). Pit jobs are actions on the server (plug in, a tyre on a spot, start / stop holding) timed with the server's
+clock: a job counts only if it was finished before the car arrived. A driver whose app is silent for AUTO_AFTER seconds
+gets the autopilot until the app is back. Bots drive by the same rules (they lift off when the battery runs low), plug
+their spare in first and prepare their stops (easier bots miss more).
 
 Coins (setting `game_rewards["langstrecke"]`): places 1–3, for every person of the family in that team, only at a
 family table with at least two people of the family, only for a race run to the end – paid once (flag `paid`, a
@@ -85,21 +94,25 @@ CHICANES = ((210.0, 245.0, 2, 0), (450.0, 485.0, 0, 2))      # gate a, gate b, k
 KERB_T, KERB_T_WET = 0.6, 1.0                               # seconds slow after touching a kerb
 SAFE, SAFE_TRICKY = 23.0, 18.0                              # m/s at most into a chicane (by day and dry / in the rain or at night)
 VOFF, OFF_T = 6.0, 3.0                                      # too fast: off into the gravel – this slow for this long
+# the battery (an electric car): % per metre at full throttle / lifted (also limping), % back per m/s braked off
+E_FULL, E_LIFT, REGEN = 0.16, 0.07, 0.3
+VEMERG = 7.0                 # m/s with an empty battery: the emergency drive mode
 COUNTDOWN = 6.0              # seconds from the start to game time 0 (the intro: run to the cars, engines, lights)
 SETTLE = 0.8                 # the server simulates this far behind the clock
 AHEAD = 0.5                  # inputs may be this much ahead of the server's clock
 AUTO_AFTER = 6.0             # a silent driver: the autopilot drives
 STALE = 10.0                 # a silent person is not counted as crew / next driver
 # ---------------------------------------------------------------- the pit stop
-STOP_BASE = 3.0              # every stop (the driver change included)
-PEN_PREP = 4.0               # tyres / fuel not ready
+STOP_BASE = 2.0              # every stop (the driver change included)
+BAT_SWAP = 1.0               # the battery swap at every stop (a fixed time)
+PEN_PREP = 4.0               # tyres not ready
 ENG_READY, ENG_SWAP = 2.0, 6.0   # the engine swap: prepared / not prepared
-GARAGE = 5.0                 # a team without crew: the garage prepares, a fixed time (+ GARAGE_ENG after an overheat)
+GARAGE = 4.0                 # a team without crew: the garage prepares, a fixed time (+ the swap, + GARAGE_ENG after an overheat)
 GARAGE_ENG = 4.0
 TYRE_GAP = 0.25              # seconds at least between two tyres of a team
-FILL_RATE = 25.0             # % per second at the canister
-GREEN = 80.0                 # 80–100 % is the green zone
-SPILL_AFTER = 0.5            # held this long past 100 %: spilled (also without letting go)
+CHARGE_RATE = 4.0            # % per second while the spare battery is plugged in (empty → full in 25 s, about a lap)
+GARAGE_PLUG = 8.0            # no crew: the garage plugs the spare in this many seconds after the stop
+BOT_PLUG, BOT_PLUG_LATE = 0.5, 8.0   # bots plug in right away – or late (the chance of a missed job)
 ENGINE_HOLD = 2.0            # seconds of holding to prepare the spare engine
 TEAM_STYLES = (("Comet Racing", "#e03131"), ("Blue Falcon Works", "#1c7ed6"), ("Pine Cone Motors", "#2f9e44"),
                ("Sunrise Speedsters", "#f08c00"), ("Silver Owl Garage", "#7048e8"), ("Night Fox Racing", "#0c8599"),
@@ -180,7 +193,21 @@ def default_looks(country: str | None = None) -> list[dict]:
 
 def new_car(lane: int, d: float) -> dict:
     return {"d": d, "v": 0.0, "lane": lane, "thr": 0, "temp": TMIN, "eng": 0, "slow": 0.0, "olap": 0, "ob": 0,
-            "ls": 0.0, "best": 0.0, "pit": 0, "hits": 0, "blows": 0, "tyre": "s", "kerb": 0, "off": 0.0, "offs": 0}
+            "ls": 0.0, "best": 0.0, "pit": 0, "hits": 0, "blows": 0, "tyre": "s", "kerb": 0, "off": 0.0, "offs": 0,
+            "bat": 100.0, "flat": 0}
+
+
+def new_spare(charge: float, t: float, auto: float | None = None) -> dict:
+    """The team's ONE spare battery in the pits: its charge when it came out of the car (c0) at game time t, when it was
+    plugged in (None: not yet) and when the garage / the bot plugs it in by itself (auto)."""
+    return {"c0": charge, "t": t, "plug": None, "auto": auto}
+
+
+def spare_charge(sp: dict, at: float) -> float:
+    """The spare's charge at game time `at` – from the server's timestamps only."""
+    if sp["plug"] is None or at <= sp["plug"]:
+        return sp["c0"]
+    return min(100.0, sp["c0"] + CHARGE_RATE * (at - sp["plug"]))
 
 
 def apply_input(car: dict, c: str, v) -> None:
@@ -205,8 +232,11 @@ def step(car: dict, s: float, seed: int, jr: bool, rain: bool = False, dark: boo
     if car["pit"]:
         car["temp"] = max(TMIN, car["temp"] - COOL * DT)
         return ev
-    full = car["thr"] > 0 and not car["eng"]
+    emg = car["bat"] <= 0                              # the battery is empty: the emergency drive mode
+    full = car["thr"] > 0 and not car["eng"] and not emg
     vt = VLIMP if car["eng"] else (VFULL if full else VLIFT) * grip(car["tyre"], rain)
+    if emg:
+        vt = min(vt, VEMERG)
     dec = COAST
     if car["thr"] < 0:
         vt = min(vt, VBRAKE)
@@ -216,8 +246,17 @@ def step(car: dict, s: float, seed: int, jr: bool, rain: bool = False, dark: boo
         dec = BRAKE
         car["slow"] = max(0.0, car["slow"] - DT)
     car["off"] = max(0.0, car.get("off", 0.0) - DT)
-    v = car["v"]
-    v = min(vt, v + ACC * DT) if v < vt else max(vt, v - dec * DT)
+    v0 = car["v"]
+    v = min(vt, v0 + ACC * DT) if v0 < vt else max(vt, v0 - dec * DT)
+    # the battery: by the metre – full throttle much more than lifted; braking gives a little back
+    if not emg:
+        use = (E_FULL if full else E_LIFT) * v * DT
+        if car["thr"] < 0 and v < v0:
+            use -= REGEN * (v0 - v)
+        car["bat"] = max(0.0, min(100.0, car["bat"] - use))
+        if car["bat"] <= 0:
+            car["flat"] += 1
+            ev.append("empty")
     d0 = car["d"]
     d1 = d0 + v * DT
     # the engine: full throttle heats it, lifting cools it; at RED it overheats (limp to the pits, swap it there)
@@ -322,10 +361,9 @@ def rain_plan(rng, limit: float) -> list[list[float]]:
 
 
 def new_prep() -> dict:
-    """The pit crew's jobs for the next stop: tyres on the 4 spots (the server's time of each), the canister (level,
-    who holds since when, when it was green), the spare engine (held seconds, who holds since when, when ready)."""
-    return {"tyres": [None, None, None, None], "tyre_t": -99.0, "compound": None, "fuel": 0.0, "fuel_on": None, "fuel_at": None, "spill": 0,
-            "eng": 0.0, "eng_on": None, "eng_at": None}
+    """The pit crew's jobs for the next stop: tyres on the 4 spots (the server's time of each), the spare engine (held
+    seconds, who holds since when, when ready). The spare battery is the team's `spare` (it stays from stop to stop)."""
+    return {"tyres": [None, None, None, None], "tyre_t": -99.0, "compound": None, "eng": 0.0, "eng_on": None, "eng_at": None}
 
 
 # ================================================================ one table (pure logic on a dict)
@@ -391,7 +429,8 @@ class Table:
         for pos, ti in enumerate(order):                 # the grid: two by two, 10 m apart
             t = teams[ti]
             t.update(car=new_car(pos % 3, -5.0 - 10.0 * pos), driver=t["members"][0], drives={t["members"][0]: 1},
-                     stop=None, pits=[], best_pit=None, ev=[], auto=False, bm=[], blc=-9.0, hot=0, grid=pos + 1, prep=new_prep())
+                     stop=None, pits=[], best_pit=None, ev=[], auto=False, bm=[], blc=-9.0, hot=0, grid=pos + 1, prep=new_prep(),
+                     spare=new_spare(100.0, 0.0))
         for p in players:
             p["team"] = next(i for i, t in enumerate(teams) if p["id"] in t["members"])
         self.st.update(phase="play", seed=seed if seed is not None else self.rng.randrange(1, 2 ** 31), t0=self.now() + COUNTDOWN,
@@ -431,9 +470,13 @@ class Table:
     def crew(self, t: dict) -> list[str]:
         return [m for m in t["members"] if m != t["driver"]]
 
+    def active_crew(self, t: dict) -> list[str]:
+        """The crew whose apps are alive (bots have none: their team prepares by itself)."""
+        return [p for p in self.crew(t) if self.seen_ok(p, STALE)] if not t["bot"] else []
+
     def prep(self, pid: str, action: str, spot=None) -> dict:
-        """A job of the pit crew during the lap – the server's clock decides (a tyre on a spot, start / stop holding
-        the canister or the spare engine)."""
+        """A job of the pit crew during the lap – the server's clock decides (plug the spare battery in, a tyre on a
+        spot, start / stop holding the spare engine)."""
         if self.st.get("phase") != "play":
             raise CommunityError("The game is not running")
         t = self.team_of(pid)
@@ -464,53 +507,37 @@ class Table:
         if action in ("slicks", "rain"):
             pr["compound"] = "r" if action == "rain" else "s"
             return {"ok": True, "compound": pr["compound"]}
-        if action in ("fuel_on", "eng_on"):
-            key = action[:-3]
-            if key == "eng" and not t["car"]["eng"]:
+        if action == "plug":                             # the spare battery onto the charger – from now on it charges
+            sp = t["spare"]
+            if sp["plug"] is not None:
+                return {"ok": True, "again": True, "charge": round(spare_charge(sp, now_t), 1)}
+            sp["plug"] = max(now_t, sp["t"])
+            return {"ok": True, "charge": round(sp["c0"], 1)}
+        if action == "eng_on":
+            if not t["car"]["eng"]:
                 raise CommunityError("The engine is fine")
-            if pr[key + "_at"] is not None:
+            if pr["eng_at"] is not None:
                 return {"ok": True, "again": True}
-            if pr[key + "_on"]:
-                if pr[key + "_on"][0] != pid:
+            if pr["eng_on"]:
+                if pr["eng_on"][0] != pid:
                     raise CommunityError("Somebody else is on it")
                 return {"ok": True, "again": True}
-            pr[key + "_on"] = [pid, now_t]
+            pr["eng_on"] = [pid, now_t]
             return {"ok": True}
-        if action in ("fuel_off", "eng_off"):
-            key = action[:-4]
-            on = pr[key + "_on"]
+        if action == "eng_off":
+            on = pr["eng_on"]
             if not on or on[0] != pid:
-                return {"ok": True, "again": True, **self._prep_out(pr, key)}
-            held = max(0.0, now_t - on[1])
-            pr[key + "_on"] = None
-            if key == "fuel":
-                level = pr["fuel"] + FILL_RATE * held
-                if level > 100.0:
-                    pr["fuel"] = 0.0
-                    pr["spill"] += 1
-                    return {"ok": True, "spill": True, "level": 0.0, "green": False}
-                pr["fuel"] = round(level, 1)
-                if level >= GREEN:
-                    pr["fuel_at"] = now_t
-            else:
-                pr["eng"] = round(min(ENGINE_HOLD, pr["eng"] + held), 2)
-                if pr["eng"] >= ENGINE_HOLD - 1e-9:
-                    pr["eng_at"] = now_t
-            return {"ok": True, **self._prep_out(pr, key)}
+                return {"ok": True, "again": True, "held": pr["eng"], "ready": pr["eng_at"] is not None}
+            pr["eng_on"] = None
+            pr["eng"] = round(min(ENGINE_HOLD, pr["eng"] + max(0.0, now_t - on[1])), 2)
+            if pr["eng"] >= ENGINE_HOLD - 1e-9:
+                pr["eng_at"] = now_t
+            return {"ok": True, "held": pr["eng"], "ready": pr["eng_at"] is not None}
         raise CommunityError("Unknown job")
 
-    @staticmethod
-    def _prep_out(pr: dict, key: str) -> dict:
-        if key == "fuel":
-            return {"level": pr["fuel"], "green": pr["fuel_at"] is not None, "spill": False}
-        return {"held": pr["eng"], "ready": pr["eng_at"] is not None}
-
     def _settle(self, t: dict, now_t: float) -> None:
-        """Holding on too long: the canister spills over (starts empty again), the spare engine is ready."""
+        """Holding on long enough: the spare engine is ready."""
         pr = t["prep"]
-        on = pr["fuel_on"]
-        if on and pr["fuel"] + FILL_RATE * (now_t - on[1]) > 100.0 + FILL_RATE * SPILL_AFTER:
-            pr.update(fuel=0.0, fuel_on=None, spill=pr["spill"] + 1)
         on = pr["eng_on"]
         if on and pr["eng"] + now_t - on[1] >= ENGINE_HOLD:
             at = round(on[1] + ENGINE_HOLD - pr["eng"], 3)
@@ -524,7 +551,7 @@ class Table:
         if eng_at is None and pr["eng_on"]:
             eng_at = pr["eng_on"][1] + ENGINE_HOLD - pr["eng"]
         return {"tyres": all(x is not None and x <= at + 1e-9 for x in ty),
-                "fuel": pr["fuel_at"] is not None and pr["fuel_at"] <= at + 1e-9,
+                "battery": spare_charge(t["spare"], at) >= 100.0 - 1e-9,
                 "engine": eng_at is not None and eng_at <= at + 1e-9}
 
     # ---------- the pit stop
@@ -542,29 +569,30 @@ class Table:
         car = t["car"]
         at = round(s + DT, 2)
         eng = bool(car["eng"])
-        crew = [p for p in self.crew(t) if self.seen_ok(p, STALE)] if not t["bot"] else []
+        crew = self.active_crew(t)
         parts: list[list] = []
         garage = False
+        # the battery swap (every stop, a fixed time): the spare goes in with the charge it has right now
+        bat_in = round(spare_charge(t["spare"], at), 2)
+        swap = ["battery", BAT_SWAP, bat_in >= 100.0 - 1e-9]
         if t["bot"]:
             miss = BOT_SKILL.get(self.person(t["driver"]).get("level", "normal"), BOT_SKILL["normal"])[3]
-            parts.append(["base", STOP_BASE, True])
-            for job in ("tyres", "fuel"):
-                ok = self.rng.random() >= miss
-                parts.append([job, 0.0 if ok else PEN_PREP, ok])
+            parts += [["base", STOP_BASE, True], swap]
+            ok = self.rng.random() >= miss
+            parts.append(["tyres", 0.0 if ok else PEN_PREP, ok])
             if eng:
                 ok = self.rng.random() >= miss
                 parts.append(["engine", ENG_READY if ok else ENG_SWAP, ok])
         elif not crew:                                   # alone (or the crew is offline): the garage, a fixed time
             garage = True
-            parts.append(["garage", GARAGE, True])
+            parts += [["garage", GARAGE, True], swap]
             if eng:
                 parts.append(["engine", GARAGE_ENG, False])
         else:
             self._settle(t, at)
             rd = self.ready(t, at)
-            parts.append(["base", STOP_BASE, True])
+            parts += [["base", STOP_BASE, True], swap]
             parts.append(["tyres", 0.0 if rd["tyres"] else PEN_PREP, rd["tyres"]])
-            parts.append(["fuel", 0.0 if rd["fuel"] else PEN_PREP, rd["fuel"]])
             if eng:
                 parts.append(["engine", ENG_READY if rd["engine"] else ENG_SWAP, rd["engine"]])
         took = round(sum(p[1] for p in parts), 1)
@@ -578,7 +606,8 @@ class Table:
             tyre = t["prep"]["compound"] or car["tyre"]
         nxt = self.next_driver(t)
         t["stop"] = {"t": at, "end": round(at + took, 2), "time": took, "n": len(t["pits"]) + 1, "parts": parts,
-                     "prev": t["driver"], "next": nxt, "change": nxt != t["driver"], "garage": garage, "eng": eng, "tyre": tyre}
+                     "prev": t["driver"], "next": nxt, "change": nxt != t["driver"], "garage": garage, "eng": eng, "tyre": tyre,
+                     "bat_in": bat_in, "bat_out": round(car["bat"], 2)}
 
     def wet_soon(self, s: float) -> bool:
         """The forecast for the next lap: rain at about the middle of it."""
@@ -586,7 +615,15 @@ class Table:
 
     def _release(self, t: dict) -> None:
         car, stop = t["car"], t["stop"]
-        car.update(pit=0, v=0.0, eng=0, slow=0.0, temp=min(car["temp"], 70.0), tyre=stop["tyre"])
+        car.update(pit=0, v=0.0, eng=0, slow=0.0, temp=min(car["temp"], 70.0), tyre=stop["tyre"], bat=stop["bat_in"])
+        # the used battery comes out and waits in the pits for the charger: a bot plugs it in right away (or late, like
+        # a missed job), the garage after GARAGE_PLUG seconds when nobody of the crew is there
+        if t["bot"]:
+            miss = BOT_SKILL.get(self.person(t["driver"]).get("level", "normal"), BOT_SKILL["normal"])[3]
+            auto = stop["end"] + (BOT_PLUG if self.rng.random() >= miss else BOT_PLUG_LATE)
+        else:
+            auto = stop["end"] + GARAGE_PLUG
+        t["spare"] = new_spare(stop["bat_out"], stop["end"], round(auto, 2))
         if not t["bot"]:
             car["thr"] = 0                               # the new driver presses the pedal again
         t["pits"].append({"n": stop["n"], "time": stop["time"], "change": stop["change"], "garage": stop["garage"],
@@ -620,6 +657,9 @@ class Table:
                 car = t["car"]
                 if car["pit"] and t["stop"] and s + 1e-9 >= t["stop"]["end"]:
                     self._release(t)
+                sp = t["spare"]
+                if sp["plug"] is None and sp["auto"] is not None and s + 1e-9 >= sp["auto"] and not car["pit"] and not self.active_crew(t):
+                    sp["plug"] = round(max(sp["auto"], s), 2)  # the garage / the bot plugs the spare in
                 if t["bot"] or t["auto"]:
                     self._drive(t, s)
                 else:
@@ -665,7 +705,7 @@ class Table:
                     if "x" + key not in t["bm"]:
                         ahead.append((dz, lane))
         lap0 = math.floor(car["d"] / L)
-        tricky = in_window(self.st.get("rain"), s) or darkness(s, self.limit()) > 0.5
+        tricky = in_window(self.st.get("rain"), s) or in_window(self.st.get("rain"), s + 3.0) or darkness(s + 3.0, self.limit()) > 0.5 or darkness(s, self.limit()) > 0.5
         for k in range(2):
             for x, lanes in kerbs(tricky):
                 dz = (lap0 + k) * L + x - car["d"]
@@ -686,6 +726,10 @@ class Table:
         elif car["temp"] <= hot_lo:
             t["hot"] = 0
         car["thr"] = 0 if t["hot"] else 1
+        # the battery: flat out only while it lasts to the pits, else lift off (economical)
+        left = (math.floor(car["d"] / L) + 1) * L - car["d"]
+        if car["bat"] < left * E_FULL + 2.0:
+            car["thr"] = 0
         # brake in time before a chicane (down to a little below the safe speed)
         safe = (SAFE_TRICKY if tricky else SAFE) - {"easy": 2.5, "normal": 1.5, "hard": 0.8}.get(level, 1.5)
         for k in range(2):
@@ -833,6 +877,7 @@ class Langstrecke(CardGames):
                         "place": st["places"].get(p["id"]), "players": len(st["teams"]), "laps": laps_of(t["car"]["d"]),
                         "team": t["name"], "num": t["num"], "best_pit": t.get("best_pit"), "drives": t["drives"].get(p["id"], 0),
                         "stops": len(t["pits"]), "record": bool(records.get(p["id"])), "complete": bool(st.get("complete")),
+                        "flat": t["car"].get("flat", 0),
                         "coins": coins.get(p["id"], 0)})
                 except Exception:  # noqa: BLE001
                     pass
@@ -1060,7 +1105,7 @@ class Langstrecke(CardGames):
         return {**self._view(row, st, str(pid)), "taken": taken}
 
     def prep(self, pid: int, action: str, spot=None) -> dict:
-        """A job of the pit crew (tyre, canister, spare engine) – checked and timed by the server."""
+        """A job of the pit crew (plug the spare battery in, tyre, spare engine) – checked and timed by the server."""
         return self._with_play(pid, lambda t, st: t.prep(str(pid), action, spot)) or {"ok": False}
 
     def end(self, kind: str, viewer: int) -> None:
@@ -1123,15 +1168,16 @@ class Langstrecke(CardGames):
             car = t["car"]
             tv = {"i": i, "name": t["name"], "color": t["color"], "country": t.get("country"), "tyre": car["tyre"], "num": t["num"], "members": t["members"], "bot": t["bot"],
                   "driver": t["driver"], "laps": laps_of(car["d"]), "d": round(car["d"], 2), "v": round(car["v"], 2), "lane": car["lane"],
-                  "pit": car["pit"], "eng": car["eng"], "stops": len(t["pits"]), "best_pit": t["best_pit"], "best_lap": car["best"],
+                  "pit": car["pit"], "eng": car["eng"], "emg": car["bat"] <= 0, "stops": len(t["pits"]), "best_pit": t["best_pit"], "best_lap": car["best"],
                   "gap": round(lead - car["d"], 1), "auto": t["auto"], "place": t.get("place"), "grid": t["grid"]}
             if t is mine or ph == "done":
-                pr = t["prep"]
+                pr, sp = t["prep"], t["spare"]
                 tv.update(car=car, drives=t["drives"], pits=t["pits"], ev=t["ev"] if t is mine else [], stop=t["stop"],
                           next=t_.next_driver(t) if ph == "play" else None,
-                          prep={"tyres": [x is not None for x in pr["tyres"]], "fuel": pr["fuel"], "fuel_on": pr["fuel_on"], "spill": pr["spill"],
-                                "compound": pr["compound"] or car["tyre"], "eng": pr["eng"], "eng_on": pr["eng_on"], "need_eng": bool(car["eng"]),
-                                "ready": t_.ready(t, now_t if ph == "play" else 1e9)})
+                          spare={"c0": sp["c0"], "t": sp["t"], "plug": sp["plug"], "rate": CHARGE_RATE, "garage": not t_.active_crew(t),
+                                 "charge": round(spare_charge(sp, now_t if ph == "play" else sp["t"]), 1)},
+                          prep={"tyres": [x is not None for x in pr["tyres"]], "compound": pr["compound"] or car["tyre"], "eng": pr["eng"],
+                                "eng_on": pr["eng_on"], "need_eng": bool(car["eng"]), "ready": t_.ready(t, now_t if ph == "play" else 1e9)})
             teams.append(tv)
         players_out = []
         for p in players:
