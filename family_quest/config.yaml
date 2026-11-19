@@ -15,6 +15,7 @@ ingress: true
 ingress_port: 8099
 panel_icon: mdi:school
 panel_title: "Family Quest"
+panel_admin: false
 ports:
   8099/tcp: 8099
 ports_description:

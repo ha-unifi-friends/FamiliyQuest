@@ -43,7 +43,9 @@ class Unit(BaseModel):
     model_config = ConfigDict(extra="allow")
     id: str
     titel: str = ""
+    titel_i18n: dict[str, str] | None = None          # {"fr": "…"}: the title in other app languages
     beschreibung: str = ""
+    beschreibung_i18n: dict[str, str] | None = None
     icon: str = ""
     karten: list[dict[str, Any]] = Field(default_factory=list)
     uebungen: list[str] = Field(default_factory=list)
@@ -81,6 +83,10 @@ class Pack(BaseModel):
     stufe: str = ""
     sprache: str = ""
     quellsprache: str = "de"
+    # more prompt languages the cards carry ({de: …, en: …, fr: …}): the learner sees the prompt in the app language
+    # (packs/i18n.py); progress stays with the card, whatever language it is shown in
+    quellsprachen: list[str] = Field(default_factory=list)
+    titel_i18n: dict[str, str] | None = None          # {"fr": "…"}: the title in other app languages
     version: str = "1"
     farbe: str = ""
     icon: str = ""
@@ -91,6 +97,10 @@ class Pack(BaseModel):
     pfad: bool = False              # False = every unit open (default), True = units unlock one after the other
     standard: bool = True           # False = not switched on automatically for new profiles (e.g. language courses)
     selbst: bool = False            # True = learners switch it on themselves in the learning app (course catalogue)
+    # True = not installed by default: a new installation keeps it under «More packs» (parent area) – e.g. packs whose
+    # content exists in one language only (`sprachen: [de]`)
+    optional: bool = False
+    sprachen: list[str] = Field(default_factory=list)   # the languages the content is written in ([] = any / follows the app)
     einheiten: list[Unit] = Field(default_factory=list)
 
     @model_validator(mode="before")
@@ -148,6 +158,9 @@ class Bundle(BaseModel):
     lehrplan: str = ""
     stufe: str = ""
     kanton: str = ""
+    titel_i18n: dict[str, str] | None = None
+    optional: bool = False
+    sprachen: list[str] = Field(default_factory=list)
     version: str = "1"
     faecher: list[str] = Field(default_factory=list)
     semester: list[Semester] = Field(default_factory=list)
@@ -209,6 +222,21 @@ def card_view(pack: Pack | dict, card: dict) -> dict:
         "emoji": str(card.get("emoji") or ""),
         "hint": str(card.get("hinweis") or ""),
     }
+
+
+def localize_view(view: dict, card: dict, src: str, canon: str) -> dict:
+    """The view of a card with its prompt in another language the card carries ({de: …, fr: …} or `frage_i18n`).
+    The answer side (the language learnt) never changes; the card key is made from the canonical view."""
+    if not src or src == canon:
+        return view
+    if "frage" in card:
+        fi = card.get("frage_i18n")
+        text = fi.get(src) if isinstance(fi, dict) else None
+    else:
+        text = card.get(src)
+    if text is None or str(text) == "":
+        return view
+    return dict(view, prompt=str(text))
 
 
 def card_key(pack_id: str, unit_id: str, card: dict, view: dict | None = None) -> str:

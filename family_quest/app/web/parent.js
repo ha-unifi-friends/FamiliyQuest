@@ -119,7 +119,7 @@ async function loginView(auto = true) {
   const done = async r => {
     Auth.parent = r.parent_token;
     // first PIN login through Home Assistant: offer to skip the PIN next time
-    if (haUser && !linked && (await confirmDialog(I18N.tr(T("Log in with your Home Assistant user «{0}» from now on – without PIN?")).replace("{0}", haUser.name || haUser.user)))) {
+    if (haUser && !linked && !ha.kid && (await confirmDialog(I18N.tr(T("Log in with your Home Assistant user «{0}» from now on – without PIN?")).replace("{0}", haUser.name || haUser.user)))) {
       try { await api("parent/ha-link", { method: "POST", body: { on: true } }); toast(T("Linked with Home Assistant"), "good"); } catch (e) { toast(e.message, "bad"); }
     }
     boot();
@@ -629,19 +629,29 @@ async function profileDialog(p, persons, role = "kid") {
   const avBox = h("div", h("p.small.muted", "…"));
   let avatar = null;
   if (!isNew) call(`parent/profiles/${p.id}/avatar`).then(d => { avatar = JSON.parse(JSON.stringify(d.avatar)); avBox.replaceChildren(avatarEditorBox(d, avatar)); }).catch(() => avBox.replaceChildren());
-  // parents: the Home Assistant user opens the parent area – a PIN is only needed for the app without Home Assistant
-  const haUser = h("select", h("option", { value: "" }, "– " + I18N.tr(T("none")) + " –"));
+  // parents: the Home Assistant user opens the parent area – a PIN is only needed for the app without Home Assistant;
+  // children: it opens the children's app in Home Assistant (option in Settings)
+  const haUser = h("select", h("option", { value: "" }, "– " + I18N.tr(T("none")) + " –"),
+    p.settings && p.settings.ha_user_id ? h("option", { value: p.settings.ha_user_id, selected: true, "data-name": p.settings.ha_user_name || "" }, p.settings.ha_user_name || p.settings.ha_user_id) : null);
   const haInfo = h("span.hint");
   if (P.meta.ha) call("parent/ha/users").then(list => {
     const cur = p.settings && p.settings.ha_user_id;
     haUser.replaceChildren(h("option", { value: "" }, "– " + I18N.tr(T("none")) + " –"), ...list.map(u => h("option", { value: u.id, selected: u.id === cur, "data-name": u.name },
       u.name + (u.linked_to && u.id !== cur ? " (" + u.linked_to + ")" : ""))));
-    if (cur && !list.some(u => u.id === cur)) haUser.append(h("option", { value: cur, selected: true }, p.settings.ha_user_name || cur));
+    if (cur && !list.some(u => u.id === cur)) haUser.append(h("option", { value: cur, selected: true, "data-name": p.settings.ha_user_name || "" }, p.settings.ha_user_name || cur));
     if (!list.length) haInfo.textContent = I18N.tr(T("No Home Assistant user found – a user needs a person in Home Assistant (Settings › People)."));
   }).catch(() => {});
+  // children (option): the Home Assistant user opens the children's app in Home Assistant without PIN – never the parent area
+  const haLabel = h("span"), haHint = h("span.hint"), haWarn = h("span.hint.warn");
   const haPart = h("div.form", h("h3", "🏠 ", T("Home Assistant user")),
-    h("label.field", T("Logs in to the parent area as"), haUser, haInfo,
-      h("span.hint", T("This parent opens the parent area in the Home Assistant sidebar without PIN."))));
+    h("label.field", haLabel, haUser, haInfo, haHint, haWarn));
+  const syncHa = kid => {
+    haLabel.textContent = I18N.tr(kid ? T("Logs in to the children's app as") : T("Logs in to the parent area as"));
+    haHint.textContent = I18N.tr(kid ? T("This child opens Family Quest in the Home Assistant sidebar without PIN – only the children's app, never the parent area.")
+      : T("This parent opens the parent area in the Home Assistant sidebar without PIN."));
+    haWarn.textContent = kid && !P.meta.kid_ha_login ? I18N.tr(T("Only works when «Children may sign in with their Home Assistant user» is switched on in Settings.")) : "";
+    haWarn.hidden = !haWarn.textContent;
+  };
   // PIN: children get the picture PIN first (4 symbols), digits or no PIN on request; parents always digits
   const symbolKind = (p.settings && p.settings.pin_kind) === "symbols";
   let pinKind = p.has_pin ? (symbolKind && p.role !== "parent" ? "symbols" : "digits") : (p.role === "parent" ? (P.meta.ha ? "none" : "digits") : "symbols");
@@ -696,7 +706,7 @@ async function profileDialog(p, persons, role = "kid") {
   ]);
   const syncRole = () => {
     const kid = f.role.value === "kid";
-    kidPart.hidden = timePart.hidden = !kid; if (batteryPart) batteryPart.hidden = !kid; parentPart.hidden = kid; haPart.hidden = kid || !P.meta.ha;
+    kidPart.hidden = timePart.hidden = !kid; if (batteryPart) batteryPart.hidden = !kid; parentPart.hidden = kid; haPart.hidden = !P.meta.ha; syncHa(kid);
     tabs.setVisible("time", kid); tabs.setVisible("net", kid || !!P.meta.ha);
     drawPin();
   };
@@ -718,7 +728,7 @@ async function profileDialog(p, persons, role = "kid") {
     if (changing && pinKind === "digits" && !pin && p.has_pin) { focusIn(f.pin); return toast(T("Enter the new digit PIN"), "bad"); }
     const isParent = f.role.value === "parent";
     const body = { name: f.name.value, role: f.role.value, color: f.color.value, pin, planer_person_id: f.planer.value || null,
-      ...(isParent && P.meta.ha ? { ha_user_id: haUser.value, ha_user_name: haUser.selectedOptions[0]?.dataset.name || "" } : {}),
+      ...(P.meta.ha ? { ha_user_id: haUser.value, ha_user_name: haUser.selectedOptions[0]?.dataset.name || "" } : {}),
       ...(pinSymbols ? { pin_symbols: pinSymbols.symbols, symbol_set: pinSymbols.set } : {}),
       settings: { daily_goal: +f.daily_goal.value, lesson_length: +f.lesson_length.value, new_per_lesson: +f.new_per_lesson.value,
         learning_hours: f.learning_hours.value.trim(), auto_logout_min: +f.auto_logout_min.value, internet_entity: f.internet_entity.value,

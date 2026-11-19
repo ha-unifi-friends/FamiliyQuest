@@ -5,14 +5,15 @@ import json
 import logging
 import shutil
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from .. import generators
 from ..i18n import _t
 from ..db import Database
 from .loader import PackError, content_hash, iter_dir, media_refs, pack_dict, parse_doc, store_media
-from .schema import Bundle, Pack, card_key, card_view, skill_key
+from . import i18n
+from .schema import Bundle, Pack, card_key, card_view, localize_view, skill_key
 
 log = logging.getLogger("familyquest.packs")
 
@@ -48,6 +49,8 @@ class UnitInfo:
     generator: str | None = None
     params: dict = field(default_factory=dict)
     skills: list[str] = field(default_factory=list)
+    titles: dict = field(default_factory=dict)            # titel_i18n of the unit
+    descriptions: dict = field(default_factory=dict)      # beschreibung_i18n of the unit
 
     def keys(self, pack_id: str) -> list[str]:
         if self.kind == "cards":
@@ -67,6 +70,9 @@ class PackInfo:
     version: str
     model: Pack | Bundle
     units: list[UnitInfo] = field(default_factory=list)
+    src: str = ""                     # the prompt language shown (localized copies; "" = the canonical `quellsprache`)
+    ui: str = ""                      # the viewer's language of a localized copy
+    loc_cache: dict = field(default_factory=dict, repr=False, compare=False)
 
     def unit(self, unit_id: str) -> UnitInfo | None:
         return next((u for u in self.units if u.id == unit_id), None)
@@ -75,14 +81,57 @@ class PackInfo:
     def lang(self) -> str:
         return getattr(self.model, "sprache", "") or ""
 
+    @property
+    def src_lang(self) -> str:
+        """The language of the prompts as shown (the learner's language when the cards carry it)."""
+        return self.src or getattr(self.model, "quellsprache", "") or "de"
+
+    @property
+    def src_langs(self) -> list[str]:
+        """Every prompt language the cards carry (never the language that is learnt)."""
+        m = self.model
+        if not isinstance(m, Pack):
+            return []
+        return [l for l in dict.fromkeys([m.quellsprache, *m.quellsprachen]) if l and l != m.sprache]
+
+    @property
+    def optional(self) -> bool:
+        return bool(getattr(self.model, "optional", False))
+
+    def localized(self, lang: str, family: str = "") -> "PackInfo":
+        """This pack in the viewer's language (cached). The card keys stay the canonical ones."""
+        if not lang:
+            return self
+        ck = (lang, family)
+        if ck in self.loc_cache:
+            return self.loc_cache[ck]
+        m = self.model
+        title = i18n.pick(getattr(m, "titel_i18n", None), self.title, lang)
+        if not isinstance(m, Pack):
+            out = replace(self, title=title, ui=lang, loc_cache={})
+        else:
+            src = i18n.source_lang(m.quellsprache, m.quellsprachen, m.sprache, lang, family)
+            units = []
+            for u in self.units:
+                items = u.items
+                if u.kind == "cards":
+                    items = [dict(it, view=localize_view(it["view"], it["card"], src, m.quellsprache)) for it in u.items]
+                units.append(replace(u, title=i18n.pick(u.titles, u.title, lang),
+                                     description=i18n.pick(u.descriptions, u.description, lang), items=items))
+            out = replace(self, title=title, units=units, src=src, ui=lang, loc_cache={})
+        self.loc_cache[ck] = out
+        return out
+
     def summary(self) -> dict:
         m = self.model
         d = {"id": self.id, "kind": self.kind, "title": self.title, "subject": subject_meta(self.subject),
-             "level": self.level, "status": self.status, "source": self.source, "version": self.version}
+             "level": self.level, "status": self.status, "source": self.source, "version": self.version,
+             "optional": self.optional, "content_langs": list(getattr(m, "sprachen", []) or [])}
         if isinstance(m, Pack):
-            d.update(lang=m.sprache, src_lang=m.quellsprache, private=m.privat, path=m.pfad, color=m.farbe or d["subject"]["color"],
-                     standard=m.standard, self_service=m.selbst,
-                     icon=m.icon or d["subject"]["icon"], description=m.beschreibung, descriptions=m.beschreibung_i18n or {},
+            descr = i18n.pick(m.beschreibung_i18n, m.beschreibung, self.ui) if self.ui else m.beschreibung
+            d.update(lang=m.sprache, src_lang=self.src_lang, src_langs=self.src_langs, private=m.privat, path=m.pfad,
+                     color=m.farbe or d["subject"]["color"], standard=m.standard, self_service=m.selbst,
+                     icon=m.icon or d["subject"]["icon"], description=descr, descriptions=m.beschreibung_i18n or {},
                      units=[{"id": u.id, "title": u.title, "kind": u.kind, "count": len(u.items) or len(u.skills),
                              "exercises": u.exercises, "icon": u.icon} for u in self.units])
         else:
@@ -107,7 +156,8 @@ def build_info(row: dict) -> PackInfo:
                     log.warning("pack %s unit %s: %s", model.id, u.id, e)
                     skills = []
                 info.units.append(UnitInfo(u.id, u.titel, "generator", u.uebungen or ["rechnen"], u.icon, u.beschreibung,
-                                           generator=u.generator, params=u.parameter, skills=skills))
+                                           generator=u.generator, params=u.parameter, skills=skills,
+                                           titles=u.titel_i18n or {}, descriptions=u.beschreibung_i18n or {}))
             else:
                 items, seen = [], set()
                 for c in u.karten:
@@ -121,7 +171,8 @@ def build_info(row: dict) -> PackInfo:
                     items.append({"key": k, "view": v, "card": c})
                 ex = u.uebungen or (["zuordnen"] if u.model_extra and u.model_extra.get("typ") == "zuordnen"
                                     else ["auswahl", "eintippen", "paare", "karteikarte"])
-                info.units.append(UnitInfo(u.id, u.titel, "cards", ex, u.icon, u.beschreibung, items=items))
+                info.units.append(UnitInfo(u.id, u.titel, "cards", ex, u.icon, u.beschreibung, items=items,
+                                           titles=u.titel_i18n or {}, descriptions=u.beschreibung_i18n or {}))
     return info
 
 
@@ -148,7 +199,9 @@ class PackStore:
         kind = "bundle" if isinstance(p, Bundle) else "pack"
         subject = None if isinstance(p, Bundle) else p.fach
         level = p.stufe
-        st = status or (row["status"] if row else "active")
+        # optional packs of the app's folders (e.g. content in one language only) start under «More packs»
+        st = status or (row["status"] if row else
+                        ("available" if getattr(p, "optional", False) and source in ("builtin", "share") else "active"))
         self.db.x(
             """INSERT INTO pack(id,kind,title,subject,level,version,source,status,hash,data,updated_at)
                VALUES(?,?,?,?,?,?,?,?,?,?,datetime('now'))
@@ -190,10 +243,112 @@ class PackStore:
                 except PackError as e:
                     log.warning("pack %s: %s", getattr(p, "id", "?"), e)
         log.info("packs synced: %s", stats)
+        self.retire_optional_once()
         return stats
 
+    # ---------- optional packs («More packs»: status 'available' = in the library, not installed) ----------
+    def _optional_ids(self) -> list[tuple[str, str, dict]]:
+        """(id, status, data) of the optional packs from the app's folders – never a pack a parent changed."""
+        out = []
+        for r in self.db.q("SELECT id, status, data FROM pack WHERE source IN ('builtin','share')"):
+            d = json.loads(r["data"] or "{}")
+            if d.get("optional"):
+                out.append((r["id"], r["status"], d))
+        return out
+
+    def _has_progress(self, pack_ids: list[str], profile_id: int | None = None) -> bool:
+        if not pack_ids:
+            return False
+        marks = ",".join("?" * len(pack_ids))
+        who, args = ("", []) if profile_id is None else (" AND profile_id=?", [profile_id])
+        return bool(self.db.val(f"SELECT 1 FROM item_state WHERE pack_id IN ({marks}){who} LIMIT 1", *pack_ids, *args)
+                    or self.db.val(f"SELECT 1 FROM attempt WHERE pack_id IN ({marks}){who} LIMIT 1", *pack_ids, *args))
+
+    @staticmethod
+    def _members(pid: str, data: dict) -> list[str]:
+        """A pack's own id, a level pack's packs."""
+        if data.get("stufenpaket"):
+            return [p for s in data.get("semester") or [] for p in s.get("pakete") or []]
+        return [pid]
+
+    def retire_unused_optional(self) -> list[str]:
+        """Optional packs that are installed but nobody has (no child, no progress) go back to «More packs»."""
+        out = []
+        for pid, st, d in self._optional_ids():
+            if st != "active" or self.db.val("SELECT 1 FROM pack_profile WHERE pack_id=? LIMIT 1", pid):
+                continue
+            if d.get("stufenpaket") or not self._has_progress([pid]):
+                self.set_status(pid, "available")
+                out.append(pid)
+        return out
+
+    def retire_optional_once(self) -> None:
+        """Update to optional packs (once): existing installations keep every optional pack a child has or learnt
+        with; the others move to «More packs»."""
+        if self.db.get_setting("packs_optional_v1"):
+            return
+        retired = self.retire_unused_optional()
+        self.db.set_setting("packs_optional_v1", True)
+        if retired:
+            log.info("optional packs moved to «More packs»: %s", retired)
+
+    def unassign_unused_optional(self) -> list[tuple[str, int]]:
+        """Families whose language is not German: optional (German-only) packs that were switched on automatically
+        and never used are switched off again – every pack with learning progress stays."""
+        gone = []
+        opt = self._optional_ids()
+        for pid, _st, d in opt:
+            members = [m for m in self._members(pid, d) if any(m == o[0] for o in opt)] if d.get("stufenpaket") else [pid]
+            for r in self.db.q("SELECT profile_id FROM pack_profile WHERE pack_id=?", pid):
+                if not self._has_progress(members, r["profile_id"]):
+                    self.db.x("DELETE FROM pack_profile WHERE pack_id=? AND profile_id=?", pid, r["profile_id"])
+                    gone.append((pid, r["profile_id"]))
+        self.retire_unused_optional()
+        return gone
+
+    def family_lang(self) -> str:
+        return i18n.base(self.db.get_setting("family_lang", "") or "")
+
+    def note_family_lang(self, code: str | None) -> None:
+        """The language of the parent area = the family language (prompt fallback). The first time it is known and
+        it is not German, unused German-only packs that were switched on automatically are switched off."""
+        lang = i18n.base(code)
+        if not lang:
+            return
+        if self.family_lang() != lang:
+            self.db.set_setting("family_lang", lang)
+        if not self.db.get_setting("packs_optional_unassign_v1"):
+            self.db.set_setting("packs_optional_unassign_v1", lang)
+            if lang != "de":
+                gone = self.unassign_unused_optional()
+                if gone:
+                    log.info("unused German-only packs switched off (family language %s): %s", lang, gone)
+                    self.invalidate()
+
+    def install(self, pack_id: str) -> None:
+        """«More packs» › Add: the pack is offered in the family (children get it when a parent switches it on)."""
+        info = self._get(pack_id)
+        ids = [pack_id] + (info.model.pack_ids() if info and isinstance(info.model, Bundle) else [])
+        for i in ids:
+            self.db.x("UPDATE pack SET status='active' WHERE id=? AND (id=? OR status='available')", i, pack_id)
+            self.invalidate(i)
+
+    def uninstall(self, pack_id: str) -> None:
+        """Back to «More packs»: switched off for every child – the learning progress stays (it is back when the pack
+        is added again)."""
+        with self.db.tx():
+            self.db.x("DELETE FROM pack_profile WHERE pack_id=?", pack_id)
+            self.db.x("UPDATE pack SET status='available' WHERE id=?", pack_id)
+        self.invalidate(pack_id)
+
     # ---------- read ----------
-    def get(self, pack_id: str) -> PackInfo | None:
+    def get(self, pack_id: str, localize: bool = True) -> PackInfo | None:
+        """The pack – in the viewer's language during a request (packs/i18n.py); `localize=False`: as written."""
+        info = self._get(pack_id)
+        lang = i18n.viewer() if localize else ""
+        return info.localized(lang, self.family_lang()) if info and lang else info
+
+    def _get(self, pack_id: str) -> PackInfo | None:
         with self._lock:
             if pack_id in self._cache:
                 return self._cache[pack_id]
@@ -229,7 +384,7 @@ class PackStore:
         """The packs a profile learns with. Children: the active packs switched on for them. Parents: every pack –
         also drafts and switched-off ones, to try them out (try_all=False: only the active packs, e.g. daily lesson)."""
         if self.db.val("SELECT role FROM profile WHERE id=?", profile_id) == "parent":
-            sql = "SELECT id FROM pack WHERE kind='pack'" + ("" if try_all else " AND status='active'")
+            sql = "SELECT id FROM pack WHERE kind='pack'" + (" AND status<>'available'" if try_all else " AND status='active'")
             rows = self.db.q(sql + " ORDER BY status<>'active', subject, title")
         else:
             rows = self.db.q("""SELECT p.id FROM pack p JOIN pack_profile pp ON pp.pack_id=p.id
@@ -248,12 +403,18 @@ class PackStore:
         with self.db.tx():
             for i in ids:
                 if on:
+                    # switched on for a child = added to the family (also the packs of a level pack)
+                    self.db.x("UPDATE pack SET status='active' WHERE id=? AND status='available'", i)
                     self.db.x("INSERT OR IGNORE INTO pack_profile(pack_id,profile_id) VALUES(?,?)", i, profile_id)
                 else:
                     self.db.x("DELETE FROM pack_profile WHERE pack_id=? AND profile_id=?", i, profile_id)
+        if on:
+            for i in ids:
+                self.invalidate(i)
 
     def activate_defaults(self, profile_id: int) -> None:
         for r in self.db.q("SELECT id, data FROM pack WHERE status='active' AND kind='pack'"):
-            if json.loads(r["data"] or "{}").get("standard", True) is False:
-                continue                       # e.g. language courses: chosen by the learner
+            d = json.loads(r["data"] or "{}")
+            if d.get("standard", True) is False or d.get("optional"):
+                continue                       # e.g. language courses: chosen by the learner; optional packs: by a parent
             self.db.x("INSERT OR IGNORE INTO pack_profile(pack_id,profile_id) VALUES(?,?)", r["id"], profile_id)
