@@ -19,6 +19,20 @@ still show. Once reworked, take the game out of `DEV_GAMES` and it is in the nex
 - **🏛️ Beat the Bureaucracy** (`stempeljagd`) – too complex to play: rework before beta (fewer counters, rules and
   special cards; a game that explains itself while playing).
 
+### 💡 Code Workshop – stages 2 and 3 (stage 1 is in the dev app)
+
+Stage 1 (editor, engine, events / motion / looks / control / minimal sensing, 15 puzzles, own programs with templates,
+visibility and remix) is only in Family Quest Dev (`channel.DEV_FEATURES`) – test it with children, then into the beta.
+
+- **Stage 2:** 🔊 sound (play sound: bell, drum, meow, boing … · play note with a mini keyboard); 🔴 variables (new variable
+  «points», «lives» · set / change by · show on the stage); more sensing (key pressed?, distance to, x / y position,
+  direction, size, touching colour?, math + − × ÷, join texts); «repeat until», «when sprite touches …», colour effects;
+  more puzzle levels (about 30 in 5 worlds: variables «count the apples», messages); 🤖 import / export in an AI-friendly
+  JSON format with a prompt box (`aiPromptBox`, like the books); the avatar of the child as a sprite; templates «Maze» and
+  «Ping-Pong»; a Facts question «Who solved most code levels?»; coins per shared program (parent setting).
+- **Stage 3:** own blocks (functions with parameters), clones, lists; a «share as book page» link; a small gallery of the
+  family with ⭐ ratings.
+
 ### «Fischen» – multiplayer fishing (simple)
 
 User wishes (2026-11-18): keep casting / reeling **simple**; **many rarity levels**; **several fish per rarity**;

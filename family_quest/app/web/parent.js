@@ -834,14 +834,16 @@ async function packsView(main) {
     h("button.btn.ghost", { title: T("All packs in one JSON file"), onclick: () => download(null, "json") }, "⬇️ ", T("Export all")),
     h("button.btn", { onclick: () => { P.tab = "import"; render(); } }, "📥 ", T("Import"))));
   main.append(search, noPacks);
+  // 💡 Code Workshop (codelab.js): only in the dev channel (channel.DEV_FEATURES)
+  const codeSec = P.info && P.info.codelab ? await codelabSection().catch(e => section("💡 " + I18N.tr(T("Code Workshop")), h("p.bad", e.message))) : null;
   if (mode === "kids") return main.append(...byKid(),
-    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null);
+    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null, codeSec);
   const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
     drafts.length ? section("📝 " + I18N.tr(T("Imported as draft – to check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
     importedPacks.length ? section("⭐ " + I18N.tr(T("Own packs")), ...importedPacks.map(card)) : null,
     levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
-    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
+    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null, codeSec);
   function packRewards(p) {
     const r = p.rewards || {};
     const xp = h("input", { type: "number", min: 0, max: 10000, value: r.xp ?? "", placeholder: "–", inputmode: "numeric" });
@@ -861,6 +863,47 @@ async function packsView(main) {
   }
   async function setStatus(id, status) { await call(`parent/packs/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } }); render(); }
   async function del(p) { if (!(await confirmDialog(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title)))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
+}
+
+// 💡 Code Workshop (familyquest/codelab.py): on / off per child, puzzle rewards, the progress of every child, the programs
+// the family shares (open in the app, remove) – of private programs only that they exist
+async function codelabSection() {
+  const d = await call("codelab/overview");
+  const s = d.settings;
+  const on = d.kids.map(k => [k.id, h("input", { type: "checkbox", checked: !s.off.includes(k.id) })]);
+  const num = v => h("input", { type: "number", min: 0, max: 10000, value: v, inputmode: "numeric" });
+  const xp = num(s.level_xp), coins = num(s.level_coins);
+  const save = async () => {
+    const body = { off: on.filter(([, c]) => !c.checked).map(([id]) => id), level_xp: Math.max(0, Math.round(+xp.value || 0)), level_coins: Math.max(0, Math.round(+coins.value || 0)) };
+    try { await call("codelab/settings", { method: "PUT", body }); toast(T("Saved"), "good"); } catch {}
+  };
+  const worlds = [...new Set(d.levels.map(l => l.world))];
+  const kidRow = k => h("tr", h("td", h("div.row.cw-pk", avatarSvg(k.avatar, 30), C(k.name, "strong"))),
+    h("td", { translate: "no" }, k.solved + " / " + d.total), h("td", { translate: "no" }, "⭐ " + k.stars),
+    ...worlds.map(w => h("td.cw-pw", { translate: "no" }, d.levels.filter(l => l.world === w).map(l => k.levels[l.id] ? "★".repeat(k.levels[l.id]) : "·").join(" "))));
+  const proj = d.projects;
+  const shared = [...proj.mine, ...proj.others];
+  const remove = async p => {
+    if (!(await confirmDialog(I18N.tr(T("Remove the program «{0}»?")).replace("{0}", p.title)))) return;
+    try { await call("codelab/projects/" + p.id, { method: "DELETE" }); render(); } catch {}
+  };
+  const VIS = { me: "🔒", kids: "🧒", family: "👨‍👩‍👧" };
+  return section("💡 " + I18N.tr(T("Code Workshop")),
+    h("p.small.muted", T("Block programming for the children: 15 puzzles with the fox and own programs. The time in the workshop counts as learning time.")),
+    h("div.field", h("b", T("Code Workshop for")), d.kids.length ? h("div.row.wrap", ...on.map(([id, c]) => h("label.check", c, " ", C(d.kids.find(k => k.id === id).name)))) : h("span.small.muted", T("No child profile yet"))),
+    h("div.sb-rew", h("b", T("Reward for the first solve of a puzzle level")),
+      h("label.field", h("span", "⭐ XP"), xp), h("label.field", h("span", "🪙 ", T("Coins")), coins)),
+    h("button.btn", { onclick: save }, "💾 ", T("Save")),
+    d.kids.length ? h("div.cw-ptable", h("h3", "🧩 ", T("Puzzle progress")), h("div.tbl-wrap", h("table.tbl",
+      h("thead", h("tr", h("th", T("Child")), h("th", T("Levels")), h("th", "⭐"), ...worlds.map(w => h("th", { translate: "no" }, "#" + w)))),
+      h("tbody", ...d.kids.map(kidRow))))) : null,
+    h("h3", "🎨 ", T("Programs of the family")),
+    shared.length ? h("ul.cw-plist-p", ...shared.map(p => h("li.row",
+      h("span", VIS[p.visibility] || ""), h("div.grow", C(p.title, "strong"), h("div.small.muted", C(p.author.name), " · 🧱 " + p.blocks + " · " + fmtDate(p.updated_at))),
+      h("button.btn.small.ghost", { onclick: () => openInApp("codelab/play/" + p.id) }, "▶ ", T("Open in the app")),
+      h("button.btn.small.ghost", { "aria-label": T("Remove"), onclick: () => remove(p) }, "🗑️")))) : h("p.small.muted", T("No shared programs yet.")),
+    proj.private.length ? h("div", h("p.small.muted", "🔒 ", T("Private programs – only the child can open them:")),
+      h("ul.cw-plist-p", ...proj.private.map(p => h("li.row.small", h("span", "🔒"), C(p.author.name, "strong"), h("span.muted", " · 🧱 " + p.blocks + " · " + fmtDate(p.updated_at)))))) : null);
 }
 
 async function download(id, format = "zip") {

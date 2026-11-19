@@ -10,7 +10,7 @@ from .api.auth import Throttle, Tokens
 from .bingo import Bingo
 from .poker import Poker
 from .cardgames import CardGames
-from .channel import ChannelGames
+from .channel import ChannelGames, feature_visible
 from .community import Community
 from .chores import Chores
 from .internet import InternetTime
@@ -132,6 +132,9 @@ class FamilyQuest:
         # the adventure games of the library are a game of their own (parent area › Games): switched off for a child,
         # it can neither play nor write them – parents always
         self.stories.games_ok = lambda prof: prof.get("role") == "parent" or "adventuregame" in self.games_for(prof)
+        from .codelab import Codelab
+        self.codelab = Codelab(self.db, self.rewards)              # 💡 Code Workshop (codelab.py) – learning time
+        self.codelab.hours_ok = self._learning_hours_ok
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
         from .pong4 import Doubles
@@ -154,6 +157,15 @@ class FamilyQuest:
         self.ha = None            # set by main when Home Assistant is available (ha.service.HAService)
         self.planer_host = None   # Family Planer core (planer.host.PlanerHost), started by main
         self.on_mood: list = []   # fn(profile_row) – a child set its avatar to «sad»
+
+    def _learning_hours_ok(self, prof: dict) -> bool:
+        """Within the learning hours of the profile (profile setting «learning_hours», as for the lessons)?"""
+        from .learning.lesson import LearnError, Learning
+        try:
+            Learning._check_hours(profile_settings(prof))
+        except LearnError:
+            return False
+        return True
 
     def _away_days(self, pid: int) -> set[str]:
         """Days the Family Planer has this profile away on holiday («away» decision) – pet care pauses then."""
@@ -525,6 +537,8 @@ class FamilyQuest:
             "coins_reserved": self.rewards.reserved(pid),     # promised in a deal that stands – cannot be spent
             "coins_available": self.rewards.available(pid),   # what can be spent («enough coins?» in the app)
             "stories": self.stories.enabled_for(prof),        # adventure books (stories.py) – off per child by the parents
+            # 💡 Code Workshop (codelab.py) – only in the dev channel (channel.DEV_FEATURES), off per child by the parents
+            "codelab": feature_visible("codelab") and self.codelab.enabled_for(prof),
         }
 
     def party_public(self, prof: dict) -> dict | None:

@@ -6,7 +6,7 @@
 
 Sources: T("…") in the web app, _t("…") in Python, and error messages passed to
 HTTPException / LearnError / ShopError / PackError (they end up in toasts).
-Word content kept as data: the cards of «Verbotene Wörter» (familyquest/verboten_cards.json) – every card's word and
+The puzzle texts of the Code Workshop (familyquest/codelab_levels.json). Word content kept as data: the cards of «Verbotene Wörter» (familyquest/verboten_cards.json) – every card's word and
 its five forbidden words joined with " · " (familyquest/gamewords.py). The word lists of «Zeichnen & Raten» and
 «Wer bin ich?» are _t("…") in zeichnen_data.py / whoami_data.py.
 """
@@ -46,8 +46,17 @@ def card_keys() -> set[str]:
     return out
 
 
+def codelab_keys() -> set[str]:
+    """The texts of the Code Workshop puzzles (familyquest/codelab_levels.json): world and level titles, goals, hints."""
+    data = json.loads((PY / "codelab_levels.json").read_text(encoding="utf-8"))
+    out = {w["title"] for w in data["worlds"]}
+    for lv in data["levels"]:
+        out.update(lv[k] for k in ("title", "goal", "hint"))
+    return out
+
+
 def keys() -> list[str]:
-    found: set[str] = set(EXTRA) | card_keys()
+    found: set[str] = set(EXTRA) | card_keys() | codelab_keys()
     for f in list(WEB.glob("*.js")) + list((WEB / "shared").glob("*.js")):
         text = f.read_text(encoding="utf-8")
         for p in JS_PATTERNS:
