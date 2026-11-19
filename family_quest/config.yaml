@@ -26,7 +26,7 @@ map:
   - media:rw
 options:
   log_level: info
-  direct_access: false
+  direct_access: true
 schema:
   log_level: list(debug|info|warning|error)
   direct_access: bool

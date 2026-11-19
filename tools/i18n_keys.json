@@ -1179,7 +1179,6 @@
  "Dino nest",
  "Dinosaur",
  "Dinosaur valley",
- "Direct access is off: the code opens the app inside Home Assistant. In Home Assistant open the app → Configuration and switch on direct_access, so the children's devices can open it without a Home Assistant login.",
  "Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.",
  "Direct access is switched off – open Family Quest from Home Assistant",
  "Direction",

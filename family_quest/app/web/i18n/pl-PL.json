@@ -1212,7 +1212,6 @@
  "Dino nest": "Gniazdo dinozaura",
  "Dinosaur": "Dinozaur",
  "Dinosaur valley": "Dolina dinozaurów",
- "Direct access is off: the code opens the app inside Home Assistant. In Home Assistant open the app → Configuration and switch on direct_access, so the children's devices can open it without a Home Assistant login.": "Dostęp bezpośredni jest wyłączony: kod otwiera aplikację w Home Assistant. W Home Assistant otwórz aplikację → Konfiguracja i włącz direct_access, aby urządzenia dzieci mogły ją otworzyć bez logowania do Home Assistant.",
  "Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.": "Dostęp bezpośredni jest jeszcze wyłączony: w Home Assistant otwórz aplikację → Konfiguracja, włącz direct_access i uruchom aplikację ponownie.",
  "Direct access is switched off – open Family Quest from Home Assistant": "Bezpośredni dostęp jest wyłączony – otwórz Family Quest z Home Assistant",
  "Direction": "Kierunek",
