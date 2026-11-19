@@ -173,6 +173,7 @@ def setup(body: SetupIn, request: Request) -> dict:
     if not body.name.strip() or (body.pin and not valid_pin(body.pin)) or (not body.pin and not u):
         raise HTTPException(400, "Name and a PIN with 4–8 digits are required")
     st = {"ha_user_id": u["id"], "ha_user_name": u["name"] or u["user"]} if u else {}
+    st["login"] = ("pin_ha" if body.pin else "ha") if u else "pin"
     pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash, settings) VALUES(?, 'parent', '#495057', ?, ?)",
                   body.name.strip()[:40], hash_pin(body.pin) if body.pin else None, json.dumps(st))
     return {"parent_token": fq.tokens.make(pid, "parent"), "token": fq.tokens.make(pid, "kid"),
@@ -373,6 +374,8 @@ def change_pin(body: PinChangeIn, request: Request, prof: dict = Learner) -> dic
     """Children (and parents) change their own PIN – with the current one. Removing the PIN stays with the parents."""
     fq = app_of(request)
     p = fq.db.q1("SELECT * FROM profile WHERE id=?", prof["id"])
+    if login_mode(p) == "ha":
+        raise HTTPException(403, "Your parents chose: sign in only with Home Assistant")
     key = f"login:{p['id']}"
     fq.throttle.check(key)
     if p["pin_hash"] and not check_pin(body.old_pin, p["pin_hash"]):
@@ -380,22 +383,25 @@ def change_pin(body: PinChangeIn, request: Request, prof: dict = Learner) -> dic
         raise HTTPException(403, "Wrong PIN")
     fq.throttle.ok(key)
     st = profile_settings(p)
+    raw = json.loads(p["settings"] or "{}")
+    if login_mode(p, st) == "none":
+        raw["login"] = "pin"                 # «No sign-in» and the child sets a PIN itself: from now on with the PIN
     if body.pin_symbols is not None:
         try:
             sset = symbols.check_set(body.symbol_set or [])
             new = hash_pin(symbols.secret(body.pin_symbols, sset))
         except ValueError as e:
             raise HTTPException(400, str(e)) from None
-        st.update(pin_kind="symbols", symbol_set=sset)
+        raw.update(pin_kind="symbols", symbol_set=sset)
     elif body.pin:
         lo, hi = (4, 4) if p["role"] == "kid" else (4, 8)
         if not valid_pin(body.pin, lo, hi):
             raise HTTPException(400, "Children's PIN: 4 digits" if p["role"] == "kid" else "PIN: 4–8 digits")
         new = hash_pin(body.pin)
-        st.update(pin_kind="digits", symbol_set=[])
+        raw.update(pin_kind="digits", symbol_set=[])
     else:
         raise HTTPException(400, "Choose a new PIN")
-    fq.db.x("UPDATE profile SET pin_hash=?, settings=? WHERE id=?", new, json.dumps(st), p["id"])
+    fq.db.x("UPDATE profile SET pin_hash=?, settings=? WHERE id=?", new, json.dumps(raw), p["id"])
     # a new PIN ends every other login of this profile – this device gets a fresh one
     return {"profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", p["id"])), "token": fq.tokens.make(p["id"], "kid")}
 
