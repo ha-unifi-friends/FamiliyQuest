@@ -189,6 +189,8 @@ def ha_link(body: HaLinkIn, request: Request, me: dict = Parent) -> dict:
         if not u:
             raise HTTPException(400, "Open the parent area through Home Assistant to link your user")
         _ha_user_taken(fq, u["id"], me["id"])
+    elif not me["pin_hash"]:
+        raise HTTPException(400, "Set a PIN first – without PIN and Home Assistant user you could not log in any more")
     st = profile_settings(me)
     if body.on:
         st.update(ha_user_id=u["id"], ha_user_name=u["name"] or u["user"])
@@ -1103,8 +1105,15 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         if isinstance(v, list):
             return all(finite(x) for x in v)
         return True
-    if "kid_ha_login" in body and not isinstance(body["kid_ha_login"], bool):
-        raise HTTPException(400, "Unknown setting")
+    for k in ("kid_ha_login", "ha_app_login"):
+        if k in body and not isinstance(body[k], bool):
+            raise HTTPException(400, "Unknown setting")
+    if "ha_app_login_url" in body:
+        from ..haauth import clean_url
+        try:
+            body = {**body, "ha_app_login_url": clean_url(body["ha_app_login_url"]) if str(body["ha_app_login_url"] or "").strip() else ""}
+        except (ValueError, TypeError):
+            raise HTTPException(400, "Address: e.g. http://192.168.1.10:8123") from None
     if "game_starter" in body and body["game_starter"] not in ("dice", "leader", "choose"):
         raise HTTPException(400, "Unknown setting")
     for k, v in body.items():

@@ -85,14 +85,28 @@ async function call(path, opts) {
 // ---------------------------------------------------------------- setup and login
 function setupView() {
   const name = h("input", { type: "text", placeholder: T("Your name"), "aria-label": T("Your name"), value: P.info.setup_ha_user || "" });
+  const viaHA = !!P.info.setup_ha_user;            // through Home Assistant with a known user: the PIN is optional
   let step = 1, first = "";
+  const create = async pin => {
+    const r = await api("setup", { method: "POST", body: { name: name.value.trim(), pin: pin || "" } });
+    Auth.parent = r.parent_token;
+    P.info.setup_needed = false;
+    toast(T("Done! Now add the children."), "good");
+    location.hash = "#profiles";
+    boot();
+  };
   const box = h("div.card.login-card",
     h("img", { src: "img/icon.svg", alt: "", width: 72, height: 72 }),
     h("h1", T("Welcome to Family Quest")),
-    h("p", T("First create the parent profile. It is always protected by a PIN.")),
+    h("p", viaHA ? T("First create the parent profile.") : T("First create the parent profile. It is always protected by a PIN.")),
     h("label.field", T("Your name"), name),
-    P.info.setup_ha_user ? h("p.small.muted", "🏠 ", I18N.tr(T("Your parent profile is linked with the Home Assistant user «{0}»: here in Home Assistant you need no PIN. The PIN is for the app on the tablets.")).replace("{0}", P.info.setup_ha_user)) : null,
-    h("button.btn.big", { onclick: () => { if (!name.value.trim()) return name.focus(); pinStep(); } }, T("Next")),
+    viaHA ? h("p.small.muted", "🏠 ", I18N.tr(T("Your parent profile is linked with the Home Assistant user «{0}»: you need no PIN. On tablets and phones you sign in with «Sign in with Home Assistant» – or you set a PIN later in your profile.")).replace("{0}", P.info.setup_ha_user)) : null,
+    viaHA ? h("button.btn.big", { onclick: async () => {
+      if (!name.value.trim()) return name.focus();
+      try { await create(""); } catch (e) { toast(e.message, "bad"); }
+    } }, "✓ ", T("Create")) : null,
+    h("button.btn" + (viaHA ? ".ghost.small" : ".big"), { onclick: () => { if (!name.value.trim()) return name.focus(); pinStep(); } },
+      viaHA ? "🔑 " + I18N.tr(T("Also choose a PIN")) : T("Next")),
     langPicker());
   app.replaceChildren(h("div.login", box));
   function pinStep() {
@@ -100,12 +114,7 @@ function setupView() {
       onSubmit: async pin => {
         if (step === 1) { first = pin; step = 2; return pinStep(); }
         if (pin !== first) { step = 1; throw new Error(I18N.tr(T("The PINs do not match"))); }
-        const r = await api("setup", { method: "POST", body: { name: name.value.trim(), pin } });
-        Auth.parent = r.parent_token;
-        P.info.setup_needed = false;
-        toast(T("Done! Now add the children."), "good");
-        location.hash = "#profiles";
-        boot();
+        await create(pin);
       } }));
   }
 }
@@ -2163,7 +2172,51 @@ function haLoginSection(s) {
         await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked, kid_ha_login: kids.checked } });
         P.meta.kid_ha_login = kids.checked; s.parent_ha_only = only.checked; s.kid_ha_login = kids.checked; toast(T("Saved"), "good");
       } catch (e) { only.checked = !!s.parent_ha_only; kids.checked = !!s.kid_ha_login; }
-    } }, "💾 ", T("Save")));
+    } }, "💾 ", T("Save")),
+    haAppLoginBox());
+}
+
+// «Sign in with Home Assistant» in the app on tablets and phones (direct port, api/haauth.py)
+function haAppLoginBox() {
+  const box = h("div.ha-app-box");
+  (async () => {
+    let st;
+    try { st = await call("parent/ha-app-login"); } catch { return; }
+    const on = h("input", { type: "checkbox", checked: st.on });
+    const url = h("input", { type: "url", value: st.url, placeholder: st.auto || "http://192.168.1.10:8123", "aria-label": T("Home Assistant address for the sign-in"), autocomplete: "off" });
+    const result = h("p.small");
+    const names = st.linked.map(p => p.name).join(", ");
+    box.replaceChildren(
+      h("h3", "📱 ", T("Sign in with Home Assistant in the app")),
+      h("label.check", on, h("span", T("Allow sign-in with Home Assistant in the app (tablets, phones)"))),
+      h("p.small.muted", T("The login screen of the app shows «Sign in with Home Assistant». It opens the login page of Home Assistant (with two-factor authentication when the user has it) and comes back signed in – as the profile linked with that Home Assistant user. Family Quest keeps no Home Assistant password or token.")),
+      h("p.small", names ? [T("Can sign in:"), " ", C(names)] : h("span.muted", T("Nobody can sign in yet – link a Home Assistant user with a profile (Profiles › edit)."))),
+      st.linked_kids_off ? h("p.small.muted", T("Children only when «Children may sign in with their Home Assistant user» is switched on.")) : null,
+      h("label.field", T("Home Assistant address for the sign-in"), url),
+      h("p.small.muted", st.auto ? I18N.tr(T("Empty = automatic: {0}")).replace("{0}", st.auto) : T("Empty = automatic (this host with the port of Home Assistant)."),
+        " ", T("The tablets must reach Home Assistant at this address.")),
+      st.suggestions.length ? h("div.row.wrap.small", h("span.muted", T("From Home Assistant:")),
+        ...st.suggestions.map(u => h("button.btn.small.ghost", { type: "button", onclick: () => { url.value = u; } }, C(u)))) : null,
+      h("div.row.wrap",
+        h("button.btn.small.ghost", { type: "button", onclick: async () => {
+          result.textContent = "…";
+          let r;
+          try { r = await call("parent/ha-app-login/test", { method: "POST", body: { url: url.value.trim() } }); } catch (e) { result.textContent = ""; return; }
+          // this device: an answer at all (no-cors) means the address is reachable from here
+          let here = false;
+          try { await fetch(r.url + "/auth/providers", { mode: "no-cors", cache: "no-store" }); here = true; } catch {}
+          result.replaceChildren((here ? "✓ " : "✗ ") + I18N.tr(here ? T("This device reaches Home Assistant at {0}.") : T("This device does not reach Home Assistant at {0}.")).replace("{0}", r.url),
+            h("br"), (r.server ? "✓ " : "✗ ") + I18N.tr(r.server ? T("Family Quest reaches Home Assistant.") : T("Family Quest does not reach Home Assistant at this address."))));
+        } }, "🔍 ", T("Test")),
+        h("button.btn.small", { type: "button", onclick: async () => {
+          try {
+            const r = await call("parent/settings", { method: "PUT", body: { ha_app_login: on.checked, ha_app_login_url: url.value.trim() } });
+            url.value = r.ha_app_login_url || ""; toast(T("Saved"), "good");
+          } catch (e) { /* call() shows the error */ }
+        } }, "💾 ", T("Save"))),
+      result);
+  })();
+  return box;
 }
 
 // ---------------------------------------------------------------- Family Quest HA integration (custom component)

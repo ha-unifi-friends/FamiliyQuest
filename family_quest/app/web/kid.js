@@ -18,6 +18,7 @@ async function boot() {
   // opened in Home Assistant with the child's own Home Assistant user: logged in without PIN (also instead of another
   // profile still logged in on this device) – not again in this tab after «Log out» (haKidOff)
   if (S.info.ha_kid && !haKidOff() && !/^#\/?as\//.test(location.hash)) await haKidLogin().catch(() => {});
+  if (/^#\/?ha-auth\?/.test(location.hash)) await haAppFinish();          // back from Home Assistant's login page
   window.addEventListener("hashchange", route);
   ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, idleReset, { passive: true }));
   if ("serviceWorker" in navigator) {
@@ -118,6 +119,29 @@ async function haKidLogin() {
   Auth.kid = r.token; Auth.parent = "";
   return true;
 }
+
+// «Sign in with Home Assistant» outside Home Assistant (tablets, phones – api/haauth.py): Home Assistant's own login
+// page, back to #/ha-auth with a code that the server exchanges. The nonce stays in this tab (sessionStorage).
+async function haAppLogin() {
+  try {
+    const r = await api("ha-auth/start", { method: "POST", body: { base: new URL(".", location.href).href } });
+    try { sessionStorage.setItem("fq.ha.nonce", r.nonce); } catch {}
+    location.href = r.url;
+  } catch (e) { toast(e.message, "bad"); }
+}
+async function haAppFinish() {
+  const q = new URLSearchParams(location.hash.replace(/^#\/?ha-auth\?/, ""));
+  let nonce = "";
+  try { nonce = sessionStorage.getItem("fq.ha.nonce") || ""; sessionStorage.removeItem("fq.ha.nonce"); } catch {}
+  history.replaceState(null, "", location.pathname + location.search + "#/");
+  if (!q.get("code")) return toast(T("Sign-in with Home Assistant was cancelled"), "bad");
+  try {
+    const r = await api("ha-auth/finish", { method: "POST", body: { code: q.get("code"), state: q.get("state") || "", nonce } });
+    Auth.kid = r.token; Auth.parent = r.parent_token || "";
+    Sound.play("tap");
+  } catch (e) { setTimeout(() => toast(e.message, "bad"), 300); }
+}
+const haAppButton = () => h("button.btn.big.ha-app-login", { onclick: haAppLogin }, "🏠 ", T("Sign in with Home Assistant"));
 
 function logout() {
   if (S.info && S.info.ha_kid) { try { sessionStorage.setItem("fq.ha.off", "1"); } catch {} }     // no automatic login right away
@@ -440,6 +464,7 @@ async function profilesView() {
     hk ? h("div.center.ha-kid-login", h("button.btn.big", { onclick: async () => {
       try { if (await haKidLogin()) { Sound.play("tap"); location.hash = "#/"; route(); } } catch (e) { toast(e.message, "bad"); }
     } }, "🏠 ", I18N.tr(T("Log in as {0}")).replace("{0}", hk.name))) : null,
+    !hk && S.info.ha_app_login && !S.info.setup_needed ? h("div.center.ha-kid-login", haAppButton()) : null,
     S.info.setup_needed
       ? h("div.card.welcome", h("h2", T("Welcome to Family Quest!")), h("p", T("A parent sets up the profiles first.")),
           h("a.btn.big", { href: "eltern" }, T("Set up now")))
@@ -460,6 +485,9 @@ function login(p) {
     location.hash = "#/";
     route();
   };
+  // linked with a Home Assistant user and no PIN (e.g. a parent who only uses Home Assistant): straight to its login
+  if (!p.has_pin && p.ha_login && p.role === "parent") return haAppLogin();
+  const haBtn = () => p.ha_login ? h("div.center.ha-pin-alt", h("button.btn.ghost.small", { onclick: haAppLogin }, "🏠 ", T("Sign in with Home Assistant"))) : null;
   if (!p.has_pin) return api("login", { method: "POST", body: { profile_id: p.id } }).then(done).catch(e => toast(e.message, "bad"));
   if (p.pin_kind === "symbols" && p.symbol_set) {
     // picture PIN: the 24 symbols come in a new order every time, so a watched pattern does not help
@@ -467,14 +495,14 @@ function login(p) {
       symbolPad({ title: C(p.name), symbols: p.symbol_set, onSubmit: async ids => {
         const res = await api("login", { method: "POST", body: { profile_id: p.id, pin: "sym:" + ids.join(",") } });
         m.close(); done(res);
-      } })));
+      } }), haBtn()));
     return;
   }
   const m = modal(h("div", h("div.center", avatarSvg(p.avatar, 90)),
     pinPad({ title: C(p.name), length: 4, maxLength: p.role === "kid" ? 4 : 8, onSubmit: async pin => {
       const res = await api("login", { method: "POST", body: { profile_id: p.id, pin } });
       m.close(); done(res);
-    } })));
+    } }), haBtn()));
 }
 
 // the subjects (packs) of a profile as tiles: tap = the pack with its path, ▶ = go on with the next unit right away.

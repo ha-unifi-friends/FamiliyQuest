@@ -7,7 +7,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
-from .. import loginlog, symbols, themes
+from .. import haauth, loginlog, symbols, themes
 from ..chores import ChoreError
 from ..internet import InternetError
 from ..db import profile_settings
@@ -29,7 +29,7 @@ class LoginIn(BaseModel):
 
 class SetupIn(BaseModel):
     name: str
-    pin: str
+    pin: str = ""                    # optional only through Home Assistant with a known user (the profile is linked)
 
 
 class SessionIn(BaseModel):
@@ -74,6 +74,8 @@ def info(request: Request) -> dict:
             "via_ha": via_ingress(request),
             # a child opened the app with its own Home Assistant user (ingress, parents allow it): log in without PIN
             "ha_kid": {"id": kid["id"], "name": kid["name"]} if (kid := ha_kid(fq, request)) else None,
+            # outside Home Assistant (tablets): «Sign in with Home Assistant» (haauth.py) when switched on and somebody is linked
+            "ha_app_login": not via_ingress(request) and haauth.available(fq),
             "season": themes.active(s.get("themes")),
             "codelab": feature_visible("codelab")}           # 💡 Code Workshop: only in the dev channel (channel.DEV_FEATURES)
 
@@ -98,9 +100,19 @@ async def ha_panel(request: Request) -> dict:
 @router.get("/profiles")
 def profiles(request: Request) -> list[dict]:
     fq = app_of(request)
-    # parents only with a PIN: the PIN is their login in the app (e.g. to join a game on another device)
-    rows = fq.db.q("SELECT * FROM profile WHERE archived=0 AND (role!='parent' OR pin_hash IS NOT NULL) ORDER BY role='parent', id")
-    return [fq.profile_public(p) for p in rows]
+    # parents only with a PIN: the PIN is their login in the app (e.g. to join a game on another device) – or, on the
+    # direct port with «Sign in with Home Assistant» on, with a linked Home Assistant user (tap = Home Assistant login)
+    rows = fq.db.q("SELECT * FROM profile WHERE archived=0 ORDER BY role='parent', id")
+    ha = {p["id"] for p in haauth.linked_profiles(fq)} if not via_ingress(request) and fq.db.get_setting("ha_app_login") else set()
+    out = []
+    for p in rows:
+        if p["role"] == "parent" and not p["pin_hash"] and p["id"] not in ha:
+            continue
+        d = fq.profile_public(p)
+        if p["id"] in ha:
+            d["ha_login"] = True
+        out.append(d)
+    return out
 
 
 @router.post("/login")
@@ -145,14 +157,15 @@ def setup(body: SetupIn, request: Request) -> dict:
     fq = app_of(request)
     if fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0):
         raise HTTPException(409, "Already set up")
-    if not body.name.strip() or not valid_pin(body.pin):
-        raise HTTPException(400, "Name and a PIN with 4–8 digits are required")
     # opened through Home Assistant: the first parent is linked with that Home Assistant user right away – the parent
-    # area then opens without PIN (the PIN stays for the app on the tablets)
+    # area then opens without PIN, and the PIN is optional (the tablets: «Sign in with Home Assistant», or a PIN set
+    # later in the profile). Without a Home Assistant user the PIN is the only login and stays required.
     u = ha_user(request)
+    if not body.name.strip() or (body.pin and not valid_pin(body.pin)) or (not body.pin and not u):
+        raise HTTPException(400, "Name and a PIN with 4–8 digits are required")
     st = {"ha_user_id": u["id"], "ha_user_name": u["name"] or u["user"]} if u else {}
     pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash, settings) VALUES(?, 'parent', '#495057', ?, ?)",
-                  body.name.strip()[:40], hash_pin(body.pin), json.dumps(st))
+                  body.name.strip()[:40], hash_pin(body.pin) if body.pin else None, json.dumps(st))
     return {"parent_token": fq.tokens.make(pid, "parent"), "token": fq.tokens.make(pid, "kid"),
             "profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid))}
 
