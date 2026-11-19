@@ -410,7 +410,7 @@ function zeichnenLive(box, me, back) {
         h("button.zr-tool", { type: "button", title: I18N.tr(T("Clear")), onclick: clear }, "🗑️"));
     };
     const undo = () => { if (!painter.canUndo()) return; painter.op({ u: 1 }); outq.push({ u: 1 }); cur = null; };
-    const clear = () => { if (!painter.canUndo()) return; if (!confirm(I18N.tr(T("Clear the whole picture?")))) return; painter.op({ x: 1 }); outq.push({ x: 1 }); cur = null; };
+    const clear = async () => { if (!painter.canUndo()) return; if (!(await confirmDialog(I18N.tr(T("Clear the whole picture?"))))) return; painter.op({ x: 1 }); outq.push({ x: 1 }); cur = null; };
     drawTools();
     // the pointer: normalised coordinates, three decimals, points closer than a little step are skipped
     let down = null, lastPt = null, count = st.npts || 0;

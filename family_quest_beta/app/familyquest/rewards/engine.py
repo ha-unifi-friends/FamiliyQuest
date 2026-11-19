@@ -114,6 +114,13 @@ class Rewards:
                 log.exception("book listener failed")
         return {"id": lid, "account": account, "amount": amount, "event": event, "reason": reason}
 
+    def book_once(self, pid: int, account: str, amount: float, event: str = "", reason: str = "", ref: str = "") -> dict | None:
+        """Book unless a ledger row with this ref exists – checked and booked in one transaction (None: booked before)."""
+        with self.db.tx():
+            if self.db.q1("SELECT 1 FROM ledger WHERE ref=?", ref):
+                return None
+            return self.book(pid, account, amount, event, reason, ref)
+
     def _add_daily(self, pid: int, xp: float = 0, seconds: int = 0, lessons: int = 0) -> None:
         d = today().isoformat()
         self.db.x("""INSERT INTO daily(profile_id,day,xp,seconds,lessons) VALUES(?,?,?,?,?)

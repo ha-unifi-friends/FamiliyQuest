@@ -54,7 +54,7 @@ function boardDialog(b, done) {
     b ? h("div.row.bb-danger",
       h("button.btn.small.ghost", { onclick: () => call(() => api("community/boards/" + b.id, { method: "PUT", body: { archived: !b.archived } })) },
         b.archived ? "📤 " : "🗄️ ", b.archived ? T("Take out of the archive") : T("Archive")),
-      h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Remove this board with everything on it?"))) && call(() => api("community/boards/" + b.id, { method: "DELETE" })) },
+      h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Remove this board with everything on it?")))) && call(() => api("community/boards/" + b.id, { method: "DELETE" })) },
         "🗑️ ", T("Remove"))) : null));
   title.focus();
 }

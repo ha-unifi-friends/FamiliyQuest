@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.14
+
+- Review fixes (code & security): no more deadlock when approving a chore from a deal; profile ids are never reused (a new child can't inherit a deleted child's private books); Home Assistant actions only for HA admins; Facts quiz respects the family view and keeps guests out; deal reservations also in the shop and the Family Planer; clean errors instead of crashes for bad input; coin payouts protected against double booking; far fewer database queries
+- Review fixes (UX & touch): games fit on phones in landscape (Clap the Beat, Snack Rush, Domino, Five Dice, Homeward); better contrast in dark mode; larger tap targets and checkboxes; dialogs with focus handling and the app's own confirm dialogs; back button works in the parent area; profile dialog in tabs; status chips on the parent Games page; shop category chips; paste box for the learning-pack AI import; notch-safe game screens; no more «null» texts
+
 ## 1.1.1-beta.13
 
 - 24h Endurance runs on batteries: full throttle drains much more, an empty battery means emergency drive mode at walking pace; every team has one spare battery that is swapped at each stop with whatever charge it has – the crew must plug it in early, charging takes about a lap

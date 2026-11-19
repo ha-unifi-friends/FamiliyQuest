@@ -18,6 +18,7 @@ import time
 from datetime import date, datetime, timedelta
 
 import httpx
+from . import memo
 from .i18n import _t
 
 OPENHOLIDAYS = "https://openholidaysapi.org"
@@ -86,7 +87,7 @@ def clean_event(e: dict) -> dict:
     options = {}
     if kind == "offlinetime":           # what OfflineTime does: internet off and / or app games locked – for whom
         options = {"internet": bool(o.get("internet")), "games": bool(o.get("games")),
-                   "profiles": sorted({int(x) for x in o.get("profiles") or [] if str(x).isdigit()})}
+                   "profiles": sorted({int(x) for x in o.get("profiles") or [] if str(x).isdecimal()})}
     return {"title": title, "start": start, "end": end, "all_day": all_day,
             "icon": str(e.get("icon") or "").strip()[:8], "color": str(e.get("color") or "")[:9],
             "kind": kind, "note": str(e.get("note") or "").strip()[:500],
@@ -239,8 +240,8 @@ class FamilyCalendar:
 
     def own(self, start: str, end: str) -> list[dict]:
         """Own events that touch the days start … end (ISO dates, end included)."""
-        rows = self.db.q("""SELECT * FROM family_event WHERE substr(start,1,10) <= ? AND substr(end,1,10) >= ?
-                            ORDER BY start, title""", end, start)
+        rows = memo.get(("family_event", start, end), lambda: self.db.q(
+            """SELECT * FROM family_event WHERE substr(start,1,10) <= ? AND substr(end,1,10) >= ? ORDER BY start, title""", end, start))
         return [{**r, "all_day": bool(r["all_day"]), "readonly": False, "options": json.loads(r.get("options") or "{}")} for r in rows]
 
     # ---------- FamilyTime and OfflineTime

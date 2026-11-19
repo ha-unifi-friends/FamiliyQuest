@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import itertools
 import threading
+import math
 import time
 
 SEATS = ("A1", "A2", "B1", "B2")
@@ -156,7 +157,8 @@ class Doubles:
             g, me = self._mine(pid)
             p = g["pong"]
             try:
-                p["pads"][me] = max(0.0, min(1.0, float(pad)))
+                if math.isfinite(float(pad)):
+                    p["pads"][me] = max(0.0, min(1.0, float(pad)))
             except (TypeError, ValueError):
                 pass
             if me == "A1" and g["status"] == "play":
@@ -164,16 +166,22 @@ class Doubles:
                     for s, v in bots.items():
                         if s in SEATS and g["seats"][s]["state"] == "bot":
                             try:
-                                p["pads"][s] = max(0.0, min(1.0, float(v)))
+                                if math.isfinite(float(v)):
+                                    p["pads"][s] = max(0.0, min(1.0, float(v)))
                             except (TypeError, ValueError):
                                 pass
                 if isinstance(ball, dict):
                     try:
-                        p["ball"] = {k: round(float(ball[k]), 4) for k in ("x", "y", "vx", "vy")}
+                        b = {k: round(float(ball[k]), 4) for k in ("x", "y", "vx", "vy")}
+                        if all(math.isfinite(v) for v in b.values()):         # inf / nan would break every answer
+                            p["ball"] = b
                     except (KeyError, TypeError, ValueError):
                         pass
                 if isinstance(points, dict):
-                    p["points"] = {k: max(0, min(99, int(points.get(k, 0) or 0))) for k in ("A", "B")}
+                    try:
+                        p["points"] = {k: max(0, min(99, int(points.get(k, 0) or 0))) for k in ("A", "B")}
+                    except (TypeError, ValueError, OverflowError):
+                        pass
                 if over in ("A", "B"):
                     g.update(status="done", result=over)
                     g["score"][over] += 1

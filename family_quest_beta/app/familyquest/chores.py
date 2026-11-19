@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+from contextlib import nullcontext
 from datetime import date, timedelta
 from typing import Callable
 
@@ -212,16 +213,19 @@ class Chores:
         return self._task(task_id)
 
     def _complete(self, t: dict) -> None:
-        with self.db.tx():
+        # lock order deals.lock → db (as in deals.py): a chore of a deal takes the deal lock BEFORE the transaction,
+        # never inside it (deals.chore_done would wait for deals.lock while holding the database – a deadlock)
+        deal = bool(t.get("deal_id") and self.deals)
+        with (self.deals.lock if deal else nullcontext()), self.db.tx():
             n = self.db.x("UPDATE chore_task SET status='done', confirmed_at=datetime('now','localtime') WHERE id=? AND status!='done'", t["id"])
             if not n:
                 return
             # a chore taken over in a deal: its coins go to whom the deal says (XP always to who did it – deals.py)
-            to = self.deals.reward_to(t) if t.get("deal_id") and self.deals and t["account"] != "xp" else t["profile_id"]
+            to = self.deals.reward_to(t) if deal and t["account"] != "xp" else t["profile_id"]
             if t["points"] and self.db.q1("SELECT 1 FROM account WHERE key=? AND active=1", t["account"]):
                 self.rewards.book(to, t["account"], float(t["points"]), "chore_done", t["name"], f"chore:{t['id']}")
             self._week_bonus(t["profile_id"])
-            if t.get("deal_id") and self.deals:
+            if deal:
                 self.deals.chore_done(t)                  # the share of the deal for this chore (same transaction)
         self.rewards.check_badges(t["profile_id"])
         self.rewards._notify("chore", t["profile_id"], {"chore": t["name"], "task": t["id"]})
@@ -234,7 +238,7 @@ class Chores:
         end = (start + timedelta(days=6)).isoformat()
         rows = self.db.q("""SELECT t.status FROM chore_task t JOIN chore c ON c.id=t.chore_id
                             WHERE c.active=1 AND t.profile_id=? AND t.period>=? AND t.period<=?
-                            AND t.deal_id IS NULL""", pid, start.isoformat(), end)       # chores taken over in a deal do not count
+                            AND t.deal_id IS NULL AND t.from_id IS NULL""", pid, start.isoformat(), end)   # taken over in a deal: not counted
         if rows and all(r["status"] == "done" for r in rows):
             ref = f"chores-week:{start.isoformat()}"
             if not self.db.q1("SELECT 1 FROM ledger WHERE profile_id=? AND ref=?", pid, ref):

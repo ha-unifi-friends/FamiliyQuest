@@ -9,6 +9,7 @@ minute; after a restart you simply invite again). Both devices poll the state.
 from __future__ import annotations
 
 import itertools
+import math
 import threading
 import time
 
@@ -80,17 +81,23 @@ class Duels:
             p = g["pong"]
             me = "X" if pid == g["host"] else "O"
             try:
-                p["pads"][me] = max(0.0, min(1.0, float(pad)))
+                if math.isfinite(float(pad)):
+                    p["pads"][me] = max(0.0, min(1.0, float(pad)))
             except (TypeError, ValueError):
                 pass
             if me == "X" and g["status"] == "play":
                 if isinstance(ball, dict):
                     try:
-                        p["ball"] = {k: round(float(ball[k]), 4) for k in ("x", "y", "vx", "vy")}
+                        b = {k: round(float(ball[k]), 4) for k in ("x", "y", "vx", "vy")}
+                        if all(math.isfinite(v) for v in b.values()):         # inf / nan would break every answer
+                            p["ball"] = b
                     except (KeyError, TypeError, ValueError):
                         pass
                 if isinstance(points, dict):
-                    p["points"] = {k: max(0, min(99, int(points.get(k, 0) or 0))) for k in ("X", "O")}
+                    try:
+                        p["points"] = {k: max(0, min(99, int(points.get(k, 0) or 0))) for k in ("X", "O")}
+                    except (TypeError, ValueError, OverflowError):
+                        pass
                 if over in ("X", "O"):
                     g.update(status="done", result=over)
                     g["score"][over] += 1

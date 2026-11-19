@@ -1,6 +1,21 @@
 // Small helpers shared by the children's app and the parent area. No framework, no build step.
 "use strict";
 
+// optional parts are passed as null / undefined / false everywhere (like in h()): the DOM methods would print them as
+// the text «null» – leave them out instead (append, prepend, replaceChildren, before, after, replaceWith)
+(() => {
+  const keep = x => x != null && x !== false;
+  for (const proto of [Element.prototype, DocumentFragment.prototype, CharacterData.prototype]) {
+    for (const k of ["append", "prepend", "replaceChildren", "before", "after", "replaceWith"]) {
+      const orig = proto[k];
+      if (typeof orig !== "function" || orig._fqKeep) continue;
+      const fn = function (...xs) { return orig.apply(this, xs.some(x => !keep(x)) ? xs.filter(keep) : xs); };
+      fn._fqKeep = true;
+      proto[k] = fn;
+    }
+  }
+})();
+
 // h("div.card#x", {onclick, translate: "no"}, child, "text", [more])
 function h(sel, attrs, ...kids) {
   if (attrs == null || typeof attrs !== "object" || attrs instanceof Node || Array.isArray(attrs)) { kids.unshift(attrs); attrs = {}; }
@@ -102,6 +117,14 @@ function toast(msg, kind = "") {
   setTimeout(() => t.classList.add("out"), 2600);
   setTimeout(() => t.remove(), 3100);
 }
+
+// a hint only in a tooltip (title) cannot be read on a phone: a tap on such a small badge (🔥 streak, 👑, 🔒 …) shows it
+document.addEventListener("click", e => {
+  const el = e.target.closest && e.target.closest("[title]");
+  if (!el || el.closest("button, a, input, select, textarea, label, summary, [role=button], .modal-back, .drawer, svg") || !el.title.trim()) return;
+  if (getSelection && String(getSelection()).length) return;          // selecting text
+  toast(el.title);
+});
 
 const Sound = {
   ctx: null,
@@ -300,16 +323,100 @@ function symbolPad({ title, symbols, mode = "enter", length = 4, onSubmit, cance
   return box;
 }
 
+// keyboard and screen readers in a dialog or a drawer: focus goes in (the first control – on touch screens the dialog
+// itself, so no keyboard pops up), Tab stays inside, Escape closes the topmost one only, focus returns to the opener
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+function focusTrap(back, box, close) {
+  const opener = document.activeElement;
+  const items = () => [...box.querySelectorAll(FOCUSABLE)].filter(e => e.getClientRects().length && !e.closest("[hidden], [inert]"));
+  const top = () => [...document.querySelectorAll(".modal-back, .drawer-back")].pop() === back;
+  const key = e => {
+    if (!back.isConnected) return release();
+    if (!top()) return;
+    if (e.key === "Escape") { e.preventDefault(); close(); return; }
+    if (e.key !== "Tab") return;
+    const l = items();
+    if (!l.length) { e.preventDefault(); box.focus(); return; }
+    const i = l.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); l[l.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === l.length - 1)) { e.preventDefault(); l[0].focus(); }
+  };
+  const release = (restore = true) => {
+    document.removeEventListener("keydown", key);
+    if (restore && opener && opener.isConnected && typeof opener.focus === "function" && !document.querySelector(".modal-back, .drawer-back")) opener.focus({ preventScroll: true });
+  };
+  document.addEventListener("keydown", key);
+  if (!box.hasAttribute("tabindex")) box.tabIndex = -1;
+  requestAnimationFrame(() => {
+    if (!back.isConnected || box.contains(document.activeElement)) return;
+    const auto = box.querySelector("[autofocus]");
+    const first = auto || (matchMedia("(pointer: coarse)").matches ? null : items().find(e => e.tagName !== "SUMMARY"));
+    (first || box).focus({ preventScroll: true });
+  });
+  return release;
+}
+
 function modal(content, { onClose, wide = false } = {}) {
   const back = h("div.modal-back", { onclick: e => { if (e.target === back) close(); } });
   const box = h("div.modal" + (wide ? ".wide" : ""), { role: "dialog", "aria-modal": "true" }, content);
   back.append(box);
-  const close = () => { back.remove(); document.removeEventListener("keydown", esc); onClose && onClose(); };
-  const esc = e => { if (e.key === "Escape") close(); };
-  document.addEventListener("keydown", esc);
+  let release = null;
+  const close = () => { if (!back.isConnected) return; back.remove(); release && release(); onClose && onClose(); };
   back.addEventListener("cancel", close);
   document.body.append(back);
+  release = focusTrap(back, box, close);
   return { close, box };
+}
+
+// the app's own «OK / Cancel» and «enter a name» dialogs instead of the browser's confirm() / prompt() (those look
+// foreign, block the page and cannot be styled): await confirmDialog(text) → true / false; await promptDialog(text, value) → text / null
+function confirmDialog(msg, { ok = T("OK"), cancel = T("Cancel"), danger = null } = {}) {
+  const text = I18N.tr(msg);
+  if (danger == null) danger = /delete|remove|end|resign|give up|reset|replace|clear|throw|lösch|entfern/i.test(String(msg));
+  return new Promise(resolve => {
+    let answer = false;
+    const done = v => { answer = v; m.close(); };
+    const m = modal(h("div.form.ask-dlg", h("p.ask-text", text),
+      h("div.row.ask-btns", h("button.btn" + (danger ? ".bad" : ""), { type: "button", autofocus: true, onclick: () => done(true) }, I18N.tr(ok)),
+        h("button.btn.ghost", { type: "button", onclick: () => done(false) }, I18N.tr(cancel)))), { onClose: () => resolve(answer) });
+    m.box.setAttribute("role", "alertdialog");
+  });
+}
+function promptDialog(msg, value = "", { ok = T("OK"), cancel = T("Cancel"), maxLength = 200 } = {}) {
+  return new Promise(resolve => {
+    let answer = null;
+    const input = h("input", { type: "text", value: value == null ? "" : String(value), maxLength, autofocus: true,
+      onkeydown: e => { if (e.key === "Enter") { e.preventDefault(); done(input.value); } } });
+    const done = v => { answer = v; m.close(); };
+    const m = modal(h("div.form.ask-dlg", h("label.field", h("span.ask-text", I18N.tr(msg)), input),
+      h("div.row.ask-btns", h("button.btn", { type: "button", onclick: () => done(input.value) }, I18N.tr(ok)),
+        h("button.btn.ghost", { type: "button", onclick: () => done(null) }, I18N.tr(cancel)))), { onClose: () => resolve(answer) });
+    requestAnimationFrame(() => input.select());
+  });
+}
+
+// tabs (e.g. a long dialog in parts): tabbed([{ key, label, content: [...] }]) → { el, bar, show(key), setVisible(key, on), reveal(el) }
+function tabbed(tabs) {
+  const btns = {}, panes = {};
+  let cur = null;
+  const order = tabs.map(t => t.key);
+  const visible = k => !btns[k].hidden;
+  const show = k => {
+    if (!panes[k]) return;
+    cur = k;
+    for (const x of order) { const on = x === k; btns[x].setAttribute("aria-selected", String(on)); btns[x].tabIndex = on ? 0 : -1; panes[x].hidden = !on; }
+    btns[k].scrollIntoView({ block: "nearest", inline: "nearest" });
+  };
+  const move = (k, d) => { const l = order.filter(visible); const n = l[(l.indexOf(k) + d + l.length) % l.length]; show(n); btns[n].focus(); };
+  const bar = h("div.tabbar", { role: "tablist" }, ...tabs.map(t => (btns[t.key] = h("button.tab", { type: "button", role: "tab", id: "tab-" + t.key,
+    onclick: () => show(t.key), onkeydown: e => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); move(t.key, e.key === "ArrowRight" ? 1 : -1); } } }, t.label))));
+  for (const t of tabs) panes[t.key] = h("div.tab-pane", { role: "tabpanel", "aria-labelledby": "tab-" + t.key }, ...[].concat(t.content));
+  show(order[0]);
+  return {
+    el: h("div.tabbed", bar, ...order.map(k => panes[k])), bar, show,
+    setVisible: (k, on) => { btns[k].hidden = !on; if (!on && cur === k) show(order.find(visible)); },
+    reveal: el => { const k = order.find(x => panes[x].contains(el)); if (k) { btns[k].hidden = false; show(k); } },
+  };
 }
 
 function themeInit() {
@@ -443,8 +550,8 @@ function gameMenu({ rules = null, invite = null, actions = [], onLeave = null } 
 }
 
 function openGameMenu({ rules, invite, actions, onLeave }) {
-  const close = () => { back.remove(); document.removeEventListener("keydown", esc); window.removeEventListener("hashchange", close); };
-  const esc = e => { if (e.key === "Escape") close(); };
+  let release = null;
+  const close = () => { back.remove(); release && release(); window.removeEventListener("hashchange", close); };
   window.addEventListener("hashchange", close);              // another page: the menu of the game goes away
   const item = (ic, label, fn, cls = "") => h("button.drawer-item" + cls, { onclick: () => { close(); fn(); } }, h("span.foot-ic", ic), h("span", label));
   const showRules = () => { const view = typeof rules === "function" ? rules() : rules;
@@ -457,13 +564,13 @@ function openGameMenu({ rules, invite, actions, onLeave }) {
     h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", T("Game"))),
     rules ? item("📜", T("Rules"), showRules) : null,
     invite ? item("👥", T("Invite guests"), () => guestInvite(...[].concat(invite))) : null,
-    ...acts.map(a => item(a.ic || "▶", a.label, () => { if (a.confirm && !confirm(I18N.tr(a.confirm))) return; a.onclick(); }, a.danger ? ".danger" : "")),
+    ...acts.map(a => item(a.ic || "▶", a.label, async () => { if (a.confirm && !(await confirmDialog(I18N.tr(a.confirm)))) return; a.onclick(); }, a.danger ? ".danger" : "")),
     h("hr"),
     footLang(), footTheme(), soundItem,
     onLeave ? item("🚪", T("Leave the game"), onLeave) : null);
   const back = h("div.drawer-back.game-menu-back", { onclick: e => { if (e.target === back) close(); } }, drawer);
   document.body.append(back);
-  document.addEventListener("keydown", esc);
+  release = focusTrap(back, drawer, close);
   requestAnimationFrame(() => back.classList.add("open"));
 }
 
@@ -564,8 +671,8 @@ async function parentAreaHref() {
 }
 
 function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, onSeason = null }) {
-  const close = () => { back.remove(); document.removeEventListener("keydown", esc); };
-  const esc = e => { if (e.key === "Escape") close(); };
+  let release = null;
+  const close = () => { back.remove(); release && release(); };
   const soundItem = h("button.foot-item", { onclick: () => { Sound.on = !Sound.on; drawSound(); } });
   const drawSound = () => soundItem.replaceChildren(h("span.foot-ic", Sound.on ? "🔊" : "🔇"), h("span", Sound.on ? T("Sound on") : T("Sound off")));
   drawSound();
@@ -583,8 +690,16 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   parentAreaHref().then(href => { parentItem.href = href; });
   const back = h("div.drawer-back", { onclick: e => { if (e.target === back) close(); } }, drawer);
   document.body.append(back);
-  document.addEventListener("keydown", esc);
+  release = focusTrap(back, drawer, close);
   requestAnimationFrame(() => back.classList.add("open"));
+}
+
+// the card of a game (app › Games): the same two choices in the same order everywhere – «🤖 Alone against bots» (the
+// main button; null when bots are switched off for the game) and «👨‍👩‍👧 Open a family table»
+function gameStartRow(solo, table, { bots = true } = {}) {
+  return h("div.row.wrap.game-start-row",
+    solo ? h("button.btn", { onclick: solo }, bots ? "🤖 " : "🙋 ", bots ? T("Alone against bots") : T("Alone")) : null,
+    h("button.btn" + (solo ? ".ghost" : ""), { onclick: table }, "👨‍👩‍👧 ", T("Open a family table")));
 }
 
 // a game page opened directly (link, bookmark) while no table is open: in the app the child can open one right here –

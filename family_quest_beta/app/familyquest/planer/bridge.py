@@ -12,7 +12,7 @@
   that disappear because the Planer folds entries older than a year into one carry entry are not.
 
 State in the kv document `fq.planer_bridge`: {"links": {profile id: person id}, "seen": {entry id: [profile id, pts, ts]},
-"fq_last": last Family Quest ledger id looked at}.
+"fq_last": last Family Quest ledger id looked at, "held": {profile id: coins reserved in deals mirrored as held}}.
 """
 from __future__ import annotations
 
@@ -257,6 +257,17 @@ class Bridge:
             changed = True
         if rows:
             st["fq_last"] = max(st["fq_last"], rows[-1]["id"])
+        # coins reserved in a deal (deals.py) cannot be spent in the Planer either: a correction mirrors the
+        # reservation (balance minus reserved) and gives it back when the deal pays or ends
+        held: dict = st.setdefault("held", {})
+        for prof_id, person in links.items():
+            want = round(self.fq.rewards.reserved(int(prof_id), acc))
+            have = int(held.get(prof_id, 0))
+            if want != have:
+                st["held_n"] = int(st.get("held_n", 0)) + 1
+                prew._add(ledger, person, have - want, "adjust", f"fq:held:{st['held_n']}", "Family Quest: deal 🔒", ts)
+                held[prof_id] = want
+                changed = True
         return changed
 
 

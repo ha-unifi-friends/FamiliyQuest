@@ -51,7 +51,7 @@ class Dashboard:
         if "title" in c:
             out["title"] = str(c["title"] or "").strip()[:60] or "Family Quest"
         if "kids" in c:
-            out["kids"] = [int(x) for x in c["kids"] or [] if str(x).isdigit()]
+            out["kids"] = [int(x) for x in c["kids"] or [] if str(x).isdecimal()]
         if "widgets" in c:
             out["widgets"] = [w for w in WIDGETS if w in (c["widgets"] or [])]
         if "calendars" in c:

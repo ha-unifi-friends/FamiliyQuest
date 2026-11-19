@@ -15,7 +15,7 @@ import logging
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request
 from fastapi.responses import Response
 from fastapi.routing import APIRoute
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .. import timelimits
 from ..community import CommunityError
@@ -230,6 +230,12 @@ def _bots_not_remembered(fq, kind: str, forced: bool):
             fq.db.set_setting(key, after)
 
 
+class FiniteIn(BaseModel):
+    """A body with numbers from the apps (realtime sync, quiz answers): JSON may carry Infinity / NaN (or 1e999) – such
+    a number is refused (422), it would break the game state (int() → OverflowError, the JSON answer of every poll)."""
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
 def _run(fn, *args):
     try:
         return fn(*args)
@@ -238,7 +244,7 @@ def _run(fn, *args):
 
 
 # ---------------------------------------------------------------- quiz: playing
-class AnswerIn(BaseModel):
+class AnswerIn(FiniteIn):
     idx: int
     choice: int | None = None
     value: float | None = None           # estimation question
@@ -440,7 +446,7 @@ def quiz_abort(request: Request, prof: dict = Gamer) -> dict | None:
 
 
 # ---------------------------------------------------------------- bingo
-class BingoStartIn(BaseModel):
+class BingoStartIn(FiniteIn):
     interval: float | None = None
     win: str | None = None          # line | two_lines | full
 
@@ -1426,7 +1432,7 @@ class JumpStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class JumpSyncIn(BaseModel):
+class JumpSyncIn(FiniteIn):
     t: float | None = None                                   # the game time of the app (seconds)
     jumps: list[float] = Field(default_factory=list, max_length=40)   # new jumps (game times)
     hits: list[list[float]] = Field(default_factory=list, max_length=20)   # new hits: [obstacle index, game time]
@@ -1502,7 +1508,7 @@ class SternlaufStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class SternlaufSyncIn(BaseModel):
+class SternlaufSyncIn(FiniteIn):
     # the app's own new inputs: [game time (s), "l" | "r" | "u" | "d"] – the server replays them on the course
     inputs: list[tuple[float, str]] = Field(default_factory=list, max_length=40)
 
@@ -1576,7 +1582,7 @@ class SnackStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class SnackSyncIn(BaseModel):
+class SnackSyncIn(FiniteIn):
     t: float | None = None                                               # the game time of the app (seconds)
     serves: list[list[float]] = Field(default_factory=list, max_length=30)   # [customer index, game time]
     angry: list[int] = Field(default_factory=list, max_length=30)            # customers that left angry
@@ -1653,7 +1659,7 @@ class VerkehrStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class VerkehrSyncIn(BaseModel):
+class VerkehrSyncIn(FiniteIn):
     t: float | None = None                                   # the game time of the app (seconds)
     events: list[list[int]] = Field(default_factory=list, max_length=40)   # new switches: [global tick, group, 1 green / 0 red]
 
@@ -1743,7 +1749,7 @@ class LangstreckeStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class LangstreckeSyncIn(BaseModel):
+class LangstreckeSyncIn(FiniteIn):
     inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "l"|"r"|"u", value]
 
 
@@ -1881,7 +1887,7 @@ class KlatschStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class KlatschSyncIn(BaseModel):
+class KlatschSyncIn(FiniteIn):
     round: int | None = None                                       # the round of these taps
     taps: list[float] = Field(default_factory=list, max_length=64)  # the taps of this round (game times, delay subtracted)
 
@@ -3081,7 +3087,7 @@ def duel_invite(body: DuelIn, request: Request, me: dict = Gamer) -> dict:
         raise HTTPException(400, str(e).replace("{0}", opp["name"])) from None
 
 
-class PongIn(BaseModel):
+class PongIn(FiniteIn):
     pad: float
     ball: dict | None = None
     points: dict | None = None
@@ -3196,7 +3202,7 @@ def pong4_start(request: Request, me: dict = Gamer) -> dict:
     return _p4(lambda: app_of(request).pong4.start(me["id"]))
 
 
-class Pong4Sync(BaseModel):
+class Pong4Sync(FiniteIn):
     pad: float
     bots: dict | None = None
     ball: dict | None = None
@@ -3368,7 +3374,7 @@ class BoardEditIn(BaseModel):
     archived: bool | None = None
 
 
-class BoardSyncIn(BaseModel):
+class BoardSyncIn(FiniteIn):
     since: int = 0
     ops: list[dict[str, Any]] = Field(default=[], max_length=200)
     presence: dict[str, Any] | None = None

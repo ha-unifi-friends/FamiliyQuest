@@ -11,6 +11,7 @@ icon: "🇫🇷"
 beschreibung: "Französisch für Fortgeschrittene: Meinungen äussern, über Arbeit, Umwelt, Medien und Gefühle sprechen und typische Redewendungen verstehen."
 beschreibung_i18n:   # the description in the language of the app (shown in the course list)
   en: "French for advanced learners: giving opinions, talking about work, environment, media and feelings, and understanding typical idioms."
+  fr: "Le français pour avancés : donner son avis, parler du travail, de l'environnement, des médias et des sentiments, et comprendre les expressions typiques."
   it: "Francese avanzato: esprimere opinioni, parlare di lavoro, ambiente, media e sentimenti e capire i modi di dire tipici."
   es: "Francés avanzado: dar opiniones, hablar del trabajo, el medio ambiente, los medios y los sentimientos y entender expresiones típicas."
   nl: "Frans voor gevorderden: meningen geven, praten over werk, milieu, media en gevoelens en typische uitdrukkingen begrijpen."

@@ -287,8 +287,8 @@ function escapeLive(box, me, back) {
       h("p", T("Part of the door code:"), " ", fragView(r.frag, rm.door.kind)));
     else foot = input(r);
     const hints = h("div.er-hints", ...r.hints.map((x, i) => h("p.er-hint", { translate: "no" }, "💡 " + (i + 1) + ". " + erText(x))),
-      !r.solved && r.hints.length < r.n_hints ? h("button.btn.small.ghost.er-hint-btn", { onclick: () => {
-        if (confirm(I18N.tr(T("Take a hint? It costs {0} seconds for the team.")).replace("{0}", st.hint_s))) act("hint", { key: r.key });
+      !r.solved && r.hints.length < r.n_hints ? h("button.btn.small.ghost.er-hint-btn", { onclick: async () => {
+        if ((await confirmDialog(I18N.tr(T("Take a hint? It costs {0} seconds for the team.")).replace("{0}", st.hint_s)))) act("hint", { key: r.key });
       } }, "💡 ", I18N.tr(T("Hint ({0} of {1})")).replace("{0}", r.hints.length + 1).replace("{1}", r.n_hints), h("small", " +" + st.hint_s + " s")) : null);
     return h("div.er-sheet", { role: "dialog" }, h("div.er-sheet-in",
       h("div.er-sheet-head", h("span.er-sheet-ic", r.obj), h("div.grow", h("b", I18N.tr(r.obj_name)), h("br"),

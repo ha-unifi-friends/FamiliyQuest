@@ -144,7 +144,7 @@ function gamePlayer(engine, { onClose = null, preview = false } = {}) {
         h("button.icon-btn", { title: T("Close"), "aria-label": T("Close"), onclick: close }, "✕"),
         h("div.sb-rtitle", h("span", { translate: "no" }, st.emoji), C(st.title, "strong")),
         h("span.sb-pill", { title: T("Endings found") }, "🏁 ", st.found + "/" + st.endings),
-        !st.fresh ? h("button.icon-btn", { title: T("Start again"), "aria-label": T("Start again"), onclick: () => confirm(I18N.tr(T("Start the game again from the beginning?"))) && restart() }, "↺") : null),
+        !st.fresh ? h("button.icon-btn", { title: T("Start again"), "aria-label": T("Start again"), onclick: async () => (await confirmDialog(I18N.tr(T("Start the game again from the beginning?")))) && restart() }, "↺") : null),
       preview ? h("p.sb-try.small.ag-try", "👀 ", T("Try-out – nothing is saved")) : null,
       h("div.ag-stage" + (moved ? ".enter" : ""), scene()),
       st.talk ? talk() : [panel(), inv()],
@@ -202,7 +202,7 @@ async function gameEditor(id, onClose = null) {
   const nm = (x, fallback = "…") => (x && x.name) || fallback;
   const lineLabel = x => { const t = (x.text || "").replace(/\s+/g, " ").trim(); return "💬 " + (t.length > 28 ? t.slice(0, 27) + "…" : t || "…"); };
   const endLabel = e => (e.kind === "win" ? "🏆 " : "💀 ") + (((e.text || "").slice(0, 26)) || "…");
-  const ask = (msg, value = "") => { const v = prompt(I18N.tr(msg), value); return v == null ? null : v.trim().slice(0, 40) || null; };
+  const ask = async (msg, value = "") => { const v = await promptDialog(msg, value, { maxLength: 40 }); return v == null ? null : v.trim().slice(0, 40) || null; };
   const newItem = name => { if (data.items.length >= AG_MAX.items) return toast(I18N.tr(T("A game can have at most 60 items")), "bad"), null;
     const it = { id: nextId(data.items), name, icon: null }; data.items.push(it); return it; };
   const newFlag = name => { if (data.flags.length >= AG_MAX.flags) return toast(I18N.tr(T("A game can have at most 100 switches")), "bad"), null;
@@ -301,10 +301,10 @@ async function gameEditor(id, onClose = null) {
         const sel_ = h("select.ag-csel", { "aria-label": T("Condition") }, ...opts().map(([v, l]) => h("option", { value: v, selected: v === `${a.k}:${a.id}:${a.not ? 1 : 0}`, translate: "no" }, l)),
           !opts().some(([v]) => v === `${a.k}:${a.id}:${a.not ? 1 : 0}`) ? h("option", { selected: true, value: "" }, "⚠️ ", T("deleted")) : null,
           h("option", { value: "new:item" }, "＋ ", T("New item …")), h("option", { value: "new:flag" }, "＋ ", T("New switch …")));
-        sel_.onchange = () => {
+        sel_.onchange = async () => {
           let v = sel_.value;
           if (v.startsWith("new:")) {
-            const name = ask(v === "new:item" ? T("Name of the new item") : T("Name of the new switch"));
+            const name = (await ask(v === "new:item" ? T("Name of the new item") : T("Name of the new switch")));
             const x = name && (v === "new:item" ? newItem(name) : newFlag(name));
             if (!x) return draw();
             v = `${v.slice(4)}:${x.id}:0`;
@@ -313,9 +313,9 @@ async function gameEditor(id, onClose = null) {
         };
         return h("div.ag-crow", sel_, h("button.icon-btn.ag-x", { title: T("Remove"), "aria-label": T("Remove"), onclick: () => { list.splice(i, 1); onChange(); draw(); } }, "✕"));
       }),
-      list.length < AG_MAX.cond ? h("button.btn.small.ghost.ag-add", { onclick: () => {
+      list.length < AG_MAX.cond ? h("button.btn.small.ghost.ag-add", { onclick: async () => {
         let o = opts()[0];
-        if (!o) { const name = ask(T("Name of the new switch")); const f = name && newFlag(name); if (!f) return; o = [`flag:${f.id}:0`]; }
+        if (!o) { const name = (await ask(T("Name of the new switch"))); const f = name && newFlag(name); if (!f) return; o = [`flag:${f.id}:0`]; }
         const [k, rid] = o[0].split(":"); list.push({ k, id: +rid, not: false }); onChange(); draw();
       } }, "＋ ", T("Condition")) : null);
     draw();
@@ -339,11 +339,11 @@ async function gameEditor(id, onClose = null) {
             !ts.some(([v]) => v === a.id) ? h("option", { value: "", selected: true }, "⚠️ ", T("choose")) : null,
             a.k === "give" || a.k === "take" ? h("option", { value: "new" }, "＋ ", T("New item …")) : a.k === "set" || a.k === "clear" ? h("option", { value: "new" }, "＋ ", T("New switch …"))
               : a.k === "end" ? h("option", { value: "new" }, "＋ ", T("New ending")) : a.k === "go" ? h("option", { value: "new" }, "＋ ", T("New room")) : null);
-          arg.onchange = () => {
+          arg.onchange = async () => {
             if (arg.value === "new") {
               let x = null;
-              if (a.k === "give" || a.k === "take") { const n = ask(T("Name of the new item")); x = n && newItem(n); }
-              else if (a.k === "set" || a.k === "clear") { const n = ask(T("Name of the new switch")); x = n && newFlag(n); }
+              if (a.k === "give" || a.k === "take") { const n = (await ask(T("Name of the new item"))); x = n && newItem(n); }
+              else if (a.k === "set" || a.k === "clear") { const n = (await ask(T("Name of the new switch"))); x = n && newFlag(n); }
               else if (a.k === "end") x = newEnding("win");
               else if (a.k === "go") x = newRoom();
               if (!x) return draw();
@@ -463,8 +463,8 @@ async function gameEditor(id, onClose = null) {
       h("div.ag-rhead", name,
         r.id === data.start ? h("span.sb-startchip", "⭐ ", T("Start")) : h("button.btn.small.ghost", { onclick: () => { data.start = r.id; changed(true); } }, "⭐ ", T("Start here")),
         h("button.btn.small.ghost", { onclick: () => test(r.id), title: T("Test play from this room") }, "▶"),
-        h("button.icon-btn.sb-del", { title: T("Remove room"), "aria-label": T("Remove room"), onclick: () => {
-          if ((r.spots.length || r.text) && !confirm(I18N.tr(T("Remove this room with all its hotspots?")))) return;
+        h("button.icon-btn.sb-del", { title: T("Remove room"), "aria-label": T("Remove room"), onclick: async () => {
+          if ((r.spots.length || r.text) && !(await confirmDialog(I18N.tr(T("Remove this room with all its hotspots?"))))) return;
           r.spots.forEach(s => purge("spot", s.id)); purge("room", r.id);
           data.rooms.splice(data.rooms.indexOf(r), 1);
           if (data.start === r.id) data.start = (data.rooms[0] || {}).id || null;
@@ -582,7 +582,7 @@ async function gameEditor(id, onClose = null) {
       };
       const item = h("select", { "aria-label": T("Item") }, h("option", { value: "" }, "🎒 ", T("choose")),
         ...data.items.map(x => h("option", { value: x.id, selected: s.item === x.id, translate: "no" }, "🎒 " + nm(x))), h("option", { value: "new" }, "＋ ", T("New item …")));
-      item.onchange = () => { if (item.value === "new") { const n = ask(T("Name of the new item"), s.name); const it = n && newItem(n); s.item = it ? it.id : s.item; if (it && s.art) it.icon = s.art; }
+      item.onchange = async () => { if (item.value === "new") { const n = (await ask(T("Name of the new item"), s.name)); const it = n && newItem(n); s.item = it ? it.id : s.item; if (it && s.art) it.icon = s.art; }
         else s.item = +item.value || null; changed(true); };
       const keep = h("input", { type: "checkbox", checked: !!s.keep });
       keep.onchange = () => { s.keep = keep.checked; changed(); };
@@ -620,14 +620,14 @@ async function gameEditor(id, onClose = null) {
       const n = h("input", { type: "text", maxlength: 40, value: it.name, lang: meta.lang, placeholder: I18N.tr(T("e.g. Old key")) });
       n.oninput = () => { it.name = n.value; changed(); };
       return h("div.ag-trow", h("button.ag-ticon", { title: T("Picture"), onclick: () => artDialog(it, "icon") }, it.icon ? agArt(it.icon) : h("span.ag-emo", "🎒")), n,
-        h("button.icon-btn.sb-del", { title: T("Remove"), "aria-label": T("Remove"), onclick: () => { if (!confirm(I18N.tr(T("Remove this item everywhere in the game?")))) return;
+        h("button.icon-btn.sb-del", { title: T("Remove"), "aria-label": T("Remove"), onclick: async () => { if (!(await confirmDialog(I18N.tr(T("Remove this item everywhere in the game?"))))) return;
           purge("item", it.id); data.items.splice(data.items.indexOf(it), 1); changed(true); } }, "🗑"));
     };
     const flagRow = f => {
       const n = h("input", { type: "text", maxlength: 40, value: f.name, lang: meta.lang, placeholder: I18N.tr(T("e.g. Dragon sleeps")) });
       n.oninput = () => { f.name = n.value; changed(); };
-      return h("div.ag-trow", h("span.ag-ticon", "🚩"), n, h("button.icon-btn.sb-del", { title: T("Remove"), "aria-label": T("Remove"), onclick: () => {
-        if (!confirm(I18N.tr(T("Remove this switch everywhere in the game?")))) return; purge("flag", f.id); data.flags.splice(data.flags.indexOf(f), 1); changed(true); } }, "🗑"));
+      return h("div.ag-trow", h("span.ag-ticon", "🚩"), n, h("button.icon-btn.sb-del", { title: T("Remove"), "aria-label": T("Remove"), onclick: async () => {
+        if (!(await confirmDialog(I18N.tr(T("Remove this switch everywhere in the game?"))))) return; purge("flag", f.id); data.flags.splice(data.flags.indexOf(f), 1); changed(true); } }, "🗑"));
     };
     const endRow = e => {
       const t = h("textarea.sb-ptext", { rows: 2, maxlength: 800, lang: meta.lang, placeholder: I18N.tr(e.kind === "win" ? T("How does the player win?") : T("What goes wrong?")) });
@@ -689,7 +689,7 @@ async function gameEditor(id, onClose = null) {
     const itemSel = (val, onPick, none = null) => {
       const s = h("select", { "aria-label": T("Item") }, none ? h("option", { value: "", selected: !val }, none) : h("option", { value: "", selected: !val }, "🎒 ", T("choose")),
         ...data.items.map(x => h("option", { value: x.id, selected: val === x.id, translate: "no" }, "🎒 " + nm(x))), h("option", { value: "new" }, "＋ ", T("New item …")));
-      s.onchange = () => { if (s.value === "new") { const n = ask(T("Name of the new item")); const it = n && newItem(n); onPick(it ? it.id : val); } else onPick(+s.value || null); changed(true); };
+      s.onchange = async () => { if (s.value === "new") { const n = (await ask(T("Name of the new item"))); const it = n && newItem(n); onPick(it ? it.id : val); } else onPick(+s.value || null); changed(true); };
       return s;
     };
     const card = x => {
@@ -804,9 +804,9 @@ async function gameEditor(id, onClose = null) {
       h("div.row.wrap", h("button.btn.small.ghost", { onclick: async () => { await save(); downloadApi(`stories/${id}/export`, `family-quest-game-${id}.json`); } }, "⬇️ ", T("Export as a file")),
         h("span.small.muted", T("For a backup, another family or an AI – own drawings go along, photos stay out."))),
       h("div.sb-danger.row.wrap",
-        ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Take the game off the shelf? It stays here as a draft."))) &&
+        ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Take the game off the shelf? It stays here as a draft.")))) &&
           runA(`stories/${id}/unpublish`, "POST", T("The game is a draft again"), async () => { ed = await api("stories/" + id); drawHead(); }) }, "📥 ", T("Unpublish")) : null,
-        h("button.btn.small.bad", { onclick: () => confirm(I18N.tr(T("Remove this game for good? This cannot be undone."))) &&
+        h("button.btn.small.bad", { onclick: async () => (await confirmDialog(I18N.tr(T("Remove this game for good? This cannot be undone.")))) &&
           runA(`stories/${id}`, "DELETE", T("Removed"), () => { closed = true; dirty = false; clearTimeout(timer); finish(); }) }, "🗑 ", T("Remove game")))), { wide: true });
   };
 

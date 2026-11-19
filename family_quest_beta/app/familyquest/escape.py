@@ -421,13 +421,7 @@ class Escape(CardGames):
         coins = self.coins_for(st)
         st["paid"], st["coins"] = True, coins
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st, separators=(",", ":"), ensure_ascii=False), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND, 1), ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND, 1))
         winners = [p for p in (st.get("team_of") or {}) if (st.get("team_of") or {}).get(p) in (st.get("winners") or [])]
         if len(st["players"]) >= 2:
             self._champion(st, winners)
