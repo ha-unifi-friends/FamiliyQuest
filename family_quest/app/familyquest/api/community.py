@@ -1752,7 +1752,7 @@ class LangstreckeTeamIn(BaseModel):
 
 
 class LangstreckePrepIn(BaseModel):
-    action: str = Field(max_length=10)   # tyre | slicks | rain | fuel_on | fuel_off | eng_on | eng_off
+    action: str = Field(max_length=10)   # plug | tyre | slicks | rain | eng_on | eng_off
     spot: int | None = None              # tyre: the spot 0–3
 
 
@@ -1858,7 +1858,7 @@ def langstrecke_sync(body: LangstreckeSyncIn, request: Request, prof: dict = Pla
 
 @router.post("/langstrecke/prep")
 def langstrecke_prep(body: LangstreckePrepIn, request: Request, prof: dict = Playing) -> dict:
-    """A job of the pit crew during the lap (tyres, canister, spare engine) – checked and timed by the server."""
+    """A job of the pit crew during the lap (spare battery, tyres, spare engine) – checked and timed by the server."""
     fq = app_of(request)
     out = _run(fq.langstrecke.prep, prof["id"], body.action, body.spot)
     return {**(out or {}), "state": fq.langstrecke.state("langstrecke", prof["id"])}

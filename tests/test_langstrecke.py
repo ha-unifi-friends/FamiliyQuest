@@ -1,7 +1,9 @@
 """«24h Endurance» (24-Stunden-Rennen), the short version – the car (engine, things on the track, chicanes, rain and
 tyres, the same step in the app), into the pits after every lap, the crew's jobs (checked and timed on the server), the
-stop time from what was ready, the engine swap, the driver change for 1 / 2 / 3 people, bots, team looks (colour,
-country, number), the end and the winner, coins once, history, records, guests, battery, settings, the app."""
+stop time from what was ready, the engine swap, the electric car's battery (drain, emergency drive mode, the swap at
+every stop, the ONE spare charging on the server's clock, the garage, bots), the driver change for 1 / 2 / 3 people,
+bots, team looks (colour, country, number), the end and the winner, coins once, history, records, guests, the game
+battery, settings, the app."""
 import json
 import random
 import re
@@ -102,16 +104,17 @@ def test_the_app_runs_exactly_the_same_step():
             c = rng.choice("lruuu")
             ev.append([t, c, rng.choice((-1, 0, 1, 1)) if c == "u" else 0])
         cases.append({"seed": 100 + n, "jr": n == 3, "ev": ev, "rain": [[30, 60]] if n % 2 else [], "dark": [[50, 90]] if n >= 2 else [],
-                      "tyre": "r" if n == 1 else "s"})
-    keys = ["d", "v", "lane", "thr", "temp", "eng", "slow", "olap", "ob", "best", "pit", "hits", "blows", "kerb", "off", "offs"]
+                      "tyre": "r" if n == 1 else "s", "bat": (100.0, 55.0, 30.0, 70.0)[n]})
+    keys = ["d", "v", "lane", "thr", "temp", "eng", "slow", "olap", "ob", "best", "pit", "hits", "blows", "kerb", "off", "offs", "bat", "flat"]
     code = "const T = s => s;\n" + src + "\nconst cases = %s, keys = %s, out = [];\n" % (json.dumps(cases), json.dumps(keys)) + """
-for (const c of cases) { const car = {d: -5, v: 0, lane: 1, thr: 0, temp: 60, eng: 0, slow: 0, olap: 0, ob: 0, ls: 0, best: 0, pit: 0, hits: 0, blows: 0, tyre: c.tyre, kerb: 0, off: 0, offs: 0};
+for (const c of cases) { const car = {d: -5, v: 0, lane: 1, thr: 0, temp: 60, eng: 0, slow: 0, olap: 0, ob: 0, ls: 0, best: 0, pit: 0, hits: 0, blows: 0, tyre: c.tyre, kerb: 0, off: 0, offs: 0,
+    bat: c.bat, flat: 0};
   const trace = [], evs = [];
   let i = 0;
   for (let k = 0; k < 1300; k++) { const s = k / 10;
     while (i < c.ev.length && c.ev[i][0] <= s + 1e-9) { leApply(car, c.ev[i][1], c.ev[i][2]); i++; }
     for (const e of leStep(car, s, c.seed, c.jr, leInWin(c.rain, s), leInWin(c.dark, s))) evs.push([k, e]);
-    if (car.pit) { car.pit = 0; car.eng = 0; }
+    if (car.pit) { car.pit = 0; car.eng = 0; car.bat = c.bat; }
     if (k % 50 === 0) trace.push(keys.map(x => car[x])); }
   out.push([trace, evs]); }
 console.log(JSON.stringify(out));"""
@@ -120,6 +123,7 @@ console.log(JSON.stringify(out));"""
     for c, (jtrace, jevs) in zip(cases, js):
         cr = ls.new_car(1, -5.0)
         cr["tyre"] = c["tyre"]
+        cr["bat"] = c["bat"]
         trace, evs, i = [], [], 0
         for k in range(1300):
             s = k / 10
@@ -129,7 +133,7 @@ console.log(JSON.stringify(out));"""
             for e in ls.step(cr, s, c["seed"], c["jr"], ls.in_window(c["rain"], s), ls.in_window(c["dark"], s)):
                 evs.append([k, e])
             if cr["pit"]:
-                cr.update(pit=0, eng=0)
+                cr.update(pit=0, eng=0, bat=c["bat"])
             if k % 50 == 0:
                 trace.append([cr[x] for x in keys])
         assert evs == jevs, c["seed"]
@@ -140,7 +144,7 @@ console.log(JSON.stringify(out));"""
                     assert abs(float(x) - float(y)) < 1e-6, (key, x, y)
                 else:
                     assert x == y, (key, x, y)
-    assert {"lap", "pit", "hit", "kerb", "off"} <= seen
+    assert {"lap", "pit", "hit", "kerb", "off", "empty"} <= seen
 
 
 def test_full_throttle_heats_the_engine_it_overheats_and_limps(monkeypatch):
@@ -162,6 +166,43 @@ def test_full_throttle_heats_the_engine_it_overheats_and_limps(monkeypatch):
     t0 = a["temp"]
     drive(a, 2)
     assert a["temp"] < t0 and a["v"] < ls.VFULL
+
+
+def test_the_battery_drains_much_faster_at_full_throttle_braking_gives_a_little_back(monkeypatch):
+    no_things(monkeypatch)
+    no_kerbs(monkeypatch)
+    full, lifted = car(thr=1, d=10.0, v=ls.VFULL), car(thr=0, d=10.0, v=ls.VLIFT)
+    drive(full, 4)
+    drive(lifted, 4)
+    used_full, used_lift = 100 - full["bat"], 100 - lifted["bat"]
+    assert used_full == pytest.approx(ls.E_FULL * ls.VFULL * 4, rel=0.01) and used_lift == pytest.approx(ls.E_LIFT * ls.VLIFT * 4, rel=0.01)
+    per_m = (used_full / (full["d"] - 10)), (used_lift / (lifted["d"] - 10))
+    assert per_m[0] > 2 * per_m[1]                                       # per metre more than twice as much
+    assert ls.E_FULL * ls.L > 100 > ls.E_LIFT * ls.L * 1.5               # flat out a full battery does not last a lap, lifted easily
+    # braking gives a little back
+    b = car(thr=-1, d=10.0, v=ls.VFULL, bat=50.0)
+    drive(b, 0.5)
+    assert b["bat"] > 50.0 and b["v"] < ls.VFULL
+    # an empty battery stays empty (no regeneration in the emergency mode)
+    e = car(thr=-1, d=10.0, v=ls.VFULL, bat=0.0)
+    drive(e, 1)
+    assert e["bat"] == 0.0
+
+
+def test_an_empty_battery_means_the_emergency_drive_mode(monkeypatch):
+    no_things(monkeypatch)
+    no_kerbs(monkeypatch)
+    c = car(thr=1, d=10.0, v=ls.VFULL, bat=2.0)
+    evs = drive(c, 1)
+    assert evs.count("empty") == 1 and c["bat"] == 0 and c["flat"] == 1
+    drive(c, 6)
+    assert c["v"] == pytest.approx(ls.VEMERG) and not c["eng"]          # it crawls – full throttle does nothing any more
+    t0 = c["temp"]
+    drive(c, 2)
+    assert c["temp"] <= t0                                               # and the engine cools
+    evs = drive(c, 120)
+    assert "pit" in evs and c["pit"]                                     # no retirement: it crawls into the pits
+    assert "empty" not in evs and c["flat"] == 1
 
 
 def test_rain_slicks_slide_and_rain_tyres_are_slower_in_the_dry(monkeypatch):
@@ -296,35 +337,17 @@ def test_the_crews_jobs_are_checked_and_timed_on_the_server(monkeypatch):
     for k in (1, 2, 3):
         clock.t += 0.3
         t.prep("2", "tyre", k)
-    assert t.ready(tm, t.gt())["tyres"] and not t.ready(tm, t.gt())["fuel"]
+    assert t.ready(tm, t.gt())["tyres"] and t.ready(tm, t.gt())["battery"]          # the first spare is full from the start
     with pytest.raises(CommunityError):
         t.prep("3", "tyre", 0)                                           # alone in the team: the driver – the garage prepares
     assert t.team_of("3")["prep"]["tyres"] == [None] * 4
-    # the canister: the server measures the hold – 3.4 s × 25 %/s = 85 % (green)
-    t.prep("2", "fuel_on")
-    clock.t += 2.0
-    r = t.prep("2", "fuel_off")
-    assert r["level"] == pytest.approx(50.0) and not r["green"]
-    t.prep("2", "fuel_on")
-    clock.t += 2.5
-    r = t.prep("2", "fuel_off")                                           # 50 + 62.5 > 100: spilled, empty again
-    assert r["spill"] and tm["prep"]["fuel"] == 0 and tm["prep"]["spill"] == 1
-    t.prep("2", "fuel_on")
-    clock.t += 3.4
-    r = t.prep("2", "fuel_off")
-    assert r["green"] and r["level"] == pytest.approx(85.0) and t.ready(tm, t.gt())["fuel"]
+    for old in ("fuel_on", "fuel_off"):                                  # no fuel any more
+        with pytest.raises(CommunityError):
+            t.prep("2", old)
+    with pytest.raises(CommunityError):
+        t.prep("1", "plug")                                              # the driver drives
     # the tyre choice
     assert t.prep("2", "rain")["compound"] == "r" and t.prep("2", "slicks")["compound"] == "s"
-
-
-def test_a_canister_held_too_long_spills_by_itself():
-    t, clock = table(humans=(("1", 0), ("2", 0)))
-    at(t, clock, 1)
-    tm = mine(t)
-    t.prep("2", "fuel_on")
-    clock.t += 5.0
-    t.tick()
-    assert tm["prep"]["fuel"] == 0 and tm["prep"]["spill"] == 1 and tm["prep"]["fuel_on"] is None
 
 
 def stop_now(t, clock, team, s):
@@ -341,21 +364,23 @@ def test_stop_time_from_what_the_crew_had_ready_and_the_tyres_they_chose(monkeyp
     no_kerbs(monkeypatch)
     t, clock = table(humans=(("1", 0), ("2", 0)), bots=1)
     tm = mine(t)
-    stp = stop_now(t, clock, tm, 3)                                       # nothing ready: 3 + 4 + 4
-    assert stp["time"] == 11.0 and [p[0] for p in stp["parts"]] == ["base", "tyres", "fuel"] and not stp["garage"]
+    stp = stop_now(t, clock, tm, 3)                                       # tyres not ready: 2 + 1 (the battery swap) + 4
+    assert stp["time"] == 7.0 and [p[0] for p in stp["parts"]] == ["base", "battery", "tyres"] and not stp["garage"]
+    assert stp["parts"][1] == ["battery", ls.BAT_SWAP, True] and stp["bat_in"] == 100.0       # the first spare is full
     with pytest.raises(CommunityError):
         t.prep("2", "tyre", 0)                                           # the car is in: too late
-    at(t, clock, 3.2 + 11 + 0.3)
-    assert not tm["car"]["pit"] and tm["driver"] == "2" and tm["pits"][-1]["time"] == 11.0 and tm["prep"]["tyres"] == [None] * 4
-    # everything ready (crew: player 1 now), rain tyres chosen: 3 s, rain tyres on
+    with pytest.raises(CommunityError):
+        t.prep("2", "plug")
+    at(t, clock, 3.2 + 7 + 0.3)
+    assert not tm["car"]["pit"] and tm["driver"] == "2" and tm["pits"][-1]["time"] == 7.0 and tm["prep"]["tyres"] == [None] * 4
+    # everything ready (crew: player 1 now – plugged in first), rain tyres chosen: 3 s, rain tyres on
+    at(t, clock, 11)
+    t.prep("1", "plug")
     at(t, clock, 20)
     for k in range(4):
         t.prep("1", "tyre", k)
         clock.t += 0.3
     t.prep("1", "rain")
-    t.prep("1", "fuel_on")
-    clock.t += 3.5
-    t.prep("1", "fuel_off")
     stp = stop_now(t, clock, tm, 28)
     assert stp["time"] == 3.0 and stp["tyre"] == "r" and all(p[2] for p in stp["parts"])
     at(t, clock, 32)
@@ -373,7 +398,7 @@ def test_jobs_done_after_the_car_arrived_do_not_count(monkeypatch):
         clock.t += 0.3
     to_line(t, tm)                                                        # arrives at ≈ 5.2 – the tyres were laid out at ≈ 5.8 … 6.7
     at(t, clock, 7.5, seen=True)
-    assert tm["stop"]["parts"][1] == ["tyres", ls.PEN_PREP, False]
+    assert tm["stop"]["parts"][2] == ["tyres", ls.PEN_PREP, False]
 
 
 def test_an_overheated_engine_is_swapped_prepared_or_not(monkeypatch):
@@ -384,8 +409,8 @@ def test_an_overheated_engine_is_swapped_prepared_or_not(monkeypatch):
     at(t, clock, 2)
     tm["car"]["eng"] = 1
     stp = stop_now(t, clock, tm, 3)
-    assert stp["parts"][-1] == ["engine", ls.ENG_SWAP, False] and stp["time"] == 3 + 4 + 4 + 6 and stp["eng"]
-    at(t, clock, 3.2 + 17 + 0.3)
+    assert stp["parts"][-1] == ["engine", ls.ENG_SWAP, False] and stp["time"] == 2 + 1 + 4 + 6 and stp["eng"]
+    at(t, clock, 3.2 + 13 + 0.3)
     assert not tm["car"]["eng"] and not tm["car"]["pit"]
     tm["car"]["eng"] = 1                                                  # again – now the crew (player 1) prepares the engine
     at(t, clock, 25)
@@ -397,6 +422,123 @@ def test_an_overheated_engine_is_swapped_prepared_or_not(monkeypatch):
     assert t.prep("1", "eng_off")["ready"]
     stp = stop_now(t, clock, tm, 28)
     assert stp["parts"][-1] == ["engine", ls.ENG_READY, True]
+
+
+def test_the_swap_puts_the_spare_in_with_its_charge_and_it_charges_only_once_plugged_in(monkeypatch):
+    no_things(monkeypatch)
+    no_kerbs(monkeypatch)
+    t, clock = table(humans=(("1", 0), ("2", 0)))
+    tm = mine(t)
+    at(t, clock, 2)
+    tm["car"]["bat"] = 12.0                                               # a hard lap
+    stp = stop_now(t, clock, tm, 3)
+    assert stp["bat_in"] == 100.0 and 9 < stp["bat_out"] < 12.0
+    end = stp["end"]
+    at(t, clock, end + 0.3)
+    assert tm["car"]["bat"] > 99.5                                         # the spare is in the car now …
+    sp = tm["spare"]
+    assert sp["c0"] == stp["bat_out"] and sp["t"] == end and sp["plug"] is None    # … and the used one is the ONE spare
+    out = sp["c0"]
+    # not plugged in: it does not charge at all
+    at(t, clock, end + 6)
+    assert ls.spare_charge(sp, t.gt()) == out and not t.ready(tm, t.gt())["battery"]
+    # plugged in late (6 s after the stop): charging by the server's clock, the app's number is ignored
+    pin = t.gt()
+    r = t.prep("1", "plug", 100)
+    assert r["charge"] == pytest.approx(out, abs=0.1) and sp["plug"] == pytest.approx(pin, abs=0.01)
+    assert t.prep("1", "plug")["again"] and sp["plug"] == pytest.approx(pin, abs=0.01)   # plugging in again changes nothing
+    at(t, clock, end + 11)
+    assert ls.spare_charge(sp, t.gt()) == pytest.approx(out + ls.CHARGE_RATE * 5, abs=0.1)
+    # the car comes in 16 s after the stop: only 10 s on the charger – it goes in partly charged
+    stp2 = stop_now(t, clock, tm, end + 15.5)
+    want = out + ls.CHARGE_RATE * (stp2["t"] - sp["plug"])
+    assert stp2["bat_in"] == pytest.approx(want, abs=0.01) and stp2["bat_in"] < 100
+    assert ["battery", ls.BAT_SWAP, False] in stp2["parts"] and stp2["time"] == ls.STOP_BASE + ls.BAT_SWAP + ls.PEN_PREP
+    at(t, clock, stp2["end"] + 0.3)
+    assert tm["car"]["bat"] == pytest.approx(want, abs=0.2)               # the next driver has to save energy
+    # plugged in right away: full after 100 / CHARGE_RATE seconds at the latest
+    sp = tm["spare"]
+    t.prep("2", "plug")
+    at(t, clock, stp2["end"] + 0.3 + 100 / ls.CHARGE_RATE + 0.5)
+    assert ls.spare_charge(sp, t.gt()) == 100.0 and t.ready(tm, t.gt())["battery"]
+    # two batteries per team, never more: one in the car, one spare
+    assert isinstance(tm["spare"], dict) and all(isinstance(x["spare"], dict) for x in t.st["teams"])
+
+
+def test_the_charge_comes_only_from_the_servers_timestamps():
+    sp = ls.new_spare(40.0, 50.0)
+    assert ls.spare_charge(sp, 99.0) == 40.0                             # never plugged in: never charged
+    sp["plug"] = 52.0
+    assert ls.spare_charge(sp, 51.0) == 40.0 and ls.spare_charge(sp, 52.0) == 40.0
+    assert ls.spare_charge(sp, 57.0) == pytest.approx(40.0 + 5 * ls.CHARGE_RATE)
+    assert ls.spare_charge(sp, 52.0 + 100 / ls.CHARGE_RATE) == 100.0 and ls.spare_charge(sp, 999.0) == 100.0
+    assert 100 / ls.CHARGE_RATE == 25.0                                  # empty → full in about a lap
+    # the plug-in time is the server's: a stopped clock, then the job – the app sends nothing but the action
+    t, clock = table(humans=(("1", 0), ("2", 0)))
+    at(t, clock, 3)
+    tm = mine(t)
+    tm["spare"] = ls.new_spare(20.0, 0.0)
+    now_t = t.gt()
+    assert t.prep("2", "plug", 99)["charge"] == 20.0 and tm["spare"]["plug"] == pytest.approx(now_t, abs=0.002)
+
+
+def test_the_garage_plugs_in_late_for_a_team_alone_and_an_offline_crew(monkeypatch):
+    no_things(monkeypatch)
+    no_kerbs(monkeypatch)
+    t, clock = table(humans=(("1", 0),), bots=1)
+    tm = mine(t)
+    at(t, clock, 2)
+    tm["car"]["bat"] = 10.0
+    stp = stop_now(t, clock, tm, 3)
+    assert stp["garage"] and stp["time"] == ls.GARAGE + ls.BAT_SWAP
+    end = stp["end"]
+    at(t, clock, end + ls.GARAGE_PLUG - 1)
+    assert tm["spare"]["plug"] is None
+    at(t, clock, end + ls.GARAGE_PLUG + 1)
+    assert tm["spare"]["plug"] == pytest.approx(end + ls.GARAGE_PLUG)    # exactly GARAGE_PLUG s after the stop
+    with pytest.raises(CommunityError):
+        t.prep("1", "plug")                                              # alone: the driver drives
+    # 25 s later: 10 % + 17 s × 4 %/s – fair, not perfect
+    assert ls.spare_charge(tm["spare"], end + 25) == pytest.approx(stp["bat_out"] + (25 - ls.GARAGE_PLUG) * ls.CHARGE_RATE, abs=0.01)
+    # a crew that is online plugs in itself – the garage keeps out; offline: the garage plugs in
+    t, clock = table(humans=(("1", 0), ("2", 0)))
+    tm = mine(t)
+    stp = stop_now(t, clock, tm, 3)
+    at(t, clock, stp["end"] + ls.GARAGE_PLUG + 2)
+    assert tm["spare"]["plug"] is None                                    # player 1 is in the crew now, online: their job
+    t.st["seen"]["1"] = clock.t - 60
+    clock.t += 1.0
+    t.st["seen"]["2"] = clock.t
+    t.tick()
+    assert tm["spare"]["plug"] is not None and tm["spare"]["plug"] >= stp["end"] + ls.GARAGE_PLUG + 2    # not into the past
+
+
+def test_bots_plug_in_first_and_save_energy_when_low(monkeypatch):
+    no_things(monkeypatch)
+    no_kerbs(monkeypatch)
+    t, clock = table(humans=(("1", 0),), bots=1, level="hard")
+    bot = t.st["teams"][1] if t.st["teams"][1]["bot"] else t.st["teams"][0]
+    at(t, clock, 2, seen=False)
+    stp = stop_now(t, clock, bot, 3)
+    at(t, clock, stp["end"] + 1.0, seen=False)
+    assert bot["spare"]["plug"] == pytest.approx(stp["end"] + ls.BOT_PLUG)
+    # low on battery: the bot lifts off instead of flat out – and reaches the pits without the emergency mode
+    car_ = bot["car"]
+    car_.update(bat=50.0, d=ls.laps_of(car_["d"]) * ls.L + 20, olap=ls.laps_of(car_["d"]), ob=0)
+    t._drive(bot, t.sim_t())
+    assert car_["thr"] == 0
+    car_.update(bat=50.0, d=ls.laps_of(car_["d"]) * ls.L + 500, temp=ls.TMIN, v=ls.VLIFT)
+    bot["hot"] = 0
+    t._drive(bot, t.sim_t())
+    assert car_["thr"] == 1                                               # enough for the last 140 m flat out
+    car_.update(bat=50.0, d=ls.laps_of(car_["d"]) * ls.L + 20)
+    car_["bat"] = 50.0
+    s = t.sim_t()
+    while not car_["pit"] and s < 400:
+        s += 2.0
+        at(t, clock, s, seen=False)
+    assert car_["pit"] or bot["pits"][-1]["n"] >= 2
+    assert car_["flat"] == 0
 
 
 def test_driver_rotation_for_one_two_and_three_people(monkeypatch):
@@ -435,7 +577,7 @@ def test_driver_rotation_for_one_two_and_three_people(monkeypatch):
     tm = mine(t)
     t.st["rain"] = [[10.0, 60.0]]
     stp = stop_now(t, clock, tm, 3)
-    assert stp["garage"] and stp["time"] == ls.GARAGE and not stp["change"] and stp["tyre"] == "r"
+    assert stp["garage"] and stp["time"] == ls.GARAGE + ls.BAT_SWAP == 5.0 and not stp["change"] and stp["tyre"] == "r"
     with pytest.raises(CommunityError):
         t.prep("1", "tyre", 0)
     at(t, clock, stp["end"] + 0.5)
@@ -471,7 +613,8 @@ def test_bots_race_and_prepare_sensibly_and_the_most_laps_wins():
     assert t.st["complete"] and s >= 300
     bots = [x for x in t.st["teams"] if x["bot"]]
     assert all(ls.laps_of(b["car"]["d"]) >= 8 for b in bots) and all(b["car"]["blows"] == 0 for b in bots)
-    assert all(min(p["time"] for p in b["pits"]) == ls.STOP_BASE for b in bots)
+    assert all(min(p["time"] for p in b["pits"]) == ls.STOP_BASE + ls.BAT_SWAP for b in bots)
+    assert all(b["car"]["flat"] == 0 for b in bots)                        # they save energy in time
     places = {i: x["place"] for i, x in enumerate(t.st["teams"])}
     best = max(ls.laps_of(x["car"]["d"]) for x in t.st["teams"])
     assert all(places[i] == 1 for i, x in enumerate(t.st["teams"]) if ls.laps_of(x["car"]["d"]) == best and x["car"]["d"] == max(y["car"]["d"] for y in t.st["teams"]))
@@ -561,10 +704,9 @@ def test_pit_records_from_a_real_crew(client):
     for k in range(4):
         assert client.post("/api/community/langstrecke/prep", json={"action": "tyre", "spot": k}, headers=hl).status_code == 200
         clock.t += 0.3
-    client.post("/api/community/langstrecke/prep", json={"action": "fuel_on"}, headers=hl)
-    clock.t += 3.6
-    r = client.post("/api/community/langstrecke/prep", json={"action": "fuel_off"}, headers=hl).json()
-    assert r["green"] and r["state"]["teams"][0]["prep"]["ready"] == {"tyres": True, "fuel": True, "engine": False}
+    r = client.post("/api/community/langstrecke/prep", json={"action": "plug", "charge": 100}, headers=hl).json()
+    assert r["charge"] == 100.0 and r["state"]["teams"][0]["prep"]["ready"] == {"tyres": True, "battery": True, "engine": False}
+    assert r["state"]["teams"][0]["spare"]["charge"] == 100.0 and r["state"]["teams"][0]["car"]["bat"] < 100
     t = 6.0
     while True:                                                            # both apps stay in touch until the first stop is done
         clock.t = st["t0"] + t
