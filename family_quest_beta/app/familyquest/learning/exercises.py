@@ -45,7 +45,7 @@ def _distractors(right: str, pool: list[str], own: list[str], rng: random.Random
 def _langs(pack: PackInfo) -> tuple[str, str]:
     """(language learnt, language of the prompt) – empty when the pack is not a language pack."""
     tgt = pack.lang
-    src = getattr(pack.model, "quellsprache", "") or "de"
+    src = pack.src_lang                 # the learner's language when the cards carry it (packs/i18n.py)
     return (tgt, src) if tgt else ("", "")
 
 

@@ -3,7 +3,7 @@
 // pen (smoothed, pen pressure), lines, rectangles, ellipses / circles, triangles, polygons, stamps, a word of text,
 // fill bucket, colour palette + own colour, background presets, select / move / scale / stretch / rotate, layers,
 // duplicate, undo / redo, two-finger zoom of the picture (never of the page). svgPaint({kind, svg}) resolves with the
-// cleaned SVG of the server (stories/svg, svgsafe.py) – or null.
+// cleaned SVG of the server (stories/svg – or `endpoint`, e.g. codelab/svg of the Code Workshop; svgsafe.py) – or null.
 // kind «bg»: a scene that fills a page / a room (viewBox 800×600, max. 60 KB); «art»: a thing or a character
 // (200×200, see-through background, max. 20 KB).
 // The SVG is its own shape model: the editor writes every shape as one element with transform="translate() rotate()
@@ -196,7 +196,7 @@ function svpSmoothPath(pts, dec) {
 }
 
 // ---------------------------------------------------------------- the editor
-function svgPaint({ kind = "bg", svg = null, title = null } = {}) {
+function svgPaint({ kind = "bg", svg = null, title = null, endpoint = "stories/svg" } = {}) {
   return new Promise(resolve => {
     const spec = SVP_SPEC[kind] || SVP_SPEC.bg, W = spec.w, H = spec.h, DEC = W < 400 ? 1 : 0, U = W / 800;
     const SIZES = [4, 10, 20, 40].map(v => Math.max(1.5, v * U * (kind === "art" ? 2 : 1)));
@@ -585,7 +585,7 @@ function svgPaint({ kind = "bg", svg = null, title = null } = {}) {
       if (out.length > spec.max) return toast(I18N.tr(T("The drawing is too large – remove some shapes")), "bad");
       if (!st.shapes.length && !st.locked && !st.bg) return toast(I18N.tr(T("The picture is still empty")), "bad");
       useBtn.disabled = true;
-      try { const r = await api("stories/svg", { method: "POST", body: { svg: out, use: kind } }); finish(r.svg); }
+      try { const r = await api(endpoint, { method: "POST", body: { svg: out, use: kind } }); finish(r.svg); }
       catch (e) { toast(e.message, "bad"); useBtn.disabled = false; }
     };
     const onHash = () => finish(null);

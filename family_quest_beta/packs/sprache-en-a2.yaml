@@ -1,10 +1,12 @@
 # Englisch A2 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
 id: "sprache-en-a2"
 titel: "Englisch A2 – Grundlagen"
+titel_i18n: {de: "Englisch A2 – Grundlagen", en: "English A2 – Elementary", fr: "Anglais A2 – Les bases", it: "Inglese A2 – Le basi", es: "Inglés A2 – Lo básico", nl: "Engels A2 – De basis", pl: "Angielski A2 – Podstawy", pt: "Inglês A2 – O básico", sv: "Engelska A2 – Grunder"}
 fach: "englisch"
 stufe: "A2"
 sprache: "en"
 quellsprache: "de"
+quellsprachen: [fr, it, es, nl, pl, pt, sv]
 version: 1
 quelle: "Family Quest (eigene Inhalte, CC0)"
 icon: "🇬🇧"
@@ -24,142 +26,151 @@ selbst: true
 einheiten:
   - id: shopping
     titel: "Einkaufen"
+    titel_i18n: {de: "Einkaufen", en: "Shopping", fr: "Faire les courses", it: "Fare la spesa", es: "De compras", nl: "Boodschappen doen", pl: "Zakupy", pt: "Fazer compras", sv: "Handla"}
     icon: "🛒"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "der Laden", en: "the shop", auch: ["shop", "the store", "store"], emoji: "🏪"}
-      - {de: "der Supermarkt", en: "the supermarket", auch: ["supermarket"], emoji: "🛒"}
-      - {de: "der Preis", en: "the price", auch: ["price"], emoji: "🏷️"}
-      - {de: "billig", en: "cheap", auch: ["inexpensive"]}
-      - {de: "teuer", en: "expensive", emoji: "💎"}
-      - {de: "kaufen", en: "to buy", auch: ["buy"]}
-      - {de: "bezahlen", en: "to pay", auch: ["pay"], emoji: "💳"}
-      - {de: "das Geld", en: "the money", auch: ["money"], emoji: "💰"}
-      - {de: "die Kasse", en: "the till", auch: ["till", "the checkout", "checkout", "the cash register", "cash register"]}
-      - {de: "die Grösse", en: "the size", auch: ["size"]}
-      - {de: "die Quittung", en: "the receipt", auch: ["receipt"], emoji: "🧾"}
+      - {de: "der Laden", en: "the shop", fr: "le magasin", it: "il negozio", es: "la tienda", nl: "de winkel", pl: "sklep", pt: "a loja", sv: "affären", auch: ["shop", "the store", "store"], emoji: "🏪"}
+      - {de: "der Supermarkt", en: "the supermarket", fr: "le supermarché", it: "il supermercato", es: "el supermercado", nl: "de supermarkt", pl: "supermarket", pt: "o supermercado", sv: "mataffären", auch: ["supermarket"], emoji: "🛒"}
+      - {de: "der Preis", en: "the price", fr: "le prix", it: "il prezzo", es: "el precio", nl: "de prijs", pl: "cena", pt: "o preço", sv: "priset", auch: ["price"], emoji: "🏷️"}
+      - {de: "billig", en: "cheap", fr: "pas cher", it: "economico", es: "barato", nl: "goedkoop", pl: "tani", pt: "barato", sv: "billig", auch: ["inexpensive"]}
+      - {de: "teuer", en: "expensive", fr: "cher", it: "caro", es: "caro", nl: "duur", pl: "drogi", pt: "caro", sv: "dyr", emoji: "💎"}
+      - {de: "kaufen", en: "to buy", fr: "acheter", it: "comprare", es: "comprar", nl: "kopen", pl: "kupować", pt: "comprar", sv: "att köpa", auch: ["buy"]}
+      - {de: "bezahlen", en: "to pay", fr: "payer", it: "pagare", es: "pagar", nl: "betalen", pl: "płacić", pt: "pagar", sv: "att betala", auch: ["pay"], emoji: "💳"}
+      - {de: "das Geld", en: "the money", fr: "l'argent", it: "i soldi", es: "el dinero", nl: "het geld", pl: "pieniądze", pt: "o dinheiro", sv: "pengarna", auch: ["money"], emoji: "💰"}
+      - {de: "die Kasse", en: "the till", fr: "la caisse", it: "la cassa", es: "la caja", nl: "de kassa", pl: "kasa", pt: "o caixa", sv: "kassan", auch: ["till", "the checkout", "checkout", "the cash register", "cash register"]}
+      - {de: "die Grösse", en: "the size", fr: "la taille", it: "la taglia", es: "la talla", nl: "de maat", pl: "rozmiar", pt: "o tamanho", sv: "storleken", auch: ["size"]}
+      - {de: "die Quittung", en: "the receipt", fr: "le ticket de caisse", it: "lo scontrino", es: "el tique", nl: "de kassabon", pl: "paragon", pt: "o recibo", sv: "kvittot", auch: ["receipt"], emoji: "🧾"}
   - id: travel
     titel: "Reisen und Verkehr"
+    titel_i18n: {de: "Reisen und Verkehr", en: "Travel and transport", fr: "Voyages et transports", it: "Viaggi e trasporti", es: "Viajes y transporte", nl: "Reizen en verkeer", pl: "Podróże i transport", pt: "Viagens e transporte", sv: "Resor och trafik"}
     icon: "🚆"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "der Zug", en: "the train", auch: ["train"], emoji: "🚆"}
-      - {de: "der Bus", en: "the bus", auch: ["bus"], emoji: "🚌"}
-      - {de: "das Flugzeug", en: "the plane", auch: ["plane", "the aeroplane", "aeroplane", "the airplane", "airplane"], emoji: "✈️"}
-      - {de: "der Bahnhof", en: "the station", auch: ["station", "the train station", "train station"], emoji: "🚉"}
-      - {de: "der Flughafen", en: "the airport", auch: ["airport"], emoji: "🛫"}
-      - {de: "die Fahrkarte", en: "the ticket", auch: ["ticket"], emoji: "🎫"}
-      - {de: "der Koffer", en: "the suitcase", auch: ["suitcase"], emoji: "🧳"}
-      - {de: "die Strasse", en: "the street", auch: ["street", "the road", "road"], emoji: "🛣️"}
-      - {de: "links", en: "left", emoji: "⬅️"}
-      - {de: "rechts", en: "right", emoji: "➡️"}
-      - {de: "geradeaus", en: "straight on", auch: ["straight ahead"], emoji: "⬆️"}
-      - {de: "die Ferien", en: "the holidays", auch: ["holidays", "the holiday", "holiday", "the vacation", "vacation"], emoji: "🏖️"}
+      - {de: "der Zug", en: "the train", fr: "le train", it: "il treno", es: "el tren", nl: "de trein", pl: "pociąg", pt: "o trem", sv: "tåget", auch: ["train"], emoji: "🚆"}
+      - {de: "der Bus", en: "the bus", fr: "le bus", it: "l'autobus", es: "el autobús", nl: "de bus", pl: "autobus", pt: "o ônibus", sv: "bussen", auch: ["bus"], emoji: "🚌"}
+      - {de: "das Flugzeug", en: "the plane", fr: "l'avion", it: "l'aereo", es: "el avión", nl: "het vliegtuig", pl: "samolot", pt: "o avião", sv: "flygplanet", auch: ["plane", "the aeroplane", "aeroplane", "the airplane", "airplane"], emoji: "✈️"}
+      - {de: "der Bahnhof", en: "the station", fr: "la gare", it: "la stazione", es: "la estación", nl: "het station", pl: "dworzec", pt: "a estação", sv: "järnvägsstationen", auch: ["station", "the train station", "train station"], emoji: "🚉"}
+      - {de: "der Flughafen", en: "the airport", fr: "l'aéroport", it: "l'aeroporto", es: "el aeropuerto", nl: "het vliegveld", pl: "lotnisko", pt: "o aeroporto", sv: "flygplatsen", auch: ["airport"], emoji: "🛫"}
+      - {de: "die Fahrkarte", en: "the ticket", fr: "le billet", it: "il biglietto", es: "el billete", nl: "het kaartje", pl: "bilet", pt: "a passagem", sv: "biljetten", auch: ["ticket"], emoji: "🎫"}
+      - {de: "der Koffer", en: "the suitcase", fr: "la valise", it: "la valigia", es: "la maleta", nl: "de koffer", pl: "walizka", pt: "a mala", sv: "resväskan", auch: ["suitcase"], emoji: "🧳"}
+      - {de: "die Strasse", en: "the street", fr: "la rue", it: "la strada", es: "la calle", nl: "de straat", pl: "ulica", pt: "a rua", sv: "gatan", auch: ["street", "the road", "road"], emoji: "🛣️"}
+      - {de: "links", en: "left", fr: "à gauche", it: "a sinistra", es: "a la izquierda", nl: "links", pl: "w lewo", pt: "à esquerda", sv: "till vänster", emoji: "⬅️"}
+      - {de: "rechts", en: "right", fr: "à droite", it: "a destra", es: "a la derecha", nl: "rechts", pl: "w prawo", pt: "à direita", sv: "till höger", emoji: "➡️"}
+      - {de: "geradeaus", en: "straight on", fr: "tout droit", it: "dritto", es: "todo recto", nl: "rechtdoor", pl: "prosto", pt: "em frente", sv: "rakt fram", auch: ["straight ahead"], emoji: "⬆️"}
+      - {de: "die Ferien", en: "the holidays", fr: "les vacances", it: "le vacanze", es: "las vacaciones", nl: "de vakantie", pl: "wakacje", pt: "as férias", sv: "lovet", auch: ["holidays", "the holiday", "holiday", "the vacation", "vacation"], emoji: "🏖️"}
   - id: weather
     titel: "Wetter und Jahreszeiten"
+    titel_i18n: {de: "Wetter und Jahreszeiten", en: "Weather and seasons", fr: "La météo et les saisons", it: "Il tempo e le stagioni", es: "El tiempo y las estaciones", nl: "Weer en seizoenen", pl: "Pogoda i pory roku", pt: "O tempo e as estações", sv: "Väder och årstider"}
     icon: "🌦️"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "das Wetter", en: "the weather", auch: ["weather"], emoji: "🌦️"}
-      - {de: "die Sonne", en: "the sun", auch: ["sun"], emoji: "☀️"}
-      - {de: "der Regen", en: "the rain", auch: ["rain"], emoji: "🌧️"}
-      - {de: "der Schnee", en: "the snow", auch: ["snow"], emoji: "❄️"}
-      - {de: "der Wind", en: "the wind", auch: ["wind"], emoji: "💨"}
-      - {de: "die Wolke", en: "the cloud", auch: ["cloud"], emoji: "☁️"}
-      - {de: "warm", en: "warm", emoji: "🌡️"}
-      - {de: "kalt", en: "cold", emoji: "🥶"}
-      - {de: "der Frühling", en: "spring", auch: ["the spring"], emoji: "🌷"}
-      - {de: "der Sommer", en: "summer", auch: ["the summer"], emoji: "🌞"}
-      - {de: "der Herbst", en: "autumn", auch: ["the autumn", "fall", "the fall"], emoji: "🍂"}
-      - {de: "der Winter", en: "winter", auch: ["the winter"], emoji: "⛄"}
+      - {de: "das Wetter", en: "the weather", fr: "le temps (la météo)", it: "il tempo (meteo)", es: "el tiempo (meteorológico)", nl: "het weer", pl: "pogoda", pt: "o tempo (clima)", sv: "vädret", auch: ["weather"], emoji: "🌦️"}
+      - {de: "die Sonne", en: "the sun", fr: "le soleil", it: "il sole", es: "el sol", nl: "de zon", pl: "słońce", pt: "o sol", sv: "solen", auch: ["sun"], emoji: "☀️"}
+      - {de: "der Regen", en: "the rain", fr: "la pluie", it: "la pioggia", es: "la lluvia", nl: "de regen", pl: "deszcz", pt: "a chuva", sv: "regnet", auch: ["rain"], emoji: "🌧️"}
+      - {de: "der Schnee", en: "the snow", fr: "la neige", it: "la neve", es: "la nieve", nl: "de sneeuw", pl: "śnieg", pt: "a neve", sv: "snön", auch: ["snow"], emoji: "❄️"}
+      - {de: "der Wind", en: "the wind", fr: "le vent", it: "il vento", es: "el viento", nl: "de wind", pl: "wiatr", pt: "o vento", sv: "vinden", auch: ["wind"], emoji: "💨"}
+      - {de: "die Wolke", en: "the cloud", fr: "le nuage", it: "la nuvola", es: "la nube", nl: "de wolk", pl: "chmura", pt: "a nuvem", sv: "molnet", auch: ["cloud"], emoji: "☁️"}
+      - {de: "warm", en: "warm", fr: "chaud", it: "caldo", es: "cálido", nl: "warm", pl: "ciepło", pt: "quente", sv: "varmt", emoji: "🌡️"}
+      - {de: "kalt", en: "cold", fr: "froid", it: "freddo", es: "frío", nl: "koud", pl: "zimno", pt: "frio", sv: "kallt", emoji: "🥶"}
+      - {de: "der Frühling", en: "spring", fr: "le printemps", it: "la primavera", es: "la primavera", nl: "de lente", pl: "wiosna", pt: "a primavera", sv: "våren", auch: ["the spring"], emoji: "🌷"}
+      - {de: "der Sommer", en: "summer", fr: "l'été", it: "l'estate", es: "el verano", nl: "de zomer", pl: "lato", pt: "o verão", sv: "sommaren", auch: ["the summer"], emoji: "🌞"}
+      - {de: "der Herbst", en: "autumn", fr: "l'automne", it: "l'autunno", es: "el otoño", nl: "de herfst", pl: "jesień", pt: "o outono", sv: "hösten", auch: ["the autumn", "fall", "the fall"], emoji: "🍂"}
+      - {de: "der Winter", en: "winter", fr: "l'hiver", it: "l'inverno", es: "el invierno", nl: "de winter", pl: "zima", pt: "o inverno", sv: "vintern", auch: ["the winter"], emoji: "⛄"}
   - id: body-health
     titel: "Körper und Gesundheit"
+    titel_i18n: {de: "Körper und Gesundheit", en: "Body and health", fr: "Le corps et la santé", it: "Il corpo e la salute", es: "El cuerpo y la salud", nl: "Lichaam en gezondheid", pl: "Ciało i zdrowie", pt: "O corpo e a saúde", sv: "Kroppen och hälsan"}
     icon: "🩺"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "der Kopf", en: "the head", auch: ["head"], emoji: "🙂"}
-      - {de: "die Hand", en: "the hand", auch: ["hand"], emoji: "✋"}
-      - {de: "der Fuss", en: "the foot", auch: ["foot"], emoji: "🦶"}
-      - {de: "das Bein", en: "the leg", auch: ["leg"], emoji: "🦵"}
-      - {de: "der Bauch", en: "the stomach", auch: ["stomach", "the tummy", "tummy", "the belly", "belly"]}
-      - {de: "der Zahn", en: "the tooth", auch: ["tooth"], emoji: "🦷"}
-      - {de: "das Ohr", en: "the ear", auch: ["ear"], emoji: "👂"}
-      - {de: "krank", en: "ill", auch: ["sick"], emoji: "🤒"}
-      - {de: "die Kopfschmerzen", en: "the headache", auch: ["headache", "a headache"]}
-      - {de: "der Arzt / die Ärztin", en: "the doctor", auch: ["doctor"], emoji: "🧑‍⚕️"}
-      - {de: "die Apotheke", en: "the chemist's", auch: ["chemist's", "the pharmacy", "pharmacy", "the drugstore", "drugstore"], emoji: "💊"}
+      - {de: "der Kopf", en: "the head", fr: "la tête", it: "la testa", es: "la cabeza", nl: "het hoofd", pl: "głowa", pt: "a cabeça", sv: "huvudet", auch: ["head"], emoji: "🙂"}
+      - {de: "die Hand", en: "the hand", fr: "la main", it: "la mano", es: "la mano", nl: "de hand", pl: "ręka (dłoń)", pt: "a mão", sv: "handen", auch: ["hand"], emoji: "✋"}
+      - {de: "der Fuss", en: "the foot", fr: "le pied", it: "il piede", es: "el pie", nl: "de voet", pl: "stopa", pt: "o pé", sv: "foten", auch: ["foot"], emoji: "🦶"}
+      - {de: "das Bein", en: "the leg", fr: "la jambe", it: "la gamba", es: "la pierna", nl: "het been", pl: "noga", pt: "a perna", sv: "benet", auch: ["leg"], emoji: "🦵"}
+      - {de: "der Bauch", en: "the stomach", fr: "le ventre", it: "la pancia", es: "la barriga", nl: "de buik", pl: "brzuch", pt: "a barriga", sv: "magen", auch: ["stomach", "the tummy", "tummy", "the belly", "belly"]}
+      - {de: "der Zahn", en: "the tooth", fr: "la dent", it: "il dente", es: "el diente", nl: "de tand", pl: "ząb", pt: "o dente", sv: "tanden", auch: ["tooth"], emoji: "🦷"}
+      - {de: "das Ohr", en: "the ear", fr: "l'oreille", it: "l'orecchio", es: "la oreja", nl: "het oor", pl: "ucho", pt: "a orelha", sv: "örat", auch: ["ear"], emoji: "👂"}
+      - {de: "krank", en: "ill", fr: "malade", it: "malato", es: "enfermo", nl: "ziek", pl: "chory", pt: "doente", sv: "sjuk", auch: ["sick"], emoji: "🤒"}
+      - {de: "die Kopfschmerzen", en: "the headache", fr: "le mal de tête", it: "il mal di testa", es: "el dolor de cabeza", nl: "de hoofdpijn", pl: "ból głowy", pt: "a dor de cabeça", sv: "huvudvärken", auch: ["headache", "a headache"]}
+      - {de: "der Arzt / die Ärztin", en: "the doctor", fr: "le médecin", it: "il medico / la dottoressa", es: "el médico / la médica", nl: "de dokter", pl: "lekarz / lekarka", pt: "o médico / a médica", sv: "läkaren", auch: ["doctor"], emoji: "🧑‍⚕️"}
+      - {de: "die Apotheke", en: "the chemist's", fr: "la pharmacie", it: "la farmacia", es: "la farmacia", nl: "de apotheek", pl: "apteka", pt: "a farmácia", sv: "apoteket", auch: ["chemist's", "the pharmacy", "pharmacy", "the drugstore", "drugstore"], emoji: "💊"}
   - id: hobbies
     titel: "Hobbys und Freizeit"
+    titel_i18n: {de: "Hobbys und Freizeit", en: "Hobbies and free time", fr: "Loisirs et temps libre", it: "Hobby e tempo libero", es: "Aficiones y tiempo libre", nl: "Hobby's en vrije tijd", pl: "Hobby i czas wolny", pt: "Hobbies e tempo livre", sv: "Hobbyer och fritid"}
     icon: "⚽"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "schwimmen", en: "to swim", auch: ["swim"], emoji: "🏊"}
-      - {de: "tanzen", en: "to dance", auch: ["dance"], emoji: "💃"}
-      - {de: "singen", en: "to sing", auch: ["sing"], emoji: "🎤"}
-      - {de: "lesen", en: "to read", auch: ["read"], emoji: "📚"}
-      - {de: "malen", en: "to paint", auch: ["paint"], emoji: "🖌️"}
-      - {de: "Fussball spielen", en: "to play football", auch: ["play football", "to play soccer", "play soccer"], emoji: "⚽"}
-      - {de: "Rad fahren", en: "to ride a bike", auch: ["ride a bike", "to cycle", "cycle"], emoji: "🚲"}
-      - {de: "kochen", en: "to cook", auch: ["cook"], emoji: "🍳"}
-      - {de: "wandern", en: "to go hiking", auch: ["go hiking", "to hike", "hike"], emoji: "🥾"}
-      - {de: "die Freizeit", en: "free time", auch: ["the free time", "spare time", "leisure time"], emoji: "🎈"}
+      - {de: "schwimmen", en: "to swim", fr: "nager", it: "nuotare", es: "nadar", nl: "zwemmen", pl: "pływać", pt: "nadar", sv: "att simma", auch: ["swim"], emoji: "🏊"}
+      - {de: "tanzen", en: "to dance", fr: "danser", it: "ballare", es: "bailar", nl: "dansen", pl: "tańczyć", pt: "dançar", sv: "att dansa", auch: ["dance"], emoji: "💃"}
+      - {de: "singen", en: "to sing", fr: "chanter", it: "cantare", es: "cantar", nl: "zingen", pl: "śpiewać", pt: "cantar", sv: "att sjunga", auch: ["sing"], emoji: "🎤"}
+      - {de: "lesen", en: "to read", fr: "lire", it: "leggere", es: "leer", nl: "lezen", pl: "czytać", pt: "ler", sv: "att läsa", auch: ["read"], emoji: "📚"}
+      - {de: "malen", en: "to paint", fr: "peindre", it: "dipingere", es: "pintar", nl: "schilderen", pl: "malować", pt: "pintar", sv: "att måla", auch: ["paint"], emoji: "🖌️"}
+      - {de: "Fussball spielen", en: "to play football", fr: "jouer au foot", it: "giocare a calcio", es: "jugar al fútbol", nl: "voetballen", pl: "grać w piłkę nożną", pt: "jogar futebol", sv: "att spela fotboll", auch: ["play football", "to play soccer", "play soccer"], emoji: "⚽"}
+      - {de: "Rad fahren", en: "to ride a bike", fr: "faire du vélo", it: "andare in bici", es: "montar en bici", nl: "fietsen", pl: "jeździć na rowerze", pt: "andar de bicicleta", sv: "att cykla", auch: ["ride a bike", "to cycle", "cycle"], emoji: "🚲"}
+      - {de: "kochen", en: "to cook", fr: "cuisiner", it: "cucinare", es: "cocinar", nl: "koken", pl: "gotować", pt: "cozinhar", sv: "att laga mat", auch: ["cook"], emoji: "🍳"}
+      - {de: "wandern", en: "to go hiking", fr: "faire de la randonnée", it: "fare escursioni", es: "hacer senderismo", nl: "wandelen", pl: "wędrować", pt: "fazer trilha", sv: "att vandra", auch: ["go hiking", "to hike", "hike"], emoji: "🥾"}
+      - {de: "die Freizeit", en: "free time", fr: "le temps libre", it: "il tempo libero", es: "el tiempo libre", nl: "de vrije tijd", pl: "czas wolny", pt: "o tempo livre", sv: "fritiden", auch: ["the free time", "spare time", "leisure time"], emoji: "🎈"}
   - id: home
     titel: "Zu Hause"
+    titel_i18n: {de: "Zu Hause", en: "At home", fr: "À la maison", it: "A casa", es: "En casa", nl: "Thuis", pl: "W domu", pt: "Em casa", sv: "Hemma"}
     icon: "🏠"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "das Haus", en: "the house", auch: ["house"], emoji: "🏠"}
-      - {de: "die Wohnung", en: "the flat", auch: ["flat", "the apartment", "apartment"], emoji: "🏢"}
-      - {de: "die Küche", en: "the kitchen", auch: ["kitchen"], emoji: "🍳"}
-      - {de: "das Schlafzimmer", en: "the bedroom", auch: ["bedroom"], emoji: "🛏️"}
-      - {de: "das Badezimmer", en: "the bathroom", auch: ["bathroom"], emoji: "🛁"}
-      - {de: "das Wohnzimmer", en: "the living room", auch: ["living room", "the sitting room", "sitting room", "the lounge", "lounge"], emoji: "🛋️"}
-      - {de: "der Garten", en: "the garden", auch: ["garden", "the yard", "yard"], emoji: "🌳"}
-      - {de: "das Fenster", en: "the window", auch: ["window"], emoji: "🪟"}
-      - {de: "die Tür", en: "the door", auch: ["door"], emoji: "🚪"}
-      - {de: "das Sofa", en: "the sofa", auch: ["sofa", "the couch", "couch"], emoji: "🛋️"}
-      - {de: "der Kühlschrank", en: "the fridge", auch: ["fridge", "the refrigerator", "refrigerator"], emoji: "🧊"}
+      - {de: "das Haus", en: "the house", fr: "la maison", it: "la casa", es: "la casa", nl: "het huis", pl: "dom", pt: "a casa", sv: "huset", auch: ["house"], emoji: "🏠"}
+      - {de: "die Wohnung", en: "the flat", fr: "l'appartement", it: "l'appartamento", es: "el piso", nl: "het appartement", pl: "mieszkanie", pt: "o apartamento", sv: "lägenheten", auch: ["flat", "the apartment", "apartment"], emoji: "🏢"}
+      - {de: "die Küche", en: "the kitchen", fr: "la cuisine", it: "la cucina", es: "la cocina", nl: "de keuken", pl: "kuchnia", pt: "a cozinha", sv: "köket", auch: ["kitchen"], emoji: "🍳"}
+      - {de: "das Schlafzimmer", en: "the bedroom", fr: "la chambre", it: "la camera da letto", es: "el dormitorio", nl: "de slaapkamer", pl: "sypialnia", pt: "o quarto", sv: "sovrummet", auch: ["bedroom"], emoji: "🛏️"}
+      - {de: "das Badezimmer", en: "the bathroom", fr: "la salle de bains", it: "il bagno", es: "el cuarto de baño", nl: "de badkamer", pl: "łazienka", pt: "o banheiro", sv: "badrummet", auch: ["bathroom"], emoji: "🛁"}
+      - {de: "das Wohnzimmer", en: "the living room", fr: "le salon", it: "il soggiorno", es: "el salón", nl: "de woonkamer", pl: "salon", pt: "a sala de estar", sv: "vardagsrummet", auch: ["living room", "the sitting room", "sitting room", "the lounge", "lounge"], emoji: "🛋️"}
+      - {de: "der Garten", en: "the garden", fr: "le jardin", it: "il giardino", es: "el jardín", nl: "de tuin", pl: "ogród", pt: "o jardim", sv: "trädgården", auch: ["garden", "the yard", "yard"], emoji: "🌳"}
+      - {de: "das Fenster", en: "the window", fr: "la fenêtre", it: "la finestra", es: "la ventana", nl: "het raam", pl: "okno", pt: "a janela", sv: "fönstret", auch: ["window"], emoji: "🪟"}
+      - {de: "die Tür", en: "the door", fr: "la porte", it: "la porta", es: "la puerta", nl: "de deur", pl: "drzwi", pt: "a porta", sv: "dörren", auch: ["door"], emoji: "🚪"}
+      - {de: "das Sofa", en: "the sofa", fr: "le canapé", it: "il divano", es: "el sofá", nl: "de bank", pl: "kanapa", pt: "o sofá", sv: "soffan", auch: ["sofa", "the couch", "couch"], emoji: "🛋️"}
+      - {de: "der Kühlschrank", en: "the fridge", fr: "le frigo", it: "il frigorifero", es: "la nevera", nl: "de koelkast", pl: "lodówka", pt: "a geladeira", sv: "kylskåpet", auch: ["fridge", "the refrigerator", "refrigerator"], emoji: "🧊"}
   - id: simple-past
     titel: "Simple Past – Vergangenheit"
+    titel_i18n: {de: "Simple Past – Vergangenheit", en: "Simple past", fr: "Simple past – le passé", it: "Simple past – il passato", es: "Simple past – el pasado", nl: "Simple past – verleden tijd", pl: "Simple past – czas przeszły", pt: "Simple past – o passado", sv: "Simple past – dåtid"}
     icon: "⏪"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "go – gestern", antwort: "went", satz: "Yesterday I ___ to the park.", optionen: ["went", "goed", "go", "gone"]}
-      - {frage: "play – letzte Woche", antwort: "played", satz: "We ___ football last week.", optionen: ["played", "play", "plays", "playing"]}
-      - {frage: "see – gestern Abend", antwort: "saw", satz: "I ___ a great film last night.", optionen: ["saw", "seed", "see", "seen"]}
-      - {frage: "eat – zum Frühstück", antwort: "ate", satz: "She ___ an apple for breakfast.", optionen: ["ate", "eated", "eats", "eaten"]}
-      - {frage: "be – I (gestern)", antwort: "was", satz: "I ___ tired yesterday.", optionen: ["was", "were", "am", "be"]}
-      - {frage: "be – they (letzten Sommer)", antwort: "were", satz: "They ___ in London last summer.", optionen: ["was", "were", "are", "been"]}
-      - {frage: "buy – letzten Samstag", antwort: "bought", satz: "He ___ a new jacket last Saturday.", optionen: ["bought", "buyed", "buys", "brought"]}
-      - {frage: "have – letzte Nacht", antwort: "had", satz: "We ___ pizza last night.", optionen: ["had", "haved", "have", "has"]}
-      - {frage: "Frage – did", antwort: "Did", satz: "___ you watch the match yesterday?", optionen: ["Did", "Do", "Does", "Was"]}
-      - {frage: "Verneinung – didn't", antwort: "didn't", satz: "I ___ go to school on Sunday.", optionen: ["didn't", "don't", "wasn't", "doesn't"]}
+      - {frage: "go – gestern", antwort: "went", satz: "Yesterday I ___ to the park.", optionen: ["went", "goed", "go", "gone"], frage_i18n: {"fr": "go – hier", "it": "go – ieri", "es": "go – ayer", "nl": "go – gisteren", "pl": "go – wczoraj", "pt": "go – ontem", "sv": "go – i går"}}
+      - {frage: "play – letzte Woche", antwort: "played", satz: "We ___ football last week.", optionen: ["played", "play", "plays", "playing"], frage_i18n: {"fr": "play – la semaine dernière", "it": "play – la settimana scorsa", "es": "play – la semana pasada", "nl": "play – vorige week", "pl": "play – w zeszłym tygodniu", "pt": "play – na semana passada", "sv": "play – förra veckan"}}
+      - {frage: "see – gestern Abend", antwort: "saw", satz: "I ___ a great film last night.", optionen: ["saw", "seed", "see", "seen"], frage_i18n: {"fr": "see – hier soir", "it": "see – ieri sera", "es": "see – anoche", "nl": "see – gisteravond", "pl": "see – wczoraj wieczorem", "pt": "see – ontem à noite", "sv": "see – i går kväll"}}
+      - {frage: "eat – zum Frühstück", antwort: "ate", satz: "She ___ an apple for breakfast.", optionen: ["ate", "eated", "eats", "eaten"], frage_i18n: {"fr": "eat – au petit-déjeuner", "it": "eat – a colazione", "es": "eat – en el desayuno", "nl": "eat – bij het ontbijt", "pl": "eat – na śniadanie", "pt": "eat – no café da manhã", "sv": "eat – till frukost"}}
+      - {frage: "be – I (gestern)", antwort: "was", satz: "I ___ tired yesterday.", optionen: ["was", "were", "am", "be"], frage_i18n: {"fr": "be – I (hier)", "it": "be – I (ieri)", "es": "be – I (ayer)", "nl": "be – I (gisteren)", "pl": "be – I (wczoraj)", "pt": "be – I (ontem)", "sv": "be – I (i går)"}}
+      - {frage: "be – they (letzten Sommer)", antwort: "were", satz: "They ___ in London last summer.", optionen: ["was", "were", "are", "been"], frage_i18n: {"fr": "be – they (l'été dernier)", "it": "be – they (l'estate scorsa)", "es": "be – they (el verano pasado)", "nl": "be – they (vorige zomer)", "pl": "be – they (zeszłego lata)", "pt": "be – they (no verão passado)", "sv": "be – they (förra sommaren)"}}
+      - {frage: "buy – letzten Samstag", antwort: "bought", satz: "He ___ a new jacket last Saturday.", optionen: ["bought", "buyed", "buys", "brought"], frage_i18n: {"fr": "buy – samedi dernier", "it": "buy – sabato scorso", "es": "buy – el sábado pasado", "nl": "buy – afgelopen zaterdag", "pl": "buy – w zeszłą sobotę", "pt": "buy – no sábado passado", "sv": "buy – i lördags"}}
+      - {frage: "have – letzte Nacht", antwort: "had", satz: "We ___ pizza last night.", optionen: ["had", "haved", "have", "has"], frage_i18n: {"fr": "have – hier soir", "it": "have – ieri sera", "es": "have – anoche", "nl": "have – gisteravond", "pl": "have – wczoraj wieczorem", "pt": "have – ontem à noite", "sv": "have – i går kväll"}}
+      - {frage: "Frage – did", antwort: "Did", satz: "___ you watch the match yesterday?", optionen: ["Did", "Do", "Does", "Was"], frage_i18n: {"fr": "Question – did", "it": "Domanda – did", "es": "Pregunta – did", "nl": "Vraag – did", "pl": "Pytanie – did", "pt": "Pergunta – did", "sv": "Fråga – did"}}
+      - {frage: "Verneinung – didn't", antwort: "didn't", satz: "I ___ go to school on Sunday.", optionen: ["didn't", "don't", "wasn't", "doesn't"], frage_i18n: {"fr": "Négation – didn't", "it": "Negazione – didn't", "es": "Negación – didn't", "nl": "Ontkenning – didn't", "pl": "Przeczenie – didn't", "pt": "Negação – didn't", "sv": "Nekande – didn't"}}
   - id: going-to
     titel: "going to – Zukunftspläne"
+    titel_i18n: {de: "going to – Zukunftspläne", en: "going to – plans", fr: "going to – projets d'avenir", it: "going to – progetti futuri", es: "going to – planes futuros", nl: "going to – plannen", pl: "going to – plany na przyszłość", pt: "going to – planos futuros", sv: "going to – framtidsplaner"}
     icon: "🔮"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "I – Plan", antwort: "am", satz: "I ___ going to visit my grandma.", optionen: ["am", "is", "are", "be"]}
-      - {frage: "she – Plan", antwort: "is", satz: "She ___ going to learn French.", optionen: ["am", "is", "are", "be"]}
-      - {frage: "we – Plan", antwort: "are", satz: "We ___ going to travel by train.", optionen: ["am", "is", "are", "be"]}
-      - {frage: "they – Plan", antwort: "are", satz: "They ___ going to buy a house.", optionen: ["am", "is", "are", "be"]}
-      - {frage: "Verb nach going", antwort: "to", satz: "It's going ___ rain later.", optionen: ["to", "for", "at", "in"]}
-      - {frage: "Verb nach going to", antwort: "cook", satz: "I'm going to ___ dinner tonight.", optionen: ["cook", "cooking", "cooked", "cooks"]}
-      - {frage: "Verneinung", antwort: "not", satz: "He is ___ going to come to the party.", optionen: ["not", "no", "don't", "isn't"]}
-      - {frage: "Frage", antwort: "Are", satz: "___ you going to play tennis tomorrow?", optionen: ["Are", "Do", "Is", "Will"]}
-      - {frage: "Frage – he", antwort: "Is", satz: "___ he going to call you later?", optionen: ["Are", "Do", "Is", "Does"]}
+      - {frage: "I – Plan", antwort: "am", satz: "I ___ going to visit my grandma.", optionen: ["am", "is", "are", "be"], frage_i18n: {"fr": "I – projet", "it": "I – progetto", "es": "I – plan", "nl": "I – plan", "pl": "I – plan", "pt": "I – plano", "sv": "I – plan"}}
+      - {frage: "she – Plan", antwort: "is", satz: "She ___ going to learn French.", optionen: ["am", "is", "are", "be"], frage_i18n: {"fr": "she – projet", "it": "she – progetto", "es": "she – plan", "nl": "she – plan", "pl": "she – plan", "pt": "she – plano", "sv": "she – plan"}}
+      - {frage: "we – Plan", antwort: "are", satz: "We ___ going to travel by train.", optionen: ["am", "is", "are", "be"], frage_i18n: {"fr": "we – projet", "it": "we – progetto", "es": "we – plan", "nl": "we – plan", "pl": "we – plan", "pt": "we – plano", "sv": "we – plan"}}
+      - {frage: "they – Plan", antwort: "are", satz: "They ___ going to buy a house.", optionen: ["am", "is", "are", "be"], frage_i18n: {"fr": "they – projet", "it": "they – progetto", "es": "they – plan", "nl": "they – plan", "pl": "they – plan", "pt": "they – plano", "sv": "they – plan"}}
+      - {frage: "Verb nach going", antwort: "to", satz: "It's going ___ rain later.", optionen: ["to", "for", "at", "in"], frage_i18n: {"fr": "Mot après going", "it": "Parola dopo going", "es": "Palabra después de going", "nl": "Woord na going", "pl": "Słowo po going", "pt": "Palavra depois de going", "sv": "Ord efter going"}}
+      - {frage: "Verb nach going to", antwort: "cook", satz: "I'm going to ___ dinner tonight.", optionen: ["cook", "cooking", "cooked", "cooks"], frage_i18n: {"fr": "Verbe après going to", "it": "Verbo dopo going to", "es": "Verbo después de going to", "nl": "Werkwoord na going to", "pl": "Czasownik po going to", "pt": "Verbo depois de going to", "sv": "Verb efter going to"}}
+      - {frage: "Verneinung", antwort: "not", satz: "He is ___ going to come to the party.", optionen: ["not", "no", "don't", "isn't"], frage_i18n: {"fr": "Négation", "it": "Negazione", "es": "Negación", "nl": "Ontkenning", "pl": "Przeczenie", "pt": "Negação", "sv": "Nekande"}}
+      - {frage: "Frage", antwort: "Are", satz: "___ you going to play tennis tomorrow?", optionen: ["Are", "Do", "Is", "Will"], frage_i18n: {"fr": "Question", "it": "Domanda", "es": "Pregunta", "nl": "Vraag", "pl": "Pytanie", "pt": "Pergunta", "sv": "Fråga"}}
+      - {frage: "Frage – he", antwort: "Is", satz: "___ he going to call you later?", optionen: ["Are", "Do", "Is", "Does"], frage_i18n: {"fr": "Question – he", "it": "Domanda – he", "es": "Pregunta – he", "nl": "Vraag – he", "pl": "Pytanie – he", "pt": "Pergunta – he", "sv": "Fråga – he"}}
   - id: everyday-phrases
     titel: "Alltagssätze"
+    titel_i18n: {de: "Alltagssätze", en: "Everyday phrases", fr: "Phrases du quotidien", it: "Frasi di tutti i giorni", es: "Frases del día a día", nl: "Zinnen voor elke dag", pl: "Zdania na co dzień", pt: "Frases do dia a dia", sv: "Vardagsfraser"}
     icon: "💬"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {de: "Wie viel kostet das?", en: "How much is it?", auch: ["How much does it cost?", "How much is this?", "How much is that?"]}
-      - {de: "Ich hätte gern einen Tee.", en: "I'd like a tea, please.", auch: ["I would like a tea, please.", "I'd like a tea.", "I would like a tea.", "I'd like a cup of tea, please."]}
-      - {de: "Wo ist der Bahnhof?", en: "Where is the station?", auch: ["Where's the station?", "Where is the train station?", "Where's the train station?"]}
-      - {de: "Mir ist kalt.", en: "I'm cold.", auch: ["I am cold."]}
-      - {de: "Ich habe Kopfschmerzen.", en: "I've got a headache.", auch: ["I have a headache.", "I have got a headache."]}
-      - {de: "Was machst du gern?", en: "What do you like doing?", auch: ["What do you like to do?"]}
-      - {de: "Darf ich das Fenster öffnen?", en: "Can I open the window?", auch: ["May I open the window?", "Could I open the window?"]}
-      - {de: "Was hast du am Wochenende gemacht?", en: "What did you do at the weekend?", auch: ["What did you do on the weekend?", "What did you do last weekend?"]}
-      - {de: "Wie wird das Wetter morgen?", en: "What will the weather be like tomorrow?", auch: ["What's the weather going to be like tomorrow?", "What is the weather going to be like tomorrow?"]}
-      - {de: "Kein Problem.", en: "No problem.", auch: ["No worries."]}
+      - {de: "Wie viel kostet das?", en: "How much is it?", fr: "Combien ça coûte ?", it: "Quanto costa?", es: "¿Cuánto cuesta?", nl: "Hoeveel kost het?", pl: "Ile to kosztuje?", pt: "Quanto custa?", sv: "Vad kostar det?", auch: ["How much does it cost?", "How much is this?", "How much is that?"]}
+      - {de: "Ich hätte gern einen Tee.", en: "I'd like a tea, please.", fr: "Je voudrais un thé.", it: "Vorrei un tè.", es: "Quería un té, por favor.", nl: "Ik wil graag een thee.", pl: "Poproszę herbatę.", pt: "Eu queria um chá.", sv: "Jag skulle vilja ha ett te.", auch: ["I would like a tea, please.", "I'd like a tea.", "I would like a tea.", "I'd like a cup of tea, please."]}
+      - {de: "Wo ist der Bahnhof?", en: "Where is the station?", fr: "Où est la gare ?", it: "Dov'è la stazione?", es: "¿Dónde está la estación?", nl: "Waar is het station?", pl: "Gdzie jest dworzec?", pt: "Onde fica a estação?", sv: "Var ligger stationen?", auch: ["Where's the station?", "Where is the train station?", "Where's the train station?"]}
+      - {de: "Mir ist kalt.", en: "I'm cold.", fr: "J'ai froid.", it: "Ho freddo.", es: "Tengo frío.", nl: "Ik heb het koud.", pl: "Zimno mi.", pt: "Estou com frio.", sv: "Jag fryser.", auch: ["I am cold."]}
+      - {de: "Ich habe Kopfschmerzen.", en: "I've got a headache.", fr: "J'ai mal à la tête.", it: "Ho mal di testa.", es: "Me duele la cabeza.", nl: "Ik heb hoofdpijn.", pl: "Boli mnie głowa.", pt: "Estou com dor de cabeça.", sv: "Jag har ont i huvudet.", auch: ["I have a headache.", "I have got a headache."]}
+      - {de: "Was machst du gern?", en: "What do you like doing?", fr: "Qu'est-ce que tu aimes faire ?", it: "Cosa ti piace fare?", es: "¿Qué te gusta hacer?", nl: "Wat doe je graag?", pl: "Co lubisz robić?", pt: "O que você gosta de fazer?", sv: "Vad tycker du om att göra?", auch: ["What do you like to do?"]}
+      - {de: "Darf ich das Fenster öffnen?", en: "Can I open the window?", fr: "Je peux ouvrir la fenêtre ?", it: "Posso aprire la finestra?", es: "¿Puedo abrir la ventana?", nl: "Mag ik het raam opendoen?", pl: "Mogę otworzyć okno?", pt: "Posso abrir a janela?", sv: "Får jag öppna fönstret?", auch: ["May I open the window?", "Could I open the window?"]}
+      - {de: "Was hast du am Wochenende gemacht?", en: "What did you do at the weekend?", fr: "Qu'est-ce que tu as fait ce week-end ?", it: "Cosa hai fatto nel fine settimana?", es: "¿Qué hiciste el fin de semana?", nl: "Wat heb je in het weekend gedaan?", pl: "Co robiłeś w weekend?", pt: "O que você fez no fim de semana?", sv: "Vad gjorde du i helgen?", auch: ["What did you do on the weekend?", "What did you do last weekend?"]}
+      - {de: "Wie wird das Wetter morgen?", en: "What will the weather be like tomorrow?", fr: "Quel temps fera-t-il demain ?", it: "Che tempo farà domani?", es: "¿Qué tiempo hará mañana?", nl: "Wat voor weer wordt het morgen?", pl: "Jaka będzie jutro pogoda?", pt: "Como vai estar o tempo amanhã?", sv: "Hur blir vädret i morgon?", auch: ["What's the weather going to be like tomorrow?", "What is the weather going to be like tomorrow?"]}
+      - {de: "Kein Problem.", en: "No problem.", fr: "Pas de problème.", it: "Nessun problema.", es: "No hay problema.", nl: "Geen probleem.", pl: "Nie ma problemu.", pt: "Sem problema.", sv: "Inga problem.", auch: ["No worries."]}

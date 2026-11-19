@@ -1,10 +1,12 @@
 # Deutsch B1 – language course (own content, Family Quest, CC0)
 id: sprache-de-b1
 titel: "German B1 – Intermediate"
+titel_i18n: {de: "Deutsch B1 – Fortgeschritten", en: "German B1 – Intermediate", fr: "Allemand B1 – Avancé", it: "Tedesco B1 – Avanzato", es: "Alemán B1 – Avanzado", nl: "Duits B1 – Gevorderd", pl: "Niemiecki B1 – Średnio zaawansowany", pt: "Alemão B1 – Avançado", sv: "Tyska B1 – Fortsättning"}
 fach: deutsch
 stufe: "B1"
 sprache: de
 quellsprache: en
+quellsprachen: [fr, it, es, nl, pl, pt, sv]
 version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇩🇪"
@@ -24,144 +26,153 @@ selbst: true
 einheiten:
   - id: work-school
     titel: Work and school
+    titel_i18n: {de: "Arbeit und Schule", en: "Work and school", fr: "Travail et école", it: "Lavoro e scuola", es: "Trabajo y escuela", nl: "Werk en school", pl: "Praca i szkoła", pt: "Trabalho e escola", sv: "Arbete och skola"}
     icon: "💼"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: the job application, de: die Bewerbung, emoji: "📄"}
-      - {en: the colleague (female), de: die Kollegin}
-      - {en: the colleague (male), de: der Kollege}
-      - {en: the boss (male), de: der Chef, emoji: "👔"}
-      - {en: the meeting, de: die Sitzung, auch: [das Meeting, die Besprechung]}
-      - {en: the apprenticeship, de: die Lehre, auch: [die Ausbildung]}
-      - {en: the exam, de: die Prüfung, emoji: "📝"}
-      - {en: the grade / the mark, de: die Note}
-      - {en: the salary, de: der Lohn, auch: [das Gehalt], emoji: "💰"}
-      - {en: to apply (for a job), de: sich bewerben}
-      - {en: to earn, de: verdienen}
-      - {en: experienced, de: erfahren}
+      - {en: "the job application", de: "die Bewerbung", fr: "la candidature", it: "la candidatura", es: "la solicitud de empleo", nl: "de sollicitatie", pl: "podanie o pracę", pt: "a candidatura", sv: "jobbansökan", emoji: "📄"}
+      - {en: "the colleague (female)", de: "die Kollegin", fr: "la collègue", it: "la collega", es: "la compañera de trabajo", nl: "de collega (vrouw)", pl: "koleżanka z pracy", pt: "a colega (mulher)", sv: "kollegan (kvinna)"}
+      - {en: "the colleague (male)", de: "der Kollege", fr: "le collègue", it: "il collega", es: "el compañero de trabajo", nl: "de collega (man)", pl: "kolega z pracy", pt: "o colega (homem)", sv: "kollegan (man)"}
+      - {en: "the boss (male)", de: "der Chef", fr: "le chef", it: "il capo", es: "el jefe", nl: "de baas (man)", pl: "szef", pt: "o chefe", sv: "chefen (man)", emoji: "👔"}
+      - {en: "the meeting", de: "die Sitzung", fr: "la réunion", it: "la riunione", es: "la reunión", nl: "de vergadering", pl: "zebranie", pt: "a reunião", sv: "mötet", auch: ["das Meeting", "die Besprechung"]}
+      - {en: "the apprenticeship", de: "die Lehre", fr: "l'apprentissage", it: "l'apprendistato", es: "el aprendizaje (formación profesional)", nl: "de leerlingplaats", pl: "praktyka zawodowa", pt: "o estágio profissional", sv: "lärlingsutbildningen", auch: ["die Ausbildung"]}
+      - {en: "the exam", de: "die Prüfung", fr: "l'examen", it: "l'esame", es: "el examen", nl: "het examen", pl: "egzamin", pt: "a prova", sv: "provet", emoji: "📝"}
+      - {en: "the grade / the mark", de: "die Note", fr: "la note", it: "il voto", es: "la nota", nl: "het cijfer", pl: "ocena", pt: "a nota", sv: "betyget"}
+      - {en: "the salary", de: "der Lohn", fr: "le salaire", it: "lo stipendio", es: "el sueldo", nl: "het salaris", pl: "pensja", pt: "o salário", sv: "lönen", auch: ["das Gehalt"], emoji: "💰"}
+      - {en: "to apply (for a job)", de: "sich bewerben", fr: "postuler (à un emploi)", it: "candidarsi (per un lavoro)", es: "solicitar (un empleo)", nl: "solliciteren", pl: "ubiegać się (o pracę)", pt: "candidatar-se (a uma vaga)", sv: "att söka (ett jobb)"}
+      - {en: "to earn", de: "verdienen", fr: "gagner (de l'argent)", it: "guadagnare", es: "ganar (dinero)", nl: "verdienen", pl: "zarabiać", pt: "ganhar (dinheiro)", sv: "att tjäna"}
+      - {en: "experienced", de: "erfahren", fr: "expérimenté", it: "esperto", es: "con experiencia", nl: "ervaren", pl: "doświadczony", pt: "experiente", sv: "erfaren"}
   - id: opinions
     titel: Giving your opinion
+    titel_i18n: {de: "Seine Meinung sagen", en: "Giving your opinion", fr: "Donner son avis", it: "Dire la propria opinione", es: "Dar tu opinión", nl: "Je mening geven", pl: "Wyrażanie opinii", pt: "Dar a sua opinião", sv: "Säga sin åsikt"}
     icon: "🗣️"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {en: "In my opinion …", de: "Meiner Meinung nach …"}
-      - {en: "I think that's a good idea.", de: Ich finde das eine gute Idee.}
-      - {en: I agree with you., de: Ich bin deiner Meinung.}
-      - {en: "I don't agree.", de: Da bin ich anderer Meinung.}
-      - {en: "That's true.", de: Das stimmt.}
-      - {en: "On the one hand … on the other hand …", de: "Einerseits … andererseits …"}
-      - {en: "I'm not sure.", de: Ich bin mir nicht sicher.}
-      - {en: "What do you think?", de: "Was meinst du?"}
-      - {en: That depends., de: Das kommt darauf an.}
-      - {en: "I'm convinced that …", de: "Ich bin überzeugt, dass …"}
+      - {en: "In my opinion …", de: "Meiner Meinung nach …", fr: "À mon avis …", it: "Secondo me …", es: "En mi opinión …", nl: "Volgens mij …", pl: "Moim zdaniem …", pt: "Na minha opinião …", sv: "Enligt min åsikt …"}
+      - {en: "I think that's a good idea.", de: "Ich finde das eine gute Idee.", fr: "Je trouve que c'est une bonne idée.", it: "Penso che sia una buona idea.", es: "Creo que es una buena idea.", nl: "Ik vind dat een goed idee.", pl: "Myślę, że to dobry pomysł.", pt: "Acho que é uma boa ideia.", sv: "Jag tycker att det är en bra idé."}
+      - {en: "I agree with you.", de: "Ich bin deiner Meinung.", fr: "Je suis d'accord avec toi.", it: "Sono d'accordo con te.", es: "Estoy de acuerdo contigo.", nl: "Ik ben het met je eens.", pl: "Zgadzam się z tobą.", pt: "Concordo com você.", sv: "Jag håller med dig."}
+      - {en: "I don't agree.", de: "Da bin ich anderer Meinung.", fr: "Je ne suis pas d'accord.", it: "Non sono d'accordo.", es: "No estoy de acuerdo.", nl: "Ik ben het er niet mee eens.", pl: "Nie zgadzam się.", pt: "Eu não concordo.", sv: "Jag håller inte med."}
+      - {en: "That's true.", de: "Das stimmt.", fr: "C'est vrai.", it: "È vero.", es: "Es verdad.", nl: "Dat klopt.", pl: "To prawda.", pt: "É verdade.", sv: "Det stämmer."}
+      - {en: "On the one hand … on the other hand …", de: "Einerseits … andererseits …", fr: "D'un côté … de l'autre …", it: "Da un lato … dall'altro …", es: "Por un lado … por otro …", nl: "Aan de ene kant … aan de andere kant …", pl: "Z jednej strony … z drugiej strony …", pt: "Por um lado … por outro …", sv: "Å ena sidan … å andra sidan …"}
+      - {en: "I'm not sure.", de: "Ich bin mir nicht sicher.", fr: "Je ne suis pas sûr.", it: "Non sono sicuro.", es: "No estoy seguro.", nl: "Ik weet het niet zeker.", pl: "Nie jestem pewien.", pt: "Não tenho certeza.", sv: "Jag är inte säker."}
+      - {en: "What do you think?", de: "Was meinst du?", fr: "Qu'est-ce que tu en penses ?", it: "Cosa ne pensi?", es: "¿Qué opinas?", nl: "Wat vind jij?", pl: "Co myślisz?", pt: "O que você acha?", sv: "Vad tycker du?"}
+      - {en: "That depends.", de: "Das kommt darauf an.", fr: "Ça dépend.", it: "Dipende.", es: "Depende.", nl: "Dat hangt ervan af.", pl: "To zależy.", pt: "Depende.", sv: "Det beror på."}
+      - {en: "I'm convinced that …", de: "Ich bin überzeugt, dass …", fr: "Je suis convaincu que …", it: "Sono convinto che …", es: "Estoy convencido de que …", nl: "Ik ben ervan overtuigd dat …", pl: "Jestem przekonany, że …", pt: "Estou convencido de que …", sv: "Jag är övertygad om att …"}
   - id: environment
     titel: Environment and nature
+    titel_i18n: {de: "Umwelt und Natur", en: "Environment and nature", fr: "L'environnement et la nature", it: "Ambiente e natura", es: "El medio ambiente y la naturaleza", nl: "Milieu en natuur", pl: "Środowisko i przyroda", pt: "O meio ambiente e a natureza", sv: "Miljö och natur"}
     icon: "🌍"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: the environment, de: die Umwelt, emoji: "🌍"}
-      - {en: the climate, de: das Klima}
-      - {en: the waste / the rubbish, de: der Abfall, auch: [der Müll], emoji: "🗑️"}
-      - {en: the energy, de: die Energie, emoji: "⚡"}
-      - {en: the forest, de: der Wald, emoji: "🌲"}
-      - {en: the air, de: die Luft}
-      - {en: the pollution, de: die Verschmutzung, emoji: "🏭"}
-      - {en: to recycle, de: recyceln, emoji: "♻️"}
-      - {en: to protect, de: schützen}
-      - {en: to save (energy), de: sparen}
-      - {en: sustainable, de: nachhaltig}
-      - {en: renewable, de: erneuerbar}
+      - {en: "the environment", de: "die Umwelt", fr: "l'environnement", it: "l'ambiente", es: "el medio ambiente", nl: "het milieu", pl: "środowisko", pt: "o meio ambiente", sv: "miljön", emoji: "🌍"}
+      - {en: "the climate", de: "das Klima", fr: "le climat", it: "il clima", es: "el clima", nl: "het klimaat", pl: "klimat", pt: "o clima", sv: "klimatet"}
+      - {en: "the waste / the rubbish", de: "der Abfall", fr: "les déchets", it: "i rifiuti", es: "la basura", nl: "het afval", pl: "śmieci", pt: "o lixo", sv: "soporna", auch: ["der Müll"], emoji: "🗑️"}
+      - {en: "the energy", de: "die Energie", fr: "l'énergie", it: "l'energia", es: "la energía", nl: "de energie", pl: "energia", pt: "a energia", sv: "energin", emoji: "⚡"}
+      - {en: "the forest", de: "der Wald", fr: "la forêt", it: "il bosco", es: "el bosque", nl: "het bos", pl: "las", pt: "a floresta", sv: "skogen", emoji: "🌲"}
+      - {en: "the air", de: "die Luft", fr: "l'air", it: "l'aria", es: "el aire", nl: "de lucht", pl: "powietrze", pt: "o ar", sv: "luften"}
+      - {en: "the pollution", de: "die Verschmutzung", fr: "la pollution", it: "l'inquinamento", es: "la contaminación", nl: "de vervuiling", pl: "zanieczyszczenie", pt: "a poluição", sv: "föroreningarna", emoji: "🏭"}
+      - {en: "to recycle", de: "recyceln", fr: "recycler", it: "riciclare", es: "reciclar", nl: "recyclen", pl: "recyklingować", pt: "reciclar", sv: "att återvinna", emoji: "♻️"}
+      - {en: "to protect", de: "schützen", fr: "protéger", it: "proteggere", es: "proteger", nl: "beschermen", pl: "chronić", pt: "proteger", sv: "att skydda"}
+      - {en: "to save (energy)", de: "sparen", fr: "économiser (de l'énergie)", it: "risparmiare (energia)", es: "ahorrar (energía)", nl: "besparen (energie)", pl: "oszczędzać (energię)", pt: "economizar (energia)", sv: "att spara (energi)"}
+      - {en: "sustainable", de: "nachhaltig", fr: "durable", it: "sostenibile", es: "sostenible", nl: "duurzaam", pl: "zrównoważony", pt: "sustentável", sv: "hållbar"}
+      - {en: "renewable", de: "erneuerbar", fr: "renouvelable", it: "rinnovabile", es: "renovable", nl: "hernieuwbaar", pl: "odnawialny", pt: "renovável", sv: "förnybar"}
   - id: media
     titel: Media and technology
+    titel_i18n: {de: "Medien und Technik", en: "Media and technology", fr: "Médias et technologie", it: "Media e tecnologia", es: "Medios y tecnología", nl: "Media en techniek", pl: "Media i technologia", pt: "Mídia e tecnologia", sv: "Medier och teknik"}
     icon: "📱"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: the newspaper, de: die Zeitung, emoji: "📰"}
-      - {en: the news, de: die Nachrichten}
-      - {en: the mobile phone, de: das Handy, emoji: "📱"}
-      - {en: the screen, de: der Bildschirm, emoji: "🖥️"}
-      - {en: the message, de: die Nachricht, emoji: "💬"}
-      - {en: the advertisement, de: die Werbung}
-      - {en: the password, de: das Passwort, emoji: "🔑"}
-      - {en: the article, de: der Artikel}
-      - {en: to download, de: herunterladen, emoji: "⬇️"}
-      - {en: to share, de: teilen}
-      - {en: to search for, de: suchen}
-      - {en: online, de: online}
+      - {en: "the newspaper", de: "die Zeitung", fr: "le journal", it: "il giornale", es: "el periódico", nl: "de krant", pl: "gazeta", pt: "o jornal", sv: "tidningen", emoji: "📰"}
+      - {en: "the news", de: "die Nachrichten", fr: "les informations", it: "il telegiornale", es: "las noticias", nl: "het nieuws", pl: "wiadomości", pt: "as notícias", sv: "nyheterna"}
+      - {en: "the mobile phone", de: "das Handy", fr: "le portable", it: "il cellulare", es: "el móvil", nl: "de mobiele telefoon", pl: "komórka", pt: "o celular", sv: "mobilen", emoji: "📱"}
+      - {en: "the screen", de: "der Bildschirm", fr: "l'écran", it: "lo schermo", es: "la pantalla", nl: "het scherm", pl: "ekran", pt: "a tela", sv: "skärmen", emoji: "🖥️"}
+      - {en: "the message", de: "die Nachricht", fr: "le message", it: "il messaggio", es: "el mensaje", nl: "het bericht", pl: "wiadomość (SMS)", pt: "a mensagem", sv: "meddelandet", emoji: "💬"}
+      - {en: "the advertisement", de: "die Werbung", fr: "la publicité", it: "la pubblicità", es: "el anuncio", nl: "de advertentie", pl: "reklama", pt: "o anúncio", sv: "reklamen"}
+      - {en: "the password", de: "das Passwort", fr: "le mot de passe", it: "la password", es: "la contraseña", nl: "het wachtwoord", pl: "hasło", pt: "a senha", sv: "lösenordet", emoji: "🔑"}
+      - {en: "the article", de: "der Artikel", fr: "l'article", it: "l'articolo", es: "el artículo", nl: "het artikel", pl: "artykuł", pt: "o artigo", sv: "artikeln"}
+      - {en: "to download", de: "herunterladen", fr: "télécharger", it: "scaricare", es: "descargar", nl: "downloaden", pl: "pobierać", pt: "baixar", sv: "att ladda ner", emoji: "⬇️"}
+      - {en: "to share", de: "teilen", fr: "partager", it: "condividere", es: "compartir", nl: "delen", pl: "udostępniać", pt: "compartilhar", sv: "att dela"}
+      - {en: "to search for", de: "suchen", fr: "chercher", it: "cercare", es: "buscar", nl: "zoeken", pl: "szukać", pt: "procurar", sv: "att söka efter"}
+      - {en: "online", de: "online", fr: "en ligne", it: "online", es: "en línea", nl: "online", pl: "online", pt: "on-line", sv: "på nätet"}
   - id: feelings
     titel: Feelings
+    titel_i18n: {de: "Gefühle", en: "Feelings", fr: "Les sentiments", it: "I sentimenti", es: "Los sentimientos", nl: "Gevoelens", pl: "Uczucia", pt: "Os sentimentos", sv: "Känslor"}
     icon: "😊"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: happy, de: glücklich, emoji: "😊"}
-      - {en: sad, de: traurig, emoji: "😢"}
-      - {en: angry, de: wütend, emoji: "😠"}
-      - {en: nervous, de: nervös, emoji: "😬"}
-      - {en: proud, de: stolz}
-      - {en: disappointed, de: enttäuscht, emoji: "😞"}
-      - {en: surprised, de: überrascht, emoji: "😮"}
-      - {en: bored, de: gelangweilt, emoji: "🥱"}
-      - {en: the fear, de: die Angst, emoji: "😨"}
-      - {en: to look forward to, de: sich freuen auf}
-      - {en: to be annoyed about, de: sich ärgern über}
-      - {en: "I'm worried.", de: Ich mache mir Sorgen.}
+      - {en: "happy", de: "glücklich", fr: "heureux", it: "felice", es: "feliz", nl: "gelukkig", pl: "szczęśliwy", pt: "feliz", sv: "lycklig", emoji: "😊"}
+      - {en: "sad", de: "traurig", fr: "triste", it: "triste", es: "triste", nl: "verdrietig", pl: "smutny", pt: "triste", sv: "ledsen", emoji: "😢"}
+      - {en: "angry", de: "wütend", fr: "en colère", it: "arrabbiato", es: "enfadado", nl: "boos", pl: "wściekły", pt: "bravo", sv: "arg", emoji: "😠"}
+      - {en: "nervous", de: "nervös", fr: "nerveux", it: "nervoso", es: "nervioso", nl: "zenuwachtig", pl: "zdenerwowany", pt: "nervoso", sv: "nervös", emoji: "😬"}
+      - {en: "proud", de: "stolz", fr: "fier", it: "orgoglioso", es: "orgulloso", nl: "trots", pl: "dumny", pt: "orgulhoso", sv: "stolt"}
+      - {en: "disappointed", de: "enttäuscht", fr: "déçu", it: "deluso", es: "decepcionado", nl: "teleurgesteld", pl: "rozczarowany", pt: "decepcionado", sv: "besviken", emoji: "😞"}
+      - {en: "surprised", de: "überrascht", fr: "surpris", it: "sorpreso", es: "sorprendido", nl: "verrast", pl: "zaskoczony", pt: "surpreso", sv: "överraskad", emoji: "😮"}
+      - {en: "bored", de: "gelangweilt", fr: "qui s'ennuie", it: "annoiato", es: "aburrido", nl: "verveeld", pl: "znudzony", pt: "entediado", sv: "uttråkad", emoji: "🥱"}
+      - {en: "the fear", de: "die Angst", fr: "la peur", it: "la paura", es: "el miedo", nl: "de angst", pl: "strach", pt: "o medo", sv: "rädslan", emoji: "😨"}
+      - {en: "to look forward to", de: "sich freuen auf", fr: "avoir hâte de", it: "non vedere l'ora di", es: "tener ganas de", nl: "uitkijken naar", pl: "cieszyć się na", pt: "estar ansioso por", sv: "att se fram emot"}
+      - {en: "to be annoyed about", de: "sich ärgern über", fr: "être agacé par", it: "arrabbiarsi per", es: "enfadarse por", nl: "zich ergeren aan", pl: "złościć się na", pt: "ficar irritado com", sv: "att irritera sig på"}
+      - {en: "I'm worried.", de: "Ich mache mir Sorgen.", fr: "Je m'inquiète.", it: "Sono preoccupato.", es: "Estoy preocupado.", nl: "Ik maak me zorgen.", pl: "Martwię się.", pt: "Estou preocupado.", sv: "Jag är orolig."}
   - id: idioms
     titel: Idioms and sayings
+    titel_i18n: {de: "Redewendungen", en: "Idioms and sayings", fr: "Expressions et dictons", it: "Modi di dire e proverbi", es: "Expresiones y refranes", nl: "Uitdrukkingen en gezegden", pl: "Idiomy i powiedzenia", pt: "Expressões e ditados", sv: "Uttryck och ordspråk"}
     icon: "🐷"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {en: to be lucky (lit. to have a pig), de: Schwein haben, emoji: "🐷"}
-      - {en: I keep my fingers crossed for you., de: Ich drücke dir die Daumen., emoji: "🤞"}
-      - {en: "That's not my cup of tea.", de: Das ist nicht mein Ding.}
-      - {en: "That's all Greek to me.", de: Ich verstehe nur Bahnhof.}
-      - {en: to be very tired (lit. to be dead tired), de: todmüde sein}
-      - {en: "There's a catch somewhere.", de: Da ist ein Haken dran.}
-      - {en: "Break a leg! / Good luck!", de: "Hals- und Beinbruch!"}
-      - {en: to be in a bad mood, de: schlechte Laune haben}
-      - {en: "That's the last straw!", de: "Das ist der Gipfel!"}
-      - {en: to kill two birds with one stone, de: zwei Fliegen mit einer Klappe schlagen}
+      - {en: "to be lucky (lit. to have a pig)", de: "Schwein haben", fr: "avoir de la chance (mot à mot : avoir un cochon)", it: "avere fortuna (letteralmente: avere un maiale)", es: "tener suerte (literalmente: tener un cerdo)", nl: "geluk hebben (letterlijk: een varken hebben)", pl: "mieć szczęście (dosłownie: mieć świnię)", pt: "ter sorte (literalmente: ter um porco)", sv: "ha tur (ordagrant: ha en gris)", emoji: "🐷"}
+      - {en: "I keep my fingers crossed for you.", de: "Ich drücke dir die Daumen.", fr: "Je croise les doigts pour toi.", it: "Incrocio le dita per te.", es: "Cruzo los dedos por ti.", nl: "Ik duim voor je.", pl: "Trzymam za ciebie kciuki.", pt: "Estou torcendo por você.", sv: "Jag håller tummarna för dig.", emoji: "🤞"}
+      - {en: "That's not my cup of tea.", de: "Das ist nicht mein Ding.", fr: "Ce n'est pas mon truc.", it: "Non fa per me.", es: "No es lo mío.", nl: "Dat is niks voor mij.", pl: "To nie moja bajka.", pt: "Não é a minha praia.", sv: "Det är inte min grej."}
+      - {en: "That's all Greek to me.", de: "Ich verstehe nur Bahnhof.", fr: "C'est du chinois pour moi.", it: "Per me è arabo.", es: "Me suena a chino.", nl: "Ik snap er niks van.", pl: "Nic z tego nie rozumiem.", pt: "Isso é grego para mim.", sv: "Det är rena grekiskan för mig."}
+      - {en: "to be very tired (lit. to be dead tired)", de: "todmüde sein", fr: "être mort de fatigue", it: "essere stanco morto", es: "estar muerto de cansancio", nl: "doodmoe zijn", pl: "być śmiertelnie zmęczonym", pt: "estar morto de cansaço", sv: "att vara dödstrött"}
+      - {en: "There's a catch somewhere.", de: "Da ist ein Haken dran.", fr: "Il y a un piège quelque part.", it: "C'è un trucco da qualche parte.", es: "Aquí hay gato encerrado.", nl: "Er zit ergens een addertje onder het gras.", pl: "Jest w tym jakiś haczyk.", pt: "Tem algum truque nisso.", sv: "Det finns en hake någonstans."}
+      - {en: "Break a leg! / Good luck!", de: "Hals- und Beinbruch!", fr: "Bonne chance !", it: "In bocca al lupo!", es: "¡Mucha suerte!", nl: "Succes!", pl: "Połamania nóg!", pt: "Boa sorte!", sv: "Lycka till!"}
+      - {en: "to be in a bad mood", de: "schlechte Laune haben", fr: "être de mauvaise humeur", it: "essere di cattivo umore", es: "estar de mal humor", nl: "een slecht humeur hebben", pl: "mieć zły humor", pt: "estar de mau humor", sv: "att vara på dåligt humör"}
+      - {en: "That's the last straw!", de: "Das ist der Gipfel!", fr: "C'est la goutte d'eau qui fait déborder le vase !", it: "È la goccia che fa traboccare il vaso!", es: "¡Es la gota que colma el vaso!", nl: "Dat is de druppel!", pl: "To już szczyt wszystkiego!", pt: "É a gota d'água!", sv: "Det är droppen!"}
+      - {en: "to kill two birds with one stone", de: "zwei Fliegen mit einer Klappe schlagen", fr: "faire d'une pierre deux coups", it: "prendere due piccioni con una fava", es: "matar dos pájaros de un tiro", nl: "twee vliegen in één klap slaan", pl: "upiec dwie pieczenie na jednym ogniu", pt: "matar dois coelhos com uma cajadada só", sv: "att slå två flugor i en smäll"}
   - id: praeteritum
     titel: "Präteritum – telling stories"
+    titel_i18n: {de: "Präteritum – Geschichten erzählen", en: "Präteritum – telling stories", fr: "Präteritum – raconter des histoires", it: "Präteritum – raccontare storie", es: "Präteritum – contar historias", nl: "Präteritum – verhalen vertellen", pl: "Präteritum – opowiadanie historii", pt: "Präteritum – contar histórias", sv: "Präteritum – berätta historier"}
     icon: "✍️"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "Präteritum – sein (ich)", antwort: war, satz: "Gestern ___ ich sehr müde.", optionen: [war, waren, bin, wäre]}
-      - {frage: "Präteritum – haben (wir)", antwort: hatten, satz: "Früher ___ wir einen Hund.", optionen: [hatte, hatten, haben, hätten]}
-      - {frage: "Präteritum – gehen (er)", antwort: ging, satz: "Er ___ jeden Tag zu Fuss zur Arbeit.", optionen: [ging, gang, gehte, geht]}
-      - {frage: "Präteritum – kommen (sie, they)", antwort: kamen, satz: "Die Gäste ___ erst um zehn Uhr.", optionen: [kamen, kommten, kam, kommen]}
-      - {frage: "Präteritum – sagen (sie, she)", antwort: sagte, satz: "Sie ___ kein Wort.", optionen: [sagte, sag, sagten, sug]}
-      - {frage: "Präteritum – können (ich)", antwort: konnte, satz: "Als Kind ___ ich nicht schwimmen.", optionen: [konnte, kann, könnte, konnten]}
-      - {frage: "Präteritum – fahren (wir)", antwort: fuhren, satz: "Im Sommer ___ wir ans Meer.", optionen: [fuhren, fahrten, fuhr, fahren]}
-      - {frage: "Präteritum – finden (er)", antwort: fand, satz: "Er ___ den Schlüssel unter dem Sofa.", optionen: [fand, findete, fund, fanden]}
-      - {frage: "Präteritum – müssen (du)", antwort: musstest, satz: "Warum ___ du so früh gehen?", optionen: [musstest, musste, müsstest, musst]}
-      - {frage: "Präteritum – wohnen (ich)", antwort: wohnte, satz: "Damals ___ ich in Bern.", optionen: [wohnte, wohne, wohnten, wahn]}
+      - {frage: "Präteritum – sein (ich)", antwort: "war", satz: "Gestern ___ ich sehr müde.", optionen: ["war", "waren", "bin", "wäre"]}
+      - {frage: "Präteritum – haben (wir)", antwort: "hatten", satz: "Früher ___ wir einen Hund.", optionen: ["hatte", "hatten", "haben", "hätten"]}
+      - {frage: "Präteritum – gehen (er)", antwort: "ging", satz: "Er ___ jeden Tag zu Fuss zur Arbeit.", optionen: ["ging", "gang", "gehte", "geht"]}
+      - {frage: "Präteritum – kommen (sie, they)", antwort: "kamen", satz: "Die Gäste ___ erst um zehn Uhr.", optionen: ["kamen", "kommten", "kam", "kommen"], frage_i18n: {"fr": "Präteritum – kommen (sie = ils)", "it": "Präteritum – kommen (sie = loro)", "es": "Präteritum – kommen (sie = ellos)", "nl": "Präteritum – kommen (sie = zij, meervoud)", "pl": "Präteritum – kommen (sie = oni)", "pt": "Präteritum – kommen (sie = eles)", "sv": "Präteritum – kommen (sie = de)"}}
+      - {frage: "Präteritum – sagen (sie, she)", antwort: "sagte", satz: "Sie ___ kein Wort.", optionen: ["sagte", "sag", "sagten", "sug"], frage_i18n: {"fr": "Präteritum – sagen (sie = elle)", "it": "Präteritum – sagen (sie = lei)", "es": "Präteritum – sagen (sie = ella)", "nl": "Präteritum – sagen (sie = zij, enkelvoud)", "pl": "Präteritum – sagen (sie = ona)", "pt": "Präteritum – sagen (sie = ela)", "sv": "Präteritum – sagen (sie = hon)"}}
+      - {frage: "Präteritum – können (ich)", antwort: "konnte", satz: "Als Kind ___ ich nicht schwimmen.", optionen: ["konnte", "kann", "könnte", "konnten"]}
+      - {frage: "Präteritum – fahren (wir)", antwort: "fuhren", satz: "Im Sommer ___ wir ans Meer.", optionen: ["fuhren", "fahrten", "fuhr", "fahren"]}
+      - {frage: "Präteritum – finden (er)", antwort: "fand", satz: "Er ___ den Schlüssel unter dem Sofa.", optionen: ["fand", "findete", "fund", "fanden"]}
+      - {frage: "Präteritum – müssen (du)", antwort: "musstest", satz: "Warum ___ du so früh gehen?", optionen: ["musstest", "musste", "müsstest", "musst"]}
+      - {frage: "Präteritum – wohnen (ich)", antwort: "wohnte", satz: "Damals ___ ich in Bern.", optionen: ["wohnte", "wohne", "wohnten", "wahn"]}
   - id: konjunktiv-2
     titel: "Konjunktiv II – würde, hätte, wäre"
+    titel_i18n: {de: "Konjunktiv II – würde, hätte, wäre", en: "Konjunktiv II – würde, hätte, wäre", fr: "Konjunktiv II – würde, hätte, wäre", it: "Konjunktiv II – würde, hätte, wäre", es: "Konjunktiv II – würde, hätte, wäre", nl: "Konjunktiv II – würde, hätte, wäre", pl: "Konjunktiv II – würde, hätte, wäre", pt: "Konjunktiv II – würde, hätte, wäre", sv: "Konjunktiv II – würde, hätte, wäre"}
     icon: "💭"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "wish – würde (ich)", antwort: würde, satz: "Ich ___ gern mehr reisen.", optionen: [würde, wurde, wird, werde]}
-      - {frage: "wish – hätte (ich)", antwort: hätte, satz: "Wenn ich Zeit ___, käme ich mit.", optionen: [hätte, hatte, habe, wäre]}
-      - {frage: "wish – wäre (es)", antwort: wäre, satz: "Es ___ schön, wenn du kommst.", optionen: [wäre, war, ist, hätte]}
-      - {frage: "polite – könnten (Sie)", antwort: Könnten, satz: "___ Sie mir bitte helfen?", optionen: [Könnten, Konnten, Können, Kannst]}
-      - {frage: "advice – würde (ich, an deiner Stelle)", antwort: würde, satz: "An deiner Stelle ___ ich zum Arzt gehen.", optionen: [würde, wurde, werde, wäre]}
-      - {frage: "wish – wäre (ich)", antwort: wäre, satz: "Ich ___ jetzt lieber am Strand.", optionen: [wäre, war, bin, hätte]}
-      - {frage: "polite – hätte (ich)", antwort: hätte, satz: "Ich ___ gern ein Glas Wasser.", optionen: [hätte, hatte, habe, würde]}
-      - {frage: "wish – würdest (du)", antwort: würdest, satz: "Was ___ du mit einer Million machen?", optionen: [würdest, wurdest, wirst, würde]}
-      - {frage: "advice – solltest (du)", antwort: solltest, satz: "Du ___ mehr schlafen.", optionen: [solltest, sollst, solltet, sollte]}
-      - {frage: "wish – hätten (wir)", antwort: hätten, satz: "Wenn wir ein Auto ___, wäre alles einfacher.", optionen: [hätten, hatten, haben, wären]}
+      - {frage: "wish – würde (ich)", antwort: "würde", satz: "Ich ___ gern mehr reisen.", optionen: ["würde", "wurde", "wird", "werde"], frage_i18n: {"fr": "souhait – würde (ich)", "it": "desiderio – würde (ich)", "es": "deseo – würde (ich)", "nl": "wens – würde (ich)", "pl": "życzenie – würde (ich)", "pt": "desejo – würde (ich)", "sv": "önskan – würde (ich)"}}
+      - {frage: "wish – hätte (ich)", antwort: "hätte", satz: "Wenn ich Zeit ___, käme ich mit.", optionen: ["hätte", "hatte", "habe", "wäre"], frage_i18n: {"fr": "souhait – hätte (ich)", "it": "desiderio – hätte (ich)", "es": "deseo – hätte (ich)", "nl": "wens – hätte (ich)", "pl": "życzenie – hätte (ich)", "pt": "desejo – hätte (ich)", "sv": "önskan – hätte (ich)"}}
+      - {frage: "wish – wäre (es)", antwort: "wäre", satz: "Es ___ schön, wenn du kommst.", optionen: ["wäre", "war", "ist", "hätte"], frage_i18n: {"fr": "souhait – wäre (es)", "it": "desiderio – wäre (es)", "es": "deseo – wäre (es)", "nl": "wens – wäre (es)", "pl": "życzenie – wäre (es)", "pt": "desejo – wäre (es)", "sv": "önskan – wäre (es)"}}
+      - {frage: "polite – könnten (Sie)", antwort: "Könnten", satz: "___ Sie mir bitte helfen?", optionen: ["Könnten", "Konnten", "Können", "Kannst"], frage_i18n: {"fr": "poli – könnten (Sie)", "it": "cortese – könnten (Sie)", "es": "cortés – könnten (Sie)", "nl": "beleefd – könnten (Sie)", "pl": "grzecznie – könnten (Sie)", "pt": "educado – könnten (Sie)", "sv": "artigt – könnten (Sie)"}}
+      - {frage: "advice – würde (ich, an deiner Stelle)", antwort: "würde", satz: "An deiner Stelle ___ ich zum Arzt gehen.", optionen: ["würde", "wurde", "werde", "wäre"], frage_i18n: {"fr": "conseil – würde (ich, à ta place)", "it": "consiglio – würde (ich, al posto tuo)", "es": "consejo – würde (ich, en tu lugar)", "nl": "advies – würde (ich, in jouw plaats)", "pl": "rada – würde (ich, na twoim miejscu)", "pt": "conselho – würde (ich, no seu lugar)", "sv": "råd – würde (ich, i ditt ställe)"}}
+      - {frage: "wish – wäre (ich)", antwort: "wäre", satz: "Ich ___ jetzt lieber am Strand.", optionen: ["wäre", "war", "bin", "hätte"], frage_i18n: {"fr": "souhait – wäre (ich)", "it": "desiderio – wäre (ich)", "es": "deseo – wäre (ich)", "nl": "wens – wäre (ich)", "pl": "życzenie – wäre (ich)", "pt": "desejo – wäre (ich)", "sv": "önskan – wäre (ich)"}}
+      - {frage: "polite – hätte (ich)", antwort: "hätte", satz: "Ich ___ gern ein Glas Wasser.", optionen: ["hätte", "hatte", "habe", "würde"], frage_i18n: {"fr": "poli – hätte (ich)", "it": "cortese – hätte (ich)", "es": "cortés – hätte (ich)", "nl": "beleefd – hätte (ich)", "pl": "grzecznie – hätte (ich)", "pt": "educado – hätte (ich)", "sv": "artigt – hätte (ich)"}}
+      - {frage: "wish – würdest (du)", antwort: "würdest", satz: "Was ___ du mit einer Million machen?", optionen: ["würdest", "wurdest", "wirst", "würde"], frage_i18n: {"fr": "souhait – würdest (du)", "it": "desiderio – würdest (du)", "es": "deseo – würdest (du)", "nl": "wens – würdest (du)", "pl": "życzenie – würdest (du)", "pt": "desejo – würdest (du)", "sv": "önskan – würdest (du)"}}
+      - {frage: "advice – solltest (du)", antwort: "solltest", satz: "Du ___ mehr schlafen.", optionen: ["solltest", "sollst", "solltet", "sollte"], frage_i18n: {"fr": "conseil – solltest (du)", "it": "consiglio – solltest (du)", "es": "consejo – solltest (du)", "nl": "advies – solltest (du)", "pl": "rada – solltest (du)", "pt": "conselho – solltest (du)", "sv": "råd – solltest (du)"}}
+      - {frage: "wish – hätten (wir)", antwort: "hätten", satz: "Wenn wir ein Auto ___, wäre alles einfacher.", optionen: ["hätten", "hatten", "haben", "wären"], frage_i18n: {"fr": "souhait – hätten (wir)", "it": "desiderio – hätten (wir)", "es": "deseo – hätten (wir)", "nl": "wens – hätten (wir)", "pl": "życzenie – hätten (wir)", "pt": "desejo – hätten (wir)", "sv": "önskan – hätten (wir)"}}
   - id: weil-dass
     titel: "weil and dass – verb at the end"
+    titel_i18n: {de: "weil und dass – Verb am Ende", en: "weil and dass – verb at the end", fr: "weil et dass – le verbe à la fin", it: "weil e dass – il verbo alla fine", es: "weil y dass – el verbo al final", nl: "weil en dass – werkwoord achteraan", pl: "weil i dass – czasownik na końcu", pt: "weil e dass – o verbo no final", sv: "weil och dass – verbet sist"}
     icon: "🔗"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "weil – word order (bin)", antwort: krank bin, satz: "Ich bleibe zu Hause, weil ich ___.", optionen: [krank bin, bin krank, krank sein, bin ich krank]}
-      - {frage: "dass – word order (kommt)", antwort: morgen kommt, satz: "Ich glaube, dass sie ___.", optionen: [morgen kommt, kommt morgen, kommen morgen, morgen kommen]}
-      - {frage: "weil or dass? (reason)", antwort: weil, satz: "Er lernt viel, ___ er die Prüfung bestehen will.", optionen: [weil, dass, denn, aber]}
-      - {frage: "weil or dass? (I know …)", antwort: dass, satz: "Ich weiss, ___ du recht hast.", optionen: [weil, dass, wenn, ob]}
-      - {frage: "weil – word order (regnet)", antwort: es regnet, satz: "Wir gehen nicht raus, weil ___.", optionen: [es regnet, regnet es, es regnen, regnet]}
-      - {frage: "dass – word order (hat)", antwort: keine Zeit hat, satz: "Er sagt, dass er ___.", optionen: [keine Zeit hat, hat keine Zeit, keine Zeit haben, hat er keine Zeit]}
-      - {frage: "weil – modal verb at the end", antwort: arbeiten muss, satz: "Sie kommt nicht, weil sie ___.", optionen: [arbeiten muss, muss arbeiten, arbeiten müssen, muss sie arbeiten]}
-      - {frage: "denn or weil? (normal word order)", antwort: denn, satz: "Ich nehme einen Schirm, ___ es regnet bald.", optionen: [denn, weil, dass, ob]}
-      - {frage: "dass – Perfekt word order", antwort: gewonnen haben, satz: "Ich freue mich, dass wir ___.", optionen: [gewonnen haben, haben gewonnen, gewinnen haben, haben wir gewonnen]}
-      - {frage: "weil – separable verb", antwort: früh aufsteht, satz: "Er ist müde, weil er immer so ___.", optionen: [früh aufsteht, steht früh auf, früh steht auf, aufsteht früh]}
+      - {frage: "weil – word order (bin)", antwort: "krank bin", satz: "Ich bleibe zu Hause, weil ich ___.", optionen: ["krank bin", "bin krank", "krank sein", "bin ich krank"], frage_i18n: {"fr": "weil – ordre des mots (bin)", "it": "weil – ordine delle parole (bin)", "es": "weil – orden de las palabras (bin)", "nl": "weil – woordvolgorde (bin)", "pl": "weil – szyk wyrazów (bin)", "pt": "weil – ordem das palavras (bin)", "sv": "weil – ordföljd (bin)"}}
+      - {frage: "dass – word order (kommt)", antwort: "morgen kommt", satz: "Ich glaube, dass sie ___.", optionen: ["morgen kommt", "kommt morgen", "kommen morgen", "morgen kommen"], frage_i18n: {"fr": "dass – ordre des mots (kommt)", "it": "dass – ordine delle parole (kommt)", "es": "dass – orden de las palabras (kommt)", "nl": "dass – woordvolgorde (kommt)", "pl": "dass – szyk wyrazów (kommt)", "pt": "dass – ordem das palavras (kommt)", "sv": "dass – ordföljd (kommt)"}}
+      - {frage: "weil or dass? (reason)", antwort: "weil", satz: "Er lernt viel, ___ er die Prüfung bestehen will.", optionen: ["weil", "dass", "denn", "aber"], frage_i18n: {"fr": "weil ou dass ? (cause)", "it": "weil o dass? (causa)", "es": "¿weil o dass? (causa)", "nl": "weil of dass? (reden)", "pl": "weil czy dass? (przyczyna)", "pt": "weil ou dass? (causa)", "sv": "weil eller dass? (orsak)"}}
+      - {frage: "weil or dass? (I know …)", antwort: "dass", satz: "Ich weiss, ___ du recht hast.", optionen: ["weil", "dass", "wenn", "ob"], frage_i18n: {"fr": "weil ou dass ? (je sais …)", "it": "weil o dass? (so che …)", "es": "¿weil o dass? (sé que …)", "nl": "weil of dass? (ik weet …)", "pl": "weil czy dass? (wiem, że …)", "pt": "weil ou dass? (eu sei …)", "sv": "weil eller dass? (jag vet …)"}}
+      - {frage: "weil – word order (regnet)", antwort: "es regnet", satz: "Wir gehen nicht raus, weil ___.", optionen: ["es regnet", "regnet es", "es regnen", "regnet"], frage_i18n: {"fr": "weil – ordre des mots (regnet)", "it": "weil – ordine delle parole (regnet)", "es": "weil – orden de las palabras (regnet)", "nl": "weil – woordvolgorde (regnet)", "pl": "weil – szyk wyrazów (regnet)", "pt": "weil – ordem das palavras (regnet)", "sv": "weil – ordföljd (regnet)"}}
+      - {frage: "dass – word order (hat)", antwort: "keine Zeit hat", satz: "Er sagt, dass er ___.", optionen: ["keine Zeit hat", "hat keine Zeit", "keine Zeit haben", "hat er keine Zeit"], frage_i18n: {"fr": "dass – ordre des mots (hat)", "it": "dass – ordine delle parole (hat)", "es": "dass – orden de las palabras (hat)", "nl": "dass – woordvolgorde (hat)", "pl": "dass – szyk wyrazów (hat)", "pt": "dass – ordem das palavras (hat)", "sv": "dass – ordföljd (hat)"}}
+      - {frage: "weil – modal verb at the end", antwort: "arbeiten muss", satz: "Sie kommt nicht, weil sie ___.", optionen: ["arbeiten muss", "muss arbeiten", "arbeiten müssen", "muss sie arbeiten"], frage_i18n: {"fr": "weil – verbe de modalité à la fin", "it": "weil – verbo modale alla fine", "es": "weil – verbo modal al final", "nl": "weil – modaal werkwoord achteraan", "pl": "weil – czasownik modalny na końcu", "pt": "weil – verbo modal no final", "sv": "weil – modalt verb sist"}}
+      - {frage: "denn or weil? (normal word order)", antwort: "denn", satz: "Ich nehme einen Schirm, ___ es regnet bald.", optionen: ["denn", "weil", "dass", "ob"], frage_i18n: {"fr": "denn ou weil ? (ordre normal)", "it": "denn o weil? (ordine normale)", "es": "¿denn o weil? (orden normal)", "nl": "denn of weil? (gewone woordvolgorde)", "pl": "denn czy weil? (zwykły szyk)", "pt": "denn ou weil? (ordem normal)", "sv": "denn eller weil? (vanlig ordföljd)"}}
+      - {frage: "dass – Perfekt word order", antwort: "gewonnen haben", satz: "Ich freue mich, dass wir ___.", optionen: ["gewonnen haben", "haben gewonnen", "gewinnen haben", "haben wir gewonnen"], frage_i18n: {"fr": "dass – ordre des mots au Perfekt", "it": "dass – ordine delle parole al Perfekt", "es": "dass – orden de las palabras en Perfekt", "nl": "dass – woordvolgorde in het Perfekt", "pl": "dass – szyk wyrazów w Perfekt", "pt": "dass – ordem das palavras no Perfekt", "sv": "dass – ordföljd i Perfekt"}}
+      - {frage: "weil – separable verb", antwort: "früh aufsteht", satz: "Er ist müde, weil er immer so ___.", optionen: ["früh aufsteht", "steht früh auf", "früh steht auf", "aufsteht früh"], frage_i18n: {"fr": "weil – verbe à particule séparable", "it": "weil – verbo separabile", "es": "weil – verbo separable", "nl": "weil – scheidbaar werkwoord", "pl": "weil – czasownik rozdzielnie złożony", "pt": "weil – verbo separável", "sv": "weil – partikelverb"}}
