@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-dev.15
+
+- Everything from 1.1.1-beta.19 plus the dev-only Code Workshop and «Beat the Bureaucracy»
+
 ## 1.1.1-dev.14
 
 - Everything from 1.1.1-beta.18 plus the dev-only Code Workshop and «Beat the Bureaucracy»

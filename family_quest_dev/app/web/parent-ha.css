@@ -111,12 +111,12 @@ button.cal-n:hover { background: var(--hover); }
 .cal-yd.today { outline: 2px solid var(--accent); }
 @media (max-width: 700px) { .cal-week { grid-template-columns: 1fr; } .cal-wcol { min-height: 0; } }
 .theme-row.off { opacity: .55; } .theme-row { gap: 10px; align-items: center; }
-/* ⓘ info buttons: right of a title, top right in a pop-up */
+/* ⓘ info buttons: always right next to the title */
 .info-btn { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: 8px; padding: 0; border: 1.5px solid currentColor;
   border-radius: 50%; background: none; color: var(--muted); font: 700 .8rem/1 var(--font); cursor: pointer; vertical-align: middle; position: relative; }
 .info-btn::after { content: ""; position: absolute; inset: -10px; }          /* a 44 px finger target, the circle stays small */
 .info-btn:hover { color: var(--accent); }
 .modal { position: relative; }
-.info-btn.info-corner { position: absolute; top: 14px; right: 14px; margin: 0; }
-.modal h2:first-child { padding-right: 34px; }
+/* the ⓘ follows the label text: a heading that grows in a flex row only as wide as its text */
+h2.grow:has(> .info-btn), h3.grow:has(> .info-btn) { flex: 0 1 auto; margin-right: auto; }
 .info-text { line-height: 1.5; white-space: pre-line; }
