@@ -139,3 +139,25 @@ html.ha .field-row > div.field { font-weight: 400; color: var(--muted); font-siz
 /* settings: the four groups (App, Personalisation, Home Assistant, System) – a heading above their folds */
 html h2.set-group { margin: 22px 4px 0; font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; }
 html h1 + h2.set-group { margin-top: 4px; }
+/* the expand chevron of every fold in the parent area (details > summary): one component – on the right, big, bold,
+   with contrast in light and dark; ▸ folded, ▾ open */
+:root { --chev: #2b3142; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --chev: #dde2ee; } }
+:root[data-theme="dark"] { --chev: #dde2ee; }
+html details:not(.more-menu) > summary { position: relative; padding-right: 44px; list-style: none; cursor: pointer; }
+html details:not(.more-menu) > summary::-webkit-details-marker { display: none; }
+html details:not(.more-menu) > summary::after { content: ""; position: absolute; right: 16px; top: 50%; width: 11px; height: 11px; margin: -7px 0 0;
+  border: solid var(--chev); border-width: 0 3px 3px 0; border-radius: 1px; transform: rotate(-45deg); transition: transform .15s; }
+html details:not(.more-menu)[open] > summary::after { transform: rotate(45deg); margin-top: -9px; }
+html details.game-sec > summary h2::before, html details.inst-item > summary::before { content: none; }
+/* a fold shows the title of its box in its row: the box itself starts without it (also after the box redrew itself) */
+.set-fold .set-body .fold-title, .set-fold .set-body > .sec-head:first-child > h2 { display: none; }
+.set-fold .set-body > .sec-head:first-child { justify-content: flex-end; margin-top: 0; }
+/* overview: a child is a folded row – folded it shows the weather to pick and «Edit profile» */
+details.kid-fold > summary { display: grid; gap: 8px; }
+details.kid-fold > summary h2 { margin: 0; }
+.kid-head { align-items: center; gap: 12px; }
+.kid-quick { gap: 6px; align-items: center; }
+.kid-quick .weather-btns { gap: 4px; }
+.kid-fold .kid-actions { display: flex; justify-content: flex-start; gap: 6px; }
+.kid-weather h3 { margin: 0 0 4px; }

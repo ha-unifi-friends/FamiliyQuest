@@ -981,8 +981,9 @@ def delete_reward(rid: int, request: Request, me: dict = Parent) -> dict:
 
 
 @router.get("/redemptions")
-def redemptions(request: Request, status: str | None = None, me: dict = Parent) -> list[dict]:
-    return app_of(request).shop.list(status)
+def redemptions(request: Request, status: str | None = None, profile_id: int | None = None, me: dict = Parent) -> list[dict]:
+    """The shop rewards children asked for – all, or one profile's (parent area › History)."""
+    return app_of(request).shop.list(status, profile_id, limit=100) if profile_id else app_of(request).shop.list(status)
 
 
 @router.post("/redemptions/{rid}")

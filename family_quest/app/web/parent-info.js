@@ -87,7 +87,7 @@ const PARENT_INFO = {
   [T("Village Market")]: T("The property-trading board game in a Swiss village, 2 to 6 players (family, guests via QR code, bots easy / normal / hard): roll two dice (on the server), buy shops and places, build market stands and a market hall with a whole colour group, collect rent, trade fields and Taler, mortgage when short. Default: after 30 rounds the richest wins – or a time limit, or classic until one is left. Who leads may pause the game; it is saved and survives a restart. Coins for places 1 to 3 only for a game played to the end at a family table with at least two people of the family."),
   [T("Beat the Bureaucracy")]: T("The family party game in a wonderfully complicated town hall, 2 to 4 teams (one device per team, guests via QR code, bots easy / normal / hard): every team needs all stamps (5, 7 or 9) for its building project. At every counter first comes the scene – «Do you have an appointment?» (argue your way in) or a huge queue (wait or try a trick) – then an authority card: a stamp, a referral, a missing document, a lunch break or a mini-game. Trick cards, objections between the teams, events; optionally one team (or a bot) plays the administration. At the end: the permit certificate and the funniest moments."),
   [T("Texas Hold'em")]: T("Poker with play chips – everybody on their own device, or alone against bots. No real money; the chips start again every game."),
-  [T("History")]: T("What a profile experienced: quiz places, council decisions, games won. Choose the profile to see its history."),
+  [T("History")]: T("Everything that happened, newest first: points and coins booked, rewards from the shop and the family history (games won, quiz places, council decisions …). Choose a child or everybody and what to show."),
   [T("Season, time of day & weather designs")]: [
     T("The animated scene in the header of the app: seasons, Halloween and Christmas switch themselves every year. Switch them on or off, move the dates or add your own designs (e.g. a birthday week)."),
     T("The header of the app shows the animated scene of the design of the day – like the Family Planer. Children can switch it off on their device in the ☰ menu.")],
@@ -284,10 +284,16 @@ const PARENT_INFO = {
   [T("Cube solver")]: T("In the game corner: paint the colours of your puzzle cube and get the moves to solve it, step by step. Set whether it is active and for whom."),
   [T("Private books")]: T("Only their authors can read these books – parents neither. You see only that they exist."),
   [T("New photo set")]: T("Start with a preset – then add photos from this device or from Home Assistant Media. Every photo becomes a pair."),
-  "set.app": T("How the app works for the family: the link for tablets and phones, the family view, the designs of the header, levels, learning and the FamilyTime games."),
-  "set.personal": T("Make the app your own: own texts and languages (e.g. your dialect), the family crest and the bonus/malus points of the day."),
+  "set.app": T("How the app works for the family: the link for tablets and phones, the designs of the header, levels and learning."),
+  "set.personal": T("Make the app your own: own texts and languages (e.g. your dialect) and the bonus/malus points of the day."),
   "set.ha": T("Everything with Home Assistant: signing in with a Home Assistant user, the Family Quest integration, reminders and push messages, and the shopping list (Bring!)."),
-  "set.system": T("Backup and restore, which networks may open the app, taking over an existing Family Planer and the version of the app.")
+  "set.system": T("Backup and restore, which networks may open the app, taking over an existing Family Planer and the version of the app."),
+  "fam.together": T("What the family plans and decides together: the games for FamilyTime, the family council, polls, bulletin boards and secret gift giving. Children can take part and open topics too."),
+  "fam.ours": T("What belongs to your family: the bookshelf, the family crest and what children see when they compare themselves."),
+  "prof.learn": T("How this child learns: the daily goal in XP, how long a lesson is and how many new cards it brings, when learning is open and when the app logs out by itself."),
+  [T("For a game night")]: T("The longer table games for an evening together: card and board games, party and quiz games – everybody on their own device, with bots and guests."),
+  [T("Quick games for in between")]: T("Short live games for a few minutes: dice, jumping, running, cooking, clapping – alone for a high score, with bots or at the family table."),
+  [T("Game corner")]: T("The small games of the game corner: alone or two on one device, no family table.")
 };
 
 const _infoNorm = s => String(s || "").replace(/ⓘ/g, "").replace(/^[^\p{L}\p{N}]+/u, "").replace(/\s+/g, " ").trim();

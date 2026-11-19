@@ -361,6 +361,10 @@ async function dealsParentView(main) {
     section("📋 " + I18N.tr(T("All running deals")), running.length ? h("ul.list", ...running.map(row)) : h("p.small.muted", T("No running deals."))),
     section("📜 " + I18N.tr(T("Finished deals")), ended.length ? h("ul.list", ...ended.slice(0, 40).map(row)) : h("p.small.muted", T("Nothing yet."))),
     dealSettingsBox(ov.settings, ov.kids));
+  // every box folded like the settings: how many deals it holds (the settings: trading on / off) in its row
+  const set = main.querySelector(":scope > section.card:last-of-type");
+  if (set) set.dataset.status = I18N.tr(ov.settings.on ? T("Trading is on") : T("Off"));
+  foldBoxes(main, "deals", sec => I18N.tr(T("Deals: {0}")).replace("{0}", sec.querySelectorAll("li, .deal-card").length));
 }
 
 async function dealParentThread(id, overview) {

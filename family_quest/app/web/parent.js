@@ -4,7 +4,7 @@
 const P = { info: null, meta: null, tab: "overview", profiles: [], accounts: [] };
 const app = $("#app");
 const TABS = [["overview", "📊", T("Overview")], ["calendar", "📅", T("Calendar")], ["packs", "📦", T("Learning packs")],
-  ["chores", "🧹", T("Chores")], ["community", "👨‍👩‍👧", T("Family")], ["deals", "🤝", T("Deals")], ["games", "🎲", T("Games")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
+  ["chores", "🧹", T("Chores")], ["community", "👨‍👩‍👧", T("Family")], ["history", "📜", T("History")], ["deals", "🤝", T("Deals")], ["games", "🎲", T("Games")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
 const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes: T("Internet minutes"), planer_points: T("Family Planer points"),
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
@@ -47,7 +47,7 @@ async function boot() {
 }
 
 // old addresses: #goals is a part of «Family» now (its fold opens), #weather the overview (the weather of each child)
-const TAB_ALIAS = { goals: ["community", "fam.goals"], weather: ["overview"] };
+const TAB_ALIAS = { goals: ["community", "fam.goals"], weather: ["overview"], ledger: ["history"] };
 function tabFromHash() {
   let t = location.hash.replace("#", "") || "overview";
   const a = TAB_ALIAS[t];
@@ -284,7 +284,7 @@ function render() {
   setInert();
   const titled = () => { const t = main.querySelector("h1"); mob.classList.toggle("titled", !t || t.getBoundingClientRect().bottom < mob.getBoundingClientRect().bottom); };
   window.onscroll = titled; setTimeout(titled, 600);
-  const views = { deals: dealsParentView, dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, settings: settingsView };
+  const views = { deals: dealsParentView, dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, settings: settingsView, history: historyView };
   // a page that cannot load shows why and offers to try again – instead of an empty or broken page
   views[P.tab](main).catch(e => {
     if (!main.isConnected) return;                 // another page was opened meanwhile
@@ -949,7 +949,10 @@ async function packsView(main) {
     noPacks.hidden = !q || all.some(c => !c.hidden);
     main.querySelectorAll("section.sec, section.card.sec").forEach(sec => {
       const cards = sec.querySelectorAll(".card.pack, .pack-mini");
-      if (cards.length) sec.hidden = !!q && [...cards].every(c => c.hidden) && !sec.classList.contains("kid-packs");
+      if (!cards.length) return;
+      const fold = sec.closest("details.set-fold") || sec, hit = [...cards].some(c => !c.hidden);
+      fold.hidden = !!q && !hit && !sec.classList.contains("kid-packs");
+      if (q && hit && fold.tagName === "DETAILS") fold.open = true;          // a search opens the boxes with what it found
     });
   };
   setTimeout(filterPacks);
@@ -961,8 +964,13 @@ async function packsView(main) {
   const codeSec = P.info && P.info.codelab ? await codelabSection().catch(e => section("💡 " + I18N.tr(T("Code Workshop")), h("p.bad", e.message))) : null;
   const german = String(I18N.lang || "").startsWith("de");
   const more = moreSection(german);
-  if (mode === "kids") return main.append(...byKid(),
-    drafts.length ? section("📝 " + I18N.tr(T("To check")), ...drafts.map(card)) : null, codeSec, more);
+  // every box folded like the settings (the grouping stays): its title and how many packs it holds in the row
+  const packCount = sec => sec.classList.contains("kid-packs") ? "" : I18N.tr(T("Packs: {0}")).replace("{0}", sec.querySelectorAll(".card.pack").length);
+  const kidStatus = sec => { const r = sec.querySelector(":scope > .row > span.muted"); return r ? r.textContent : ""; };
+  if (mode === "kids") {
+    main.append(...byKid(), drafts.length ? section("📝 " + I18N.tr(T("To check")), ...drafts.map(card)) : null, codeSec, more);
+    return foldBoxes(main, "packs", sec => kidStatus(sec) || packCount(sec));
+  }
   const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
     german ? more : null,
@@ -970,6 +978,7 @@ async function packsView(main) {
     importedPacks.length ? section("⭐ " + I18N.tr(T("Own packs")), ...importedPacks.map(card)) : null,
     levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), ...levelPacks.map(card)) : null,
     ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null, codeSec, german ? null : more);
+  foldBoxes(main, "packs", sec => sec.querySelector(".cw-pk, table") && !sec.querySelector(".card.pack") ? "" : packCount(sec));
   // ➕ More packs: optional packs of the app, added with one click (then switched on per child as every other pack)
   function moreSection(top) {
     if (!available.length) return null;
@@ -1605,7 +1614,7 @@ function choreDialog(c, kids) {
 // ---------------------------------------------------------------- rewards: accounts, rules, shop
 // phones: a table with class «stack» shows each row as a small card – every cell gets its column name (also rows added later)
 function stackTable(table) {
-  const names = [...table.querySelectorAll("thead th")].map(th => I18N.tr(th.textContent.trim()));
+  const names = [...table.querySelectorAll("thead th")].map(th => { const c = th.cloneNode(true); c.querySelectorAll(".info-btn").forEach(x => x.remove()); return I18N.tr(c.textContent.trim()); });
   const label = tr => [...tr.children].forEach((td, i) => { if (names[i]) td.dataset.label = names[i]; });
   table.querySelectorAll("tbody tr").forEach(label);
   new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeName === "TR") label(n); }))).observe(table.tBodies[0], { childList: true });
@@ -1677,10 +1686,17 @@ async function rewardsView(main, opts = {}) {
             h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
         newAcc.focus();
       } }, "+ ", T("Add account")),
-      h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th.key-col", T("Key")), h("th", "Icon"), h("th", T("Name")), h("th", T("Unit")), h("th", T("Spendable")), h("th", T("Active")))), h("tbody", ...accRows))))),
+      h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th.key-col", T("Key"), fieldInfo(T("The short internal name of the account, without spaces – rules and rewards use it."))), h("th", "Icon"), h("th", T("Name")),
+        h("th", T("Unit"), fieldInfo(T("What the points of this account are called, e.g. «min» – shown next to the amounts."))),
+        h("th", T("Spendable"), fieldInfo(T("XP shows progress and is never spent. Spendable accounts can be used in the shop."))),
+        h("th", T("Active"), fieldInfo(T("An inactive account is hidden in the app and nothing is booked on it any more – what it holds is kept."))))), h("tbody", ...accRows))))),
     sectionAdd(T("Rules: which action gives how much on which account"),
       h("button.btn.small", { onclick: () => rulesBody.append(ruleRow({ event: "lesson_done", account: "coins", amount: 5, daily_limit: null, label: "", active: 1, condition: {} })) }, "+ ", T("Add rule")),
-      h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th", T("Event")), h("th", T("Amount")), h("th", T("Account")), h("th", T("Daily limit")), h("th", T("Label")), h("th", T("Active")), h("th"))), rulesBody)))),
+      h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th", T("Event"), fieldInfo(T("What gives the points: a right answer, a finished lesson, the daily goal, a chore …"))),
+        h("th", T("Amount"), fieldInfo(T("How many points one such event gives; a negative amount takes points away."))), h("th", T("Account")),
+        h("th", T("Daily limit"), fieldInfo(T("The most points this rule gives a child per day. Empty = no limit."))),
+        h("th", T("Label"), fieldInfo(T("An own name for the rule, e.g. in the list of points – empty: the name of the event."))),
+        h("th", T("Active"), fieldInfo(T("An inactive rule gives no points until you switch it on again."))), h("th"))), rulesBody)))),
     section("🛍️ " + I18N.tr(T("Shop")),
       h("button.btn.small", { onclick: () => { P.tab = "shop"; location.hash = "shop"; render(); } }, "🛍️ ", T("Open the shop settings"))));
   if (opts.onlyShop) { main.replaceChildren(); return { rewardBox, rewardCard }; }
@@ -1725,6 +1741,8 @@ async function shopSettingsView(main) {
   const filterShop = () => {
     const q = (search.value || "").trim().toLowerCase();
     main.querySelectorAll(".reward-ed").forEach(c => { c.hidden = !!q && ![...c.querySelectorAll("input")].some(i => (i.value || "").toLowerCase().includes(q)); });
+    const rf = rewardBox.closest("details.set-fold");
+    if (rf) { const any = [...rewardBox.querySelectorAll(".reward-ed")].some(c => !c.hidden); rf.hidden = !!q && !any; if (q && any) rf.open = true; }
     main.querySelectorAll("details.shop-slot").forEach(dt => {
       const rows = [...dt.querySelectorAll("tbody tr")];
       rows.forEach(r => { r.hidden = !!q && !r.textContent.toLowerCase().includes(q) && !dt.querySelector("summary").textContent.toLowerCase().includes(q); });
@@ -1738,11 +1756,18 @@ async function shopSettingsView(main) {
   main.append(pageHead(T("Shop")), search, noShop,
     sectionAdd("🎁 " + I18N.tr(T("Own rewards")), h("button.btn.small", { onclick: () => rewardBox.prepend(rewardCard({ name: "", kind: "voucher", account: "coins", cost: 50, approval: 1, weekly_limit: null, icon: "🎁", config: {}, active: 1 })) }, "+ ", T("Add reward")),
       rewardBox),
-    section("🧑‍🎨 " + I18N.tr(T("Avatar items")),
-      ...bySlot.map(([sl, list]) => h("details.shop-slot", { open: sl === "background" },
-        h("summary", h("strong", SLOT_NAMES[sl] || sl), h("span.small.muted", " · " + list.length)),
+    // the avatar items: one folded box per kind (background, hat, …) under their group heading – like every fold
+    h("h2.set-group", { "data-ik": "Avatar items" }, "🧑‍🎨 ", T("Avatar items")),
+    ...bySlot.map(([sl, list]) => {
+      const off = list.filter(i => i.override && i.override.off).length;
+      const d = setFold("shop." + sl, SLOT_NAMES[sl] || sl, h("section.card.sec",
         h("div.scroll", h("table.tbl.shop-tbl", h("thead", h("tr", h("th"), h("th", T("Item")), h("th", T("In the app")), h("th", T("In the shop")), h("th", T("Price")), h("th", T("Paid with")))),
-          h("tbody", ...list.map(row))))))));
+          h("tbody", ...list.map(row))))));
+      d.classList.add("shop-slot");
+      d.querySelector(".set-status").textContent = I18N.tr(T("Items: {0}")).replace("{0}", list.length) + (off ? " · " + I18N.tr(T("switched off: {0}")).replace("{0}", off) : "");
+      return d;
+    }));
+  foldBoxes(main, "shop", () => I18N.tr(T("Rewards: {0}")).replace("{0}", rewardBox.children.length));
 }
 
 // ---------------------------------------------------------------- goals
@@ -1832,6 +1857,11 @@ GAME_LIST.splice(GAME_LIST.findIndex(g => g[0] === "verkehr") + 1, 0, ["langstre
 GAME_LIST.push(["adventuregame", "🗝️", T("Adventure games")]);
 // 🛠️ Custom games: the games with the family's own content (quizzes, photo sets, adventure games) – on top of the page
 const CUSTOM_GAMES = ["quiz", "paarjagd", "adventuregame"];
+// the built-in games in the groups of the children's games page (kid.js gamesView, minigames.js «Game corner»)
+const GAME_GROUPS = [["night", "🎲", T("For a game night"), ["tschau", "karussell", "domino", "jass", "poker", "dorfmarkt", "heimwaerts", "langstrecke", "kartenlauf",
+    "werwolf", "escape", "stempeljagd", "werbinich", "verboten", "zeichnen", "stadtland", "song", "bingo", "schach"]],
+  ["quick", "⚡", T("Quick games for in between"), ["wuerfel", "jump", "klatsch", "sternlauf", "snack", "verkehr"]],
+  ["corner", "🕹️", T("Game corner"), ["ttt", "pingpong", "sudoku", "patience", "slots", "cube"]]];
 const FREE_GAMES = new Set(["adventuregame"]);             // no price, no rent (services.py FREE_GAMES)
 
 // per game: active / active without bots (only games with bots) / inactive – and for whom (everybody or chosen children)
@@ -2506,10 +2536,6 @@ function runningGamesBox() {
 async function communityView(main) {
   const me = P.meta.me;
   const [profiles, s, mem] = await Promise.all([call("parent/profiles"), call("parent/settings"), call("parent/memory").catch(() => null)]);
-  const who = h("select", ...profiles.map(p => h("option", { value: p.id }, p.name)));
-  const hist = h("div");
-  const drawHist = async () => hist.replaceChildren(await historySection(+who.value, null));   // the list only – the section has the heading
-  who.onchange = drawHist;
   const t = k => I18N.tr(k), f = (k, ...v) => v.reduce((a, x, i) => a.split("{" + i + "}").join(String(x)), I18N.tr(k));
   const mark = (sec, id, status) => { if (sec) { sec.dataset.fold = id; if (status != null) sec.dataset.status = status; } return sec; };
   // the same folds as the settings: groups with their ⓘ, every box folded with a short status in its row
@@ -2527,9 +2553,7 @@ async function communityView(main) {
     group("fam.ours", "🏡", T("Our family")),
     mark(await storiesSection(), "library"),
     mark(await crestSection(), "crest", !c ? t(T("No family crest")) : [t(c.image ? T("Own picture") : T("Drawn crest")), c.name || null].filter(Boolean).join(" · ")),
-    mark(familyViewSection(s), "view", f(T("Comparison: {0}"), t(vis)) + " · " + t(s.sound !== false ? T("Sound on") : T("Sound off"))),
-    mark(section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist), "history", ""));
-  drawHist();
+    mark(familyViewSection(s), "view", f(T("Comparison: {0}"), t(vis)) + " · " + t(s.sound !== false ? T("Sound on") : T("Sound off"))));
   foldBoxes(main, "fam", sec => {
     // lists with «Active / Closed»: how many of each; the bookshelf: how many books are on it
     const seg = sec.querySelectorAll(".inst-filter .inst-n");
@@ -2537,6 +2561,64 @@ async function communityView(main) {
     if (sec.dataset.fold === "library") return t(T("On the shelf")) + ": " + sec.querySelectorAll(".sb-shelf > *").length;
     return "";
   });
+}
+
+// ---------------------------------------------------------------- 📜 History: everything that happened, one list
+// points and coins (ledger), shop rewards (redemptions) and the family history (games, quiz wins, council decisions …) –
+// for one child or everybody, filtered by kind; the newest first
+const HIST_KINDS = () => [["all", "📜", T("Everything")], ["points", "🪙", T("Points & coins")], ["rewards", "🎁", T("Rewards")], ["family", "👨‍👩‍👧", T("Games & family")]];
+async function historyView(main) {
+  const [profiles, accounts] = await Promise.all([call("parent/profiles"), call("parent/accounts")]);
+  P.accounts = accounts;
+  const people = [...profiles.filter(p => p.role === "kid"), ...profiles.filter(p => p.role !== "kid")];
+  if (P.histWho == null) P.histWho = people.length ? String(people[0].id) : "all";
+  P.histKind = P.histKind || "all";
+  const who = h("select", { "aria-label": T("Profile"), onchange: () => { P.histWho = who.value; load(); } },
+    h("option", { value: "all", selected: P.histWho === "all" }, I18N.tr(T("Everybody"))),
+    ...people.map(p => h("option", { value: p.id, selected: String(p.id) === P.histWho }, p.name)));
+  const kinds = h("div.seg.hist-kinds", { role: "radiogroup", "aria-label": T("Show") });
+  const drawKinds = () => kinds.replaceChildren(...HIST_KINDS().map(([k, ic, n]) => h("button" + (P.histKind === k ? ".on" : ""), { type: "button", role: "radio",
+    "aria-checked": String(P.histKind === k), onclick: () => { P.histKind = k; drawKinds(); load(); } }, ic + " ", n)));
+  drawKinds();
+  const box = h("div.hist-box");
+  const acc = k => accounts.find(a => a.key === k) || { icon: "", name: k };
+  const when = at => new Date(String(at).replace(" ", "T")).toLocaleString(I18N.locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const STATUS = { pending: ["⏳", T("Waiting")], approved: ["✓", T("Approved")], rejected: ["✗", T("Declined")], failed: ["⚠️", T("Failed")] };
+  async function rows(p) {
+    const k = P.histKind, out = [];
+    const [led, red, fam] = await Promise.all([
+      k === "all" || k === "points" ? call(`parent/ledger/${p.id}`).catch(() => []) : [],
+      k === "all" || k === "rewards" ? call(`parent/redemptions?profile_id=${p.id}`).catch(() => []) : [],
+      k === "all" || k === "family" ? api(`community/history?profile_id=${p.id}`).catch(() => []) : []]);
+    for (const r of led) {
+      const a = acc(r.account);
+      out.push({ at: r.at, ic: a.icon || "🪙", who: p.name, txt: I18N.tr(r.reason || r.event || ""),
+        extra: (r.amount > 0 ? "+" : "") + fmt(r.amount, 1) + " " + I18N.tr(a.name), cls: r.amount < 0 ? "bad" : "good" });
+    }
+    for (const r of red) {
+      const [sic, sn] = STATUS[r.status] || ["", r.status];
+      out.push({ at: r.created_at, ic: r.icon || "🎁", who: p.name, txt: r.name, own: true, extra: "−" + fmt(r.cost) + " · " + sic + " " + I18N.tr(sn) });
+    }
+    for (const e of fam) { const [ic, txt, extra] = historyText(e); out.push({ at: e.at, ic, who: p.name, txt, own: true, extra: extra || "" }); }
+    return out;
+  }
+  async function load() {
+    box.replaceChildren(h("p.muted", "…"));
+    const list = (await Promise.all((P.histWho === "all" ? people : people.filter(p => String(p.id) === P.histWho)).map(rows))).flat()
+      .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    if (!list.length) return box.replaceChildren(h("p.muted", T("Nothing yet.")));
+    const ul = h("ul.list.history"), PAGE = 50;
+    let n = 0;
+    const more = h("button.btn.small.ghost.history-more", { onclick: () => page() }, T("Show more"));
+    const line = e => h("li.row", h("span.big-ic", e.ic), h("span.grow", e.own ? h("span", { translate: "no" }, e.txt) : h("span", e.txt),
+        P.histWho === "all" ? h("span.small.muted", { translate: "no" }, " · " + e.who) : null),
+      e.extra ? h("b" + (e.cls ? "." + e.cls + "-text" : ""), " ", e.extra) : null, h("span.small.muted", " " + when(e.at)));
+    const page = () => { ul.append(...list.slice(n, n + PAGE).map(line)); n += PAGE; more.hidden = n >= list.length; };
+    page();
+    box.replaceChildren(ul, more);
+  }
+  main.append(pageHead("📜 " + I18N.tr(T("History"))), h("div.row.wrap.hist-filter", who, kinds), section("📜 " + I18N.tr(T("History")), box));
+  load();
 }
 
 /** Family › Family view: what children see in the comparison, the sound (was a part of the settings). */
@@ -2907,6 +2989,10 @@ async function gamesView(main) {
   for (const k of Object.keys(blocks)) if (!(k in data.access)) delete blocks[k];
   const custom = h("section.cg-group", h("h2.cg-title", "🛠️ ", T("Custom games")),
     ...CUSTOM_GAMES.filter(k => blocks[k]).map(k => blocks[k]));
+  // the other games in the groups of the children's app; a game in no group goes to the game night
+  const grouped = new Set(GAME_GROUPS.flatMap(g => g[3]));
+  const groups = GAME_GROUPS.map(([id, ic, name, keys], i) => h("section.cg-group.game-group", { "data-group": id }, h("h2.cg-title", ic, " ", name),
+    ...[...keys, ...(i ? [] : Object.keys(blocks).filter(k => !grouped.has(k) && !CUSTOM_GAMES.includes(k)))].filter(k => blocks[k]).map(k => blocks[k])));
   for (const [k, el] of Object.entries(blocks)) {
     const g = GAME_LIST.find(x => x[0] === k);
     el.classList.add("game-block");
@@ -2925,6 +3011,7 @@ async function gamesView(main) {
     }
     none.hidden = !q || shown > 0;
     custom.hidden = CUSTOM_GAMES.every(k => !blocks[k] || blocks[k].hidden);
+    for (const g of groups) g.hidden = !g.querySelector(":scope > .game-block:not([hidden])");
   };
   // for every game: who begins, guests, all on / off
   const starter = h("select", { onchange: async () => { await call("parent/settings", { method: "PUT", body: { game_starter: starter.value } }); toast(T("Saved"), "good"); } },
@@ -2938,7 +3025,7 @@ async function gamesView(main) {
     h("label.field", T("Who begins a game (card and board games)"), starter),
     h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
   main.append(h("h1", T("Games")), partyCard(),
-    search, general, batterySettingsCard(), runningGamesBox(), custom, none, ...Object.entries(blocks).filter(([k]) => !CUSTOM_GAMES.includes(k)).map(([, el]) => el));
+    search, general, batterySettingsCard(), runningGamesBox(), custom, none, ...groups);
   filter();
   showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
   if (blocks.langstrecke) showLangstrecke();
