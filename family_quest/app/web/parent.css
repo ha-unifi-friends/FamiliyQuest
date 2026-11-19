@@ -371,3 +371,9 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .app-link-qr { display: flex; justify-content: center; }
 .app-link-qr svg { width: min(240px, 70vw); height: auto; background: #fff; padding: 10px; border-radius: 12px; }
 .app-link-dlg p a { word-break: break-all; }
+
+/* «Sign in with Home Assistant» in the app (Settings › Log in with Home Assistant) and the profile dialog */
+.ha-app-box { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ha-app-box h3 { margin: 0 0 8px; }
+.ha-app-box input[type=url] { width: 100%; box-sizing: border-box; }
+.pin-ha-only { color: var(--accent); font-weight: 600; }

@@ -509,3 +509,7 @@
   font: inherit; font-weight: 700; white-space: nowrap; cursor: pointer; }
 .chip-btn:hover { border-color: var(--accent); }
 .shop-part { scroll-margin-top: calc(var(--head-h, 64px) + 70px); }
+
+/* «Sign in with Home Assistant» (direct port): on the login screen and below a PIN pad */
+.ha-kid-login { margin: 8px 0 16px; }
+.ha-pin-alt { margin-top: 12px; }
