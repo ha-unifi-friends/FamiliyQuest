@@ -55,6 +55,24 @@ function fqParentState(root) {
   fqParentState.last = key;
   try { if (window.frameElement) window.frameElement.dispatchEvent(new CustomEvent("fq-planer-state", { detail: state })); } catch {}
 }
+// The frame is as high as its content (parent.js planerFrame), so «position:fixed» windows of the planer (parent PIN,
+// «+ Special chore», holidays …) would sit in the middle of the whole frame – maybe far outside the screen. They are
+// moved into the part of the frame that is visible on the screen just now.
+window.FQ_VIS = () => {
+  try {
+    const r = window.frameElement.getBoundingClientRect(), H = window.parent.innerHeight;
+    const top = Math.max(0, -r.top), h = Math.max(160, Math.min(r.bottom, H) - Math.max(r.top, 0));
+    return { top: Math.round(top), h: Math.round(Math.min(h, innerHeight - top)) };
+  } catch { return { top: 0, h: innerHeight }; }
+};
+if (window.FQ_PLANER_MODE === "parent" && window.frameElement) {
+  const pin = el => {
+    if (!(el instanceof HTMLElement) || el.style.position !== "fixed" || el.style.inset !== "0px") return;
+    const v = window.FQ_VIS();
+    Object.assign(el.style, { top: v.top + "px", bottom: "auto", height: v.h + "px", transform: "translateZ(0)" });  // own frame for fixed children
+  };
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(pin))).observe(document.body || document.documentElement, { childList: true });
+}
 window.FQ_PLANER_DO = async act => {
   const panel = document.querySelector("family-planer-panel");
   const nav = panel && panel.querySelector("family-planer-nav-card"), card = panel && panel.querySelector("family-planer-card");

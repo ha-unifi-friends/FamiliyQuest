@@ -873,7 +873,7 @@ async function quizzesView() {
 // list of quizzes with start / edit / delete, templates, editor – for profile `me`
 // `actions`: the head row of the section the «+ New quiz» button goes into – `withImport`: also «📥 Import» (a quiz file)
 // next to it, «+ New» (parent area › Games › Custom games); `onCount(n)`: the number of quizzes
-async function quizzesPanel(box, me, onStarted, { actions, withImport = false, onCount = null } = {}) {
+async function quizzesPanel(box, me, onStarted, { actions, withImport = false, onCount = null, play = null } = {}) {
   let quizzes = [], templates = [], live = null, facts = null;
   try { [quizzes, templates, live, facts] = await Promise.all([api("community/quizzes"), api("community/templates"), api("community/quiz").catch(() => null),
     api("community/quizzes/facts").catch(() => null)]); }
@@ -888,7 +888,15 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
         catch (e) { toast(e.message, "bad"); }
       } }, "▶ ", T("Start")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   };
-  const reload = () => quizzesPanel(box, me, onStarted, { actions, withImport, onCount });
+  const reload = () => quizzesPanel(box, me, onStarted, { actions, withImport, onCount, play });
+  // parent area › Custom games: «Open a family table» – pick the quiz (or Family Quest Facts), then start it
+  if (play) play.replaceChildren(h("button.btn", { onclick: () => {
+    const m = modal(h("div.form", h("h2", "👨‍👩‍👧 ", T("Open a family table")), h("p.small.muted", T("Which quiz shall we play?")),
+      facts && facts.enabled ? h("button.btn.ghost", { onclick: () => { m.close(); factsStart(); } }, "📊 ", T("Family Quest Facts")) : null,
+      ...quizzes.map(q => h("button.btn.ghost", { onclick: () => { m.close(); start(q); } }, "🎯 ", C(quizTitle(q.title, q.langs)))),
+      quizzes.length ? null : h("p.muted", T("No quiz yet – make one with «+ New».")),
+      h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  } }, "👨‍👩‍👧 ", T("Open a family table")));
   if (onCount) onCount(quizzes.length);
   // «Family Quest Facts»: a special quiz – the server makes new questions from the family's own data at every start
   const factsStart = () => {

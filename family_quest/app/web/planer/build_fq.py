@@ -84,7 +84,7 @@ REPLACE += [
 # of the parent area, web/planer/host.js FQ_PLANER_DO), the settings drop their «Chores» tab (the plan is right above)
 REPLACE += [
     ("const bar = this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: 60, right: window.innerWidth - 8 };",
-     "const bar = window.FQ_PARENT_AREA ? null : this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: window.FQ_PARENT_AREA ? 2 : 60, right: window.innerWidth - 8 };"),
+     "const bar = window.FQ_PARENT_AREA ? null : this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: window.FQ_PARENT_AREA ? window.FQ_VIS().top + 2 : 60, right: window.innerWidth - 8 };"),
     ('<div class="card">\n        <div class="head"><div class="badge"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon></div>',
      '<div class="card${window.FQ_PARENT_AREA ? \' fqe\' : \'\'}">\n        <div class="head"><div class="badge"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon></div>'),
     ("const tabs = ORDER.map((id) => TABS.find((x) => x.id === id)).filter((x) => x && ",

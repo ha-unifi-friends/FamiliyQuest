@@ -5952,7 +5952,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
         this._layer.shadowRoot.addEventListener('click', (e) => this._onClick(e));
         document.body.appendChild(this._layer);
       }
-      const bar = window.FQ_PARENT_AREA ? null : this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: window.FQ_PARENT_AREA ? 2 : 60, right: window.innerWidth - 8 };
+      const bar = window.FQ_PARENT_AREA ? null : this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: window.FQ_PARENT_AREA ? window.FQ_VIS().top + 2 : 60, right: window.innerWidth - 8 };
       this._layer.style.cssText = `display:block;position:fixed;z-index:9999;top:${Math.round(r.bottom + 6)}px;right:${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
       const s = this._store && this._store.snap; if (s) applyTheme(this._layer, this._cfg.theme || s.theme, this._cfg.style || s.style);
       this._layer.shadowRoot.innerHTML = `<style>${css}</style>${html}`;

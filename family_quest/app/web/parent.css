@@ -381,3 +381,13 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .ha-app-box h3 { margin: 0 0 8px; }
 .ha-app-box input[type=url] { width: 100%; box-sizing: border-box; }
 .pin-ha-only { color: var(--accent); font-weight: 600; }
+
+/* Custom games: play row (family table / alone / ↗ in the app), then the content title with «+ New» next to it */
+.cg-play { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+.cg-play-btns { gap: 8px; }
+.cg-play-btns:empty { display: none; }
+.cg-play .cg-app { margin-left: auto; }
+.cg-content-head { align-items: center; gap: 8px; margin: 4px 0 8px; }
+.cg-content-head .cg-sub { font-size: 1rem; margin: 0; }
+.cg-content-head .cg-actions { margin: 0; }
+.cg-sec:has(.game-status.off) > .cg-play { opacity: .55; }

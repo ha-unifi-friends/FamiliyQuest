@@ -1089,11 +1089,7 @@ async function packEditor(id, { afterSave } = {}) {
         }) }, "📷 ", T("Add photos as cards"))),
       h("p.small.muted", T("Own photos: one card per photo – write the answer (e.g. the name) next to it. Shown in «Pairs», quiz and flash cards.")));
   }
-  function pickPhotos(multiple, cb) {
-    const inp = h("input", { type: "file", accept: "image/*", multiple });
-    inp.onchange = () => inp.files.length && cb([...inp.files]);
-    inp.click();
-  }
+  function pickPhotos(multiple, cb) { pickFiles({ accept: "image/*", multiple }, cb); }
   async function uploadPhoto(file) {
     try {
       const blob = await shrinkPhoto(file);
@@ -1454,7 +1450,6 @@ function planerChoresSection(...more) {
   const act = kind => {
     const w = frame.contentWindow;
     if (!w || !w.FQ_PLANER_DO) return;
-    if (frame.getBoundingClientRect().top < 0) frame.scrollIntoView({ block: "start", behavior: "smooth" });   // its windows open at its top
     w.FQ_PLANER_DO(kind);
   };
   const dot = h("span.chip.warn.planer-dot", { hidden: true });
@@ -2046,22 +2041,36 @@ async function haMediaPicker({ single = false } = {}) {
 // The cards of the pairs game are small: the shorter edge becomes at most PHOTO_EDGE px (sharp enough on phones and
 // tablets, a few KB per photo instead of megabytes).
 const PHOTO_EDGE = 240;
+// a file dialog that works reliably in phone browsers and the Home Assistant app: the input must be part of the page
+// while the dialog is open (a detached one is sometimes collected before «change» fires); removed afterwards
+function pickFiles({ accept = "image/*", multiple = false } = {}, then) {
+  const inp = h("input", { type: "file", accept, multiple, style: { position: "fixed", left: "-1000px", top: "0", opacity: "0" } });
+  const done = () => setTimeout(() => inp.remove(), 1000);
+  inp.addEventListener("change", () => { const files = [...inp.files]; done(); if (files.length) then(files); });
+  inp.addEventListener("cancel", done);
+  document.body.append(inp);
+  inp.click();
+}
+
 const Photos = {
   async upload(file, edge = PHOTO_EDGE) {          // the crest (printed on the poster) passes a larger edge
-    const fd = new FormData(); fd.append("file", await shrinkPhoto(file, edge, { short: true }), "foto.jpg");
-    return (await api("parent/memory/photo", { method: "POST", form: fd })).name;
+    const blob = await shrinkPhoto(file, edge, { short: true });
+    for (let attempt = 0; ; attempt++) {            // one more try after a network hiccup (phones on Wi-Fi)
+      const fd = new FormData(); fd.append("file", blob, "foto.jpg");
+      try { return (await api("parent/memory/photo", { method: "POST", form: fd })).name; }
+      catch (e) { if (attempt >= 1 || /\b(400|413|415)\b|large|photos? \(/i.test(e.message || "")) throw e; await new Promise(r => setTimeout(r, 800)); }
+    }
   },
   async uploadAll(files, edge) {                           // every photo on its own – one bad file does not stop the others
     const out = [];
-    for (const file of files) {
+    for (const [i, file] of files.entries()) {
+      if (files.length > 1) toast("⏳ " + I18N.tr(T("Uploading photo {0} of {1} …")).replace("{0}", i + 1).replace("{1}", files.length));
       try { out.push(await Photos.upload(file, edge)); } catch (e) { toast(`${file.name}: ${e.message}`, "bad"); }
     }
     return out;
   },
   pick(multiple, then, edge) {
-    const f = h("input", { type: "file", accept: "image/*,.heic,.heif", multiple });
-    f.onchange = async () => { const names = await Photos.uploadAll([...f.files], edge); if (names.length) await then(names); };
-    f.click();
+    pickFiles({ accept: "image/*", multiple }, async files => { const names = await Photos.uploadAll(files, edge); if (names.length) await then(names); });
   },
   async fromHa(single, then, edge) {
     const paths = await haMediaPicker({ single });
@@ -2118,7 +2127,6 @@ async function crestSection() {
     h("label.field", T("Colours"), h("div.row", color(0), color(1))));
   const drawPictureRow = () => { drawnFields.hidden = !!crest.image; pictureRow.replaceChildren(...[
     h("button.btn.small.ghost", { onclick: () => Photos.pick(false, setImage, 800) }, "📷 ", T("Upload picture")),
-    h("button.btn.small.ghost", { onclick: () => Photos.fromHa(true, setImage, 800) }, "🏠 ", T("From Home Assistant Media")),
     crest.image ? h("button.btn.small.ghost", { onclick: () => { crest.image = null; drawCrest(); drawPictureRow(); } }, "✕ ", T("Remove picture")) : null].filter(Boolean)); };
   const crestForm = h("div.form",
     h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: T("e.g. Miller") })),
@@ -2165,7 +2173,6 @@ async function photoSets(onCount = null) {
     h("div.mm-thumbs", ...st.photos.map((ph, j) => h("div.mm-thumb", h("img", { src: memPhotoUrl(ph), alt: "", loading: "lazy" }),
       h("button", { title: T("Remove photo"), onclick: () => { st.photos.splice(j, 1); drawSets(); } }, "✕")))),
     h("div.row.wrap",
-      h("button.btn.ghost.small", { onclick: () => Photos.fromHa(false, addTo(st)) }, "🏠 ", T("From Home Assistant Media")),
       h("button.btn.ghost.small", { onclick: () => Photos.pick(true, addTo(st)) }, "📷 ", T("Add photos"))),
     h("p.small.muted", I18N.tr(T("Photos: {0}")).replace("{0}", st.photos.length), st.photos.length < 3 ? [" – ", T("at least 3 photos for a game")] : null))));
   };
@@ -2184,37 +2191,15 @@ async function photoSets(onCount = null) {
         ...PHOTO_PRESETS().map(([ic, n]) => tile(ic, n, () => add(ic + " " + I18N.tr(n))))),
       h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
   };
-  // «📥 Import»: photos (several at once) or a ZIP file with photos (e.g. an exported set) – becomes a new set
-  const importDialog = () => {
-    const name = h("input", { type: "text", maxlength: 60, placeholder: I18N.tr(T("e.g. Our holidays")) });
-    const file = h("input", { type: "file", multiple: true, accept: "image/*,.heic,.heif,.zip,application/zip" });
-    const go = async () => {
-      const files = [...file.files];
-      if (!files.length) return toast(T("Choose photos or a ZIP file"), "bad");
-      btn.disabled = true; btn.textContent = "⏳ " + I18N.tr(T("Uploading …"));
-      let names = [];
-      for (const z of files.filter(f => /\.zip$/i.test(f.name) || f.type === "application/zip")) {
-        const fd = new FormData(); fd.append("file", z, z.name);
-        try { names.push(...(await api("parent/memory/import", { method: "POST", form: fd })).names); } catch (e) { toast(`${z.name}: ${e.message}`, "bad"); }
-      }
-      names.push(...await Photos.uploadAll(files.filter(f => !(/\.zip$/i.test(f.name) || f.type === "application/zip"))));
-      names = [...new Set(names)].slice(0, 40);
-      m.close();
-      if (!names.length) return;
-      const zip = files.find(f => /\.zip$/i.test(f.name));
-      await add(name.value.trim() || (zip ? zip.name.replace(/\.zip$/i, "").replace(/^family-quest-photos-/, "") : I18N.tr(T("Photos {0}")).replace("{0}", d.sets.length + 1)), names);
-    };
-    const btn = h("button.btn", { onclick: go }, "📥 ", T("Import"));
-    const m = modal(h("div.form", h("h2", "📥 ", T("Import a photo set")),
-      h("label.field", T("Name"), name),
-      h("label.field", T("Photos or a ZIP file"), file, h("span.hint", T("Up to 40 photos (JPEG, PNG, WebP, GIF), max. 5 MB each – a ZIP file like the export of a set."))),
-      h("div.row", btn, h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
-  };
+  // «📥 Import»: one or several photos at once – becomes a new set
+  const importDialog = () => pickFiles({ accept: "image/*", multiple: true }, async files => {
+    const names = [...new Set(await Photos.uploadAll(files))].slice(0, 40);
+    if (names.length) await add(I18N.tr(T("Photos {0}")).replace("{0}", d.sets.length + 1), names);
+  });
   drawSets();
   return { newDialog, importDialog, el: h("div.mm-box",
     h("p.small.muted", T("In the game corner the children find pairs – with animals, fruit … or with your own photos. Every photo becomes a pair.")),
-    h("p.small.muted", T("Take the photos from Home Assistant Media (Media → My media) or upload them from this device. Chosen photos are copied into Family Quest right away.")),
-    h("div.row.wrap", haMediaOpenBtn()),
+    h("p.small.muted", T("Upload the photos from this device – several at once are fine. They are made small automatically.")),
     setsBox,
     h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save")))) };
 }
@@ -2421,7 +2406,7 @@ const appBtn = path => h("button.btn.small.ghost", { title: T("Opens the game in
 
 // the planner in a frame (same origin): on phones as tall as its content – no second scroll area inside the page
 // the frame is as high as the planer's content (no scrolling inside a scrolling page; planer.html drops its min-height
-// in the parent area) – its windows open at its top, the section head scrolls there first (planerChoresSection)
+// in the parent area) – its windows open in the part visible on the screen (planer/host.js FQ_VIS)
 function planerFrame(src, title) {
   const f = h("iframe.planer-frame", { src, title: I18N.tr(title) });
   const fit = () => {
@@ -2524,16 +2509,19 @@ async function gamesView(main) {
   };
   // 🛠️ Custom games: the same structure for each – what it is and how many, «📥 Import» and «+ New» (templates first),
   // the own content (quizzes, photo sets, adventure games), then the settings (status, coins)
-  const csec = (k, desc, head, ...settings) => {
+  // the same order everywhere: play (family table / alone / ↗ in the app), then the own content under its title with
+  // «+ New» (and «📥 Import» where it makes sense) next to that title, then the settings
+  const csec = (k, desc, head, contentTitle, ...settings) => {
     const [, ic, name] = GAME_LIST.find(g => g[0] === k);
     const count = h("span.chip.cg-count", "…"), actions = h("div.row.wrap.cg-actions"), list = h("div.cg-list");
-    if (head) actions.append(Object.assign(head, { className: head.className + " cg-app" }));      // «↗ Open in the app»: at the end of the row
+    const play = h("div.row.wrap.cg-play-btns"), playRow = h("div.game-play.cg-play", play, head ? Object.assign(head, { className: head.className + " cg-app" }) : null);
     const el = h("details.card.sec.game-sec.cg-sec", { "data-game": k },
       h("summary.sec-head", h("h2", ic, " ", I18N.tr(name), " ", count, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null),
         access.chips(k), h("p.small.muted.cg-desc", desc)),
-      actions, list,
+      playRow,
+      h("div.row.wrap.cg-content-head", h("h3.cg-sub.grow", contentTitle), actions), list,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
-    return { el, actions, list, count: n => { count.textContent = String(n); } };
+    return { el, actions, list, play, count: n => { count.textContent = String(n); } };
   };
   const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), verkehr = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div"), escape = h("div"), stempeljagd = h("div");
   const langstrecke = h("div");
@@ -2601,9 +2589,9 @@ async function gamesView(main) {
           h("button.btn.ghost", { onclick: () => dominoStartDialog(true, open) }, "🤖 ", T("Alone against bots")))));
   };
   // Pair Hunt: play, then its own content – the photo sets (shared with the pairs game of the game corner)
-  const pjPlay = h("div.game-play"), pjSets = h("div"), pjRewards = h("div");
-  const cPair = csec("paarjagd", T("Find the pairs – with animals, fruit … or your own photo sets. Every photo becomes a pair."), appBtn("paarjagd"), pjRewards);
-  cPair.list.append(pjPlay, pjSets);
+  const pjPlay = h("div"), pjSets = h("div"), pjRewards = h("div");
+  const cPair = csec("paarjagd", T("Find the pairs – with animals, fruit … or your own photo sets. Every photo becomes a pair."), appBtn("paarjagd"), "📷 " + I18N.tr(T("Photo sets")), pjRewards);
+  cPair.play.append(pjPlay); cPair.list.append(pjSets);
   paarjagd.append(cPair.el);
   const showPaarjagd = async () => {
     let g = null; try { g = await call("community/paarjagd"); } catch {}
@@ -2614,8 +2602,8 @@ async function gamesView(main) {
           h("button.btn.ghost", { onclick: () => paarjagdStartDialog(true, open) }, "🤖 ", T("Alone against bots"))));
     pjRewards.replaceChildren(await gameRewardsRow("paarjagd"));
     const ps = await photoSets(cPair.count);
-    cPair.actions.prepend(h("button.btn.ghost", { onclick: ps.importDialog }, "📥 ", T("Import")), h("button.btn", { onclick: ps.newDialog }, "+ ", T("New")));
-    pjSets.replaceChildren(h("h3.cg-sub", "📷 ", T("Photo sets")), ps.el);
+    cPair.actions.replaceChildren(h("button.btn", { onclick: ps.newDialog }, "+ ", T("New")));
+    pjSets.replaceChildren(ps.el);
   };
   const showWerbinich = async () => {
     let g = null; try { g = await call("community/werbinich"); } catch {}
@@ -2816,11 +2804,12 @@ async function gamesView(main) {
   const factsOn = h("input", { type: "checkbox", checked: s.quiz_facts !== false, onchange: async () => {
     await call("parent/settings", { method: "PUT", body: { quiz_facts: factsOn.checked } }); toast(T("Saved"), "good"); } });
   const factsSet = h("div.pj-rewards", h("label.check", factsOn, h("span", "📊 ", T("Special quiz «Family Quest Facts»: questions from our own data (chores, games, records, shop, pets) – nothing from the parent area"))));
-  const cQuiz = csec("quiz", T("Your own quizzes and the templates – everybody plays on their own device."), appBtn("quiz"), factsSet);
+  const cQuiz = csec("quiz", T("Your own quizzes and the templates – everybody plays on their own device."), appBtn("quiz"), "🎯 " + I18N.tr(T("Quizzes")), factsSet);
   cQuiz.list.append(live, quizzes);
   const quiz = h("div", cQuiz.el);
   // adventure games: the ones of the family (stories.js storyShelf, type «game») – approve, edit, import, new
-  const cAdv = csec("adventuregame", T("Point & click: rooms, things to find, riddles and characters – made by the family or from a template."), null);
+  const cAdv = csec("adventuregame", T("Point & click: rooms, things to find, riddles and characters – made by the family or from a template."), null, "🗝️ " + I18N.tr(T("Adventure games")));
+  cAdv.play.append(h("button.btn", { onclick: () => openInApp("advgames") }, "🧭 ", T("Play alone")));
   const adventuregame = h("div", cAdv.el);
   const blocks = { quiz, adventuregame, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
     langstrecke,
@@ -2867,7 +2856,7 @@ async function gamesView(main) {
   showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
   if (blocks.langstrecke) showLangstrecke();
   if (blocks.stempeljagd) showStempeljagd();
-  quizzesPanel(quizzes, me, showLive, { actions: cQuiz.actions, withImport: true, onCount: cQuiz.count });
+  quizzesPanel(quizzes, me, showLive, { actions: cQuiz.actions, withImport: true, onCount: cQuiz.count, play: cQuiz.play });
   if (blocks.adventuregame) storyShelf(cAdv.list, { types: ["game"], actions: cAdv.actions, onCount: cAdv.count });
 }
 
