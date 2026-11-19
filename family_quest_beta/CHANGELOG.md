@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-beta.19
+
+- The ⓘ info button is always right next to its label, also in dialogs
+
 ## 1.1.1-beta.18
 
 - Parent area: an ⓘ info button with an explanation on every section and setting
