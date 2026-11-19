@@ -1,13 +1,20 @@
 # Deutsch: der/die/das und Wortarten.
 id: deutsch-5kl
 titel: Deutsch 5. Klasse – Artikel und Wortarten
+titel_i18n: {de: "Deutsch 5. Klasse – Artikel und Wortarten", en: "German Year 5 – articles and word types", fr: "Allemand 5e année – articles et natures des mots", it: "Tedesco 5ª classe – articoli e parti del discorso", es: "Alemán 5.º curso – artículos y clases de palabras", nl: "Duits leerjaar 5 – lidwoorden en woordsoorten", pl: "Niemiecki klasa 5 – rodzajniki i części mowy", pt: "Alemão 5º ano – artigos e classes de palavras", sv: "Tyska årskurs 5 – artiklar och ordklasser"}
 fach: deutsch
 stufe: 5. Klasse
+stufe_i18n: {de: "5. Klasse", en: "Year 5", fr: "5e année", it: "5ª classe", es: "5.º curso", nl: "leerjaar 5", pl: "klasa 5", pt: "5º ano", sv: "årskurs 5"}
 version: 1
 quelle: Family Quest (CC0)
+beschreibung: "Deutsch als Muttersprache in der Schule: der, die, das und Wortarten."
+beschreibung_i18n: {de: "Deutsch als Muttersprache in der Schule: der, die, das und Wortarten.", en: "German for native speakers at school: der, die, das and word types.", fr: "L'allemand langue maternelle à l'école : der, die, das et les natures des mots.", it: "Il tedesco come lingua madre a scuola: der, die, das e le parti del discorso.", es: "Alemán como lengua materna en la escuela: der, die, das y las clases de palabras.", nl: "Duits als moedertaal op school: der, die, das en woordsoorten.", pl: "Niemiecki jako język ojczysty w szkole: der, die, das i części mowy.", pt: "Alemão como língua materna na escola: der, die, das e as classes de palavras.", sv: "Tyska som modersmål i skolan: der, die, das och ordklasser."}
+optional: true        # German content only: not installed by default – Parent area › Learning packs › More packs
+sprachen: [de]
 einheiten:
   - id: artikel
     titel: der, die oder das?
+    titel_i18n: {de: "der, die oder das?", en: "der, die oder das?", fr: "der, die oder das?", it: "der, die oder das?", es: "der, die oder das?", nl: "der, die oder das?", pl: "der, die oder das?", pt: "der, die oder das?", sv: "der, die oder das?"}
     icon: "📖"
     uebungen: [auswahl]
     karten:
@@ -31,6 +38,7 @@ einheiten:
       - {frage: Zeitung, antwort: die, optionen: [der, die, das]}
   - id: wortarten
     titel: Wortarten sortieren
+    titel_i18n: {de: "Wortarten sortieren", en: "Sorting word types", fr: "Trier les natures des mots", it: "Ordinare le parti del discorso", es: "Ordenar clases de palabras", nl: "Woordsoorten sorteren", pl: "Sortowanie części mowy", pt: "Classificar as classes de palavras", sv: "Sortera ordklasser"}
     icon: "🧩"
     uebungen: [zuordnen]
     karten:

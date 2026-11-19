@@ -1,10 +1,12 @@
 # Deutsch A1 – language course (own content, Family Quest, CC0)
 id: sprache-de-a1
 titel: "German A1 – Beginner"
+titel_i18n: {de: "Deutsch A1 – Einstieg", en: "German A1 – Beginner", fr: "Allemand A1 – Débutant", it: "Tedesco A1 – Principiante", es: "Alemán A1 – Principiante", nl: "Duits A1 – Beginner", pl: "Niemiecki A1 – Początek", pt: "Alemão A1 – Iniciante", sv: "Tyska A1 – Nybörjare"}
 fach: deutsch
 stufe: "A1"
 sprache: de
 quellsprache: en
+quellsprachen: [fr, it, es, nl, pl, pt, sv]
 version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇩🇪"
@@ -24,148 +26,157 @@ selbst: true
 einheiten:
   - id: greetings
     titel: Hello and goodbye
+    titel_i18n: {de: "Hallo und Tschüss", en: "Hello and goodbye", fr: "Bonjour et au revoir", it: "Ciao e arrivederci", es: "Hola y adiós", nl: "Hallo en doei", pl: "Cześć i do widzenia", pt: "Olá e tchau", sv: "Hej och hej då"}
     icon: "👋"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {en: hello, de: Hallo, emoji: "👋"}
-      - {en: good morning, de: Guten Morgen, emoji: "🌅"}
-      - {en: good evening, de: Guten Abend, emoji: "🌆"}
-      - {en: goodbye, de: Auf Wiedersehen}
-      - {en: bye, de: Tschüss, auch: [Tschüs]}
-      - {en: please, de: bitte, emoji: "🙏"}
-      - {en: thank you, de: danke}
-      - {en: My name is Anna., de: Ich heisse Anna., auch: [Ich heiße Anna.]}
-      - {en: "What is your name?", de: "Wie heisst du?", auch: ["Wie heißt du?"]}
-      - {en: "How are you?", de: "Wie geht es dir?"}
-      - {en: "I'm fine, thanks.", de: "Mir geht es gut, danke."}
-      - {en: "I don't understand.", de: Ich verstehe das nicht.}
+      - {en: "hello", de: "Hallo", fr: "salut", it: "ciao", es: "hola", nl: "hallo", pl: "cześć", pt: "oi", sv: "hej", emoji: "👋"}
+      - {en: "good morning", de: "Guten Morgen", fr: "bonjour (le matin)", it: "buongiorno", es: "buenos días", nl: "goedemorgen", pl: "dzień dobry (rano)", pt: "bom dia", sv: "god morgon", emoji: "🌅"}
+      - {en: "good evening", de: "Guten Abend", fr: "bonsoir", it: "buonasera", es: "buenas noches (al llegar)", nl: "goedenavond", pl: "dobry wieczór", pt: "boa noite (ao chegar)", sv: "god kväll", emoji: "🌆"}
+      - {en: "goodbye", de: "Auf Wiedersehen", fr: "au revoir", it: "arrivederci", es: "adiós", nl: "tot ziens", pl: "do widzenia", pt: "até logo", sv: "adjö"}
+      - {en: "bye", de: "Tschüss", fr: "salut (pour partir)", it: "ciao (per salutare)", es: "chao", nl: "doei", pl: "pa pa", pt: "tchau", sv: "hej då", auch: ["Tschüs"]}
+      - {en: "please", de: "bitte", fr: "s'il te plaît", it: "per favore", es: "por favor", nl: "alsjeblieft", pl: "proszę", pt: "por favor", sv: "snälla", emoji: "🙏"}
+      - {en: "thank you", de: "danke", fr: "merci", it: "grazie", es: "gracias", nl: "dank je", pl: "dziękuję", pt: "obrigado", sv: "tack"}
+      - {en: "My name is Anna.", de: "Ich heisse Anna.", fr: "Je m'appelle Anna.", it: "Mi chiamo Anna.", es: "Me llamo Anna.", nl: "Ik heet Anna.", pl: "Mam na imię Anna.", pt: "Eu me chamo Anna.", sv: "Jag heter Anna.", auch: ["Ich heiße Anna."]}
+      - {en: "What is your name?", de: "Wie heisst du?", fr: "Comment tu t'appelles ?", it: "Come ti chiami?", es: "¿Cómo te llamas?", nl: "Hoe heet je?", pl: "Jak masz na imię?", pt: "Como você se chama?", sv: "Vad heter du?", auch: ["Wie heißt du?"]}
+      - {en: "How are you?", de: "Wie geht es dir?", fr: "Comment ça va ?", it: "Come stai?", es: "¿Cómo estás?", nl: "Hoe gaat het met je?", pl: "Jak się masz?", pt: "Como você está?", sv: "Hur mår du?"}
+      - {en: "I'm fine, thanks.", de: "Mir geht es gut, danke.", fr: "Ça va bien, merci.", it: "Sto bene, grazie.", es: "Estoy bien, gracias.", nl: "Het gaat goed, dank je.", pl: "Dobrze, dziękuję.", pt: "Estou bem, obrigado.", sv: "Jag mår bra, tack."}
+      - {en: "I don't understand.", de: "Ich verstehe das nicht.", fr: "Je ne comprends pas.", it: "Non capisco.", es: "No entiendo.", nl: "Ik begrijp het niet.", pl: "Nie rozumiem.", pt: "Eu não entendo.", sv: "Jag förstår inte."}
   - id: numbers
     titel: Numbers 1–20
+    titel_i18n: {de: "Zahlen 1–20", en: "Numbers 1–20", fr: "Les nombres de 1 à 20", it: "I numeri 1–20", es: "Los números del 1 al 20", nl: "Getallen 1–20", pl: "Liczby 1–20", pt: "Os números de 1 a 20", sv: "Siffror 1–20"}
     icon: "🔢"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: one, de: eins, emoji: "1️⃣"}
-      - {en: two, de: zwei, emoji: "2️⃣"}
-      - {en: three, de: drei, emoji: "3️⃣"}
-      - {en: four, de: vier, emoji: "4️⃣"}
-      - {en: five, de: fünf, emoji: "5️⃣"}
-      - {en: six, de: sechs, emoji: "6️⃣"}
-      - {en: seven, de: sieben, emoji: "7️⃣"}
-      - {en: eight, de: acht, emoji: "8️⃣"}
-      - {en: nine, de: neun, emoji: "9️⃣"}
-      - {en: ten, de: zehn, emoji: "🔟"}
-      - {en: twelve, de: zwölf}
-      - {en: twenty, de: zwanzig}
+      - {en: "one", de: "eins", fr: "un", it: "uno", es: "uno", nl: "een", pl: "jeden", pt: "um", sv: "ett", emoji: "1️⃣"}
+      - {en: "two", de: "zwei", fr: "deux", it: "due", es: "dos", nl: "twee", pl: "dwa", pt: "dois", sv: "två", emoji: "2️⃣"}
+      - {en: "three", de: "drei", fr: "trois", it: "tre", es: "tres", nl: "drie", pl: "trzy", pt: "três", sv: "tre", emoji: "3️⃣"}
+      - {en: "four", de: "vier", fr: "quatre", it: "quattro", es: "cuatro", nl: "vier", pl: "cztery", pt: "quatro", sv: "fyra", emoji: "4️⃣"}
+      - {en: "five", de: "fünf", fr: "cinq", it: "cinque", es: "cinco", nl: "vijf", pl: "pięć", pt: "cinco", sv: "fem", emoji: "5️⃣"}
+      - {en: "six", de: "sechs", fr: "six", it: "sei", es: "seis", nl: "zes", pl: "sześć", pt: "seis", sv: "sex", emoji: "6️⃣"}
+      - {en: "seven", de: "sieben", fr: "sept", it: "sette", es: "siete", nl: "zeven", pl: "siedem", pt: "sete", sv: "sju", emoji: "7️⃣"}
+      - {en: "eight", de: "acht", fr: "huit", it: "otto", es: "ocho", nl: "acht", pl: "osiem", pt: "oito", sv: "åtta", emoji: "8️⃣"}
+      - {en: "nine", de: "neun", fr: "neuf", it: "nove", es: "nueve", nl: "negen", pl: "dziewięć", pt: "nove", sv: "nio", emoji: "9️⃣"}
+      - {en: "ten", de: "zehn", fr: "dix", it: "dieci", es: "diez", nl: "tien", pl: "dziesięć", pt: "dez", sv: "tio", emoji: "🔟"}
+      - {en: "twelve", de: "zwölf", fr: "douze", it: "dodici", es: "doce", nl: "twaalf", pl: "dwanaście", pt: "doze", sv: "tolv"}
+      - {en: "twenty", de: "zwanzig", fr: "vingt", it: "venti", es: "veinte", nl: "twintig", pl: "dwadzieścia", pt: "vinte", sv: "tjugo"}
   - id: family
     titel: My family
+    titel_i18n: {de: "Meine Familie", en: "My family", fr: "Ma famille", it: "La mia famiglia", es: "Mi familia", nl: "Mijn familie", pl: "Moja rodzina", pt: "Minha família", sv: "Min familj"}
     icon: "👪"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: the mother, de: die Mutter, emoji: "👩"}
-      - {en: the father, de: der Vater, emoji: "👨"}
-      - {en: the sister, de: die Schwester, emoji: "👧"}
-      - {en: the brother, de: der Bruder, emoji: "👦"}
-      - {en: the parents, de: die Eltern}
-      - {en: the grandmother, de: die Grossmutter, auch: [die Großmutter], emoji: "👵"}
-      - {en: the grandfather, de: der Grossvater, auch: [der Großvater], emoji: "👴"}
-      - {en: the child, de: das Kind, emoji: "🧒"}
-      - {en: the baby, de: das Baby, emoji: "👶"}
-      - {en: the aunt, de: die Tante}
-      - {en: the uncle, de: der Onkel}
+      - {en: "the mother", de: "die Mutter", fr: "la mère", it: "la madre", es: "la madre", nl: "de moeder", pl: "mama", pt: "a mãe", sv: "mamma", emoji: "👩"}
+      - {en: "the father", de: "der Vater", fr: "le père", it: "il padre", es: "el padre", nl: "de vader", pl: "tata", pt: "o pai", sv: "pappa", emoji: "👨"}
+      - {en: "the sister", de: "die Schwester", fr: "la sœur", it: "la sorella", es: "la hermana", nl: "de zus", pl: "siostra", pt: "a irmã", sv: "syster", emoji: "👧"}
+      - {en: "the brother", de: "der Bruder", fr: "le frère", it: "il fratello", es: "el hermano", nl: "de broer", pl: "brat", pt: "o irmão", sv: "bror", emoji: "👦"}
+      - {en: "the parents", de: "die Eltern", fr: "les parents", it: "i genitori", es: "los padres", nl: "de ouders", pl: "rodzice", pt: "os pais", sv: "föräldrarna"}
+      - {en: "the grandmother", de: "die Grossmutter", fr: "la grand-mère", it: "la nonna", es: "la abuela", nl: "de oma", pl: "babcia", pt: "a avó", sv: "mormor / farmor", auch: ["die Großmutter"], emoji: "👵"}
+      - {en: "the grandfather", de: "der Grossvater", fr: "le grand-père", it: "il nonno", es: "el abuelo", nl: "de opa", pl: "dziadek", pt: "o avô", sv: "morfar / farfar", auch: ["der Großvater"], emoji: "👴"}
+      - {en: "the child", de: "das Kind", fr: "l'enfant", it: "il bambino", es: "el niño", nl: "het kind", pl: "dziecko", pt: "a criança", sv: "barnet", emoji: "🧒"}
+      - {en: "the baby", de: "das Baby", fr: "le bébé", it: "il bebè", es: "el bebé", nl: "de baby", pl: "niemowlę", pt: "o bebê", sv: "bebisen", emoji: "👶"}
+      - {en: "the aunt", de: "die Tante", fr: "la tante", it: "la zia", es: "la tía", nl: "de tante", pl: "ciocia", pt: "a tia", sv: "faster / moster"}
+      - {en: "the uncle", de: "der Onkel", fr: "l'oncle", it: "lo zio", es: "el tío", nl: "de oom", pl: "wujek", pt: "o tio", sv: "farbror / morbror"}
   - id: food-drinks
     titel: Food and drinks
+    titel_i18n: {de: "Essen und Trinken", en: "Food and drinks", fr: "Manger et boire", it: "Cibo e bevande", es: "Comida y bebida", nl: "Eten en drinken", pl: "Jedzenie i picie", pt: "Comida e bebida", sv: "Mat och dryck"}
     icon: "🍎"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: the bread, de: das Brot, emoji: "🍞"}
-      - {en: the apple, de: der Apfel, emoji: "🍎"}
-      - {en: the water, de: das Wasser, emoji: "💧"}
-      - {en: the milk, de: die Milch, emoji: "🥛"}
-      - {en: the cheese, de: der Käse, emoji: "🧀"}
-      - {en: the egg, de: das Ei, emoji: "🥚"}
-      - {en: the banana, de: die Banane, emoji: "🍌"}
-      - {en: the juice, de: der Saft, emoji: "🧃"}
-      - {en: the coffee, de: der Kaffee, emoji: "☕"}
-      - {en: the tea, de: der Tee, emoji: "🍵"}
-      - {en: to eat, de: essen}
-      - {en: to drink, de: trinken}
+      - {en: "the bread", de: "das Brot", fr: "le pain", it: "il pane", es: "el pan", nl: "het brood", pl: "chleb", pt: "o pão", sv: "brödet", emoji: "🍞"}
+      - {en: "the apple", de: "der Apfel", fr: "la pomme", it: "la mela", es: "la manzana", nl: "de appel", pl: "jabłko", pt: "a maçã", sv: "äpplet", emoji: "🍎"}
+      - {en: "the water", de: "das Wasser", fr: "l'eau", it: "l'acqua", es: "el agua", nl: "het water", pl: "woda", pt: "a água", sv: "vattnet", emoji: "💧"}
+      - {en: "the milk", de: "die Milch", fr: "le lait", it: "il latte", es: "la leche", nl: "de melk", pl: "mleko", pt: "o leite", sv: "mjölken", emoji: "🥛"}
+      - {en: "the cheese", de: "der Käse", fr: "le fromage", it: "il formaggio", es: "el queso", nl: "de kaas", pl: "ser", pt: "o queijo", sv: "osten", emoji: "🧀"}
+      - {en: "the egg", de: "das Ei", fr: "l'œuf", it: "l'uovo", es: "el huevo", nl: "het ei", pl: "jajko", pt: "o ovo", sv: "ägget", emoji: "🥚"}
+      - {en: "the banana", de: "die Banane", fr: "la banane", it: "la banana", es: "el plátano", nl: "de banaan", pl: "banan", pt: "a banana", sv: "bananen", emoji: "🍌"}
+      - {en: "the juice", de: "der Saft", fr: "le jus", it: "il succo", es: "el zumo", nl: "het sap", pl: "sok", pt: "o suco", sv: "juicen", emoji: "🧃"}
+      - {en: "the coffee", de: "der Kaffee", fr: "le café", it: "il caffè", es: "el café", nl: "de koffie", pl: "kawa", pt: "o café", sv: "kaffet", emoji: "☕"}
+      - {en: "the tea", de: "der Tee", fr: "le thé", it: "il tè", es: "el té", nl: "de thee", pl: "herbata", pt: "o chá", sv: "teet", emoji: "🍵"}
+      - {en: "to eat", de: "essen", fr: "manger", it: "mangiare", es: "comer", nl: "eten", pl: "jeść", pt: "comer", sv: "att äta"}
+      - {en: "to drink", de: "trinken", fr: "boire", it: "bere", es: "beber", nl: "drinken", pl: "pić", pt: "beber", sv: "att dricka"}
   - id: colours
     titel: Colours
+    titel_i18n: {de: "Farben", en: "Colours", fr: "Les couleurs", it: "I colori", es: "Los colores", nl: "Kleuren", pl: "Kolory", pt: "As cores", sv: "Färger"}
     icon: "🎨"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: red, de: rot, emoji: "🟥"}
-      - {en: blue, de: blau, emoji: "🟦"}
-      - {en: green, de: grün, emoji: "🟩"}
-      - {en: yellow, de: gelb, emoji: "🟨"}
-      - {en: black, de: schwarz, emoji: "⬛"}
-      - {en: white, de: weiss, auch: [weiß], emoji: "⬜"}
-      - {en: orange, de: orange, emoji: "🟧"}
-      - {en: brown, de: braun, emoji: "🟫"}
-      - {en: purple, de: lila, emoji: "🟪"}
-      - {en: grey, de: grau}
+      - {en: "red", de: "rot", fr: "rouge", it: "rosso", es: "rojo", nl: "rood", pl: "czerwony", pt: "vermelho", sv: "röd", emoji: "🟥"}
+      - {en: "blue", de: "blau", fr: "bleu", it: "blu", es: "azul", nl: "blauw", pl: "niebieski", pt: "azul", sv: "blå", emoji: "🟦"}
+      - {en: "green", de: "grün", fr: "vert", it: "verde", es: "verde", nl: "groen", pl: "zielony", pt: "verde", sv: "grön", emoji: "🟩"}
+      - {en: "yellow", de: "gelb", fr: "jaune", it: "giallo", es: "amarillo", nl: "geel", pl: "żółty", pt: "amarelo", sv: "gul", emoji: "🟨"}
+      - {en: "black", de: "schwarz", fr: "noir", it: "nero", es: "negro", nl: "zwart", pl: "czarny", pt: "preto", sv: "svart", emoji: "⬛"}
+      - {en: "white", de: "weiss", fr: "blanc", it: "bianco", es: "blanco", nl: "wit", pl: "biały", pt: "branco", sv: "vit", auch: ["weiß"], emoji: "⬜"}
+      - {en: "orange", de: "orange", fr: "orange", it: "arancione", es: "naranja", nl: "oranje", pl: "pomarańczowy", pt: "laranja", sv: "orange", emoji: "🟧"}
+      - {en: "brown", de: "braun", fr: "marron", it: "marrone", es: "marrón", nl: "bruin", pl: "brązowy", pt: "marrom", sv: "brun", emoji: "🟫"}
+      - {en: "purple", de: "lila", fr: "violet", it: "viola", es: "morado", nl: "paars", pl: "fioletowy", pt: "roxo", sv: "lila", emoji: "🟪"}
+      - {en: "grey", de: "grau", fr: "gris", it: "grigio", es: "gris", nl: "grijs", pl: "szary", pt: "cinza", sv: "grå"}
   - id: days-time
     titel: Days and time
+    titel_i18n: {de: "Tage und Zeit", en: "Days and time", fr: "Les jours et l'heure", it: "Giorni e ore", es: "Días y horas", nl: "Dagen en tijd", pl: "Dni i godziny", pt: "Dias e horas", sv: "Dagar och tid"}
     icon: "📅"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: Monday, de: Montag}
-      - {en: Tuesday, de: Dienstag}
-      - {en: Wednesday, de: Mittwoch}
-      - {en: Thursday, de: Donnerstag}
-      - {en: Friday, de: Freitag}
-      - {en: Saturday, de: Samstag}
-      - {en: Sunday, de: Sonntag}
-      - {en: today, de: heute}
-      - {en: tomorrow, de: morgen}
-      - {en: yesterday, de: gestern}
-      - {en: the hour, de: die Stunde, emoji: "⏰"}
-      - {en: the week, de: die Woche}
+      - {en: "Monday", de: "Montag", fr: "lundi", it: "lunedì", es: "lunes", nl: "maandag", pl: "poniedziałek", pt: "segunda-feira", sv: "måndag"}
+      - {en: "Tuesday", de: "Dienstag", fr: "mardi", it: "martedì", es: "martes", nl: "dinsdag", pl: "wtorek", pt: "terça-feira", sv: "tisdag"}
+      - {en: "Wednesday", de: "Mittwoch", fr: "mercredi", it: "mercoledì", es: "miércoles", nl: "woensdag", pl: "środa", pt: "quarta-feira", sv: "onsdag"}
+      - {en: "Thursday", de: "Donnerstag", fr: "jeudi", it: "giovedì", es: "jueves", nl: "donderdag", pl: "czwartek", pt: "quinta-feira", sv: "torsdag"}
+      - {en: "Friday", de: "Freitag", fr: "vendredi", it: "venerdì", es: "viernes", nl: "vrijdag", pl: "piątek", pt: "sexta-feira", sv: "fredag"}
+      - {en: "Saturday", de: "Samstag", fr: "samedi", it: "sabato", es: "sábado", nl: "zaterdag", pl: "sobota", pt: "sábado", sv: "lördag"}
+      - {en: "Sunday", de: "Sonntag", fr: "dimanche", it: "domenica", es: "domingo", nl: "zondag", pl: "niedziela", pt: "domingo", sv: "söndag"}
+      - {en: "today", de: "heute", fr: "aujourd'hui", it: "oggi", es: "hoy", nl: "vandaag", pl: "dzisiaj", pt: "hoje", sv: "i dag"}
+      - {en: "tomorrow", de: "morgen", fr: "demain", it: "domani", es: "mañana", nl: "morgen", pl: "jutro", pt: "amanhã", sv: "i morgon"}
+      - {en: "yesterday", de: "gestern", fr: "hier", it: "ieri", es: "ayer", nl: "gisteren", pl: "wczoraj", pt: "ontem", sv: "i går"}
+      - {en: "the hour", de: "die Stunde", fr: "l'heure", it: "l'ora", es: "la hora", nl: "het uur", pl: "godzina", pt: "a hora", sv: "timmen", emoji: "⏰"}
+      - {en: "the week", de: "die Woche", fr: "la semaine", it: "la settimana", es: "la semana", nl: "de week", pl: "tydzień", pt: "a semana", sv: "veckan"}
   - id: school-work
     titel: School and work
+    titel_i18n: {de: "Schule und Arbeit", en: "School and work", fr: "L'école et le travail", it: "Scuola e lavoro", es: "Escuela y trabajo", nl: "School en werk", pl: "Szkoła i praca", pt: "Escola e trabalho", sv: "Skola och arbete"}
     icon: "🏫"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {en: the school, de: die Schule, emoji: "🏫"}
-      - {en: the teacher (female), de: die Lehrerin, emoji: "👩‍🏫"}
-      - {en: the teacher (male), de: der Lehrer, emoji: "👨‍🏫"}
-      - {en: the book, de: das Buch, emoji: "📕"}
-      - {en: the pen, de: der Stift, emoji: "🖊️"}
-      - {en: the table, de: der Tisch}
-      - {en: the work / the job, de: die Arbeit, emoji: "💼"}
-      - {en: the office, de: das Büro, emoji: "🏢"}
-      - {en: to learn, de: lernen}
-      - {en: to work, de: arbeiten}
-      - {en: to read, de: lesen, emoji: "📖"}
-      - {en: to write, de: schreiben, emoji: "✏️"}
+      - {en: "the school", de: "die Schule", fr: "l'école", it: "la scuola", es: "la escuela", nl: "de school", pl: "szkoła", pt: "a escola", sv: "skolan", emoji: "🏫"}
+      - {en: "the teacher (female)", de: "die Lehrerin", fr: "la maîtresse", it: "la maestra", es: "la profesora", nl: "de lerares", pl: "nauczycielka", pt: "a professora", sv: "läraren (kvinna)", emoji: "👩‍🏫"}
+      - {en: "the teacher (male)", de: "der Lehrer", fr: "le maître", it: "il maestro", es: "el profesor", nl: "de leraar", pl: "nauczyciel", pt: "o professor", sv: "läraren (man)", emoji: "👨‍🏫"}
+      - {en: "the book", de: "das Buch", fr: "le livre", it: "il libro", es: "el libro", nl: "het boek", pl: "książka", pt: "o livro", sv: "boken", emoji: "📕"}
+      - {en: "the pen", de: "der Stift", fr: "le stylo", it: "la penna", es: "el bolígrafo", nl: "de pen", pl: "długopis", pt: "a caneta", sv: "pennan", emoji: "🖊️"}
+      - {en: "the table", de: "der Tisch", fr: "la table", it: "il tavolo", es: "la mesa", nl: "de tafel", pl: "stół", pt: "a mesa", sv: "bordet"}
+      - {en: "the work / the job", de: "die Arbeit", fr: "le travail", it: "il lavoro", es: "el trabajo", nl: "het werk", pl: "praca", pt: "o trabalho", sv: "arbetet", emoji: "💼"}
+      - {en: "the office", de: "das Büro", fr: "le bureau", it: "l'ufficio", es: "la oficina", nl: "het kantoor", pl: "biuro", pt: "o escritório", sv: "kontoret", emoji: "🏢"}
+      - {en: "to learn", de: "lernen", fr: "apprendre", it: "imparare", es: "aprender", nl: "leren", pl: "uczyć się", pt: "aprender", sv: "att lära sig"}
+      - {en: "to work", de: "arbeiten", fr: "travailler", it: "lavorare", es: "trabajar", nl: "werken", pl: "pracować", pt: "trabalhar", sv: "att arbeta"}
+      - {en: "to read", de: "lesen", fr: "lire", it: "leggere", es: "leer", nl: "lezen", pl: "czytać", pt: "ler", sv: "att läsa", emoji: "📖"}
+      - {en: "to write", de: "schreiben", fr: "écrire", it: "scrivere", es: "escribir", nl: "schrijven", pl: "pisać", pt: "escrever", sv: "att skriva", emoji: "✏️"}
   - id: sein-haben
     titel: "sein and haben – to be, to have"
+    titel_i18n: {de: "sein und haben", en: "sein and haben – to be, to have", fr: "sein et haben – être, avoir", it: "sein e haben – essere, avere", es: "sein y haben – ser/estar, tener", nl: "sein en haben – zijn, hebben", pl: "sein i haben – być, mieć", pt: "sein e haben – ser/estar, ter", sv: "sein och haben – vara, ha"}
     icon: "✍️"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "sein – ich", antwort: bin, satz: "Ich ___ müde.", optionen: [bin, bist, ist, sind, seid]}
-      - {frage: "sein – du", antwort: bist, satz: "Du ___ mein Freund.", optionen: [bin, bist, ist, sind, seid]}
-      - {frage: "sein – er/sie/es", antwort: ist, satz: "Das Wetter ___ schön.", optionen: [bin, bist, ist, sind, seid]}
-      - {frage: "sein – wir", antwort: sind, satz: "Wir ___ zu Hause.", optionen: [bin, bist, ist, sind, seid]}
-      - {frage: "sein – ihr", antwort: seid, satz: "Ihr ___ sehr nett.", optionen: [bin, bist, ist, sind, seid]}
-      - {frage: "haben – ich", antwort: habe, satz: "Ich ___ einen Hund.", optionen: [habe, hast, hat, haben, habt]}
-      - {frage: "haben – du", antwort: hast, satz: "___ du Zeit?", optionen: [habe, hast, hat, haben, habt]}
-      - {frage: "haben – er/sie/es", antwort: hat, satz: "Mein Bruder ___ eine Katze.", optionen: [habe, hast, hat, haben, habt]}
-      - {frage: "haben – wir", antwort: haben, satz: "Wir ___ heute Schule.", optionen: [habe, hast, hat, haben, habt]}
-      - {frage: "haben – ihr", antwort: habt, satz: "___ ihr Hunger?", optionen: [habe, hast, hat, haben, habt]}
+      - {frage: "sein – ich", antwort: "bin", satz: "Ich ___ müde.", optionen: ["bin", "bist", "ist", "sind", "seid"]}
+      - {frage: "sein – du", antwort: "bist", satz: "Du ___ mein Freund.", optionen: ["bin", "bist", "ist", "sind", "seid"]}
+      - {frage: "sein – er/sie/es", antwort: "ist", satz: "Das Wetter ___ schön.", optionen: ["bin", "bist", "ist", "sind", "seid"]}
+      - {frage: "sein – wir", antwort: "sind", satz: "Wir ___ zu Hause.", optionen: ["bin", "bist", "ist", "sind", "seid"]}
+      - {frage: "sein – ihr", antwort: "seid", satz: "Ihr ___ sehr nett.", optionen: ["bin", "bist", "ist", "sind", "seid"]}
+      - {frage: "haben – ich", antwort: "habe", satz: "Ich ___ einen Hund.", optionen: ["habe", "hast", "hat", "haben", "habt"]}
+      - {frage: "haben – du", antwort: "hast", satz: "___ du Zeit?", optionen: ["habe", "hast", "hat", "haben", "habt"]}
+      - {frage: "haben – er/sie/es", antwort: "hat", satz: "Mein Bruder ___ eine Katze.", optionen: ["habe", "hast", "hat", "haben", "habt"]}
+      - {frage: "haben – wir", antwort: "haben", satz: "Wir ___ heute Schule.", optionen: ["habe", "hast", "hat", "haben", "habt"]}
+      - {frage: "haben – ihr", antwort: "habt", satz: "___ ihr Hunger?", optionen: ["habe", "hast", "hat", "haben", "habt"]}
   - id: articles
     titel: "der, die, das"
+    titel_i18n: {de: "der, die, das", en: "der, die, das", fr: "der, die, das", it: "der, die, das", es: "der, die, das", nl: "der, die, das", pl: "der, die, das", pt: "der, die, das", sv: "der, die, das"}
     icon: "📝"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "article – Hund (dog)", antwort: der, satz: "___ Hund ist gross.", optionen: [der, die, das]}
-      - {frage: "article – Katze (cat)", antwort: die, satz: "___ Katze schläft.", optionen: [der, die, das]}
-      - {frage: "article – Haus (house)", antwort: das, satz: "___ Haus ist alt.", optionen: [der, die, das]}
-      - {frage: "article – Schule (school)", antwort: die, satz: "___ Schule beginnt um acht.", optionen: [der, die, das]}
-      - {frage: "article – Apfel (apple)", antwort: der, satz: "___ Apfel ist rot.", optionen: [der, die, das]}
-      - {frage: "article – Buch (book)", antwort: das, satz: "___ Buch ist spannend.", optionen: [der, die, das]}
-      - {frage: "article – Milch (milk)", antwort: die, satz: "___ Milch ist kalt.", optionen: [der, die, das]}
-      - {frage: "article – Kind (child)", antwort: das, satz: "___ Kind spielt im Garten.", optionen: [der, die, das]}
-      - {frage: "article – Vater (father)", antwort: der, satz: "___ Vater kocht heute.", optionen: [der, die, das]}
-      - {frage: "a / an – Brot (das)", antwort: ein, satz: "Ich esse ___ Brot.", optionen: [ein, eine, einen]}
-      - {frage: "a / an – Banane (die)", antwort: eine, satz: "Ich möchte ___ Banane.", optionen: [ein, eine, einen]}
+      - {frage: "article – Hund (dog)", antwort: "der", satz: "___ Hund ist gross.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Hund (chien)", "it": "articolo – Hund (cane)", "es": "artículo – Hund (perro)", "nl": "lidwoord – Hund (hond)", "pl": "rodzajnik – Hund (pies)", "pt": "artigo – Hund (cachorro)", "sv": "artikel – Hund (hund)"}}
+      - {frage: "article – Katze (cat)", antwort: "die", satz: "___ Katze schläft.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Katze (chat)", "it": "articolo – Katze (gatto)", "es": "artículo – Katze (gato)", "nl": "lidwoord – Katze (kat)", "pl": "rodzajnik – Katze (kot)", "pt": "artigo – Katze (gato)", "sv": "artikel – Katze (katt)"}}
+      - {frage: "article – Haus (house)", antwort: "das", satz: "___ Haus ist alt.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Haus (maison)", "it": "articolo – Haus (casa)", "es": "artículo – Haus (casa)", "nl": "lidwoord – Haus (huis)", "pl": "rodzajnik – Haus (dom)", "pt": "artigo – Haus (casa)", "sv": "artikel – Haus (hus)"}}
+      - {frage: "article – Schule (school)", antwort: "die", satz: "___ Schule beginnt um acht.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Schule (école)", "it": "articolo – Schule (scuola)", "es": "artículo – Schule (escuela)", "nl": "lidwoord – Schule (school)", "pl": "rodzajnik – Schule (szkoła)", "pt": "artigo – Schule (escola)", "sv": "artikel – Schule (skola)"}}
+      - {frage: "article – Apfel (apple)", antwort: "der", satz: "___ Apfel ist rot.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Apfel (pomme)", "it": "articolo – Apfel (mela)", "es": "artículo – Apfel (manzana)", "nl": "lidwoord – Apfel (appel)", "pl": "rodzajnik – Apfel (jabłko)", "pt": "artigo – Apfel (maçã)", "sv": "artikel – Apfel (äpple)"}}
+      - {frage: "article – Buch (book)", antwort: "das", satz: "___ Buch ist spannend.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Buch (livre)", "it": "articolo – Buch (libro)", "es": "artículo – Buch (libro)", "nl": "lidwoord – Buch (boek)", "pl": "rodzajnik – Buch (książka)", "pt": "artigo – Buch (livro)", "sv": "artikel – Buch (bok)"}}
+      - {frage: "article – Milch (milk)", antwort: "die", satz: "___ Milch ist kalt.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Milch (lait)", "it": "articolo – Milch (latte)", "es": "artículo – Milch (leche)", "nl": "lidwoord – Milch (melk)", "pl": "rodzajnik – Milch (mleko)", "pt": "artigo – Milch (leite)", "sv": "artikel – Milch (mjölk)"}}
+      - {frage: "article – Kind (child)", antwort: "das", satz: "___ Kind spielt im Garten.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Kind (enfant)", "it": "articolo – Kind (bambino)", "es": "artículo – Kind (niño)", "nl": "lidwoord – Kind (kind)", "pl": "rodzajnik – Kind (dziecko)", "pt": "artigo – Kind (criança)", "sv": "artikel – Kind (barn)"}}
+      - {frage: "article – Vater (father)", antwort: "der", satz: "___ Vater kocht heute.", optionen: ["der", "die", "das"], frage_i18n: {"fr": "article – Vater (père)", "it": "articolo – Vater (padre)", "es": "artículo – Vater (padre)", "nl": "lidwoord – Vater (vader)", "pl": "rodzajnik – Vater (ojciec)", "pt": "artigo – Vater (pai)", "sv": "artikel – Vater (pappa)"}}
+      - {frage: "a / an – Brot (das)", antwort: "ein", satz: "Ich esse ___ Brot.", optionen: ["ein", "eine", "einen"], frage_i18n: {"fr": "un / une – Brot (das)", "it": "un / una – Brot (das)", "es": "un / una – Brot (das)", "nl": "een – Brot (das)", "pl": "rodzajnik nieokreślony – Brot (das)", "pt": "um / uma – Brot (das)", "sv": "en / ett – Brot (das)"}}
+      - {frage: "a / an – Banane (die)", antwort: "eine", satz: "Ich möchte ___ Banane.", optionen: ["ein", "eine", "einen"], frage_i18n: {"fr": "un / une – Banane (die)", "it": "un / una – Banane (die)", "es": "un / una – Banane (die)", "nl": "een – Banane (die)", "pl": "rodzajnik nieokreślony – Banane (die)", "pt": "um / uma – Banane (die)", "sv": "en / ett – Banane (die)"}}

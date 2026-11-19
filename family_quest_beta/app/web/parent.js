@@ -9,7 +9,7 @@ const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
   karteikarte: T("Flash cards"), zuordnen: T("Drag & drop"), hoeren: T("Listening") };
-const STATUS = { active: T("active"), draft: T("draft – to check"), disabled: T("switched off") };
+const STATUS = { active: T("active"), draft: T("draft – to check"), disabled: T("switched off"), available: T("not added") };
 
 async function boot() {
   try { P.info = await api("info"); if (P.info.via_ha) P.appLink = await api("app-link").catch(() => null); } catch (e) { return app.replaceChildren(h("div.login", h("div.card", h("h2", T("Family Quest cannot be reached")), h("p", e.message)))); }
@@ -119,14 +119,14 @@ async function loginView(auto = true) {
   const done = async r => {
     Auth.parent = r.parent_token;
     // first PIN login through Home Assistant: offer to skip the PIN next time
-    if (haUser && !linked && (await confirmDialog(I18N.tr(T("Log in with your Home Assistant user «{0}» from now on – without PIN?")).replace("{0}", haUser.name || haUser.user)))) {
+    if (haUser && !linked && !ha.kid && (await confirmDialog(I18N.tr(T("Log in with your Home Assistant user «{0}» from now on – without PIN?")).replace("{0}", haUser.name || haUser.user)))) {
       try { await api("parent/ha-link", { method: "POST", body: { on: true } }); toast(T("Linked with Home Assistant"), "good"); } catch (e) { toast(e.message, "bad"); }
     }
     boot();
   };
   const card = h("div.card.login-card");
   const digits = () => card.replaceChildren(...[
-    h("div.row", h("a.link", appLinkAttrs(), "⭐ Family Quest App ↗"), h("span.grow"), themeBtn(), langPicker()),
+    h("div.row", h("a.link", appLinkAttrs({ dialog: true }), "⭐ Family Quest App ↗"), h("span.grow"), themeBtn(), langPicker()),
     linked ? h("div.center", h("button.btn", { onclick: () => loginView(true) }, "🏠 ", I18N.tr(T("Log in as {0}")).replace("{0}", haUser.name || haUser.user)))
       : haUser ? h("p.small.muted.center", "🏠 ", I18N.tr(T("Home Assistant user: {0}")).replace("{0}", haUser.name || haUser.user)) : null,
     pinPad({ title: T("Parent PIN"), length: 4, maxLength: 8, cancel: false, onSubmit: async pin => done(await api("parent/login", { method: "POST", body: { pin } })) }),
@@ -175,7 +175,25 @@ async function releaseNotes() {
 
 // link to the kid app: in Home Assistant through the direct access (http://<host>:<port>/app) – an ingress address opened
 // in a new tab outside of Home Assistant (Safari from the companion app) only shows «401: Unauthorized»
-function appLinkAttrs() {
+// «⭐ Family Quest App»: a dialog with the QR code of the kids' app, print and open in a new tab – so it is clear where
+// the app is and how the children sign in
+function appLinkDialog(href) {
+  const link = new URL(href, location.href).href, direct = !!(P.appLink && P.appLink.port) || !(P.info && P.info.via_ha);
+  const m = modal(h("div.form.app-link-dlg", h("h2", "⭐ ", T("Family Quest App")),
+    h("p", T("The children use their own app: scan the code with the phone or tablet, pick your profile and enter your PIN.")),
+    h("div.center.app-link-qr", qrSvg(link)),
+    h("p.small.center", { translate: "no" }, h("a", { href: link, target: "_blank", rel: "noopener" }, link)),
+    direct ? h("p.small.muted", "📶 ", T("Works in the home Wi-Fi.")) : h("p.small.muted", "ℹ️ ", T("Direct access is off: the code opens the app inside Home Assistant. In Home Assistant open the app → Configuration and switch on direct_access, so the children's devices can open it without a Home Assistant login.")),
+    h("div.row.wrap", h("a.btn", { href: link, target: "_blank", rel: "noopener", onclick: () => m.close() }, "↗ ", T("Open in a new tab")),
+      h("button.btn.ghost", { onclick: () => { m.close(); printPoster(link); } }, "🖨️ ", T("Print poster")),
+      h("button.btn.ghost", { onclick: () => m.close() }, T("Close")))));
+}
+
+function appLinkAttrs({ dialog = false } = {}) {
+  if (dialog) {
+    const a = appLinkAttrs();
+    return { ...a, onclick: e => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; e.preventDefault(); appLinkDialog(a.href); } };
+  }
   const base = { rel: "noopener", translate: "no" };
   if (!P.info || !P.info.via_ha) return { ...base, href: "app", target: "_blank" };
   const l = P.appLink;
@@ -194,7 +212,7 @@ function render() {
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
       // four items one below the other, written out: app, light / dark, language, log out
-      h("a.foot-item", appLinkAttrs(), h("span.foot-ic", "⭐"), h("span", "Family Quest App")),
+      h("a.foot-item", appLinkAttrs({ dialog: true }), h("span.foot-ic", "⭐"), h("span", "Family Quest App")),
       footTheme(), footLang(),
       h("button.foot-item", { onclick: () => { Auth.parent = ""; loginView(false); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),
       h("button.foot-item", { onclick: releaseNotes }, h("span.foot-ic", "📝"), h("span", T("Release notes"))),
@@ -629,19 +647,29 @@ async function profileDialog(p, persons, role = "kid") {
   const avBox = h("div", h("p.small.muted", "…"));
   let avatar = null;
   if (!isNew) call(`parent/profiles/${p.id}/avatar`).then(d => { avatar = JSON.parse(JSON.stringify(d.avatar)); avBox.replaceChildren(avatarEditorBox(d, avatar)); }).catch(() => avBox.replaceChildren());
-  // parents: the Home Assistant user opens the parent area – a PIN is only needed for the app without Home Assistant
-  const haUser = h("select", h("option", { value: "" }, "– " + I18N.tr(T("none")) + " –"));
+  // parents: the Home Assistant user opens the parent area – a PIN is only needed for the app without Home Assistant;
+  // children: it opens the children's app in Home Assistant (option in Settings)
+  const haUser = h("select", h("option", { value: "" }, "– " + I18N.tr(T("none")) + " –"),
+    p.settings && p.settings.ha_user_id ? h("option", { value: p.settings.ha_user_id, selected: true, "data-name": p.settings.ha_user_name || "" }, p.settings.ha_user_name || p.settings.ha_user_id) : null);
   const haInfo = h("span.hint");
   if (P.meta.ha) call("parent/ha/users").then(list => {
     const cur = p.settings && p.settings.ha_user_id;
     haUser.replaceChildren(h("option", { value: "" }, "– " + I18N.tr(T("none")) + " –"), ...list.map(u => h("option", { value: u.id, selected: u.id === cur, "data-name": u.name },
       u.name + (u.linked_to && u.id !== cur ? " (" + u.linked_to + ")" : ""))));
-    if (cur && !list.some(u => u.id === cur)) haUser.append(h("option", { value: cur, selected: true }, p.settings.ha_user_name || cur));
+    if (cur && !list.some(u => u.id === cur)) haUser.append(h("option", { value: cur, selected: true, "data-name": p.settings.ha_user_name || "" }, p.settings.ha_user_name || cur));
     if (!list.length) haInfo.textContent = I18N.tr(T("No Home Assistant user found – a user needs a person in Home Assistant (Settings › People)."));
   }).catch(() => {});
+  // children (option): the Home Assistant user opens the children's app in Home Assistant without PIN – never the parent area
+  const haLabel = h("span"), haHint = h("span.hint"), haWarn = h("span.hint.warn");
   const haPart = h("div.form", h("h3", "🏠 ", T("Home Assistant user")),
-    h("label.field", T("Logs in to the parent area as"), haUser, haInfo,
-      h("span.hint", T("This parent opens the parent area in the Home Assistant sidebar without PIN."))));
+    h("label.field", haLabel, haUser, haInfo, haHint, haWarn));
+  const syncHa = kid => {
+    haLabel.textContent = I18N.tr(kid ? T("Logs in to the children's app as") : T("Logs in to the parent area as"));
+    haHint.textContent = I18N.tr(kid ? T("This child opens Family Quest in the Home Assistant sidebar without PIN – only the children's app, never the parent area.")
+      : T("This parent opens the parent area in the Home Assistant sidebar without PIN."));
+    haWarn.textContent = kid && !P.meta.kid_ha_login ? I18N.tr(T("Only works when «Children may sign in with their Home Assistant user» is switched on in Settings.")) : "";
+    haWarn.hidden = !haWarn.textContent;
+  };
   // PIN: children get the picture PIN first (4 symbols), digits or no PIN on request; parents always digits
   const symbolKind = (p.settings && p.settings.pin_kind) === "symbols";
   let pinKind = p.has_pin ? (symbolKind && p.role !== "parent" ? "symbols" : "digits") : (p.role === "parent" ? (P.meta.ha ? "none" : "digits") : "symbols");
@@ -696,7 +724,7 @@ async function profileDialog(p, persons, role = "kid") {
   ]);
   const syncRole = () => {
     const kid = f.role.value === "kid";
-    kidPart.hidden = timePart.hidden = !kid; if (batteryPart) batteryPart.hidden = !kid; parentPart.hidden = kid; haPart.hidden = kid || !P.meta.ha;
+    kidPart.hidden = timePart.hidden = !kid; if (batteryPart) batteryPart.hidden = !kid; parentPart.hidden = kid; haPart.hidden = !P.meta.ha; syncHa(kid);
     tabs.setVisible("time", kid); tabs.setVisible("net", kid || !!P.meta.ha);
     drawPin();
   };
@@ -718,7 +746,7 @@ async function profileDialog(p, persons, role = "kid") {
     if (changing && pinKind === "digits" && !pin && p.has_pin) { focusIn(f.pin); return toast(T("Enter the new digit PIN"), "bad"); }
     const isParent = f.role.value === "parent";
     const body = { name: f.name.value, role: f.role.value, color: f.color.value, pin, planer_person_id: f.planer.value || null,
-      ...(isParent && P.meta.ha ? { ha_user_id: haUser.value, ha_user_name: haUser.selectedOptions[0]?.dataset.name || "" } : {}),
+      ...(P.meta.ha ? { ha_user_id: haUser.value, ha_user_name: haUser.selectedOptions[0]?.dataset.name || "" } : {}),
       ...(pinSymbols ? { pin_symbols: pinSymbols.symbols, symbol_set: pinSymbols.set } : {}),
       settings: { daily_goal: +f.daily_goal.value, lesson_length: +f.lesson_length.value, new_per_lesson: +f.new_per_lesson.value,
         learning_hours: f.learning_hours.value.trim(), auto_logout_min: +f.auto_logout_min.value, internet_entity: f.internet_entity.value,
@@ -748,14 +776,20 @@ function noMatch(text, reset) {
 // an open «⋯» menu closes with a tap anywhere else
 document.addEventListener("click", e => document.querySelectorAll("details.more-menu[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
 
+const LANG_FLAG = { de: "🇩🇪", en: "🇬🇧", fr: "🇫🇷", it: "🇮🇹", es: "🇪🇸", nl: "🇳🇱", pl: "🇵🇱", pt: "🇧🇷", sv: "🇸🇪" };
+const LANG_NAME = { de: T("German"), en: T("English"), fr: T("French"), it: T("Italian"), es: T("Spanish"), nl: T("Dutch"), pl: T("Polish"), pt: T("Portuguese"), sv: T("Swedish") };
+
 async function packsView(main) {
   const [d, profiles] = await Promise.all([call("parent/packs"), call("parent/profiles")]);
   const kids = profiles.filter(p => p.role === "kid");
   const drafts = d.packs.filter(p => p.status === "draft");
   const imported = p => !["builtin", "share"].includes(p.source);      // own packs: imported, made with the AI or edited – shown on top
-  const importedPacks = d.packs.filter(p => p.status !== "draft" && imported(p));
-  const bundles = d.packs.filter(p => p.kind === "bundle" && p.status !== "draft");
-  const packs = d.packs.filter(p => p.kind === "pack" && p.status !== "draft");
+  // «More packs»: optional packs of the app (e.g. German content only) – not installed until a parent adds them
+  const available = d.packs.filter(p => p.status === "available");
+  const shown = d.packs.filter(p => p.status !== "available");
+  const importedPacks = shown.filter(p => p.status !== "draft" && imported(p));
+  const bundles = shown.filter(p => p.kind === "bundle" && p.status !== "draft");
+  const packs = shown.filter(p => p.kind === "pack" && p.status !== "draft");
   const actRow = p => h("div.act", ...kids.map(k => h("label.check", h("input", { type: "checkbox", checked: p.profiles.includes(k.id),
     onchange: async e => {
       try { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: p.id, on: e.target.checked } }); toast(T("Saved"), "good"); }
@@ -770,11 +804,17 @@ async function packsView(main) {
     h("div.more-pop",
       h("button.btn.small.ghost", { title: T("Export as ZIP (with pictures)"), onclick: e => { e.target.closest("details").open = false; download(p.id, "zip"); } }, "⬇️ ", T("Export as ZIP (with pictures)")),
       h("button.btn.small.ghost", { onclick: e => { e.target.closest("details").open = false; download(p.id, "json"); } }, "⬇️ ", T("Export as JSON")),
-      h("button.btn.small.ghost.danger-text", { onclick: e => { e.target.closest("details").open = false; del(p); } }, "🗑️ ", T("Delete"))));
+      // an optional pack of the app goes back to «More packs» (deleting it would only bring it back at the next start)
+      p.optional && !imported(p)
+        ? h("button.btn.small.ghost", { onclick: e => { e.target.closest("details").open = false; uninstall(p); } }, "↩️ ", T("Remove from the family"))
+        : h("button.btn.small.ghost.danger-text", { onclick: e => { e.target.closest("details").open = false; del(p); } }, "🗑️ ", T("Delete"))));
+  // the language the content is written in (packs that do not follow the app language)
+  const langNote = p => (p.content_langs || []).length ? h("span.chip.pack-lang", { title: T("The questions and answers of this pack are written in this language") },
+    (p.content_langs || []).map(l => (LANG_FLAG[l] || "🗣️") + " ").join(""), I18N.tr(T("Content in {0}")).replace("{0}", p.content_langs.map(l => langInText(I18N.tr(LANG_NAME[l] || l))).join(", "))) : null;
   const card = p => h("div.card.pack" + (p.status === "draft" ? ".draft" : ""), { "data-find": [p.id, p.title, p.level, p.subject && I18N.tr(p.subject.name), ...(p.units || []).map(u => u.title)].filter(Boolean).join(" ") },
     h("div.row.pack-head", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
       h("div.small.muted", p.kind === "bundle" ? T("Level pack") : subjectName(p.subject.key), p.level ? h("span", { translate: "no" }, " · " + p.level) : null, " · ",
-        STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : "")), moreMenu(p)),
+        STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : ""), langNote(p)), moreMenu(p)),
     h("div.row.wrap.pack-acts",
       // a draft is checked, then published – the same two verbs as on the import page
       p.kind === "pack" ? h("button.btn.small.ghost", { onclick: () => packEditor(p.id) }, "✏️ ", p.status === "draft" ? T("Check") : T("Edit")) : null,
@@ -834,14 +874,46 @@ async function packsView(main) {
     h("button.btn.ghost", { title: T("All packs in one JSON file"), onclick: () => download(null, "json") }, "⬇️ ", T("Export all")),
     h("button.btn", { onclick: () => { P.tab = "import"; render(); } }, "📥 ", T("Import"))));
   main.append(search, noPacks);
+  // 💡 Code Workshop (codelab.js): only in the dev channel (channel.DEV_FEATURES)
+  const codeSec = P.info && P.info.codelab ? await codelabSection().catch(e => section("💡 " + I18N.tr(T("Code Workshop")), h("p.bad", e.message))) : null;
+  const german = String(I18N.lang || "").startsWith("de");
+  const more = moreSection(german);
   if (mode === "kids") return main.append(...byKid(),
-    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null);
+    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null, codeSec, more);
   const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
+    german ? more : null,
     drafts.length ? section("📝 " + I18N.tr(T("Imported as draft – to check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
     importedPacks.length ? section("⭐ " + I18N.tr(T("Own packs")), ...importedPacks.map(card)) : null,
     levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
-    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null);
+    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null, codeSec, german ? null : more);
+  // ➕ More packs: optional packs of the app, added with one click (then switched on per child as every other pack)
+  function moreSection(top) {
+    if (!available.length) return null;
+    const de = available.filter(p => (p.content_langs || []).includes("de"));
+    const avCard = p => h("div.card.pack.pack-avail", { "data-find": [p.id, p.title, p.level, p.subject && I18N.tr(p.subject.name), ...(p.units || []).map(u => u.title)].filter(Boolean).join(" ") },
+      h("div.row.pack-head", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
+        h("div.small.muted", p.kind === "bundle" ? T("Level pack") : subjectName(p.subject.key), p.level ? h("span", { translate: "no" }, " · " + p.level) : null), langNote(p)),
+        h("button.btn.small.good", { onclick: () => install([p.id]) }, "＋ ", T("Add"))),
+      p.description ? C(p.description, "p.small.muted") : null,
+      p.kind === "pack" ? h("div.small.units", ...p.units.map(u => chip([u.icon ? u.icon + " " : "", C(u.title), " · " + u.count]))) :
+        h("div.small", ...(p.semesters || []).map(s => h("div", C(s.titel || s.id, "strong"), ": ",
+          C(s.pakete.map(id => byId[id] ? byId[id].title : id).join(", ") || "–")))));
+    return section("➕ " + I18N.tr(T("More packs")),
+      h("p.small.muted", top ? T("Recommended for German-speaking families: packs with German content (school topics of Switzerland and general knowledge). Add them with one click, then switch them on per child.")
+        : T("Packs whose content exists in one language only. They are not added automatically – add them with one click, then switch them on per child.")),
+      de.length > 1 ? h("button.btn", { onclick: () => install(de.map(p => p.id)) }, "🇩🇪 ", T("Add all German-language packs")) : null,
+      ...available.map(avCard));
+  }
+  async function install(ids) {
+    try { await call("parent/packs/install", { method: "POST", body: { ids, on: true } }); toast(T("Added"), "good"); } catch { return; }
+    render();
+  }
+  async function uninstall(p) {
+    if (!(await confirmDialog(I18N.tr(T("Remove {0} from the family? It is switched off for every child and goes back to «More packs». The learning progress is kept.")).replace("{0}", p.title)))) return;
+    try { await call("parent/packs/install", { method: "POST", body: { ids: [p.id], on: false } }); } catch { return; }
+    render();
+  }
   function packRewards(p) {
     const r = p.rewards || {};
     const xp = h("input", { type: "number", min: 0, max: 10000, value: r.xp ?? "", placeholder: "–", inputmode: "numeric" });
@@ -861,6 +933,47 @@ async function packsView(main) {
   }
   async function setStatus(id, status) { await call(`parent/packs/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } }); render(); }
   async function del(p) { if (!(await confirmDialog(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title)))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
+}
+
+// 💡 Code Workshop (familyquest/codelab.py): on / off per child, puzzle rewards, the progress of every child, the programs
+// the family shares (open in the app, remove) – of private programs only that they exist
+async function codelabSection() {
+  const d = await call("codelab/overview");
+  const s = d.settings;
+  const on = d.kids.map(k => [k.id, h("input", { type: "checkbox", checked: !s.off.includes(k.id) })]);
+  const num = v => h("input", { type: "number", min: 0, max: 10000, value: v, inputmode: "numeric" });
+  const xp = num(s.level_xp), coins = num(s.level_coins);
+  const save = async () => {
+    const body = { off: on.filter(([, c]) => !c.checked).map(([id]) => id), level_xp: Math.max(0, Math.round(+xp.value || 0)), level_coins: Math.max(0, Math.round(+coins.value || 0)) };
+    try { await call("codelab/settings", { method: "PUT", body }); toast(T("Saved"), "good"); } catch {}
+  };
+  const worlds = [...new Set(d.levels.map(l => l.world))];
+  const kidRow = k => h("tr", h("td", h("div.row.cw-pk", avatarSvg(k.avatar, 30), C(k.name, "strong"))),
+    h("td", { translate: "no" }, k.solved + " / " + d.total), h("td", { translate: "no" }, "⭐ " + k.stars),
+    ...worlds.map(w => h("td.cw-pw", { translate: "no" }, d.levels.filter(l => l.world === w).map(l => k.levels[l.id] ? "★".repeat(k.levels[l.id]) : "·").join(" "))));
+  const proj = d.projects;
+  const shared = [...proj.mine, ...proj.others];
+  const remove = async p => {
+    if (!(await confirmDialog(I18N.tr(T("Remove the program «{0}»?")).replace("{0}", p.title)))) return;
+    try { await call("codelab/projects/" + p.id, { method: "DELETE" }); render(); } catch {}
+  };
+  const VIS = { me: "🔒", kids: "🧒", family: "👨‍👩‍👧" };
+  return section("💡 " + I18N.tr(T("Code Workshop")),
+    h("p.small.muted", T("Block programming for the children: 15 puzzles with the fox and own programs. The time in the workshop counts as learning time.")),
+    h("div.field", h("b", T("Code Workshop for")), d.kids.length ? h("div.row.wrap", ...on.map(([id, c]) => h("label.check", c, " ", C(d.kids.find(k => k.id === id).name)))) : h("span.small.muted", T("No child profile yet"))),
+    h("div.sb-rew", h("b", T("Reward for the first solve of a puzzle level")),
+      h("label.field", h("span", "⭐ XP"), xp), h("label.field", h("span", "🪙 ", T("Coins")), coins)),
+    h("button.btn", { onclick: save }, "💾 ", T("Save")),
+    d.kids.length ? h("div.cw-ptable", h("h3", "🧩 ", T("Puzzle progress")), h("div.tbl-wrap", h("table.tbl",
+      h("thead", h("tr", h("th", T("Child")), h("th", T("Levels")), h("th", "⭐"), ...worlds.map(w => h("th", { translate: "no" }, "#" + w)))),
+      h("tbody", ...d.kids.map(kidRow))))) : null,
+    h("h3", "🎨 ", T("Programs of the family")),
+    shared.length ? h("ul.cw-plist-p", ...shared.map(p => h("li.row",
+      h("span", VIS[p.visibility] || ""), h("div.grow", C(p.title, "strong"), h("div.small.muted", C(p.author.name), " · 🧱 " + p.blocks + " · " + fmtDate(p.updated_at))),
+      h("button.btn.small.ghost", { onclick: () => openInApp("codelab/play/" + p.id) }, "▶ ", T("Open in the app")),
+      h("button.btn.small.ghost", { "aria-label": T("Remove"), onclick: () => remove(p) }, "🗑️")))) : h("p.small.muted", T("No shared programs yet.")),
+    proj.private.length ? h("div", h("p.small.muted", "🔒 ", T("Private programs – only the child can open them:")),
+      h("ul.cw-plist-p", ...proj.private.map(p => h("li.row.small", h("span", "🔒"), C(p.author.name, "strong"), h("span.muted", " · 🧱 " + p.blocks + " · " + fmtDate(p.updated_at)))))) : null);
 }
 
 async function download(id, format = "zip") {
@@ -2026,6 +2139,7 @@ async function photoSets(onCount = null) {
 function haLoginSection(s) {
   const u = P.meta.ha_user, mine = P.meta.my_ha_user;
   const only = h("input", { type: "checkbox", checked: !!s.parent_ha_only, disabled: !(u && mine) && !s.parent_ha_only });
+  const kids = h("input", { type: "checkbox", checked: !!s.kid_ha_login });
   return section("🏠 " + I18N.tr(T("Log in with Home Assistant")),
     h("p.small.muted", T("Parents who open Family Quest in Home Assistant (sidebar) come into the parent area without PIN once their Home Assistant user is linked. The PIN stays for the app on tablets and for the direct address.")),
     h("div.row.wrap",
@@ -2035,9 +2149,13 @@ function haLoginSection(s) {
         : u ? h("button.btn.small", { onclick: async () => { await call("parent/ha-link", { method: "POST", body: { on: true } }); P.meta = await call("parent/meta"); toast(T("Linked with Home Assistant"), "good"); render(); } }, "🔗 ", T("Link my user")) : null),
     h("label.check", only, h("span", T("Parent area only through Home Assistant (no PIN login for the parent area)"))),
     h("p.small.muted", T("Then the app port (tablets, phones) is only for the children's app – the parent area opens only in the Home Assistant sidebar with your Home Assistant login. No second port is needed.")),
+    h("label.check", kids, h("span", T("Children may sign in with their Home Assistant user"))),
+    h("p.small.muted", T("For each child choose its Home Assistant user in the profile (Profiles › edit). In the Home Assistant sidebar the child then comes into its app without PIN – never into the parent area. Home Assistant users that are neither linked nor administrators get the children's app with the normal login.")),
     h("button.btn.small", { onclick: async () => {
-      try { await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked } }); toast(T("Saved"), "good"); }
-      catch (e) { only.checked = !only.checked; }
+      try {
+        await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked, kid_ha_login: kids.checked } });
+        P.meta.kid_ha_login = kids.checked; s.parent_ha_only = only.checked; s.kid_ha_login = kids.checked; toast(T("Saved"), "good");
+      } catch (e) { only.checked = !!s.parent_ha_only; kids.checked = !!s.kid_ha_login; }
     } }, "💾 ", T("Save")));
 }
 

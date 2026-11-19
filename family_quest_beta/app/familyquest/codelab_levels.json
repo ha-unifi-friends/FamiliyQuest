@@ -1,0 +1,1850 @@
+{
+ "_note": "Puzzles of the Code Workshop (codelab.py). Cells: [column, row] from the top left, 8×6; fox: [column, row, direction (90 right, 0 up, -90 left, 180 down)]; stars: the most blocks for ⭐⭐⭐ and ⭐⭐; max: block limit; inputs: tap / keys (the player starts the scripts); solution: a reference program (compact: [op, {args}, [body], [else]]) checked by tests/test_codelab.py.",
+ "worlds": [
+  {
+   "id": 1,
+   "emoji": "👣",
+   "title": "Step by step"
+  },
+  {
+   "id": 2,
+   "emoji": "🔁",
+   "title": "Loops"
+  },
+  {
+   "id": 3,
+   "emoji": "⚡",
+   "title": "Events and if"
+  }
+ ],
+ "levels": [
+  {
+   "id": "1-1",
+   "world": 1,
+   "title": "First steps",
+   "goal": "Bring the fox to the star.",
+   "hint": "One block is enough: tap the number in «move» and choose how many steps.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    1,
+    2,
+    90
+   ],
+   "star": [
+    4,
+    2
+   ],
+   "stones": [],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     }
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    1,
+    3
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "1-2",
+   "world": 1,
+   "title": "Around the corner",
+   "goal": "Bring the fox to the star.",
+   "hint": "Walk to the end of the row, then turn ↺ to the left and walk up.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    1,
+    4,
+    90
+   ],
+   "star": [
+    4,
+    1
+   ],
+   "stones": [
+    [
+     2,
+     2
+    ],
+    [
+     6,
+     2
+    ],
+    [
+     6,
+     4
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     }
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    3,
+    5
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ],
+      [
+       "turn_l",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "1-3",
+   "world": 1,
+   "title": "Stone in the way",
+   "goal": "Bring the fox to the star.",
+   "hint": "Walk around the stone: up one row, past it, and down again.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    2,
+    90
+   ],
+   "star": [
+    5,
+    2
+   ],
+   "stones": [
+    [
+     3,
+     2
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     }
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    7,
+    9
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "move",
+       {
+        "n": 2
+       }
+      ],
+      [
+       "turn_l",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 1
+       }
+      ],
+      [
+       "turn_r",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ],
+      [
+       "turn_r",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 1
+       }
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "1-4",
+   "world": 1,
+   "title": "The long way round",
+   "goal": "Bring the fox to the star.",
+   "hint": "The stones are a wall. Walk to its end, turn twice and come back below it.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    0,
+    90
+   ],
+   "star": [
+    0,
+    2
+   ],
+   "stones": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     1
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     }
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    5,
+    7
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ],
+      [
+       "turn_r",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 2
+       }
+      ],
+      [
+       "turn_r",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "1-5",
+   "world": 1,
+   "title": "Little maze",
+   "goal": "Bring the fox to the star.",
+   "hint": "Follow the free path one piece at a time: count the cells, then turn.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    5,
+    90
+   ],
+   "star": [
+    7,
+    0
+   ],
+   "stones": [
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     6,
+     2
+    ],
+    [
+     6,
+     3
+    ],
+    [
+     6,
+     1
+    ],
+    [
+     4,
+     3
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     }
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    9,
+    11
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "move",
+       {
+        "n": 2
+       }
+      ],
+      [
+       "turn_l",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ],
+      [
+       "turn_r",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ],
+      [
+       "turn_l",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 2
+       }
+      ],
+      [
+       "turn_r",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 2
+       }
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "2-1",
+   "world": 2,
+   "title": "Again and again",
+   "goal": "Bring the fox to the star.",
+   "hint": "«move» only goes one step here. Put it inside «repeat» and tap the number of the loop.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    2,
+    90
+   ],
+   "star": [
+    7,
+    2
+   ],
+   "stones": [],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "repeat",
+     "args": {
+      "n": 3
+     }
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": 3,
+   "stars": [
+    2,
+    3
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "repeat",
+       {
+        "n": 7
+       },
+       [
+        [
+         "move",
+         {
+          "n": 1
+         }
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "2-2",
+   "world": 2,
+   "title": "Stairs",
+   "goal": "Bring the fox to the star.",
+   "hint": "One stair is: step, turn ↺, step, turn ↻. How many stairs are there?",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    5,
+    90
+   ],
+   "star": [
+    5,
+    0
+   ],
+   "stones": [
+    [
+     2,
+     5
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     5,
+     2
+    ],
+    [
+     6,
+     1
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "repeat",
+     "args": {
+      "n": 3
+     }
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": 6,
+   "stars": [
+    5,
+    6
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "repeat",
+       {
+        "n": 5
+       },
+       [
+        [
+         "move",
+         {
+          "n": 1
+         }
+        ],
+        [
+         "turn_l",
+         {
+          "deg": 90
+         }
+        ],
+        [
+         "move",
+         {
+          "n": 1
+         }
+        ],
+        [
+         "turn_r",
+         {
+          "deg": 90
+         }
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "2-3",
+   "world": 2,
+   "title": "Two corridors",
+   "goal": "Bring the fox to the star.",
+   "hint": "Two loops one after the other: one for the long way right, one for the way down.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    0,
+    90
+   ],
+   "star": [
+    7,
+    5
+   ],
+   "stones": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     5,
+     1
+    ],
+    [
+     6,
+     1
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     6,
+     3
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "repeat",
+     "args": {
+      "n": 3
+     }
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": 6,
+   "stars": [
+    5,
+    6
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "repeat",
+       {
+        "n": 7
+       },
+       [
+        [
+         "move",
+         {
+          "n": 1
+         }
+        ]
+       ]
+      ],
+      [
+       "turn_r",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "repeat",
+       {
+        "n": 5
+       },
+       [
+        [
+         "move",
+         {
+          "n": 1
+         }
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "2-4",
+   "world": 2,
+   "title": "Big stairs",
+   "goal": "Bring the fox to the star.",
+   "hint": "A loop can be inside a loop! One big stair: 3 steps, turn ↺, 2 steps, turn ↻.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    5,
+    90
+   ],
+   "star": [
+    6,
+    1
+   ],
+   "stones": [
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     5,
+     4
+    ],
+    [
+     6,
+     4
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     7,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     1,
+     2
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "repeat",
+     "args": {
+      "n": 3
+     }
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": 7,
+   "stars": [
+    7,
+    7
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "repeat",
+       {
+        "n": 2
+       },
+       [
+        [
+         "repeat",
+         {
+          "n": 3
+         },
+         [
+          [
+           "move",
+           {
+            "n": 1
+           }
+          ]
+         ]
+        ],
+        [
+         "turn_l",
+         {
+          "deg": 90
+         }
+        ],
+        [
+         "repeat",
+         {
+          "n": 2
+         },
+         [
+          [
+           "move",
+           {
+            "n": 1
+           }
+          ]
+         ]
+        ],
+        [
+         "turn_r",
+         {
+          "deg": 90
+         }
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "2-5",
+   "world": 2,
+   "title": "For ever",
+   "goal": "Bring the fox to the star.",
+   "hint": "«repeat forever» never stops – but the fox stops as soon as it finds the star.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    1,
+    3,
+    90
+   ],
+   "star": [
+    6,
+    3
+   ],
+   "stones": [
+    [
+     3,
+     1
+    ],
+    [
+     3,
+     5
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "forever"
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": 2,
+   "stars": [
+    2,
+    2
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "forever",
+       [
+        [
+         "move",
+         {
+          "n": 1
+         }
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "3-1",
+   "world": 3,
+   "title": "Tap the fox",
+   "goal": "Bring the fox to the star.",
+   "hint": "This program starts when you tap the fox – not with ▶ Start. Press ▶ Start first, then tap the fox on the stage.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    1,
+    4,
+    90
+   ],
+   "star": [
+    6,
+    1
+   ],
+   "stones": [
+    [
+     3,
+     2
+    ],
+    [
+     4,
+     2
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_tap",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     }
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    }
+   ],
+   "start": [
+    [
+     "ev_tap"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    3,
+    5
+   ],
+   "inputs": "tap",
+   "solution": [
+    [
+     "ev_tap",
+     [
+      [
+       "move",
+       {
+        "n": 5
+       }
+      ],
+      [
+       "turn_l",
+       {
+        "deg": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 3
+       }
+      ]
+     ]
+    ]
+   ],
+   "solution_inputs": [
+    "tap"
+   ]
+  },
+  {
+   "id": "3-2",
+   "world": 3,
+   "title": "Arrow keys",
+   "goal": "Bring the fox to the star.",
+   "hint": "Make a script «when arrow → is pressed» and one «when arrow ↑ is pressed»: point the fox that way and move. Press ▶ Start, then steer with the arrows.",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    5,
+    90
+   ],
+   "star": [
+    7,
+    0
+   ],
+   "stones": [
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     5,
+     1
+    ],
+    [
+     7,
+     1
+    ],
+    [
+     7,
+     2
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_key",
+     "args": {
+      "key": "right"
+     }
+    },
+    {
+     "op": "point",
+     "args": {
+      "dir": 90
+     }
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    }
+   ],
+   "start": [],
+   "max": null,
+   "stars": [
+    4,
+    8
+   ],
+   "inputs": "keys",
+   "solution": [
+    [
+     "ev_key",
+     {
+      "key": "right"
+     },
+     [
+      [
+       "point",
+       {
+        "dir": 90
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 1
+       }
+      ]
+     ]
+    ],
+    [
+     "ev_key",
+     {
+      "key": "up"
+     },
+     [
+      [
+       "point",
+       {
+        "dir": 0
+       }
+      ],
+      [
+       "move",
+       {
+        "n": 1
+       }
+      ]
+     ]
+    ]
+   ],
+   "solution_inputs": [
+    "key:right",
+    "key:right",
+    "key:up",
+    "key:up",
+    "key:right",
+    "key:right",
+    "key:up",
+    "key:right",
+    "key:right",
+    "key:up",
+    "key:up",
+    "key:right"
+   ]
+  },
+  {
+   "id": "3-3",
+   "world": 3,
+   "title": "Avoid the stone",
+   "goal": "Bring the fox to the star.",
+   "hint": "Repeat forever: if the way is blocked, turn ↻ – else move. The fox finds its way alone!",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    0,
+    90
+   ],
+   "star": [
+    2,
+    5
+   ],
+   "stones": [
+    [
+     5,
+     0
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "forever"
+    },
+    {
+     "op": "if"
+    },
+    {
+     "op": "if_else"
+    },
+    {
+     "op": "blocked"
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    4,
+    5
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "forever",
+       [
+        [
+         "if_else",
+         {
+          "cond": [
+           "blocked"
+          ]
+         },
+         [
+          [
+           "turn_r",
+           {
+            "deg": 90
+           }
+          ]
+         ],
+         [
+          [
+           "move",
+           {
+            "n": 1
+           }
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "3-4",
+   "world": 3,
+   "title": "Same trick, new maze",
+   "goal": "Bring the fox to the star.",
+   "hint": "Does your program of the last level work here too? Try it!",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    1,
+    90
+   ],
+   "star": [
+    1,
+    4
+   ],
+   "stones": [
+    [
+     4,
+     1
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     6,
+     3
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     6,
+     0
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "forever"
+    },
+    {
+     "op": "if"
+    },
+    {
+     "op": "if_else"
+    },
+    {
+     "op": "blocked"
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    4,
+    5
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "forever",
+       [
+        [
+         "if_else",
+         {
+          "cond": [
+           "blocked"
+          ]
+         },
+         [
+          [
+           "turn_r",
+           {
+            "deg": 90
+           }
+          ]
+         ],
+         [
+          [
+           "move",
+           {
+            "n": 1
+           }
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "3-5",
+   "world": 3,
+   "title": "Left or right?",
+   "goal": "Bring the fox to the star.",
+   "hint": "Turning right leads in circles here. Which way must the fox turn when the way is blocked?",
+   "cols": 8,
+   "rows": 6,
+   "fox": [
+    0,
+    5,
+    90
+   ],
+   "star": [
+    2,
+    3
+   ],
+   "stones": [
+    [
+     7,
+     2
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     5,
+     1
+    ]
+   ],
+   "palette": [
+    {
+     "op": "ev_start",
+     "hide": true
+    },
+    {
+     "op": "move",
+     "args": {
+      "n": 1
+     },
+     "fixed": [
+      "n"
+     ]
+    },
+    {
+     "op": "turn_r",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "turn_l",
+     "args": {
+      "deg": 90
+     },
+     "fixed": [
+      "deg"
+     ]
+    },
+    {
+     "op": "forever"
+    },
+    {
+     "op": "if"
+    },
+    {
+     "op": "if_else"
+    },
+    {
+     "op": "blocked"
+    }
+   ],
+   "start": [
+    [
+     "ev_start"
+    ]
+   ],
+   "max": null,
+   "stars": [
+    4,
+    5
+   ],
+   "inputs": null,
+   "solution": [
+    [
+     "ev_start",
+     [
+      [
+       "forever",
+       [
+        [
+         "if_else",
+         {
+          "cond": [
+           "blocked"
+          ]
+         },
+         [
+          [
+           "turn_l",
+           {
+            "deg": 90
+           }
+          ]
+         ],
+         [
+          [
+           "move",
+           {
+            "n": 1
+           }
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  }
+ ]
+}

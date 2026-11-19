@@ -134,9 +134,46 @@ def learner(request: Request, x_fq_token: str | None = Header(default=None),
 LOCK_OPEN = {"/api/me", "/api/me/logout", "/api/logout", "/api/info"}
 
 
+def via_ingress(request: Request) -> bool:
+    """The request really comes through Home Assistant ingress (the Supervisor proxy)."""
+    return bool(request.client and request.client.host == INGRESS_IP)
+
+
+def ha_user(request: Request) -> dict | None:
+    """The Home Assistant user – only trusted when the request really comes through Home Assistant ingress
+    (the Supervisor proxy sets these headers; on the direct port anybody could send them)."""
+    if not via_ingress(request):
+        return None
+    uid = request.headers.get("x-remote-user-id")
+    if not uid:
+        return None
+    return {"id": uid, "name": request.headers.get("x-remote-user-display-name") or request.headers.get("x-remote-user-name") or "",
+            "user": request.headers.get("x-remote-user-name") or ""}
+
+
+def profile_of_ha_user(fq, uid: str | None, role: str | None = None) -> dict | None:
+    """The (not archived) profile linked with this Home Assistant user – one profile per user."""
+    from ..db import profile_settings
+    if not uid:
+        return None
+    for p in fq.db.q("SELECT * FROM profile WHERE archived=0" + (" AND role=?" if role else "") + " ORDER BY id", *([role] if role else [])):
+        if profile_settings(p).get("ha_user_id") == uid:
+            return p
+    return None
+
+
+def ha_kid(fq, request: Request) -> dict | None:
+    """The child whose Home Assistant user opened the app through ingress – only when the parents allow it
+    (setting «kid_ha_login»). Gives the children's app, never the parent area."""
+    if not fq.db.get_setting("kid_ha_login"):
+        return None
+    u = ha_user(request)
+    return profile_of_ha_user(fq, u["id"], "kid") if u else None
+
+
 def parent(request: Request, x_fq_parent: str | None = Header(default=None)) -> dict:
     fq = app_of(request)
-    if fq.db.get_setting("parent_ha_only") and (not request.client or request.client.host != INGRESS_IP):
+    if fq.db.get_setting("parent_ha_only") and not via_ingress(request):
         raise HTTPException(403, "The parent area opens only through Home Assistant")
     pid = fq.tokens.read(x_fq_parent, "parent", PARENT_MAX_AGE)
     prof = fq.db.q1("SELECT * FROM profile WHERE id=? AND role='parent' AND archived=0", pid) if pid else None

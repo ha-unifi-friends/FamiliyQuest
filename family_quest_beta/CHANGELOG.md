@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1-beta.15
+
+- Language courses in the learner's own language: English, French, Spanish and German (A1–B1 and the year-5 units) ask in the app language of the child – progress is kept when the language changes; a course in your own language isn't offered
+- German-only learning packs (German year 5, Thurgau, TG year 5, general knowledge) are no longer installed by default – parents add them under Learning packs › More packs
+- Optional: children can sign in with their own Home Assistant user (switch in Settings, link in the child's profile) – never the parent area; the Family Quest panel is visible to all Home Assistant users
+- Parent area: «Family Quest App» opens a dialog with the QR code of the kids' app, open in a new tab and print poster
+
 ## 1.1.1-beta.14
 
 - Review fixes (code & security): no more deadlock when approving a chore from a deal; profile ids are never reused (a new child can't inherit a deleted child's private books); Home Assistant actions only for HA admins; Facts quiz respects the family view and keeps guests out; deal reservations also in the shop and the Family Planer; clean errors instead of crashes for bad input; coin payouts protected against double booking; far fewer database queries
