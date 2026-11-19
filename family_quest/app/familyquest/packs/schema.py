@@ -87,6 +87,7 @@ class Pack(BaseModel):
     # (packs/i18n.py); progress stays with the card, whatever language it is shown in
     quellsprachen: list[str] = Field(default_factory=list)
     titel_i18n: dict[str, str] | None = None          # {"fr": "…"}: the title in other app languages
+    stufe_i18n: dict[str, str] | None = None          # the level («5. Klasse») in other app languages
     version: str = "1"
     farbe: str = ""
     icon: str = ""
@@ -159,6 +160,7 @@ class Bundle(BaseModel):
     stufe: str = ""
     kanton: str = ""
     titel_i18n: dict[str, str] | None = None
+    stufe_i18n: dict[str, str] | None = None
     optional: bool = False
     sprachen: list[str] = Field(default_factory=list)
     version: str = "1"

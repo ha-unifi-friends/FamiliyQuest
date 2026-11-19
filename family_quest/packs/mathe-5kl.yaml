@@ -2,38 +2,46 @@
 # der Lernstand gilt pro Teilfähigkeit (z. B. 7er-Reihe, Brüche mit ungleichem Nenner).
 id: mathe-5kl
 titel: Mathematik 5. Klasse
+titel_i18n: {de: "Mathematik 5. Klasse", en: "Maths Year 5", fr: "Mathématiques 5e année", it: "Matematica 5ª classe", es: "Matemáticas 5.º curso", nl: "Rekenen leerjaar 5", pl: "Matematyka klasa 5", pt: "Matemática 5º ano", sv: "Matematik årskurs 5"}
 fach: mathematik
 stufe: 5. Klasse
+stufe_i18n: {de: "5. Klasse", en: "Year 5", fr: "5e année", it: "5ª classe", es: "5.º curso", nl: "leerjaar 5", pl: "klasa 5", pt: "5º ano", sv: "årskurs 5"}
 version: 1
 quelle: Family Quest (eigene Generatoren)
 einheiten:
   - id: einmaleins
     titel: Einmaleins 6er bis 9er
+    titel_i18n: {de: "Einmaleins 6er bis 9er", en: "Times tables 6 to 9", fr: "Tables de multiplication de 6 à 9", it: "Tabelline dal 6 al 9", es: "Tablas de multiplicar del 6 al 9", nl: "Tafels van 6 tot 9", pl: "Tabliczka mnożenia od 6 do 9", pt: "Tabuada do 6 ao 9", sv: "Multiplikationstabellen 6 till 9"}
     icon: "✖️"
     generator: einmaleins
     parameter: {reihen: "6-9", modus: gemischt}
   - id: division-rest
     titel: Division mit Rest
+    titel_i18n: {de: "Division mit Rest", en: "Division with remainder", fr: "Division avec reste", it: "Divisione con resto", es: "División con resto", nl: "Delen met rest", pl: "Dzielenie z resztą", pt: "Divisão com resto", sv: "Division med rest"}
     icon: "➗"
     generator: division_rest
     parameter: {teiler: "3-9", max_quotient: 12}
   - id: schriftlich
     titel: Schriftlich rechnen
+    titel_i18n: {de: "Schriftlich rechnen", en: "Written arithmetic", fr: "Calcul posé", it: "Calcolo in colonna", es: "Cálculo por escrito", nl: "Cijferen", pl: "Działania pisemne", pt: "Contas armadas", sv: "Uppställning"}
     icon: "📝"
     generator: schriftlich
     parameter: {arten: [addieren, subtrahieren, multiplizieren, dividieren], max: 9999}
   - id: brueche
     titel: Brüche
+    titel_i18n: {de: "Brüche", en: "Fractions", fr: "Fractions", it: "Frazioni", es: "Fracciones", nl: "Breuken", pl: "Ułamki", pt: "Frações", sv: "Bråk"}
     icon: "🍰"
     generator: brueche
     parameter: {nenner_max: 12, arten: [kuerzen, erweitern, addieren_gleich, vergleichen, von_zahl]}
   - id: brueche-ungleich
     titel: Brüche mit ungleichem Nenner
+    titel_i18n: {de: "Brüche mit ungleichem Nenner", en: "Fractions with different denominators", fr: "Fractions de dénominateurs différents", it: "Frazioni con denominatori diversi", es: "Fracciones con distinto denominador", nl: "Breuken met verschillende noemers", pl: "Ułamki o różnych mianownikach", pt: "Frações com denominadores diferentes", sv: "Bråk med olika nämnare"}
     icon: "🥧"
     generator: brueche
     parameter: {nenner_max: 12, arten: [addieren_ungleich, subtrahieren_ungleich]}
   - id: dezimal
     titel: Dezimalzahlen
+    titel_i18n: {de: "Dezimalzahlen", en: "Decimal numbers", fr: "Nombres décimaux", it: "Numeri decimali", es: "Números decimales", nl: "Kommagetallen", pl: "Ułamki dziesiętne", pt: "Números decimais", sv: "Decimaltal"}
     icon: "🔢"
     generator: dezimal
     parameter: {stellen: 2}

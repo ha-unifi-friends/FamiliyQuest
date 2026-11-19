@@ -1,61 +1,68 @@
 # Französisch 5. Klasse – Grundwortschatz «La maison» (eigene Wortliste, nicht aus einem Lehrmittel).
 id: franz-5kl-la-maison
 titel: "Französisch 5. Klasse – La maison"
+titel_i18n: {de: "Französisch 5. Klasse – La maison", en: "French Year 5 – La maison", fr: "Français 5e année – La maison", it: "Francese 5ª classe – La maison", es: "Francés 5.º curso – La maison", nl: "Frans leerjaar 5 – La maison", pl: "Francuski klasa 5 – La maison", pt: "Francês 5º ano – La maison", sv: "Franska årskurs 5 – La maison"}
 fach: franzoesisch
 stufe: 5. Klasse
+stufe_i18n: {de: "5. Klasse", en: "Year 5", fr: "5e année", it: "5ª classe", es: "5.º curso", nl: "leerjaar 5", pl: "klasa 5", pt: "5º ano", sv: "årskurs 5"}
 sprache: fr
 quellsprache: de
+quellsprachen: [en, it, es, nl, pl, pt, sv]
 version: 1
 quelle: Family Quest (eigene Wortliste, CC0)
 einheiten:
   - id: zimmer
     titel: Zimmer im Haus
+    titel_i18n: {de: "Zimmer im Haus", en: "Rooms in the house", fr: "Les pièces de la maison", it: "Le stanze della casa", es: "Las habitaciones de la casa", nl: "Kamers in huis", pl: "Pomieszczenia w domu", pt: "Os cômodos da casa", sv: "Rummen i huset"}
     icon: "🏠"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: das Haus, fr: la maison, emoji: "🏠"}
-      - {de: die Küche, fr: la cuisine, emoji: "🍳"}
-      - {de: das Zimmer, fr: la chambre, emoji: "🛏️"}
-      - {de: das Badezimmer, fr: la salle de bains, emoji: "🛁"}
-      - {de: das Wohnzimmer, fr: le salon, emoji: "🛋️"}
-      - {de: der Garten, fr: le jardin, emoji: "🌳"}
-      - {de: die Treppe, fr: l'escalier, emoji: "🪜"}
-      - {de: das Dach, fr: le toit, emoji: "🏚️"}
+      - {de: "das Haus", fr: "la maison", en: "the house", it: "la casa", es: "la casa", nl: "het huis", pl: "dom", pt: "a casa", sv: "huset", emoji: "🏠"}
+      - {de: "die Küche", fr: "la cuisine", en: "the kitchen", it: "la cucina", es: "la cocina", nl: "de keuken", pl: "kuchnia", pt: "a cozinha", sv: "köket", emoji: "🍳"}
+      - {de: "das Zimmer", fr: "la chambre", en: "the bedroom", it: "la camera", es: "el cuarto", nl: "de kamer", pl: "pokój", pt: "o quarto", sv: "rummet", emoji: "🛏️"}
+      - {de: "das Badezimmer", fr: "la salle de bains", en: "the bathroom", it: "il bagno", es: "el cuarto de baño", nl: "de badkamer", pl: "łazienka", pt: "o banheiro", sv: "badrummet", emoji: "🛁"}
+      - {de: "das Wohnzimmer", fr: "le salon", en: "the living room", it: "il soggiorno", es: "el salón", nl: "de woonkamer", pl: "salon", pt: "a sala", sv: "vardagsrummet", emoji: "🛋️"}
+      - {de: "der Garten", fr: "le jardin", en: "the garden", it: "il giardino", es: "el jardín", nl: "de tuin", pl: "ogród", pt: "o jardim", sv: "trädgården", emoji: "🌳"}
+      - {de: "die Treppe", fr: "l'escalier", en: "the stairs", it: "la scala", es: "la escalera", nl: "de trap", pl: "schody", pt: "a escada", sv: "trappan", emoji: "🪜"}
+      - {de: "das Dach", fr: "le toit", en: "the roof", it: "il tetto", es: "el tejado", nl: "het dak", pl: "dach", pt: "o telhado", sv: "taket", emoji: "🏚️"}
   - id: moebel
     titel: Möbel und Dinge
+    titel_i18n: {de: "Möbel und Dinge", en: "Furniture and things", fr: "Les meubles et les objets", it: "Mobili e oggetti", es: "Muebles y cosas", nl: "Meubels en spullen", pl: "Meble i przedmioty", pt: "Móveis e coisas", sv: "Möbler och saker"}
     icon: "🪑"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: die Tür, fr: la porte, emoji: "🚪"}
-      - {de: das Fenster, fr: la fenêtre, emoji: "🪟"}
-      - {de: der Tisch, fr: la table}
-      - {de: der Stuhl, fr: la chaise, emoji: "🪑"}
-      - {de: das Bett, fr: le lit, emoji: "🛏️"}
-      - {de: die Lampe, fr: la lampe, emoji: "💡"}
-      - {de: der Schrank, fr: l'armoire}
-      - {de: der Teppich, fr: le tapis}
+      - {de: "die Tür", fr: "la porte", en: "the door", it: "la porta", es: "la puerta", nl: "de deur", pl: "drzwi", pt: "a porta", sv: "dörren", emoji: "🚪"}
+      - {de: "das Fenster", fr: "la fenêtre", en: "the window", it: "la finestra", es: "la ventana", nl: "het raam", pl: "okno", pt: "a janela", sv: "fönstret", emoji: "🪟"}
+      - {de: "der Tisch", fr: "la table", en: "the table", it: "il tavolo", es: "la mesa", nl: "de tafel", pl: "stół", pt: "a mesa", sv: "bordet"}
+      - {de: "der Stuhl", fr: "la chaise", en: "the chair", it: "la sedia", es: "la silla", nl: "de stoel", pl: "krzesło", pt: "a cadeira", sv: "stolen", emoji: "🪑"}
+      - {de: "das Bett", fr: "le lit", en: "the bed", it: "il letto", es: "la cama", nl: "het bed", pl: "łóżko", pt: "a cama", sv: "sängen", emoji: "🛏️"}
+      - {de: "die Lampe", fr: "la lampe", en: "the lamp", it: "la lampada", es: "la lámpara", nl: "de lamp", pl: "lampa", pt: "a lâmpada", sv: "lampan", emoji: "💡"}
+      - {de: "der Schrank", fr: "l'armoire", en: "the wardrobe", it: "l'armadio", es: "el armario", nl: "de kast", pl: "szafa", pt: "o armário", sv: "garderoben"}
+      - {de: "der Teppich", fr: "le tapis", en: "the rug", it: "il tappeto", es: "la alfombra", nl: "het tapijt", pl: "dywan", pt: "o tapete", sv: "mattan"}
   - id: famille
     titel: La famille
+    titel_i18n: {de: "La famille", en: "La famille (the family)", fr: "La famille", it: "La famille (la famiglia)", es: "La famille (la familia)", nl: "La famille (het gezin)", pl: "La famille (rodzina)", pt: "La famille (a família)", sv: "La famille (familjen)"}
     icon: "👪"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: die Mutter, fr: la mère, emoji: "👩"}
-      - {de: der Vater, fr: le père, emoji: "👨"}
-      - {de: die Schwester, fr: la sœur, auch: [la soeur], emoji: "👧"}
-      - {de: der Bruder, fr: le frère, emoji: "👦"}
-      - {de: die Eltern, fr: les parents}
-      - {de: die Grossmutter, fr: la grand-mère, emoji: "👵"}
-      - {de: der Grossvater, fr: le grand-père, emoji: "👴"}
-      - {de: die Katze, fr: le chat, emoji: "🐱"}
-      - {de: der Hund, fr: le chien, emoji: "🐶"}
+      - {de: "die Mutter", fr: "la mère", en: "the mother", it: "la madre", es: "la madre", nl: "de moeder", pl: "mama", pt: "a mãe", sv: "mamma", emoji: "👩"}
+      - {de: "der Vater", fr: "le père", en: "the father", it: "il padre", es: "el padre", nl: "de vader", pl: "tata", pt: "o pai", sv: "pappa", emoji: "👨"}
+      - {de: "die Schwester", fr: "la sœur", en: "the sister", it: "la sorella", es: "la hermana", nl: "de zus", pl: "siostra", pt: "a irmã", sv: "syster", auch: ["la soeur"], emoji: "👧"}
+      - {de: "der Bruder", fr: "le frère", en: "the brother", it: "il fratello", es: "el hermano", nl: "de broer", pl: "brat", pt: "o irmão", sv: "bror", emoji: "👦"}
+      - {de: "die Eltern", fr: "les parents", en: "the parents", it: "i genitori", es: "los padres", nl: "de ouders", pl: "rodzice", pt: "os pais", sv: "föräldrarna"}
+      - {de: "die Grossmutter", fr: "la grand-mère", en: "the grandmother", it: "la nonna", es: "la abuela", nl: "de oma", pl: "babcia", pt: "a avó", sv: "mormor / farmor", emoji: "👵"}
+      - {de: "der Grossvater", fr: "le grand-père", en: "the grandfather", it: "il nonno", es: "el abuelo", nl: "de opa", pl: "dziadek", pt: "o avô", sv: "morfar / farfar", emoji: "👴"}
+      - {de: "die Katze", fr: "le chat", en: "the cat", it: "il gatto", es: "el gato", nl: "de kat", pl: "kot", pt: "o gato", sv: "katten", emoji: "🐱"}
+      - {de: "der Hund", fr: "le chien", en: "the dog", it: "il cane", es: "el perro", nl: "de hond", pl: "pies", pt: "o cachorro", sv: "hunden", emoji: "🐶"}
   - id: avoir
     titel: "avoir – haben"
+    titel_i18n: {de: "avoir – haben", en: "avoir – to have", fr: "avoir", it: "avoir – avere", es: "avoir – tener", nl: "avoir – hebben", pl: "avoir – mieć", pt: "avoir – ter", sv: "avoir – ha"}
     icon: "✍️"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "avoir – je", antwort: ai, satz: "J'___ un chien.", optionen: [ai, as, a, avons, avez, ont]}
-      - {frage: "avoir – tu", antwort: as, satz: "Tu ___ une sœur ?", optionen: [ai, as, a, avons, avez, ont]}
-      - {frage: "avoir – il/elle", antwort: a, satz: "Elle ___ un vélo.", optionen: [ai, as, a, avons, avez, ont]}
-      - {frage: "avoir – nous", antwort: avons, satz: "Nous ___ un jardin.", optionen: [ai, as, a, avons, avez, ont]}
-      - {frage: "avoir – vous", antwort: avez, satz: "Vous ___ un chat ?", optionen: [ai, as, a, avons, avez, ont]}
-      - {frage: "avoir – ils/elles", antwort: ont, satz: "Ils ___ une grande maison.", optionen: [ai, as, a, avons, avez, ont]}
+      - {frage: "avoir – je", antwort: "ai", satz: "J'___ un chien.", optionen: ["ai", "as", "a", "avons", "avez", "ont"]}
+      - {frage: "avoir – tu", antwort: "as", satz: "Tu ___ une sœur ?", optionen: ["ai", "as", "a", "avons", "avez", "ont"]}
+      - {frage: "avoir – il/elle", antwort: "a", satz: "Elle ___ un vélo.", optionen: ["ai", "as", "a", "avons", "avez", "ont"]}
+      - {frage: "avoir – nous", antwort: "avons", satz: "Nous ___ un jardin.", optionen: ["ai", "as", "a", "avons", "avez", "ont"]}
+      - {frage: "avoir – vous", antwort: "avez", satz: "Vous ___ un chat ?", optionen: ["ai", "as", "a", "avons", "avez", "ont"]}
+      - {frage: "avoir – ils/elles", antwort: "ont", satz: "Ils ___ une grande maison.", optionen: ["ai", "as", "a", "avons", "avez", "ont"]}

@@ -1,8 +1,10 @@
 # Allgemeinwissen – eigene Fragen (Family Quest, CC0)
 id: allgemeinwissen
 titel: "Allgemeinwissen"
+titel_i18n: {de: "Allgemeinwissen", en: "General knowledge", fr: "Culture générale", it: "Cultura generale", es: "Cultura general", nl: "Algemene kennis", pl: "Wiedza ogólna", pt: "Conhecimentos gerais", sv: "Allmänbildning"}
 fach: allgemeinwissen
 stufe: "für alle"
+stufe_i18n: {de: "für alle", en: "for everybody", fr: "pour tous", it: "per tutti", es: "para todos", nl: "voor iedereen", pl: "dla wszystkich", pt: "para todos", sv: "för alla"}
 version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🧠"

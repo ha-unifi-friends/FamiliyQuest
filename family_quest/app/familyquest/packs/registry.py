@@ -107,8 +107,9 @@ class PackInfo:
             return self.loc_cache[ck]
         m = self.model
         title = i18n.pick(getattr(m, "titel_i18n", None), self.title, lang)
+        level = i18n.pick(getattr(m, "stufe_i18n", None), self.level, lang)
         if not isinstance(m, Pack):
-            out = replace(self, title=title, ui=lang, loc_cache={})
+            out = replace(self, title=title, level=level, ui=lang, loc_cache={})
         else:
             src = i18n.source_lang(m.quellsprache, m.quellsprachen, m.sprache, lang, family)
             units = []
@@ -118,7 +119,7 @@ class PackInfo:
                     items = [dict(it, view=localize_view(it["view"], it["card"], src, m.quellsprache)) for it in u.items]
                 units.append(replace(u, title=i18n.pick(u.titles, u.title, lang),
                                      description=i18n.pick(u.descriptions, u.description, lang), items=items))
-            out = replace(self, title=title, units=units, src=src, ui=lang, loc_cache={})
+            out = replace(self, title=title, level=level, units=units, src=src, ui=lang, loc_cache={})
         self.loc_cache[ck] = out
         return out
 
@@ -303,7 +304,11 @@ class PackStore:
                 if not self._has_progress(members, r["profile_id"]):
                     self.db.x("DELETE FROM pack_profile WHERE pack_id=? AND profile_id=?", pid, r["profile_id"])
                     gone.append((pid, r["profile_id"]))
-        self.retire_unused_optional()
+        # packs nobody has any more go back to «More packs» – only those switched off here (not one a parent just added)
+        touched = {g[0] for g in gone}
+        for pid in touched:
+            if not self.db.val("SELECT 1 FROM pack_profile WHERE pack_id=? LIMIT 1", pid) and not self._has_progress([pid]):
+                self.db.x("UPDATE pack SET status='available' WHERE id=? AND status='active'", pid)
         return gone
 
     def family_lang(self) -> str:
@@ -413,8 +418,11 @@ class PackStore:
                 self.invalidate(i)
 
     def activate_defaults(self, profile_id: int) -> None:
+        family = self.family_lang() or i18n.viewer()
         for r in self.db.q("SELECT id, data FROM pack WHERE status='active' AND kind='pack'"):
             d = json.loads(r["data"] or "{}")
             if d.get("standard", True) is False or d.get("optional"):
                 continue                       # e.g. language courses: chosen by the learner; optional packs: by a parent
+            if family and d.get("sprache") == family:
+                continue                       # no French course for a French-speaking child
             self.db.x("INSERT OR IGNORE INTO pack_profile(pack_id,profile_id) VALUES(?,?)", r["id"], profile_id)
