@@ -139,6 +139,31 @@ function leStep(car, s, seed, jr, rain = false, dark = false) {
   return ev;
 }
 
+// The server's clock on this device: offset = server time − performance.now() (in s). The sample with the shortest
+// round trip is the most exact one – but a phone that slept (in the lobby, before the start) comes back with a
+// performance.now() that stood still (iOS, Android), and later samples are slower (the canvas is busy) than the best
+// one from the lobby. So a sample that PROVES the offset wrong – the server's time lies between sending (t1) and
+// receiving (t2), the offset between now − t2 and now − t1 – replaces it at once. Else the app stays that far behind:
+// the intro with the start lights for the whole race, the crew jobs below it, the driver's inputs too old.
+function leClockSample(ck, now, t1, t2) {
+  const rtt = Math.max(0, t2 - t1), mid = now - (t1 + t2) / 2;
+  if (ck.offset == null || ck.offset < now - t2 - 0.05 || ck.offset > now - t1 + 0.05) return { offset: mid, rtt };
+  if (rtt <= ck.rtt * 1.15) return { offset: mid, rtt: Math.min(ck.rtt, rtt) };
+  return { offset: ck.offset, rtt: ck.rtt * 1.01 };                // the best round trip ages: a slower network later counts again
+}
+// Which screen this player sees – decided in ONE place, from the server's roles and the race clock (t = game time,
+// < 0 during the 6 s start countdown): lobby | done | watch | pit | drive | crew. `intro`: the start lights are on the
+// stage – for everybody at the start, never during a pit stop; the crew gets its jobs only after the start.
+function leScreen(st, myId, t) {
+  if (!st) return { mode: "none", intro: false };
+  if (st.phase === "lobby" || st.phase === "done") return { mode: st.phase, intro: false };
+  const tm = st.teams && st.my_team != null ? st.teams[st.my_team] : null;
+  const intro = st.phase === "play" && st.status !== "done" && t < 0;
+  if (!st.joined || !tm) return { mode: "watch", intro };
+  if (tm.car && tm.car.pit && tm.stop) return { mode: "pit", intro: false };
+  return { mode: tm.driver === String(myId) ? "drive" : "crew", intro };
+}
+
 // ---------------------------------------------------------------- the rules, the start
 const LE_PARTS = { base: ["🔄", T("Stop and driver change")], garage: ["🏠", T("The garage prepares")],
   tyres: ["🛞", T("Tyres")], battery: ["🔋", T("Battery swap")], engine: ["🔧", T("Engine swap")] };
@@ -414,7 +439,7 @@ function leCarTop(ctx, x, y, len, ang, col, num, door, o = {}) {
 
 function langstreckeLive(box, me, back) {
   let st = null, timer = null, alive = true, lastSig = "", busy = false, raf = 0, syncing = false, lastSync = 0, cheered = false;
-  let offset = null, bestRtt = 1e9;
+  let ck = { offset: null, rtt: 1e9 };                          // the server's clock (leClockSample)
   let pend = [], inflight = [], thrLocal = 0;
   const fired = new Set();
   let ui = {}, introSkip = false, introSound = 0, finalCue = false, lastTempWarn = 0, wasDriver = false, stopSeen = null;
@@ -431,7 +456,7 @@ function langstreckeLive(box, me, back) {
   };
   window.addEventListener("hashchange", stop, { once: true });
   const nowS = () => performance.now() / 1000;
-  const gameT = () => (st && offset != null ? nowS() + offset - st.t0 : -99);
+  const gameT = () => (st && ck.offset != null ? nowS() + ck.offset - st.t0 : -99);
   const playing = () => st && st.phase === "play" && st.status !== "done";
   const limit = () => (st && st.limit) || 480;
   const jr = () => st && st.rules && st.rules.difficulty === "junior";
@@ -442,8 +467,7 @@ function langstreckeLive(box, me, back) {
 
   function clock(s, t1, t2) {
     if (!s || typeof s.now !== "number") return;
-    const rtt = t2 - t1;
-    if (rtt <= bestRtt * 1.15 || offset == null) { bestRtt = Math.min(bestRtt, rtt); offset = s.now - (t1 + t2) / 2; }
+    ck = leClockSample(ck, s.now, t1, t2);
   }
   const req = async (path, opts) => {
     const t1 = nowS();
@@ -894,12 +918,13 @@ function langstreckeLive(box, me, back) {
     raf = requestAnimationFrame(frame);
     if (!st || st.phase !== "play") { LeAudio.engine(false); return; }
     const t = gameT();
+    if (leScreen(st, myId, t).intro !== !!ui.intro) draw();     // the green light: the intro goes, the crew gets its jobs
     const team = myTeam();
     if (ui.go && t >= 0 && t < 0.2) { ui.go = false; LeAudio.light(true); leBuzz(120); }
     const c = ui.cv;
     if (c) {
       fit(c);
-      if (t < 0 && ui.mode !== "pit") intro(c, t);
+      if (ui.intro) intro(c, t);
       else if (ui.mode === "pit") { if (team && team.stop) garage(c, team, team.stop, t); }
       else {
         let car, tm = team;
@@ -1138,15 +1163,14 @@ function langstreckeLive(box, me, back) {
   function draw(force) {
     if (!alive || !box.isConnected) return;
     const tm = myTeam();
-    const mode = !st ? "none" : st.phase === "lobby" ? "lobby" : st.phase === "done" ? "done" : !st.joined || !tm ? "watch"
-      : tm.car.pit && tm.stop ? "pit" : tm.driver === myId ? "drive" : "crew";
-    const sig = JSON.stringify(st && [st.game, st.phase, st.status, st.joined, mode, tm && tm.driver, mode === "pit" && tm.stop.t,
+    const { mode, intro: introOn } = leScreen(st, myId, gameT());
+    const sig = JSON.stringify(st && [st.game, st.phase, st.status, st.joined, mode, introOn, tm && tm.driver, mode === "pit" && tm.stop.t,
       mode === "crew" && tm.prep && tm.prep.need_eng, st.phase === "lobby" ? st.players.map(p => [p.id, p.team]) : 0, st.phase === "done" ? st.players.map(p => p.place) : 0]);
     if (sig === lastSig && !force) return;
     lastSig = sig;
     const running = st && st.status !== "done";
     box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running); box.classList.toggle("le-scroll", mode === "lobby");
-    ui = { go: ui.go ?? true, roared: ui.roared, mode, lanePos: mode === "drive" ? ui.lanePos : null };
+    ui = { go: ui.go ?? true, roared: ui.roared, mode, intro: introOn, lanePos: mode === "drive" ? ui.lanePos : null };
     if (!st) return show(h("section.card.center", h("div.big-ic", LE_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     const menu = gameMenu({ rules: () => langstreckeRulesView(st.rules, st.coins_on ? st.rewards : null),
       invite: !st.solo && !me.guest && st.status !== "done" ? "langstrecke" : null,
@@ -1156,7 +1180,7 @@ function langstreckeLive(box, me, back) {
     const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", LE_ICON, " ", leName())));
     if (st.phase === "done") { LeAudio.engine(false); return show(head, result()); }
     if (st.phase === "lobby") return show(head, lobby());
-    const cv = h("canvas.le-canvas"), wrap = h("div.le-wrap" + (mode === "drive" ? ".le-big" : mode === "pit" ? ".le-gar" : ".le-tv"), cv);
+    const cv = h("canvas.le-canvas"), wrap = h("div.le-wrap" + (mode === "drive" || introOn ? ".le-big" : mode === "pit" ? ".le-gar" : ".le-tv"), cv);
     ui.cv = { el: cv, ctx: cv.getContext("2d"), wrap, w: 0, h: 0, dpr: 0 };
     swipes(wrap);
     ui.hud = { pos: h("b.le-pos"), lap: h("span.le-lap"), clock: h("span.le-clock"), left: h("span.le-left") };
@@ -1198,6 +1222,10 @@ function langstreckeLive(box, me, back) {
       ui.crowd = crowd(tm);
       show(head, top, ui.board, h("div.le-pithead", h("strong", "🅿️ ", I18N.tr(T("Pit stop {0}")).replace("{0}", stp.n)), h("span.small", leTyreName(stp.tyre)), teamTag),
         ui.crowd, wrap, h("div.le-watchrow", ui.watchHand, ui.watch), h("div.le-parts", ...ui.parts.map(x => x[0])), change, next, low);
+    } else if (mode === "crew" && introOn) {                   // the start: the lights for everybody – the jobs come with the green light
+      const next = tm.next === myId && tm.members.length > 1 ? h("span.le-nextme", "🏎️ ", T("You drive next!")) : null;
+      show(head, top, ui.board, h("div.le-role", "🔧 ", T("Pit crew"), " · ", C(pName(tm.driver), "span.small"), " 🏎️", teamTag),
+        wrap, h("div.le-etarow.le-introrow", h("span.small", T("Get ready!")), next));
     } else if (mode === "crew") {
       ui.job = {};
       ui.eta = h("div.le-eta"); ui.etaTxt = h("span.small.le-etatxt"); ui.cast = h("span.le-cast");
