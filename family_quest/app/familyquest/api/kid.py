@@ -94,7 +94,12 @@ async def app_link(request: Request) -> dict:
 async def ha_panel(request: Request) -> dict:
     """Link target for «open in Home Assistant» when the parent area is only offered there."""
     from ..netinfo import ha_panel as panel
-    return await panel(app_of(request).settings)
+    fq = app_of(request)
+    p = await panel(fq.settings)
+    if p.get("slug"):   # newer HA: /app/<slug>, older: /hassio/ingress/<slug> – the parent area tells which (parent/ha-panel-path)
+        learned = fq.db.get_setting("ha_panel_path")
+        p["path"] = learned if learned in (f"/app/{p['slug']}", f"/hassio/ingress/{p['slug']}") else f"/app/{p['slug']}"
+    return p
 
 
 @router.get("/profiles")

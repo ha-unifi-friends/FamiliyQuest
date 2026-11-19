@@ -1399,6 +1399,21 @@ def games_get(request: Request, me: dict = Parent) -> dict:
     return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
 
 
+@router.post("/ha-panel-path")
+async def ha_panel_path(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    """The parent area opened in Home Assistant reports the panel path of this HA version (/app/<slug> or
+    /hassio/ingress/<slug>) – links from the app to the parent area use it."""
+    from ..netinfo import ha_panel as panel
+    fq = app_of(request)
+    slug = (await panel(fq.settings)).get("slug")
+    path = str(body.get("path") or "")
+    if not slug or path not in (f"/app/{slug}", f"/hassio/ingress/{slug}"):
+        raise HTTPException(400, "Unknown panel path")
+    if fq.db.get_setting("ha_panel_path") != path:
+        fq.db.set_setting("ha_panel_path", path)
+    return {"path": path}
+
+
 # ---------------------------------------------------------------- game battery and party mode (battery.py)
 class BatteryIn(BaseModel):
     on: bool | None = None

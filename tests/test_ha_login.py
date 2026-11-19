@@ -75,7 +75,15 @@ def test_ha_panel_link(client, monkeypatch):
     monkeypatch.setattr(ni, "_PANEL", {})
     client.app.state.fq.settings.ha_token = "x"
     try:
-        assert client.get("/api/ha-panel").json() == {"slug": "8fb20791_family_quest_beta", "port": 8123, "ssl": False}
+        slug = "8fb20791_family_quest_beta"
+        assert client.get("/api/ha-panel").json() == {"slug": slug, "port": 8123, "ssl": False, "path": f"/app/{slug}"}
+        # an older HA shows the panel under /hassio/ingress/<slug>: the parent area reports it, the link follows
+        from test_api import setup_family
+        ph, _, _ = setup_family(client)
+        assert client.post("/api/parent/ha-panel-path", json={"path": f"/hassio/ingress/{slug}"}).status_code in (401, 403)
+        assert client.post("/api/parent/ha-panel-path", json={"path": "/evil/x"}, headers=ph).status_code == 400
+        assert client.post("/api/parent/ha-panel-path", json={"path": f"/hassio/ingress/{slug}"}, headers=ph).status_code == 200
+        assert client.get("/api/ha-panel").json()["path"] == f"/hassio/ingress/{slug}"
     finally:
         client.app.state.fq.settings.ha_token = None
 
