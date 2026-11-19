@@ -16,7 +16,7 @@ async function boot() {
   if (P.info.setup_needed) return setupView();
   if (P.info.parent_ha_only && !P.info.via_ha) {
     let ha = null;
-    try { const p = await api("ha-panel"); if (p.slug) ha = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/${p.slug}`; } catch (e) { /* no link then */ }
+    try { const p = await api("ha-panel"); if (p.slug) ha = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/hassio/ingress/${p.slug}`; } catch (e) { /* no link then */ }
     return app.replaceChildren(h("div.login", h("div.card.login-card.center",
       h("h2", "🏠 ", T("Parent area")), h("p", T("The parent area opens only in Home Assistant – in the sidebar under Family Quest.")),
       h("div.row.center", ha ? h("a.btn", { href: ha }, "🏠 ", T("Open in Home Assistant")) : null,
