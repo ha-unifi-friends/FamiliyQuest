@@ -17,8 +17,9 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
 from .api import stories as stories_api
+from .api import codelab as codelab_api
 from . import loginlog, memo, netfilter
-from .channel import hidden_games
+from .channel import feature_visible, hidden_games
 from .api import deals as deals_api
 from .api.auth import INGRESS_IP
 from .services import FamilyQuest
@@ -94,6 +95,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     @app.middleware("http")
     async def access(request: Request, call_next):
         # games still in development (channel.py): outside the dev channel their API does not exist
+        if request.url.path.startswith("/api/codelab") and not feature_visible("codelab"):    # 💡 Code Workshop: dev channel only
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
         if request.url.path.startswith("/api/community/") and community.game_of(request.url.path) in hidden_games():
             return JSONResponse({"detail": "Not Found"}, status_code=404)
         # Family Quest HA integration (custom component): inside the add-on only Home Assistant Core on the Supervisor
@@ -146,6 +149,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     app.include_router(community.router)
     app.include_router(decks.router)
     app.include_router(stories_api.router)
+    app.include_router(codelab_api.router)              # 💡 Code Workshop (codelab.py)
     app.include_router(integration_api.router)
     app.include_router(integration_api.parent_router)
     app.include_router(deals_api.router)               # deals (deals.py)

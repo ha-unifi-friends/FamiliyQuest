@@ -778,6 +778,35 @@ MIGRATIONS: list[str] = [
         COALESCE((SELECT MAX(profile_id) FROM ledger), 0), COALESCE((SELECT MAX(from_id) FROM chore_task), 0)) WHERE name='profile';
     CREATE INDEX ledger_ref ON ledger(ref);
     """,
+    # 43 – 💡 Code Workshop (codelab.py): own block programs of the family (visibility like the books) and the puzzle
+    # progress of every person (best ⭐, fewest blocks, the last try)
+    """
+    CREATE TABLE codelab_project(
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        author_id INTEGER,
+        data TEXT NOT NULL,                      -- JSON program (codelab.clean_program)
+        visibility TEXT NOT NULL DEFAULT 'family',   -- me (nobody else, parents neither) | kids | family
+        blocks INTEGER NOT NULL DEFAULT 0,
+        sprites INTEGER NOT NULL DEFAULT 0,
+        cover TEXT,                              -- library costume shown on the card
+        remix_of INTEGER,                        -- the program it was copied from (may be gone)
+        remix_title TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE INDEX codelab_project_author ON codelab_project(author_id);
+    CREATE TABLE codelab_progress(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        level TEXT NOT NULL,
+        stars INTEGER NOT NULL DEFAULT 0,        -- best result
+        blocks INTEGER,                          -- fewest blocks of a solution
+        program TEXT,                            -- the last try (scripts of the fox)
+        solved_at TEXT,                          -- first solved
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        PRIMARY KEY(profile_id, level)
+    );
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -848,6 +877,7 @@ DEFAULT_SETTINGS = {
     "planer_points_account": "coins",    # built-in planner: its points and this account are one balance ("" = separate)
     "deals": None,                       # deals between children and with parents (deals.py) – None = defaults (deals.DEFAULT)
     "stories": None,                     # adventure books (stories.py): children off, approval, rewards – None = stories.DEFAULT
+    "codelab": None,                     # 💡 Code Workshop (codelab.py): children off, puzzle rewards – None = codelab.DEFAULT
 }
 
 DEFAULT_PROFILE_SETTINGS = {

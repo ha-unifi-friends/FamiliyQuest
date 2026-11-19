@@ -5,7 +5,8 @@ channel is normal. The environment variable FQ_CHANNEL overrides the file (local
 
 Games still in development (DEV_GAMES) exist only in the dev channel: elsewhere they are not in the games lists, the
 access settings, FamilyTime, the Facts quiz or the running tables, and their API answers 404. Their code and tests stay
-in the repository; history entries of families that played them keep showing.
+in the repository; history entries of families that played them keep showing. Features in development (DEV_FEATURES,
+e.g. the 💡 Code Workshop) likewise: `feature_visible(name)`.
 """
 from __future__ import annotations
 
@@ -15,6 +16,8 @@ from pathlib import Path
 CHANNEL_FILE = Path(__file__).resolve().parent.parent / "CHANNEL"
 # too complex to play yet – reworked before they go to the beta (docs/BACKLOG.md)
 DEV_GAMES = frozenset({"stempeljagd"})
+# features still in development: only in the dev channel (elsewhere the app hides them and their API answers 404)
+DEV_FEATURES = frozenset({"codelab"})          # 💡 Code Workshop (codelab.py)
 
 _channel: str | None = None         # read once; tests set it with monkeypatch (tests/test_channel.py)
 
@@ -40,6 +43,11 @@ def is_dev() -> bool:
 def hidden_games() -> frozenset:
     """The games that do not exist in this channel."""
     return frozenset() if is_dev() else DEV_GAMES
+
+
+def feature_visible(name: str) -> bool:
+    """Does this feature exist in this channel (DEV_FEATURES only in the dev channel)?"""
+    return is_dev() or name not in DEV_FEATURES
 
 
 def visible(games) -> tuple:

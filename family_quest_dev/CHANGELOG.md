@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-dev.10
+
+- New (dev only): 💡 Code Workshop – block programming for kids on the phone: stage on top, code as a list, tap to insert blocks, events, motion, looks, control and simple sensing; a safe engine with slow motion and step mode; 15 puzzles in 3 worlds with stars and XP (learning time); own programs with templates, visibility like books and remix; parents switch it on per child
+
 ## 1.1.1-dev.9
 
 - Everything from 1.1.1-beta.14 plus the dev-only game «Beat the Bureaucracy»

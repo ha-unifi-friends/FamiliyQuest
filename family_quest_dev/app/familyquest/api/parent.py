@@ -528,6 +528,7 @@ def delete_profile(pid: int, request: Request, name: str = "", mode: str = "arch
     else:
         fq.deals.profile_removed(pid)                   # open deals end, chores taken over go back
         fq.stories.author_removed(pid)                  # its books (private ones too) – never inherited by a new profile
+        fq.codelab.author_removed(pid)                  # its programs of the Code Workshop (private ones too)
         fq.db.x("UPDATE pet SET sitter_id=NULL, sit_until=NULL WHERE sitter_id=?", pid)
         for t in fq.db.q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):
             cols = {c["name"] for c in fq.db.q(f"PRAGMA table_info({t['name']})")}

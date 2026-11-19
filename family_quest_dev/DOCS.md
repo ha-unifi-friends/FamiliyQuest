@@ -36,8 +36,8 @@ they are read at start. Packs changed in the parent area are not overwritten by 
 Three apps of this repository can run side by side, each with its own data and entities: **Family Quest** (stable,
 `family_quest_…`, port 8099), **Family Quest Beta** (the next version for testing, `family_quest_beta_…`, port 8098,
 orange «BETA» icon) and **Family Quest Dev** (development builds, `family_quest_dev_…`, port 8097, purple «DEV» icon).
-Only the dev app has games that are still being reworked (now: 🏛️ Beat the Bureaucracy) –
-stable and beta do not show them; history entries of earlier games stay.
+Only the dev app has games that are still being reworked (now: 🏛️ Beat the Bureaucracy) and features still in
+development (now: 💡 Code Workshop) – stable and beta do not show them; history entries of earlier games stay.
 
 ## The app: menu and season designs
 
@@ -1930,6 +1930,57 @@ shows how many cards are due.
   known by now), 🌱 new; the bar and the filter chips show the counts.
 
 Repeating the own cards gives no points (own cards could be made very easy).
+
+## 💡 Code Workshop (block programming)
+**Only in Family Quest Dev for now** (`channel.DEV_FEATURES`): in stable and beta the tile, the routes, the parent
+section and the API (`/api/codelab/*` → 404) do not exist.
+
+Children learn to program with blocks – made for a phone in portrait. On the **Learning** page a tile «💡 Code Workshop»
+opens three parts: **🧩 Puzzles**, **🎨 My programs** and **👨‍👩‍👧 Family programs**. Time in the workshop counts as
+**learning time** (the daily learning limit and the learning hours of the child), not as game time: the app sends a
+heartbeat every 30 s while it is open (at most 45 s per heartbeat are booked); with the limit used up the workshop does
+not open (saving still works).
+
+**The editor:** the stage on top (480 × 360, 0/0 in the middle; ▴ hides it, landscape: stage left, code right), the
+sprite tabs (🖼️ Stage for the backdrops, one tab per sprite – tap the open one for its settings: name, costumes, size,
+direction, turning style, duplicate, delete – ＋ for a new sprite), the code as a **vertical list**: a script starts with
+an event ⚡, blocks inside C blocks (repeat, if) are indented with a coloured bracket. **Tap a gap** (the caret ＋) and
+then a **block card** in the drawer below (chips per category) – it is inserted there; after «repeat» the caret goes into
+the loop. Values: tap them – a big number pad (directions with arrows), pickers for sprites, costumes, backdrops,
+arrows and messages; conditions (◇) get a value block (touching?, = < >, and / or / not, random). **Long press** a block:
+a menu (duplicate, switch off, up / down, delete) – keep holding and **drag** it (with everything inside) to another
+gap. ↶ ↷ undo / redo; programs save themselves. Stopped, a sprite can be dragged on the stage to its start place.
+**▶ Start** (always from the start positions), **⏹**, **🐢 slow motion** (the running block lights up), tap a sprite or
+swipe / the arrow pad / the arrow keys for the events.
+
+**Blocks (stage 1):** ⚡ when ▶ Start is pressed, when this sprite is tapped, when arrow ← → ↑ ↓ is pressed, when I receive
+✉️ …, send ✉️ … to all · 🏃 move, turn ↻ / ↺, go to x/y, go to (a sprite / random place), glide, point in direction, change
+x / y, if on edge bounce · 🎨 say / think for n s, switch costume / backdrop, next costume, change / set size, show / hide ·
+🔁 repeat n, repeat forever, if, if-else, wait, wait until, stop everything · ❓ touching (a sprite / the edge)?, random,
+= < >, and / or / not (puzzles also «way blocked?»). The engine (web/codelab.js) is our own interpreter – no code of the
+child is run as JavaScript: every script is a thread that yields once per frame in loops and waits, at most 100 threads
+and 12 sprites, a loop that runs for ever without a pause gets a friendly hint. Sprites: 16 own drawings with 2–3
+costumes (`web/img/codelab/`), own sprites and backdrops with the drawing editor; backdrops from the library scenes and
+the rooms of the adventure games.
+
+**🧩 Puzzles** (`familyquest/codelab_levels.json`): 15 levels in 3 worlds on a grid – «bring the fox to the star»:
+👣 step by step (move, turn), 🔁 loops (only one step per «move», block limits, a loop in a loop, repeat forever), ⚡ events
+and if (tap the fox, steer with arrows, «if way blocked? turn else move»). Only the blocks of the level are in the drawer;
+⭐⭐⭐ for few blocks, a 💡 hint, 👣 step by step. A stone or the edge ends a try, a loop that runs more than 1000 blocks
+too. The server checks a solution again (`codelab.simulate`: the same rules, the taps / arrows given are replayed), keeps
+the best ⭐ and the fewest blocks per child and pays **XP / coins once per level** on the first solve (parent setting,
+default 10 XP). Levels open one after the other (parents: all).
+
+**🎨 Own programs:** templates «Empty program», «Dancing cat», «Catch the star», «Greeting card». Who sees a program –
+like the books: **🔒 only me** (parents neither; in the parent area only that it exists), **🧒 other children**,
+**👨‍👩‍👧 whole family** (default). Who may see it plays it; **🔀 Remix** makes an own copy (the card names the original).
+Only the author changes a program; parents remove shared ones. The server checks every program (`clean_program`): only
+known blocks, every value of its type, at most 12 sprites, 800 blocks, 12 nested levels, 700 KB (own drawings cleaned
+like in the books); 60 programs per person, 300 per family. A deleted profile takes its programs along.
+
+**Parent area › Learning packs › 💡 Code Workshop:** on / off per child, the reward for a first solved level, the puzzle
+progress per child (levels, ⭐ per world), the shared programs (open in the app, remove) and the private ones only as
+«exists».
 
 ## Language courses and general knowledge
 

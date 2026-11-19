@@ -108,6 +108,19 @@ MSG = {
 }
 
 
+def can_see(prof: dict, author_id, visibility: str, oversee: bool = False) -> bool:
+    """Who sees something of a family member (books here, programs of the Code Workshop codelab.py): the author always;
+    «me» nobody else (parents neither); in the parent area (`oversee`) a parent everything that is not private; else
+    «family» everybody and «kids» the children."""
+    if author_id == prof["id"]:
+        return True
+    if visibility == "me":
+        return False
+    if oversee and prof.get("role") == "parent":
+        return True
+    return visibility == "family" or prof.get("role") != "parent"
+
+
 def _text(v, n: int) -> str:
     return str(v or "").replace("\r\n", "\n").replace("\x00", "")[:n].strip()
 
@@ -808,15 +821,11 @@ class Stories:
         is not private; the others what the visibility allows (once approved). A hidden sample book: nobody."""
         if b.get("sample"):
             return b["sample"] not in self.settings()["samples_off"]
-        if b["author_id"] == prof["id"]:
-            return True
-        if b["visibility"] == "me":
-            return False
-        if oversee and self._parent(prof):
-            return True
+        if b["author_id"] == prof["id"] or b["visibility"] == "me" or (oversee and self._parent(prof)):
+            return can_see(prof, b["author_id"], b["visibility"], oversee)
         if not b["live"] or not b["approved"]:
             return False
-        return b["visibility"] == "family" or prof.get("role") != "parent"
+        return can_see(prof, b["author_id"], b["visibility"])
 
     def _shared(self, sid: int) -> None:
         """The others can see it now: the writing reward, once per book."""
