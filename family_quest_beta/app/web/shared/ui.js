@@ -659,14 +659,14 @@ function aiPromptBox(promptText, { template, name } = {}) {
 let _parentHref = null;
 async function parentAreaHref() {
   if (_parentHref) return _parentHref;
-  let href = "eltern";
+  let href = "parents";
   try {
     const i = await api("info");
     if (i.parent_ha_only && !i.via_ha) {
       const p = await api("ha-panel");
       if (p.slug) href = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/hassio/ingress/${p.slug}`;
     }
-  } catch { /* «eltern» explains where the parent area is */ }
+  } catch { /* «parents» explains where the parent area is */ }
   return (_parentHref = href);
 }
 
@@ -678,13 +678,14 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   drawSound();
   const seasonItem = season && onSeason ? h("button.foot-item", { onclick: () => { close(); onSeason(); } },
     h("span.foot-ic", season.icon || "🎨"), h("span", seasonOn ? T("Season design on") : T("Season design off"))) : null;
-  const parentItem = h("a.foot-item.parent-item", { href: "eltern" }, h("span.foot-ic", "🔐"), h("span", T("Parent area")));
+  const parentItem = h("a.foot-item.parent-item", { href: "parents" }, h("span.foot-ic", "🔐"), h("span", T("Parent area")));
   const drawer = h("nav.drawer", { role: "dialog", "aria-label": T("Menu") },
     h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", "Family Quest")),
     ...APP_NAV().map(([k, ic, n]) => h("button.drawer-item" + (k === active ? ".on" : ""), { onclick: () => { close(); onGo(k); } }, h("span.foot-ic", ic), h("span", n),
       (window.FQ_NAV_BADGES || {})[k] ? h("span.deal-badge", String(window.FQ_NAV_BADGES[k])) : null)),
     h("hr"),
     footLang(), footTheme(), soundItem, seasonItem,
+    pwaStandalone() ? null : h("button.foot-item.pwa-item", { onclick: () => { close(); installAppDialog(); } }, h("span.foot-ic", "📲"), h("span", T("Install app"))),
     h("button.foot-item", { onclick: () => { close(); onLogout(); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),
     parentItem);
   parentAreaHref().then(href => { parentItem.href = href; });
@@ -692,6 +693,88 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   document.body.append(back);
   release = focusTrap(back, drawer, close);
   requestAnimationFrame(() => back.classList.add("open"));
+}
+
+// ---------------------------------------------------------------- «📲 Install app»: Family Quest on the home screen
+// The browser's own install offer (Chrome, Edge, Samsung Internet; only over https): kept for the «Install now» button.
+let _pwaPrompt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); _pwaPrompt = e; });
+window.addEventListener("appinstalled", () => { _pwaPrompt = null; });
+// already opened from the home screen icon: no install entry
+function pwaStandalone() {
+  try { return matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true; }
+  catch { return false; }
+}
+// the device from the user agent: iPhone / iPad (iPadOS says «Macintosh» but has a touch screen), Android, else null
+function pwaDevice(ua = navigator.userAgent || "") {
+  const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1);
+  if (ios) return { os: "ios", browser: /CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|GSA\/|YaBrowser|DuckDuckGo/.test(ua) ? "other" : "safari" };
+  if (/Android/i.test(ua)) return { os: "android", browser: /SamsungBrowser/.test(ua) ? "samsung" : "chrome" };
+  return { os: null, browser: null };
+}
+// the buttons as the phone draws them (outline icons, inline SVG)
+const PWA_ICONS = {
+  share: '<path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M8 10H6a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 18 10h-2"/>',
+  addhome: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M12 8.5v7M8.5 12h7"/>',
+  kebab: '<circle cx="12" cy="5.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="18.5" r="1.4" fill="currentColor" stroke="none"/>',
+  burger: '<path d="M4.5 7h15M4.5 12h15M4.5 17h15"/>',
+  install: '<rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M12 7.5v7M9.2 11.8 12 14.6l2.8-2.8"/>',
+};
+const pwaIcon = (k, label) => h("span.pwa-ic", { role: "img", "aria-label": label || "", html:
+  `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PWA_ICONS[k]}</svg>` });
+
+// forOther: the parent area shows it for a child's device (no «Install now», the address to open first)
+function installAppDialog({ forOther = false, link = null } = {}) {
+  const dev = forOther ? { os: null, browser: null } : pwaDevice();
+  let os = dev.os || (/Mac|iPhone|iPad/.test(navigator.platform || "") ? "ios" : "android");
+  const step = (text, icon, hint) => h("li", h("div.pwa-step", h("span", text), icon), hint ? h("div.small.muted", hint) : null);
+  const block = (title, here, steps, note) => h("div.pwa-block" + (here ? ".here" : ""),
+    h("h3", title, here ? h("span.chip.good", T("this browser")) : null), h("ol.pwa-steps", ...steps), note ? h("p.small.muted", note) : null);
+  const homeStep = () => step(T("Scroll down and tap «Add to Home Screen»."), pwaIcon("addhome", T("Add to Home Screen")));
+  const ios = () => {
+    const safari = block("Safari", dev.os === "ios" && dev.browser === "safari", [
+      step(T("Tap the Share button."), pwaIcon("share", T("Share")), T("At the bottom of the screen – on the iPad at the top right.")),
+      homeStep(), step(T("Tap «Add» at the top right."))]);
+    const other = block(T("Chrome, Firefox, Edge …"), dev.os === "ios" && dev.browser === "other", [
+      step(T("Tap the Share button in the address bar."), pwaIcon("share", T("Share")), T("At the top right next to the address. If it is missing: open the menu and choose «Share».")),
+      homeStep(), step(T("Tap «Add» at the top right."))], T("Before iOS 16.4 this only works in Safari."));
+    return dev.browser === "other" ? [other, safari] : [safari, other];
+  };
+  const android = () => {
+    const chrome = block(T("Chrome (and most other browsers)"), dev.os === "android" && dev.browser === "chrome", [
+      step(T("Tap the menu."), pwaIcon("kebab", T("Menu")), T("The three dots at the top right.")),
+      step(T("Tap «Install app» or «Add to home screen»."), pwaIcon("install", T("Install app"))),
+      step(T("Confirm with «Install» or «Add»."))]);
+    const samsung = block("Samsung Internet", dev.os === "android" && dev.browser === "samsung", [
+      step(T("Tap the menu."), pwaIcon("burger", T("Menu")), T("The three lines at the bottom right.")),
+      step(T("Tap «Add page to»."), pwaIcon("addhome", T("Add page to"))),
+      step(T("Choose «Home screen»."))]);
+    return dev.browser === "samsung" ? [samsung, chrome] : [chrome, samsung];
+  };
+  const seg = h("div.seg.pwa-seg", { role: "tablist", "aria-label": T("Device") });
+  const body = h("div.pwa-body");
+  const draw = () => {
+    seg.replaceChildren(...[["ios", "iPhone / iPad"], ["android", "Android"]].map(([k, n]) =>
+      h("button" + (k === os ? ".on" : ""), { type: "button", role: "tab", "aria-selected": String(k === os), translate: "no", onclick: () => { os = k; draw(); } }, n)));
+    body.replaceChildren(...(os === "ios" ? ios() : android()));
+  };
+  draw();
+  const now = !forOther && _pwaPrompt ? h("div.pwa-now", h("p", T("This browser can install it right away:")),
+    h("button.btn", { type: "button", onclick: async () => {
+      const ev = _pwaPrompt; if (!ev) return;
+      try { ev.prompt(); const r = await ev.userChoice; _pwaPrompt = null; if (r && r.outcome === "accepted") m.close(); } catch {}
+    } }, "📲 ", T("Install now"))) : null;
+  const ingress = !forOther && location.pathname.includes("/hassio_ingress/");
+  const m = modal(h("div.form.pwa-dlg", h("h2", "📲 ", T("Install app")),
+    h("p", T("Put Family Quest on the home screen: it opens like an app – full screen, without the address bar.")),
+    forOther ? h("p", T("On the child's phone or tablet: scan the QR code or open the address, then follow the steps.")) : null,
+    forOther && link ? h("p.small.center", { translate: "no" }, h("a", { href: link, target: "_blank", rel: "noopener" }, link)) : null,
+    ingress ? h("p.small.muted", "ℹ️ ", T("Open the app on its own address first (parent area › ⭐ Family Quest App): an icon of the Home Assistant address needs a Home Assistant login.")) : null,
+    now, seg, body,
+    !forOther && !dev.os ? h("p.small.muted", T("On a computer: Chrome and Edge show an install button in the address bar.")) : null,
+    h("p.small.muted", T("Then open Family Quest with its icon on the home screen.")),
+    h("div.row.wrap", h("button.btn.ghost", { type: "button", onclick: () => m.close() }, T("Close")))));
+  return m;
 }
 
 // the card of a game (app › Games): the same two choices in the same order everywhere – «🤖 Alone against bots» (the

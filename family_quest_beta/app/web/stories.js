@@ -145,7 +145,7 @@ function storiesCard() {
 async function storiesSection() {
   const sec = h("section.card.sec.sb-psec");
   const box = h("div.sb-wrap");
-  const set = h("details.sb-settings", h("summary", "⚙️ ", T("Settings for the bookshelf")));
+  const set = h("details.sb-settings", h("summary", { "data-ik": "sb.settings" }, "⚙️ ", T("Settings for the bookshelf")));
   set.addEventListener("toggle", () => { if (set.open && !set.dataset.done) { set.dataset.done = "1"; storiesSettings(set); } });
   sec.append(h("h2", "📚 ", T("Library")),
     h("p.small.muted", T("Children and parents write books and interactive books, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones. The adventure games are under Games.")),

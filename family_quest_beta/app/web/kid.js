@@ -414,7 +414,7 @@ function topBar(active, opts = {}) {
 
 function openDrawer(active) {
   openAppMenu({ active, season: S.info.season, seasonOn: seasonOn(),
-    onGo: key => { if (key === "planer") location.href = "planer"; else go(key === "home" ? "" : key); },
+    onGo: key => { if (key === "planer") location.href = "planner"; else go(key === "home" ? "" : key); },
     onSeason: () => { try { localStorage.setItem("fq.season", seasonOn() ? "0" : "1"); } catch {} route(); },
     onLogout: logout });
 }
@@ -458,7 +458,7 @@ async function profilesView() {
   const kids = profiles.filter(p => p.role === "kid"), parents = profiles.filter(p => p.role === "parent");
   const tile = p => h("button.profile-tile", { onclick: () => login(p) }, avatarSvg(p.avatar, 120),
     C(p.name, "strong"), loginIcon(p));
-  const parentBtn = h("a.btn.ghost.parent-link", { href: "eltern" }, "🔐 ", T("Parent area"));
+  const parentBtn = h("a.btn.ghost.parent-link", { href: "parents" }, "🔐 ", T("Parent area"));
   const hk = S.info.ha_kid;
   const body = h("div.profiles-screen",
     h("div.row.profiles-head", h("h1.grow", T("Log in")), themeBtn(), langPicker()),
@@ -469,7 +469,7 @@ async function profilesView() {
     S.haError ? h("p.card.ha-auth-error", { role: "alert" }, "⚠️ ", S.haError) : null,
     S.info.setup_needed
       ? h("div.card.welcome", h("h2", T("Welcome to Family Quest!")), h("p", T("A parent sets up the profiles first.")),
-          h("a.btn.big", { href: "eltern" }, T("Set up now")))
+          h("a.btn.big", { href: "parents" }, T("Set up now")))
       : null,
     kids.length ? h("div.profile-grid", ...kids.map(tile)) : (!S.info.setup_needed ? h("p.muted.center", T("No child profile yet – add one in the parent area.")) : null),
     parents.length ? h("div.parents-row", h("span.muted", T("Learn along:")), ...parents.map(p =>

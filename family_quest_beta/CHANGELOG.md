@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1-beta.18
+
+- Parent area: an ⓘ info button with an explanation on every section and setting
+- Settings: every part folded, with a short live status in its header (network access, Home Assistant login, backup, …)
+- Kids' app ☰ menu: «📲 Install app» – recognises iPhone/iPad or Android and shows the steps with the real buttons, with an Install button where the browser offers it; also in the parent area «⭐ Family Quest App» dialog
+- English addresses: /parents, /guest, /planner – the old German addresses keep working (printed guest QR codes, bookmarks)
+
 ## 1.1.1-beta.17
 
 - Sign in with Home Assistant also in the app (tablets): kids and parents linked to a Home Assistant user sign in with their HA account – on by default

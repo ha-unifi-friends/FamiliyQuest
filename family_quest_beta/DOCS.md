@@ -4,7 +4,7 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 
 ## First start
 
-1. Open **Family Quest** in the sidebar and choose **Parent area** (or open `…/eltern`).
+1. Open **Family Quest** in the sidebar and choose **Parent area** (or open `…/parents`).
 2. Create the parent profile. Opened from the Home Assistant sidebar, the name of your Home Assistant user is filled
    in and the profile is linked with that user – a PIN is optional (add one later in the profile; on tablets you can
    use *Sign in with Home Assistant*, see below). Opened on the app port (no Home Assistant user), a PIN (4–8 digits)
@@ -393,6 +393,13 @@ empty translation goes back to the standard. Learning content is not translated 
 - **The app** for children: `…/app` – inside Home Assistant as well as on the direct port (`http://<IP>:<port>/app`;
   on the direct port `/` still opens the app too). «Family Quest App» in the parent menu, «Open in the app» and the
   planner link there.
+- **Parent area**: `…/parents`, **guest page** (invitations by QR code): `…/guest?c=<code>`, **planner**: `…/planner`.
+  The former German addresses `/eltern`, `/gast` and `/planer` still work: they redirect to the new ones (query and
+  `#…` are kept), so printed guest QR codes, bookmarks and home screen icons keep working.
+- **Install the app** on a phone or tablet: ☰ → «📲 Install app» in the app (or «⭐ Family Quest App» → «📲 Install
+  app» in the parent area) shows the steps for iPhone/iPad (Safari: share button → «Add to Home Screen» → «Add») and
+  Android (Chrome: ⋮ → «Install app» / «Add to home screen»; Samsung Internet: ≡ → «Add page to» → «Home screen»).
+  Where the browser offers it, an «Install» button does it in one tap. The entry is hidden in the installed app.
 
 ## Security in the parent area
 
@@ -475,7 +482,7 @@ minutes and once; IP bans and login attempts of Home Assistant apply as usual.
 **One port for the children, the parent area only in Home Assistant:** no second port is needed. Home Assistant
 reaches the app through its own way (ingress, from the Supervisor), the app port (e.g. `http://192.168.x.y:8099`)
 is for tablets and phones. With *Parent area only through Home Assistant* switched on, the app port offers no parent
-area at all: the link is gone, `/eltern` only shows a hint, and every request of the parent area that does not come
+area at all: the link is gone, `/parents` only shows a hint, and every request of the parent area that does not come
 through Home Assistant is refused – even with an old session.
 
 **Look:** the parent area uses the shapes of Home Assistant (Roboto, flat cards, the HA sidebar) with the colours of
