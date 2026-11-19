@@ -16,7 +16,7 @@ async function boot() {
   if (P.info.setup_needed) return setupView();
   if (P.info.parent_ha_only && !P.info.via_ha) {
     let ha = null;
-    try { const p = await api("ha-panel"); if (p.slug) ha = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/hassio/ingress/${p.slug}`; } catch (e) { /* no link then */ }
+    try { const p = await api("ha-panel"); if (p.slug) ha = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}${p.path || "/app/" + p.slug}`; } catch (e) { /* no link then */ }
     return app.replaceChildren(h("div.login", h("div.card.login-card.center",
       h("h2", "🏠 ", T("Parent area")), h("p", T("The parent area opens only in Home Assistant – in the sidebar under Family Quest.")),
       h("div.row.center", ha ? h("a.btn", { href: ha }, "🏠 ", T("Open in Home Assistant")) : null,
@@ -25,6 +25,11 @@ async function boot() {
   if (!Auth.parent) return loginView();
   try { P.meta = await api("parent/meta"); } catch (e) { Auth.parent = ""; return loginView(); }
   if (P.info.via_ha) { try { P.haSlug = (await api("ha-panel")).slug || ""; } catch (e) { P.haSlug = ""; } }   // version links to the add-on page
+  if (P.info.via_ha && P.haSlug) {   // remember where this HA version shows the panel (/app/<slug> or /hassio/ingress/<slug>)
+    let top = ""; try { top = window.top.location.pathname; } catch (e) { /* not readable */ }
+    const m = top.match(new RegExp("^/(app|hassio/ingress)/" + P.haSlug.replace(/[^\w-]/g, "") + "(?=/|$)"));
+    if (m) api("parent/ha-panel-path", { method: "POST", body: { path: m[0] } }).catch(() => {});
+  }
   setInterval(refreshToken, 10 * 60 * 1000);
   P.tab = (location.hash.replace("#", "") || "overview");
   if (P.tab === "weather") P.tab = "overview";
@@ -331,7 +336,6 @@ async function overviewView(main) {
   const failed = await call("parent/logins/failed?days=30").catch(() => []);
   // folded, the number in the title – details only when wanted
   const failBox = failed.length ? h("details.card.sec.fold", h("summary", h("h2", "🔐 " + I18N.tr(T("Failed logins (30 days)")) + " ", chip(String(failed.length), "warn"))),
-    h("p.small.muted", T("Wrong PINs with the device they came from. «Usually» = who normally logs in successfully from this address.")),
     h("div.scroll", h("table.tbl.logins",
       h("thead", h("tr", h("th", T("When")), h("th", T("Profile")), h("th", T("IP address")), h("th", "MAC"), h("th", T("Device")), h("th", T("Usually")))),
       h("tbody", ...failed.map(r => h("tr",
@@ -347,7 +351,7 @@ async function overviewView(main) {
     d.family_goal ? section("🤝 " + I18N.tr(T("Family goal")), h("div.row", C(d.family_goal.title, "strong.grow"), h("b", fmt(d.family_goal.value) + " / " + fmt(d.family_goal.target))),
       bar(d.family_goal.value, d.family_goal.target, "var(--good)")) : null,
     ...(kids.length ? kids : [h("div.card", h("p", T("No child profile yet.")))]),
-    section("👪 " + I18N.tr(T("Parents")), h("p.small.muted", T("Every parent has an own PIN for the parent area, can confirm chores and rewards and can learn along.")),
+    section("👪 " + I18N.tr(T("Parents")),
       profileCards(profiles.filter(p => p.role === "parent"), persons)),
     await archivedSection());
   async function importPersons() {
@@ -378,7 +382,7 @@ function petsBox(k, render) {
 async function archivedSection() {
   let list = []; try { list = await call("parent/profiles/archived"); } catch {}
   if (!list.length) return null;
-  return section("🗄️ " + I18N.tr(T("Archived profiles")), h("p.small.muted", T("Inactive – they cannot log in. Their history is kept.")),
+  return section("🗄️ " + I18N.tr(T("Archived profiles")),
     h("ul.list", ...list.map(p => h("li.row", avatarSvg(p.avatar, 36), C(p.name, "strong.grow"),
       h("button.btn.small.ghost", { onclick: async () => { await call(`parent/profiles/${p.id}/restore`, { method: "POST" }); toast(T("Restored"), "good"); render(); } }, "↩️ ", T("Restore")),
       h("button.btn.small.bad", { onclick: () => removeDialog(p, true) }, "🗑 ", T("Delete"))))));
@@ -575,10 +579,9 @@ function internetPlanEditor(cur) {
   sync();
   return {
     slider,
-    el: h("div.plan", h("b", T("Internet budget and block times")),
-      h("div.row.wrap", resetDayField, h("label.field", T("Reset at"), reset)),
-      h("div.field", h("b", T("Block times")), h("span.hint", T("The internet is off – and you choose what Family Quest still allows.")), blockBox),
-      h("p.small.muted", T("Minutes from the shop or rewards come on top; the budget is used first and starts again at the reset."))),
+    el: h("div.plan", h("b", T("Internet budget and block times"), fieldInfo(T("Minutes from the shop or rewards come on top; the budget is used first and starts again at the reset."))),
+      h("div.field-row", resetDayField, h("label.field", T("Reset at"), reset)),
+      h("div.field", h("b", T("Block times"), fieldInfo(T("The internet is off – and you choose what Family Quest still allows."))), blockBox)),
     value: () => {
       const sv = slider.value(), bl = blocks.filter(b => b.days.length);
       if (sv.all === 0 && !Object.keys(sv.days).length && !bl.length) return null;      // no plan: only earned minutes
@@ -622,22 +625,16 @@ async function profileDialog(p, persons, role = "kid") {
   const gameLimit = limitSlider({ icon: "🎮", label: T("Games per day"), value: s.game_limit });
   const learnLimit = limitSlider({ icon: "📚", label: T("Learning per day"), value: s.learn_limit });
   const timePart = h("div.form.lim-box", h("h3", { "data-ik": "prof.time" }, "⏱️ ", T("Time per day")),
-    h("p.small.muted", T("Far right ∞ = not limited. 📅 Days: own times per weekday – a weekday moves with the slider above until you move it yourself.")),
-    gameLimit.el, learnLimit.el, plan.slider.el,
-    h("p.small.muted", T("Games: family games and the game corner – a game already running may be finished. Internet: the free minutes of the internet budget (needs the UniFi firewall rule below); 0 = only minutes from the shop.")));
+    gameLimit.el, learnLimit.el, plan.slider.el);
   const batteryPart = !isNew && p.role === "kid" ? kidBatteryBox(p.id) : null;
   const kidPart = h("div.form", h("h3", { "data-ik": "prof.internet" }, T("Internet minutes")),
-    h("p.small.muted", T("Optional. Family Quest manages the internet time itself with the UniFi firewall rule; an input_number can also receive the minutes.")),
-    h("div.grid2", h("label.field", T("UniFi firewall rule (switch)"), f.internet_rule, ruleList,
-      h("span.hint", T("The child starts and stops the internet time in the app; the budget is the account «Internet minutes»."))),
+    h("div.grid2", h("label.field", h("span", T("UniFi firewall rule (switch)"), fieldInfo(T("The child starts and stops the internet time in the app; the budget is the account «Internet minutes»."))), f.internet_rule, ruleList),
       h("label.check", f.internet_rule_blocks, T("The rule blocks the internet while the switch is on"))),
-    h("div.grid2", h("label.field", T("Budget entity in Home Assistant"), h("div.row", f.internet_entity, createBudget),
-      h("span.hint", T("Receives the minutes from the shop, e.g. for your own automations."))),
+    h("div.grid2", h("label.field", h("span", T("Budget entity in Home Assistant"), fieldInfo(T("Receives the minutes from the shop, e.g. for your own automations."))), h("div.row", f.internet_entity, createBudget)),
       h("label.field", T("Maximum minutes per day from the shop"), f.internet_daily_limit)),
     plan.el);
   const parentPart = h("div.form", h("h3", { "data-ik": "prof.push" }, "🔔 ", T("Push messages")),
-    h("label.field", T("Notify service of this parent"), f.notify_service, notifyList,
-      h("span.hint", T("Approvals for chores and rewards also go to this phone (Companion app), with the buttons OK / No."))));
+    h("label.field", T("Notify service of this parent"), f.notify_service, notifyList));
   // Home Assistant devices this profile may switch (light in the own room, …)
   const devSel = new Set(s.devices || []);
   const devSearch = h("input", { type: "search", placeholder: I18N.tr(T("Search …")) });
@@ -648,7 +645,7 @@ async function profileDialog(p, persons, role = "kid") {
   const drawPills = () => devPills.replaceChildren(...[...devSel].map(id => h("span.chip.dev-pill", { title: id, translate: "no" }, devNames[id] || id)),
     !devSel.size ? h("span.small.muted", T("No devices yet.")) : null,
     h("button.btn.small.ghost", { type: "button", onclick: () => { devPick.hidden = !devPick.hidden; if (!devPick.hidden) devSearch.focus(); } }, "✏️ ", T("Edit")));
-  const devBox = h("div", h("p.small.muted", T("Lights, switches, fans, blinds, scenes and scripts this person may control in the app – or a whole room (area).")), devPills, devPick);
+  const devBox = h("div", devPills, devPick);
   drawPills();
   if (P.meta.ha) Promise.all([call("parent/ha/areas").then(l => l.map(a => ({ entity_id: "area." + a.area_id,
       name: "🏠 " + a.name + " · " + I18N.tr(T("whole room ({0} devices)")).replace("{0}", a.count) }))).catch(() => []),
@@ -702,12 +699,14 @@ async function profileDialog(p, persons, role = "kid") {
     const n = haUser.value ? haUser.selectedOptions[0]?.dataset.name || "" : "";
     if (n && (!f.name.value.trim() || f.name.value === autoName)) { f.name.value = n; autoName = n; }
   });
-  const haLabel = h("span"), haHint = h("span.hint");
-  const haPart = h("div.login-sub", h("label.field", haLabel, haUser, haInfo, haHint));
+  let haKid = true;
+  const haLabel = h("span");
+  const haPart = h("div.login-sub", h("label.field", h("span", haLabel, fieldInfo(() => haKid
+    ? T("Home Assistant sidebar and «Sign in with Home Assistant» on tablets – only the children's app, never the parent area.")
+    : T("Home Assistant sidebar opens the parent area; on tablets «Sign in with Home Assistant»."))), haUser, haInfo));
   const syncHa = kid => {
+    haKid = kid;
     haLabel.textContent = I18N.tr(kid ? T("Logs in to the children's app as") : T("Logs in to the parent area as"));
-    haHint.textContent = I18N.tr(kid ? T("Home Assistant sidebar and «Sign in with Home Assistant» on tablets – only the children's app, never the parent area.")
-      : T("Home Assistant sidebar opens the parent area; on tablets «Sign in with Home Assistant»."));
   };
   // PIN: children a picture PIN (4 symbols) or digits, parents digits – an existing PIN stays unless «Change PIN»
   const symbolKind = (p.settings && p.settings.pin_kind) === "symbols";
@@ -769,13 +768,13 @@ async function profileDialog(p, persons, role = "kid") {
       h("div.grid2", h("label.field", T("Name"), f.name), h("label.field", T("Role"), f.role), h("label.field", T("Colour"), f.color)),
       loginForm,
       isNew ? null : h("div.form", h("h3", { "data-ik": "prof.avatar" }, "🧑‍🎨 ", T("Avatar")), avBox),
-      persons.length ? h("label.field", T("Person in the Family Planer"), f.planer, h("span.hint", T("Shows the chores of this person and counts them."))) : null,
+      persons.length ? h("label.field", h("span", T("Person in the Family Planer"), fieldInfo(T("Shows the chores of this person and counts them."))), f.planer) : null,
       parentPart, danger] },
     { key: "learn", label: "📚 " + I18N.tr(T("Learning")), content: [
-      h("div.grid2", h("label.field", T("Daily goal (XP)"), f.daily_goal), h("label.field", T("Exercises per lesson"), f.lesson_length),
+      h("div.field-row", h("label.field", T("Daily goal (XP)"), f.daily_goal), h("label.field", T("Exercises per lesson"), f.lesson_length),
         h("label.field", T("New cards per lesson"), f.new_per_lesson),
-        h("label.field", T("Learning hours"), f.learning_hours, h("span.hint", T("Empty = always. Example: 07:00-20:00"))),
-        h("label.field", T("Log out after minutes without touch"), f.auto_logout_min, h("span.hint", T("0 = never"))))] },
+        h("label.field", h("span", T("Learning hours"), fieldInfo(T("Empty = always. Example: 07:00-20:00"))), f.learning_hours),
+        h("label.field", h("span", T("Log out after minutes without touch"), fieldInfo(T("0 = never"))), f.auto_logout_min))] },
     { key: "time", label: "⏱️ " + I18N.tr(T("Time & battery")), content: [timePart, batteryPart] },
     { key: "net", label: "🌐 " + I18N.tr(T("Internet & devices")), content: [kidPart, P.meta.ha ? h("div.form", h("h3", { "data-ik": "prof.devices" }, "🏠 ", T("Devices")), devBox) : null] },
   ]);
@@ -936,13 +935,13 @@ async function packsView(main) {
   const german = String(I18N.lang || "").startsWith("de");
   const more = moreSection(german);
   if (mode === "kids") return main.append(...byKid(),
-    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null, codeSec, more);
+    drafts.length ? section("📝 " + I18N.tr(T("To check")), ...drafts.map(card)) : null, codeSec, more);
   const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
     german ? more : null,
-    drafts.length ? section("📝 " + I18N.tr(T("Imported as draft – to check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
+    drafts.length ? section("📝 " + I18N.tr(T("Imported as draft – to check")), ...drafts.map(card)) : null,
     importedPacks.length ? section("⭐ " + I18N.tr(T("Own packs")), ...importedPacks.map(card)) : null,
-    levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
+    levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), ...levelPacks.map(card)) : null,
     ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null, codeSec, german ? null : more);
   // ➕ More packs: optional packs of the app, added with one click (then switched on per child as every other pack)
   function moreSection(top) {
@@ -957,8 +956,6 @@ async function packsView(main) {
         h("div.small", ...(p.semesters || []).map(s => h("div", C(s.titel || s.id, "strong"), ": ",
           C(s.pakete.map(id => byId[id] ? byId[id].title : id).join(", ") || "–")))));
     return section("➕ " + I18N.tr(T("More packs")),
-      h("p.small.muted", top ? T("Recommended for German-speaking families: packs with German content (school topics of Switzerland and general knowledge). Add them with one click, then switch them on per child.")
-        : T("Packs whose content exists in one language only. They are not added automatically – add them with one click, then switch them on per child.")),
       de.length > 1 ? h("button.btn", { onclick: () => install(de.map(p => p.id)) }, "🇩🇪 ", T("Add all German-language packs")) : null,
       ...available.map(avCard));
   }
@@ -980,8 +977,7 @@ async function packsView(main) {
       try { await call(`parent/packs/${encodeURIComponent(p.id)}/rewards`, { method: "POST", body: { xp: num(xp), coins: num(coins) } }); m.close(); toast(T("Saved"), "good"); render(); }
       catch (e) { toast(e.message, "bad"); }
     };
-    const m = modal(h("div.form", h("h2", "🏅 ", C(p.title)),
-      h("p.small.muted", T("What a finished lesson of this pack gives. Empty: the family rule (Rewards › Rules «Lesson finished»). The daily limit of the rule still applies.")),
+    const m = modal(h("div.form", h("h2", "🏅 ", C(p.title), fieldInfo(T("What a finished lesson of this pack gives. Empty: the family rule (Rewards › Rules «Lesson finished»). The daily limit of the rule still applies."))),
       // both numbers side by side, the icon inline in the label; empty = the family rule, «Reset» empties both
       h("div.reward-nums", h("label.field", { title: T("XP per finished lesson") }, h("span", "⭐ XP"), xp),
         h("label.field", { title: T("Coins per finished lesson") }, h("span", "🪙 ", T("Coins")), coins)),
@@ -1016,7 +1012,6 @@ async function codelabSection() {
   };
   const VIS = { me: "🔒", kids: "🧒", family: "👨‍👩‍👧" };
   return section("💡 " + I18N.tr(T("Code Workshop")),
-    h("p.small.muted", T("Block programming for the children: 15 puzzles with the fox and own programs. The time in the workshop counts as learning time.")),
     h("div.field", h("b", T("Code Workshop for")), d.kids.length ? h("div.row.wrap", ...on.map(([id, c]) => h("label.check", c, " ", C(d.kids.find(k => k.id === id).name)))) : h("span.small.muted", T("No child profile yet"))),
     h("div.sb-rew", h("b", T("Reward for the first solve of a puzzle level")),
       h("label.field", h("span", "⭐ XP"), xp), h("label.field", h("span", "🪙 ", T("Coins")), coins)),
@@ -1116,8 +1111,8 @@ async function packEditor(id, { afterSave } = {}) {
         h("button.btn.small.ghost", { onclick: () => pickPhotos(true, async files => {
           for (const f of files) { const n = await uploadPhoto(f); if (n) u.karten.push({ bild: n, antwort: "" }); }
           draw();
-        }) }, "📷 ", T("Add photos as cards"))),
-      h("p.small.muted", T("Own photos: one card per photo – write the answer (e.g. the name) next to it. Shown in «Pairs», quiz and flash cards.")));
+        }) }, "📷 ", T("Add photos as cards")),
+        fieldInfo(T("Own photos: one card per photo – write the answer (e.g. the name) next to it. Shown in «Pairs», quiz and flash cards."), { title: T("Add photos as cards") })));
   }
   function pickPhotos(multiple, cb) { pickFiles({ accept: "image/*", multiple }, cb); }
   async function uploadPhoto(file) {
@@ -1179,9 +1174,7 @@ async function importView(main) {
   main.append(pageHead(T("Import"), h("button.btn.ghost", { onclick: () => { P.tab = "packs"; location.hash = "packs"; render(); } }, "← ", T("Learning packs"))),
     out,                                        // the imported drafts: on top, right where you look after the upload
     section(T("From a file"), drop,
-      h("p.small.muted", T("Everything imported becomes a draft first. You check it, then publish it for the children.")),
-      P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: the AI of Home Assistant reads it and makes a draft. Packs from school material stay private.")) :
-        h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
+      P.meta.ai ? null : h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section("🤖 " + I18N.tr(T("Made with your AI")),
       h("p", T("Learning material that fits your child's school year and textbook: the template – and every JSON export of a pack – is a JSON file that explains itself to an AI (instructions and every field). Give it to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3», «the words on this photo» or «add 10 cards». Paste the answer below (or save it as a .json file and upload it above). Then check the draft, publish it and assign it to your children.")),
       aiPromptBox(T("Make me a learning pack for Family Quest.\nSubject: [e.g. French vocabulary]\nSchool year: [e.g. 5th grade]\nTopic or textbook unit: [e.g. unit 3 – at school]\nAbout [20] cards, my child speaks [English]."),
@@ -1296,8 +1289,7 @@ async function weatherView(main, part = "both") {
   if (!P.accounts.length) P.accounts = await call("parent/accounts");
   const cfg = d.config, n = cfg.levels.length;
   const list = section("⛅ " + I18N.tr(T("Weather of the day")),
-    h("p.muted", T("Give each child its weather – the bonus or malus is booked right away. Only the child sees its own weather."), " ",
-      I18N.tr(T("Everybody is back at {0} at {1}.")).replace("{0}", cfg.levels.find(l => l.key === cfg.default)?.icon || "").replace("{1}", cfg.reset)),
+    h("p.muted", I18N.tr(T("Everybody is back at {0} at {1}.")).replace("{0}", cfg.levels.find(l => l.key === cfg.default)?.icon || "").replace("{1}", cfg.reset)),
     !cfg.enabled ? h("p.bad", T("The weather is switched off.")) : null,
     !d.kids.length ? h("p.muted", T("No children yet.")) : null,
     h("ul.weather-list", ...d.kids.map(k => {
@@ -1348,7 +1340,6 @@ async function weatherView(main, part = "both") {
   const acc = h("select", ...P.accounts.filter(a => a.active && a.key !== "xp").map(a => h("option", { value: a.key, selected: a.key === cfg.account }, a.icon + " " + I18N.tr(a.name))));
   const on = h("input", { type: "checkbox", checked: cfg.enabled });
   const conf = section("⚙️ " + I18N.tr(T("Weather settings")),
-    h("p.muted", T("Symbols with bonus (positive) or malus (negative points). The best weather on top.")),
     rows, h("div.row", h("button.btn.small.ghost", { onclick: () => addRow({ icon: "", name: "", points: 0 }) }, "＋ ", T("Add weather"))),
     h("div.small.muted", T("Tap a symbol to put it into the field you edited last:")), palette,
     h("div.grid3", h("label.field", h("span", T("Reset every day at")), time),
@@ -1388,8 +1379,7 @@ function themesSection() {
     const m = modal(h("div.form", h("h2", "🎨 ", o.name ? C(o.name) : T("Own design")),
       h("div.row", h("label.field.grow", T("Name"), name), h("label.field", T("Icon"), icon)),
       h("div.grid2", h("label.field", T("Scene"), vis), h("label.field", T("Colour"), accent)),
-      h("div.grid2", h("label.field", T("From"), from), h("label.field", T("To"), to)),
-      h("p.small.muted", T("Every year on these days (the year is ignored). Own designs come before Halloween, Christmas and the seasons.")),
+      h("div.grid2", h("label.field", h("span", T("From"), fieldInfo(T("Every year on these days (the year is ignored). Own designs come before Halloween, Christmas and the seasons."))), from), h("label.field", T("To"), to)),
       h("div.row", h("button.btn", { onclick: () => {
         if (!name.value.trim() || !from.value || !to.value) return toast(T("A design needs a name and a date from – to"), "bad");
         const d = { ...o, name: name.value.trim(), icon: icon.value || "🎨", vis: vis.value, accent: accent.value, from: toMd(from.value), to: toMd(to.value) };
@@ -1416,7 +1406,6 @@ function themesSection() {
         h("button.icon-btn", { title: T("Delete"), onclick: () => { cfg.own.splice(i, 1); save(); } }, "🗑️")]);
     let ownIdx = -1;
     sec.replaceChildren(sec.firstChild,
-      h("p.small.muted", T("The header of the app shows the animated scene of the design of the day – like the Family Planer. Children can switch it off on their device in the ☰ menu.")),
       h("ul.list", ...d.designs.map(x => row(x, x.builtin ? null : ++ownIdx))),
       h("button.btn.ghost", { onclick: () => ownDialog(null, null) }, "+ ", T("Own design")));
   };
@@ -1493,7 +1482,6 @@ function planerChoresSection(...more) {
   return sectionAdd("📅 " + I18N.tr(T("One chore plan: the Planner")), [vac,
       h("button.btn.small.ghost", { onclick: () => act("special") }, "+ ", T("Special chore")),
       h("button.btn.small.ghost", { onclick: () => act("todo") }, "+ ", T("To-do"))],
-    h("p.small.muted", T("The built-in planner has the bigger chore plan (days, rhythm, time to do it, special chores, awards). Its chores also appear on the children's start page.")),
     frame, ...more);
 }
 
@@ -1540,8 +1528,8 @@ function choreDialog(c, kids) {
   const m = modal(h("div.form",
     h("h2", isNew ? T("New chore") : T("Edit chore")),
     h("div.row", f.icon, h("label.field.grow", T("Name"), f.name)),
-    h("div.grid3", h("label.field", T("Points"), f.points), h("label.field", T("Account"), f.account), h("label.field", T("Type"), f.kind)),
-    h("label.field", h("span", "⚡ ", T("Energy bonus")), f.energy, h("span.hint", T("Segments of the game battery the child gets when the chore is done (0 = none). Never more than the battery holds."))),
+    h("div.field-row", h("label.field", T("Points"), f.points), h("label.field", T("Account"), f.account), h("label.field", T("Type"), f.kind),
+      h("label.field", h("span", "⚡ ", T("Energy bonus"), fieldInfo(T("Segments of the game battery the child gets when the chore is done (0 = none). Never more than the battery holds."))), f.energy)),
     h("div.grid3", h("label.field", T("How often"), f.frequency), dateRow, h("label.field", T("Assignment"), f.assign), rotRow), dayRow,
     h("div", h("strong", T("Who")), h("div.row", ...who)),
     h("label.check", f.confirm, T("Parents confirm before points are booked")), h("label.check", f.active, T("Active")),
@@ -1636,12 +1624,11 @@ async function rewardsView(main, opts = {}) {
             h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
         newAcc.focus();
       } }, "+ ", T("Add account")),
-      h("p.small.muted", T("XP shows progress and is never spent. Spendable accounts can be used in the shop.")),
       h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th.key-col", T("Key")), h("th", "Icon"), h("th", T("Name")), h("th", T("Unit")), h("th", T("Spendable")), h("th", T("Active")))), h("tbody", ...accRows))))),
     sectionAdd(T("Rules: which action gives how much on which account"),
       h("button.btn.small", { onclick: () => rulesBody.append(ruleRow({ event: "lesson_done", account: "coins", amount: 5, daily_limit: null, label: "", active: 1, condition: {} })) }, "+ ", T("Add rule")),
       h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th", T("Event")), h("th", T("Amount")), h("th", T("Account")), h("th", T("Daily limit")), h("th", T("Label")), h("th", T("Active")), h("th"))), rulesBody)))),
-    section("🛍️ " + I18N.tr(T("Shop")), h("p.small.muted", T("Own rewards, avatar items and their prices are set in the menu Shop.")),
+    section("🛍️ " + I18N.tr(T("Shop")),
       h("button.btn.small", { onclick: () => { P.tab = "shop"; location.hash = "shop"; render(); } }, "🛍️ ", T("Open the shop settings"))));
   if (opts.onlyShop) { main.replaceChildren(); return { rewardBox, rewardCard }; }
 }
@@ -1697,9 +1684,8 @@ async function shopSettingsView(main) {
   setTimeout(filterShop);
   main.append(pageHead(T("Shop")), search, noShop,
     sectionAdd("🎁 " + I18N.tr(T("Own rewards")), h("button.btn.small", { onclick: () => rewardBox.prepend(rewardCard({ name: "", kind: "voucher", account: "coins", cost: 50, approval: 1, weekly_limit: null, icon: "🎁", config: {}, active: 1 })) }, "+ ", T("Add reward")),
-      h("p.small.muted", T("Your own rewards come first in the children's shop.")), rewardBox),
+      rewardBox),
     section("🧑‍🎨 " + I18N.tr(T("Avatar items")),
-      h("p.small.muted", T("Switch items off (they leave the shop – who has one keeps it), set your own price, or let them be paid with new XP: XP earned from now on – the XP account and the level stay as they are.")),
       ...bySlot.map(([sl, list]) => h("details.shop-slot", { open: sl === "background" },
         h("summary", h("strong", SLOT_NAMES[sl] || sl), h("span.small.muted", " · " + list.length)),
         h("div.scroll", h("table.tbl.shop-tbl", h("thead", h("tr", h("th"), h("th", T("Item")), h("th", T("In the app")), h("th", T("In the shop")), h("th", T("Price")), h("th", T("Paid with")))),
@@ -1731,12 +1717,12 @@ async function goalsView(main) {
   main.append(pageHead(T("Goals"), h("button.btn.ghost", { onclick: () => goalDialog(true) }, "+ ", T("Start family goal")),
       h("button.btn", { onclick: () => goalDialog(false) }, "+ ", T("Add goal"))),
     section(T("Current goals"), goals.length ? h("ul.list", ...list) : h("p.muted", T("No goals yet."))));
-  const formKid = h("div.form", h("h2", T("Weekly goal for a child")), h("p.small.muted", T("Shown on the child's dashboard, e.g. «finish French unit 3».")),
+  const formKid = h("div.form", h("h2", T("Weekly goal for a child")),
       h("div.grid3", h("label.field", T("Child"), f.kid), h("label.field", T("Pack"), f.pack), h("label.field", T("Unit"), f.unit),
         h("label.field", T("Target (stars or %)"), f.target), h("label.field", T("Title (optional)"), f.title)),
       h("button.btn", { onclick: async () => { await call("parent/goals", { method: "POST", body: { kind: "unit", profile_id: +f.kid.value, pack_id: f.pack.value,
         unit_id: f.unit.value || null, target: +f.target.value, title: f.title.value } }); document.querySelector(".modal-back")?.remove(); render(); } }, "💾 ", T("Add goal")));
-  const formFamily = h("div.form", h("h2", T("Family goal")), h("p.small.muted", T("All children collect together – so siblings help each other instead of only competing.")),
+  const formFamily = h("div.form", h("h2", T("Family goal")),
       h("div.grid3", h("label.field", T("What for?"), fg.title), h("label.field", T("Account"), fg.account), h("label.field", T("Target"), fg.target)),
       h("button.btn", { onclick: async () => { if (!fg.title.value) return fg.title.focus(); await call("parent/goals", { method: "POST", body: { kind: "family", title: fg.title.value,
         account: fg.account.value, target: +fg.target.value } }); document.querySelector(".modal-back")?.remove(); render(); } }, "💾 ", T("Start family goal")));
@@ -1755,10 +1741,9 @@ function linkSection() {
       T("Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.")));
   }).catch(() => { url.value = `http://${location.hostname}:8099/`; draw(); });
   return section("📱 " + I18N.tr(T("Link for tablets and phones")),
-    h("p.small.muted", T("Children scan the code with a tablet or phone in your home network, pick their profile and learn – without a Home Assistant login.")),
     warn,
     h("div.qr-row", qr, h("div.grow",
-      h("label.field", T("Address in the home network"), url, h("span.hint", T("Only reachable at home (Wi-Fi). Change it if the address is not right."))),
+      h("label.field", h("span", T("Address in the home network"), fieldInfo(T("Only reachable at home (Wi-Fi). Change it if the address is not right."))), url),
       h("div.row", h("button.btn", { onclick: () => printPoster(url.value.trim()) }, "🖨️ ", T("Print poster"))))));
 }
 
@@ -1791,10 +1776,6 @@ GAME_LIST.push(["adventuregame", "🗝️", T("Adventure games")]);
 // 🛠️ Custom games: the games with the family's own content (quizzes, photo sets, adventure games) – on top of the page
 const CUSTOM_GAMES = ["quiz", "paarjagd", "adventuregame"];
 const FREE_GAMES = new Set(["adventuregame"]);             // no price, no rent (services.py FREE_GAMES)
-// the small games of the game corner (no live section) – the texts like in the app (minigames.js ARCADE)
-const ARCADE_TEXTS = { ttt: T("Three in a row – against the app or a second player."), pingpong: T("Bounce the ball back – against the app or face to face on one tablet."),
-  sudoku: T("Every number once in each row, column and box. From 4×4 to 9×9."), patience: T("Sort all cards by suit onto the four piles."),
-  slots: T("Pull the lever for 1 coin – three times a day. Three alike win, cherries too.") };
 
 // per game: active / active without bots (only games with bots) / inactive – and for whom (everybody or chosen children)
 // ---------------------------------------------------------------- game battery and party mode (familyquest/battery.py)
@@ -1802,14 +1783,14 @@ const UNL_CHOICES = () => [["off", T("Off")], ["forever", T("Permanent")], ["day
 const unlRunning = v => v && v !== "forever" && new Date(v.replace(" ", "T")) > new Date();
 
 /** The values of the game battery – the family default (`own` null) or one child's own values («as the family»). */
-function batteryForm(values, own, onSave) {
+function batteryForm(values, own, onSave, ...more) {
   const fam = values, kid = own != null;
   const has = k => kid && Object.prototype.hasOwnProperty.call(own, k);
-  const num = (k, min, max, hint) => {
+  const num = (k, min, max) => {
     const inp = h("input", { type: "number", min, max, step: 1, inputmode: "numeric", value: kid ? (has(k) ? own[k] : "") : fam[k],
       placeholder: kid ? I18N.tr(T("as family")) + " (" + fam[k] + ")" : "",
       onchange: () => onSave({ [k]: inp.value === "" ? (kid ? null : fam[k]) : Math.max(min, Math.min(max, Math.round(+inp.value || 0))) }) });
-    return [inp, hint ? h("span.hint", hint) : null];
+    return inp;
   };
   const on = kid ? h("select", { onchange: () => onSave({ on: on.value === "" ? null : on.value === "1" }) },
       h("option", { value: "", selected: !has("on") }, I18N.tr(T("as family")) + " (" + I18N.tr(fam.on ? T("On") : T("Off")) + ")"),
@@ -1823,10 +1804,12 @@ function batteryForm(values, own, onSave) {
     ...UNL_CHOICES().map(([v, n]) => h("option", { value: v, selected: !running && (v === "forever" ? cur === "forever" : v === "off" && (kid ? has("unlimited") && cur === "" : !cur)) }, n)));
   return h("div.form.bat-form",
     kid ? h("label.field", h("span", "🔋 ", T("Game battery")), on) : h("label.check", on, h("span", "🔋 ", T("Game battery on – starting a game costs a segment"))),
-    h("div.grid2", h("label.field", h("span", T("Capacity (segments)")), ...num("cap", 1, 20, T("1 to 20 – starts full."))),
-      h("label.field", h("span", "⚡ ", T("Recharging costs (coins)")), ...num("cost", 0, 10000, T("0 = recharging is free.")))),
-    h("label.field", h("span", "∞ ", T("Unlimited energy")), unl,
-      running || cur === "forever" ? h("button.btn.small.ghost", { type: "button", onclick: () => onSave({ unlimited: kid ? "family" : "off" }) }, "⏹ ", T("End")) : null));
+    // the small fields side by side (two per row on a phone)
+    h("div.field-row", h("label.field", h("span", T("Capacity (segments)"), fieldInfo(T("1 to 20 – starts full."))), num("cap", 1, 20)),
+      h("label.field", h("span", "⚡ ", T("Recharging costs (coins)"), fieldInfo(T("0 = recharging is free."))), num("cost", 0, 10000)),
+      h("label.field", h("span", "∞ ", T("Unlimited energy")), unl,
+        running || cur === "forever" ? h("button.btn.small.ghost", { type: "button", onclick: () => onSave({ unlimited: kid ? "family" : "off" }) }, "⏹ ", T("End")) : null),
+      ...more));
 }
 
 /** Parent area › Games: the family default of the game battery, the daily goal, every child's charge now. */
@@ -1839,10 +1822,7 @@ function batterySettingsCard() {
       .map(([v, n]) => h("option", { value: v, selected: fam.goal === v }, n)));
     const plus = h("input", { type: "number", min: 1, max: 20, step: 1, value: fam.goal_plus, inputmode: "numeric", onchange: () => save({ goal_plus: +plus.value }) });
     box.replaceChildren(box.firstChild,
-      h("p.small.muted", T("Every child has a game battery. Starting a game (an own table, alone against bots, a game of the game corner) costs one segment – joining a table of somebody else is free and a started game can be finished. Empty: the child recharges for coins. Parents play without a battery.")),
-      batteryForm(fam, null, save),
-      h("div.grid2", h("label.field", h("span", "🎯 ", T("Daily goal reached")), goal), fam.goal === "plus" ? h("label.field", h("span", T("Extra segments")), plus) : h("span")),
-      h("p.small.muted", T("Chores can give an energy bonus too (chore plan › ⚡ Energy bonus). Each child's own values: profile › Game battery.")),
+      batteryForm(fam, null, save, h("label.field", h("span", "🎯 ", T("Daily goal reached")), goal), fam.goal === "plus" ? h("label.field", h("span", T("Extra segments")), plus) : null),
       h("ul.list.bat-kids", ...d.kids.map(k => h("li.row", k.state ? batteryIcon(k.state) : null, C(k.name, "strong.grow"),
         h("span.small.muted", k.state && k.state.free ? (k.state.party ? "🎉 " : "∞ ") + (k.state.until ? untilWhen(k.state.until) : "") : k.state ? k.state.charge + " / " + k.state.cap : ""),
         k.state && !k.state.free && k.state.charge < k.state.cap ? h("button.btn.small.ghost", { onclick: async () => { draw(await call(`parent/battery/${k.id}/recharge`, { method: "POST" })); toast(T("Battery recharged"), "good"); } }, "🎁 ", T("Recharge")) : null))));
@@ -1861,7 +1841,6 @@ function kidBatteryBox(pid) {
     box.replaceChildren(box.firstChild,
       k.state ? h("div.row", batteryIcon(k.state, true), h("span.grow", k.state.party ? "🎉 " + I18N.tr(T("Party mode")) : k.state.free ? "∞" + (k.state.until ? " " + untilWhen(k.state.until) : "") : k.state.charge + " / " + k.state.cap),
         !k.state.free && k.state.charge < k.state.cap ? h("button.btn.small.ghost", { type: "button", onclick: async () => { draw(await call(`parent/battery/${pid}/recharge`, { method: "POST" })); } }, "🎁 ", T("Recharge")) : null) : null,
-      h("p.small.muted", T("Empty fields: as the family (parent area › Games › Game battery).")),
       batteryForm(d.family, k.own, save));
   };
   call("parent/battery").then(draw).catch(() => box.replaceChildren());
@@ -1910,7 +1889,6 @@ function partyDialog(kids, after) {
     h("h3", T("For whom")), h("div.row", h("label.check", all, T("All children")), h("label.check", some, T("Chosen children"))), pickRow,
     h("h3", T("What")), unlockL, battL, limL,
     h("h3", T("How long")), durs,
-    h("p.small.muted", T("Nothing is bought or used during the party – when it ends, everything is as before. The children's app turns to the 🪩 Disco design.")),
     h("div.row", h("button.btn", { onclick: async () => {
       const body = { kids: all.checked ? "all" : picks.map(l => l.querySelector("input")).filter(i => i.checked).map(i => +i.value),
         unlock: unlock.checked, battery: batt.checked, limits: lim.checked, for: dur };
@@ -1949,12 +1927,12 @@ function gameAccess(kids, data) {
     bar.classList.toggle("off", state === "off");                  // the section is dimmed (parent.css)
     bar.replaceChildren(...[
       h("div.pin-kind.game-state", ...[["on", "✓ ", T("Active")], botGames.has(k) ? ["nobots", "🚫 ", T("Active without bots")] : null, ["off", "✕ ", T("Inactive")]].filter(Boolean)
-        .map(([v, ic, n]) => h("button.btn.small" + (state === v ? (v === "off" ? ".bad" : "") : ".ghost"), { "aria-pressed": String(state === v), onclick: () => set(v) }, ic, n))),
+        .map(([v, ic, n]) => h("button.btn.small" + (state === v ? (v === "off" ? ".bad" : "") : ".ghost"), { "aria-pressed": String(state === v), onclick: () => set(v) }, ic, n)),
+        botGames.has(k) ? fieldInfo(T("No «alone against bots», no bots at the table, no games against the app – only people play. Parents are not bound."), { title: T("Active without bots") }) : null),
       state === "off" ? null : h("div.pin-kind", ...[["all", T("For everybody")], ["some", T("Only chosen children")]].map(([m, n]) =>
         h("button.btn.small" + (a.mode === m ? "" : ".ghost"), { onclick: () => { acc[k] = { ...a, mode: m }; save(k); } }, n))),
       state !== "off" && a.mode === "some" ? h("div.row.game-kids", ...kids.map(kid => h("label.check", h("input", { type: "checkbox", checked: a.profiles.includes(kid.id),
         onchange: e => { const ids = new Set(a.profiles); e.target.checked ? ids.add(kid.id) : ids.delete(kid.id); acc[k] = { ...a, profiles: [...ids] }; save(k); } }), C(kid.name)))) : null,
-      state === "nobots" ? h("p.small.muted", T("No «alone against bots», no bots at the table, no games against the app – only people play. Parents are not bound.")) : null,
       state === "off" || FREE_GAMES.has(k) ? null : gamePriceBox(k, a, v => { acc[k] = { ...a, ...v }; save(k); }, returns)].filter(Boolean));
   };
   return {
@@ -1983,22 +1961,23 @@ function gamePriceBox(k, a, set, returns) {
   let luck = null;
   if (k === "slots") {
     const pct = v => I18N.tr(T("≈ {0} % comes back on average")).replace("{0}", returns[v] ?? "?");
-    const hint = h("span.hint", pct(a.luck || 5));
+    const hint = h("span.hint", pct(a.luck || 5));          // the live value stays visible
     const range = h("input.gp-luck", { type: "range", min: 1, max: 10, step: 1, value: a.luck || 5,
       oninput: () => { hint.textContent = pct(range.value); val.textContent = range.value; }, onchange: () => set({ luck: +range.value }) });
     const val = h("b", String(a.luck || 5));
-    luck = h("label.field", h("span", "🍀 ", T("Win chance"), " ", val, " / 10"), range, hint,
-      h("span.hint", T("5 = like a typical casino machine. Higher: better odds for the children, lower: worse.")));
+    luck = h("label.field", h("span", "🍀 ", T("Win chance"), " ", val, " / 10",
+      fieldInfo(T("5 = like a typical casino machine. Higher: better odds for the children, lower: worse."))), range, hint);
   }
+  // side by side: price · free tries · rent with its period (the rent spans two columns, so day / week / month stay next to it)
+  rent.setAttribute("aria-label", T("Rent price (coins)"));
   return h("div.gp-box",
-    h("label.field", h("span", "🪙 ", T("Price for children (coins)")), price,
-      h("span.hint", T("0 = free. Bought once, the game stays the child's for good – also when you change the price."))),
-    h("label.field", h("span", "🔁 ", T("Rent price (coins)")), rent,
-      h("span.hint", T("0 = no renting. Renting opens the game for one day, week or month; renting again adds the time."))),
-    periods,
-    h("label.field", h("span", "🎁 ", T("Free tries before buying")), preview,
-      h("span.hint", T("How often a child may play the game for free before buying or renting it. Only matters with a price or a rent."))),
-    h("p.small.muted", T("With a price the children buy or rent the game in the shop. Parents always play for free.")),
+    h("div.field-row",
+      h("label.field", h("span", "🪙 ", T("Price for children (coins)"),
+        fieldInfo(T("0 = free. Bought once, the game stays the child's for good – also when you change the price."), T("With a price the children buy or rent the game in the shop. Parents always play for free."))), price),
+      h("label.field", h("span", "🎁 ", T("Free tries before buying"),
+        fieldInfo(T("How often a child may play the game for free before buying or renting it. Only matters with a price or a rent."))), preview),
+      h("div.field.span2", h("span", "🔁 ", T("Rent price (coins)"),
+        fieldInfo(T("0 = no renting. Renting opens the game for one day, week or month; renting again adds the time."))), h("div.gp-rent", rent, periods))),
     luck);
 }
 
@@ -2062,7 +2041,7 @@ async function haMediaPicker({ single = false } = {}) {
     };
     const m = modal(h("div", h("div.sec-head", h("h2", "🏠 ", T("Home Assistant Media")),
         h("div.head-actions", haMediaOpenBtn(), h("button.btn.small.ghost", { title: T("Refresh"), onclick: () => open(cur) }, "🔄 ", T("Refresh")))),
-      h("p.small.muted", T("Upload new photos in the Home Assistant media browser (new tab), then tap «Refresh».")), body, foot), { wide: true, onClose: () => finish(null) });
+      body, foot), { wide: true, onClose: () => finish(null) });
     open("");
   });
 }
@@ -2160,13 +2139,12 @@ async function crestSection() {
     crest.image ? h("button.btn.small.ghost", { onclick: () => { crest.image = null; drawCrest(); drawPictureRow(); } }, "✕ ", T("Remove picture")) : null].filter(Boolean)); };
   const crestForm = h("div.form",
     h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: T("e.g. Miller") })),
-    h("div.field", h("span", T("Own picture as crest")), h("p.small.muted", T("A photo or drawing of your crest – it is shown in the shield. Without a picture the crest is drawn from colours, pattern and symbol.")), pictureRow),
+    h("div.field", h("span", T("Own picture as crest"), fieldInfo(T("A photo or drawing of your crest – it is shown in the shield. Without a picture the crest is drawn from colours, pattern and symbol."))), pictureRow),
     drawnFields);
   const onOff = h("input", { type: "checkbox", checked: useCrest, onchange: e => { useCrest = e.target.checked; crestForm.hidden = !useCrest; drawCrest(); } });
   crestForm.hidden = !useCrest;
   drawCrest(); drawPictureRow();
   return section("🛡️ " + I18N.tr(T("Family crest")),
-    h("p.small.muted", T("Your family crest – on the card backs of the games, on the dashboard and on posters.")),
     h("label.check", onOff, h("span", T("We have a family crest"))),
     h("div.crest-edit", preview, crestForm),
     h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save"))));
@@ -2216,7 +2194,6 @@ async function photoSets(onCount = null) {
   const newDialog = () => {
     const tile = (ic, name, go) => h("button.mm-preset", { onclick: () => { m.close(); go(); } }, h("span.big-ic", ic), h("strong", name));
     const m = modal(h("div.form", h("h2", "🧠 ", T("New photo set")),
-      h("p.small.muted", T("Start with a preset – then add photos from this device or from Home Assistant Media. Every photo becomes a pair.")),
       h("div.mm-presets", tile("📄", T("Empty set"), () => { d.sets.unshift({ name: "", photos: [] }); drawSets(); setsBox.querySelector("input").focus(); }),
         ...PHOTO_PRESETS().map(([ic, n]) => tile(ic, n, () => add(ic + " " + I18N.tr(n))))),
       h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
@@ -2228,8 +2205,6 @@ async function photoSets(onCount = null) {
   });
   drawSets();
   return { newDialog, importDialog, el: h("div.mm-box",
-    h("p.small.muted", T("In the game corner the children find pairs – with animals, fruit … or with your own photos. Every photo becomes a pair.")),
-    h("p.small.muted", T("Upload the photos from this device – several at once are fine. They are made small automatically.")),
     setsBox,
     h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save")))) };
 }
@@ -2240,15 +2215,13 @@ function haLoginSection(s) {
   const u = P.meta.ha_user, mine = P.meta.my_ha_user;
   const only = h("input", { type: "checkbox", checked: !!s.parent_ha_only, disabled: !(u && mine) && !s.parent_ha_only });
   return section("🏠 " + I18N.tr(T("Log in with Home Assistant")),
-    h("p.small.muted", T("Link a Home Assistant user with a profile (Profiles › edit, for parents and children). Parents then open the parent area in the Home Assistant sidebar without PIN; children open their app there without PIN – never the parent area. With the option below both also sign in on tablets and phones with «Sign in with Home Assistant». Profiles without a linked user log in with their PIN.")),
     h("div.row.wrap",
       h("span.grow", mine ? ["✓ ", I18N.tr(T("Linked with «{0}»")).replace("{0}", mine)] : u ? I18N.tr(T("You are logged in to Home Assistant as «{0}».")).replace("{0}", u.name || u.user)
         : I18N.tr(T("Open the parent area through Home Assistant to link your user."))),
       mine ? h("button.btn.small.ghost", { onclick: async () => { await call("parent/ha-link", { method: "POST", body: { on: false } }); P.meta = await call("parent/meta"); render(); } }, T("Unlink"))
         : u ? h("button.btn.small", { onclick: async () => { await call("parent/ha-link", { method: "POST", body: { on: true } }); P.meta = await call("parent/meta"); toast(T("Linked with Home Assistant"), "good"); render(); } }, "🔗 ", T("Link my user")) : null),
-    h("label.check", only, h("span", T("Parent area only through Home Assistant (no PIN login for the parent area)"))),
-    h("p.small.muted", T("Then the app port (tablets, phones) is only for the children's app – the parent area opens only in the Home Assistant sidebar with your Home Assistant login. No second port is needed.")),
-    h("p.small.muted", T("Home Assistant users that are neither linked nor administrators get the children's app with the normal login.")),
+    h("label.check", only, h("span", T("Parent area only through Home Assistant (no PIN login for the parent area)"),
+      fieldInfo(T("Then the app port (tablets, phones) is only for the children's app – the parent area opens only in the Home Assistant sidebar with your Home Assistant login. No second port is needed.")))),
     h("button.btn.small", { onclick: async () => {
       try {
         await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked } });
@@ -2271,11 +2244,9 @@ function haAppLoginBox() {
     box.replaceChildren(
       h("h3", { "data-ik": "ha.app" }, "📱 ", T("Sign in with Home Assistant in the app")),
       h("label.check", on, h("span", T("Allow sign-in with Home Assistant in the app (tablets, phones)"))),
-      h("p.small.muted", T("The login screen of the app shows «Sign in with Home Assistant». It opens the login page of Home Assistant (with two-factor authentication when the user has it) and comes back signed in – as the profile linked with that Home Assistant user. Family Quest keeps no Home Assistant password or token.")),
       h("p.small", names ? [T("Can sign in:"), " ", C(names)] : h("span.muted", T("Nobody can sign in yet – link a Home Assistant user with a profile (Profiles › edit)."))),
-      h("label.field", T("Home Assistant address for the sign-in"), url),
-      h("p.small.muted", st.auto ? I18N.tr(T("Empty = automatic: {0}")).replace("{0}", st.auto) : T("Empty = automatic (this host with the port of Home Assistant)."),
-        " ", T("The tablets must reach Home Assistant at this address.")),
+      h("label.field", h("span", T("Home Assistant address for the sign-in"), fieldInfo(T("The tablets must reach Home Assistant at this address."))), url,
+        h("span.hint", st.auto ? I18N.tr(T("Empty = automatic: {0}")).replace("{0}", st.auto) : T("Empty = automatic (this host with the port of Home Assistant)."))),
       st.suggestions.length ? h("div.row.wrap.small", h("span.muted", T("From Home Assistant:")),
         ...st.suggestions.map(u => h("button.btn.small.ghost", { type: "button", onclick: () => { url.value = u; } }, C(u)))) : null,
       h("div.row.wrap",
@@ -2322,7 +2293,6 @@ async function integrationSection() {
     const comp = st.component || {};
     const on = h("input", { type: "checkbox", checked: st.enabled, onchange: () => switchTo(on.checked) });
     box.replaceChildren(...[h("h2", "🏠 ", T("Family Quest HA integration")),
-      h("p.small.muted", T("Shows the most important numbers of every child (XP, coins, chores, time left, internet …) as sensors in Home Assistant – with a switch for the internet time and actions to book points and to approve chores and rewards.")),
       h("label.check", on, h("strong", T("Family Quest HA integration"))),
       !st.config_writable ? h("p.warn-text", T("The Home Assistant configuration folder cannot be written – the component cannot be copied (update the app).")) : null,
       st.enabled ? [
@@ -2412,11 +2382,10 @@ async function firewallSection(s) {
     my.device ? h("span", " · ", C(my.device)) : null, my.mac ? h("span.mono", " · " + my.mac) : null);
   const app = networkEditor(s.allowed_networks, my.ip), par = networkEditor(s.parent_networks, my.ip), gst = networkEditor(s.guest_networks, null);
   return section("🛡️ " + I18N.tr(T("Access from the network")),
-    h("p.small.muted", T("Only devices with an address in these ranges may use Family Quest. A range can also be a single address (leave «to» empty). No range = every network.")),
     me,
     h("h3", { "data-ik": "net.app" }, T("Whole app")), app,
-    h("h3", { "data-ik": "net.parent" }, T("Parent area (additionally)")), h("p.small.muted", T("e.g. only the parents' network – children's devices can then not open the parent area.")), par,
-    h("h3", { "data-ik": "net.guest" }, "👥 ", T("Guest networks")), h("p.small.muted", T("e.g. your guest Wi-Fi: devices there can only join games with an invitation (QR code) – no family login, no app, no parent area.")), gst,
+    h("h3", { "data-ik": "net.parent" }, T("Parent area (additionally)")), par,
+    h("h3", { "data-ik": "net.guest" }, "👥 ", T("Guest networks")), gst,
     h("button.btn", { onclick: async () => {
       try { await call("parent/settings", { method: "PUT", body: { allowed_networks: app.value(), parent_networks: par.value(), guest_networks: gst.value() } }); toast(T("Saved"), "good"); render(); }
       catch (e) { toast(e.message, "bad"); }
@@ -2466,7 +2435,6 @@ function runningGamesBox() {
     };
     box.replaceChildren(sectionAdd("⏹ " + I18N.tr(T("Running games")),
       list.length > 1 ? h("button.btn.small.ghost", { onclick: endAll }, "⏹ ", T("End all")) : null,
-      h("p.small.muted", T("Every game that is running just now – family tables and games alone against bots. Ending works like the «End» button of whoever leads it.")),
       h("div.run-list", ...list.map(g => h("div.row.run-item",
         h("span.run-ic", g.icon), h("div.grow", h("strong", I18N.tr(g.title)), h("br"),
           h("span.small.muted", [g.solo ? T("alone against bots") : T("family table"), g.host ? " · " + g.host : "",
@@ -2487,7 +2455,6 @@ async function communityView(main) {
   const drawHist = async () => hist.replaceChildren(await historySection(+who.value, null));   // the list only – the section has the heading
   who.onchange = drawHist;
   main.append(h("h1", T("Family")),
-    h("p.muted", T("Family council, polls and Wichteln – children can open topics and vote too. The games are on their own page «Games».")),
     await familyTimeSection(me, { settings: redraw => familyTimeSettings(redraw, true) }),
     await councilSection(me), await pollsSection(me),
     await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }),
@@ -2513,9 +2480,9 @@ function familyTimeSettings(after = null, inBox = false) {
     };
     box.replaceChildren(inBox ? h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")) : null,
       h("label.check", on, T("Game wishes for FamilyTime (wishes, vote, buying a game)")),
-      h("div.grid2",
-        h("label.field", h("span", "🪙 ", T("Fix a game: price in coins")), price, h("span.hint", T("A child pays this to set the game of a FamilyTime that has none yet. 0 = buying is off."))),
-        h("label.field", h("span", "⏰ ", T("Wishes close (hours before)")), hours, h("span.hint", T("Then the vote starts by itself – one wish is set directly.")))),
+      h("div.field-row",
+        h("label.field", h("span", "🪙 ", T("Fix a game: price in coins"), fieldInfo(T("A child pays this to set the game of a FamilyTime that has none yet. 0 = buying is off."))), price),
+        h("label.field", h("span", "⏰ ", T("Wishes close (hours before)"), fieldInfo(T("Then the vote starts by itself – one wish is set directly."))), hours)),
       h("button.btn.small", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
   }).catch(() => box.replaceChildren());
   return box;
@@ -2541,13 +2508,13 @@ async function gamesView(main) {
   // the own content (quizzes, photo sets, adventure games), then the settings (status, coins)
   // the same order everywhere: play (family table / alone / ↗ in the app), then the own content under its title with
   // «+ New» (and «📥 Import» where it makes sense) next to that title, then the settings
-  const csec = (k, desc, head, contentTitle, ...settings) => {
+  const csec = (k, head, contentTitle, ...settings) => {
     const [, ic, name] = GAME_LIST.find(g => g[0] === k);
     const count = h("span.chip.cg-count", "…"), actions = h("div.row.wrap.cg-actions"), list = h("div.cg-list");
     const play = h("div.row.wrap.cg-play-btns"), playRow = h("div.game-play.cg-play", play, head ? Object.assign(head, { className: head.className + " cg-app" }) : null);
     const el = h("details.card.sec.game-sec.cg-sec", { "data-game": k },
       h("summary.sec-head", h("h2", { "data-ik": name }, ic, " ", I18N.tr(name), " ", count, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null),
-        access.chips(k), h("p.small.muted.cg-desc", desc)),
+        access.chips(k)),
       playRow,
       h("div.row.wrap.cg-content-head", h("h3.cg-sub.grow", { "data-ik": "cg." + k }, contentTitle), actions), list,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
@@ -2581,16 +2548,14 @@ async function gamesView(main) {
     const open = () => { const box = h("div.bingo-live"); bingo.replaceChildren(box); bingoLive(box, me, () => render()); };
     bingo.replaceChildren(gsec("bingo", "🎱 Bingo", appBtn("bingo"), b && b.status !== "done"
       ? h("button.btn", { onclick: open }, b.card ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("Everybody gets a card, the balls come by themselves – mark your numbers and shout «Bingo!».")),
-         h("button.btn", { onclick: () => bingoStartDialog(open) }, "▶ ", T("Start bingo"))]));
+      : [h("button.btn", { onclick: () => bingoStartDialog(open) }, "▶ ", T("Start bingo"))]));
   };
   const showPoker = async () => {
     let g = null; try { g = await call("community/poker"); } catch {}
     const open = () => { const box = h("div.poker-live"); poker.replaceChildren(box); pokerLive(box, me, () => render()); };
     poker.replaceChildren(gsec("poker", "🃏 Texas Hold'em", appBtn("poker"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("Poker with play chips – everybody on their own device.")),
-         h("button.btn", { onclick: () => pokerStartDialog(open) }, "▶ ", T("Open a table"))]));
+      : [h("button.btn", { onclick: () => pokerStartDialog(open) }, "▶ ", T("Open a table"))]));
   };
   const song = h("div");
   const showSong = async () => {
@@ -2598,8 +2563,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.song-live"); song.replaceChildren(b); songLive(b, me, () => render()); };
     song.replaceChildren(gsec("song", "🎵 " + I18N.tr(T("Guess the song")), appBtn("song"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("A speaker plays songs – who buzzes first and knows artist and title gets a point.")),
-         h("button.btn", { onclick: () => songStartDialog(open) }, "▶ ", T("Open the game"))]));
+      : [h("button.btn", { onclick: () => songStartDialog(open) }, "▶ ", T("Open the game"))]));
   };
   const showCards = async kind => {
     let g = null; try { g = await call("community/cards/" + kind); } catch {}
@@ -2620,7 +2584,7 @@ async function gamesView(main) {
   };
   // Pair Hunt: play, then its own content – the photo sets (shared with the pairs game of the game corner)
   const pjPlay = h("div"), pjSets = h("div"), pjRewards = h("div");
-  const cPair = csec("paarjagd", T("Find the pairs – with animals, fruit … or your own photo sets. Every photo becomes a pair."), appBtn("paarjagd"), "📷 " + I18N.tr(T("Photo sets")), pjRewards);
+  const cPair = csec("paarjagd", appBtn("paarjagd"), "📷 " + I18N.tr(T("Photo sets")), pjRewards);
   cPair.play.append(pjPlay); cPair.list.append(pjSets);
   paarjagd.append(cPair.el);
   const showPaarjagd = async () => {
@@ -2640,8 +2604,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.wb-live"); werbinich.replaceChildren(b); werbinichLive(b, me, () => render()); };
     werbinich.replaceChildren(gsec("werbinich", "🎭 " + I18N.tr(T("Who am I?")), appBtn("werbinich"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("Everybody gets a secret character and finds out with yes/no questions – everybody on their own device, guests via QR code.")),
-         h("button.btn", { onclick: () => werbinichStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      : [h("button.btn", { onclick: () => werbinichStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("werbinich")));
   };
   const showKartenlauf = async () => {
@@ -2649,8 +2612,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.kl-live"); kartenlauf.replaceChildren(b); kartenlaufLive(b, me, () => render()); };
     kartenlauf.replaceChildren(gsec("kartenlauf", "🏁 " + I18N.tr(T("Card Race")), appBtn("kartenlauf"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The race board game with cards: bring your four marbles home – alone or in teams of two, with bots and guests.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => kartenlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => kartenlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => kartenlaufStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
       await gameRewardsRow("kartenlauf")));
   };
@@ -2659,8 +2621,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.sl-live"); stadtland.replaceChildren(b); stadtlandLive(b, me, () => render()); };
     stadtland.replaceChildren(gsec("stadtland", "🏙️ " + I18N.tr(T("City, Country, River")), appBtn("stadtland"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The word game: a letter, 3 to 8 categories, the clock runs – everybody writes on their own device, guests via QR code.")),
-         h("button.btn", { onclick: () => stadtlandStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      : [h("button.btn", { onclick: () => stadtlandStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("stadtland")));
   };
   const showZeichnen = async () => {
@@ -2668,8 +2629,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.zr-live"); zeichnen.replaceChildren(b); zeichnenLive(b, me, () => render()); };
     zeichnen.replaceChildren(gsec("zeichnen", "🎨 " + I18N.tr(T("Draw & Guess")), appBtn("zeichnen"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("One draws, the others guess – live on every device, guests via QR code.")),
-         h("button.btn", { onclick: () => zeichnenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      : [h("button.btn", { onclick: () => zeichnenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("zeichnen")));
   };
   const showWuerfel = async () => {
@@ -2677,8 +2637,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.fw-live"); wuerfel.replaceChildren(b); wuerfelLive(b, me, () => render()); };
     wuerfel.replaceChildren(gsec("wuerfel", "🎲 " + I18N.tr(T("Five Dice")), appBtn("wuerfel"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The dice game with five dice: everybody rolls at the same time on their own device and fills the score sheet – with bots and guests.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => wuerfelStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => wuerfelStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => wuerfelStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
       await gameRewardsRow("wuerfel")));
   };
@@ -2687,8 +2646,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.hw-live"); heimwaerts.replaceChildren(b); heimwaertsLive(b, me, () => render()); };
     heimwaerts.replaceChildren(gsec("heimwaerts", "🏠 " + I18N.tr(T("Homeward")), appBtn("heimwaerts"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The classic race board game: roll the die, bring your 4 pieces home and send the others back to their yard – with bots and guests.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => heimwaertsStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => heimwaertsStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => heimwaertsStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
       await gameRewardsRow("heimwaerts")));
   };
@@ -2697,8 +2655,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.ju-live"); jump.replaceChildren(b); jumpLive(b, me, () => render()); };
     jump.replaceChildren(gsec("jump", "🦘 Jump", appBtn("jump"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("A jumping race on every device: the obstacles come from the left, jump over them – the last one running wins. Alone for a high score, with practice bots or at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => jumpStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => jumpStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => jumpStartDialog(true, open) }, JU_ICON, " ", T("Alone")))],
       await gameRewardsRow("jump")));
   };
@@ -2707,8 +2664,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.sr-live"); sternlauf.replaceChildren(b); sternlaufLive(b, me, () => render()); };
     sternlauf.replaceChildren(gsec("sternlauf", "🌠 " + I18N.tr(T("Star Runner")), appBtn("sternlauf"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("An endless runner on a forest path at night: swipe to change the lane, jump and duck, catch falling star sparks for the village lantern. Everybody runs the same course at the same time on their own device – alone, with practice bots or at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => sternlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => sternlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => sternlaufStartDialog(true, open) }, SR_ICON, " ", T("Alone")))],
       await gameRewardsRow("sternlauf")));
   };
@@ -2717,8 +2673,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.sn-live"); snack.replaceChildren(b); snackLive(b, me, () => render()); };
     snack.replaceChildren(gsec("snack", "🍔 " + I18N.tr(T("Snack Rush")), appBtn("snack"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("A snack stand on every device: everybody serves the same customers – cook, fry and fill at the same time, serve before they get angry. Most money in the till wins. Alone for a high score, with practice bots or at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => snackStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => snackStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => snackStartDialog(true, open) }, SN_ICON, " ", T("Alone")))],
       await gameRewardsRow("snack")));
   };
@@ -2727,8 +2682,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.vk-live"); verkehr.replaceChildren(b); vkLive(b, me, () => render()); };
     verkehr.replaceChildren(gsec("verkehr", "🚦 " + I18N.tr(T("Traffic Cadet")), appBtn("verkehr"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("Everybody switches the traffic lights of their own map – the same streets and cars for all, from a simple crossing to a roundabout. No accidents, no angry drivers: the last one standing or the most points wins. Alone, with practice bots or at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => vkStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => vkStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => vkStartDialog(true, open) }, VK_ICON, " ", T("Alone")))],
       await gameRewardsRow("verkehr")));
   };
@@ -2745,8 +2699,7 @@ async function gamesView(main) {
       } }, T("Save"))));
     langstrecke.replaceChildren(gsec("langstrecke", "🏎️ " + I18N.tr(T("24h Endurance")), appBtn("langstrecke"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("Short laps and a pit stop after every lap: one drives, the others charge the spare battery and get the tyres ready – then the next one drives.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => langstreckeStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => langstreckeStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => langstreckeStartDialog(true, open) }, LE_ICON, " ", T("Alone")))],
       defaults, await gameRewardsRow("langstrecke")));
   };
@@ -2755,8 +2708,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.kb-live"); klatsch.replaceChildren(b); klatschLive(b, me, () => render()); };
     klatsch.replaceChildren(gsec("klatsch", "👏 " + I18N.tr(T("Clap the Beat")), appBtn("klatsch"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("A rhythm game on every device: listen to a beat, then everybody claps it back at the same time – the server judges the timing. Alone for a personal best, with practice bots or at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => klatschStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => klatschStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => klatschStartDialog(true, open) }, KB_ICON, " ", T("Alone")))],
       await gameRewardsRow("klatsch")));
   };
@@ -2765,8 +2717,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.vw-live"); verboten.replaceChildren(b); verbotenLive(b, me, () => render()); };
     verboten.replaceChildren(gsec("verboten", "🚫 " + I18N.tr(T("Forbidden Words")), appBtn("verboten"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("Explain the word without the forbidden words – the others guess aloud. In teams or everybody for themselves, guests via QR code.")),
-         h("button.btn", { onclick: () => verbotenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      : [h("button.btn", { onclick: () => verbotenStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("verboten")));
   };
   const showJass = async () => {
@@ -2774,8 +2725,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.ja-live"); jass.replaceChildren(b); jassLive(b, me, () => render()); };
     jass.replaceChildren(gsec("jass", "♣️ " + I18N.tr(T("Jass")), appBtn("jass"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The Swiss card game Schieber: 2 against 2 with Trumpf, Obenabe and Undeufe, Weis and Stöck – with bots, the family and guests.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => jassStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => jassStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => jassStartDialog(true, open) }, "🤖 ", T("With 3 bots")))],
       await gameRewardsRow("jass")));
   };
@@ -2784,14 +2734,12 @@ async function gamesView(main) {
     const open = () => { const b = h("div.ww-live"); werwolf.replaceChildren(b); werwolfLive(b, me, () => render()); };
     werwolf.replaceChildren(gsec("werwolf", "🐺 " + I18N.tr(T("Werewolves")), appBtn("werwolf"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The classic party game for 2 to 12 players in one room (bots fill the table up to 5): the app is the game master, everybody gets a secret role on their phone – find the werewolves!")),
-         h("button.btn", { onclick: () => werwolfStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
+      : [h("button.btn", { onclick: () => werwolfStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("werwolf")));
   };
   const showSchach = async () => {
     const open = id => { const b = h("div.ch-live"); schach.replaceChildren(b); schachLive(b, me, () => render(), id); };
     schach.replaceChildren(gsec("schach", "♟️ " + I18N.tr(T("Chess")), appBtn("schach"),
-      h("p.muted", T("Chess with the full rules: against the bot (easy / normal / hard), against somebody of the family on two devices (guests via QR code) or two on one device. Games can be paused and continued later; here you see all games and can delete paused ones.")),
       await schachPanel(me, open), await gameRewardsRow("schach")));
   };
   const showDorfmarkt = async () => {
@@ -2799,8 +2747,7 @@ async function gamesView(main) {
     const open = () => { const b = h("div.mk-live"); dorfmarkt.replaceChildren(b); dorfmarktLive(b, me, () => render()); };
     dorfmarkt.replaceChildren(gsec("dorfmarkt", "🏘️ " + I18N.tr(T("Village Market")), appBtn("dorfmarkt"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The property-trading board game in a Swiss village: buy shops, build market stands, collect rent and trade – with bots and guests.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => dorfmarktStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => dorfmarktStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => dorfmarktStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
       await gameRewardsRow("dorfmarkt")));
   };
@@ -2810,8 +2757,7 @@ async function gamesView(main) {
     let info = null; try { info = (await call("community/escape/rules")).played; } catch {}
     escape.replaceChildren(gsec("escape", "🗝️ " + I18N.tr(T("Escape Room")), appBtn("escape"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("Solve riddles together and find the way out of every room – all together or in two teams.")),
-         info ? h("p.small", "🧩 ", I18N.tr(T("{0} of {1} riddles not played yet – round {2}")).replace("{0}", info.new).replace("{1}", info.total).replace("{2}", info.round)) : null,
+      : [info ? h("p.small", "🧩 ", I18N.tr(T("{0} of {1} riddles not played yet – round {2}")).replace("{0}", info.new).replace("{1}", info.total).replace("{2}", info.round)) : null,
          h("button.btn", { onclick: () => escapeStartDialog(open) }, "👨‍👩‍👧 ", T("Open a family table"))],
       await gameRewardsRow("escape")));
   };
@@ -2820,25 +2766,24 @@ async function gamesView(main) {
     const open = () => { const b = h("div.sj-live"); stempeljagd.replaceChildren(b); stempeljagdLive(b, me, () => render()); };
     stempeljagd.replaceChildren(gsec("stempeljagd", "🏛️ " + I18N.tr(T("Beat the Bureaucracy")), appBtn("stempeljagd"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
-      : [h("p.muted", T("The family party game in a wonderfully complicated town hall: every team needs all stamps for its building project – despite appointments, queues, referrals and lunch breaks. Teams against teams or the family against the administration, with bots and guests.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => stempeljagdStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
+      : [h("div.row.wrap", h("button.btn", { onclick: () => stempeljagdStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
            h("button.btn.ghost", { onclick: () => stempeljagdStartDialog(true, open) }, "🤖 ", T("Alone against bots")))],
       await gameRewardsRow("stempeljagd")));
   };
   // the small games of the game corner: only the status (they run on the device)
   const arcade = ["ttt", "pingpong", "sudoku", "patience", "slots"].map(k => {
     const [, ic, name] = GAME_LIST.find(g => g[0] === k);
-    return h("div", gsec(k, ic + " " + I18N.tr(name), appBtn("arcade/" + k), h("p.muted", ARCADE_TEXTS[k])));
+    return h("div", gsec(k, ic + " " + I18N.tr(name), appBtn("arcade/" + k)));
   });
   // the special quiz «Family Quest Facts» (questions from the family's data) – on by default
   const factsOn = h("input", { type: "checkbox", checked: s.quiz_facts !== false, onchange: async () => {
     await call("parent/settings", { method: "PUT", body: { quiz_facts: factsOn.checked } }); toast(T("Saved"), "good"); } });
   const factsSet = h("div.pj-rewards", h("label.check", factsOn, h("span", "📊 ", T("Special quiz «Family Quest Facts»: questions from our own data (chores, games, records, shop, pets) – nothing from the parent area"))));
-  const cQuiz = csec("quiz", T("Your own quizzes and the templates – everybody plays on their own device."), appBtn("quiz"), "🎯 " + I18N.tr(T("Quizzes")), factsSet);
+  const cQuiz = csec("quiz", appBtn("quiz"), "🎯 " + I18N.tr(T("Quizzes")), factsSet);
   cQuiz.list.append(live, quizzes);
   const quiz = h("div", cQuiz.el);
   // adventure games: the ones of the family (stories.js storyShelf, type «game») – approve, edit, import, new
-  const cAdv = csec("adventuregame", T("Point & click: rooms, things to find, riddles and characters – made by the family or from a template."), null, "🗝️ " + I18N.tr(T("Adventure games")));
+  const cAdv = csec("adventuregame", null, "🗝️ " + I18N.tr(T("Adventure games")));
   cAdv.play.append(h("button.btn", { onclick: () => openInApp("advgames") }, "🧭 ", T("Play alone")));
   const adventuregame = h("div", cAdv.el);
   const blocks = { quiz, adventuregame, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
@@ -2847,7 +2792,6 @@ async function gamesView(main) {
   // only the games of this app's channel: the server leaves out games still in development (channel.py DEV_GAMES)
   for (const k of Object.keys(blocks)) if (!(k in data.access)) delete blocks[k];
   const custom = h("section.cg-group", h("h2.cg-title", "🛠️ ", T("Custom games")),
-    h("p.small.muted", T("Games with your own content: quizzes, photo sets and adventure games – import them or make new ones from a template.")),
     ...CUSTOM_GAMES.filter(k => blocks[k]).map(k => blocks[k]));
   for (const [k, el] of Object.entries(blocks)) {
     const g = GAME_LIST.find(x => x[0] === k);
@@ -2880,7 +2824,6 @@ async function gamesView(main) {
     h("label.field", T("Who begins a game (card and board games)"), starter),
     h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
   main.append(h("h1", T("Games")), partyCard(),
-    h("p.muted", T("Every game on its own: active, active without bots (only people play) or inactive – for everybody or only for chosen children. Parents can always play.")),
     search, general, batterySettingsCard(), runningGamesBox(), custom, none, ...Object.entries(blocks).filter(([k]) => !CUSTOM_GAMES.includes(k)).map(([, el]) => el));
   filter();
   showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
@@ -2903,27 +2846,23 @@ async function gameRewardsRow(game) {
       if (!Number.isInteger(v) || v < 0 || v > 1000) return toast(T("Three numbers of coins (0 to 1000) are needed"), "bad");
       try { await call("parent/game-rewards", { method: "PUT", body: { [game]: [v, cur[1], cur[2]] } }); toast(T("Saved"), "good"); } catch {}
     };
-    return h("div.pj-rewards", h("b", "🪙 ", T("Coins for each person of the family in the winning team")),
-      h("div.row", inputs[0], h("button.btn.small", { onclick: save1 }, T("Save"))),
-      h("p.small.muted", game === "escape" ? T("Only when the team escaped (together: everybody; two teams: the team out first) – at a family table with at least two people of the family, not for guests.")
-        : T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
+    return h("div.pj-rewards", h("b", "🪙 ", T("Coins for each person of the family in the winning team"),
+        fieldInfo(game === "escape" ? T("Only when the team escaped (together: everybody; two teams: the team out first) – at a family table with at least two people of the family, not for guests.")
+          : T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots."))),
+      h("div.row", inputs[0], h("button.btn.small", { onclick: save1 }, T("Save"))));
   }
   const save = async () => {
     const vals = inputs.map(i => Number(i.value));
     if (vals.some(v => !Number.isInteger(v) || v < 0 || v > 1000)) return toast(T("Three numbers of coins (0 to 1000) are needed"), "bad");
     try { await call("parent/game-rewards", { method: "PUT", body: { [game]: vals } }); toast(T("Saved"), "good"); } catch {}
   };
-  const row = [h("b", "🪙 ", T("Coins for place 1 / 2 / 3")),
-    h("div.row", ...inputs.flatMap((i, k) => [k ? h("span.muted", "/") : null, i]).filter(Boolean), h("button.btn.small", { onclick: save }, T("Save")))];
-  if (game === "schach") return h("div.pj-rewards", h("b", "🪙 ", T("Coins for a win: against the family / the hard bot / the normal bot")), row[1],
-    h("p.small.muted", T("Only the winner gets coins, only after at least 10 own moves – not against the easy bot, not on one device, not against guests.")));
-  if (game === "werwolf") return h("div.pj-rewards", ...row,
-    h("p.small.muted", T("Werwölfe: everybody of the family on the winning side gets the coins of place 1 – only at a table with at least two people of the family, only for a game played to the end, not for guests.")));
-  if (game !== "paarjagd") return h("div.pj-rewards", ...row,
-    h("p.small.muted", T("Coins only at a table with at least two people of the family – not for guests.")));
-  // the photo sets of the Paarjagd: in its section of «Custom games» (photoSets)
-  return h("div.pj-rewards", ...row,
-    h("p.small.muted", T("Coins only at a family table with at least two people of the family – not alone against bots, not for guests or bots.")));
+  // when coins are paid: in the ⓘ of the row (the photo sets of the Paarjagd: in its section of «Custom games», photoSets)
+  const rule = game === "schach" ? T("Only the winner gets coins, only after at least 10 own moves – not against the easy bot, not on one device, not against guests.")
+    : game === "werwolf" ? T("Werwölfe: everybody of the family on the winning side gets the coins of place 1 – only at a table with at least two people of the family, only for a game played to the end, not for guests.")
+    : game !== "paarjagd" ? T("Coins only at a table with at least two people of the family – not for guests.")
+    : T("Coins only at a family table with at least two people of the family – not alone against bots, not for guests or bots.");
+  return h("div.pj-rewards", h("b", "🪙 ", game === "schach" ? T("Coins for a win: against the family / the hard bot / the normal bot") : T("Coins for place 1 / 2 / 3"), fieldInfo(rule)),
+    h("div.row", ...inputs.flatMap((i, k) => [k ? h("span.muted", "/") : null, i]).filter(Boolean), h("button.btn.small", { onclick: save }, T("Save"))));
 }
 
 // ---------------------------------------------------------------- Family Planer (built in)
@@ -2944,7 +2883,6 @@ function shoppingSection() {
   }).catch(() => box.replaceChildren());
   load();
   return section("🛒 " + I18N.tr(T("Shopping list (Bring!)")),
-    h("p.small.muted", T("A list of Home Assistant becomes a smart list of the planner (sorted by shop sections). It stays one list: what you add or tick in the planner shows up in the Bring! app, and the other way round.")),
     box);
 }
 
@@ -2974,7 +2912,6 @@ function planerSection(s) {
       h("button.btn.small", { onclick: () => show(src, () => call("planer/import", { method: "POST", body: { source: src.id } })) }, T("Take over…")))));
   }).catch(() => found.replaceChildren());
   return section("📥 " + I18N.tr(T("Take over an existing Family Planer")),
-    h("p.small.muted", T("From the Family Planer integration in Home Assistant: chores, lists, rewards, points, settings and photos.")),
     found,
     h("label.field", T("…or upload the file family_planer.<id> from /config/.storage"), file), box);
 }
@@ -3035,7 +2972,6 @@ function backupSection() {
     T("Data"), " ", mb(s.database), " · ", T("Photo sets"), " ", mb(s.photo_sets), " · ",
     T("Pack pictures"), " ", mb(s.pack_pictures), " · ", T("Planner photos"), " ", mb(s.planner_photos), ")")).catch(() => {});
   return section("💾 " + I18N.tr(T("Backup & restore")),
-    h("p.small.muted", T("Saves your own data in one file: profiles, learning progress, points, chores, planner, own packs, own pictures and settings. Pictures from Home Assistant Media and the app's own content are not copied – only the reference.")),
     sizes,
     h("div.row", h("button.btn", { onclick: () => downloadBackup() }, "⬇️ ", T("Download backup"))),
     h("label.field", T("Restore from a backup file"), file), info);
@@ -3057,7 +2993,7 @@ async function translationsSection() {
   const box = h("div");
   // folded in the settings like every part (setFold)
   const sec = h("section.card.sec", h("h2", "🌐 " + I18N.tr(T("Own texts and languages"))),
-    h("p.muted", T("Overwrite single texts of a language, or create your own language (e.g. your dialect) – it starts from a base language. Learning content is not translated here.")), box);
+    box);
   const nameOf = code => (I18N.LANGS.find(([k]) => k === code) || [code, code])[1];
   let lang = I18N.custom.some(l => l.code === I18N.lang) || I18N.LANGS.some(([k]) => k === I18N.lang) ? I18N.lang : "de-DE";
   async function draw() {
@@ -3137,9 +3073,9 @@ async function translationsSection() {
     box.replaceChildren(
       h("div.row.wrap", h("label.field.grow", T("Language"), sel),
         h("button.btn.small.ghost", { onclick: exportCsv }, "⬇️ ", T("Export CSV")),
-        h("button.btn.small.ghost", { onclick: () => file.click() }, "⬆️ ", T("Import CSV")), file),
+        h("button.btn.small.ghost", { onclick: () => file.click() }, "⬆️ ", T("Import CSV")),
+        fieldInfo(T("CSV with the columns key and translation (separated by ; or ,). An empty translation goes back to the standard."), { title: T("Import CSV") }), file),
       langTools, newLang,
-      h("p.small.muted", T("CSV with the columns key and translation (separated by ; or ,). An empty translation goes back to the standard.")),
       h("div.row.wrap", q, h("label.check", onlyOwn, T("Only own texts"))),
       h("div.tr-head.small.muted", h("span", "English"), h("span", T("Standard")), h("span", T("Your text"))),
       rows, save);
@@ -3340,7 +3276,6 @@ async function holidaySection() {
   const out = h("div");
   const lang = ({ de: "DE", fr: "FR", it: "IT" })[(I18N.base || "de").slice(0, 2)] || "EN";
   return section("🏖️ " + I18N.tr(T("Templates: school and public holidays")),
-    h("p.small.muted", T("School holidays and public holidays of a canton – from the free OpenHolidays service. You see a preview first; what is already in the calendar is left out.")),
     h("div.grid3", h("label.field", T("Canton"), canton), h("label.field", T("Year"), year)),
     h("div.row.wrap", h("label.check", school, T("School holidays")), h("label.check", pub, T("Public holidays")),
       h("button.btn", { onclick: async () => {
@@ -3364,7 +3299,6 @@ function importSection(sources) {
     } catch { file.value = ""; }
   });
   return section("📥 " + I18N.tr(T("Import a calendar file")),
-    h("p.small.muted", T("iCal (.ics) from another calendar, or CSV with the columns title; start; end (e.g. 04.07.2026). You see a preview first – duplicates are recognised.")),
     file, out,
     sources.length ? h("div", h("h3", T("Imports")), h("ul.list", ...sources.map(src => h("li.row",
       h("span.grow", C(src.source.replace(/^holidays:/, "🏖️ ").replace(/^file:/, "📄 ")), h("span.small.muted", " · " + src.n + " · " + fmtDate(src.first.slice(0, 10)) + " – " + fmtDate(src.last.slice(0, 10)))),
@@ -3382,7 +3316,6 @@ function haCalendarSection(settings) {
     C(c.name || c.entity_id))) : [h("p.small.muted", T("No calendars found in Home Assistant."))]))).catch(() => list.replaceChildren());
   else list.replaceChildren(h("p.small.muted", T("Home Assistant is not connected")));
   return section("🏠 " + I18N.tr(T("Calendars from Home Assistant")),
-    h("p.small.muted", T("Show calendars you already have in Home Assistant (e.g. Google, school, waste collection) in the family calendar – read only.")),
     list, h("button.btn.small", { onclick: async () => { await call("parent/calendar/settings", { method: "PUT", body: { ha_calendars: [...chosen] } }); toast(T("Saved"), "good"); render(); } }, "💾 ", T("Save")));
 }
 
@@ -3418,7 +3351,6 @@ async function dashboardView(main) {
   const wxRain = h("select", ...[30, 40, 50, 60, 70].map(v => h("option", { value: v, selected: c.rain_chance === v }, v + " %")));
   const wxKids = h("input", { type: "checkbox", checked: c.kids_alarm !== false });
   const wxBox = h("div", h("h3", { "data-ik": "dash.weather" }, "🌂 ", T("Weather alarm")),
-    h("p.small.muted", T("From a weather entity of Home Assistant: rain, thunderstorm, snow, wind, cold or heat in the next hours → a hint what to take along.")),
     h("div.grid3", h("label.field", T("Weather entity"), wxEnt), h("label.field", T("Look ahead"), wxHours), h("label.field", T("Rain hint from a chance of"), wxRain)),
     h("label.check", wxKids, T("Also on the children's start page")));
   // link for the kiosk browser: the home network address (like the tablet link), plus the key
@@ -3439,7 +3371,6 @@ async function dashboardView(main) {
         } }, "🔄 ", T("New link")))))
       : h("p.muted", T("Switch the dashboard on and save – then the link appears here.")));
   main.append(h("h1", "🖥️ ", T("Dashboard")),
-    h("p.muted", T("A screen for the whole family: a wall tablet or TV shows what is going on – without anybody logging in.")),
     section("⚙️ " + I18N.tr(T("What the dashboard shows")),
       h("label.check", on, h("strong", T("Dashboard on"))),
       h("div.grid3", h("label.field", T("Title"), title), h("label.field", T("Look"), theme), h("label.field", T("Refresh every … seconds"), refresh)),
@@ -3564,25 +3495,20 @@ async function settingsView(main) {
   const saveBtn = () => h("div.row", h("button.btn", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
   const fold = (id, title, sec) => setFold(id, title, sec);
   main.append(h("h1", T("Settings")),
-    h("p.small.muted.set-intro", T("Every part is folded – tap a row to open it. The row shows how it is set now.")),
     fold("family", T("Family view"), section(T("Family view"), h("label.field", T("What children see in the comparison"), f.family_visibility), h("label.check", f.sound, T("Sound on by default")), saveBtn())),
     fold("ha", "Home Assistant", section("Home Assistant", P.meta.ha ? null : h("p.warn-text", T("Home Assistant is not connected – these settings take effect once it is.")),
-      h("div.grid2",
-        h("label.field", T("Learning reminder at"), f.reminder_time, h("span.hint", T("Children without the daily goal get an announcement (Family Planer) and the event family_quest_erinnerung."))),
-        h("label.field", T("Chore reminder at"), f.chore_reminder_time, h("span.hint", T("Children with open chores get an announcement (Family Planer) and the event family_quest_aemtli_erinnerung."))),
-        h("label.field", T("Push messages for approvals"), f.notify_service, dl, h("span.hint", T("Notify service of the Companion app – with buttons OK / No.")))),
+      h("div.field-row",
+        h("label.field", h("span", T("Learning reminder at"), fieldInfo(T("Children without the daily goal get an announcement (Family Planer) and the event family_quest_erinnerung."))), f.reminder_time),
+        h("label.field", h("span", T("Chore reminder at"), fieldInfo(T("Children with open chores get an announcement (Family Planer) and the event family_quest_aemtli_erinnerung."))), f.chore_reminder_time),
+        h("label.field.span2", h("span", T("Push messages for approvals"), fieldInfo(T("Notify service of the Companion app – with buttons OK / No."))), f.notify_service, dl)),
       h("label.check", f.planer_points, T("Also book learning coins as Family Planer points")),
       h("label.field", T("Factor for Family Planer points"), f.planer_points_factor), saveBtn())),
-    fold("learning", "📚 " + I18N.tr(T("Learning")), section("📚 " + I18N.tr(T("Learning")), h("label.field", T("Coins for a perfect lesson"), f.lesson_perfect_coins,
-      h("span.hint", T("A lesson finished without a single mistake. Comes on top of the coins for a finished lesson; 0 = none."))),
-      h("label.field", "🐾 ", T("Pets: food costs (coins)"), f.pet_food_cost,
-        h("span.hint", T("Feeding a pet once. Playing and washing are free; 0 = food is free."))),
-      h("label.field", "🏨 ", T("Pet hotel: coins per day"), f.pet_hotel_cost,
-        h("span.hint", T("The Family Quest pet hotel looks after a pet while the child is away (e.g. at a camp) – paid per day in advance; the pet comes back fed, happy and clean. 0 = free."))),
-      h("label.field", "🐹 ", T("Hamster: coins per day"), f.hamster_coins_per_day,
-        h("span.hint", T("While the hamster is healthy (every bar at least 50) it runs in its wheel and mines this many coins per day for its owner."))),
-      h("label.field", "🐾 ", T("Pet shop: pay with"), f.pet_shop_currency,
-        h("span.hint", T("Outfits, houses and furniture for the pets. XP spent there do not lower the level."))), saveBtn())),
+    fold("learning", "📚 " + I18N.tr(T("Learning")), section("📚 " + I18N.tr(T("Learning")), h("div.field-row",
+      h("label.field", h("span", T("Coins for a perfect lesson"), fieldInfo(T("A lesson finished without a single mistake. Comes on top of the coins for a finished lesson; 0 = none."))), f.lesson_perfect_coins),
+      h("label.field", h("span", "🐾 ", T("Pets: food costs (coins)"), fieldInfo(T("Feeding a pet once. Playing and washing are free; 0 = food is free."))), f.pet_food_cost),
+      h("label.field", h("span", "🏨 ", T("Pet hotel: coins per day"), fieldInfo(T("The Family Quest pet hotel looks after a pet while the child is away (e.g. at a camp) – paid per day in advance; the pet comes back fed, happy and clean. 0 = free."))), f.pet_hotel_cost),
+      h("label.field", h("span", "🐹 ", T("Hamster: coins per day"), fieldInfo(T("While the hamster is healthy (every bar at least 50) it runs in its wheel and mines this many coins per day for its owner."))), f.hamster_coins_per_day),
+      h("label.field", h("span", "🐾 ", T("Pet shop: pay with"), fieldInfo(T("Outfits, houses and furniture for the pets. XP spent there do not lower the level."))), f.pet_shop_currency)), saveBtn())),
     fold("levels", T("Levels"), section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels), saveBtn())),
     fold("familytime", "👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), section("👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), familyTimeSettings(),
       h("button.link.small", { onclick: () => { P.tab = "community"; location.hash = "community"; render(); } }, T("Wishes and votes: tab «Family» ›")))),

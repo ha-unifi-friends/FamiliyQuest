@@ -2,6 +2,9 @@
 // Every box (right of its title), every page (right of the heading) and every pop-up (top right) gets an info button
 // that describes it. The headings are found by their text (English or translated); a heading whose text is not a
 // key (a sub-section, a fold without a heading) names its entry with `data-ik` – tests/test_parent_info.py checks the cover.
+// An entry is one text or a list of paragraphs (the explanations that used to stand under a title live here now).
+// Fields get their own small ⓘ right of the label with fieldInfo(…) – the page itself only shows what is needed
+// while using it (errors, live values, warnings, empty lists).
 const PARENT_INFO = {
   [T("Overview")]: T("The start page of the parent area: open approvals, today's weather of each child, the family goal and one card per child with XP, learning time, weak spots and the balance. Add children and parents at the top right."),
   [T("Calendar")]: T("The family calendar: events, FamilyTime and OfflineTime. Switch between list, day, week, month and year; tap a day to add an event. Below: holiday templates, calendar files and calendars from Home Assistant."),
@@ -178,12 +181,31 @@ function infoKey(text) {
   return null;
 }
 
+/** The info pop-up: the title (as shown) and one or more paragraphs. */
+function showInfo(title, texts) {
+  const m = modal(h("div.info-modal", h("h2", "ⓘ ", C(_infoNorm(title))),
+    ...[].concat(texts).filter(Boolean).map(t => h("p.info-text", T(t))),
+    h("div.row", h("button.btn", { onclick: () => m.close() }, T("Close")))));
+  return m;
+}
+
 function infoButton(key, title) {
   return h("button.info-btn", { type: "button", title: T("Info"), "aria-label": T("Info"), onclick: e => {
     e.preventDefault(); e.stopPropagation();
-    const m = modal(h("div.info-modal", h("h2", "ⓘ ", C(_infoNorm(title))), h("p.info-text", T(PARENT_INFO[key])),
-      h("div.row", h("button.btn", { onclick: () => m.close() }, T("Close")))));
+    showInfo(title, PARENT_INFO[key]);
   } }, "ⓘ");
+}
+
+/** ⓘ for one field or a small part, right of its label text: fieldInfo(T("…"), …) – a text, several paragraphs or a
+ *  function that gives them when tapped (texts that change with the form). The pop-up is titled like the label it stands
+ *  in (or `opts.title`). Inside a <label> the tap only opens the info, it does not focus the field. */
+function fieldInfo(...texts) {
+  const opts = texts.length && texts[texts.length - 1] && typeof texts[texts.length - 1] === "object" && !Array.isArray(texts[texts.length - 1]) ? texts.pop() : {};
+  const b = h("button.info-btn.field-info", { type: "button", title: T("Info"), "aria-label": T("Info"), onclick: e => {
+    e.preventDefault(); e.stopPropagation();
+    showInfo(opts.title || infoTitle(b.parentElement), texts.flatMap(t => typeof t === "function" ? t() : t));
+  } }, "ⓘ");
+  return b;
 }
 
 // what gets an ⓘ: page titles, the titles of boxes and folds (also the games and the folded settings), the sub-boxes of
