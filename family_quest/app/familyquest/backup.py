@@ -166,6 +166,7 @@ def restore(fq, raw: bytes) -> dict:
         finally:
             src.close()
     fq.db.migrate()                             # older backups get the newer tables
+    fq.db.migrate_logins()                      # … and the explicit sign-in of each profile
     for d in FILE_DIRS:
         target = data_dir / d
         shutil.rmtree(target, ignore_errors=True)

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from .. import haauth, loginlog, symbols, themes
 from ..chores import ChoreError
 from ..internet import InternetError
-from ..db import profile_settings
+from ..db import login_mode, login_pin_ok, login_tap_ok, profile_settings
 from ..channel import feature_visible
 from ..learning.lesson import LearnError
 from ..packs import i18n as pack_i18n
@@ -100,13 +100,14 @@ async def ha_panel(request: Request) -> dict:
 @router.get("/profiles")
 def profiles(request: Request) -> list[dict]:
     fq = app_of(request)
-    # parents only with a PIN: the PIN is their login in the app (e.g. to join a game on another device) – or, on the
-    # direct port with «Sign in with Home Assistant» on, with a linked Home Assistant user (tap = Home Assistant login)
+    # every profile with its sign-in («login»: none | pin | ha | pin_ha – the picker shows it and routes the tap).
+    # Parents only when they can sign in here: with their PIN, or on the direct port with «Sign in with Home Assistant»
+    # on (tap = Home Assistant login). ha_login: «Sign in with Home Assistant» works for this profile on this port.
     rows = fq.db.q("SELECT * FROM profile WHERE archived=0 ORDER BY role='parent', id")
     ha = {p["id"] for p in haauth.linked_profiles(fq)} if not via_ingress(request) and fq.db.get_setting("ha_app_login") else set()
     out = []
     for p in rows:
-        if p["role"] == "parent" and not p["pin_hash"] and p["id"] not in ha:
+        if p["role"] == "parent" and not login_pin_ok(p) and p["id"] not in ha:
             continue
         d = fq.profile_public(p)
         if p["id"] in ha:
@@ -117,6 +118,9 @@ def profiles(request: Request) -> list[dict]:
 
 @router.post("/login")
 def login(body: LoginIn, request: Request) -> dict:
+    """Sign in with a tap or the PIN – as the parents chose it for the profile (db.login_mode). A profile with
+    «Home Assistant only» never signs in here (sidebar: /ha-login, app: «Sign in with Home Assistant»), also when it
+    still had a PIN; «PIN» / «PIN or Home Assistant» always needs the PIN; a tap only for «No sign-in» (children)."""
     fq = app_of(request)
     p = fq.db.q1("SELECT * FROM profile WHERE id=? AND archived=0", body.profile_id)
     if not p:
@@ -124,17 +128,18 @@ def login(body: LoginIn, request: Request) -> dict:
     # per profile and device – a child cannot lock out a sibling; parent profiles share the parent counter of the device
     ip = loginlog.client_ip(request)
     key = f"parent:{ip}" if p["role"] == "parent" else f"login:{p['id']}:{ip}"
-    fq.throttle.check(key)
-    if p["pin_hash"] and not check_pin(body.pin, p["pin_hash"]):
-        fq.throttle.fail(key)
-        loginlog.record(fq, request, "profile", p["id"], False)
-        raise HTTPException(403, "Wrong PIN")
-    if p["role"] == "parent" and not p["pin_hash"]:
-        raise HTTPException(403, "Parent profile needs a PIN")
-    # no PIN, but linked with a Home Assistant user: ONLY with the Home Assistant login (sidebar or «Sign in with Home
-    # Assistant» in the app) – never PIN-less on the app port, also when that sign-in is switched off
-    if not p["pin_hash"] and not via_ingress(request) and any(x["id"] == p["id"] for x in haauth.linked_profiles(fq)):
+    mode = login_mode(p)
+    if mode == "ha":
         raise HTTPException(403, "Sign in with Home Assistant")
+    fq.throttle.check(key)
+    if not login_tap_ok(p):
+        if not p["pin_hash"]:
+            loginlog.record(fq, request, "profile", p["id"], False)
+            raise HTTPException(403, "Parent profile needs a PIN" if p["role"] == "parent" else "No PIN set yet – ask your parents")
+        if not check_pin(body.pin, p["pin_hash"]):
+            fq.throttle.fail(key)
+            loginlog.record(fq, request, "profile", p["id"], False)
+            raise HTTPException(403, "Wrong PIN")
     fq.throttle.ok(key)
     loginlog.record(fq, request, "profile", p["id"], True)
     out = {"token": fq.tokens.make(p["id"], "kid"), "profile": fq.profile_public(p)}

@@ -40,9 +40,10 @@ class HAAuthError(Exception):
 
 # ---------------------------------------------------------------- who may use it
 def linked_profiles(fq) -> list[dict]:
-    """The profiles that can sign in with Home Assistant: every profile linked with a Home Assistant user."""
-    from .db import profile_settings
-    return [p for p in fq.db.q("SELECT * FROM profile WHERE archived=0 ORDER BY id") if profile_settings(p).get("ha_user_id")]
+    """The profiles that can sign in with Home Assistant: linked with a Home Assistant user, sign-in «Home Assistant only»
+    or «PIN or Home Assistant»."""
+    from .db import login_ha_ok
+    return [p for p in fq.db.q("SELECT * FROM profile WHERE archived=0 ORDER BY id") if login_ha_ok(p)]
 
 
 def available(fq) -> bool:
