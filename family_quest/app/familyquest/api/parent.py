@@ -1667,6 +1667,7 @@ async def backup_download(request: Request, me: dict = Parent) -> Response:
     if fq.planer_host:
         await fq.planer_host.save_now()
     data, name = await asyncio.to_thread(backup.create, fq)
+    fq.db.set_setting("last_backup", time.strftime("%Y-%m-%dT%H:%M:%S"))   # the status «Last backup» in the settings
     return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
@@ -1674,7 +1675,8 @@ async def backup_download(request: Request, me: dict = Parent) -> Response:
 def backup_sizes(request: Request, me: dict = Parent) -> dict:
     """What takes how much room in a backup."""
     from .. import backup
-    return backup.sizes(app_of(request))
+    fq = app_of(request)
+    return {**backup.sizes(fq), "last_backup": fq.db.get_setting("last_backup")}
 
 
 @router.post("/backup/inspect")
