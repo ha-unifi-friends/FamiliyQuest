@@ -136,3 +136,6 @@ html.ha .field-row > div.field { font-weight: 400; color: var(--muted); font-siz
 .gp-rent > input { flex: 0 1 100px; min-width: 72px; }
 .gp-rent .gp-periods { gap: 4px; }
 .gp-rent .gp-periods .btn { padding-inline: 10px; }
+/* settings: the four groups (App, Personalisation, Home Assistant, System) – a heading above their folds */
+html h2.set-group { margin: 22px 4px 0; font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; }
+html h1 + h2.set-group { margin-top: 4px; }

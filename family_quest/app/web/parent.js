@@ -1338,7 +1338,7 @@ async function weatherView(main, part = "both") {
   const time = h("input", { type: "time", value: cfg.reset });
   const acc = h("select", ...P.accounts.filter(a => a.active && a.key !== "xp").map(a => h("option", { value: a.key, selected: a.key === cfg.account }, a.icon + " " + I18N.tr(a.name))));
   const on = h("input", { type: "checkbox", checked: cfg.enabled });
-  const conf = section("⚙️ " + I18N.tr(T("Weather settings")),
+  const conf = section("☀️ " + I18N.tr(T("Bonus/malus points")),
     rows, h("div.row", h("button.btn.small.ghost", { onclick: () => addRow({ icon: "", name: "", points: 0 }) }, "＋ ", T("Add weather"))),
     h("div.small.muted", T("Tap a symbol to put it into the field you edited last:")), palette,
     h("div.grid3", h("label.field", h("span", T("Reset every day at")), time),
@@ -1358,7 +1358,7 @@ async function weatherView(main, part = "both") {
 
 /** Season designs of the app header: seasons, Halloween, Christmas (on/off, dates) and own designs. */
 function themesSection() {
-  const sec = section("🎨 " + I18N.tr(T("Season designs")));
+  const sec = section("🎨 " + I18N.tr(T("Season, time of day & weather designs")));
   const VIS = { alltag: "🏡", fruehling: "🌷", sommer: "🏖️", herbst: "🍂", winter: "❄️", halloween: "🎃", weihnachten: "🎄", silvester: "🎆", fasnacht: "🎭",
     ostern: "🐣", liebe: "💕", pfingsten: "🪁", august: "🇨🇭", schule: "🎒", geburtstag: "🎂", sport: "⛷️" };
   const md = v => { const [m, d] = String(v).split("-"); return fmtDate(new Date(2024, +m - 1, +d), { day: "numeric", month: "short" }); };
@@ -3491,34 +3491,40 @@ async function settingsView(main) {
   const dl = h("datalist#notify-list", ...notifyOpts.map(o => h("option", { value: o.entity_id })));
   const saveBtn = () => h("div.row", h("button.btn", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
   const fold = (id, title, sec) => setFold(id, title, sec);
+  // four groups, each a heading with its ⓘ and its folds; the fold ids (data-set) stay as they were
+  const group = (ik, icon, title) => h("h2.set-group", { "data-ik": ik }, icon + " ", title);
   main.append(h("h1", T("Settings")),
+    group("set.app", "📱", T("App")),
+    fold("link", "📱 " + I18N.tr(T("Link for tablets and phones")), linkSection()),
     fold("family", T("Family view"), section(T("Family view"), h("label.field", T("What children see in the comparison"), f.family_visibility), h("label.check", f.sound, T("Sound on by default")), saveBtn())),
-    fold("ha", "Home Assistant", section("Home Assistant", P.meta.ha ? null : h("p.warn-text", T("Home Assistant is not connected – these settings take effect once it is.")),
-      h("div.field-row",
-        h("label.field", h("span", T("Learning reminder at"), fieldInfo(T("Children without the daily goal get an announcement (Family Planer) and the event family_quest_erinnerung."))), f.reminder_time),
-        h("label.field", h("span", T("Chore reminder at"), fieldInfo(T("Children with open chores get an announcement (Family Planer) and the event family_quest_aemtli_erinnerung."))), f.chore_reminder_time),
-        h("label.field.span2", h("span", T("Push messages for approvals"), fieldInfo(T("Notify service of the Companion app – with buttons OK / No."))), f.notify_service, dl)),
-      h("label.check", f.planer_points, T("Also book learning coins as Family Planer points")),
-      h("label.field", T("Factor for Family Planer points"), f.planer_points_factor), saveBtn())),
+    fold("themes", "🎨 " + I18N.tr(T("Season, time of day & weather designs")), themesSection()),
+    fold("levels", T("Levels"), section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels), saveBtn())),
     fold("learning", "📚 " + I18N.tr(T("Learning")), section("📚 " + I18N.tr(T("Learning")), h("div.field-row",
       h("label.field", h("span", T("Coins for a perfect lesson"), fieldInfo(T("A lesson finished without a single mistake. Comes on top of the coins for a finished lesson; 0 = none."))), f.lesson_perfect_coins),
       h("label.field", h("span", "🐾 ", T("Pets: food costs (coins)"), fieldInfo(T("Feeding a pet once. Playing and washing are free; 0 = food is free."))), f.pet_food_cost),
       h("label.field", h("span", "🏨 ", T("Pet hotel: coins per day"), fieldInfo(T("The Family Quest pet hotel looks after a pet while the child is away (e.g. at a camp) – paid per day in advance; the pet comes back fed, happy and clean. 0 = free."))), f.pet_hotel_cost),
       h("label.field", h("span", "🐹 ", T("Hamster: coins per day"), fieldInfo(T("While the hamster is healthy (every bar at least 50) it runs in its wheel and mines this many coins per day for its owner."))), f.hamster_coins_per_day),
       h("label.field", h("span", "🐾 ", T("Pet shop: pay with"), fieldInfo(T("Outfits, houses and furniture for the pets. XP spent there do not lower the level."))), f.pet_shop_currency)), saveBtn())),
-    fold("levels", T("Levels"), section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels), saveBtn())),
     fold("familytime", "👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), section("👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), familyTimeSettings(),
       h("button.link.small", { onclick: () => { P.tab = "community"; location.hash = "community"; render(); } }, T("Wishes and votes: tab «Family» ›")))),
+    group("set.personal", "🎨", T("Personalisation")),
+    fold("texts", "🌐 " + I18N.tr(T("Own texts and languages")), await translationsSection()),
     fold("crest", "🛡️ " + I18N.tr(T("Family crest")), await crestSection()),
-    fold("link", "📱 " + I18N.tr(T("Link for tablets and phones")), linkSection()),
-    fold("themes", "🎨 " + I18N.tr(T("Season designs")), themesSection()),
-    fold("weather", "⚙️ " + I18N.tr(T("Weather settings")), weatherBox("config")),
+    fold("weather", "☀️ " + I18N.tr(T("Bonus/malus points")), weatherBox("config")),
+    group("set.ha", "🏠", T("Home Assistant")),
     fold("halogin", "🏠 " + I18N.tr(T("Log in with Home Assistant")), haLoginSection(s)),
     fold("integration", "🏠 " + I18N.tr(T("Family Quest HA integration")), await integrationSection()),
-    fold("network", "🛡️ " + I18N.tr(T("Access from the network")), await firewallSection(s)),
-    fold("texts", "🌐 " + I18N.tr(T("Own texts and languages")), await translationsSection()),
-    fold("backup", "💾 " + I18N.tr(T("Backup & restore")), backupSection()),
+    fold("ha", "🔔 " + I18N.tr(T("Home Assistant reminders")), section("🔔 " + I18N.tr(T("Home Assistant reminders")), P.meta.ha ? null : h("p.warn-text", T("Home Assistant is not connected – these settings take effect once it is.")),
+      h("div.field-row",
+        h("label.field", h("span", T("Learning reminder at"), fieldInfo(T("Children without the daily goal get an announcement (Family Planer) and the event family_quest_erinnerung."))), f.reminder_time),
+        h("label.field", h("span", T("Chore reminder at"), fieldInfo(T("Children with open chores get an announcement (Family Planer) and the event family_quest_aemtli_erinnerung."))), f.chore_reminder_time),
+        h("label.field.span2", h("span", T("Push messages for approvals"), fieldInfo(T("Notify service of the Companion app – with buttons OK / No."))), f.notify_service, dl)),
+      h("label.check", f.planer_points, T("Also book learning coins as Family Planer points")),
+      h("label.field", T("Factor for Family Planer points"), f.planer_points_factor), saveBtn())),
     fold("shopping", "🛒 " + I18N.tr(T("Shopping list (Bring!)")), shoppingSection()),
+    group("set.system", "🛠️", T("System")),
+    fold("backup", "💾 " + I18N.tr(T("Backup & restore")), backupSection()),
+    fold("network", "🛡️ " + I18N.tr(T("Access from the network")), await firewallSection(s)),
     fold("planer", "📥 " + I18N.tr(T("Take over an existing Family Planer")), planerSection(s)),
     fold("about", T("About"), section(T("About"), h("p.small", "Family Quest v" + P.meta.version), h("ul.small",
       h("li", "Home Assistant: ", P.meta.ha ? "✓" : h("span", { translate: "no" }, "– ", P.meta.ha_status || "")), h("li", I18N.tr(T("Planner")) + ": ✓ ", h("span.small.muted", T("(built in)"))),

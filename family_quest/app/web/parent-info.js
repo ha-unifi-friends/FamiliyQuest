@@ -28,8 +28,8 @@ const PARENT_INFO = {
   [T("Weather of the day")]: [
     T("The behaviour weather: give each child its weather for today. Sunny gives a bonus, a thunderstorm a malus – only the child sees its own weather. Everybody is back at the default at the reset time."),
     T("Give each child its weather – the bonus or malus is booked right away. Only the child sees its own weather.")],
-  [T("Weather settings")]: [
-    T("The weather levels with icon, name and points, which account the points go to, the default weather and when every day it resets."),
+  [T("Bonus/malus points")]: [
+    T("The bonus/malus points of the day (☀️ to ⛈️): the levels with icon, name and points, which account the points go to, the default level and when every day it resets."),
     T("Symbols with bonus (positive) or malus (negative points). The best weather on top.")],
   [T("Family goal")]: [
     T("A goal the whole family reaches together, e.g. 50 lessons this month. Everybody's progress counts; reaching it can unlock a reward."),
@@ -88,7 +88,7 @@ const PARENT_INFO = {
   [T("Beat the Bureaucracy")]: T("The family party game in a wonderfully complicated town hall, 2 to 4 teams (one device per team, guests via QR code, bots easy / normal / hard): every team needs all stamps (5, 7 or 9) for its building project. At every counter first comes the scene – «Do you have an appointment?» (argue your way in) or a huge queue (wait or try a trick) – then an authority card: a stamp, a referral, a missing document, a lunch break or a mini-game. Trick cards, objections between the teams, events; optionally one team (or a bot) plays the administration. At the end: the permit certificate and the funniest moments."),
   [T("Texas Hold'em")]: T("Poker with play chips – everybody on their own device, or alone against bots. No real money; the chips start again every game."),
   [T("History")]: T("What a profile experienced: quiz places, council decisions, games won. Choose the profile to see its history."),
-  [T("Season designs")]: [
+  [T("Season, time of day & weather designs")]: [
     T("The animated scene in the header of the app: seasons, Halloween and Christmas switch themselves every year. Switch them on or off, move the dates or add your own designs (e.g. a birthday week)."),
     T("The header of the app shows the animated scene of the design of the day – like the Family Planer. Children can switch it off on their device in the ☰ menu.")],
   [T("Pairs game: photo sets")]: T("Your own photo sets for the pairs game and the Paarjagd (e.g. family members, holidays) – from Home Assistant Media or uploaded from this device. Every photo becomes a pair."),
@@ -166,7 +166,7 @@ const PARENT_INFO = {
   [T("Rules: which action gives how much on which account")]: T("What gives points: a right answer, a lesson, the daily goal, a chore … – how many points on which account and how many at most per day."),
   [T("Shop")]: T("What children can buy with their points: vouchers you fulfil, internet minutes, avatar items or a Home Assistant script. Rewards with approval wait for your OK."),
   [T("Current goals")]: T("All goals that are running now. 🎯 A learning goal is for one child: a whole pack up to a percentage, or one unit with a number of stars. 🤝 A family goal is collected by everybody together on one account, e.g. 2000 coins for a pizza evening. Below each goal: for whom and the target. ✕ deletes a goal; new ones with the buttons at the top right."),
-  [T("Home Assistant")]: T("Reminders and push messages through Home Assistant: when children without the daily goal or with open chores are reminded, the notify service for approvals and whether learning coins also count as Family Planer points."),
+  [T("Home Assistant reminders")]: T("Reminders and push messages through Home Assistant: when children without the daily goal or with open chores are reminded, the notify service for approvals and whether learning coins also count as Family Planer points."),
   [T("About")]: T("The version of Family Quest and what is connected: Home Assistant, the built-in planner and the photo / PDF import."),
   [T("From a file")]: [
     T("Choose or drop a file: YAML, JSON or ZIP packs, CSV or Excel tables (you assign the columns) or – with an AI in Home Assistant – a photo or PDF of a word list."),
@@ -283,7 +283,11 @@ const PARENT_INFO = {
     T("Upload new photos in the Home Assistant media browser (new tab), then tap «Refresh».")],
   [T("Cube solver")]: T("In the game corner: paint the colours of your puzzle cube and get the moves to solve it, step by step. Set whether it is active and for whom."),
   [T("Private books")]: T("Only their authors can read these books – parents neither. You see only that they exist."),
-  [T("New photo set")]: T("Start with a preset – then add photos from this device or from Home Assistant Media. Every photo becomes a pair.")
+  [T("New photo set")]: T("Start with a preset – then add photos from this device or from Home Assistant Media. Every photo becomes a pair."),
+  "set.app": T("How the app works for the family: the link for tablets and phones, the family view, the designs of the header, levels, learning and the FamilyTime games."),
+  "set.personal": T("Make the app your own: own texts and languages (e.g. your dialect), the family crest and the bonus/malus points of the day."),
+  "set.ha": T("Everything with Home Assistant: signing in with a Home Assistant user, the Family Quest integration, reminders and push messages, and the shopping list (Bring!)."),
+  "set.system": T("Backup and restore, which networks may open the app, taking over an existing Family Planer and the version of the app.")
 };
 
 const _infoNorm = s => String(s || "").replace(/ⓘ/g, "").replace(/^[^\p{L}\p{N}]+/u, "").replace(/\s+/g, " ").trim();

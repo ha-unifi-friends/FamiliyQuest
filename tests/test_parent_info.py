@@ -66,7 +66,7 @@ def test_every_section_head_has_an_info_entry():
     # the check must see the real page: these are on it for sure
     for must in ["Overview", "Games", "Settings", "Custom games", "Access from the network", "Backup & restore",
                  "Log in with Home Assistant", "Family Quest HA integration", "Own texts and languages", "Deal settings",
-                 "Weather settings", "Library"] :
+                 "Bonus/malus points", "Season, time of day & weather designs", "Home Assistant reminders", "Library"] :
         assert must in found or must in keys, must
     assert len(found) > 60, sorted(found)
     missing = sorted(t for t in found if t not in keys)
@@ -95,7 +95,7 @@ def test_every_settings_part_is_folded():
     body = view[view.index('main.append(h("h1", T("Settings"))'):view.index("// the status in the rows")]
     # every part of the page is a fold: no section, no part function outside fold(…) – the intro lives in the ⓘ of the title
     parts = re.findall(r'^    (\S.*)$', body, re.M)
-    loose = [p for p in parts if not p.startswith("fold(")]
+    loose = [p for p in parts if not p.startswith(("fold(", "group("))]
     assert not loose, loose
     ids = re.findall(r'fold\("(\w+)"', body)
     assert len(ids) == len(set(ids)) >= 17, ids
@@ -181,6 +181,22 @@ def test_small_fields_side_by_side():
     assert 'h("div.field-row"' in price and 'h("div.gp-rent", rent, periods)' in price and price.count("fieldInfo(") == 4
     battery = src[src.index("function batteryForm("):src.index("/** Parent area › Games: the family default")]
     assert 'h("div.field-row"' in battery and "...more" in battery
-    learning = src[src.index('fold("learning"'):src.index('fold("levels"')]
+    learning = src[src.index('fold("learning"'):src.index('fold("familytime"')]
     assert learning.count("fieldInfo(") == 5 and 'h("div.field-row"' in learning
     assert 'h("div.field-row"' in _src("deals.js")
+
+
+def test_settings_in_four_groups():
+    """Settings: App · Personalisation · Home Assistant · System – each a heading with its ⓘ, the folds below in this order."""
+    src = _src("parent.js")
+    view = src[src.index("async function settingsView(main)"):]
+    body = view[view.index('main.append(h("h1", T("Settings"))'):view.index("// the status in the rows")]
+    order = re.findall(r'^    (?:group\("(set\.\w+)"|fold\("(\w+)")', body, re.M)
+    order = [g or f for g, f in order]
+    assert order == ["set.app", "link", "family", "themes", "levels", "learning", "familytime",
+                     "set.personal", "texts", "crest", "weather",
+                     "set.ha", "halogin", "integration", "ha", "shopping",
+                     "set.system", "backup", "network", "planer", "about"], order
+    keys, _ = info_keys()
+    assert {"set.app", "set.personal", "set.ha", "set.system"} <= keys
+    assert 'T("Season, time of day & weather designs")' in body and 'T("Bonus/malus points")' in body
