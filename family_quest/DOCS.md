@@ -524,6 +524,63 @@ the children's app opens; *Parent area* there leads to the PIN login.
   stricter – from which the parent area may be opened (e.g. only the parents' network). Empty = every network.
   A list that would lock out the device you are saving from is refused.
 
+## 🛡️ Privacy (parent area › Privacy / Datenschutz)
+
+**Master switch** (top of the page, **on by default**): off means nothing is counted, no clean-up runs (manual
+and automatic are refused) and no badge; the retention periods stay saved and editable. While it is on, the menu item
+**🛡️ Privacy shows a red badge** with the number of entries ready for a clean-up run (the total of the preview, «999+»
+above 999). The count is cached on the server for 5 minutes and refreshed after a run, after a settings change and every
+5 minutes; on phones the ☰ button shows a red dot.
+
+**Retention periods (Aufbewahrungsfristen):** every kind of stored personal or usage data has a lifetime – days,
+months, years or «keep forever» – with a default the parents can change (ⓘ next to each kind explains it):
+
+| Kind | Default | What |
+|---|---|---|
+| 🔐 Login log | 90 days | logins and failed logins with address and device |
+| 🌦️ Behaviour weather | 3 months | the weather given per child and day (the points stay in the balance) |
+| 🔋 Game battery log | 3 months | starts, recharges, charges |
+| 💣 Pranks received | 3 months | pranks a child has seen |
+| 📌 Removed board items | 1 month | notes kept for «undo» |
+| 📜 Personal history | 1 year | game results, quizzes, council votes |
+| 🎲 Finished games | 1 year | tables of finished games with moves and answers |
+| 📝 Learning answers | 1 year | every single answer, finished lessons |
+| 📅 Learning days | 2 years | XP, time and lessons per day – folded, totals stay |
+| 🪙 Point bookings | 2 years | the ledger – folded into «Balance brought forward» |
+| 🧹 Chores done | 1 year | who did which chore when |
+| 🤝 Deals | 1 year | ended deals with their messages |
+| 🛍️ Shop orders | 1 year | decided orders |
+| 🗳️ Council topics and polls | 1 year | closed ones with proposals and votes |
+| 🎁 Secret gift giving | 1 year | past draws |
+| 📆 Past calendar events | 2 years | with the FamilyTime wishes and votes (birthdays stay) |
+
+Not time-based («keep»): profiles, balances, badges, records and highscores, settings, learning progress and decks,
+books, quizzes, programs, photo sets and uploads, boards, pets, upcoming events, the chore plan.
+
+**Clean-up runs (Löschläufe):** the list of what is past due, per kind with the count and the oldest / newest date,
+is the preview – nothing is deleted while you look. Tick kinds (or «Select all»; for most kinds also single entries
+with 🔎) and confirm. Every run first writes a **backup snapshot** with the backup module into the data folder
+(`/data/privacy_backups/before-cleanup-….zip`, the last 3 are kept; a run whose snapshot fails deletes nothing), then
+deletes each kind in **one transaction**, then logs date, kinds, counts and who in **Past runs**.
+
+**Balances never change:** old ledger rows are folded into «Balance brought forward» rows (per profile, account and
+class) dated at the cut-off, in the same transaction – balances, XP, levels, new XP for the XP items, the Family Planer
+sync and counts like «50 chores» stay exactly the same. Old learning days are added up into one row per child; the
+days of a running streak stay.
+
+**Never deleted** because something still refers to it: anything of the current week, running games, open and
+pending chores, chores of running deals, open deals, orders waiting for approval, open topics and polls, upcoming
+events and draws, the newest row of every list (its id is never given out again), the last game of every quiz, the
+bookings since the active family goal started.
+
+**Automatic clean-up:** a switch, **off by default**. When on, Family Quest cleans the kinds that are past due once
+every night between 02:00 and 05:00 (snapshot and log entry as above, «automatic» in Past runs).
+
+**Good to know:** older copies can still be in your own backups and in the Home Assistant history – delete old
+backups too if data should be gone everywhere. To delete everything of one child, use *Delete all data of a child*:
+it opens the protected «Remove profile» dialog (type the name, «Delete for good»). The login log keeps at most 180
+days on its own (longer if you set a longer period).
+
 ## Family (parent area, formerly «Community»): family quiz and family council
 
 - **Family quiz** (learning app › Family › Quizzes, or parent area › Games): everybody – children too – makes
