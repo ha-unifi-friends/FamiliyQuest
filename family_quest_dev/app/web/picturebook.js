@@ -241,8 +241,8 @@ async function pictureEditor(id, onClose = null) {
       h("div.sb-phead", h("span.sb-pnum", String(i + 1)), lays, h("span.grow"),
         h("button.icon-btn.pb-mv", { title: T("Move up"), "aria-label": T("Move up"), disabled: i === 0, onclick: () => move(p, -1) }, "↑"),
         h("button.icon-btn.pb-mv", { title: T("Move down"), "aria-label": T("Move down"), disabled: i === data.pages.length - 1, onclick: () => move(p, 1) }, "↓"),
-        h("button.icon-btn.sb-del", { title: T("Remove page"), "aria-label": T("Remove page"), onclick: () => {
-          if ((p.text || p.pic) && !confirm(I18N.tr(T("Remove this page?")))) return;
+        h("button.icon-btn.sb-del", { title: T("Remove page"), "aria-label": T("Remove page"), onclick: async () => {
+          if ((p.text || p.pic) && !(await confirmDialog(I18N.tr(T("Remove this page?"))))) return;
           data.pages.splice(data.pages.indexOf(p), 1); changed(true);
         } }, "🗑")),
       h("div.pb-emain",
@@ -326,9 +326,9 @@ async function pictureEditor(id, onClose = null) {
       h("div.row.wrap", h("button.btn.small.ghost", { onclick: async () => { await save(); downloadApi(`stories/${id}/export`, `family-quest-picturebook-${id}.json`); } }, "⬇️ ", T("Export as a file")),
         h("span.small.muted", T("For a backup, another family or an AI – own drawings, SVG, library and emoji pictures go along, photos stay out."))),
       h("div.sb-danger.row.wrap",
-        ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Take the book off the shelf? It stays here as a draft."))) &&
+        ed.live || ed.pending ? h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Take the book off the shelf? It stays here as a draft.")))) &&
           run(`stories/${id}/unpublish`, "POST", T("The book is a draft again"), async () => { ed = await api("stories/" + id); drawHead(); }) }, "📥 ", T("Unpublish")) : null,
-        h("button.btn.small.bad", { onclick: () => confirm(I18N.tr(T("Remove this book for good? This cannot be undone."))) &&
+        h("button.btn.small.bad", { onclick: async () => (await confirmDialog(I18N.tr(T("Remove this book for good? This cannot be undone.")))) &&
           run(`stories/${id}`, "DELETE", T("Removed"), () => { closed = true; dirty = false; clearTimeout(timer); finish(); }) }, "🗑 ", T("Remove book")))), { wide: true });
   };
 

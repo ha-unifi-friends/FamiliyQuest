@@ -86,7 +86,7 @@ def _j(s, default):
 def _int(v, lo: int, hi: int, msg: str) -> int:
     try:
         n = int(v)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):      # «²» passes str.isdigit but not int(); 1e999 is infinite
         raise DealError(msg) from None
     if not lo <= n <= hi:
         raise DealError(msg)
@@ -114,14 +114,14 @@ class Deals:
         out = json.loads(json.dumps(DEFAULT))
         if "on" in d:
             out["on"] = bool(d["on"])
-        out["off"] = sorted({int(x) for x in d.get("off") or [] if str(x).lstrip("-").isdigit()})
+        out["off"] = sorted({int(x) for x in d.get("off") or [] if str(x).lstrip("-").isdecimal()})
         kinds = d.get("kinds") if isinstance(d.get("kinds"), dict) else {}
         out["kinds"] = {k: bool(kinds.get(k, True)) for k in BLOCKS}
         for k, lo, hi in (("max_coins", 1, 100000), ("threshold", 1, 100000)):
             if d.get(k) is not None:
                 try:
                     out[k] = max(lo, min(hi, int(d[k])))
-                except (TypeError, ValueError):
+                except (TypeError, ValueError, OverflowError):
                     pass
         out["approval"] = bool(d.get("approval", False))
         out["approval_pets"] = bool(d.get("approval_pets", False))
@@ -739,6 +739,8 @@ class Deals:
         self._msg(d["id"], None, "stand")
         units = self._units(terms, prog)
         for s in ("a", "b"):
+            if self._deal(d["id"])["status"] != "running":
+                break                        # side a's transfer failed (an item is gone): nothing more is held or paid
             o = other(s)                     # side s pays for the services of side o
             if units[o]["units"] == 0:
                 self._safe(d["id"], lambda s=s: self._pay_all(self._deal(d["id"]), s))
@@ -758,11 +760,11 @@ class Deals:
         names = self._names()
         g, r = names.get(giver, {}), names.get(receiver, {})
         if g.get("role") == "kid":
-            self.rewards.book(giver, "coins", -float(amount), "deal", _t("Deal with") + f" {r.get('name', '?')}", ref)
+            self.rewards.book(giver, "coins", -float(amount), "deal", _t("Deal with {0}").replace("{0}", r.get("name", "?")), ref)
             self.db.x("UPDATE deal_hold SET paid=paid+? WHERE deal_id=? AND profile_id=? AND kind='coins' AND active=1",
                       amount, d["id"], giver)
         if r.get("role") == "kid":           # coins to a parent go to the parents (no parent account)
-            self.rewards.book(receiver, "coins", float(amount), "deal", _t("Deal with") + f" {g.get('name', '?')}", ref)
+            self.rewards.book(receiver, "coins", float(amount), "deal", _t("Deal with {0}").replace("{0}", g.get("name", "?")), ref)
         self._msg(d["id"], None, "coins", n=amount, giver=giver, receiver=receiver)
 
     def _item_move(self, d: dict, it: dict, giver: int, receiver: int) -> None:
@@ -859,7 +861,7 @@ class Deals:
     # ================================================================ chores of a deal (called by chores.py)
     def reward_to(self, t: dict) -> int:
         d = self.db.q1("SELECT * FROM deal WHERE id=?", t["deal_id"])
-        if d and t["id"] in (_j(d["progress"], {}).get("owner_pay") or []) and t.get("from_id"):
+        if d and d["status"] == "running" and t["id"] in (_j(d["progress"], {}).get("owner_pay") or []) and t.get("from_id"):
             return t["from_id"]
         return t["profile_id"]
 
@@ -895,6 +897,10 @@ class Deals:
         new = set(prog.get("new_chores") or [])
         for tid in [x for s in ("a", "b") for x in ((prog.get("tasks") or {}).get(s) or [])]:
             t = self.db.q1("SELECT * FROM chore_task WHERE id=?", tid)
+            if t and t["status"] == "pending" and t["deal_id"] == d["id"]:
+                # done, waiting for a parent: it stays with who did it – no longer part of the failed deal
+                self.db.x("UPDATE chore_task SET deal_id=NULL WHERE id=?", tid)
+                continue
             if not t or t["status"] != "open" or tid == keep:
                 continue
             if t["chore_id"] in new:
@@ -916,6 +922,14 @@ class Deals:
                 raise DealError("This deal is over already")
             self._fail(d, "cancelled", status="cancelled", by=parent["id"])
         return self.view(self._deal(deal_id), None, thread=True)
+
+    def profile_removed(self, pid: int) -> None:
+        """A profile is deleted for good: its open deals end (reservations released, taken-over chores back to their
+        owner) – before its rows go (the deal rows themselves are deleted with the profile)."""
+        with self.lock, self.db.tx():
+            for d in self.db.q(f"SELECT * FROM deal WHERE (a_id=? OR b_id=?) AND status IN ({','.join('?' * len(OPEN))})", pid, pid, *OPEN):
+                self._fail(d, "cancelled", status="cancelled")
+            self.db.x("UPDATE chore_task SET from_id=NULL, deal_id=NULL WHERE from_id=?", pid)
 
     def sweep(self) -> None:
         """Missed and removed chores, council results – called on every look and by the periodic tick."""

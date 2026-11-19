@@ -12,8 +12,9 @@ the language of the questions in the game. German: de-CH (Zürich dialect, «Äm
 Swiss German, else de-DE.
 
 Privacy: only what the family sees of each other anyway. Nothing from the parents' private areas (internet logs,
-mood notes, behaviour weather, login log). XP, levels, coins and learning time only with the family view setting
-«Everything» (family_visibility = all), like the family comparison. Parents switch the quiz off with the setting
+mood notes, behaviour weather, login log). XP, levels, coins, learning time, the shop, the pets and the birthdays only
+with the family view setting «Everything» (family_visibility = all), like the family comparison. Guests cannot join a
+running facts quiz (the questions are about the family – guests.py, community.join). Parents switch the quiz off with the setting
 `quiz_facts` (parent area › Games › Family quiz).
 """
 from __future__ import annotations
@@ -22,7 +23,7 @@ import json
 import random
 from datetime import date, datetime, timedelta
 
-from .channel import hidden_games
+from .channel import hidden_games, visible
 from .community import CommunityError, QUIZ_LANGS, shuffle_answers
 from .i18n import _t
 from .rewards.engine import SPEND_EVENTS, today
@@ -202,6 +203,12 @@ class Facts:
         return k if k in TITLES or k in GAME_TITLES else None
 
     @staticmethod
+    def game_pool() -> list[str]:
+        """The games of the tables as wrong answers – only those of this channel (channel.py)."""
+        from .running import TITLES
+        return list(visible(TITLES))
+
+    @staticmethod
     def game_title(kind: str):
         from .running import TITLES
         return (TITLES.get(kind) or GAME_TITLES.get(kind) or kind,)
@@ -332,8 +339,8 @@ class Facts:
                 per[kind] = per.get(kind, 0) + 1
             ranked = sorted(per.items(), key=lambda x: -x[1])
             if len(ranked) >= 2 and ranked[0][1] > ranked[1][1]:
-                from .running import TITLES
-                others = [k for k, _ in ranked[1:]] + random.sample(list(TITLES), len(TITLES))
+                pool = self.game_pool()
+                others = [k for k, _ in ranked[1:]] + random.sample(pool, len(pool))
                 out += self.pick(gen, scope, (q,), self.game_title(ranked[0][0]), [self.game_title(k) for k in others if k != ranked[0][0]])
         wins_all, wins_week, played = {}, {}, {}
         a, b = self.span("week")
@@ -397,7 +404,7 @@ class Facts:
         for key, kind, unit in BESTS:
             if kind in hidden_games():                  # dev games (channel.py): only in the dev channel
                 continue
-            best = {int(k): int(v or 0) for k, v in (self.db.get_setting(key) or {}).items() if str(k).isdigit() and int(k) in self.name}
+            best = {int(k): int(v or 0) for k, v in (self.db.get_setting(key) or {}).items() if str(k).isdecimal() and int(k) in self.name}
             if not best or not max(best.values()):
                 continue
             title = self.game_title(kind)
@@ -408,6 +415,8 @@ class Facts:
                 out += q
             out += self.who("record_who_" + kind, "all", (_t("Who holds the record in {0}?"), title), best)
         out += self.pit_records()
+        if not self.open:                               # the slot machine: coins
+            return out
         spins = int(self.db.val("SELECT COUNT(*) FROM ledger WHERE event='slots_bet'", default=0) or 0)
         if spins >= 3:
             out += self.number("slots_spins", "all", (_t("How often has the slot machine been played?"),), spins)
@@ -417,10 +426,10 @@ class Facts:
 
     # «24h Endurance»: the fastest pit stop (setting langstrecke_pit, tenths of a second – lower is better)
     def pit_records(self) -> list[dict]:
-        if "langstrecke" in hidden_games():             # not in this channel (channel.py DEV_GAMES)
+        if "langstrecke" in hidden_games():             # its game not in this channel (channel.py DEV_GAMES)
             return []
         best = {int(k): int(v or 0) for k, v in (self.db.get_setting("langstrecke_pit") or {}).items()
-                if str(k).isdigit() and int(k) in self.name and int(v or 0) > 0}
+                if str(k).isdecimal() and int(k) in self.name and int(v or 0) > 0}
         if not best:
             return []
         title = self.game_title("langstrecke")
@@ -433,8 +442,10 @@ class Facts:
                         {k: 1000 - v for k, v in best.items()})
         return out
 
-    # shop: rewards, avatar items, pet shop, pranks, the slot machine
+    # shop: rewards, avatar items, pet shop, pranks, the slot machine (only with the family view «Everything»: coins)
     def shop(self) -> list[dict]:
+        if not self.open:
+            return []
         out = []
         ev = ",".join("?" * len(SHOP_EVENTS))
         bought = {r["profile_id"]: r["n"] for r in self.db.q(
@@ -475,8 +486,10 @@ class Facts:
         out += self.who("pranks_hit", "all", (_t("Who has been pranked the most?"),), hit)
         return out
 
-    # pets
+    # pets (only with the family view «Everything»)
     def pets(self) -> list[dict]:
+        if not self.open:
+            return []
         out = []
         from .pets import KINDS
         from .rewards import avatar as av
@@ -559,10 +572,10 @@ class Facts:
                              WHERE g.status='set' AND g.title IS NOT NULL AND e.start <= ? ORDER BY e.start DESC LIMIT 1""",
                           datetime.now().isoformat(timespec="minutes"))
         if last:
-            from .running import TITLES
             right = (last["title"],)
+            pool = self.game_pool()
             out += self.pick("familytime_game", "all", (_t("Which game was set for the last FamilyTime?"),), right,
-                             [self.game_title(k) for k in random.sample(list(TITLES), len(TITLES)) if (TITLES[k],) != right])
+                             [self.game_title(k) for k in random.sample(pool, len(pool)) if self.game_title(k) != right])
         out += self.birthdays()
         if len(self.people) >= 2:
             ranked = sorted(self.people, key=lambda p: p["created_at"] or "", reverse=True)
@@ -581,6 +594,8 @@ class Facts:
         return out
 
     def birthdays(self) -> list[dict]:
+        if not self.open:
+            return []
         rows = self.db.q("SELECT title, start FROM family_event WHERE kind='birthday'")
         t = today()
         nxt = {}
@@ -657,6 +672,11 @@ def to_quiz(item: dict, base: str, dicts: dict[str, dict]) -> dict:
 def enabled(db) -> bool:
     v = db.get_setting(SETTING)
     return v is None or bool(v)
+
+
+def is_facts(quiz: dict | None) -> bool:
+    """Is this quiz row the hidden row of the facts quiz (see start())?"""
+    return bool(quiz) and bool(quiz["archived"]) and quiz["created_by"] is None and quiz["title"] == TITLE
 
 
 def info(fq) -> dict:

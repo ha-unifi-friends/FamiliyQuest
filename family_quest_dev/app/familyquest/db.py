@@ -12,7 +12,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
+from . import memo
 from .i18n import _t
+
+# a migration starting with this runs with the foreign keys switched off (a table rebuild: DROP TABLE must not cascade)
+FK_OFF = "-- foreign keys off\n"
 
 MIGRATIONS: list[str] = [
     # 1 – base schema
@@ -749,6 +753,31 @@ MIGRATIONS: list[str] = [
     """
     ALTER TABLE story_read ADD COLUMN state TEXT;
     """,
+    # 42 – profile ids are never used again (AUTOINCREMENT): a new profile must not inherit what a deleted one left
+    # (books by author_id, ledger rows, …) – the sequence starts above every id ever seen. Rebuilt with the foreign
+    # keys off (FK_OFF, see migrate()). An index on ledger(ref): «booked once» checks by ref.
+    FK_OFF + """
+    CREATE TABLE profile_new(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'kid',          -- kid | parent | guest
+        color TEXT NOT NULL DEFAULT '#4f8cff',
+        avatar TEXT NOT NULL DEFAULT '{}',
+        pin_hash TEXT,
+        settings TEXT NOT NULL DEFAULT '{}',
+        planer_person_id TEXT,
+        archived INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO profile_new(id, name, role, color, avatar, pin_hash, settings, planer_person_id, archived, created_at)
+        SELECT id, name, role, color, avatar, pin_hash, settings, planer_person_id, archived, created_at FROM profile;
+    DROP TABLE profile;
+    ALTER TABLE profile_new RENAME TO profile;
+    INSERT INTO sqlite_sequence(name, seq) SELECT 'profile', 0 WHERE NOT EXISTS (SELECT 1 FROM sqlite_sequence WHERE name='profile');
+    UPDATE sqlite_sequence SET seq=MAX(seq, COALESCE((SELECT MAX(id) FROM profile), 0), COALESCE((SELECT MAX(author_id) FROM story), 0),
+        COALESCE((SELECT MAX(profile_id) FROM ledger), 0), COALESCE((SELECT MAX(from_id) FROM chore_task), 0)) WHERE name='profile';
+    CREATE INDEX ledger_ref ON ledger(ref);
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -894,6 +923,7 @@ class Database:
 
     def x(self, sql: str, *args: Any) -> int:
         """Run a write. INSERT → new rowid (0 when OR IGNORE skipped the row), else the number of changed rows."""
+        memo.clear()                                   # the request reads what it writes (memo.py)
         with self.lock:
             cur = self.conn.execute(sql, args)
             if sql.lstrip()[:6].upper() == "INSERT":
@@ -902,10 +932,11 @@ class Database:
 
     # ---------- settings ----------
     def get_setting(self, key: str, default: Any = None) -> Any:
-        r = self.q1("SELECT value FROM setting WHERE key=?", key)
-        if r is None:
+        # the stored text once per request (memo.py) – parsed every time, so callers may change what they get
+        raw = memo.get(("setting", key), lambda: (self.q1("SELECT value FROM setting WHERE key=?", key) or {}).get("value"))
+        if raw is None:
             return DEFAULT_SETTINGS.get(key, default)
-        return json.loads(r["value"])
+        return json.loads(raw)
 
     def set_setting(self, key: str, value: Any) -> None:
         self.x("INSERT INTO setting(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -922,7 +953,18 @@ class Database:
         with self.lock:
             ver = self.conn.execute("PRAGMA user_version").fetchone()["user_version"]
             for i, sql in enumerate(MIGRATIONS[ver:], start=ver + 1):
-                self.conn.executescript("BEGIN;" + sql + f";PRAGMA user_version={i};COMMIT;")
+                fk_off = sql.startswith(FK_OFF)
+                if fk_off:                                 # only outside a transaction (SQLite ignores it inside)
+                    self.conn.execute("PRAGMA foreign_keys=OFF")
+                try:
+                    self.conn.executescript("BEGIN;" + sql + f";PRAGMA user_version={i};COMMIT;")
+                except BaseException:
+                    if self.conn.in_transaction:
+                        self.conn.execute("ROLLBACK")
+                    raise
+                finally:
+                    if fk_off:
+                        self.conn.execute("PRAGMA foreign_keys=ON")
                 if i == 1:
                     self._seed()
 

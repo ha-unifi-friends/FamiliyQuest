@@ -327,6 +327,5 @@ async function jassFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("jass") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("The Swiss card game Schieber: 2 against 2 with Trumpf, Obenabe and Undeufe, Weis and Stöck – with bots, the family and guests.")),
-         h("div.row.wrap", botsOn("jass") ? h("button.btn", { onclick: () => jassStartDialog(true, () => go("jass")) }, "🤖 ", T("With 3 bots")) : null,
-           h("button.btn.ghost", { onclick: () => jassStartDialog(false, () => go("jass")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("jass") ? () => jassStartDialog(true, () => go("jass")) : null, () => jassStartDialog(false, () => go("jass")))]);
 }

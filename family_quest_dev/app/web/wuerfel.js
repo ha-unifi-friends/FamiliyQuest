@@ -76,7 +76,13 @@ function wuerfelLive(box, me, back) {
   const myId = String(me.id);
   box.classList.add("fw-live");
   const isHost = () => st && (st.host === me.id || me.role === "parent");
-  const show = (...xs) => box.replaceChildren(...xs.flat().filter(x => x != null && x !== false));
+  // the score sheet scrolls by itself on small screens (base.css): a new draw keeps where it was
+  const show = (...xs) => {
+    const old = box.querySelector(".fw-scroll"), top = old ? old.scrollTop : 0, left = old ? old.scrollLeft : 0;
+    box.replaceChildren(...xs.flat().filter(x => x != null && x !== false));
+    const now = box.querySelector(".fw-scroll");
+    if (now && (top || left)) { now.scrollTop = top; now.scrollLeft = left; }
+  };
   const stop = () => { alive = false; clearTimeout(timer); box.classList.remove("quiz-full"); document.body.classList.remove("quiz-open"); };
   window.addEventListener("hashchange", stop, { once: true });
   const mine = () => st && st.players && st.players.find(p => p.id === myId);
@@ -276,6 +282,5 @@ async function wuerfelFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("wuerfel") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Roll five dice, hold the good ones and fill your score sheet – everybody at the same time. Places 1 to 3 win coins at the family table!")),
-         h("div.row.wrap", botsOn("wuerfel") ? h("button.btn", { onclick: () => wuerfelStartDialog(true, () => go("wuerfel")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => wuerfelStartDialog(false, () => go("wuerfel")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("wuerfel") ? () => wuerfelStartDialog(true, () => go("wuerfel")) : null, () => wuerfelStartDialog(false, () => go("wuerfel")))]);
 }

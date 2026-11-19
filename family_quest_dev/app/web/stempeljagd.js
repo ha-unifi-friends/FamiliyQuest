@@ -383,7 +383,7 @@ function stempeljagdLive(box, me, back) {
         onclick: () => active ? playTrick(k) : toast(ic + " " + sjTr(name) + ": " + sjTr(desc)) }, ic, counts[k] > 1 ? h("small", "×" + counts[k]) : null);
     }), (mine.folder || []).length ? h("span.sj-folder", { title: (mine.folder || []).map(d => sjTr(SJ_DOCS[d])).join(", ") }, "🗂️", h("small", (mine.folder || []).length)) : null);
   }
-  function playTrick(k) {
+  async function playTrick(k) {
     if (k === "objection") {
       const targets = st.players.filter(p => !p.admin && p.id !== myId && (p.stamps || []).length);
       if (!targets.length) return toast(sjTr(T("No other team has a stamp yet.")));
@@ -394,7 +394,7 @@ function stempeljagdLive(box, me, back) {
       return;
     }
     const [ic, name, desc] = SJ_TRICKS[k];
-    if (!confirm(ic + " " + sjTr(name) + "\n" + sjTr(desc))) return;
+    if (!(await confirmDialog(ic + " " + sjTr(name) + "\n" + sjTr(desc)))) return;
     act("play", { trick: k });
   }
   function panel() {
@@ -582,6 +582,5 @@ async function stempeljagdFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("stempeljagd") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Collect every stamp for your building project in a wonderfully complicated town hall – despite queues, referrals and lunch breaks. Places 1 to 3 win coins at the family table.")),
-         h("div.row.wrap", botsOn("stempeljagd") ? h("button.btn", { onclick: () => stempeljagdStartDialog(true, () => go("stempeljagd")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => stempeljagdStartDialog(false, () => go("stempeljagd")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("stempeljagd") ? () => stempeljagdStartDialog(true, () => go("stempeljagd")) : null, () => stempeljagdStartDialog(false, () => go("stempeljagd")))]);
 }

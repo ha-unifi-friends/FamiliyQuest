@@ -75,6 +75,9 @@ class Shop:
             if not offer["can"]:
                 raise ShopError(offer["reason"])
             with self.db.tx():
+                # checked again inside the transaction: a deal (deals.py, its own lock) may have reserved coins meanwhile
+                if self.rewards.available(pid, offer["account"]) < float(offer["cost"]):
+                    raise ShopError("Not enough yet")
                 rid = self.db.x("INSERT INTO redemption(profile_id,reward_id,cost,account,status) VALUES(?,?,?,?, 'pending')",
                                 pid, reward_id, offer["cost"], offer["account"])
                 # the amount is reserved right away; a rejection books it back

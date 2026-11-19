@@ -32,6 +32,7 @@ from . import timelimits
 log = logging.getLogger("familyquest.integration")
 
 KEY = "ha_integration"                    # setting: {"enabled", "token_hash", "token_at", "instance"}
+POLL_KEY = "ha_integration_poll"         # setting: when Home Assistant last asked (own key: no read-modify-write of KEY)
 DOMAIN = "familyquest"
 SOURCE = APP_DIR / "ha_integration" / DOMAIN
 HA_CONFIG = Path(os.environ.get("FQ_HA_CONFIG", "/homeassistant"))     # Home Assistant's /config inside the add-on
@@ -107,16 +108,15 @@ def status(fq) -> dict:
     c = config(fq)
     return {"enabled": bool(c.get("enabled")), "has_token": bool(c.get("token_hash")), "token_at": c.get("token_at"),
             "url": addon_url(), "component": component_status(), "config_writable": _writable(HA_CONFIG),
-            "last_poll": c.get("last_poll")}
+            "last_poll": fq.db.get_setting(POLL_KEY) or c.get("last_poll")}
 
 
 def polled(fq) -> None:
-    """Remember (at most every 10 minutes) when Home Assistant last asked – shown in the parent area."""
-    c = config(fq)
+    """Remember (at most every 10 minutes) when Home Assistant last asked – shown in the parent area. Its own setting:
+    a poll at the same moment as «new token» / «switch off» must not write the old token setting back."""
     now = datetime.now().isoformat(timespec="minutes")
-    if (c.get("last_poll") or "")[:15] != now[:15]:
-        c["last_poll"] = now
-        _save(fq, c)
+    if (fq.db.get_setting(POLL_KEY) or "")[:15] != now[:15]:
+        fq.db.set_setting(POLL_KEY, now)
 
 
 # ---------------------------------------------------------------- the custom component in /config
@@ -210,7 +210,7 @@ def _child(fq, prof: dict, accounts: list[dict], now: datetime) -> dict:
                     "unlimited": bool(budget.get("unlimited")), "can_start": bool(net["can_start"]),
                     "blocked": not net["running"], "block_until": blk["until"] if blk else None,
                     "reset_at": budget.get("reset_at")}
-    game_left = timelimits.left(fq.db, prof, "game", now)
+    game = fq.game_status(prof, now)                   # party-aware, like the app (services.game_status)
     learn_left = timelimits.left(fq.db, prof, "learn", now)
     off_net = fq.calendar.blocks(pid, "internet", now)
     off_games = fq.calendar.blocks(pid, "games", now)
@@ -228,7 +228,7 @@ def _child(fq, prof: dict, accounts: list[dict], now: datetime) -> dict:
         "chores_pending": sum(1 for t in tasks if t["status"] == "pending"),
         "lessons_today": int(day.get("lessons") or 0), "learn_minutes_today": int(day.get("seconds") or 0) // 60,
         "internet": internet,
-        "game_left": game_left, "game_unlimited": game_left is None, "game_used_up": game_left == 0,
+        "game_left": game["left"], "game_unlimited": game["unlimited"], "game_used_up": game["used_up"],
         "game_minutes_today": timelimits.used(fq.db, pid, "game", now),
         "learn_left": learn_left, "learn_unlimited": learn_left is None,
         "offline_time": bool(offline or plan_block),

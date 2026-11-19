@@ -191,8 +191,7 @@ async function pokerFamilyCard() {
     p ? [h("p", p.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("poker") }, "🙋 ", p.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Poker with play chips – everybody on their own device.")),
-         h("div.row.wrap", botsOn("poker") ? h("button.btn", { onclick: () => pokerSoloDialog(() => go("poker")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => pokerStartDialog(() => go("poker")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("poker") ? () => pokerSoloDialog(() => go("poker")) : null, () => pokerStartDialog(() => go("poker")))]);
 }
 
 // alone against bots: how many, how well they play, the chips – the table is dealt right away

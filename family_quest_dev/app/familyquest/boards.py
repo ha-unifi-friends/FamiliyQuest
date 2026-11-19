@@ -189,7 +189,7 @@ class Boards:
             iid = ids.get(str(ref), ref) if isinstance(ref, str) else ref
             try:
                 iid = int(iid)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 raise CommunityError("This item is no longer on the board") from None
             r = self.db.q1("SELECT * FROM board_item WHERE id=? AND board_id=?", iid, bid)
             if not r:

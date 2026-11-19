@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 
+from . import memo
 from .channel import hidden_games
 from .i18n import _t
 
@@ -63,6 +64,18 @@ def _people(players) -> int:
 
 
 def running(fq) -> list[dict]:
+    """The running tables of every game – once per request (memo.py), a copy per call."""
+    return [dict(t) for t in memo.get("running", lambda: _running(fq))]
+
+
+def _running(fq) -> list[dict]:
+    names: dict = {}
+
+    def _name(fq, pid) -> str:                         # the names of all hosts with one query
+        if not names:
+            names.update({r["id"]: r["name"] for r in fq.db.q("SELECT id, name FROM profile")})
+            names.setdefault(None, "")
+        return names.get(pid, "") or ""
     out = []
     g = fq.community._game()
     if g:

@@ -24,7 +24,7 @@ function arcadeCard() {
   if (!open.length && !locked.length) return null;
   return h("section.card", h("h2", "🕹️ ", T("Game corner")),
     h("p.small.muted", T("Small games for in between.")),
-    batteryShown() ? batteryBar(true) : null,                                          // game battery (kid.js)
+    batteryHint(),                                                                       // what a start costs (kid.js)
     h("div.arcade-grid", ...Object.entries(ARCADE).filter(([k]) => open.includes(k) || locked.includes(k)).map(([k, g]) => locked.includes(k) ? lockedTile(k, lockedGame(k))
       : h("button.arcade-tile", { onclick: () => go("arcade/" + k) }, h("span.big-ic", g.icon), h("strong", g.title)))));
 }
