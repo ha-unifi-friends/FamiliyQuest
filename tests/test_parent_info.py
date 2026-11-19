@@ -98,7 +98,7 @@ def test_every_settings_part_is_folded():
     loose = [p for p in parts if not p.startswith(("fold(", "group("))]
     assert not loose, loose
     ids = re.findall(r'fold\("(\w+)"', body)
-    assert len(ids) == len(set(ids)) >= 17, ids
+    assert len(ids) == len(set(ids)) >= 13, ids
     status = src[src.index("async function settingsStatus(main)"):src.index("async function settingsView(main)")]
     no_status = [i for i in ids if not re.search(r"\bst\." + i + r"\b", status)]
     assert not no_status, f"settings parts without a status in their row: {no_status}"
@@ -181,7 +181,7 @@ def test_small_fields_side_by_side():
     assert 'h("div.field-row"' in price and 'h("div.gp-rent", rent, periods)' in price and price.count("fieldInfo(") == 4
     battery = src[src.index("function batteryForm("):src.index("/** Parent area › Games: the family default")]
     assert 'h("div.field-row"' in battery and "...more" in battery
-    learning = src[src.index('fold("learning"'):src.index('fold("familytime"')]
+    learning = src[src.index('fold("learning"'):src.index('group("set.personal"')]
     assert learning.count("fieldInfo(") == 5 and 'h("div.field-row"' in learning
     assert 'h("div.field-row"' in _src("deals.js")
 
@@ -193,10 +193,89 @@ def test_settings_in_four_groups():
     body = view[view.index('main.append(h("h1", T("Settings"))'):view.index("// the status in the rows")]
     order = re.findall(r'^    (?:group\("(set\.\w+)"|fold\("(\w+)")', body, re.M)
     order = [g or f for g, f in order]
-    assert order == ["set.app", "link", "family", "themes", "levels", "learning", "familytime",
-                     "set.personal", "texts", "crest", "weather",
+    assert order == ["set.app", "link", "themes", "levels", "learning",
+                     "set.personal", "texts", "weather",
                      "set.ha", "halogin", "integration", "ha", "shopping",
                      "set.system", "backup", "network", "planer", "about"], order
     keys, _ = info_keys()
     assert {"set.app", "set.personal", "set.ha", "set.system"} <= keys
     assert 'T("Season, time of day & weather designs")' in body and 'T("Bonus/malus points")' in body
+
+
+# ---------------------------------------------------------------- folds everywhere, Family / History pages, game groups
+def _fn(src: str, head: str) -> str:
+    body = src[src.index(head):]
+    return body[:body.index("\n}\n")]
+
+
+def test_family_page_has_groups_and_folds():
+    src = _src("parent.js")
+    tabs = src[src.index("const TABS = ["):src.index("];", src.index("const TABS = ["))]
+    assert '"goals"' not in tabs and '["history", "📜", T("History")]' in tabs
+    assert 'goals: ["community", "fam.goals"]' in src                         # old #goals opens the goals in «Family»
+    view = _fn(src, "async function communityView(main)")
+    for part in ['group("Goals"', 'group("fam.together"', 'group("fam.ours"', "goalsSection()", "crestSection()", "familyViewSection(s)",
+                 "familyTimeSection(", 'foldBoxes(main, "fam"']:
+        assert part in view, part
+    assert "historySection" not in view                                       # the history is its own page
+    keys, _ = info_keys()
+    assert {"fam.together", "fam.ours", "prof.learn", "For a game night", "Quick games for in between", "Game corner"} <= keys
+
+
+def test_every_page_folds_its_boxes():
+    src = _src("parent.js")
+    for head, prefix in [("async function packsView(main)", "packs"), ("async function shopSettingsView(main)", "shop")]:
+        assert f'foldBoxes(main, "{prefix}"' in _fn(src, head), prefix
+    assert 'foldBoxes(main, "deals"' in _src("deals.js")
+    shop = _fn(src, "async function shopSettingsView(main)")
+    assert 'setFold("shop." + sl' in shop and 'h("details.shop-slot"' not in shop        # every kind of avatar item its own fold
+    css = _src("parent-ha.css")
+    # one chevron for every fold: big, bold, on the right, its own colour in light and dark
+    assert re.search(r"html details:not\(\.more-menu\) > summary::after \{[^}]*border-width: 0 3px 3px 0", css)
+    assert css.count("--chev:") >= 3
+
+
+def test_overview_rows_and_history_page():
+    src = _src("parent.js")
+    ov = _fn(src, "async function overviewView(main)")
+    assert "details.card.sec.kid.kid-fold" in ov and "kidWeather(" in ov and 'weatherBox("set")' not in ov
+    assert ov.index("await archivedSection()") < ov.index("failBox);")       # the failed logins at the very bottom
+    quick = ov[ov.index("div.row.wrap.kid-quick"):ov.index("w ? w.pick : null")]
+    assert 'T("Edit profile")' in quick                                       # «Edit profile» first, left of the weather
+    hist = _fn(src, "async function historyView(main)")
+    for part in ["parent/ledger/", "parent/redemptions?profile_id=", "community/history?profile_id=", "historyText("]:
+        assert part in hist, part
+    prof = _fn(src, "async function profileDialog(")
+    assert '"data-ik": "prof.learn"' in prof
+
+
+def test_games_in_the_groups_of_the_childrens_app():
+    src = _src("parent.js")
+    groups = src[src.index("const GAME_GROUPS = ["):src.index("const FREE_GAMES")]
+    for name in ["For a game night", "Quick games for in between", "Game corner"]:
+        assert f'T("{name}")' in groups
+        assert f'T("{name}")' in _src("kid.js") + _src("minigames.js")         # the same names as the children see
+    gl = src[src.index("const GAME_LIST = ["):src.index("// 🛠️ Custom games")]
+    games = set(re.findall(r'\["(\w+)", "[^"]+", ', gl)) | {"langstrecke"}
+    custom = {"quiz", "paarjagd", "adventuregame"}
+    grouped = set(re.findall(r'"(\w+)"', groups[groups.index("[["):]))
+    assert not sorted(games - custom - grouped), sorted(games - custom - grouped)
+
+
+def test_reward_table_headers_explain_themselves():
+    src = _src("parent.js")
+    rv = _fn(src, "async function rewardsView(main, opts = {})")
+    heads = re.findall(r'h\("th(?:\.[\w-]+)?", T\("([^"]+)"\), fieldInfo\(', rv)
+    assert {"Key", "Unit", "Spendable", "Active", "Event", "Amount", "Daily limit", "Label"} <= set(heads), heads
+
+
+def test_secret_gift_giving_is_translated():
+    for name in ["community.js", "parent-info.js"]:
+        assert 'T("Wichteln")' not in _src(name) and 'T("New Wichteln")' not in _src(name)
+    assert 'T("Secret gift giving")' in _src("community.js")
+    want = {"de-DE": "Wichteln", "de-CH": "Wichtle"}
+    for lang in LANGS:
+        d = json.loads((WEB / "i18n" / f"{lang}.json").read_text(encoding="utf-8"))
+        assert d["Secret gift giving"] == want.get(lang, d["Secret gift giving"]) and d["Secret gift giving"] != "Secret gift giving"
+        if lang not in want:
+            assert "Wichteln" not in d["Secret gift giving"] + d["New secret gift giving"], lang

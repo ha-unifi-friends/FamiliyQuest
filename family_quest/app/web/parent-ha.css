@@ -161,3 +161,6 @@ details.kid-fold > summary h2 { margin: 0; }
 .kid-quick .weather-btns { gap: 4px; }
 .kid-fold .kid-actions { display: flex; justify-content: flex-start; gap: 6px; }
 .kid-weather h3 { margin: 0 0 4px; }
+.kid-quick .weather-btns .btn { min-height: 40px; padding: 4px 8px; }
+.kid-quick .weather-btns .big-ic { font-size: 1.25rem; }
+details.kid-fold > summary .weather-now { font-size: 2rem; }
