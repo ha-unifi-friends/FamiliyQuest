@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-beta.13
+
+- 24h Endurance runs on batteries: full throttle drains much more, an empty battery means emergency drive mode at walking pace; every team has one spare battery that is swapped at each stop with whatever charge it has – the crew must plug it in early, charging takes about a lap
+
 ## 1.1.1-beta.12
 
 - Clap the Beat: four «get ready» clicks before every clap bar – the first note can now be hit
