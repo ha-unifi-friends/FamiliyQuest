@@ -5,7 +5,10 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 ## First start
 
 1. Open **Family Quest** in the sidebar and choose **Parent area** (or open `…/eltern`).
-2. Create the parent profile. It is always protected by a PIN (4–8 digits).
+2. Create the parent profile. Opened from the Home Assistant sidebar, the name of your Home Assistant user is filled
+   in and the profile is linked with that user – a PIN is optional (add one later in the profile; on tablets you can
+   use *Sign in with Home Assistant*, see below). Opened on the app port (no Home Assistant user), a PIN (4–8 digits)
+   is required.
 3. **Profiles › Add child** – name, colour, PIN, daily goal (XP), exercises per lesson,
    new cards per lesson, learning hours (e.g. `07:00-20:00`), automatic logout. With the Family Planer installed,
    **Take over from Family Planer** creates a profile for every person and links it.
@@ -401,6 +404,41 @@ Home Assistant user (the Supervisor tells it – only trusted for requests that 
 After the first PIN login the app offers to link this user with the parent profile; from then on the parent area
 opens without PIN there. Settings → *Log in with Home Assistant* can also close the parent area for PIN logins
 completely (then it opens only through Home Assistant; the PIN still works in the app for learning along).
+
+**Sign in with Home Assistant in the app (tablets, phones):** Settings → *Log in with Home Assistant* → *Allow
+sign-in with Home Assistant in the app* (off by default). The login screen of the app on the app port then shows
+**🏠 Sign in with Home Assistant** – only when at least one profile can use it (a linked parent, or a linked child
+while *Children may sign in with their Home Assistant user* is on). How it works:
+
+1. The app sends the browser to the login page of Home Assistant (`<HA>/auth/authorize`, Home Assistant's normal
+   OAuth2 / IndieAuth login – the same as the companion app uses). The *client_id* is the address of the app
+   (e.g. `http://192.168.1.10:8099/`), the return address `…/ha-auth/callback` is on the same host, as Home Assistant
+   requires. Home Assistant asks for user name and password – and the two-factor code when the user has one.
+2. Home Assistant sends the browser back with a one-time code. Family Quest exchanges it **itself** (server side,
+   inside Home Assistant on the Supervisor network: `http://homeassistant:8123`; with https in Home Assistant at the
+   address below), asks Home Assistant who the user is (websocket `auth/current_user`) and **revokes the Home
+   Assistant tokens right away** – Family Quest stores no Home Assistant token and no password, only the profile login
+   as with a PIN.
+3. The Home Assistant user is mapped to the profile linked with it (Profiles › edit › *Home Assistant user*):
+   a child gets its app (only with *Children may sign in…*), a parent gets the same as a parent PIN login in the app.
+   The parent area on the app port stays as before – with *Parent area only through Home Assistant* it stays closed.
+   A Home Assistant user that is not linked gets «Your Home Assistant user is not linked with a profile – ask your
+   parents». Every attempt is in the login log; the login stays on the device like a PIN login, *Log out* as usual.
+
+Profiles that are linked and have **no PIN** appear in the app's profile list too; tapping them opens the Home
+Assistant login directly (no PIN pad, a PIN login is refused for them while the option is on). Profiles with a PIN
+keep their PIN pad and additionally offer *Sign in with Home Assistant*. In the profile dialog the *Home Assistant
+user* comes first; choosing one fills in the name and switches the PIN to *No PIN* (sign-in only via Home Assistant) –
+a PIN can still be set, then both ways work.
+
+**Home Assistant address for the sign-in:** the browser of the tablet must reach Home Assistant. Empty = automatic:
+the host of the app with the port of Home Assistant (the add-on runs on the Home Assistant machine, e.g.
+`http://192.168.1.10:8123`; https when Home Assistant does https). Enter another address when Home Assistant is
+reached differently (a name with a certificate, a reverse proxy); the addresses Home Assistant knows itself
+(internal / external URL) are offered. *Test* checks both ways: this device → Home Assistant and Family Quest →
+Home Assistant. Limits: the device needs to reach Home Assistant (not from a guest network that cannot); Home
+Assistant's login page is shown in Home Assistant's look and language; the state of a sign-in is valid for 10
+minutes and once; IP bans and login attempts of Home Assistant apply as usual.
 
 **One port for the children, the parent area only in Home Assistant:** no second port is needed. Home Assistant
 reaches the app through its own way (ingress, from the Supervisor), the app port (e.g. `http://192.168.x.y:8099`)

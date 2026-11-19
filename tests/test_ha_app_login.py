@@ -223,3 +223,13 @@ def test_setup_without_pin_only_through_home_assistant(client):
     r = client.put(f"/api/parent/profiles/{pid}", json={"name": "Papa", "role": "parent", "pin": "4321"}, headers=ph)
     assert r.status_code == 200, r.text
     assert client.post("/api/parent/login", json={"pin": "4321"}).status_code == 200
+
+
+def test_kid_without_pin_linked_signs_in_only_with_home_assistant(client, fake_ha):
+    ph, mia, leo, papa = _family(client)
+    assert client.post("/api/login", json={"profile_id": leo}).status_code == 200          # not linked: as before
+    _link(client, ph, leo, "Leo", "u-leo")
+    assert client.post("/api/login", json={"profile_id": leo}).status_code == 403
+    assert next(p for p in client.get("/api/profiles").json() if p["id"] == leo)["ha_login"]
+    client.put("/api/parent/settings", json={"ha_app_login": False}, headers=ph)
+    assert client.post("/api/login", json={"profile_id": leo}).status_code == 200          # feature off: as before

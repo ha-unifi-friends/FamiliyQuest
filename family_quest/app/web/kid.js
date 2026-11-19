@@ -486,7 +486,7 @@ function login(p) {
     route();
   };
   // linked with a Home Assistant user and no PIN (e.g. a parent who only uses Home Assistant): straight to its login
-  if (!p.has_pin && p.ha_login && p.role === "parent") return haAppLogin();
+  if (!p.has_pin && p.ha_login) return haAppLogin();
   const haBtn = () => p.ha_login ? h("div.center.ha-pin-alt", h("button.btn.ghost.small", { onclick: haAppLogin }, "🏠 ", T("Sign in with Home Assistant"))) : null;
   if (!p.has_pin) return api("login", { method: "POST", body: { profile_id: p.id } }).then(done).catch(e => toast(e.message, "bad"));
   if (p.pin_kind === "symbols" && p.symbol_set) {

@@ -674,14 +674,15 @@ async function profileDialog(p, persons, role = "kid") {
       u.name + (u.linked_to && u.id !== cur ? " (" + u.linked_to + ")" : ""))));
     if (cur && !list.some(u => u.id === cur)) haUser.append(h("option", { value: cur, selected: true, "data-name": p.settings.ha_user_name || "" }, p.settings.ha_user_name || cur));
     if (!list.length) haInfo.textContent = I18N.tr(T("No Home Assistant user found – a user needs a person in Home Assistant (Settings › People)."));
-    syncPinVis();
   }).catch(() => {});
-  // choosing a Home Assistant user: the name comes along (unless the parent typed one), the PIN part goes away
+  // choosing a Home Assistant user: the name comes along (unless the parent typed one) and the PIN switches to «No PIN»
+  // (sign-in only with Home Assistant) – a PIN can still be chosen, then both ways work
   let autoName = isNew ? "" : null;
   haUser.addEventListener("change", () => {
     const n = haUser.value ? haUser.selectedOptions[0]?.dataset.name || "" : "";
     if (n && (!f.name.value.trim() || f.name.value === autoName)) { f.name.value = n; autoName = n; }
-    syncPinVis();
+    if (haUser.value) { changing = true; pinKind = "none"; pad = null; }
+    drawPin();
   });
   // children (option): the Home Assistant user opens the children's app in Home Assistant without PIN – never the parent area
   const haLabel = h("span"), haHint = h("span.hint"), haWarn = h("span.hint.warn");
@@ -703,11 +704,8 @@ async function profileDialog(p, persons, role = "kid") {
   // editing an existing profile keeps its PIN – the choice only opens with «Change PIN»
   let changing = isNew || (f.role.value === "parent" && !p.has_pin && !P.meta.ha);
   const pinHead = h("h3");
-  // with a Home Assistant user the PIN is not needed: its part is hidden (an existing PIN stays as a fallback for a
-  // device that cannot reach Home Assistant – it is removed only with «No PIN» after choosing «None» again)
   const pinForm = h("div.form", pinHead, kindBtns, pinArea);
   const haLinked = () => !!(P.meta.ha && haUser.value);
-  function syncPinVis() { pinForm.hidden = haLinked(); }
   const drawPin = () => {
     const kid = f.role.value === "kid";
     const viaHA = !kid && P.meta.ha;              // parents with Home Assistant: the HA user, the PIN is optional
@@ -729,7 +727,8 @@ async function profileDialog(p, persons, role = "kid") {
     } else if (pinKind === "digits") {
       pinArea.replaceChildren(h("label.field", "PIN", f.pin, h("span.hint", viaHA ? T("4–8 digits – to log in in the app on another device, e.g. to join a game or learn along.")
         : T("Children: 4 digits, optional. Parents: 4–8 digits, required."))));
-    } else pinArea.replaceChildren(h("p.small.muted", kid ? T("The child logs in without a PIN.") : T("No login in the app – the parent area opens with the Home Assistant user.")));
+    } else pinArea.replaceChildren(haLinked() ? h("p.small.pin-ha-only", "🏠 ", T("Sign-in only via Home Assistant login"))
+      : h("p.small.muted", kid ? T("The child logs in without a PIN.") : T("No login in the app – the parent area opens with the Home Assistant user.")));
   };
   // the dialog in parts (tabs): profile · learning · time & battery · internet & devices – Save / Cancel always at the bottom,
   // «Remove» set apart at the end of the profile tab
@@ -756,7 +755,7 @@ async function profileDialog(p, persons, role = "kid") {
     const kid = f.role.value === "kid";
     kidPart.hidden = timePart.hidden = !kid; if (batteryPart) batteryPart.hidden = !kid; parentPart.hidden = kid; haPart.hidden = !P.meta.ha; syncHa(kid);
     tabs.setVisible("time", kid); tabs.setVisible("net", kid || !!P.meta.ha);
-    drawPin(); syncPinVis();
+    drawPin();
   };
   f.role.addEventListener("change", syncRole); syncRole();
   const m = modal(h("div.form.profile-dlg",
@@ -765,7 +764,6 @@ async function profileDialog(p, persons, role = "kid") {
     h("div.dlg-foot", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
   const focusIn = el => { tabs.reveal(el); el.focus(); };
   async function save() {
-    if (haLinked()) changing = false;                  // PIN part hidden: the PIN stays as it is
     let pin = changing && f.pin.value || null, pinSymbols;
     if (changing && pinKind === "none") pin = p.has_pin ? "" : null;
     if (changing && pinKind === "symbols") {
