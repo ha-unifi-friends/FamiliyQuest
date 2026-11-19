@@ -258,6 +258,25 @@ def themes_get(request: Request, me: dict = Parent) -> dict:
     return {"designs": themes.designs(cfg), "active": themes.active(cfg), "visuals": list(themes.VISUALS)}
 
 
+@router.get("/season-live")
+def season_live_get(request: Request, me: dict = Parent) -> dict:
+    """Weather and daylight of the season designs: the weather entity (shared with the planner) and the sun switch."""
+    from .. import seasonlive
+    fq = app_of(request)
+    return {**seasonlive.config(fq), "ha": bool(fq.ha and fq.ha.connected), "live": seasonlive.live(fq)}
+
+
+@router.put("/season-live")
+def season_live_put(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    from .. import seasonlive
+    fq = app_of(request)
+    try:
+        cfg = seasonlive.save(fq, body)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {**cfg, "ha": bool(fq.ha and fq.ha.connected), "live": seasonlive.live(fq)}
+
+
 @router.put("/themes")
 def themes_put(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
     from .. import themes

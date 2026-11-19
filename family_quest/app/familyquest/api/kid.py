@@ -80,6 +80,13 @@ def info(request: Request) -> dict:
             "codelab": feature_visible("codelab")}           # 💡 Code Workshop: only in the dev channel (channel.DEV_FEATURES)
 
 
+@router.get("/season-live")
+def season_live(request: Request, prof: dict = Learner) -> dict | None:
+    """Live weather and daylight for the header scene (seasonlive.py) – None: the clock decides, no weather."""
+    from .. import seasonlive
+    return seasonlive.live(app_of(request))
+
+
 @router.get("/app-link")
 async def app_link(request: Request) -> dict:
     """Where the app is reached directly in the home network (port of the direct access, IPs of Home Assistant): links
