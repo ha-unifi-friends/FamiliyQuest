@@ -17,6 +17,8 @@ body { font-size: 15px; }
 .sec h2 { font-size: 1.12rem; }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 99px; background: var(--hover); font-size: .82rem; font-weight: 700; margin: 2px; }
 .chip.warn { background: #fff3bf; color: #7a5200; }
+.chip.pack-lang { margin: 4px 0 0; font-weight: 600; }
+.pack-avail { border-style: dashed; }
 .big-ic { font-size: 1.6rem; }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .list li { padding: 6px 0; border-bottom: 1px solid var(--line); }

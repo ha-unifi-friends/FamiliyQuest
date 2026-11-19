@@ -9,7 +9,7 @@ const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
   karteikarte: T("Flash cards"), zuordnen: T("Drag & drop"), hoeren: T("Listening") };
-const STATUS = { active: T("active"), draft: T("draft – to check"), disabled: T("switched off") };
+const STATUS = { active: T("active"), draft: T("draft – to check"), disabled: T("switched off"), available: T("not added") };
 
 async function boot() {
   try { P.info = await api("info"); if (P.info.via_ha) P.appLink = await api("app-link").catch(() => null); } catch (e) { return app.replaceChildren(h("div.login", h("div.card", h("h2", T("Family Quest cannot be reached")), h("p", e.message)))); }
@@ -776,14 +776,20 @@ function noMatch(text, reset) {
 // an open «⋯» menu closes with a tap anywhere else
 document.addEventListener("click", e => document.querySelectorAll("details.more-menu[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
 
+const LANG_FLAG = { de: "🇩🇪", en: "🇬🇧", fr: "🇫🇷", it: "🇮🇹", es: "🇪🇸", nl: "🇳🇱", pl: "🇵🇱", pt: "🇧🇷", sv: "🇸🇪" };
+const LANG_NAME = { de: T("German"), en: T("English"), fr: T("French"), it: T("Italian"), es: T("Spanish"), nl: T("Dutch"), pl: T("Polish"), pt: T("Portuguese"), sv: T("Swedish") };
+
 async function packsView(main) {
   const [d, profiles] = await Promise.all([call("parent/packs"), call("parent/profiles")]);
   const kids = profiles.filter(p => p.role === "kid");
   const drafts = d.packs.filter(p => p.status === "draft");
   const imported = p => !["builtin", "share"].includes(p.source);      // own packs: imported, made with the AI or edited – shown on top
-  const importedPacks = d.packs.filter(p => p.status !== "draft" && imported(p));
-  const bundles = d.packs.filter(p => p.kind === "bundle" && p.status !== "draft");
-  const packs = d.packs.filter(p => p.kind === "pack" && p.status !== "draft");
+  // «More packs»: optional packs of the app (e.g. German content only) – not installed until a parent adds them
+  const available = d.packs.filter(p => p.status === "available");
+  const shown = d.packs.filter(p => p.status !== "available");
+  const importedPacks = shown.filter(p => p.status !== "draft" && imported(p));
+  const bundles = shown.filter(p => p.kind === "bundle" && p.status !== "draft");
+  const packs = shown.filter(p => p.kind === "pack" && p.status !== "draft");
   const actRow = p => h("div.act", ...kids.map(k => h("label.check", h("input", { type: "checkbox", checked: p.profiles.includes(k.id),
     onchange: async e => {
       try { await call("parent/packs/activate", { method: "POST", body: { profile_id: k.id, pack_id: p.id, on: e.target.checked } }); toast(T("Saved"), "good"); }
@@ -798,11 +804,17 @@ async function packsView(main) {
     h("div.more-pop",
       h("button.btn.small.ghost", { title: T("Export as ZIP (with pictures)"), onclick: e => { e.target.closest("details").open = false; download(p.id, "zip"); } }, "⬇️ ", T("Export as ZIP (with pictures)")),
       h("button.btn.small.ghost", { onclick: e => { e.target.closest("details").open = false; download(p.id, "json"); } }, "⬇️ ", T("Export as JSON")),
-      h("button.btn.small.ghost.danger-text", { onclick: e => { e.target.closest("details").open = false; del(p); } }, "🗑️ ", T("Delete"))));
+      // an optional pack of the app goes back to «More packs» (deleting it would only bring it back at the next start)
+      p.optional && !imported(p)
+        ? h("button.btn.small.ghost", { onclick: e => { e.target.closest("details").open = false; uninstall(p); } }, "↩️ ", T("Remove from the family"))
+        : h("button.btn.small.ghost.danger-text", { onclick: e => { e.target.closest("details").open = false; del(p); } }, "🗑️ ", T("Delete"))));
+  // the language the content is written in (packs that do not follow the app language)
+  const langNote = p => (p.content_langs || []).length ? h("span.chip.pack-lang", { title: T("The questions and answers of this pack are written in this language") },
+    (p.content_langs || []).map(l => (LANG_FLAG[l] || "🗣️") + " ").join(""), I18N.tr(T("Content in {0}")).replace("{0}", p.content_langs.map(l => I18N.tr(LANG_NAME[l] || l)).join(", "))) : null;
   const card = p => h("div.card.pack" + (p.status === "draft" ? ".draft" : ""), { "data-find": [p.id, p.title, p.level, p.subject && I18N.tr(p.subject.name), ...(p.units || []).map(u => u.title)].filter(Boolean).join(" ") },
     h("div.row.pack-head", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
       h("div.small.muted", p.kind === "bundle" ? T("Level pack") : subjectName(p.subject.key), p.level ? h("span", { translate: "no" }, " · " + p.level) : null, " · ",
-        STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : "")), moreMenu(p)),
+        STATUS[p.status] || p.status, p.private ? " · 🔒 " + I18N.tr(T("private")) : ""), langNote(p)), moreMenu(p)),
     h("div.row.wrap.pack-acts",
       // a draft is checked, then published – the same two verbs as on the import page
       p.kind === "pack" ? h("button.btn.small.ghost", { onclick: () => packEditor(p.id) }, "✏️ ", p.status === "draft" ? T("Check") : T("Edit")) : null,
@@ -864,14 +876,44 @@ async function packsView(main) {
   main.append(search, noPacks);
   // 💡 Code Workshop (codelab.js): only in the dev channel (channel.DEV_FEATURES)
   const codeSec = P.info && P.info.codelab ? await codelabSection().catch(e => section("💡 " + I18N.tr(T("Code Workshop")), h("p.bad", e.message))) : null;
+  const german = String(I18N.lang || "").startsWith("de");
+  const more = moreSection(german);
   if (mode === "kids") return main.append(...byKid(),
-    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null, codeSec);
+    drafts.length ? section("📝 " + I18N.tr(T("To check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null, codeSec, more);
   const levelPacks = bundles.filter(p => !imported(p)), ownPacks = packs.filter(p => !imported(p));
   main.append(
+    german ? more : null,
     drafts.length ? section("📝 " + I18N.tr(T("Imported as draft – to check")), h("p.small.muted", T("Drafts are only visible to children after you publish them.")), ...drafts.map(card)) : null,
     importedPacks.length ? section("⭐ " + I18N.tr(T("Own packs")), ...importedPacks.map(card)) : null,
     levelPacks.length ? section("🎒 " + I18N.tr(T("Level packs")), h("p.small.muted", T("Switching on a level pack switches on all its packs for the child.")), ...levelPacks.map(card)) : null,
-    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null, codeSec);
+    ownPacks.length ? section("📚 " + I18N.tr(T("Packs")), ...ownPacks.map(card)) : null, codeSec, german ? null : more);
+  // ➕ More packs: optional packs of the app, added with one click (then switched on per child as every other pack)
+  function moreSection(top) {
+    if (!available.length) return null;
+    const de = available.filter(p => (p.content_langs || []).includes("de"));
+    const avCard = p => h("div.card.pack.pack-avail", { "data-find": [p.id, p.title, p.level, p.subject && I18N.tr(p.subject.name), ...(p.units || []).map(u => u.title)].filter(Boolean).join(" ") },
+      h("div.row.pack-head", h("span.big-ic", p.kind === "bundle" ? "🎒" : (p.icon || "📚")), h("div.grow", C(p.title, "strong"),
+        h("div.small.muted", p.kind === "bundle" ? T("Level pack") : subjectName(p.subject.key), p.level ? h("span", { translate: "no" }, " · " + p.level) : null), langNote(p)),
+        h("button.btn.small.good", { onclick: () => install([p.id]) }, "＋ ", T("Add"))),
+      p.description ? C(p.description, "p.small.muted") : null,
+      p.kind === "pack" ? h("div.small.units", ...p.units.map(u => chip([u.icon ? u.icon + " " : "", C(u.title), " · " + u.count]))) :
+        h("div.small", ...(p.semesters || []).map(s => h("div", C(s.titel || s.id, "strong"), ": ",
+          C(s.pakete.map(id => byId[id] ? byId[id].title : id).join(", ") || "–")))));
+    return section("➕ " + I18N.tr(T("More packs")),
+      h("p.small.muted", top ? T("Recommended for German-speaking families: packs with German content (school topics of Switzerland and general knowledge). Add them with one click, then switch them on per child.")
+        : T("Packs whose content exists in one language only. They are not added automatically – add them with one click, then switch them on per child.")),
+      de.length > 1 ? h("button.btn", { onclick: () => install(de.map(p => p.id)) }, "🇩🇪 ", T("Add all German-language packs")) : null,
+      ...available.map(avCard));
+  }
+  async function install(ids) {
+    try { await call("parent/packs/install", { method: "POST", body: { ids, on: true } }); toast(T("Added"), "good"); } catch { return; }
+    render();
+  }
+  async function uninstall(p) {
+    if (!(await confirmDialog(I18N.tr(T("Remove {0} from the family? It is switched off for every child and goes back to «More packs». The learning progress is kept.")).replace("{0}", p.title)))) return;
+    try { await call("parent/packs/install", { method: "POST", body: { ids: [p.id], on: false } }); } catch { return; }
+    render();
+  }
   function packRewards(p) {
     const r = p.rewards || {};
     const xp = h("input", { type: "number", min: 0, max: 10000, value: r.xp ?? "", placeholder: "–", inputmode: "numeric" });
