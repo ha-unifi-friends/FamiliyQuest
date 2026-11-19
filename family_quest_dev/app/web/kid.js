@@ -265,7 +265,7 @@ function partyBanner() {
   const what = [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean);
   return h("section.card.banner.party-banner", h("span.big-ic", "🎉"),
     h("div.grow", h("strong", T("Party mode"), p.until ? " " + untilWhen(p.until) : ""), what.length ? h("div.small", what.map(t => I18N.tr(t)).join(" · ")) : null),
-    h("span.big-ic.party-ball", "🪩"));
+    h("span.party-stage", { "aria-hidden": "true" }, h("i.party-rays"), h("i.party-spot"), h("span.big-ic.party-ball", "🪩")));
 }
 // the Disco design while the party runs for this child (or an own design of the parents with the disco look)
 const discoTheme = () => (S.me && S.me.party && S.me.party.theme) || (S.info && S.info.season && S.info.season.vis === "disco" && seasonOn() ? S.info.season : null);
