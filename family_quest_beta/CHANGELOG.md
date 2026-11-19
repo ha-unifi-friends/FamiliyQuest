@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.1-beta.17
+
+- Sign in with Home Assistant also in the app (tablets): kids and parents linked to a Home Assistant user sign in with their HA account – on by default
+- Clear sign-in per profile: no sign-in, PIN, Home Assistant only, or PIN or Home Assistant – enforced on every login; a profile with a HA user and no PIN never logs in without a login
+- First start in Home Assistant: name prefilled, no PIN needed – the first parent is linked with the HA user
+- Parent area › Chores: the planner in the standard design; no PIN prompts in the planner any more – the signed-in profile decides (children: own to-dos without points)
+- 24h Endurance: no stuck start screen any more for a player whose phone slept in the lobby; one clear screen per role
+- Pair Hunt: photos made small automatically, reliable multi-photo upload; custom games with a unified layout; quiz question language in the ☰ menu
+- Beta and Dev have their own app icons (BETA / DEV band); the parent area link to Home Assistant works when not signed in
+
 ## 1.1.1-beta.16
 
 - «Family Quest App» dialog: without direct access it shows only how to switch it on (no QR code that cannot work)
