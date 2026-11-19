@@ -11,6 +11,7 @@ from .. import loginlog, symbols, themes
 from ..chores import ChoreError
 from ..internet import InternetError
 from ..db import profile_settings
+from ..channel import feature_visible
 from ..learning.lesson import LearnError
 from ..rewards import avatar as av
 from ..rewards.shop import ShopError
@@ -68,7 +69,8 @@ def info(request: Request) -> dict:
             # parent area only in Home Assistant: on the app port (tablets) it is not offered at all
             "parent_ha_only": bool(s.get("parent_ha_only")),
             "via_ha": bool(request.client and request.client.host == INGRESS_IP),
-            "season": themes.active(s.get("themes"))}
+            "season": themes.active(s.get("themes")),
+            "codelab": feature_visible("codelab")}           # 💡 Code Workshop: only in the dev channel (channel.DEV_FEATURES)
 
 
 @router.get("/app-link")

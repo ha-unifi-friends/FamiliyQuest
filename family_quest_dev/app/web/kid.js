@@ -88,6 +88,7 @@ async function route() {
   if (view === "arcade") return arcadeView(arg);
   if (view === "deck") return arg ? deckView(+arg) : decksView();
   if (view === "stories") return storiesView();
+  if (view === "codelab") return S.me.codelab ? codelabView() : go("courses");          // 💡 Code Workshop (codelab.js) – dev channel
   if (view === "advgames") return canPlay("adventuregame") && S.me.stories !== false ? adventureGamesView() : go("games");   // stories.js
   return dashboardView();
 }
@@ -2002,6 +2003,7 @@ async function coursesView() {
     h("section.card.learn-start",
       h("div.grow", h("strong", T("Daily lesson")), h("div.small.muted", T("A short lesson mixes repetitions and new words."))),
       h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Start"))),
+    me.codelab ? codelabTile() : null,                    // 💡 Code Workshop (codelab.js) – only in the dev channel
     h("section", h("h2", T("Subjects")),
       isParent ? h("p.small.muted", "👀 ", T("As a parent you see all packs to try them out – also drafts. Children only see the packs switched on for them.")) : null,
       subjectGrid(me, true)),
