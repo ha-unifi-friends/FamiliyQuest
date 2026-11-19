@@ -164,3 +164,5 @@ details.kid-fold > summary h2 { margin: 0; }
 .kid-quick .weather-btns .btn { min-height: 40px; padding: 4px 8px; }
 .kid-quick .weather-btns .big-ic { font-size: 1.25rem; }
 details.kid-fold > summary .weather-now { font-size: 2rem; }
+/* a folded box: no gap below its row (the hidden content still takes a grid slot) */
+html details.card:not([open]) { row-gap: 0; }
