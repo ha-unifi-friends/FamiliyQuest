@@ -250,6 +250,8 @@ class Facts:
         if week:
             out += self.number("chores_week_total", "week", (_t("How many chores has the family done this week?"),), week)
         allc = self.ledger_count("event='chore_done' AND amount>0", distinct="ref")
+        for r in self.db.q("SELECT profile_id, n FROM ledger_folded WHERE event='chore_done'"):   # folded by a clean-up (privacy.py)
+            allc[r["profile_id"]] = allc.get(r["profile_id"], 0) + r["n"]
         if sum(allc.values()) >= 5:
             out += self.number("chores_total", "all", (_t("How many chores have been done in Family Quest so far?"),),
                                sum(allc.values()), estimate=True, unit=(_t("chores"),))
