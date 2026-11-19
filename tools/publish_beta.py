@@ -48,6 +48,13 @@ def publish(slug: str, name: str, tag: str, port: int, icons: Path, version: str
         shutil.copy2(ROOT / rel, out)
     for icon in ("icon.png", "logo.png"):
         shutil.copy2(icons / icon, dst / icon)
+    # the web app's own icons (browser tab, home screen) with the channel band, and its name in the manifest
+    for icon in ("icon.svg", "icon-192.png", "icon-512.png"):
+        if (icons / "web" / icon).is_file():
+            shutil.copy2(icons / "web" / icon, dst / "app" / "web" / "img" / icon)
+    mf = dst / "app" / "web" / "manifest.webmanifest"
+    if mf.is_file():
+        mf.write_text(mf.read_text(encoding="utf-8").replace('"Family Quest"', f'"{name}"'), encoding="utf-8")
     if channel:
         (dst / "app" / "CHANNEL").write_text(channel + "\n", encoding="utf-8")
 
