@@ -2037,7 +2037,7 @@ async function coursesView() {
         C(courseText(c) || c.title, "span.small.muted"),
         // a pack written in one language only (e.g. German general knowledge) says so in other app languages
         (c.content_langs || []).length && !c.content_langs.includes(String(I18N.base || I18N.lang).split("-")[0])
-          ? h("span.small.muted", I18N.tr(T("Content in {0}")).replace("{0}", c.content_langs.map(l => I18N.tr(LANG_NAMES[l] || l)).join(", "))) : null,
+          ? h("span.small.muted", I18N.tr(T("Content in {0}")).replace("{0}", c.content_langs.map(l => langInText(I18N.tr(LANG_NAMES[l] || l))).join(", "))) : null,
         h("span.small.muted", c.units + " " + I18N.tr(T("units")) + " · " + c.cards + " " + I18N.tr(T("cards"))),
         c.on ? h("div.row", h("button.btn.small", { onclick: () => go("pack/" + encodeURIComponent(c.id)) }, "▶ ", T("Continue")),
                  h("button.btn.small.ghost", { onclick: () => toggle(c, false) }, T("Remove")))

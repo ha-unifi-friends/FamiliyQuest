@@ -5,6 +5,14 @@ Ideas and planned work for Family Quest, roughly in order. Done items move to th
 ## Next
 
 1. **Detailed canton coats of arms** – the quiz uses simplified pixel symbols; detailed drawings would need a source that allows it
+2. **Multilingual learning packs (rest)** – the language courses, maths and the year-5 English / French units ask in all
+   9 app languages (`quellsprachen`, `titel_i18n`, `frage_i18n`). Still German only (optional, «More packs»):
+   **general knowledge** (146 questions + options, would need `frage_i18n` / `antwort_i18n` / `optionen_i18n` and a
+   check of every fact per language – Swiss history unit maybe replaced per country), **German year 5** (grammar of
+   German as a first language – an equivalent per language would be new content, not a translation), **Thurgau
+   geography** and the level pack **«5. Klasse Thurgau»** (regional – other regions as own packs). Also: listening
+   (TTS) of prompts in the learner's language, Italian as a course language, own family languages (x-…) as prompt
+   language via a parent-supplied column.
 
 ## Only in «Family Quest Dev» – rework before the beta
 

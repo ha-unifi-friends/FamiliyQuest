@@ -16,7 +16,10 @@ Learning in any subject with points, rewards and avatars – for the whole famil
    draw a line; 🔀 brings other symbols). At login the same 12 symbols appear in a new order every time, so a
    watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN or
    no PIN can be chosen instead.
-5. **Packs** – every child starts with all built-in packs; switch packs or whole level packs on and off per child.
+5. **Packs** – every child starts with the built-in packs that work in every language (maths, the English and French
+   units of year 5 – no course of the child's own language); switch packs or whole level packs on and off per child.
+   Packs whose content exists in German only (German grammar, Thurgau geography, the level pack «5. Klasse Thurgau»,
+   general knowledge) are under **Learning packs › ➕ More packs** – one click adds them (or all of them at once).
 
 ## Options
 
@@ -2005,7 +2008,21 @@ progress per child (levels, ⭐ per world), the shared programs (open in the app
 ## Language courses and general knowledge
 
 Learning app › **Language courses & more**: everybody (children and adults) chooses a language and a level and
-starts it – German (for English speakers), French, English and Spanish (for German speakers), each in three levels
+starts it – German, French, English and Spanish, each in three levels
 A1 Beginner, A2 Basics, B1 Advanced, plus **General knowledge** (inventions, buildings, history, science, space, art,
-sport …). The units of a course unlock one after the other; the exercises mix choice, typing, pairs, listening, gap
+sport … – German questions, so a parent adds it first under «More packs»). The units of a course unlock one after the other; the exercises mix choice, typing, pairs, listening, gap
 sentences and flash cards. Courses are not switched on automatically (`standard: false`, `selbst: true` in the pack).
+
+**In every app language:** titles, units and descriptions appear in the app language, and the courses ask in the
+learner's language – a French child learning English sees «bonjour → good morning», a Swedish child «god morgon → good
+morning» (all 9 app languages; own languages fall back to the family language, the language of the parent area, then
+English). A course is never offered in the language it teaches (no French course for French speakers). The learning
+progress belongs to the card, not to the text: switching the language keeps it.
+
+**Packs in one language only** (general knowledge, German, Thurgau geography, «5. Klasse Thurgau»): not installed in a
+new family. Parent area › Learning packs › **➕ More packs** shows them with their content language («🇩🇪 Content in
+German») – **Add** (or **Add all German-language packs**) makes them available, then switch them on per child; for
+German-speaking families the section is at the top. **⋯ › Remove from the family** puts a pack back (switched off for
+every child, the progress is kept). On updating, nothing a child learnt with is touched: packs nobody has go to «More
+packs»; in families whose language is not German, German-only packs that were switched on automatically and never
+used are switched off once (when the parent area is opened for the first time after the update).

@@ -14,8 +14,6 @@ from __future__ import annotations
 from contextvars import ContextVar, Token
 
 APP_LANGS = ("de", "en", "fr", "it", "es", "nl", "pl", "pt", "sv")
-LANG_NAMES = {"de": "German", "en": "English", "fr": "French", "it": "Italian", "es": "Spanish", "nl": "Dutch",
-              "pl": "Polish", "pt": "Portuguese", "sv": "Swedish"}
 
 _VIEWER: ContextVar[str] = ContextVar("familyquest_pack_lang", default="")
 
