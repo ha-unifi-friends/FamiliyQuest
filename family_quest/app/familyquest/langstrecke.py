@@ -456,7 +456,7 @@ class Table:
             try:
                 te, c = float(item[0]), str(item[1])
                 v = int(item[2]) if len(item) > 2 and item[2] is not None else 0
-            except (TypeError, ValueError, IndexError, KeyError):
+            except (TypeError, ValueError, OverflowError, IndexError, KeyError):     # int(inf): OverflowError
                 continue
             if c not in ("l", "r", "u") or not math.isfinite(te) or te > now_t + AHEAD:
                 continue
@@ -860,13 +860,7 @@ class Langstrecke(CardGames):
         self.db.set_setting("langstrecke_pit", pits)
         st["records"] = records
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND, st['places'][pid]), ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND, st["places"][pid]))
         if len(st["teams"]) >= 2 and st.get("complete"):
             self._champion(st, [p for p, n in (st.get("places") or {}).items() if n == 1])
         if self.add_history:

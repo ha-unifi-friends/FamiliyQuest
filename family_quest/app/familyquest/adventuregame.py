@@ -24,6 +24,7 @@ Ids are numbers; hotspot ids are unique in the whole game. A game is in one lang
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -314,8 +315,23 @@ def endings(data: dict | None) -> list[int]:
 # ---------------------------------------------------------------- the engine (also used by the checker's search)
 def new_state(data: dict, room: int | None = None) -> dict:
     rooms = {r["id"] for r in data.get("rooms") or []}
-    room = room if room in rooms else data.get("start")
+    room = room if _ids_ok(room) and room in rooms else data.get("start")
     return {"room": room, "inv": [], "flags": [], "taken": [], "talk": None, "end": None}
+
+
+def _ids_ok(v) -> bool:
+    return v is None or (isinstance(v, int) and not isinstance(v, bool))
+
+
+def valid_state(st) -> bool:
+    """A state sent by the app (▶ in the editor) has the right types: ids are numbers, lists hold numbers."""
+    if not isinstance(st, dict):
+        return False
+    talk = st.get("talk")
+    return (_ids_ok(st.get("room")) and _ids_ok(st.get("end"))
+            and all(isinstance(st.get(k), (list, type(None))) and all(_ids_ok(x) for x in st.get(k) or [])
+                    for k in ("inv", "flags", "taken"))
+            and (talk is None or (isinstance(talk, dict) and _ids_ok(talk.get("spot")) and _ids_ok(talk.get("line")))))
 
 
 def clean_state(data: dict, st) -> dict:
@@ -323,16 +339,18 @@ def clean_state(data: dict, st) -> dict:
     if not isinstance(st, dict):
         return new_state(data)
     rooms = {r["id"] for r in data.get("rooms") or []}
-    if st.get("room") not in rooms:
+    if not _ids_ok(st.get("room")) or st.get("room") not in rooms:      # (a list or a dict cannot be looked up)
         return new_state(data)
     items, flags = {i["id"] for i in data["items"]}, {f["id"] for f in data["flags"]}
     spots = {s["id"]: r["id"] for r in data["rooms"] for s in r["spots"]}
     lines = {x["id"] for x in data["lines"]}
     talk = st.get("talk") if isinstance(st.get("talk"), dict) else None
-    if talk and not (talk.get("line") in lines and spots.get(talk.get("spot")) == st["room"]):
+    if talk and not (_ids_ok(talk.get("line")) and _ids_ok(talk.get("spot")) and talk.get("line") in lines
+                     and spots.get(talk.get("spot")) == st["room"]):
         talk = None
-    end = st.get("end") if st.get("end") in set(endings(data)) else None
-    lst = lambda k, ok: [x for x in dict.fromkeys(st.get(k) if isinstance(st.get(k), list) else []) if x in ok][:500]   # noqa: E731
+    end = st.get("end") if _ids_ok(st.get("end")) and st.get("end") in set(endings(data)) else None
+    lst = lambda k, ok: [x for x in dict.fromkeys(x for x in (st.get(k) if isinstance(st.get(k), list) else [])   # noqa: E731
+                                                  if isinstance(x, (int, str))) if x in ok][:500]
     return {"room": st["room"], "inv": lst("inv", items), "flags": lst("flags", flags), "taken": lst("taken", set(spots)),
             "talk": {"spot": talk["spot"], "line": talk["line"]} if talk else None, "end": end}
 
@@ -641,9 +659,26 @@ def _short(t: str, n: int = 24) -> str:
     return t if len(t) <= n else t[: n - 1] + "…"
 
 
+_CHECKED: dict[tuple, list[dict]] = {}      # check() per game text and title: the search runs once per version
+CHECK_CACHE = 64
+
+
 def check(data: dict, title: str = "x") -> list[dict]:
     """What is missing or wrong: [{code, msg, args, level, room, spot, line, rule}] – level «error» stops publishing,
-    «warn» does not. Besides the static checks a bounded search plays every way through the game."""
+    «warn» does not. Besides the static checks a bounded search plays every way through the game (up to
+    SEARCH_SECONDS) – so the result is kept per version of the game (autosave, editor, publish, approval)."""
+    key = (hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest(), title,
+           SEARCH_STATES, SEARCH_SECONDS)
+    got = _CHECKED.get(key)
+    if got is None:
+        got = _check(data, title)
+        if len(_CHECKED) >= CHECK_CACHE:
+            _CHECKED.pop(next(iter(_CHECKED)))
+        _CHECKED[key] = got
+    return [{**i, "args": list(i["args"])} for i in got]
+
+
+def _check(data: dict, title: str) -> list[dict]:
     out: list[dict] = []
 
     def add(code: str, *args, room=None, spot=None, line=None, rule=None) -> None:

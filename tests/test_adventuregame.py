@@ -316,6 +316,14 @@ def test_game_privacy_and_try(client):
     assert t["end"]["kind"] == "win" and t["new_ending"]
     assert client.app.state.fq.db.val("SELECT COUNT(*) FROM story_read WHERE story_id=?", sid) == 0
     assert client.post(f"/api/stories/{sid}/try", json={"move": {"verb": "take", "spot": 23}}, headers=hm).status_code == 400   # not in the hall
+    # a state with wrong types: refused (400), never a server error
+    for bad in ({"room": [2]}, {"room": 2, "inv": [[1]]}, {"room": 2, "flags": [{"a": 1}]}, {"room": 2, "taken": "x"},
+                {"room": 2, "talk": {"spot": [1], "line": 1}}, {"room": 2, "end": {"x": 1}}, {"room": "2"}):
+        r = client.post(f"/api/stories/{sid}/try", json={"state": bad, "move": {"verb": "look", "spot": 23}}, headers=hm)
+        assert r.status_code == 400, bad
+    from familyquest import adventuregame as A
+    data = json.loads(client.app.state.fq.db.val("SELECT data FROM story WHERE id=?", sid))
+    assert A.clean_state(data, {"room": [2], "inv": [[1]]}) == A.new_state(data)        # a saved state: cleaned, no error
     # guests: nothing
     assert client.post("/api/stories", json={"title": "X", "type": "game"}).status_code == 401
     assert client.post(f"/api/stories/{sid}/read/act", json={"verb": "look", "spot": 11}).status_code == 401

@@ -514,7 +514,7 @@ class Pets:
                 if cost:
                     if self.rewards.available(pid) < cost:
                         raise PetError("Not enough coins for pet food")
-                    self.rewards.book(pid, "coins", -float(cost), "pet_food", _t("Pet food") + f" – {pet['name']}", f"pet:{pet_id}")
+                    self.rewards.book(pid, "coins", -float(cost), "pet_food", _t("Pet food – {0}").replace("{0}", pet["name"]), f"pet:{pet_id}")
             val = min(100.0, float(pet[bar]) + gain)
             self.db.x(f"UPDATE pet SET {bar}=?, zero_since=NULL, zero_secs=0 WHERE id=?", val, pet_id)
         self._changed(pid)
@@ -661,7 +661,7 @@ class Pets:
             if cost:
                 if self.rewards.available(pid) < cost:
                     raise PetError("Not enough coins for the pet hotel")
-                self.rewards.book(pid, "coins", -float(cost), "pet_hotel", _t("Pet hotel") + f" – {pet['name']}", f"pet:{pet_id}")
+                self.rewards.book(pid, "coins", -float(cost), "pet_hotel", _t("Pet hotel – {0}").replace("{0}", pet["name"]), f"pet:{pet_id}")
             self.db.x("UPDATE pet SET hotel_until=?, hotel_cost=?, sitter_id=NULL, sit_until=NULL, updated_at=? WHERE id=?",
                       (now() + timedelta(days=days)).isoformat(), self.hotel_cost(), now().isoformat(), pet_id)
         self._changed(pid)
@@ -680,7 +680,7 @@ class Pets:
             if hotel and hotel > t:
                 back = int((hotel - t).total_seconds() // 86400) * int(pet["hotel_cost"] or 0)   # the price that was paid
                 if back:
-                    self.rewards.book(pid, "coins", float(back), "pet_hotel", _t("Pet hotel") + f" – {pet['name']} ↩", f"pet:{pet_id}")
+                    self.rewards.book(pid, "coins", float(back), "pet_hotel", _t("Pet hotel – {0}").replace("{0}", pet["name"]) + " ↩", f"pet:{pet_id}")
                 self.db.x("""UPDATE pet SET hotel_until=NULL, hunger=100, mood=100, clean=100, zero_secs=0, zero_since=NULL,
                              updated_at=? WHERE id=?""", t.isoformat(), pet_id)
             self.db.x("UPDATE pet SET sitter_id=NULL, sit_until=NULL WHERE id=?", pet_id)

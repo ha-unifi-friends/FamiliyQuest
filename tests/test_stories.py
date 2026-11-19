@@ -311,9 +311,15 @@ def test_limits(client, monkeypatch):
     assert client.put(f"/api/stories/{sid}", json={"data": ok}, headers=hm).status_code == 200
     r = client.put(f"/api/stories/{sid}", json={"title": "y" * 300, "data": {"pages": [scene(1, "z" * 9000)]}}, headers=hm).json()
     assert len(r["title"]) == S.TITLE and len(r["data"]["pages"][0]["text"]) == S.TEXT
-    monkeypatch.setattr(S, "MAX_BOOKS", 2)
+    monkeypatch.setattr(S, "MAX_PER_AUTHOR", 2)                      # one person: at most MAX_PER_AUTHOR books
     client.post("/api/stories", json={"title": "Two"}, headers=hm)
-    assert client.post("/api/stories", json={"title": "Three"}, headers=hm).status_code == 400
+    r = client.post("/api/stories", json={"title": "Three"}, headers=hm)
+    assert r.status_code == 400 and "one person" in r.json()["detail"]
+    assert client.post("/api/stories", json={"title": "Leo 1"}, headers=hl).status_code == 200   # the others still can
+    monkeypatch.setattr(S, "MAX_PER_AUTHOR", 60)
+    monkeypatch.setattr(S, "MAX_BOOKS", 3)
+    r = client.post("/api/stories", json={"title": "Leo 2"}, headers=hl)
+    assert r.status_code == 400 and "bookshelf is full" in r.json()["detail"]
 
 
 # ---------------------------------------------------------------- who reads it: only me · other children · whole family

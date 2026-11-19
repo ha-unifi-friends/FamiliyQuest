@@ -479,3 +479,79 @@ def test_free_text_dispute_parent_settles_or_council(fam):
     fq.community.close(papa, tid)
     D.sweep()
     assert D.get(mia, d["id"])["status"] == "failed" and res(fq, mia) == 0 and bal(fq, mia) == 40
+
+
+# ---------------------------------------------------------------- review fixes (lock order, failed deals)
+def test_lock_order_chore_approval_vs_sweep_no_deadlock(fam):
+    """A parent approves a chore of a deal (chores → deals) while the sweep runs (deals.lock → db): one lock order."""
+    import threading
+    import time
+    fq, papa, mia, leo = fam
+    D = fq.deals
+    coins(fq, leo, 50)
+    dishes = chore(fq, "Abwaschen", leo["id"], points=10)
+    d = D.offer(mia, leo["id"], [{"t": "chore", "chore": dishes, "times": 1}], [{"t": "coins", "n": 20}])
+    D.accept(leo, d["id"], 1)
+    tid = fq.db.val("SELECT id FROM chore_task WHERE deal_id=?", d["id"])
+    fq.chores.mark_done(mia["id"], tid)
+    in_tx = threading.Event()
+    orig = D.chore_done
+
+    def slow(t):                                       # B: inside chores._complete's transaction
+        in_tx.set()
+        time.sleep(0.4)
+        return orig(t)
+    D.chore_done = slow
+
+    def a():                                           # A: like sweep(): deals.lock, then a transaction
+        in_tx.wait(3)
+        with D.lock:
+            time.sleep(0.1)
+            with fq.db.tx():
+                pass
+    ta = threading.Thread(target=a, daemon=True)
+    tb = threading.Thread(target=lambda: fq.chores.decide(tid, True), daemon=True)
+    ta.start()
+    tb.start()
+    ta.join(5)
+    tb.join(5)
+    assert not ta.is_alive() and not tb.is_alive(), "deadlock: chores._complete and the deal lock"
+    assert bal(fq, mia) == 30 and D.get(mia, d["id"])["status"] == "done"
+
+
+def test_failed_deal_pending_chore_pays_the_doer(fam):
+    """A deal fails while a chore of it waits for the parents: it leaves the deal, its coins go to who did it."""
+    fq, papa, mia, leo = fam
+    D = fq.deals
+    dishes = chore(fq, "Abwaschen", leo["id"], points=10)
+    d = D.offer(mia, leo["id"], [{"t": "chore", "chore": dishes, "to": "owner"}], [{"t": "text", "text": "Shoes"}])
+    D.accept(leo, d["id"], 1)
+    tid = fq.db.val("SELECT id FROM chore_task WHERE deal_id=?", d["id"])
+    fq.chores.mark_done(mia["id"], tid)
+    D.cancel(papa, d["id"])
+    assert fq.db.val("SELECT deal_id FROM chore_task WHERE id=?", tid) is None
+    t = fq.chores._task(tid)
+    t["deal_id"] = d["id"]                              # even a stale task row: a deal that is over pays nobody else
+    assert D.reward_to(t) == mia["id"]
+    fq.chores.decide(tid, True)
+    assert bal(fq, mia) == 10 and bal(fq, leo) == 0
+
+
+def test_failed_start_holds_nothing_of_the_other_side(fam, monkeypatch):
+    """Side a's item is gone when the deal starts: the deal fails – and side b's coins are not reserved afterwards."""
+    from familyquest import deals as deals_mod
+    fq, papa, mia, leo = fam
+    D = fq.deals
+    coins(fq, leo, 50)
+    dishes = chore(fq, "Abwaschen", leo["id"])
+    fq.db.x("INSERT INTO game_pass(profile_id, game, bought) VALUES(?, 'jump', 1)", mia["id"])
+    d = D.offer(mia, leo["id"], [{"t": "chore", "chore": dishes, "times": 1}, {"t": "game", "game": "jump"}],
+                [{"t": "coins", "n": 20}])
+
+    def gone(*a, **kw):
+        raise deals_mod._Gone()
+    monkeypatch.setattr(D, "_item_move", gone)
+    D.accept(leo, d["id"], 1)
+    assert D.get(leo, d["id"])["status"] == "failed"
+    assert res(fq, leo) == 0 and avail(fq, leo) == 50
+    assert not fq.db.q("SELECT 1 FROM deal_hold WHERE deal_id=? AND active=1", d["id"])

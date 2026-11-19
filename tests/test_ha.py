@@ -12,6 +12,17 @@ from familyquest.ha.service import HAService
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def wait_for(cond, timeout: float = 5.0):
+    """Poll until cond() is true (the HA service works in its own thread) – instead of a fixed sleep."""
+    import time
+    end = time.monotonic() + timeout
+    while True:
+        got = cond()
+        if got or time.monotonic() > end:
+            return got
+        time.sleep(0.01)
+
+
 class FakeClient:
     def __init__(self):
         self.connected = asyncio.Event()
@@ -140,9 +151,7 @@ def test_approval_push_and_action(fq, kid, ha):
     fq.rewards.book(kid, "coins", 100, "test")
     ice = next(o for o in fq.shop.offers(kid) if o["name"] == "Ice cream")
     red = fq.shop.redeem(kid, ice["id"])
-    import time
-    time.sleep(0.2)
-    push = [c for c in client.calls if c[0] == "notify"]
+    push = wait_for(lambda: [c for c in client.calls if c[0] == "notify"])
     assert push and push[0][1] == "mobile_app_papa"
     actions = push[0][2]["data"]["actions"]
     assert actions[0]["action"] == f"FQ_APPROVE_{red['id']}"
@@ -192,9 +201,7 @@ def test_chore_push_and_sensor(fq, kid, ha):
     fq.chores.save({"name": "Tisch decken", "points": 5, "profiles": [kid], "confirm": True})
     tid = int(fq.chores.for_kid(kid)[0]["uid"][3:])
     fq.chores.mark_done(kid, tid)
-    import time
-    time.sleep(0.2)
-    push = [c for c in client.calls if c[0] == "notify"]
+    push = wait_for(lambda: [c for c in client.calls if c[0] == "notify"])
     assert push and push[-1][2]["data"]["actions"][1]["action"] == f"FQ_CHORE_AGAIN_{tid}"
     asyncio.run_coroutine_threadsafe(svc._on_action({"data": {"action": f"FQ_CHORE_AGAIN_{tid}"}}), svc.loop).result(5)
     assert fq.chores.for_kid(kid)[0]["redo"]
@@ -214,8 +221,7 @@ def test_push_to_every_parent(fq, kid, ha):
     assert svc._notify_services() == ["notify.mobile_app_papa", "notify.mobile_app_mama"]
     fq.chores.save({"name": "Abfall", "points": 5, "profiles": [kid]})
     fq.chores.mark_done(kid, int(fq.chores.for_kid(kid)[0]["uid"][3:]))
-    import time
-    time.sleep(0.2)
+    wait_for(lambda: len([c for c in client.calls if c[0] == "notify"]) >= 2)
     assert sorted(c[1] for c in client.calls if c[0] == "notify") == ["mobile_app_mama", "mobile_app_papa"]
 
 
@@ -224,9 +230,8 @@ def test_sad_mood_push(fq, kid, ha):
     fq.db.set_setting("notify_service", "notify.mobile_app_papa")
     prof = fq.db.q1("SELECT * FROM profile WHERE id=?", kid)
     fq.mood_changed(prof, {}, {"eyes": "sad"})
-    import time
-    time.sleep(0.2)
-    push = [c for c in client.calls if c[0] == "notify"]
+    push = wait_for(lambda: [c for c in client.calls if c[0] == "notify"])
+    wait_for(lambda: any(e[0] == "family_quest_stimmung" for e in client.events))
     assert push and "traurig" in push[0][2]["message"] and "actions" not in push[0][2]["data"]
     assert any(e[0] == "family_quest_stimmung" for e in client.events)
 
@@ -237,9 +242,7 @@ def test_mood_text_push(fq, kid, ha):
     fq.db.set_setting("notify_service", "notify.mobile_app_papa")
     prof = fq.db.q1("SELECT * FROM profile WHERE id=?", kid)
     fq.mood_changed(prof, {}, {"eyes": "happy"}, "aufgeregt wegen dem Ausflug")
-    import time
-    time.sleep(0.2)
-    push = [c for c in client.calls if c[0] == "notify"]
+    push = wait_for(lambda: [c for c in client.calls if c[0] == "notify" and "Ausflug" in c[2].get("message", "")])
     assert push and push[-1][2]["message"] == "Mia: «Heute fühle ich mich aufgeregt wegen dem Ausflug»"
 
 

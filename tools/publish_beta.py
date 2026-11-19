@@ -31,6 +31,10 @@ def main(version: str, notes: list[str]) -> None:
 def publish(slug: str, name: str, tag: str, port: int, icons: Path, version: str, notes: list[str], channel: str = "") -> None:
     """Write the app `slug` (a copy of family_quest/ with its own name, slug, port, icon and changelog) – also used by
     tools/publish_dev.py. `channel`: written to app/CHANNEL (familyquest/channel.py), e.g. «dev»."""
+    # the files are copied from the work tree: uncommitted changes would go out without being in any commit
+    if subprocess.run(["git", "status", "--porcelain", "--untracked-files=no", "--", "family_quest"], cwd=ROOT, check=True,
+                      capture_output=True, text=True).stdout.strip():
+        sys.exit("family_quest/ has uncommitted changes – commit them first")
     dst = ROOT / slug
     old_log = (dst / "CHANGELOG.md").read_text(encoding="utf-8") if (dst / "CHANGELOG.md").is_file() else ""
     if dst.exists():

@@ -290,7 +290,7 @@ network; wrong tokens are limited like wrong PINs.
 | | sensor *Open chores* | attributes `chores`, `waiting_for_approval` |
 | | sensor *Lessons today* | attribute `learning_minutes_today` |
 | | sensor *Internet minutes left* | only with internet time managed by Family Quest; ∞ = state *unknown* + `unlimited: true` |
-| | sensor *Game time left today*, *Learning time left today* (min) | ∞ = state *unknown* + `unlimited: true`; `used_today` |
+| | sensor *Game time left today*, *Learning time left today* (min) | ∞ = state *unknown* + `unlimited: true` (games: also during a party that lifts the limits, like the app); `used_today` |
 | | binary sensor *Daily goal met*, *Game time used up*, *OfflineTime* | OfflineTime: calendar OfflineTime or a block time of the internet plan |
 | | binary sensor *Internet blocked* | internet time not running (attributes `block_until`, `can_start`) |
 | | **switch** *Internet* | on = the internet time runs. Off pauses it; on starts it with the child's minutes – same rules as in the app (no minutes, block time or OfflineTime: refused) |
@@ -303,6 +303,10 @@ network; wrong tokens are limited like wrong PINs.
   `reason`: like *Book points* in the parent area (shown in the child's history).
 - `familyquest.approve_chore` – `task_id`, `approve` (`false` = «again»).
 - `familyquest.approve_reward` – `redemption_id`, `approve` (`false` = reject).
+
+They are **admin actions**: only Home Assistant administrators (and automations / scripts) may call them – a
+non-admin Home Assistant user gets «unauthorized». The *Internet* switches are normal entities: every Home Assistant
+user who sees them can switch them (always with the rules of the app) – keep them off the dashboards of other users.
 
 Nothing else can be changed from Home Assistant (no profiles, settings, PINs or deletions). The sensors above
 (`sensor.family_quest_…` without unique id) are still written as before, so existing automations keep working;
@@ -664,7 +668,10 @@ an ending (not for the own book).
 books: 🔒):
 - **🔒 Only me** – only the author can read it, parents neither. Nobody else gets its title, text or pictures from the
   app; in the parent area parents only see that a private book exists (author, page count, date) and cannot open,
-  change or remove it. Never needs approval.
+  change or remove it. Never needs approval. Limits of this privacy: the history of coins / XP keeps the title of a
+  book that once paid a reward (only books the others could read pay – made private later, the entry stays), and
+  backups of Home Assistant / the app (`/data/family_quest.db`) contain every book, private ones too – whoever has a
+  backup can read them. Deleting a profile for good removes its books too.
 - **🧒 Other children** – all children of the family (and the author). Parents see these books only in the parent area
   (moderation: read, edit, unpublish, remove).
 - **👨‍👩‍👧 Whole family** – children and parents.
@@ -697,7 +704,7 @@ read it – not for private books) and per reader who is somebody else and reach
 (default 0, once per reader). Parents edit, unpublish and remove every book that is not private; children edit their
 own.
 
-Limits: 300 books (sample books not counted), 200 pages per adventure book, 60 per picture book, 40 rooms per game (600 characters per
+Limits: 300 books (sample books not counted; 60 per person), 200 pages per adventure book, 60 per picture book, 40 rooms per game (600 characters per
 page); own drawings and SVG pictures: scenes 60 KB, things 20 KB each, 2 MB per book with everything; adventure books: 1500
 characters per page, 120 per choice, 40 per item, 80 per title; photos max. 2 MB each and 300 MB together (in
 `media/_stories`, part of the backup; pictures no book uses are removed).

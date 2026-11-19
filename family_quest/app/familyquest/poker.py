@@ -680,7 +680,7 @@ class Poker:
         players = []
         for p in st["players"]:
             pid = p["id"]
-            players.append({"id": int(pid) if pid.isdigit() else pid, "name": p["name"], "avatar": p.get("avatar"), "chips": p["chips"],
+            players.append({"id": int(pid) if pid.isdecimal() else pid, "name": p["name"], "avatar": p.get("avatar"), "chips": p["chips"],
                             "bot": bool(p.get("bot")), "emoji": p.get("emoji"), "color": p.get("color"),
                             "bet": (h.get("bets") or {}).get(pid, 0), "in_hand": pid in (h.get("order") or []),
                             "folded": pid in (h.get("folded") or []), "allin": pid in (h.get("allin") or []),
@@ -693,7 +693,7 @@ class Poker:
         return {"game": row["id"], "starter": st.get("starter"), "status": row["status"], "phase": st["phase"], "host": row["host_id"], "rules": st["rules"],
                 "paused": bool(st.get("paused")), "hand_no": h.get("no", 0), "street": h.get("street"),
                 "board": h.get("board", []), "pot": pot, "current_bet": h.get("current_bet", 0),
-                "to_act": (int(h["to_act"]) if h["to_act"].isdigit() else h["to_act"]) if h.get("to_act") else None, "solo": bool(st.get("solo")),
+                "to_act": (int(h["to_act"]) if h["to_act"].isdecimal() else h["to_act"]) if h.get("to_act") else None, "solo": bool(st.get("solo")),
                 "turn_ms": max(0, int((h["deadline"] - time.time()) * 1000)) if h.get("deadline") and not st.get("paused") else None,
                 "next_ms": max(0, int((st.get("next_at", 0) - time.time()) * 1000)) if st["phase"] == "between" else None,
                 "blinds": [sb, bb], "players": players, "joined": bool(t.seat(me)),

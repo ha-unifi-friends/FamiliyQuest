@@ -178,7 +178,7 @@ function batteryBar(compact = false) {
 function rechargeBattery() {
   const b = battery();
   if (!b) return;
-  const coins = Math.floor(((S.me && S.me.balances) || {}).coins || 0), short = b.cost > coins;
+  const me = S.me || {}, coins = Math.floor(me.coins_available ?? (me.balances || {}).coins ?? 0), short = b.cost > coins;   // without deal reservations
   const m = modal(h("div.form.center.bat-dialog", h("h2", "⚡ ", T("Recharge your game battery")), batteryIcon(b, true),
     h("p", b.cost > 0 ? I18N.tr(T("Recharge to full ({0} segments) for {1} coins?")).replace("{0}", b.cap).replace("{1}", b.cost)
       : I18N.tr(T("Recharge to full ({0} segments) – it costs nothing.")).replace("{0}", b.cap)),
@@ -189,7 +189,7 @@ function rechargeBattery() {
       try {
         const r = await api("me/battery/recharge", { method: "POST" });
         S.me.battery = r.battery;
-        if (S.me.balances) S.me.balances.coins = r.coins;
+        S.me.coins_available = r.coins;
         Sound.play("done"); toast(T("Game battery recharged"), "good");
       } catch (e) { toast(e.message, "bad"); }
       try { S.me = await api("me"); } catch {}

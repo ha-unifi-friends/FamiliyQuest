@@ -569,13 +569,7 @@ class Werwolf(CardGames):
         coins = self.coins_for(st)
         st["paid"], st["coins"] = True, coins
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st, separators=(",", ":")), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", win_reason(KIND), ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND))
         if not st.get("winner"):
             return                                   # ended by the leader: no hat, no history
         self._champion(st, list(st.get("winners") or []))

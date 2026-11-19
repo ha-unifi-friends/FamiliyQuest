@@ -569,7 +569,7 @@ def games_buy(body: GamePassIn, request: Request, prof: dict = Learner) -> dict:
     fq = app_of(request)
     if prof.get("role") != "kid":
         raise HTTPException(400, "Parents always play for free")
-    if body.game not in fq.GAMES or body.game not in fq.games_open_to(prof):
+    if body.game not in fq.GAMES or body.game not in fq.games_open_to(prof, party=False):   # a party does not last
         raise HTTPException(403, "This game is switched off for you")
     a = fq.games_access()[body.game]
     try:
