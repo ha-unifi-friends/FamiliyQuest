@@ -4,7 +4,7 @@
 const P = { info: null, meta: null, tab: "overview", profiles: [], accounts: [] };
 const app = $("#app");
 const TABS = [["overview", "📊", T("Overview")], ["calendar", "📅", T("Calendar")], ["packs", "📦", T("Learning packs")],
-  ["chores", "🧹", T("Chores")], ["community", "👨‍👩‍👧", T("Family")], ["deals", "🤝", T("Deals")], ["games", "🎲", T("Games")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["goals", "🎯", T("Goals")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
+  ["chores", "🧹", T("Chores")], ["community", "👨‍👩‍👧", T("Family")], ["deals", "🤝", T("Deals")], ["games", "🎲", T("Games")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["dashboard", "🖥️", T("Dashboard")], ["settings", "⚙️", T("Settings")]];
 const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes: T("Internet minutes"), planer_points: T("Family Planer points"),
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
@@ -31,22 +31,33 @@ async function boot() {
     if (m) api("parent/ha-panel-path", { method: "POST", body: { path: m[0] } }).catch(() => {});
   }
   setInterval(refreshToken, 10 * 60 * 1000);
-  P.tab = (location.hash.replace("#", "") || "overview");
-  if (P.tab === "weather") P.tab = "overview";
-  if (!TABS.some(t => t[0] === P.tab) && P.tab !== "import") P.tab = "overview";
+  P.tab = tabFromHash();
   render();
   // browser / Android back and forward change only the hash: show that page (open dialogs close)
   if (!P.hashWatch) {
     P.hashWatch = true;
     window.addEventListener("hashchange", () => {
       if (!Auth.parent) return;
-      let t = location.hash.replace("#", "") || "overview";
-      if (t === "weather" || (!TABS.some(x => x[0] === t) && t !== "import")) t = "overview";
-      if (t === P.tab) return;
+      const t = tabFromHash();
+      if (t === P.tab && !P.foldTo) return;
       document.querySelectorAll(".modal-back").forEach(b => b.dispatchEvent(new Event("cancel")));
       P.tab = t; render(); scrollTo(0, 0);
     });
   }
+}
+
+// old addresses: #goals is a part of «Family» now (its fold opens), #weather the overview (the weather of each child)
+const TAB_ALIAS = { goals: ["community", "fam.goals"], weather: ["overview"] };
+function tabFromHash() {
+  let t = location.hash.replace("#", "") || "overview";
+  const a = TAB_ALIAS[t];
+  if (a) {
+    if (a[1]) { SET_OPEN.add(a[1]); P.foldTo = a[1]; }
+    t = a[0];
+    try { history.replaceState(null, "", "#" + t); } catch {}
+  }
+  if (!TABS.some(x => x[0] === t) && t !== "import") t = "overview";
+  return t;
 }
 
 async function refreshToken() {
@@ -273,7 +284,7 @@ function render() {
   setInert();
   const titled = () => { const t = main.querySelector("h1"); mob.classList.toggle("titled", !t || t.getBoundingClientRect().bottom < mob.getBoundingClientRect().bottom); };
   window.onscroll = titled; setTimeout(titled, 600);
-  const views = { deals: dealsParentView, dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, goals: goalsView, settings: settingsView };
+  const views = { deals: dealsParentView, dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, settings: settingsView };
   // a page that cannot load shows why and offers to try again – instead of an empty or broken page
   views[P.tab](main).catch(e => {
     if (!main.isConnected) return;                 // another page was opened meanwhile
@@ -303,19 +314,31 @@ async function overviewView(main) {
     h("button.btn.small.bad", { onclick: () => decide(r.id, false) }, "✗ ", T("Decline")))))) : null;
   async function decide(id, approve) { await call(`parent/redemptions/${id}`, { method: "POST", body: { approve } }); toast(approve ? T("Approved") : T("Declined"), "good"); render(); }
   const chorePend = d.chores_pending.length ? section("🧹 " + I18N.tr(T("Chores to confirm")), choreConfirmList(d.chores_pending, render)) : null;
-  const kids = d.kids.map(k => h("section.card.kid",
-    h("div.row", avatarSvg(k.profile.avatar, 56), h("div.grow", C(k.profile.name, "h2"), h("span.muted", I18N.tr(T("Level {0}")).replace("{0}", k.level.level) + " · 🔥 " + k.streak), " ", loginChip(k.profile),
+  // every child a folded row: folded it shows the weather of the day to pick and «Edit profile»; open: everything else
+  const wd = await call("parent/weather").catch(() => null);
+  const kids = d.kids.map(k => {
+    const wk = wd && wd.config.enabled ? wd.kids.find(x => x.profile.id === k.profile.id) : null;
+    const w = wk ? kidWeather(wk, wd.config) : null;
+    const id = k.profile.id;
+    return h("details.card.sec.kid.kid-fold", { "data-kid": id, open: KID_OPEN.has(id), ontoggle: e => e.currentTarget.open ? KID_OPEN.add(id) : KID_OPEN.delete(id) },
+      h("summary",
+        h("div.row.kid-head", avatarSvg(k.profile.avatar, 48), h("div.grow", C(k.profile.name, "h2"),
+          h("span.muted", I18N.tr(T("Level {0}")).replace("{0}", k.level.level) + " · 🔥 " + k.streak), " ", loginChip(k.profile),
+          k.sad_since ? h("span.mood-flag", { title: I18N.tr(T("feels sad")) }, " 😢") : null), w ? w.now : null),
+        // a tap on these buttons does not open the row
+        h("div.row.wrap.kid-quick", { onclick: e => { if (e.target.closest("button")) e.preventDefault(); } },
+          h("button.btn.small.ghost", { onclick: () => profileDialog(full(id) || k.profile, persons) }, "✏️ ", T("Edit profile")),
+          w ? w.pick : null)),
       k.sad_since ? h("div.mood-note", "😢 ", T("feels sad"), " (", T("since"), " ",
         new Date(k.sad_since).toLocaleString(I18N.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }), ")") : null,
       k.mood_text || k.mood ? h("div.mood-text", h("span.mood-emoji", k.mood || "💬"), " ", T("Today I feel …"), " ", k.mood_text ? C("«" + k.mood_text + "»", "strong") : null,
-        k.mood_text_at ? h("span.small.muted", " · " + new Date(k.mood_text_at).toLocaleString(I18N.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" })) : null) : null),
-      h("div.kid-actions", h("div.row",
+        k.mood_text_at ? h("span.small.muted", " · " + new Date(k.mood_text_at).toLocaleString(I18N.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" })) : null) : null,
+      h("div.row.kid-actions",
         h("button.btn.small" + (k.profile.crown ? "" : ".ghost"), { title: T("Crown for today"), onclick: async () => {
-          await call(`parent/profiles/${k.profile.id}/crown`, { method: "POST", body: { on: !k.profile.crown } });
+          await call(`parent/profiles/${id}/crown`, { method: "POST", body: { on: !k.profile.crown } });
           toast(k.profile.crown ? T("Crown taken off") : T("👑 Crown for today!"), "good"); render();
         } }, "👑"),
         h("button.btn.small.ghost", { onclick: () => bookDialog(k.profile) }, "± ", T("Book points"))),
-        h("button.btn.small.ghost", { onclick: () => profileDialog(full(k.profile.id) || k.profile, persons) }, "✏️ ", T("Edit profile")))),
     h("div.kpis",
       kpi(T("XP this week"), fmt(k.week.xp)), kpi(T("Daily goal this week"), k.week.goal_percent + " %"),
       kpi(T("Days with goal"), String(k.week.days_met)), kpi(T("Minutes this week"), fmt(k.week.minutes)),
@@ -332,7 +355,9 @@ async function overviewView(main) {
         h("tr", h("td", subjectName(s.subject)), h("td.num", s.answers + " " + I18N.tr(T("answers"))), h("td.num", Math.round(100 * s.right / Math.max(1, s.answers)) + " %"),
           h("td.num", fmt(s.minutes, 1) + " min"))))) : h("p.muted", T("Nothing learnt yet this week."))),
       h("div", h("h3", T("Weak spots")), k.weak.length ? h("ul.list.weak", ...k.weak.map(w => h("li", C(w.label, "strong"),
-        h("div.small.muted", C(w.unit), " · ", w.wrong + " / " + w.tries + " " + I18N.tr(T("wrong")))))) : h("p.muted", T("No weak spots yet – great!"))))));
+        h("div.small.muted", C(w.unit), " · ", w.wrong + " / " + w.tries + " " + I18N.tr(T("wrong")))))) : h("p.muted", T("No weak spots yet – great!")))),
+    w ? h("div.kid-weather", h("h3", "⛅ ", T("Weather of the day")), w.hist) : null);
+  });
   const failed = await call("parent/logins/failed?days=30").catch(() => []);
   // folded, the number in the title – details only when wanted
   const failBox = failed.length ? h("details.card.sec.fold", h("summary", h("h2", "🔐 " + I18N.tr(T("Failed logins (30 days)")) + " ", chip(String(failed.length), "warn"))),
@@ -347,13 +372,14 @@ async function overviewView(main) {
   main.append(pageHead(T("Overview"),
       P.meta.planer ? h("button.btn.ghost", { onclick: importPersons }, "📅 ", T("Take over from Family Planer")) : null,
       h("button.btn.ghost", { onclick: () => profileDialog(null, persons, "parent") }, "+ ", T("Add parent")),
-      h("button.btn", { onclick: () => profileDialog(null, persons, "kid") }, "+ ", T("Add child"))), d.kids.length ? partyCard() : null, pend || (chorePend ? null : h("p.muted", "✓ ", T("No open approvals."))), chorePend, failBox, weatherBox("set"),
+      h("button.btn", { onclick: () => profileDialog(null, persons, "kid") }, "+ ", T("Add child"))), d.kids.length ? partyCard() : null, pend || (chorePend ? null : h("p.muted", "✓ ", T("No open approvals."))), chorePend,
     d.family_goal ? section("🤝 " + I18N.tr(T("Family goal")), h("div.row", C(d.family_goal.title, "strong.grow"), h("b", fmt(d.family_goal.value) + " / " + fmt(d.family_goal.target))),
       bar(d.family_goal.value, d.family_goal.target, "var(--good)")) : null,
     ...(kids.length ? kids : [h("div.card", h("p", T("No child profile yet.")))]),
     section("👪 " + I18N.tr(T("Parents")),
       profileCards(profiles.filter(p => p.role === "parent"), persons)),
-    await archivedSection());
+    await archivedSection(),
+    failBox);                                    // the failed logins: at the very bottom
   async function importPersons() {
     const r = await call("parent/ha/import_persons", { method: "POST" });
     toast(r.created.length ? I18N.tr(T("Created: {0}")).replace("{0}", r.created.join(", ")) : T("All persons are already linked"), "good");
@@ -771,6 +797,7 @@ async function profileDialog(p, persons, role = "kid") {
       persons.length ? h("label.field", h("span", T("Person in the Family Planer"), fieldInfo(T("Shows the chores of this person and counts them."))), f.planer) : null,
       parentPart, danger] },
     { key: "learn", label: "📚 " + I18N.tr(T("Learning")), content: [
+      h("h3", { "data-ik": "prof.learn" }, "📚 ", T("Learning")),
       h("div.field-row", h("label.field", T("Daily goal (XP)"), f.daily_goal), h("label.field", T("Exercises per lesson"), f.lesson_length),
         h("label.field", T("New cards per lesson"), f.new_per_lesson),
         h("label.field", h("span", T("Learning hours"), fieldInfo(T("Empty = always. Example: 07:00-20:00"))), f.learning_hours),
@@ -1412,6 +1439,33 @@ function themesSection() {
   return sec;
 }
 
+const KID_OPEN = new Set();               // overview: the children's rows that are open (while the page lives)
+
+/** The weather of the day of one child (overview row): the symbol now, the buttons to pick it, the last 30 days. */
+function kidWeather(k, cfg) {
+  const now = h("span.weather-now"), pick = h("div.weather-btns"), hist = h("div.weather-hist");
+  const back = cfg.levels.find(l => l.key === cfg.default);
+  const info = fieldInfo(() => [T("Give each child its weather – the bonus or malus is booked right away. Only the child sees its own weather."),
+    I18N.tr(T("Everybody is back at {0} at {1}.")).replace("{0}", back ? back.icon : "").replace("{1}", cfg.reset)], { title: T("Weather of the day") });
+  const draw = (cur, days) => {
+    now.textContent = cur ? cur.icon : ""; now.title = cur ? wName(cur.name) : "";
+    const counts = {};
+    days.forEach(x => { if (x.icon) counts[x.icon] = (counts[x.icon] || 0) + 1; });
+    pick.replaceChildren(...cfg.levels.map(l => h("button.btn.small" + (cur && cur.key === l.key ? ".on" : ".ghost"), { type: "button", title: wName(l.name),
+      onclick: async () => {
+        try {
+          const r = await call(`parent/weather/${k.profile.id}`, { method: "POST", body: { level: l.key } });
+          toast(l.icon + " " + k.profile.name + (l.points ? " · " + (l.points > 0 ? "+" : "") + fmt(l.points) : ""), l.points < 0 ? "" : "good");
+          draw(r.current, r.days);
+        } catch (e) { toast(e.message, "bad"); }
+      } }, h("span.big-ic", l.icon), l.points ? h("span.small", (l.points > 0 ? " +" : " ") + fmt(l.points)) : null)), info);
+    hist.replaceChildren(weatherGraph(days, cfg.levels.length), h("div.small.muted.row", h("span.grow", T("Last 30 days")),
+      ...cfg.levels.filter(l => counts[l.icon]).map(l => h("span", l.icon + " " + counts[l.icon]))));
+  };
+  draw(k.current, k.days);
+  return { now, pick, hist };
+}
+
 function weatherBox(part) {
   const box = h("div");
   weatherView(box, part).catch(e => box.append(h("p.bad", e.message)));
@@ -1692,7 +1746,8 @@ async function shopSettingsView(main) {
 }
 
 // ---------------------------------------------------------------- goals
-async function goalsView(main) {
+/** Family › 🎯 Goals: the running goals, «+ Add goal» / «+ Start family goal» (was its own page «Goals»). */
+async function goalsSection() {
   const [goals, profiles, packs] = await Promise.all([call("parent/goals"), call("parent/profiles"), call("parent/packs")]);
   P.accounts = await call("parent/accounts");
   const kids = profiles.filter(p => p.role === "kid");
@@ -1713,9 +1768,6 @@ async function goalsView(main) {
   const fg = { title: h("input", { type: "text", placeholder: T("e.g. pizza evening") }), account: h("select", ...P.accounts.filter(a => a.active).map(a => h("option", { value: a.key }, a.icon + " " + I18N.tr(a.name)))),
     target: h("input", { type: "number", min: 1, value: 2000 }) };
   const goalDialog = family => { const m = modal(h("div.form", family ? formFamily : formKid, h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))); };
-  main.append(pageHead(T("Goals"), h("button.btn.ghost", { onclick: () => goalDialog(true) }, "+ ", T("Start family goal")),
-      h("button.btn", { onclick: () => goalDialog(false) }, "+ ", T("Add goal"))),
-    section(T("Current goals"), goals.length ? h("ul.list", ...list) : h("p.muted", T("No goals yet."))));
   const formKid = h("div.form", h("h2", T("Weekly goal for a child")),
       h("div.grid3", h("label.field", T("Child"), f.kid), h("label.field", T("Pack"), f.pack), h("label.field", T("Unit"), f.unit),
         h("label.field", T("Target (stars or %)"), f.target), h("label.field", T("Title (optional)"), f.title)),
@@ -1725,6 +1777,12 @@ async function goalsView(main) {
       h("div.grid3", h("label.field", T("What for?"), fg.title), h("label.field", T("Account"), fg.account), h("label.field", T("Target"), fg.target)),
       h("button.btn", { onclick: async () => { if (!fg.title.value) return fg.title.focus(); await call("parent/goals", { method: "POST", body: { kind: "family", title: fg.title.value,
         account: fg.account.value, target: +fg.target.value } }); document.querySelector(".modal-back")?.remove(); render(); } }, "💾 ", T("Start family goal")));
+  const sec = sectionAdd("🎯 " + I18N.tr(T("Current goals")), [h("button.btn.small.ghost", { onclick: () => goalDialog(true) }, "+ ", T("Start family goal")),
+      h("button.btn.small", { onclick: () => goalDialog(false) }, "+ ", T("Add goal"))],
+    goals.length ? h("ul.list", ...list) : h("p.muted", T("No goals yet.")));
+  sec.dataset.fold = "goals";
+  sec.dataset.status = goals.length ? I18N.tr(T("Current goals")) + ": " + goals.length : I18N.tr(T("No goals yet."));
+  return sec;
 }
 
 // ---------------------------------------------------------------- link + QR code for tablets and phones
@@ -2447,19 +2505,77 @@ function runningGamesBox() {
 // ---------------------------------------------------------------- community: family council, polls, Wichteln, history (the games: gamesView)
 async function communityView(main) {
   const me = P.meta.me;
-  const profiles = await call("parent/profiles");
+  const [profiles, s, mem] = await Promise.all([call("parent/profiles"), call("parent/settings"), call("parent/memory").catch(() => null)]);
   const who = h("select", ...profiles.map(p => h("option", { value: p.id }, p.name)));
   const hist = h("div");
   const drawHist = async () => hist.replaceChildren(await historySection(+who.value, null));   // the list only – the section has the heading
   who.onchange = drawHist;
+  const t = k => I18N.tr(k), f = (k, ...v) => v.reduce((a, x, i) => a.split("{" + i + "}").join(String(x)), I18N.tr(k));
+  const mark = (sec, id, status) => { if (sec) { sec.dataset.fold = id; if (status != null) sec.dataset.status = status; } return sec; };
+  // the same folds as the settings: groups with their ⓘ, every box folded with a short status in its row
+  const group = (ik, icon, title) => h("h2.set-group", { "data-ik": ik }, icon + " ", title);
+  const price = s.familytime_game_price ?? 150, c = mem && mem.crest;
+  const vis = { percent: T("Only percentages"), goal: T("Only the family goal") }[s.family_visibility] || T("Everything");
   main.append(h("h1", T("Family")),
-    await familyTimeSection(me, { settings: redraw => familyTimeSettings(redraw, true) }),
-    await councilSection(me), await pollsSection(me),
-    await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }),
-    await storiesSection(),
-    await wichtelnSection(me),
-    section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist));
+    group("Goals", "🎯", T("Goals")), mark(await goalsSection(), "goals"),
+    group("fam.together", "🤝", T("Together")),
+    mark(await familyTimeSection(me, { settings: redraw => familyTimeSettings(redraw, true) }), "familytime",
+      s.familytime_wishes === false ? t(T("Game wishes off")) : price > 0 ? f(T("Game wishes on · fix a game: {0} coins"), price) : t(T("Game wishes on"))),
+    mark(await councilSection(me), "council"), mark(await pollsSection(me), "polls"),
+    mark(await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }), "boards"),
+    mark(await wichtelnSection(me), "wichteln"),
+    group("fam.ours", "🏡", T("Our family")),
+    mark(await storiesSection(), "library"),
+    mark(await crestSection(), "crest", !c ? t(T("No family crest")) : [t(c.image ? T("Own picture") : T("Drawn crest")), c.name || null].filter(Boolean).join(" · ")),
+    mark(familyViewSection(s), "view", f(T("Comparison: {0}"), t(vis)) + " · " + t(s.sound !== false ? T("Sound on") : T("Sound off"))),
+    mark(section("📜 " + I18N.tr(T("History")), h("label.field", T("Profile"), who), hist), "history", ""));
   drawHist();
+  foldBoxes(main, "fam", sec => {
+    // lists with «Active / Closed»: how many of each; the bookshelf: how many books are on it
+    const seg = sec.querySelectorAll(".inst-filter .inst-n");
+    if (seg.length === 2) return t(T("Active")) + " " + seg[0].textContent + " · " + t(T("Closed")) + " " + seg[1].textContent;
+    if (sec.dataset.fold === "library") return t(T("On the shelf")) + ": " + sec.querySelectorAll(".sb-shelf > *").length;
+    return "";
+  });
+}
+
+/** Family › Family view: what children see in the comparison, the sound (was a part of the settings). */
+function familyViewSection(s) {
+  const vis = h("select", ...[["all", T("Everything")], ["percent", T("Only percentages")], ["goal", T("Only the family goal")]].map(([k, n]) => h("option", { value: k, selected: s.family_visibility === k }, n)));
+  const sound = h("input", { type: "checkbox", checked: s.sound !== false });
+  return section(T("Family view"), h("label.field", T("What children see in the comparison"), vis), h("label.check", sound, T("Sound on by default")),
+    h("div.row", h("button.btn", { onclick: async () => {
+      try { await call("parent/settings", { method: "PUT", body: { family_visibility: vis.value, sound: sound.checked } }); toast(T("Saved"), "good"); } catch {}
+    } }, "💾 ", T("Save"))));
+}
+
+/** A page of folds like the settings (setFold): every box of `root` folded, its title in the row and a short status below it –
+ *  `sec.dataset.status`, else `statusOf(sec)`. The fold id is `prefix.` + `sec.dataset.fold` (or the title); open ones stay open
+ *  while the page is drawn again. `P.foldTo` (an old address, e.g. #goals) opens and shows one fold. */
+function foldBoxes(root, prefix, statusOf = () => "") {
+  for (const sec of [...root.querySelectorAll(":scope > section.card")]) {
+    const head = sec.querySelector(":scope > h2, :scope > .sec-head > h2, :scope > .row > h2, :scope > div > .sec-head > h2");
+    if (!head) continue;
+    const row = head.parentElement.classList.contains("row") ? head.parentElement : null;     // avatar · name · count (packs by child)
+    const title = [row && row.querySelector("svg") ? row.querySelector("svg").cloneNode(true) : null, ...[...head.childNodes].map(n => n.cloneNode(true))].filter(Boolean);
+    title.forEach(n => n.querySelectorAll && n.querySelectorAll(".info-btn").forEach(x => x.remove()));
+    const id = prefix + "." + (sec.dataset.fold || _infoNorm(head.textContent));
+    const spot = document.createComment("");
+    sec.replaceWith(spot);
+    const d = setFold(id, title, sec);
+    if (head.dataset.ik) d.querySelector(".set-head > h2").dataset.ik = head.dataset.ik;
+    if (row) row.hidden = true;
+    else head.classList.add("fold-title");                   // shown in the row of the fold – hidden in the box
+    spot.replaceWith(d);
+    const st = d.querySelector(".set-status");
+    st.textContent = sec.dataset.status != null ? sec.dataset.status : statusOf(sec) || "";
+    if (sec.hidden) d.hidden = true;
+  }
+  if (P.foldTo && P.foldTo.startsWith(prefix + ".")) {
+    const d = root.querySelector(`details.set-fold[data-set="${P.foldTo}"]`);
+    P.foldTo = null;
+    if (d) { d.open = true; setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
+  }
 }
 
 // FamilyTime games (community.js familyTimeSection): on/off, the coin price of «fix a game», when the wishes close –
@@ -3473,8 +3589,6 @@ async function settingsView(main) {
   let notifyOpts = [];
   if (P.meta.ha) { try { notifyOpts = await call("parent/ha/entities?domain=notify"); } catch {} }
   const f = {
-    family_visibility: h("select", ...[["all", T("Everything")], ["percent", T("Only percentages")], ["goal", T("Only the family goal")]].map(([k, n]) => h("option", { value: k, selected: s.family_visibility === k }, n))),
-    sound: h("input", { type: "checkbox", checked: s.sound !== false }),
     reminder_time: h("input", { type: "text", placeholder: "17:30", value: s.reminder_time || "" }),
     chore_reminder_time: h("input", { type: "text", placeholder: "18:00", value: s.chore_reminder_time || "" }),
     notify_service: h("input", { type: "text", placeholder: "notify.mobile_app_phone", value: s.notify_service || "", list: "notify-list" }),
@@ -3496,7 +3610,6 @@ async function settingsView(main) {
   main.append(h("h1", T("Settings")),
     group("set.app", "📱", T("App")),
     fold("link", "📱 " + I18N.tr(T("Link for tablets and phones")), linkSection()),
-    fold("family", T("Family view"), section(T("Family view"), h("label.field", T("What children see in the comparison"), f.family_visibility), h("label.check", f.sound, T("Sound on by default")), saveBtn())),
     fold("themes", "🎨 " + I18N.tr(T("Season, time of day & weather designs")), themesSection()),
     fold("levels", T("Levels"), section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels), saveBtn())),
     fold("learning", "📚 " + I18N.tr(T("Learning")), section("📚 " + I18N.tr(T("Learning")), h("div.field-row",
@@ -3505,11 +3618,8 @@ async function settingsView(main) {
       h("label.field", h("span", "🏨 ", T("Pet hotel: coins per day"), fieldInfo(T("The Family Quest pet hotel looks after a pet while the child is away (e.g. at a camp) – paid per day in advance; the pet comes back fed, happy and clean. 0 = free."))), f.pet_hotel_cost),
       h("label.field", h("span", "🐹 ", T("Hamster: coins per day"), fieldInfo(T("While the hamster is healthy (every bar at least 50) it runs in its wheel and mines this many coins per day for its owner."))), f.hamster_coins_per_day),
       h("label.field", h("span", "🐾 ", T("Pet shop: pay with"), fieldInfo(T("Outfits, houses and furniture for the pets. XP spent there do not lower the level."))), f.pet_shop_currency)), saveBtn())),
-    fold("familytime", "👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), section("👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), familyTimeSettings(),
-      h("button.link.small", { onclick: () => { P.tab = "community"; location.hash = "community"; render(); } }, T("Wishes and votes: tab «Family» ›")))),
     group("set.personal", "🎨", T("Personalisation")),
     fold("texts", "🌐 " + I18N.tr(T("Own texts and languages")), await translationsSection()),
-    fold("crest", "🛡️ " + I18N.tr(T("Family crest")), await crestSection()),
     fold("weather", "☀️ " + I18N.tr(T("Bonus/malus points")), weatherBox("config")),
     group("set.ha", "🏠", T("Home Assistant")),
     fold("halogin", "🏠 " + I18N.tr(T("Log in with Home Assistant")), haLoginSection(s)),
@@ -3536,7 +3646,7 @@ async function settingsView(main) {
   P.onChange = () => { clearTimeout(timer); timer = setTimeout(() => { if (main.isConnected) refresh(); }, 350); };
   refresh();
   async function save() {
-    const body = { family_visibility: f.family_visibility.value, sound: f.sound.checked, reminder_time: f.reminder_time.value.trim(),
+    const body = { reminder_time: f.reminder_time.value.trim(),
       chore_reminder_time: f.chore_reminder_time.value.trim(),
       notify_service: f.notify_service.value.trim(), planer_points: f.planer_points.checked, planer_points_factor: +f.planer_points_factor.value,
       levels: f.levels.value.split(/[,; ]+/).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b),

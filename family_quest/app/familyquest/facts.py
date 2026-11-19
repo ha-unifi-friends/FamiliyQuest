@@ -564,7 +564,7 @@ class Facts:
             out += self.number("quizzes", "all", (_t("How many family quizzes do we have?"),), quizzes)
         wichtel = int(self.db.val("SELECT COUNT(*) FROM wichtel", default=0) or 0)
         if wichtel:
-            out += self.number("wichteln", "all", (_t("How many times has the family drawn lots for Wichteln?"),), wichtel)
+            out += self.number("wichteln", "all", (_t("How many times has the family drawn lots for secret gift giving?"),), wichtel)
         ft = int(self.db.val("SELECT COUNT(*) FROM family_event WHERE kind='familytime'", default=0) or 0)
         if ft:
             out += self.number("familytime", "all", (_t("How many FamilyTimes are in the family calendar?"),), ft)

@@ -645,7 +645,7 @@ async function wichtelnSection(me = S.profile) {
   const draw = async () => {
     let d = { items: [], members: [] };
     try { d = await api("community/wichteln"); } catch (e) { return sec.replaceChildren(h("p.bad", e.message)); }
-    sec.replaceChildren(h("div.sec-head", h("h2", "🎁 ", T("Wichteln")), h("div.head-actions", h("button.btn", { onclick: () => wichtelDialog(d.members, draw) }, "+ ", T("New Wichteln")))),
+    sec.replaceChildren(h("div.sec-head", h("h2", "🎁 ", T("Secret gift giving")), h("div.head-actions", h("button.btn", { onclick: () => wichtelDialog(d.members, draw) }, "+ ", T("New secret gift giving")))),
       comIntro(T("Who gives a present to whom is drawn at random – everybody sees only their own.")),
       instList("wichteln", d.items, { closed: w => !!w.due && w.due < new Date().toISOString().slice(0, 10),
         summary: w => [C(w.title, "strong.grow"), w.due ? h("span.small.muted", "📅 " + fmtDate(w.due)) : null, w.done ? h("span.chip.closed", "✓") : null],
@@ -681,7 +681,7 @@ function wichtelDialog(members, done) {
     onchange: e => { e.target.checked ? chosen.add(m.id) : chosen.delete(m.id); } }), C(m.name), m.role === "parent" ? h("span.small.muted", " 👪") : null)));
   drawPeople();
   const noParents = h("input", { type: "checkbox" }), noKids = h("input", { type: "checkbox" });
-  const m = modal(h("div.form", h("h2", "🎁 ", T("New Wichteln")),
+  const m = modal(h("div.form", h("h2", "🎁 ", T("New secret gift giving")),
     h("label.field", T("Occasion"), title),
     h("label.field", T("Date (optional)"), due, h("span.hint", T("Everybody gets a to-do in the planner – without the name of whom they give to."))),
     h("div.wichtel-field", h("div.row", h("b.grow", T("Who takes part?")),

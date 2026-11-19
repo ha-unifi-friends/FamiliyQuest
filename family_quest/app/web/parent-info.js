@@ -11,8 +11,8 @@ const PARENT_INFO = {
   [T("Packs")]: T("Learning packs: switch them on per child, edit them, export them or check drafts. «Import» adds new packs from a file, a link or a photo."),
   [T("Chores")]: T("The chore plan: chores with points, how often they come and who does them (fixed or rotating). Duties are expected, bonus chores bring extra points. Children tick them off, you confirm."),
   [T("Family")]: [
-    T("What the family decides and does together: family council, polls, bulletin boards, Wichteln and the history. Children can take part and open topics too."),
-    T("Family council, polls and Wichteln – children can open topics and vote too. The games are on their own page «Games».")],
+    T("What the family decides and does together: family council, polls, bulletin boards, secret gift giving and the history. Children can take part and open topics too."),
+    T("Family council, polls and secret gift giving – children can open topics and vote too. The games are on their own page «Games».")],
   [T("Games")]: T("Every game of the app: switch each one to active, active without bots (no «alone against bots», no bots at the table, no games against the app) or inactive – for everybody or only for chosen children; parents can always play. Start games here, set the coins and end running tables. The search finds a game by its name."),
   [T("Rewards")]: T("Accounts and the shop: what children can buy with their points (vouchers, internet minutes, avatar items, Home Assistant scripts) and the rules how many points an activity gives."),
   [T("Goals")]: T("Weekly goals for a child (e.g. 3 learning days) and the family goal everybody works on together. Reached goals give a bonus."),
@@ -56,7 +56,7 @@ const PARENT_INFO = {
   [T("Custom games")]: [
     T("The games with your own content – each the same: 📥 Import (a file, e.g. an export or the answer of an AI), + New (starts with the templates), the list of what you have, then the settings. 🎯 Family quiz: your quizzes. 🧠 Pair Hunt: the photo sets (also for the pairs game of the game corner), import photos or a ZIP file, ⬇️ exports a set. 🗝️ Adventure games: point & click games of the family – approve, edit, play; switched off, the children can neither play nor make them."),
     T("Games with your own content: quizzes, photo sets and adventure games – import them or make new ones from a template.")],
-  [T("Wichteln")]: [
+  [T("Secret gift giving")]: [
     T("Secret gift giving: enter the occasion and an optional date, choose who takes part and the rules. The app draws at random who gives to whom; everybody only sees their own. With a date everybody gets a to-do in the planner."),
     T("Who gives a present to whom is drawn at random – everybody sees only their own.")],
   [T("Family quiz")]: T("Your own quizzes and the templates: start a quiz, everybody plays on their own device, you show the next question. Filter by not played yet / played; «New quiz» makes one or takes a template."),
@@ -141,7 +141,7 @@ const PARENT_INFO = {
   [T("New topic")]: T("Bring up a question for the family council. Everybody can add ideas; then you start the vote."),
   [T("New board")]: T("A title and an emoji – then everybody of the family can pin sticky notes, write and draw on it."),
   [T("Edit board")]: T("Change the title and the emoji, archive the board (it can still be looked at, but not changed) or remove it with everything on it."),
-  [T("New Wichteln")]: T("Enter the occasion and an optional date, choose who takes part and the rules (parents not among each other, children not among each other). On «Draw» the pairs are drawn at random."),
+  [T("New secret gift giving")]: T("Enter the occasion and an optional date, choose who takes part and the rules (parents not among each other, children not among each other). On «Draw» the pairs are drawn at random."),
   [T("New quiz")]: T("Make your own quiz or take one of the templates (filter by region). The quiz is then in the list and can be played."),
   [T("Edit quiz")]: T("Questions with 2 to 4 answers (the right one marked), estimation questions with a number, map questions or picture questions, and the time per question."),
   [T("Start bingo")]: T("The rules of the bingo: card size, how fast the balls come and what counts as bingo."),
