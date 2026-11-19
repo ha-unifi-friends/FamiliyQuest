@@ -285,6 +285,7 @@ function render() {
   const titled = () => { const t = main.querySelector("h1"); mob.classList.toggle("titled", !t || t.getBoundingClientRect().bottom < mob.getBoundingClientRect().bottom); };
   window.onscroll = titled; setTimeout(titled, 600);
   const views = { deals: dealsParentView, dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, settings: settingsView };
+  views.analytics = m => analyticsView(m);          // 📈 Analytics (parent-analytics.js)
   // a page that cannot load shows why and offers to try again – instead of an empty or broken page
   views[P.tab](main).catch(e => {
     if (!main.isConnected) return;                 // another page was opened meanwhile
