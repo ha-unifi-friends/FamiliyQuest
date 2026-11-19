@@ -457,7 +457,7 @@ async function profilesView() {
   try { profiles = await api("profiles"); } catch (e) { return fatal(e); }
   const kids = profiles.filter(p => p.role === "kid"), parents = profiles.filter(p => p.role === "parent");
   const tile = p => h("button.profile-tile", { onclick: () => login(p) }, avatarSvg(p.avatar, 120),
-    C(p.name, "strong"), p.has_pin ? h("span.lock", { title: T("With PIN") }, "🔒") : null);
+    C(p.name, "strong"), loginIcon(p));
   const parentBtn = h("a.btn.ghost.parent-link", { href: "eltern" }, "🔐 ", T("Parent area"));
   const hk = S.info.ha_kid;
   const body = h("div.profiles-screen",
@@ -473,11 +473,20 @@ async function profilesView() {
       : null,
     kids.length ? h("div.profile-grid", ...kids.map(tile)) : (!S.info.setup_needed ? h("p.muted.center", T("No child profile yet – add one in the parent area.")) : null),
     parents.length ? h("div.parents-row", h("span.muted", T("Learn along:")), ...parents.map(p =>
-      h("button.parent-chip", { onclick: () => login(p) }, avatarSvg(p.avatar, 36), C(p.name)))) : null,
+      h("button.parent-chip", { onclick: () => login(p) }, avatarSvg(p.avatar, 36), C(p.name), loginIcon(p)))) : null,
     parentBtn);
   app.replaceChildren(body);
   S.haError = "";
   parentBtn.href = await parentAreaHref();
+}
+
+// how a profile signs in (chosen by the parents, enforced by the server): 🔢 PIN · 🏠 Home Assistant only ·
+// 🔢🏠 PIN or Home Assistant · nothing = tap and in
+const loginOf = p => p.login || (p.has_pin ? "pin" : "none");
+const LOGIN_ICON = { pin: ["🔢", T("Sign in with PIN")], ha: ["🏠", T("Sign in with Home Assistant")], pin_ha: ["🔢🏠", T("PIN or Home Assistant")] };
+function loginIcon(p) {
+  const c = LOGIN_ICON[loginOf(p)];
+  return c ? h("span.lock.login-ic", { title: I18N.tr(c[1]), "aria-label": I18N.tr(c[1]) }, c[0]) : null;
 }
 
 function login(p) {
@@ -488,10 +497,18 @@ function login(p) {
     location.hash = "#/";
     route();
   };
-  // linked with a Home Assistant user and no PIN (e.g. a parent who only uses Home Assistant): straight to its login
-  if (!p.has_pin && p.ha_login) return haAppLogin();
-  const haBtn = () => p.ha_login ? h("div.center.ha-pin-alt", h("button.btn.ghost.small", { onclick: haAppLogin }, "🏠 ", T("Sign in with Home Assistant"))) : null;
-  if (!p.has_pin) return api("login", { method: "POST", body: { profile_id: p.id } }).then(done).catch(e => toast(e.message, "bad"));
+  const mode = loginOf(p);
+  // «Home Assistant only»: in Home Assistant the own user logs in, on tablets straight to «Sign in with Home Assistant»
+  if (mode === "ha") {
+    if (S.info.ha_kid && S.info.ha_kid.id === p.id) {
+      return haKidLogin().then(ok => { if (ok) { Sound.play("tap"); location.hash = "#/"; route(); } }).catch(e => toast(e.message, "bad"));
+    }
+    if (p.ha_login) return haAppLogin();
+    return toast(S.info.via_ha ? T("Sign in with your own Home Assistant user") : T("Sign-in with Home Assistant is switched off – ask your parents"), "bad");
+  }
+  if (mode === "none") return api("login", { method: "POST", body: { profile_id: p.id } }).then(done).catch(e => toast(e.message, "bad"));
+  // PIN (and «PIN or Home Assistant»: the PIN pad with the Home Assistant button)
+  const haBtn = () => mode === "pin_ha" && p.ha_login ? h("div.center.ha-pin-alt", h("button.btn.ghost.small", { onclick: haAppLogin }, "🏠 ", T("Sign in with Home Assistant"))) : null;
   if (p.pin_kind === "symbols" && p.symbol_set) {
     // picture PIN: the 24 symbols come in a new order every time, so a watched pattern does not help
     const m = modal(h("div", h("div.center", avatarSvg(p.avatar, 80)),
@@ -1456,7 +1473,7 @@ async function avatarView() {
   draw(); drawTabs(); drawPanel();
   screen("avatar", h("h1", "🧑‍🎨 ", T("Me")), ...meSummary(), moods, petsSection(), h("div.av-editor", preview, h("div.av-side", tabs, panel)),
     h("div.row.center", h("button.btn.big", { onclick: save }, "💾 ", T("Save"))),
-    h("div.row.center", h("button.btn.ghost", { onclick: changePin }, "🔑 ", T("Change my PIN"))),
+    S.me.profile.login !== "ha" ? h("div.row.center", h("button.btn.ghost", { onclick: changePin }, "🔑 ", T("Change my PIN"))) : null,
     S.me.games ? botsSection() : null);
   async function save() {
     try { await api("me/avatar", { method: "POST", body: { avatar: a, mood_text: feel.value, mood } }); Sound.play("right"); toast(T("Saved"), "good"); go(""); }

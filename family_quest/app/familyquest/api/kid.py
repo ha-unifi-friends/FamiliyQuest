@@ -135,7 +135,9 @@ def login(body: LoginIn, request: Request) -> dict:
     if not login_tap_ok(p):
         if not p["pin_hash"]:
             loginlog.record(fq, request, "profile", p["id"], False)
-            raise HTTPException(403, "Parent profile needs a PIN" if p["role"] == "parent" else "No PIN set yet – ask your parents")
+            if p["role"] == "parent":
+                raise HTTPException(403, "Parent profile needs a PIN")
+            raise HTTPException(403, "No PIN set yet – ask your parents")
         if not check_pin(body.pin, p["pin_hash"]):
             fq.throttle.fail(key)
             loginlog.record(fq, request, "profile", p["id"], False)

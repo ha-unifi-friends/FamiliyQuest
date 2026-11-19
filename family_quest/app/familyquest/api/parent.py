@@ -403,8 +403,8 @@ def _apply_login(fq, body: ProfileIn, settings: dict, current: str | None, pid: 
     hidden stays a way in. Without a choice (older clients) the sign-in follows from PIN and Home Assistant user."""
     pin_hash = _pin_hash(body, settings, current)
     mode = body.login
-    if mode in ("none", "pin") and body.ha_user_id is None:
-        body.ha_user_id = ""
+    if mode in ("none", "pin"):
+        body.ha_user_id = ""                              # no Home Assistant in this sign-in: unlinked
     _set_ha_user(fq, body, settings, pid)
     if mode is None:
         if body.role == "parent" and not pin_hash and not settings.get("ha_user_id"):
