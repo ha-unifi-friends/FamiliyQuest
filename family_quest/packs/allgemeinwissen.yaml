@@ -7,6 +7,15 @@ version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🧠"
 beschreibung: "Quizfragen für die ganze Familie: Erfindungen, Bauwerke, Geschichte, Natur, Weltall, Kultur, Sport und Länder."
+beschreibung_i18n:   # the description in the language of the app (shown in the course list)
+  en: "Quiz questions for the whole family: inventions, buildings, history, nature, space, culture, sport and countries."
+  fr: "Des questions de quiz pour toute la famille : inventions, monuments, histoire, nature, espace, culture, sport et pays."
+  it: "Domande a quiz per tutta la famiglia: invenzioni, monumenti, storia, natura, spazio, cultura, sport e paesi."
+  es: "Preguntas de quiz para toda la familia: inventos, monumentos, historia, naturaleza, espacio, cultura, deporte y países."
+  nl: "Quizvragen voor het hele gezin: uitvindingen, bouwwerken, geschiedenis, natuur, ruimte, cultuur, sport en landen."
+  pl: "Pytania quizowe dla całej rodziny: wynalazki, budowle, historia, przyroda, kosmos, kultura, sport i kraje."
+  pt: "Perguntas de quiz para toda a família: invenções, construções, história, natureza, espaço, cultura, esporte e países."
+  sv: "Frågesportfrågor för hela familjen: uppfinningar, byggnader, historia, natur, rymden, kultur, sport och länder."
 standard: false
 selbst: true
 einheiten:

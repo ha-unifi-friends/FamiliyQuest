@@ -107,17 +107,17 @@ function dealThreadEl(v, { refresh, parent = false } = {}) {
   const actions = h("div.row.deal-actions",
     c.accept ? h("button.btn.good", { onclick: () => act("accept", { version: v.version }, T("Accepted")) }, "✓ ", T("Accept")) : null,
     c.counter ? h("button.btn.ghost", { onclick: () => dealBuilder({ deal: v, after: refresh }) }, "↔ ", T("Counter-offer")) : null,
-    c.reject ? h("button.btn.ghost.deal-no", { onclick: () => confirm(I18N.tr(T("Reject this offer?"))) && act("reject", { text: "" }) }, "✕ ", T("Reject")) : null,
-    c.withdraw ? h("button.btn.ghost", { onclick: () => confirm(I18N.tr(T("Withdraw your offer?"))) && act("withdraw") }, T("Withdraw")) : null,
+    c.reject ? h("button.btn.ghost.deal-no", { onclick: async () => (await confirmDialog(I18N.tr(T("Reject this offer?")))) && act("reject", { text: "" }) }, "✕ ", T("Reject")) : null,
+    c.withdraw ? h("button.btn.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Withdraw your offer?")))) && act("withdraw") }, T("Withdraw")) : null,
     c.confirm && !(p.text && p.text.me) ? h("button.btn.good", { onclick: () => act("confirm", { ok: true }) }, T("Done ✓")) : null,
-    c.confirm ? h("button.btn.ghost", { onclick: () => confirm(I18N.tr(T("Say that the free deal was not done? A parent decides then."))) && act("confirm", { ok: false }) }, "✗ ", T("Not done")) : null,
+    c.confirm ? h("button.btn.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Say that the free deal was not done? A parent decides then.")))) && act("confirm", { ok: false }) }, "✗ ", T("Not done")) : null,
     c.council ? h("button.btn.ghost", { onclick: () => act("council", { lang: I18N.lang || "" }, T("Sent to the family council")) }, "🏛️ ", T("To the family council")) : null,
     parent && v.status === "approval" ? [h("button.btn.good", { onclick: () => act("approve", { ok: true }) }, "✓ ", T("Allow")),
       h("button.btn.ghost", { onclick: () => act("approve", { ok: false }) }, "✕ ", T("Do not allow"))] : null,
     parent && v.status === "running" && p.dispute ? [h("button.btn.good", { onclick: () => act("settle", { ok: true }) }, T("Decide: done")),
       h("button.btn.ghost", { onclick: () => act("settle", { ok: false }) }, T("Decide: not done"))] : null,
     parent && ["open", "approval", "running"].includes(v.status) ? h("button.btn.small.bad", {
-      onclick: () => confirm(I18N.tr(T("Cancel this deal? Reservations are released, chores go back."))) && act("cancel") }, T("Cancel deal")) : null);
+      onclick: async () => (await confirmDialog(I18N.tr(T("Cancel this deal? Reservations are released, chores go back.")))) && act("cancel") }, T("Cancel deal")) : null);
   return h("div.deal-thread", head, banner, dealSides(v.give, v.get, who), prog, actions,
     h("h3.deal-hist-h", "💬 ", T("History")), h("div.deal-msgs", ...(v.messages || []).map(m => dealMsg(m, v, parent))));
 }

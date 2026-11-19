@@ -506,6 +506,5 @@ async function klatschFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => { KbAudio.ensure(); go("klatsch"); } }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("A rhythm game for everybody at once: listen to the beat, then clap it back in time on your phone. It gets faster every round – the best clappers win coins at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => klatschStartDialog(true, () => go("klatsch")) }, KB_ICON, " ", T("Alone")),
-           h("button.btn.ghost", { onclick: () => klatschStartDialog(false, () => go("klatsch")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(() => klatschStartDialog(true, () => go("klatsch")), () => klatschStartDialog(false, () => go("klatsch")))]);
 }

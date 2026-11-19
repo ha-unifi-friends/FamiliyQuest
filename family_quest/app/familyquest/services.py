@@ -356,7 +356,7 @@ class FamilyQuest:
         – None for parents, games switched off for the child, free or unlocked games and while games are blocked."""
         if prof.get("role") != "kid" or game not in self.GAMES or self._games_blocked(prof, time):
             return None
-        if game not in self.games_open_to(prof):
+        if self.party_unlocks(prof) or game not in self.games_open_to(prof):    # party «all games open»: no try needed
             return None
         a = self.games_access()[game]
         from .gamepasses import priced

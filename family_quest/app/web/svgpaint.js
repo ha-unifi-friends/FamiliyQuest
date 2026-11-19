@@ -574,8 +574,8 @@ function svgPaint({ kind = "bg", svg = null, title = null } = {}) {
       ro.disconnect(); document.removeEventListener("keydown", keys); window.removeEventListener("hashchange", onHash);
       wrap.remove(); resolve(val);
     };
-    const cancel = () => {
-      if (undo.length && !confirm(I18N.tr(T("Throw away this drawing?")))) return;
+    const cancel = async () => {
+      if (undo.length && !(await confirmDialog(I18N.tr(T("Throw away this drawing?"))))) return;
       finish(null);
     };
     const finishUse = async () => {

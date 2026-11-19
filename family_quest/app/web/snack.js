@@ -489,6 +489,5 @@ async function snackFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("snack") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Run your own snack stand: grill, fry and fill at the same time and serve every customer before they get angry. Everybody gets the same customers – most money in the till wins.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => snackStartDialog(true, () => go("snack")) }, SN_ICON, " ", T("Alone")),
-           h("button.btn.ghost", { onclick: () => snackStartDialog(false, () => go("snack")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(() => snackStartDialog(true, () => go("snack")), () => snackStartDialog(false, () => go("snack")))]);
 }

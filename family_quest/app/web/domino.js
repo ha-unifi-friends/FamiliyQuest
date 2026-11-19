@@ -290,6 +290,5 @@ async function dominoFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("domino") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Lay matching tiles – simple or Cuban, in teams of two. First to 100 points!")),
-         h("div.row.wrap", botsOn("domino") ? h("button.btn", { onclick: () => dominoStartDialog(true, () => go("domino")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => dominoStartDialog(false, () => go("domino")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("domino") ? () => dominoStartDialog(true, () => go("domino")) : null, () => dominoStartDialog(false, () => go("domino")))]);
 }
