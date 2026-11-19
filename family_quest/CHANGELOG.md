@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.1.1
+
+Version 1.1.1 – everything that was tested in the betas 1.1.1-beta.1 … 16.
+
+**Before updating:** download a backup in the parent area (Settings › Backup & restore).
+
+**Changes you will notice:** families whose language isn't German no longer get the German-only learning packs
+(German year 5, Thurgau, TG year 5, general knowledge) – packs with learning progress stay, all can be added again
+under Learning packs › More packs. The Family Quest panel is now visible to all Home Assistant users (the parent
+area still needs the PIN or a linked parent user). Direct access is on by default for new installations.
+
+- **New in the Library:** books (picture books), interactive books (mostly linear with a few choices, several happy
+  endings, templates «The princess who didn't want to marry» and «The little fox's birthday») and own vector drawings
+  (SVG) for pages, backgrounds, rooms and things – with AI import/export and visibility «only me» (also parents
+  can't read it), other children or the whole family.
+- **Games:** adventure games (point & click with rooms, things, dialogues and a solvability check) in a new «Custom
+  games» group with the family quiz and Pair Hunt (photo sets with presets, ZIP import/export); «24h Endurance» as a
+  short, fast team race with battery swaps, pit stops, chicanes, rain and night; Clap the Beat with a run-up bar;
+  word games in every language; game prices, rent, free tries, game battery and party mode with Disco theme.
+- **Deals:** children trade coins, chores, avatar items, pets and bought games with each other and with parents.
+- **Learning:** language courses ask in the learner's own language (progress is kept); German-only packs optional;
+  a paste box for AI-made packs; time limits per child for games, learning and internet.
+- **Parents:** a dialog with the QR code of the kids' app (print, open); optional sign-in of children with their own
+  Home Assistant user; the Home Assistant integration in all languages; all game sections folded with status chips;
+  profile dialog in tabs.
+- **French and other languages:** a full French pass of the kids' app and the parent area.
+- **Reviews:** many fixes from code, security and usability reviews – no deadlock on deal chores, profile ids never
+  reused, HA actions only for admins, safer coin bookings, fewer database queries, phone landscape layouts, larger tap
+  targets, better contrast in dark mode, focus handling in dialogs, notch-safe game screens.
+
 ## 1.1.0
 
 Version 1.1 – everything that was tested in the betas 1.1.0-beta.1 … 15.
