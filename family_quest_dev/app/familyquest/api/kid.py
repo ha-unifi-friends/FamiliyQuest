@@ -7,17 +7,17 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
-from .. import loginlog, symbols, themes
+from .. import haauth, loginlog, symbols, themes
 from ..chores import ChoreError
 from ..internet import InternetError
-from ..db import profile_settings
+from ..db import login_mode, login_pin_ok, login_tap_ok, profile_settings
 from ..channel import feature_visible
 from ..learning.lesson import LearnError
 from ..packs import i18n as pack_i18n
 from ..rewards import avatar as av
 from ..rewards.shop import ShopError
 from ..pets import KINDS as PET_KINDS, REBUY_COST, PetError
-from .auth import KID_MAX_AGE, Learner, app_of, check_pin, ha_kid, hash_pin, valid_pin, via_ingress
+from .auth import KID_MAX_AGE, Learner, app_of, check_pin, ha_kid, ha_user, hash_pin, valid_pin, via_ingress
 
 router = APIRouter(prefix="/api")
 
@@ -29,7 +29,7 @@ class LoginIn(BaseModel):
 
 class SetupIn(BaseModel):
     name: str
-    pin: str
+    pin: str = ""                    # optional only through Home Assistant with a known user (the profile is linked)
 
 
 class SessionIn(BaseModel):
@@ -63,7 +63,9 @@ def info(request: Request) -> dict:
     fq = app_of(request)
     s = fq.db.all_settings()
     return {"version": fq.settings.version,
-            "setup_needed": not fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0),
+            "setup_needed": (setup := not fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0)),
+            # first start through Home Assistant: the name of the HA user – the first parent is linked with it
+            "setup_ha_user": (u["name"] or u["user"]) if setup and (u := ha_user(request)) else None,
             "ha": bool(fq.ha and fq.ha.connected), "planer": bool(fq.ha and fq.ha.planer_available),
             "ai": False, "sound": s.get("sound", True),
             "family_visibility": s.get("family_visibility"), "kid_max_age": KID_MAX_AGE,
@@ -72,6 +74,8 @@ def info(request: Request) -> dict:
             "via_ha": via_ingress(request),
             # a child opened the app with its own Home Assistant user (ingress, parents allow it): log in without PIN
             "ha_kid": {"id": kid["id"], "name": kid["name"]} if (kid := ha_kid(fq, request)) else None,
+            # outside Home Assistant (tablets): «Sign in with Home Assistant» (haauth.py) when switched on and somebody is linked
+            "ha_app_login": not via_ingress(request) and haauth.available(fq),
             "season": themes.active(s.get("themes")),
             "codelab": feature_visible("codelab")}           # 💡 Code Workshop: only in the dev channel (channel.DEV_FEATURES)
 
@@ -96,13 +100,27 @@ async def ha_panel(request: Request) -> dict:
 @router.get("/profiles")
 def profiles(request: Request) -> list[dict]:
     fq = app_of(request)
-    # parents only with a PIN: the PIN is their login in the app (e.g. to join a game on another device)
-    rows = fq.db.q("SELECT * FROM profile WHERE archived=0 AND (role!='parent' OR pin_hash IS NOT NULL) ORDER BY role='parent', id")
-    return [fq.profile_public(p) for p in rows]
+    # every profile with its sign-in («login»: none | pin | ha | pin_ha – the picker shows it and routes the tap).
+    # Parents only when they can sign in here: with their PIN, or on the direct port with «Sign in with Home Assistant»
+    # on (tap = Home Assistant login). ha_login: «Sign in with Home Assistant» works for this profile on this port.
+    rows = fq.db.q("SELECT * FROM profile WHERE archived=0 ORDER BY role='parent', id")
+    ha = {p["id"] for p in haauth.linked_profiles(fq)} if not via_ingress(request) and fq.db.get_setting("ha_app_login") else set()
+    out = []
+    for p in rows:
+        if p["role"] == "parent" and not login_pin_ok(p) and p["id"] not in ha:
+            continue
+        d = fq.profile_public(p)
+        if p["id"] in ha:
+            d["ha_login"] = True
+        out.append(d)
+    return out
 
 
 @router.post("/login")
 def login(body: LoginIn, request: Request) -> dict:
+    """Sign in with a tap or the PIN – as the parents chose it for the profile (db.login_mode). A profile with
+    «Home Assistant only» never signs in here (sidebar: /ha-login, app: «Sign in with Home Assistant»), also when it
+    still had a PIN; «PIN» / «PIN or Home Assistant» always needs the PIN; a tap only for «No sign-in» (children)."""
     fq = app_of(request)
     p = fq.db.q1("SELECT * FROM profile WHERE id=? AND archived=0", body.profile_id)
     if not p:
@@ -110,13 +128,20 @@ def login(body: LoginIn, request: Request) -> dict:
     # per profile and device – a child cannot lock out a sibling; parent profiles share the parent counter of the device
     ip = loginlog.client_ip(request)
     key = f"parent:{ip}" if p["role"] == "parent" else f"login:{p['id']}:{ip}"
+    mode = login_mode(p)
+    if mode == "ha":
+        raise HTTPException(403, "Sign in with Home Assistant")
     fq.throttle.check(key)
-    if p["pin_hash"] and not check_pin(body.pin, p["pin_hash"]):
-        fq.throttle.fail(key)
-        loginlog.record(fq, request, "profile", p["id"], False)
-        raise HTTPException(403, "Wrong PIN")
-    if p["role"] == "parent" and not p["pin_hash"]:
-        raise HTTPException(403, "Parent profile needs a PIN")
+    if not login_tap_ok(p):
+        if not p["pin_hash"]:
+            loginlog.record(fq, request, "profile", p["id"], False)
+            if p["role"] == "parent":
+                raise HTTPException(403, "Parent profile needs a PIN")
+            raise HTTPException(403, "No PIN set yet – ask your parents")
+        if not check_pin(body.pin, p["pin_hash"]):
+            fq.throttle.fail(key)
+            loginlog.record(fq, request, "profile", p["id"], False)
+            raise HTTPException(403, "Wrong PIN")
     fq.throttle.ok(key)
     loginlog.record(fq, request, "profile", p["id"], True)
     out = {"token": fq.tokens.make(p["id"], "kid"), "profile": fq.profile_public(p)}
@@ -143,10 +168,16 @@ def setup(body: SetupIn, request: Request) -> dict:
     fq = app_of(request)
     if fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0):
         raise HTTPException(409, "Already set up")
-    if not body.name.strip() or not valid_pin(body.pin):
+    # opened through Home Assistant: the first parent is linked with that Home Assistant user right away – the parent
+    # area then opens without PIN, and the PIN is optional (the tablets: «Sign in with Home Assistant», or a PIN set
+    # later in the profile). Without a Home Assistant user the PIN is the only login and stays required.
+    u = ha_user(request)
+    if not body.name.strip() or (body.pin and not valid_pin(body.pin)) or (not body.pin and not u):
         raise HTTPException(400, "Name and a PIN with 4–8 digits are required")
-    pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash) VALUES(?, 'parent', '#495057', ?)",
-                  body.name.strip()[:40], hash_pin(body.pin))
+    st = {"ha_user_id": u["id"], "ha_user_name": u["name"] or u["user"]} if u else {}
+    st["login"] = ("pin_ha" if body.pin else "ha") if u else "pin"
+    pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash, settings) VALUES(?, 'parent', '#495057', ?, ?)",
+                  body.name.strip()[:40], hash_pin(body.pin) if body.pin else None, json.dumps(st))
     return {"parent_token": fq.tokens.make(pid, "parent"), "token": fq.tokens.make(pid, "kid"),
             "profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid))}
 
@@ -345,6 +376,8 @@ def change_pin(body: PinChangeIn, request: Request, prof: dict = Learner) -> dic
     """Children (and parents) change their own PIN – with the current one. Removing the PIN stays with the parents."""
     fq = app_of(request)
     p = fq.db.q1("SELECT * FROM profile WHERE id=?", prof["id"])
+    if login_mode(p) == "ha":
+        raise HTTPException(403, "Your parents chose: sign in only with Home Assistant")
     key = f"login:{p['id']}"
     fq.throttle.check(key)
     if p["pin_hash"] and not check_pin(body.old_pin, p["pin_hash"]):
@@ -352,22 +385,25 @@ def change_pin(body: PinChangeIn, request: Request, prof: dict = Learner) -> dic
         raise HTTPException(403, "Wrong PIN")
     fq.throttle.ok(key)
     st = profile_settings(p)
+    raw = json.loads(p["settings"] or "{}")
+    if login_mode(p, st) == "none":
+        raw["login"] = "pin"                 # «No sign-in» and the child sets a PIN itself: from now on with the PIN
     if body.pin_symbols is not None:
         try:
             sset = symbols.check_set(body.symbol_set or [])
             new = hash_pin(symbols.secret(body.pin_symbols, sset))
         except ValueError as e:
             raise HTTPException(400, str(e)) from None
-        st.update(pin_kind="symbols", symbol_set=sset)
+        raw.update(pin_kind="symbols", symbol_set=sset)
     elif body.pin:
         lo, hi = (4, 4) if p["role"] == "kid" else (4, 8)
         if not valid_pin(body.pin, lo, hi):
             raise HTTPException(400, "Children's PIN: 4 digits" if p["role"] == "kid" else "PIN: 4–8 digits")
         new = hash_pin(body.pin)
-        st.update(pin_kind="digits", symbol_set=[])
+        raw.update(pin_kind="digits", symbol_set=[])
     else:
         raise HTTPException(400, "Choose a new PIN")
-    fq.db.x("UPDATE profile SET pin_hash=?, settings=? WHERE id=?", new, json.dumps(st), p["id"])
+    fq.db.x("UPDATE profile SET pin_hash=?, settings=? WHERE id=?", new, json.dumps(raw), p["id"])
     # a new PIN ends every other login of this profile – this device gets a fresh one
     return {"profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", p["id"])), "token": fq.tokens.make(p["id"], "kid")}
 

@@ -22,6 +22,7 @@ from . import loginlog, memo, netfilter
 from .packs import i18n as pack_i18n
 from .channel import feature_visible, hidden_games
 from .api import deals as deals_api
+from .api import haauth as haauth_api
 from .api.auth import INGRESS_IP
 from .services import FamilyQuest
 from .settings import WEB_DIR, Settings, load_settings
@@ -156,6 +157,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     app.include_router(integration_api.router)
     app.include_router(integration_api.parent_router)
     app.include_router(deals_api.router)               # deals (deals.py)
+    app.include_router(haauth_api.router)              # «Sign in with Home Assistant» on the direct port (haauth.py)
     app.include_router(deals_api.parent_router)
 
     def page(name: str) -> HTMLResponse:

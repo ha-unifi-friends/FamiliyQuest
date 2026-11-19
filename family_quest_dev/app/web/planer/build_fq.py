@@ -79,6 +79,36 @@ REPLACE += [
      "height:32px;padding:0 12px;border-radius:var(--fp-radius,16px);border:1px solid var(--fp-line,#3a3a3a);background:var(--fp-bg2,#1b1b1b);"),
     ("const sc = this._sceneHtml(s, lang);", "const sc = window.FQ_PLANER_THEME ? { key: '', html: '' } : this._sceneHtml(s, lang);"),
 ]
+# parent area (planer?mode=parent): the top bar is hidden (planer.html) – its holiday window opens at the top right of
+# the frame instead of below the bar; the chore plan drops its own title and «+» buttons (they are in the section head
+# of the parent area, web/planer/host.js FQ_PLANER_DO), the settings drop their «Chores» tab (the plan is right above)
+REPLACE += [
+    ("const bar = this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: 60, right: window.innerWidth - 8 };",
+     "const bar = window.FQ_PARENT_AREA ? null : this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: window.FQ_PARENT_AREA ? window.FQ_VIS().top + 2 : 60, right: window.innerWidth - 8 };"),
+    ('<div class="card">\n        <div class="head"><div class="badge"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon></div>',
+     '<div class="card${window.FQ_PARENT_AREA ? \' fqe\' : \'\'}">\n        <div class="head"><div class="badge"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon></div>'),
+    ("const tabs = ORDER.map((id) => TABS.find((x) => x.id === id)).filter((x) => x && ",
+     "const tabs = ORDER.map((id) => TABS.find((x) => x.id === id)).filter((x) => x && !(window.FQ_PARENT_AREA && x.id === 'chores') && "),
+]
+# no planner PIN in Family Quest: the signed-in profile decides (web/planer/host.js FQ_NO_PIN, planer/websocket.py)
+REPLACE += [
+    ("  async function ensure(store, ctx) {\n", "  async function ensure(store, ctx) {\n    if (window.FQ_NO_PIN) return '';\n"),
+    ("  async function call(store, type, data, ctx) {\n", "  async function call(store, type, data, ctx) {\n    if (window.FQ_NO_PIN) return window.FQ_NO_PIN(store, type, data, CANCEL);\n"),
+    ("    change: (store, ctx) => change(store, ctx, ' '),\n    unlocked: (store) => !!cached(store),",
+     "    change: (store, ctx) => (window.FQ_NO_PIN ? window.FQ_NO_PIN.change(CANCEL) : change(store, ctx, ' ')),\n    unlocked: (store) => !!window.FQ_NO_PIN || !!cached(store),"),
+]
+# the picture tab of the settings: no «everything else opens with the parent PIN» hint (there is no planner PIN)
+REPLACE += [
+    ("return `<div class=\"hint3\">${esc(lbl('Jede und jeder darf hier ein Bild zusammenstellen – ohne PIN.",
+     "return `<div class=\"hint3\"${window.FQ_NO_PIN ? ' hidden' : ''}>${esc(lbl('Jede und jeder darf hier ein Bild zusammenstellen – ohne PIN."),
+]
+# to-dos: a new one is for the signed-in person first (a child may only add its own)
+REPLACE += [
+    ("const pid = this._person || (s.persons[0] && s.persons[0].id);",
+     "const pid = this._person || (window.FQ_ME && window.FQ_ME.person) || (s.persons[0] && s.persons[0].id);"),
+    ("const sel = persons.find((p) => p.id === this._person) || persons[0];",
+     "const sel = persons.find((p) => p.id === (this._person || (window.FQ_ME && window.FQ_ME.person))) || persons[0];"),
+]
 # trade marks: activity suggestion without a brand name
 REPLACE += [("lego: ['🧱', 'Lego-Challenge', 'Lego challenge']", "lego: ['🧱', 'Bauklotz-Challenge', 'Building block challenge']")]
 for old, new in REPLACE:

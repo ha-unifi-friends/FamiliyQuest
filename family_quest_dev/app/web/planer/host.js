@@ -17,7 +17,7 @@ window.addEventListener("hashchange", () => { fqGuard(); window.dispatchEvent(ne
 
 // ---------------------------------------------------------------- the app's own buttons right in the planer's top bar
 window.FQ_NAV_HOOK = root => {
-  if (window.FQ_PLANER_MODE === "parent") return;
+  if (window.FQ_PLANER_MODE === "parent") return fqParentState(root);
   // the same header as the other pages of the app: ☰ menu at the left, «check holidays» next to the calendar,
   // only «refresh» stays on the right (home, language and log out are in the ☰ menu)
   const left = root.querySelector(".bar .t");
@@ -39,6 +39,50 @@ window.FQ_NAV_HOOK = root => {
   if (mid && vac) {
     const cal = mid.querySelector("button");
     cal ? cal.after(vac) : mid.prepend(vac);
+  }
+};
+
+// ---------------------------------------------------------------- parent area (planer?mode=parent, in a frame)
+// The planer's own top bar (clock, season, its buttons) is hidden there (planer.html): the parent area shows its
+// functions as buttons in its own section head (parent.js planerChoresSection). The frame tells the parent page
+// whether holidays are on and how many wait for a decision; the buttons there call FQ_PLANER_DO.
+function fqParentState(root) {
+  const vac = root.querySelector("[data-vac]"), dot = vac && vac.querySelector(".dot");
+  const nav = root.host;
+  const state = { vac: !!vac, pending: dot ? +dot.textContent || 0 : 0, open: !!(nav && nav._open === "vac") };
+  const key = JSON.stringify(state);
+  if (key === fqParentState.last) return;
+  fqParentState.last = key;
+  try { if (window.frameElement) window.frameElement.dispatchEvent(new CustomEvent("fq-planer-state", { detail: state })); } catch {}
+}
+// The frame is as high as its content (parent.js planerFrame), so «position:fixed» windows of the planer (parent PIN,
+// «+ Special chore», holidays …) would sit in the middle of the whole frame – maybe far outside the screen. They are
+// moved into the part of the frame that is visible on the screen just now.
+window.FQ_VIS = () => {
+  try {
+    const r = window.frameElement.getBoundingClientRect(), H = window.parent.innerHeight;
+    const top = Math.max(0, -r.top), h = Math.max(160, Math.min(r.bottom, H) - Math.max(r.top, 0));
+    return { top: Math.round(top), h: Math.round(Math.min(h, innerHeight - top)) };
+  } catch { return { top: 0, h: innerHeight }; }
+};
+if (window.FQ_PLANER_MODE === "parent" && window.frameElement) {
+  const pin = el => {
+    if (!(el instanceof HTMLElement) || el.style.position !== "fixed" || el.style.inset !== "0px") return;
+    const v = window.FQ_VIS();
+    Object.assign(el.style, { top: v.top + "px", bottom: "auto", height: v.h + "px", transform: "translateZ(0)" });  // own frame for fixed children
+  };
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(pin))).observe(document.body || document.documentElement, { childList: true });
+}
+window.FQ_PLANER_DO = async act => {
+  const panel = document.querySelector("family-planer-panel");
+  const nav = panel && panel.querySelector("family-planer-nav-card"), card = panel && panel.querySelector("family-planer-card");
+  if (act === "vac" && nav && nav.shadowRoot) {
+    const b = nav.shadowRoot.querySelector("[data-vac]");
+    if (b) b.click();                                     // opens / closes the holiday window (as the button in the bar)
+  } else if (act === "refresh" && nav && nav._refresh) {
+    await nav._refresh();                                 // the server pulls calendars and lists again
+  } else if ((act === "special" || act === "todo") && card) {
+    card.dispatchEvent(new CustomEvent("fp-plan-add", { detail: { kind: act } }));   // as «+ Special chore» / «+ To-do»
   }
 };
 
@@ -70,6 +114,23 @@ class FqHaCard extends HTMLElement {
 }
 if (!customElements.get("ha-card")) customElements.define("ha-card", FqHaCard);
 
+// ---------------------------------------------------------------- no planner PIN in Family Quest
+// The old Family Planer ran on one shared screen and asked for a parent PIN for every change. In Family Quest the
+// signed-in profile is the identity (familyquest/planer/websocket.py): parents (also signed in with Home Assistant)
+// just do it, a child gets a clear «only parents» message instead of a PIN pad. pin.js asks FQ_NO_PIN (build_fq.py).
+const FQ_DENIED = ["parent_only", "parent_network", "own_only", "points_parent"];
+window.FQ_NO_PIN = async (store, type, data, CANCEL) => {
+  try { return await store.ws(type, data || {}); }
+  catch (e) {
+    if (e && FQ_DENIED.includes(e.code)) { toast(e.message, "bad"); throw CANCEL; }
+    throw e;
+  }
+};
+window.FQ_NO_PIN.change = CANCEL => {                     // «Change PIN»: the parents' PINs are in Family Quest
+  toast(I18N.tr("Parent PINs are changed in Family Quest: parent area → Profiles"));
+  return Promise.reject(CANCEL);
+};
+
 // ---------------------------------------------------------------- connection (Home Assistant websocket format)
 class FqConnection {
   constructor() {
@@ -98,6 +159,7 @@ class FqConnection {
       if (m.type === "result") {
         const p = this._pending.get(m.id); if (!p) return;
         this._pending.delete(m.id);
+        if (!m.success && m.error && FQ_DENIED.includes(m.error.code)) m.error = { ...m.error, message: I18N.tr(m.error.message) };
         m.success ? p.resolve(m.result) : p.reject(m.error || { code: "error", message: "error" });
       }
     };
@@ -176,6 +238,7 @@ async function startPlaner(root) {
   const narrow = () => matchMedia("(max-width: 870px)").matches;
   panel.narrow = narrow();
   window.addEventListener("resize", () => { const n = narrow(); if (n !== panel._narrow) panel.narrow = n; });
+  try { window.FQ_ME = await conn.sendMessagePromise({ type: "fq/me" }); } catch { window.FQ_ME = null; }   // own person: new to-dos
   let hass = await fqHass(conn);
   panel.hass = hass;
   root.replaceChildren(panel);

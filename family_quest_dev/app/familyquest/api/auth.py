@@ -152,21 +152,20 @@ def ha_user(request: Request) -> dict | None:
 
 
 def profile_of_ha_user(fq, uid: str | None, role: str | None = None) -> dict | None:
-    """The (not archived) profile linked with this Home Assistant user – one profile per user."""
-    from ..db import profile_settings
+    """The (not archived) profile linked with this Home Assistant user – one profile per user – that may sign in with
+    it (sign-in «Home Assistant only» or «PIN or Home Assistant»; db.login_ha_ok)."""
+    from ..db import login_ha_ok, profile_settings
     if not uid:
         return None
     for p in fq.db.q("SELECT * FROM profile WHERE archived=0" + (" AND role=?" if role else "") + " ORDER BY id", *([role] if role else [])):
         if profile_settings(p).get("ha_user_id") == uid:
-            return p
+            return p if login_ha_ok(p) else None
     return None
 
 
 def ha_kid(fq, request: Request) -> dict | None:
-    """The child whose Home Assistant user opened the app through ingress – only when the parents allow it
-    (setting «kid_ha_login»). Gives the children's app, never the parent area."""
-    if not fq.db.get_setting("kid_ha_login"):
-        return None
+    """The child whose Home Assistant user opened the app through ingress (linked in its profile – the link is the
+    permission, there is no extra switch). Gives the children's app, never the parent area."""
     u = ha_user(request)
     return profile_of_ha_user(fq, u["id"], "kid") if u else None
 
