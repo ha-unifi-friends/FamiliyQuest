@@ -854,7 +854,8 @@ DEFAULT_SETTINGS = {
     "games_profiles": [],                # with "some": the children who may play
     "games_access": None,                # per game {"mode", "profiles"} (services.games_access) – replaces the two above
     "parent_ha_only": False,             # parent area only through Home Assistant (linked HA user), no PIN login
-    "kid_ha_login": False,               # children with a linked Home Assistant user open their app in HA without PIN
+    "ha_app_login": True,                # «Sign in with Home Assistant» in the app on the direct port (haauth.py)
+    "ha_app_login_url": "",              # … the address of Home Assistant for the browsers – "" = automatic
     "allowed_networks": [],              # mini firewall: networks (CIDR) that may use the app – empty = all
     "guest_networks": [],                # guest Wi-Fi: only games with a QR code invitation (no family login)
     "parent_networks": [],               # … that may open the parent area – empty = all
@@ -916,6 +917,7 @@ class Database:
         self.lock = threading.RLock()
         self._depth = 0
         self.migrate()
+        self.migrate_logins()
 
     # ---------- transactions ----------
     @contextmanager
@@ -999,6 +1001,21 @@ class Database:
                 if i == 1:
                     self._seed()
 
+    def migrate_logins(self) -> None:
+        """Profiles without the explicit sign-in (profile setting «login», from before it existed) get it once from what
+        they have: PIN + Home Assistant user → pin_ha, PIN → pin, Home Assistant user → ha, nothing → none (children) or
+        pin (a parent – the PIN is asked for at the next edit). Nothing else changes."""
+        with self.tx():
+            for p in self.q("SELECT id, role, pin_hash, settings FROM profile"):
+                try:
+                    raw = json.loads(p["settings"] or "{}")
+                except ValueError:
+                    raw = {}
+                if not isinstance(raw, dict) or raw.get("login") in LOGIN_MODES:
+                    continue
+                raw["login"] = derive_login(p, profile_settings(p))
+                self.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(raw), p["id"])
+
     def _seed(self) -> None:
         with self.tx():
             for a in DEFAULT_ACCOUNTS:
@@ -1017,3 +1034,52 @@ def profile_settings(profile: dict) -> dict:
     except ValueError:
         pass
     return s
+
+
+# ---------------------------------------------------------------- how a profile signs in (profile setting «login»)
+# none   = tap the profile (children only)
+# pin    = PIN (children: picture or digit PIN, parents: digits) – never with a Home Assistant user
+# ha     = only with the linked Home Assistant user (sidebar, «Sign in with Home Assistant» in the app) – never with a PIN
+# pin_ha = PIN or the linked Home Assistant user
+# Chosen explicitly in the profile dialog and enforced on every login path (api/kid.py, api/parent.py, api/auth.py,
+# haauth.py). Profiles from before get it once from what they had (Database.migrate_logins).
+LOGIN_MODES = ("none", "pin", "ha", "pin_ha")
+
+
+def derive_login(profile: dict, st: dict | None = None) -> str:
+    """The sign-in a profile has from its PIN and its Home Assistant user (old profiles, saves without a choice)."""
+    st = profile_settings(profile) if st is None else st
+    pin, ha = bool(profile.get("pin_hash")), bool(st.get("ha_user_id"))
+    if pin and ha:
+        return "pin_ha"
+    if pin:
+        return "pin"
+    if ha:
+        return "ha"
+    return "pin" if profile.get("role") == "parent" else "none"      # a parent without both: a PIN is needed
+
+
+def login_mode(profile: dict, st: dict | None = None) -> str:
+    st = profile_settings(profile) if st is None else st
+    m = st.get("login")
+    if m not in LOGIN_MODES:
+        m = derive_login(profile, st)
+    if m == "none" and profile.get("role") == "parent":
+        m = "pin"                                                    # parents never sign in with a tap
+    return m
+
+
+def login_pin_ok(profile: dict) -> bool:
+    """May this profile sign in with its PIN?"""
+    return bool(profile.get("pin_hash")) and login_mode(profile) in ("pin", "pin_ha")
+
+
+def login_ha_ok(profile: dict) -> bool:
+    """May this profile sign in with its linked Home Assistant user?"""
+    st = profile_settings(profile)
+    return bool(st.get("ha_user_id")) and login_mode(profile, st) in ("ha", "pin_ha")
+
+
+def login_tap_ok(profile: dict) -> bool:
+    """May this profile sign in with a tap (no PIN, no Home Assistant)? Children only."""
+    return profile.get("role") != "parent" and login_mode(profile) == "none"

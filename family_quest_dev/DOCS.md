@@ -5,7 +5,10 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 ## First start
 
 1. Open **Family Quest** in the sidebar and choose **Parent area** (or open `…/eltern`).
-2. Create the parent profile. It is always protected by a PIN (4–8 digits).
+2. Create the parent profile. Opened from the Home Assistant sidebar, the name of your Home Assistant user is filled
+   in and the profile is linked with that user – a PIN is optional (add one later in the profile; on tablets you can
+   use *Sign in with Home Assistant*, see below). Opened on the app port (no Home Assistant user), a PIN (4–8 digits)
+   is required.
 3. **Profiles › Add child** – name, colour, PIN, daily goal (XP), exercises per lesson,
    new cards per lesson, learning hours (e.g. `07:00-20:00`), automatic logout. With the Family Planer installed,
    **Take over from Family Planer** creates a profile for every person and links it.
@@ -14,8 +17,9 @@ Learning in any subject with points, rewards and avatars – for the whole famil
    The last parent profile cannot be removed.
    **PIN for children:** a *picture PIN* comes first – the child picks 4 of 12 symbols in its own order (tap them or
    draw a line; 🔀 brings other symbols). At login the same 12 symbols appear in a new order every time, so a
-   watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN or
-   no PIN can be chosen instead.
+   watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN can
+   be chosen instead – or another sign-in (🔐 *Sign-in*: no sign-in, PIN, Home Assistant only, PIN or Home Assistant,
+   see *Sign-in per profile* below).
 5. **Packs** – every child starts with the built-in packs that work in every language (maths, the English and French
    units of year 5 – no course of the child's own language); switch packs or whole level packs on and off per child.
    Packs whose content exists in German only (German grammar, Thurgau geography, the level pack «5. Klasse Thurgau»,
@@ -396,11 +400,77 @@ The add-on runs with its own **AppArmor profile** (`apparmor.txt`): it reads its
 `/data`, `/share` and temporary folders, and may not mount or debug other processes. Together with Ingress this
 gives the security rating 8 in Home Assistant.
 
-**Log in with Home Assistant:** when a parent opens Family Quest from the Home Assistant sidebar, the app knows the
-Home Assistant user (the Supervisor tells it – only trusted for requests that really come through Home Assistant).
-After the first PIN login the app offers to link this user with the parent profile; from then on the parent area
-opens without PIN there. Settings → *Log in with Home Assistant* can also close the parent area for PIN logins
-completely (then it opens only through Home Assistant; the PIN still works in the app for learning along).
+**Log in with Home Assistant:** link a Home Assistant user with a profile (Profiles › edit › *Home Assistant user*,
+for parents and children – one user per profile). When Family Quest is opened from the Home Assistant sidebar, the
+app knows the Home Assistant user (the Supervisor tells it – only trusted for requests that really come through Home
+Assistant): a linked parent comes into the parent area without PIN, a linked child into its app without PIN – never
+into the parent area. There is no extra switch for children: the link is the permission; a child without a link logs
+in with its PIN. After the first PIN login in the sidebar the app also offers a parent to link the own user.
+Settings → *Log in with Home Assistant* can also close the parent area for PIN logins completely (then it opens only
+through Home Assistant; the PIN still works in the app for learning along).
+
+**Sign in with Home Assistant in the app (tablets, phones):** Settings → *Log in with Home Assistant* → *Allow
+sign-in with Home Assistant in the app* (off by default). The login screen of the app on the app port then shows
+**🏠 Sign in with Home Assistant** – only when at least one profile is linked with a Home Assistant user. How it
+works:
+
+1. The app sends the browser to the login page of Home Assistant (`<HA>/auth/authorize`, Home Assistant's normal
+   OAuth2 / IndieAuth login – the same as the companion app uses). The *client_id* is the address of the app
+   (e.g. `http://192.168.1.10:8099/`), the return address `…/ha-auth/callback` is on the same host, as Home Assistant
+   requires. Home Assistant asks for user name and password – and the two-factor code when the user has one.
+2. Home Assistant sends the browser back with a one-time code. Family Quest exchanges it **itself** (server side,
+   inside Home Assistant on the Supervisor network: `http://homeassistant:8123`; with https in Home Assistant at the
+   address below), asks Home Assistant who the user is (websocket `auth/current_user`) and **revokes the Home
+   Assistant tokens right away** – Family Quest stores no Home Assistant token and no password, only the profile login
+   as with a PIN.
+3. The Home Assistant user is mapped to the profile linked with it (Profiles › edit › *Home Assistant user*):
+   a child gets its app, a parent gets the same as a parent PIN login in the app.
+   The parent area on the app port stays as before – with *Parent area only through Home Assistant* it stays closed.
+   A Home Assistant user that is not linked gets «Your Home Assistant user is not linked with a profile – ask your
+   parents». Every attempt is in the login log; the login stays on the device like a PIN login, *Log out* as usual.
+
+**🔐 Sign-in per profile:** every profile has exactly one sign-in, chosen in Profiles › edit (top of the *Profile*
+tab) and shown as a chip on the profile cards:
+
+| Sign-in | Who | How | Needs |
+|---|---|---|---|
+| 🪄 **No sign-in – tap the profile** | children only | tap the picture and in | – |
+| 🔢 **PIN** | all | picture or digit PIN (children), 4–8 digits (parents) | a PIN |
+| 🏠 **Home Assistant only** | all | Home Assistant sidebar, *Sign in with Home Assistant* on tablets | a Home Assistant user |
+| 🔢🏠 **PIN or Home Assistant** | all | both ways | a PIN and a Home Assistant user |
+
+The Home Assistant user picker shows only for the two Home Assistant options (picking a user fills in the name), the
+PIN entry only for the two PIN options (an existing PIN stays; *Change PIN* sets a new one). Saving checks it (also
+on the server): Home Assistant options without a user, PIN options without a PIN, and *No sign-in* for a parent are
+refused. What a choice does not use is removed when it is saved – *No sign-in* and *Home Assistant only* delete the
+PIN, *No sign-in* and *PIN* unlink the Home Assistant user – so nothing hidden stays a way in.
+
+The server enforces the choice on every way in: the app's PIN login and tap login, the picture PIN, the parent-area
+PIN, the automatic login in the Home Assistant sidebar (children and parents) and *Sign in with Home Assistant* in the
+app. *Home Assistant only* refuses every PIN (also a PIN left over in an old database), *PIN* refuses every Home
+Assistant login, *No sign-in* exists only for children. A child with *No sign-in* that sets a PIN itself (Me › *Change
+my PIN*) switches to *PIN*; a child with *Home Assistant only* cannot set a PIN itself. Linking or unlinking the own
+Home Assistant user in the parent area (*Link my user* / *Unlink*) switches a parent between *PIN or Home Assistant*
+and *PIN*.
+
+The app's profile list shows a small icon per profile (🔢 / 🏠 / 🔢🏠, nothing for *No sign-in*) and routes the tap:
+*No sign-in* straight in, *PIN* the PIN pad, *Home Assistant only* straight to *Sign in with Home Assistant* (in the
+Home Assistant sidebar: the own Home Assistant user), *PIN or Home Assistant* the PIN pad with the Home Assistant
+button. Parents appear there only when they can sign in on that device.
+
+**Profiles from before** get their sign-in once at the first start of the update, from what they had: PIN and Home
+Assistant user → *PIN or Home Assistant*, PIN → *PIN*, Home Assistant user → *Home Assistant only*, nothing → *No
+sign-in* (children). Nothing else changes. A parent without both (should not exist) gets *PIN* and needs a PIN at
+the next edit.
+
+**Home Assistant address for the sign-in:** the browser of the tablet must reach Home Assistant. Empty = automatic:
+the host of the app with the port of Home Assistant (the add-on runs on the Home Assistant machine, e.g.
+`http://192.168.1.10:8123`; https when Home Assistant does https). Enter another address when Home Assistant is
+reached differently (a name with a certificate, a reverse proxy); the addresses Home Assistant knows itself
+(internal / external URL) are offered. *Test* checks both ways: this device → Home Assistant and Family Quest →
+Home Assistant. Limits: the device needs to reach Home Assistant (not from a guest network that cannot); Home
+Assistant's login page is shown in Home Assistant's look and language; the state of a sign-in is valid for 10
+minutes and once; IP bans and login attempts of Home Assistant apply as usual.
 
 **One port for the children, the parent area only in Home Assistant:** no second port is needed. Home Assistant
 reaches the app through its own way (ingress, from the Supervisor), the app port (e.g. `http://192.168.x.y:8099`)
@@ -413,16 +483,19 @@ Family Quest (as in the chore planner); opened in Home Assistant it follows the 
 Buttons that add something («+ Add child», «+ New topic», «+ Add account» …) are always top right.
 
 **Parents and their Home Assistant user:** in the profile of a parent you choose the Home Assistant user (all persons of
-Home Assistant with a login). With it the parent area opens in the HA sidebar without PIN. The PIN is optional – it is
-only the login in the app, e.g. to join a game or learn along on another device; a parent without PIN does not
-appear in the app's profile list. Without Home Assistant parents need a PIN as before.
+Home Assistant with a login) – sign-in *Home Assistant only* or *PIN or Home Assistant*. With it the parent area
+opens in the HA sidebar without PIN. The PIN (*PIN or Home Assistant*) is the login in the app, e.g. to join a game or
+learn along on another device. A parent with *Home Assistant only* appears in the app's profile list only while *Sign
+in with Home Assistant in the app* is on (tapping it opens the Home Assistant login). Without Home Assistant parents
+need a PIN as before.
 
-**Children and their Home Assistant user (option):** children who have their own Home Assistant user can open their
-app in the Home Assistant sidebar without PIN. Switch on Settings › *Log in with Home Assistant* › *Children may sign
-in with their Home Assistant user* (off by default) and choose the child's Home Assistant user in its profile
-(Profiles › edit › *Home Assistant user*). One Home Assistant user belongs to at most one profile – parent or child.
-- It only works through Home Assistant (ingress): the user is only trusted on requests from the Supervisor proxy; on
-  the app port (tablets) the child logs in with its PIN as before.
+**Children and their Home Assistant user:** children who have their own Home Assistant user open their app in the
+Home Assistant sidebar without PIN as soon as the user is chosen in the child's profile (Profiles › edit › *Home
+Assistant user*) – there is no extra switch (the former option *Children may sign in with their Home Assistant user*
+is gone; existing links stay and now simply work). One Home Assistant user belongs to at most one profile – parent or
+child. A child without a link logs in with its PIN.
+- In the sidebar it works through Home Assistant (ingress): the user is only trusted on requests from the Supervisor
+  proxy. On the app port (tablets) the child uses its PIN – or *Sign in with Home Assistant* when that is switched on.
 - The child only gets the children's app – never the parent area. *Parent area* from there asks for the parent PIN.
 - *Log out* (or the automatic log-out after a break) ends the login in that tab without logging in again right away;
   the profile screen then offers *Log in as …* for the child's Home Assistant user. Reloading keeps the tab logged

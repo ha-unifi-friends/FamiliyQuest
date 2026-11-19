@@ -59,6 +59,13 @@ window.FQN = (() => {
     .day.on{color:var(--c)!important;border-color:var(--c)!important;background:var(--cb)!important}
     .new,.nw,.newbox{border-color:var(--line)!important;background:transparent!important}
     .pn{color:var(--fg)!important}
+    .fqe .head{margin:0 0 4px}.fqe .badge,.fqe .title,.fqe .hsp,.fqe .hadd{display:none!important}.fqe .subt{margin:0;font-size:14px}
+    .fqe .sec,.card>h2,.card>h3{font-size:17px!important;font-weight:700!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
+    .fqe .sec{margin:22px 0 10px}.fqe .add .sec{margin-top:0}.fqe .foot{color:var(--muted)!important}
+    .fc,.fq,.pre,.sg,.sz,.pc,.tab,.tb,.addp,.chip,.seg button,.in,.sel,.t,.ib,button.add,.day{min-height:44px!important}
+    .rmp,.x{min-width:44px!important;min-height:44px!important}
+    .fqe .tl .in{min-width:0}.tb[data-chpin],.tb[data-lock]{display:none!important}
+    @media (max-width:560px){.fqe .ar{flex-wrap:wrap}.fqe .ar .pn{flex:1;width:auto}.fqe .days{order:5;flex:1 1 100%;flex-wrap:nowrap}.fqe .day{flex:1 1 0;width:auto!important;min-width:0}}
   `;
   const sheet = new CSSStyleSheet();
   try { sheet.replaceSync(css); } catch { return; }

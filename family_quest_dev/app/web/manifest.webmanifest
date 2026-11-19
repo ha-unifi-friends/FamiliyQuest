@@ -1,6 +1,6 @@
 {
-  "name": "Family Quest",
-  "short_name": "Family Quest",
+  "name": "Family Quest Dev",
+  "short_name": "Family Quest Dev",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

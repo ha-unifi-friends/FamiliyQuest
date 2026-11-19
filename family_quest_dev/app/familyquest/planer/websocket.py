@@ -70,11 +70,36 @@ def _pin_error(connection: websocket_api.ActiveConnection, msg: dict[str, Any], 
     connection.send_error(msg["id"], "pin_" + res, PIN_ERRORS.get(res, res))
 
 
+# Family Quest: the signed-in profile is the identity – a parent (parent area, or a parent profile in the app, also
+# signed in with Home Assistant) is an administrator and never asked for a PIN; a child is told that only a parent may
+# do this (no PIN pad: a second PIN would block parents who sign in without one). api/planer.py sets fq_denied.
+def _t(text: str) -> str:
+    return text          # marks the text for the Family Quest dictionaries – the browser translates it (planer/host.js)
+
+
+DENIED = {"parent_only": _t("Only a parent can do this – sign in with a parent profile."),
+          "parent_network": _t("Parent changes are not allowed from this network (or only in Home Assistant)."),
+          "own_only": _t("Children can only add and change their own to-dos."),
+          "points_parent": _t("Only parents give points for to-dos – choose «No points».")}
+
+
+def _fq_kid(connection: websocket_api.ActiveConnection) -> bool:
+    return not connection.user.is_admin and hasattr(connection, "fq_denied")
+
+
+def _deny(connection: websocket_api.ActiveConnection, msg: dict[str, Any], code: str | None = None) -> None:
+    code = code or getattr(connection, "fq_denied", "parent_only")
+    connection.send_error(msg["id"], code, DENIED.get(code, code))
+
+
 def _unlocked(connection: websocket_api.ActiveConnection, msg: dict[str, Any], planner) -> bool:
-    """Settings and reward changes: always the parent PIN (as a short-lived unlock token)."""
+    """Settings and reward changes: parents only."""
     if connection.user.is_admin:
-        # Family Quest: only a parent logged in with their own PIN gets an admin connection
+        # Family Quest: a parent (parent area or a parent profile in the app) gets an admin connection
         return True
+    if _fq_kid(connection):
+        _deny(connection, msg)
+        return False
     if planner.pin_default:
         _pin_error(connection, msg, "change_required")
         return False
@@ -88,6 +113,9 @@ async def _parent(connection: websocket_api.ActiveConnection, msg: dict[str, Any
     """Approving rewards and changing points: an administrator, an unlock token or the parent PIN."""
     if connection.user.is_admin or (not planner.pin_default and _token_ok(planner.entry.entry_id, msg.get("token"))):
         return True
+    if _fq_kid(connection):
+        _deny(connection, msg)
+        return False
     res = await planner.async_check_pin(msg.get("pin"))
     if res == "ok":
         return True
@@ -307,7 +335,7 @@ async def ws_list_refresh(hass: HomeAssistant, connection: websocket_api.ActiveC
     if planner is None:
         _not_found(connection, msg)
         return
-    if not _change(connection, msg, planner):
+    if not _may_edit(connection, msg, planner):          # Family Quest: also children – lists are for everybody
         return
     try:
         result = await planner.async_refresh_list(msg["list_id"], use_ai=msg["ai"])
@@ -333,7 +361,7 @@ async def ws_list_categories(hass: HomeAssistant, connection: websocket_api.Acti
     if planner is None:
         _not_found(connection, msg)
         return
-    if not _change(connection, msg, planner):
+    if not _may_edit(connection, msg, planner):          # Family Quest: also children – lists are for everybody
         return
     try:
         await planner.async_set_categories(msg["list_id"], msg["categories"])
@@ -355,7 +383,7 @@ async def ws_list_assign(hass: HomeAssistant, connection: websocket_api.ActiveCo
     if planner is None:
         _not_found(connection, msg)
         return
-    if not _change(connection, msg, planner):
+    if not _may_edit(connection, msg, planner):          # Family Quest: also children – lists are for everybody
         return
     try:
         await planner.async_assign(msg["list_id"], msg["item"], msg["category_id"])
@@ -491,7 +519,7 @@ async def ws_pin_change(hass: HomeAssistant, connection: websocket_api.ActiveCon
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/settings/get", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN})
+                                  vol.Optional("token"): TOKEN})
 @callback
 def ws_settings_get(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     planner = _planner(hass, msg)
@@ -503,7 +531,7 @@ def ws_settings_get(hass: HomeAssistant, connection: websocket_api.ActiveConnect
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/settings/save", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Required("section"): vol.In(
+                                  vol.Optional("token"): TOKEN, vol.Required("section"): vol.In(
                                       ["general", "vacation", "points", "announce", "lists_settings", "todos", "seasons", "sonder"]),
                                   vol.Required("data"): DATA})
 @websocket_api.async_response
@@ -525,7 +553,7 @@ async def ws_settings_save(hass: HomeAssistant, connection: websocket_api.Active
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/settings/person", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Optional("person_id"): ID,
+                                  vol.Optional("token"): TOKEN, vol.Optional("person_id"): ID,
                                   vol.Required("data"): DATA})
 @websocket_api.async_response
 async def ws_person_save(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
@@ -572,7 +600,7 @@ async def ws_person_save(hass: HomeAssistant, connection: websocket_api.ActiveCo
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/settings/person_remove",
-                                  vol.Optional("entry_id"): str, vol.Required("token"): TOKEN,
+                                  vol.Optional("entry_id"): str, vol.Optional("token"): TOKEN,
                                   vol.Required("person_id"): ID})
 @websocket_api.async_response
 async def ws_person_remove(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
@@ -591,7 +619,7 @@ async def ws_person_remove(hass: HomeAssistant, connection: websocket_api.Active
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/settings/list", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Optional("list_id"): ID,
+                                  vol.Optional("token"): TOKEN, vol.Optional("list_id"): ID,
                                   vol.Required("data"): DATA})
 @websocket_api.async_response
 async def ws_list_save(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
@@ -619,7 +647,7 @@ async def ws_list_save(hass: HomeAssistant, connection: websocket_api.ActiveConn
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/settings/list_remove",
-                                  vol.Optional("entry_id"): str, vol.Required("token"): TOKEN,
+                                  vol.Optional("entry_id"): str, vol.Optional("token"): TOKEN,
                                   vol.Required("list_id"): ID})
 @websocket_api.async_response
 async def ws_list_remove(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
@@ -634,7 +662,7 @@ async def ws_list_remove(hass: HomeAssistant, connection: websocket_api.ActiveCo
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/reward/save", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Optional("reward_id"): ID,
+                                  vol.Optional("token"): TOKEN, vol.Optional("reward_id"): ID,
                                   vol.Required("data"): DATA})
 @websocket_api.async_response
 async def ws_reward_save(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
@@ -654,7 +682,7 @@ async def ws_reward_save(hass: HomeAssistant, connection: websocket_api.ActiveCo
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/reward/remove", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Required("reward_id"): ID})
+                                  vol.Optional("token"): TOKEN, vol.Required("reward_id"): ID})
 @websocket_api.async_response
 async def ws_reward_remove(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     planner = _planner(hass, msg)
@@ -692,23 +720,34 @@ async def ws_theme_set(hass: HomeAssistant, connection: websocket_api.ActiveConn
                                   vol.Optional("token"): TOKEN})
 @websocket_api.async_response
 async def ws_todo_save(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    """Adding or changing a to-do needs the parent PIN (since 0.9.0)."""
+    """Adding or changing a to-do: parents any, a child (Family Quest) its own – without points – and no PIN."""
     planner = _planner(hass, msg)
     if planner is None:
         _not_found(connection, msg)
-        return
-    if not _change(connection, msg, planner):
         return
     tid = msg.get("todo_id")
     if tid and tid not in planner.data["todos"]:
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Unknown to-do")
         return
-    may_points = not planner.pin_default and _token_ok(planner.entry.entry_id, msg.get("token"))
+    kid = _fq_kid(connection)
+    if kid:
+        if not _may_edit(connection, msg, planner):
+            return
+        own = getattr(connection, "fq_person", None)
+        if not own or msg["person_id"] != own or (tid and planner.data["todos"][tid].get("person_id") != own):
+            _deny(connection, msg, "own_only")
+            return
+    elif not _change(connection, msg, planner):
+        return
+    may_points = connection.user.is_admin or (not kid and not planner.pin_default and _token_ok(planner.entry.entry_id, msg.get("token")))
     if "points" in msg and "size" not in msg:  # older dashboards: map own points to the nearest size
         msg = {**msg, "size": min(planner.sizes()["todo"].items(), key=lambda kv: abs(kv[1] - msg["points"]))[0]}
     default_size = planner.todo_settings()["size"]
     if msg.get("size", default_size) != default_size and not may_points:
-        connection.send_error(msg["id"], "pin_required", "Parent PIN required for points")
+        if kid:
+            _deny(connection, msg, "points_parent")
+        else:
+            connection.send_error(msg["id"], "pin_required", "Parent PIN required for points")
         return
     try:
         tid = await planner.async_save_todo(tid, msg, may_points)
@@ -741,7 +780,15 @@ async def ws_todo_delete(hass: HomeAssistant, connection: websocket_api.ActiveCo
     if planner is None:
         _not_found(connection, msg)
         return
-    if not _change(connection, msg, planner):
+    if _fq_kid(connection):                              # Family Quest: a child deletes its own to-dos, no PIN
+        own = getattr(connection, "fq_person", None)
+        todo = planner.data["todos"].get(msg["todo_id"])
+        if not _may_edit(connection, msg, planner):
+            return
+        if todo is None or not own or todo.get("person_id") != own:
+            _deny(connection, msg, "own_only")
+            return
+    elif not _change(connection, msg, planner):
         return
     await planner.async_delete_todo(msg["todo_id"])
     connection.send_result(msg["id"])
@@ -827,7 +874,7 @@ async def ws_sonder_set(hass: HomeAssistant, connection: websocket_api.ActiveCon
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/sonder/release", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Required("inst_id"): SONDER_ID})
+                                  vol.Optional("token"): TOKEN, vol.Required("inst_id"): SONDER_ID})
 @websocket_api.async_response
 async def ws_sonder_release(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     planner = _planner(hass, msg)
@@ -845,7 +892,7 @@ async def ws_sonder_release(hass: HomeAssistant, connection: websocket_api.Activ
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/sonder/list", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN})
+                                  vol.Optional("token"): TOKEN})
 @websocket_api.async_response
 async def ws_sonder_list(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     from . import sonder
@@ -863,7 +910,7 @@ async def ws_sonder_list(hass: HomeAssistant, connection: websocket_api.ActiveCo
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/sonder/save", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Optional("sonder_id"): vol.All(str, vol.Length(max=40)),
+                                  vol.Optional("token"): TOKEN, vol.Optional("sonder_id"): vol.All(str, vol.Length(max=40)),
                                   vol.Required("data"): DATA})
 @websocket_api.async_response
 async def ws_sonder_save(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
@@ -878,7 +925,7 @@ async def ws_sonder_save(hass: HomeAssistant, connection: websocket_api.ActiveCo
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/sonder/delete", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Required("sonder_id"): vol.All(str, vol.Length(max=40))})
+                                  vol.Optional("token"): TOKEN, vol.Required("sonder_id"): vol.All(str, vol.Length(max=40))})
 @websocket_api.async_response
 async def ws_sonder_delete(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     planner = _planner(hass, msg)
@@ -892,7 +939,7 @@ async def ws_sonder_delete(hass: HomeAssistant, connection: websocket_api.Active
 
 
 @websocket_api.websocket_command({vol.Required("type"): "family_planer/sonder/template", vol.Optional("entry_id"): str,
-                                  vol.Required("token"): TOKEN, vol.Required("template"): vol.All(str, vol.Length(max=40))})
+                                  vol.Optional("token"): TOKEN, vol.Required("template"): vol.All(str, vol.Length(max=40))})
 @websocket_api.async_response
 async def ws_sonder_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     planner = _planner(hass, msg)
