@@ -6,6 +6,8 @@ const QUIZ_COLORS = ["var(--ans-1)", "var(--ans-2)", "var(--ans-3)", "var(--ans-
 const QUIZ_SHAPES = ["♠\uFE0E", "♥\uFE0E", "♦\uFE0E", "♣\uFE0E"];   // \uFE0E: as text, not as emoji
 // parent area › Games: «active without bots» – the app hides every bot option for these games (S.me.games_nobots; parents
 // are not bound, the server checks too). withoutBots() in a start dialog: the bot fields go away, the table gets 0 bots.
+// a line that explains a box: in the parent area it lives in the ⓘ of the box title (parent-info.js PARENT_INFO)
+const comIntro = text => window.FQ_PARENT_AREA ? null : h("p.small.muted", text);
 const botsOn = game => typeof S === "undefined" || !S.me || !(S.me.games_nobots || []).includes(game);
 function withoutBots(game, bots, ...more) {
   if (botsOn(game)) return false;
@@ -423,7 +425,7 @@ async function pollsSection(me = S.profile) {
     let polls = [];
     try { polls = await api("community/polls"); } catch (e) { return sec.append(h("p.bad", e.message)); }
     sec.replaceChildren(h("div.sec-head", h("h2", "📊 ", T("Polls")), h("div.head-actions", h("button.btn", { onclick: () => pollDialog(draw) }, "+ ", T("New poll")))),
-      h("p.small.muted", T("Ask the family something – everybody answers on their own device and sees the result afterwards.")),
+      comIntro(T("Ask the family something – everybody answers on their own device and sees the result afterwards.")),
       instList("polls", polls, { closed: p => p.status === "closed",
         summary: p => [C(p.question, "strong.grow"), !p.my_votes.length && p.status !== "closed" ? h("span.chip.vote", T("answer")) : null,
           h("span.chip." + (p.status === "closed" ? "closed" : "vote"), p.status === "closed" ? T("closed") : T("open"))],
@@ -504,7 +506,7 @@ async function familyTimeSection(me = S.profile, { settings = null } = {}) {
     if (!parent && (!d.enabled || !d.events.length)) { sec.hidden = true; return; }     // switched off or nothing planned: children see nothing
     sec.hidden = false;
     sec.replaceChildren(...[h("h2", "🎲 ", T("FamilyTime games")),
-      h("p.small.muted", T("Wish a game for the next FamilyTime – if there are several wishes, the family votes.")),
+      comIntro(T("Wish a game for the next FamilyTime – if there are several wishes, the family votes.")),
       parent && !d.enabled ? h("p.warn-text", T("Game wishes are switched off – children see nothing of it.")) : null,
       d.events.length ? h("div.ftg-list", ...d.events.map(e => card(e, d))) : h("p.small.muted", T("No FamilyTime planned in the calendar yet.")),
       settings ? settings(draw) : null].filter(Boolean));
@@ -644,7 +646,7 @@ async function wichtelnSection(me = S.profile) {
     let d = { items: [], members: [] };
     try { d = await api("community/wichteln"); } catch (e) { return sec.replaceChildren(h("p.bad", e.message)); }
     sec.replaceChildren(h("div.sec-head", h("h2", "🎁 ", T("Wichteln")), h("div.head-actions", h("button.btn", { onclick: () => wichtelDialog(d.members, draw) }, "+ ", T("New Wichteln")))),
-      h("p.small.muted", T("Who gives a present to whom is drawn at random – everybody sees only their own.")),
+      comIntro(T("Who gives a present to whom is drawn at random – everybody sees only their own.")),
       instList("wichteln", d.items, { closed: w => !!w.due && w.due < new Date().toISOString().slice(0, 10),
         summary: w => [C(w.title, "strong.grow"), w.due ? h("span.small.muted", "📅 " + fmtDate(w.due)) : null, w.done ? h("span.chip.closed", "✓") : null],
         body: w => {
@@ -704,7 +706,7 @@ async function councilSection(me = S.profile) {
     let topics = [];
     try { topics = await api("community/council"); } catch (e) { return sec.append(h("p.bad", e.message)); }
     sec.replaceChildren(h("div.sec-head", h("h2", "🗳️ ", T("Family council")), h("div.head-actions", h("button.btn", { onclick: () => topicDialog(draw) }, "+ ", T("New topic")))),
-      h("p.small.muted", T("Everybody can ask the family something, collect ideas and then vote – secretly, one vote each.")),
+      comIntro(T("Everybody can ask the family something, collect ideas and then vote – secretly, one vote each.")),
       instList("council", topics, { closed: t => t.status === "closed",
         summary: t => { const und = t.status === "closed" && t.result && t.result.decided === false;
           return [C(t.title, "strong.grow"), t.status === "vote" && !t.my_vote ? h("span.chip.vote", T("vote")) : null,
@@ -990,7 +992,7 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
   box.replaceChildren(...[
     actions ? null : h("div.sec-head", h("span.grow"), h("div.head-actions", newBtn)),
     runningCard,
-    h("p.small.muted", T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
+    comIntro(T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
     instList("quizzes", quizzes, { closed: q => q.games > 0,
       labels: [T("Not played yet"), T("Played")], empty: [T("All quizzes have been played – make a new one!"), T("No quiz played yet.")],
       summary: q => [C(quizTitle(q.title, q.langs), "strong.grow"), q.langs ? h("span.chip", { title: [q.langs.base, ...q.langs.more].join(" ").toUpperCase() }, "🌐 " + (1 + q.langs.more.length)) : null,

@@ -120,3 +120,19 @@ button.cal-n:hover { background: var(--hover); }
 /* the ⓘ follows the label text: a heading that grows in a flex row only as wide as its text */
 h2.grow:has(> .info-btn), h3.grow:has(> .info-btn) { flex: 0 1 auto; margin-right: auto; }
 .info-text { line-height: 1.5; white-space: pre-line; }
+/* ⓘ of a field: the same circle right of the label text (fieldInfo in parent-info.js); the label line keeps its height */
+.field-info { margin-left: 6px; width: 22px; height: 22px; font-size: .75rem; vertical-align: -3px; }
+label.field > span:has(> .field-info), .field > span:has(> .field-info) { line-height: 22px; }
+/* small fields side by side: as many as fit (two on a phone), labels on top, the inputs on one line */
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; align-items: end; }
+.field-row > .field { margin: 0; min-width: 0; }
+.field-row > .span2 { grid-column: span 2; }
+@media (max-width: 340px) { .field-row > .span2 { grid-column: auto; } }
+.field-row > div.field { display: grid; gap: 4px; font-weight: 700; font-size: .92rem; }        /* like label.field */
+html.ha .field-row > div.field { font-weight: 400; color: var(--muted); font-size: .85rem; }
+.field-row input[type=number], .field-row input[type=time], .field-row select { max-width: none; }
+/* game price: the rent and its period in one line */
+.gp-rent { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.gp-rent > input { flex: 0 1 100px; min-width: 72px; }
+.gp-rent .gp-periods { gap: 4px; }
+.gp-rent .gp-periods .btn { padding-inline: 10px; }

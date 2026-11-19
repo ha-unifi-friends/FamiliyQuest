@@ -20,15 +20,19 @@ def _src(name: str) -> str:
     return (WEB / name).read_text(encoding="utf-8")
 
 
-def info_keys() -> tuple[set[str], dict[str, str]]:
+def info_keys() -> tuple[set[str], dict[str, list[str]]]:
+    """The keys of PARENT_INFO and the texts of each entry – one text or a list of paragraphs (some given by a function)."""
     src = _src("parent-info.js")
     body = src[src.index("const PARENT_INFO = {"):src.index("\n};\n")]
+    starts = list(re.finditer(r'^  (?:\[T\(' + S + r'\)\]|' + S + r'):', body, re.M))
     keys, texts = set(), {}
-    for m in re.finditer(r'^\s*(?:\[T\(' + S + r'\)\]|' + S + r'): T\(' + S + r'\)', body, re.M):
+    for i, m in enumerate(starts):
         k = json.loads('"' + (m.group(1) or m.group(2)) + '"')
         assert k not in keys, f"PARENT_INFO has «{k}» twice"
         keys.add(k)
-        texts[k] = json.loads('"' + m.group(3) + '"')
+        value = body[m.end():starts[i + 1].start() if i + 1 < len(starts) else len(body)]
+        texts[k] = [json.loads('"' + t + '"') for t in re.findall(r'\bT\(' + S + r'\)', value)]
+        assert texts[k], k
     return keys, texts
 
 
@@ -89,9 +93,9 @@ def test_every_settings_part_is_folded():
     view = src[src.index("async function settingsView(main)"):]
     view = view[:view.index("\n}\n")]
     body = view[view.index('main.append(h("h1", T("Settings"))'):view.index("// the status in the rows")]
-    # every part of the page is a fold: no section, no part function outside fold(…)
+    # every part of the page is a fold: no section, no part function outside fold(…) – the intro lives in the ⓘ of the title
     parts = re.findall(r'^    (\S.*)$', body, re.M)
-    loose = [p for p in parts if not p.startswith(("fold(", 'h("p.small.muted.set-intro"'))]
+    loose = [p for p in parts if not p.startswith("fold(")]
     assert not loose, loose
     ids = re.findall(r'fold\("(\w+)"', body)
     assert len(ids) == len(set(ids)) >= 17, ids
@@ -104,5 +108,79 @@ def test_info_texts_are_translated():
     _, texts = info_keys()
     for lang in LANGS:
         d = json.loads((WEB / "i18n" / f"{lang}.json").read_text(encoding="utf-8"))
-        missing = sorted(k for k, v in texts.items() if v not in d)
+        missing = sorted(k for k, v in texts.items() for t in v if t not in d)
         assert not missing, (lang, missing[:5], len(missing))
+
+
+# ---------------------------------------------------------------- explanations in the ⓘ, small fields side by side
+def _calls(src: str, name: str) -> list[str]:
+    """The argument text of every call name(…) (balanced parentheses, strings skipped)."""
+    out, i = [], 0
+    while (i := src.find(name + "(", i)) >= 0:
+        j, depth, k = i + len(name) + 1, 1, i + len(name) + 1
+        while depth:
+            c = src[k]
+            if c == '"':
+                k += 1
+                while src[k] != '"':
+                    k += 2 if src[k] == "\\" else 1
+            elif c == "(":
+                depth += 1
+            elif c == ")":
+                depth -= 1
+            k += 1
+        out.append(src[j:k - 1])
+        i = k
+    return out
+
+
+def test_merged_intros_are_paragraphs_of_the_info():
+    _, texts = info_keys()
+    # the explanations that stood under these titles are paragraphs of their ⓘ now
+    for k, part in [("Game battery", "Every child has a game battery."), ("Parents", "Every parent has an own PIN"),
+                    ("Deals", "Children trade coins"), ("Settings", "Every part is folded"), ("prof.time", "Far right ∞"),
+                    ("net.guest", "e.g. your guest Wi-Fi"), ("Library", "Children and parents write books")]:
+        assert len(texts[k]) >= 2 and any(t.startswith(part) for t in texts[k][1:]), (k, texts[k])
+    page = _src("parent.js") + _src("deals.js")
+    for t in ["Every child has a game battery.", "Every parent has an own PIN for the parent area",
+              "Every part is folded – tap a row to open it.", "Children trade coins, chores, pets"]:
+        assert t not in page, t
+
+
+def test_field_explanations_are_info_buttons():
+    pi = _src("parent-info.js")
+    assert "function fieldInfo(" in pi and "function showInfo(" in pi
+    for name in ["parent.js", "deals.js"]:
+        src = _src(name)
+        if name == "deals.js":
+            src = src[src.index("async function dealsParentView"):]          # the children's deal pages keep their texts
+        # no explaining text under a field any more – only the PIN rule (needed while typing) and live values
+        hints = re.findall(r'h\("span\.hint", ([^)]*\))', src)
+        static = [x for x in hints if x.startswith(("T(", "kid ? T(")) and "4 digits" not in x]
+        assert not static, (name, static)
+        # no intro paragraph right after the title of a box
+        # (the kiosk link keeps its warning: whoever has the link sees the dashboard)
+        intro = re.findall(r'\b(?:section|sectionAdd)\(([^\n]*?)\)\),\s*h\("p\.(?:small\.)?muted", T\(', src)
+        assert [x for x in intro if "Link for the kiosk browser" not in x] == [], (name, intro)
+    infos = _calls(_src("parent.js"), "fieldInfo") + _calls(_src("deals.js"), "fieldInfo")
+    assert len(infos) >= 40, len(infos)
+    langs = {lang: json.loads((WEB / "i18n" / f"{lang}.json").read_text(encoding="utf-8")) for lang in LANGS}
+    for args in infos:
+        for t in re.findall(r'\bT\(' + S + r'\)', args):
+            t = json.loads('"' + t + '"')
+            for lang, d in langs.items():
+                assert t in d, (lang, t)
+
+
+def test_small_fields_side_by_side():
+    css = _src("parent-ha.css")
+    assert re.search(r"\.field-row \{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(150px, 1fr\)\)", css)
+    assert ".field-info" in css and ".gp-rent" in css
+    src = _src("parent.js")
+    price = src[src.index("function gamePriceBox("):src.index("// ---------------------------------------------------------------- pairs game")]
+    assert 'h("div.field-row"' in price and 'h("div.gp-rent", rent, periods)' in price and price.count("fieldInfo(") == 4
+    battery = src[src.index("function batteryForm("):src.index("/** Parent area › Games: the family default")]
+    assert 'h("div.field-row"' in battery and "...more" in battery
+    learning = src[src.index('fold("learning"'):src.index('fold("levels"')]
+    assert learning.count("fieldInfo(") == 5 and 'h("div.field-row"' in learning
+    assert 'h("div.field-row"' in _src("deals.js")

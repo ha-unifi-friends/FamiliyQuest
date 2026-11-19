@@ -1176,7 +1176,6 @@ async function importView(main) {
     section(T("From a file"), drop,
       P.meta.ai ? null : h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section("🤖 " + I18N.tr(T("Made with your AI")),
-      h("p", T("Learning material that fits your child's school year and textbook: the template – and every JSON export of a pack – is a JSON file that explains itself to an AI (instructions and every field). Give it to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3», «the words on this photo» or «add 10 cards». Paste the answer below (or save it as a .json file and upload it above). Then check the draft, publish it and assign it to your children.")),
       aiPromptBox(T("Make me a learning pack for Family Quest.\nSubject: [e.g. French vocabulary]\nSchool year: [e.g. 5th grade]\nTopic or textbook unit: [e.g. unit 3 – at school]\nAbout [20] cards, my child speaks [English]."),
         { template: "api/ai-template/pack", name: "family-quest-pack-template.json" }),
       // the answer of the AI pasted right here – no file needed (like the import of the library)
@@ -1863,8 +1862,7 @@ function partyCard() {
     const what = p ? [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean).map(t => I18N.tr(t)).join(" · ") : "";
     box.classList.toggle("on", !!p);
     box.replaceChildren(h("div.row", h("span.big-ic", "🎉"), h("div.grow", h("h2", { "data-ik": "Party mode" }, T("Party mode")),
-        p ? h("div.small", h("b", p.until ? untilWhen(p.until) : I18N.tr(T("until switched off"))), " · ", C(who), what ? h("div.small.muted", what) : null)
-          : h("div.small.muted", T("Every game open, no battery, no time limit – for a party or a game night."))),
+        p ? h("div.small", h("b", p.until ? untilWhen(p.until) : I18N.tr(T("until switched off"))), " · ", C(who), what ? h("div.small.muted", what) : null) : null),
       h("label.switch-wrap", sw, h("span.switch-ui"))));
   };
   draw();
@@ -3211,10 +3209,9 @@ function eventDialog(e) {
   let kids = (P.profiles || []).filter(p => p.role === "kid");
   if (!P.profiles) call("parent/profiles").then(l => { P.profiles = l; kids = l.filter(p => p.role === "kid"); drawOff(); }).catch(() => {});
   const drawOff = () => offBox.replaceChildren(...(kind !== "offlinetime" ? [] : [
-    h("b", T("During the OfflineTime")),
+    h("b", T("During the OfflineTime"), fieldInfo(T("Without a tick it is only a notice in the calendar and on the start page."))),
     h("label.check", h("input", { type: "checkbox", checked: o.internet, onchange: ev => { o.internet = ev.target.checked; } }), "🌐 ", T("Internet off (the internet time cannot be started)")),
     h("label.check", h("input", { type: "checkbox", checked: o.games, onchange: ev => { o.games = ev.target.checked; } }), "🎲 ", T("Games of the app locked (learning stays open)")),
-    h("span.small.muted", T("Without a tick it is only a notice in the calendar and on the start page.")),
     kids.length ? h("div.row.wrap", h("span.small", T("For:")), ...kids.map(k => h("label.check", h("input", { type: "checkbox", checked: o.profiles.includes(k.id),
       onchange: ev => { o.profiles = ev.target.checked ? [...o.profiles, k.id] : o.profiles.filter(x => x !== k.id); } }), C(k.name))),
       h("span.small.muted", T("(none ticked = all children)"))) : null].filter(Boolean)));
