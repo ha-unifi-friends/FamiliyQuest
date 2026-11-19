@@ -3,7 +3,7 @@
 Two lists of networks (CIDR, e.g. 192.168.35.0/24, a single address or a range 192.168.35.10-192.168.35.50),
 set in the parent area:
 * allowed_networks – the whole app (learning app, planer, parent area)
-* parent_networks  – additionally for the parent area (/eltern, /api/parent/…)
+* parent_networks  – additionally for the parent area (/parents, /api/parent/…)
 Empty list = no restriction. The client address is the one loginlog.client_ip() sees (X-Forwarded-For behind
 Home Assistant ingress). Refused requests are logged (login_log, kind "blocked") at most once a minute per address.
 Saving a list that would lock out the parent who saves it is refused.
@@ -14,7 +14,9 @@ import ipaddress
 import time
 from .i18n import _t
 
-PARENT_PATHS = ("/eltern", "/api/parent/")
+PARENT_PATHS = ("/parents", "/eltern", "/api/parent/")
+# the pages had German addresses until 1.1.1 – they now redirect to the English ones (main.py)
+OLD_PAGES = {"/eltern": "/parents", "/gast": "/guest", "/planer": "/planner"}
 SUPERVISOR_NET = "172.30.32.0/23"     # hassio network: Home Assistant Core (Family Quest HA integration) comes from 172.30.32.1
 _last_logged: dict[str, float] = {}
 
@@ -75,7 +77,7 @@ def allowed(ip: str, networks: list[str]) -> bool:
 
 
 def is_parent_path(path: str) -> bool:
-    return path == "/eltern" or path.startswith(PARENT_PATHS)
+    return path in ("/parents", "/eltern") or path.startswith(PARENT_PATHS)
 
 
 # guest networks (e.g. the guest Wi-Fi): only the guest page and playing a game with an invitation
@@ -102,7 +104,7 @@ def guest_only(fq, ip: str) -> bool:
 
 
 def is_guest_path(path: str) -> bool:
-    if path == "/gast" or path.startswith("/i18n/"):
+    if path in ("/guest", "/gast") or path.startswith("/i18n/"):
         return True
     if path.startswith("/api/"):
         if path.startswith(("/api/community/cards/", "/api/community/domino/", "/api/community/paarjagd/",
@@ -117,7 +119,7 @@ def is_guest_path(path: str) -> bool:
             return False                     # Beat the Bureaucracy: only whoever leads helps a team on or sets the administration
         return path.startswith(GUEST_API) and not path.startswith(GUEST_API_DENY)
     last = path.rsplit("/", 1)[-1]
-    return "." in last and not path.startswith(("/eltern", "/media", "/family_planer_files"))   # scripts, styles, icons
+    return "." in last and not path.startswith(("/parents", "/eltern", "/media", "/family_planer_files"))   # scripts, styles, icons
 
 
 def check(fq, ip: str, path: str) -> str | None:

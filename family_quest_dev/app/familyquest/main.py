@@ -195,19 +195,30 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     def kid_app_slash():
         return Response(status_code=307, headers={"Location": "../app"})        # relative links need /app without slash
 
-    @app.get("/eltern", include_in_schema=False)
+    @app.get("/parents", include_in_schema=False)
     def parents():
         return page("eltern.html")
 
-    @app.get("/gast", include_in_schema=False)
+    @app.get("/guest", include_in_schema=False)
     def guest_page():
         return page("gast.html")
+
+    # the former German addresses (printed guest QR codes, bookmarks, home screen icons): a relative redirect – it
+    # stays below the Home Assistant ingress prefix; the query is kept, the #hash the browser keeps by itself
+    def _moved(to: str):
+        def redirect(request: Request):
+            q = request.url.query
+            return Response(status_code=307, headers={"Location": to + ("?" + q if q else ""), "Cache-Control": "no-cache"})
+        return redirect
+
+    for _old, _new in netfilter.OLD_PAGES.items():
+        app.add_api_route(_old, _moved(_new.lstrip("/")), methods=["GET", "HEAD"], include_in_schema=False)
 
     @app.get("/dashboard", include_in_schema=False)
     def dashboard_page():
         return page("dashboard.html")
 
-    @app.get("/planer", include_in_schema=False)
+    @app.get("/planner", include_in_schema=False)
     def planer_page():
         return page("planer.html")
 

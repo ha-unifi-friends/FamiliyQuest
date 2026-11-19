@@ -74,7 +74,12 @@ window.FQ_ON_401 = async () => {
 };
 
 async function call(path, opts) {
-  try { return await api(path, opts); }
+  try {
+    const r = await api(path, opts);
+    // a change (not a GET): the page may show a status of it – the folded settings update their rows (settingsView)
+    if (opts && opts.method && opts.method !== "GET" && P.onChange) P.onChange(path);
+    return r;
+  }
   catch (e) {
     if (e.status === 401 && Auth.parent) { Auth.parent = ""; loginView(); }       // could not be renewed (api did try)
     toast(e.message, "bad");
@@ -199,6 +204,7 @@ function appLinkDialog(href) {
     h("p.small.muted", "📶 ", T("Works in the home Wi-Fi.")),
     h("div.row.wrap", h("a.btn", { href: link, target: "_blank", rel: "noopener", onclick: close }, "↗ ", T("Open in a new tab")),
       h("button.btn.ghost", { onclick: () => { m.close(); printPoster(link); } }, "🖨️ ", T("Print poster")),
+      h("button.btn.ghost", { onclick: () => { m.close(); installAppDialog({ forOther: true, link }); } }, "📲 ", T("Install app")),
       h("button.btn.ghost", { onclick: close }, T("Close")))))
     : modal(h("div.form.app-link-dlg", h("h2", "⭐ ", T("Family Quest App")),
       h("p.app-link-off", "ℹ️ ", T("Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.")),
@@ -224,6 +230,7 @@ function appLinkAttrs({ dialog = false } = {}) {
 const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: async e => { e.currentTarget.disabled = true; await planerRefresh(); location.reload(); } }, "⟳");
 
 function render() {
+  P.onChange = null;
   const nav = h("nav.side", h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn()),
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
@@ -614,12 +621,12 @@ async function profileDialog(p, persons, role = "kid") {
   // daily time: games, learning, internet – three sliders, each with its weekdays (children only)
   const gameLimit = limitSlider({ icon: "🎮", label: T("Games per day"), value: s.game_limit });
   const learnLimit = limitSlider({ icon: "📚", label: T("Learning per day"), value: s.learn_limit });
-  const timePart = h("div.form.lim-box", h("h3", "⏱️ ", T("Time per day")),
+  const timePart = h("div.form.lim-box", h("h3", { "data-ik": "prof.time" }, "⏱️ ", T("Time per day")),
     h("p.small.muted", T("Far right ∞ = not limited. 📅 Days: own times per weekday – a weekday moves with the slider above until you move it yourself.")),
     gameLimit.el, learnLimit.el, plan.slider.el,
     h("p.small.muted", T("Games: family games and the game corner – a game already running may be finished. Internet: the free minutes of the internet budget (needs the UniFi firewall rule below); 0 = only minutes from the shop.")));
   const batteryPart = !isNew && p.role === "kid" ? kidBatteryBox(p.id) : null;
-  const kidPart = h("div.form", h("h3", T("Internet minutes")),
+  const kidPart = h("div.form", h("h3", { "data-ik": "prof.internet" }, T("Internet minutes")),
     h("p.small.muted", T("Optional. Family Quest manages the internet time itself with the UniFi firewall rule; an input_number can also receive the minutes.")),
     h("div.grid2", h("label.field", T("UniFi firewall rule (switch)"), f.internet_rule, ruleList,
       h("span.hint", T("The child starts and stops the internet time in the app; the budget is the account «Internet minutes»."))),
@@ -628,7 +635,7 @@ async function profileDialog(p, persons, role = "kid") {
       h("span.hint", T("Receives the minutes from the shop, e.g. for your own automations."))),
       h("label.field", T("Maximum minutes per day from the shop"), f.internet_daily_limit)),
     plan.el);
-  const parentPart = h("div.form", h("h3", "🔔 ", T("Push messages")),
+  const parentPart = h("div.form", h("h3", { "data-ik": "prof.push" }, "🔔 ", T("Push messages")),
     h("label.field", T("Notify service of this parent"), f.notify_service, notifyList,
       h("span.hint", T("Approvals for chores and rewards also go to this phone (Companion app), with the buttons OK / No."))));
   // Home Assistant devices this profile may switch (light in the own room, …)
@@ -733,7 +740,7 @@ async function profileDialog(p, persons, role = "kid") {
   ];
   const loginList = h("div.login-opts", { role: "radiogroup" });
   const loginHint = h("p.small.muted");
-  const loginForm = h("div.form.login-box", h("h3", "🔐 ", T("Sign-in")), loginList, loginHint, haPart, pinForm);
+  const loginForm = h("div.form.login-box", h("h3", { "data-ik": "prof.login" }, "🔐 ", T("Sign-in")), loginList, loginHint, haPart, pinForm);
   const drawLogin = () => {
     const kid = f.role.value === "kid";
     if (!kid && loginMode === "none") loginMode = "pin";          // parents always sign in
@@ -754,14 +761,14 @@ async function profileDialog(p, persons, role = "kid") {
   };
   // the dialog in parts (tabs): profile · learning · time & battery · internet & devices – Save / Cancel always at the bottom,
   // «Remove» set apart at the end of the profile tab
-  const danger = !isNew && p.id !== P.meta.me.id ? h("div.danger-zone", h("h3", "⚠️ ", T("Remove profile")),
+  const danger = !isNew && p.id !== P.meta.me.id ? h("div.danger-zone", h("h3", { "data-ik": "Remove profile" }, "⚠️ ", T("Remove profile")),
     h("p.small.muted", T("Archive the profile or delete it for good – you confirm it in the next step.")),
     h("button.btn.small.bad", { type: "button", onclick: remove }, "🗑 ", T("Remove"))) : null;
   const tabs = tabbed([
     { key: "profile", label: "👤 " + I18N.tr(T("Profile")), content: [
       h("div.grid2", h("label.field", T("Name"), f.name), h("label.field", T("Role"), f.role), h("label.field", T("Colour"), f.color)),
       loginForm,
-      isNew ? null : h("div.form", h("h3", "🧑‍🎨 ", T("Avatar")), avBox),
+      isNew ? null : h("div.form", h("h3", { "data-ik": "prof.avatar" }, "🧑‍🎨 ", T("Avatar")), avBox),
       persons.length ? h("label.field", T("Person in the Family Planer"), f.planer, h("span.hint", T("Shows the chores of this person and counts them."))) : null,
       parentPart, danger] },
     { key: "learn", label: "📚 " + I18N.tr(T("Learning")), content: [
@@ -770,7 +777,7 @@ async function profileDialog(p, persons, role = "kid") {
         h("label.field", T("Learning hours"), f.learning_hours, h("span.hint", T("Empty = always. Example: 07:00-20:00"))),
         h("label.field", T("Log out after minutes without touch"), f.auto_logout_min, h("span.hint", T("0 = never"))))] },
     { key: "time", label: "⏱️ " + I18N.tr(T("Time & battery")), content: [timePart, batteryPart] },
-    { key: "net", label: "🌐 " + I18N.tr(T("Internet & devices")), content: [kidPart, P.meta.ha ? h("div.form", h("h3", "🏠 ", T("Devices")), devBox) : null] },
+    { key: "net", label: "🌐 " + I18N.tr(T("Internet & devices")), content: [kidPart, P.meta.ha ? h("div.form", h("h3", { "data-ik": "prof.devices" }, "🏠 ", T("Devices")), devBox) : null] },
   ]);
   const syncRole = () => {
     const kid = f.role.value === "kid";
@@ -1469,7 +1476,7 @@ async function choresView(main) {
 // «+ To-do». They call the planer in the frame (planer/host.js FQ_PLANER_DO) – same windows, PIN rules and API calls.
 // «Refresh» (the planer pulls calendars and lists again) is the app's ⟳ button (planerRefresh). Settings: below.
 function planerChoresSection(...more) {
-  const frame = planerFrame("planer?mode=parent#/aemtliplan", T("Chore plan"));
+  const frame = planerFrame("planner?mode=parent#/aemtliplan", T("Chore plan"));
   const act = kind => {
     const w = frame.contentWindow;
     if (!w || !w.FQ_PLANER_DO) return;
@@ -1495,7 +1502,7 @@ function planerChoresSection(...more) {
 function planerSettingsSection() {
   const box = h("details.card.sec.fold.planer-settings", h("summary", h("h2", "⚙️ " + I18N.tr(T("Planner settings")))));
   box.addEventListener("toggle", () => {
-    if (box.open && !box.querySelector(".planer-frame")) box.append(planerFrame("planer?mode=parent#/einstellungen", T("Planner settings")));
+    if (box.open && !box.querySelector(".planer-frame")) box.append(planerFrame("planner?mode=parent#/einstellungen", T("Planner settings")));
   });
   return box;
 }
@@ -1824,7 +1831,7 @@ function batteryForm(values, own, onSave) {
 
 /** Parent area › Games: the family default of the game battery, the daily goal, every child's charge now. */
 function batterySettingsCard() {
-  const box = h("details.card.sec.bat-settings", h("summary", h("b", "🔋 ", T("Game battery"))));
+  const box = h("details.card.sec.bat-settings", h("summary", h("b", { "data-ik": "Game battery" }, "🔋 ", T("Game battery"))));
   const draw = d => {
     const save = async v => { try { draw(await call("parent/battery", { method: "PUT", body: v })); toast(T("Saved"), "good"); } catch {} };
     const fam = d.family;
@@ -1846,7 +1853,7 @@ function batterySettingsCard() {
 
 /** Profile dialog of a child: its own battery values (empty = as the family). */
 function kidBatteryBox(pid) {
-  const box = h("div.form.lim-box", h("h3", "🔋 ", T("Game battery")), h("p.small.muted", "…"));
+  const box = h("div.form.lim-box", h("h3", { "data-ik": "Game battery" }, "🔋 ", T("Game battery")), h("p.small.muted", "…"));
   const draw = d => {
     const k = d.kids.find(x => x.id === pid);
     if (!k) return box.replaceChildren();
@@ -1876,7 +1883,7 @@ function partyCard() {
     const who = p ? (p.kids === "all" ? I18N.tr(T("all children")) : p.kids.map(id => (kids.find(k => k.id === id) || {}).name || "?").join(", ")) : "";
     const what = p ? [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean).map(t => I18N.tr(t)).join(" · ") : "";
     box.classList.toggle("on", !!p);
-    box.replaceChildren(h("div.row", h("span.big-ic", "🎉"), h("div.grow", h("h2", T("Party mode")),
+    box.replaceChildren(h("div.row", h("span.big-ic", "🎉"), h("div.grow", h("h2", { "data-ik": "Party mode" }, T("Party mode")),
         p ? h("div.small", h("b", p.until ? untilWhen(p.until) : I18N.tr(T("until switched off"))), " · ", C(who), what ? h("div.small.muted", what) : null)
           : h("div.small.muted", T("Every game open, no battery, no time limit – for a party or a game night."))),
       h("label.switch-wrap", sw, h("span.switch-ui"))));
@@ -2262,7 +2269,7 @@ function haAppLoginBox() {
     const result = h("p.small");
     const names = st.linked.map(p => p.name).join(", ");
     box.replaceChildren(
-      h("h3", "📱 ", T("Sign in with Home Assistant in the app")),
+      h("h3", { "data-ik": "ha.app" }, "📱 ", T("Sign in with Home Assistant in the app")),
       h("label.check", on, h("span", T("Allow sign-in with Home Assistant in the app (tablets, phones)"))),
       h("p.small.muted", T("The login screen of the app shows «Sign in with Home Assistant». It opens the login page of Home Assistant (with two-factor authentication when the user has it) and comes back signed in – as the profile linked with that Home Assistant user. Family Quest keeps no Home Assistant password or token.")),
       h("p.small", names ? [T("Can sign in:"), " ", C(names)] : h("span.muted", T("Nobody can sign in yet – link a Home Assistant user with a profile (Profiles › edit)."))),
@@ -2407,9 +2414,9 @@ async function firewallSection(s) {
   return section("🛡️ " + I18N.tr(T("Access from the network")),
     h("p.small.muted", T("Only devices with an address in these ranges may use Family Quest. A range can also be a single address (leave «to» empty). No range = every network.")),
     me,
-    h("h3", T("Whole app")), app,
-    h("h3", T("Parent area (additionally)")), h("p.small.muted", T("e.g. only the parents' network – children's devices can then not open the parent area.")), par,
-    h("h3", "👥 ", T("Guest networks")), h("p.small.muted", T("e.g. your guest Wi-Fi: devices there can only join games with an invitation (QR code) – no family login, no app, no parent area.")), gst,
+    h("h3", { "data-ik": "net.app" }, T("Whole app")), app,
+    h("h3", { "data-ik": "net.parent" }, T("Parent area (additionally)")), h("p.small.muted", T("e.g. only the parents' network – children's devices can then not open the parent area.")), par,
+    h("h3", { "data-ik": "net.guest" }, "👥 ", T("Guest networks")), h("p.small.muted", T("e.g. your guest Wi-Fi: devices there can only join games with an invitation (QR code) – no family login, no app, no parent area.")), gst,
     h("button.btn", { onclick: async () => {
       try { await call("parent/settings", { method: "PUT", body: { allowed_networks: app.value(), parent_networks: par.value(), guest_networks: gst.value() } }); toast(T("Saved"), "good"); render(); }
       catch (e) { toast(e.message, "bad"); }
@@ -2526,7 +2533,7 @@ async function gamesView(main) {
     const flat = content.flat(Infinity).filter(x => x != null && x !== false);
     const settings = flat.filter(x => x.classList && x.classList.contains("pj-rewards")), play = flat.filter(x => !settings.includes(x));
     return h("details.card.sec.game-sec", { "data-game": k },
-      h("summary.sec-head", h("h2", title, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null), h("div.head-actions", ...[].concat(actions)), access.chips(k)),
+      h("summary.sec-head", h("h2", { "data-ik": (GAME_LIST.find(g => g[0] === k) || [])[2] }, title, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null), h("div.head-actions", ...[].concat(actions)), access.chips(k)),
       play.length ? h("div.game-play", ...play) : null,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
   };
@@ -2539,10 +2546,10 @@ async function gamesView(main) {
     const count = h("span.chip.cg-count", "…"), actions = h("div.row.wrap.cg-actions"), list = h("div.cg-list");
     const play = h("div.row.wrap.cg-play-btns"), playRow = h("div.game-play.cg-play", play, head ? Object.assign(head, { className: head.className + " cg-app" }) : null);
     const el = h("details.card.sec.game-sec.cg-sec", { "data-game": k },
-      h("summary.sec-head", h("h2", ic, " ", I18N.tr(name), " ", count, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null),
+      h("summary.sec-head", h("h2", { "data-ik": name }, ic, " ", I18N.tr(name), " ", count, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null),
         access.chips(k), h("p.small.muted.cg-desc", desc)),
       playRow,
-      h("div.row.wrap.cg-content-head", h("h3.cg-sub.grow", contentTitle), actions), list,
+      h("div.row.wrap.cg-content-head", h("h3.cg-sub.grow", { "data-ik": "cg." + k }, contentTitle), actions), list,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
     return { el, actions, list, play, count: n => { count.textContent = String(n); } };
   };
@@ -2640,7 +2647,7 @@ async function gamesView(main) {
   const showKartenlauf = async () => {
     let g = null; try { g = await call("community/kartenlauf"); } catch {}
     const open = () => { const b = h("div.kl-live"); kartenlauf.replaceChildren(b); kartenlaufLive(b, me, () => render()); };
-    kartenlauf.replaceChildren(gsec("kartenlauf", "🏁 Kartenlauf", appBtn("kartenlauf"), g && g.status !== "done"
+    kartenlauf.replaceChildren(gsec("kartenlauf", "🏁 " + I18N.tr(T("Card Race")), appBtn("kartenlauf"), g && g.status !== "done"
       ? h("button.btn", { onclick: open }, g.joined ? T("Back to the game") : T("Join"))
       : [h("p.muted", T("The race board game with cards: bring your four marbles home – alone or in teams of two, with bots and guests.")),
          h("div.row.wrap", h("button.btn", { onclick: () => kartenlaufStartDialog(false, open) }, "👨‍👩‍👧 ", T("Open a family table")),
@@ -2867,7 +2874,7 @@ async function gamesView(main) {
       .map(([k, n]) => h("option", { value: k, selected: (s.game_starter || "dice") === k }, n)));
   const guests = h("input", { type: "checkbox", checked: s.games_guests !== false, onchange: async () => {
     await call("parent/settings", { method: "PUT", body: { games_guests: guests.checked } }); toast(T("Saved"), "good"); } });
-  const general = h("details.card.sec.games-general", h("summary", h("b", "⚙️ ", T("For all games"))),
+  const general = h("details.card.sec.games-general", h("summary", h("b", { "data-ik": "games.general" }, "⚙️ ", T("For all games"))),
     h("div.row", h("button.btn.small.ghost", { onclick: async () => { await access.allTo("all"); render(); } }, "✓ ", T("All on")),
       h("button.btn.small.ghost", { onclick: async () => { await access.allTo("off"); render(); } }, "✕ ", T("All off"))),
     h("label.field", T("Who begins a game (card and board games)"), starter),
@@ -3041,14 +3048,15 @@ async function downloadBackup() {
   const url = URL.createObjectURL(await r.blob());
   const a = h("a", { href: url, download: name }); document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  if (P.onChange) P.onChange("parent/backup");          // «last backup» in the folded settings
 }
 
 // ---------------------------------------------------------------- settings
 // ---------------------------------------------------------------- own texts and languages
 async function translationsSection() {
   const box = h("div");
-  // folded by default – rarely needed and long
-  const sec = h("details.card.sec.fold", h("summary", h("h2", "🌐 " + I18N.tr(T("Own texts and languages")))),
+  // folded in the settings like every part (setFold)
+  const sec = h("section.card.sec", h("h2", "🌐 " + I18N.tr(T("Own texts and languages"))),
     h("p.muted", T("Overwrite single texts of a language, or create your own language (e.g. your dialect) – it starts from a base language. Learning content is not translated here.")), box);
   const nameOf = code => (I18N.LANGS.find(([k]) => k === code) || [code, code])[1];
   let lang = I18N.custom.some(l => l.code === I18N.lang) || I18N.LANGS.some(([k]) => k === I18N.lang) ? I18N.lang : "de-DE";
@@ -3398,7 +3406,7 @@ async function dashboardView(main) {
   const wBox = h("div.dash-widgets", ...DASH_WIDGETS.map(([k, ic, n]) => h("label.check", h("input", { type: "checkbox", checked: wSel.has(k),
     onchange: e => { e.target.checked ? wSel.add(k) : wSel.delete(k); calBox.hidden = !wSel.has("events"); } }), ic + " ", n)));
   const calSel = new Set(c.calendars);
-  const calBox = h("div", { hidden: !wSel.has("events") }, h("h3", "📅 ", T("Calendars")));
+  const calBox = h("div", { hidden: !wSel.has("events") }, h("h3", { "data-ik": "dash.calendars" }, "📅 ", T("Calendars")));
   if (P.meta.ha) call("parent/ha/entities?domain=calendar").then(list => calBox.append(list.length
     ? h("div.row.wrap", ...list.map(e => h("label.check", h("input", { type: "checkbox", checked: calSel.has(e.entity_id),
         onchange: ev => ev.target.checked ? calSel.add(e.entity_id) : calSel.delete(e.entity_id) }), C(e.name || e.entity_id))))
@@ -3409,7 +3417,7 @@ async function dashboardView(main) {
   const wxHours = h("select", ...[6, 12, 24].map(v => h("option", { value: v, selected: c.weather_hours === v }, I18N.tr(T("next {0} hours")).replace("{0}", v))));
   const wxRain = h("select", ...[30, 40, 50, 60, 70].map(v => h("option", { value: v, selected: c.rain_chance === v }, v + " %")));
   const wxKids = h("input", { type: "checkbox", checked: c.kids_alarm !== false });
-  const wxBox = h("div", h("h3", "🌂 ", T("Weather alarm")),
+  const wxBox = h("div", h("h3", { "data-ik": "dash.weather" }, "🌂 ", T("Weather alarm")),
     h("p.small.muted", T("From a weather entity of Home Assistant: rain, thunderstorm, snow, wind, cold or heat in the next hours → a hint what to take along.")),
     h("div.grid3", h("label.field", T("Weather entity"), wxEnt), h("label.field", T("Look ahead"), wxHours), h("label.field", T("Rain hint from a chance of"), wxRain)),
     h("label.check", wxKids, T("Also on the children's start page")));
@@ -3435,8 +3443,8 @@ async function dashboardView(main) {
     section("⚙️ " + I18N.tr(T("What the dashboard shows")),
       h("label.check", on, h("strong", T("Dashboard on"))),
       h("div.grid3", h("label.field", T("Title"), title), h("label.field", T("Look"), theme), h("label.field", T("Refresh every … seconds"), refresh)),
-      h("h3", "🧒 ", T("Children")), kidBox,
-      h("h3", "🧩 ", T("Content")), wBox,
+      h("h3", { "data-ik": "dash.children" }, "🧒 ", T("Children")), kidBox,
+      h("h3", { "data-ik": "dash.content" }, "🧩 ", T("Content")), wBox,
       h("p.small.muted", "ℹ️ ", T("The weather is otherwise only seen by each child itself – on the dashboard everybody sees it. Moods and texts to the parents are never shown.")),
       calBox, wxBox,
       h("button.btn", { onclick: async () => {
@@ -3448,6 +3456,88 @@ async function dashboardView(main) {
         } catch (e) { toast(e.message, "bad"); }
       } }, "💾 ", T("Save"))),
     linkSec);
+}
+
+// ---------------------------------------------------------------- settings: every part folded, with its status
+// Each part is a fold (details, a 44 px row – the whole row opens it) with its title and a short status of how it is
+// set now («No restrictions», «Last backup: 12.11.2026» …). The part itself stays as it is inside the fold (its own
+// title is hidden there). Open folds stay open when the page is drawn again (e.g. after saving).
+const SET_OPEN = new Set();
+function setFold(id, title, sec) {
+  if (!sec) return null;
+  sec.classList.add("set-body");
+  const d = h("details.card.sec.fold.set-fold", { "data-set": id },
+    h("summary", h("div.set-head", h("h2", title), h("span.set-status", { "data-set": id }, "…"))), sec);
+  d.open = SET_OPEN.has(id);
+  d.addEventListener("toggle", () => { if (d.open) SET_OPEN.add(id); else SET_OPEN.delete(id); });
+  return d;
+}
+
+/** The status texts of the folded settings – fetched fresh (after every change on the page too). */
+async function settingsStatus(main) {
+  const get = path => api(path).catch(() => null);
+  const [s, mem, link, themes, weather, haApp, integ, tr, backup, shop, planer] = await Promise.all([
+    get("parent/settings"), get("parent/memory"), get("parent/direct-access"), get("parent/themes"), get("parent/weather"),
+    get("parent/ha-app-login"), get("parent/integration"), get("parent/translations"), get("parent/backup/sizes"),
+    get("planer/shopping"), get("planer/import/sources")]);
+  const t = k => I18N.tr(k), f = (k, ...v) => v.reduce((a, x, i) => a.split("{" + i + "}").join(String(x)), I18N.tr(k));
+  const n = (one, many, x) => x === 1 ? t(one) : f(many, x);
+  const st = {};
+  if (s) {
+    const vis = { percent: T("Only percentages"), goal: T("Only the family goal") }[s.family_visibility] || T("Everything");
+    st.family = f(T("Comparison: {0}"), t(vis)) + " · " + t(s.sound !== false ? T("Sound on") : T("Sound off"));
+    const ha = [s.reminder_time ? f(T("Learning reminder {0}"), s.reminder_time) : null,
+      s.chore_reminder_time ? f(T("Chore reminder {0}"), s.chore_reminder_time) : null,
+      s.notify_service ? t(T("Push for approvals")) : null].filter(Boolean);
+    st.ha = [P.meta.ha ? null : t(T("Not connected")), ...(ha.length ? ha : [t(T("No reminders"))])].filter(Boolean).join(" · ");
+    st.learning = f(T("Perfect lesson: {0} coins"), s.lesson_perfect_coins ?? 5) + " · " + f(T("Pet food: {0} coins"), s.pet_food_cost ?? 2);
+    const lv = s.levels || [];
+    st.levels = lv.length ? f(T("{0} levels · the highest from {1} XP"), lv.length, Number(lv[lv.length - 1]).toLocaleString(I18N.locale)) : "";
+    const price = s.familytime_game_price ?? 150;
+    st.familytime = s.familytime_wishes === false ? t(T("Game wishes off"))
+      : price > 0 ? f(T("Game wishes on · fix a game: {0} coins"), price) : t(T("Game wishes on"));
+    st.halogin = [P.meta.my_ha_user ? f(T("Linked with «{0}»"), P.meta.my_ha_user) : t(T("Not linked")),
+      haApp ? t(haApp.on ? T("app sign-in on") : T("app sign-in off")) : null,
+      s.parent_ha_only ? t(T("parent area only in Home Assistant")) : null].filter(Boolean).join(" · ");
+    const nets = (s.allowed_networks || []).length + (s.parent_networks || []).length, guests = (s.guest_networks || []).length;
+    st.network = (nets ? n(T("IP restriction active (1 network)"), T("IP restriction active ({0} networks)"), nets) : t(T("No restrictions")))
+      + (guests ? " · " + n(T("1 guest network"), T("{0} guest networks"), guests) : "");
+  }
+  if (mem) {
+    const c = mem.crest;
+    st.crest = !c ? t(T("No family crest")) : [t(c.image ? T("Own picture") : T("Drawn crest")), c.name || null].filter(Boolean).join(" · ");
+  }
+  if (link) st.link = link.enabled ? `${(link.ips && link.ips[0]) || location.hostname}:${link.port || link.default_port || 8099}` : t(T("Direct access is off"));
+  if (themes) {
+    const on = themes.designs.filter(x => x.on).length, a = themes.active;
+    st.themes = f(T("{0} of {1} designs on"), on, themes.designs.length) + (a ? " · " + (a.icon || "") + " " + (a.builtin ? t(a.name) : a.name) : "");
+  }
+  if (weather) st.weather = weather.config.enabled ? f(T("On · {0} weather levels"), weather.config.levels.length) : t(T("Off"));
+  if (integ) st.integration = !integ.enabled ? t(T("Off"))
+    : t(integ.component && integ.component.installed ? T("On · installed in Home Assistant") : T("On · not installed in Home Assistant yet"));
+  if (tr) {
+    const lang = (I18N.LANGS.find(([k]) => k === I18N.lang) || [])[1] || (tr.languages.find(l => l.code === I18N.lang) || {}).name || I18N.lang;
+    const own = tr.languages.length, texts = Object.values(tr.counts || {}).reduce((a, b) => a + b, 0);
+    st.texts = [lang, own ? n(T("1 own language"), T("{0} own languages"), own) : null,
+      texts ? n(T("1 own text"), T("{0} own texts"), texts) : t(T("No own texts"))].filter(Boolean).join(" · ");
+  }
+  if (backup) {
+    const mb = x => (x / 1048576).toLocaleString(I18N.locale, { maximumFractionDigits: x < 10485760 ? 1 : 0 }) + " MB";
+    st.backup = (backup.last_backup ? f(T("Last backup: {0}"), fmtDate(backup.last_backup)) : t(T("No backup yet"))) + " · ≈ " + mb(backup.backup || 0);
+  }
+  if (shop) {
+    const linked = shop.lists.filter(x => x.linked);
+    st.shopping = !shop.ha ? t(T("Needs Home Assistant")) : linked.length ? f(T("In the planner: {0}"), linked.map(x => x.name).join(", "))
+      : shop.lists.length ? t(T("Not in the planner yet")) : t(T("No to-do list found"));
+  }
+  if (planer) st.planer = !planer.config_visible ? t(T("Only from a file"))
+    : planer.sources.length ? f(T("Found in Home Assistant: {0}"), planer.sources.length) : t(T("Nothing found in Home Assistant"));
+  st.about = "Family Quest v" + P.meta.version + " · " + (P.meta.ha ? "Home Assistant ✓" : t(T("without Home Assistant")));
+  for (const el of main.querySelectorAll(".set-status[data-set]")) {
+    const v = st[el.dataset.set];
+    if (v != null) { el.textContent = v; el.title = v; }
+    else if (el.textContent === "…") el.textContent = "";
+  }
 }
 
 async function settingsView(main) {
@@ -3471,16 +3561,19 @@ async function settingsView(main) {
       .map(([k, n]) => h("option", { value: k, selected: (s.pet_shop_currency || "coins") === k }, n))),
   };
   const dl = h("datalist#notify-list", ...notifyOpts.map(o => h("option", { value: o.entity_id })));
+  const saveBtn = () => h("div.row", h("button.btn", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
+  const fold = (id, title, sec) => setFold(id, title, sec);
   main.append(h("h1", T("Settings")),
-    section(T("Family view"), h("label.field", T("What children see in the comparison"), f.family_visibility), h("label.check", f.sound, T("Sound on by default"))),
-    section("Home Assistant", P.meta.ha ? null : h("p.warn-text", T("Home Assistant is not connected – these settings take effect once it is.")),
+    h("p.small.muted.set-intro", T("Every part is folded – tap a row to open it. The row shows how it is set now.")),
+    fold("family", T("Family view"), section(T("Family view"), h("label.field", T("What children see in the comparison"), f.family_visibility), h("label.check", f.sound, T("Sound on by default")), saveBtn())),
+    fold("ha", "Home Assistant", section("Home Assistant", P.meta.ha ? null : h("p.warn-text", T("Home Assistant is not connected – these settings take effect once it is.")),
       h("div.grid2",
         h("label.field", T("Learning reminder at"), f.reminder_time, h("span.hint", T("Children without the daily goal get an announcement (Family Planer) and the event family_quest_erinnerung."))),
         h("label.field", T("Chore reminder at"), f.chore_reminder_time, h("span.hint", T("Children with open chores get an announcement (Family Planer) and the event family_quest_aemtli_erinnerung."))),
         h("label.field", T("Push messages for approvals"), f.notify_service, dl, h("span.hint", T("Notify service of the Companion app – with buttons OK / No.")))),
       h("label.check", f.planer_points, T("Also book learning coins as Family Planer points")),
-      h("label.field", T("Factor for Family Planer points"), f.planer_points_factor)),
-    section("📚 " + I18N.tr(T("Learning")), h("label.field", T("Coins for a perfect lesson"), f.lesson_perfect_coins,
+      h("label.field", T("Factor for Family Planer points"), f.planer_points_factor), saveBtn())),
+    fold("learning", "📚 " + I18N.tr(T("Learning")), section("📚 " + I18N.tr(T("Learning")), h("label.field", T("Coins for a perfect lesson"), f.lesson_perfect_coins,
       h("span.hint", T("A lesson finished without a single mistake. Comes on top of the coins for a finished lesson; 0 = none."))),
       h("label.field", "🐾 ", T("Pets: food costs (coins)"), f.pet_food_cost,
         h("span.hint", T("Feeding a pet once. Playing and washing are free; 0 = food is free."))),
@@ -3489,26 +3582,30 @@ async function settingsView(main) {
       h("label.field", "🐹 ", T("Hamster: coins per day"), f.hamster_coins_per_day,
         h("span.hint", T("While the hamster is healthy (every bar at least 50) it runs in its wheel and mines this many coins per day for its owner."))),
       h("label.field", "🐾 ", T("Pet shop: pay with"), f.pet_shop_currency,
-        h("span.hint", T("Outfits, houses and furniture for the pets. XP spent there do not lower the level.")))),
-    section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels)),
-    h("button.btn.big", { onclick: save }, "💾 ", T("Save")),
-    section("👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), familyTimeSettings(),
-      h("button.link.small", { onclick: () => { P.tab = "community"; location.hash = "community"; render(); } }, T("Wishes and votes: tab «Family» ›"))),
-    await crestSection(),
-    linkSection(),
-    themesSection(),
-    weatherBox("config"),
-    haLoginSection(s),
-    await integrationSection(),
-    await firewallSection(s),
-    await translationsSection(),
-    backupSection(),
-    shoppingSection(),
-    planerSection(s),
-    section(T("About"), h("p.small", "Family Quest v" + P.meta.version), h("ul.small",
+        h("span.hint", T("Outfits, houses and furniture for the pets. XP spent there do not lower the level."))), saveBtn())),
+    fold("levels", T("Levels"), section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels), saveBtn())),
+    fold("familytime", "👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), section("👨‍👩‍👧 " + I18N.tr(T("FamilyTime games")), familyTimeSettings(),
+      h("button.link.small", { onclick: () => { P.tab = "community"; location.hash = "community"; render(); } }, T("Wishes and votes: tab «Family» ›")))),
+    fold("crest", "🛡️ " + I18N.tr(T("Family crest")), await crestSection()),
+    fold("link", "📱 " + I18N.tr(T("Link for tablets and phones")), linkSection()),
+    fold("themes", "🎨 " + I18N.tr(T("Season designs")), themesSection()),
+    fold("weather", "⚙️ " + I18N.tr(T("Weather settings")), weatherBox("config")),
+    fold("halogin", "🏠 " + I18N.tr(T("Log in with Home Assistant")), haLoginSection(s)),
+    fold("integration", "🏠 " + I18N.tr(T("Family Quest HA integration")), await integrationSection()),
+    fold("network", "🛡️ " + I18N.tr(T("Access from the network")), await firewallSection(s)),
+    fold("texts", "🌐 " + I18N.tr(T("Own texts and languages")), await translationsSection()),
+    fold("backup", "💾 " + I18N.tr(T("Backup & restore")), backupSection()),
+    fold("shopping", "🛒 " + I18N.tr(T("Shopping list (Bring!)")), shoppingSection()),
+    fold("planer", "📥 " + I18N.tr(T("Take over an existing Family Planer")), planerSection(s)),
+    fold("about", T("About"), section(T("About"), h("p.small", "Family Quest v" + P.meta.version), h("ul.small",
       h("li", "Home Assistant: ", P.meta.ha ? "✓" : h("span", { translate: "no" }, "– ", P.meta.ha_status || "")), h("li", I18N.tr(T("Planner")) + ": ✓ ", h("span.small.muted", T("(built in)"))),
       P.meta.planer ? h("li", T("Family Planer integration in Home Assistant: found – take it over under «Family Planer» above.")) : null,
-      h("li", I18N.tr(T("Photo/PDF import")) + ": ", P.meta.ai ? "✓" : h("span.small.muted", "– ", T("needs an AI Task in Home Assistant"))))));
+      h("li", I18N.tr(T("Photo/PDF import")) + ": ", P.meta.ai ? "✓" : h("span.small.muted", "– ", T("needs an AI Task in Home Assistant")))))));
+  // the status in the rows: now, and again after every change made on this page (call() reports it)
+  const refresh = () => settingsStatus(main).catch(() => {});
+  let timer = 0;
+  P.onChange = () => { clearTimeout(timer); timer = setTimeout(() => { if (main.isConnected) refresh(); }, 350); };
+  refresh();
   async function save() {
     const body = { family_visibility: f.family_visibility.value, sound: f.sound.checked, reminder_time: f.reminder_time.value.trim(),
       chore_reminder_time: f.chore_reminder_time.value.trim(),
