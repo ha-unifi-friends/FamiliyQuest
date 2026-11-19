@@ -78,29 +78,33 @@ def test_word_choice_and_timeout_pick():
 def test_mask_and_hints():
     c = Clock()
     t = table(2, clock=c)
-    pick(t, "Schildkröte")
-    assert t.mask() == ["_"] * 11 and t.revealed() == []
+    pick(t, "Turtle")                                          # the key; every viewer gets the mask of their language
+    assert t.mask("de-DE") == ["_"] * 11 and t.revealed("de-DE") == [] and t.mask() == ["_"] * 6
+    assert t.mask("fr-FR") == ["_"] * 6 and t.mask("sv-SE") == ["_"] * 10          # Tortue, Sköldpadda
     c.t += 40                                                  # 50 %
-    r1 = t.revealed()
+    r1 = t.revealed("de-DE")
     assert len(r1) == 2                                        # 11 // 3 = 3 → 2 at 50 %, 3 at 75 %
-    m = t.mask()
+    m = t.mask("de-DE")
     assert sum(1 for x in m if x != "_") == 2 and all(m[i] == "Schildkröte"[i] for i in r1)
+    mf = t.mask("fr-FR")
+    assert sum(1 for x in mf if x != "_") == 1 and all(x == "_" or x == "Tortue"[i] for i, x in enumerate(mf))
     c.t += 20
-    r2 = t.revealed()
+    r2 = t.revealed("de-DE")
     assert len(r2) == 3 and set(r1) <= set(r2)
     t2 = table(2, clock=Clock(), hints=False)
-    pick(t2, "Schildkröte")
+    pick(t2, "Turtle")
     t2.now.t += 79
-    assert t2.revealed() == [] and t2.mask() == ["_"] * 11
+    assert t2.revealed("de-DE") == [] and t2.mask("de-DE") == ["_"] * 11
     t3 = table(2, clock=Clock())
-    pick(t3, "Pommes frites")
-    assert t3.mask()[6] == " " and t3.mask().count("_") == 12
+    pick(t3, "Polar bear")
+    assert t3.mask()[5] == " " and t3.mask().count("_") == 9
+    assert t3.mask("fr-FR")[4] == " " and t3.mask("fr-FR").count("_") == 11      # Ours polaire
     t3.now.t += 70
-    assert len(t3.revealed()) == 4 and all(t3.st["word"][i].isalpha() for i in t3.revealed())
+    assert len(t3.revealed()) == 3 and all("Polar bear"[i].isalpha() for i in t3.revealed())
     t4 = table(2, clock=Clock())
-    pick(t4, "Ei")
+    pick(t4, "Egg")
     t4.now.t += 79
-    assert t4.revealed() == []                                 # never more than a third
+    assert t4.revealed("de-DE") == []                          # never more than a third (Ei)
 
 
 def test_guess_normalisation_typos_close():
@@ -331,7 +335,7 @@ def test_family_flow_no_leak_coins_once_history(client):
     fq.zeichnen._save(row, json.loads(row["state"]))                      # saving again pays nothing more
     assert fq.rewards.balance(leo, "coins") == before[1] + 8
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"zeichnen:{gid}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"zeichnen:{gid}:{leo}")["reason"] == "Zeichnen & Raten – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"zeichnen:{gid}:{leo}")["reason"] == "Draw & Guess – place 1"
     e = next(x for x in client.get("/api/community/history", headers=hm).json() if x["kind"] == "zeichnen")
     assert e["data"]["place"] == 2 and e["data"]["points"] == 10 and e["data"]["drawn"] == [word] and e["data"]["coins"] == 4
     assert fq.db.val("SELECT COUNT(*) FROM history WHERE kind='zeichnen'") == 2
@@ -361,7 +365,7 @@ def test_guests_play_but_not_lead_no_coins_with_one_family_person(client):
     hm = login(client, mia, "1111")
     client.post("/api/community/zeichnen/start", json={"category": "essen"}, headers=hm)
     inv = client.post("/api/community/guests", json={"game": "zeichnen"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Zeichnen & Raten"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Draw & Guess"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     for path in ("start", "begin", "end", "skip"):

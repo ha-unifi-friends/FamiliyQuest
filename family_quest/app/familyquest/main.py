@@ -3,16 +3,25 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import re
 from html import escape as html_escape
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
+from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
-from . import loginlog, netfilter
+from .api import stories as stories_api
+from .api import codelab as codelab_api
+from . import loginlog, memo, netfilter
+from .packs import i18n as pack_i18n
+from .channel import feature_visible, hidden_games
+from .api import deals as deals_api
 from .api.auth import INGRESS_IP
 from .services import FamilyQuest
 from .settings import WEB_DIR, Settings, load_settings
@@ -69,16 +78,34 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
             await client.close()
 
     app = FastAPI(title="Family Quest", version=settings.version, lifespan=lifespan, docs_url=None, redoc_url=None)
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_body(request: Request, exc: RequestValidationError) -> JSONResponse:
+        """422 like FastAPI's own – but a refused Infinity / NaN in the body must not break the answer itself."""
+        def finite(v):
+            if isinstance(v, float) and not math.isfinite(v):
+                return str(v)
+            if isinstance(v, dict):
+                return {k: finite(x) for k, x in v.items()}
+            if isinstance(v, (list, tuple)):
+                return [finite(x) for x in v]
+            return v
+        return JSONResponse(status_code=422, content={"detail": finite(jsonable_encoder(exc.errors()))})
     app.state.fq = fq or FamilyQuest(settings)
 
     @app.middleware("http")
     async def access(request: Request, call_next):
+        # games still in development (channel.py): outside the dev channel their API does not exist
+        if request.url.path.startswith("/api/codelab") and not feature_visible("codelab"):    # 💡 Code Workshop: dev channel only
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+        if request.url.path.startswith("/api/community/") and community.game_of(request.url.path) in hidden_games():
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
         # Family Quest HA integration (custom component): inside the add-on only Home Assistant Core on the Supervisor
         # network may call it – the integration token is checked by the API itself (api/integration.py)
         if request.url.path.startswith("/api/integration/") and settings.ha_enabled:
             host = request.client.host if request.client else ""
             if not netfilter.allowed(host, [netfilter.SUPERVISOR_NET]) or host == INGRESS_IP:
-                return JSONResponse({"detail": "Only Home Assistant may use the integration API"}, status_code=403)
+                return JSONResponse({"detail": _t("Only Home Assistant may use the integration API")}, status_code=403)
             resp = await call_next(request)
             resp.headers["Cache-Control"] = "no-store"
             return resp
@@ -86,14 +113,14 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         if settings.ha_enabled and not settings.direct_access:
             host = request.client.host if request.client else ""
             if host != INGRESS_IP:
-                return JSONResponse({"detail": "Direct access is switched off – open Family Quest from Home Assistant"},
+                return JSONResponse({"detail": _t("Direct access is switched off – open Family Quest from Home Assistant")},
                                     status_code=403)
         # mini firewall: networks allowed for the app / the parent area (parent area → Settings)
         ip = loginlog.client_ip(request)
         reason = netfilter.check(app.state.fq, ip, request.url.path)
         if reason:
             netfilter.log_blocked(app.state.fq, ip, loginlog.device(app.state.fq, ip))
-            msg = {"app": "Access from this network is not allowed", "parent": "The parent area cannot be opened from this network",
+            msg = {"app": _t("Access from this network is not allowed"), "parent": _t("The parent area cannot be opened from this network"),
                    "guest": "Guest network: only games with an invitation (QR code) are open"}[reason]
             if request.url.path.startswith("/api/"):
                 return JSONResponse({"detail": msg}, status_code=403)
@@ -107,13 +134,29 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         resp.headers["Referrer-Policy"] = "same-origin"
         return resp
 
+    @app.middleware("http")
+    async def request_memo(request: Request, call_next):
+        """Around everything (added last = outermost): one memo per request (memo.py) – settings, the games access,
+        the running tables … are read once per request instead of dozens of times."""
+        token = memo.begin()
+        lang = pack_i18n.set_viewer(request.headers.get("x-fq-lang"))     # packs in the viewer's language (packs/i18n.py)
+        try:
+            return await call_next(request)
+        finally:
+            pack_i18n.reset_viewer(lang)
+            memo.end(token)
+
     app.include_router(kid.router)
     app.include_router(parent.router)
     app.include_router(planer.router)
     app.include_router(community.router)
     app.include_router(decks.router)
+    app.include_router(stories_api.router)
+    app.include_router(codelab_api.router)              # 💡 Code Workshop (codelab.py)
     app.include_router(integration_api.router)
     app.include_router(integration_api.parent_router)
+    app.include_router(deals_api.router)               # deals (deals.py)
+    app.include_router(deals_api.parent_router)
 
     def page(name: str) -> HTMLResponse:
         html = (WEB_DIR / name).read_text(encoding="utf-8").replace("__VERSION__", settings.version)
@@ -123,9 +166,24 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     def index(request: Request):
         # through Home Assistant («Open Web UI», sidebar) the address opens the parent area; on the direct port
         # (tablets, phones of the children) it stays the app
-        from .api.auth import INGRESS_IP
-        via_ha = bool(request.client and request.client.host == INGRESS_IP)
-        return page("eltern.html" if via_ha else "index.html")
+        return page("eltern.html" if _ingress_parent_area(request) else "index.html")
+
+    def _ingress_parent_area(request: Request) -> bool:
+        """Through Home Assistant the panel is open to every Home Assistant user (panel_admin: false): the parent area
+        for linked parents and Home Assistant administrators, the children's app for everybody else (a child linked
+        with its Home Assistant user logs in there without PIN). The parent area itself still needs its login."""
+        from .api.auth import ha_kid, ha_user, profile_of_ha_user, via_ingress
+        if not via_ingress(request):
+            return False
+        u = ha_user(request)
+        if not u:
+            return True                           # no user known (older Home Assistant): as before
+        fq = app.state.fq
+        if profile_of_ha_user(fq, u["id"], "parent"):
+            return True
+        if ha_kid(fq, request):
+            return False
+        return bool(fq.ha and fq.ha.connected and fq.ha.user_is_admin(u["id"]))
 
     @app.get("/app", include_in_schema=False)
     def kid_app():

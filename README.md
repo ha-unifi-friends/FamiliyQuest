@@ -161,12 +161,19 @@ guest page of the game, nothing else of Family Quest or your home.
 3. Open it, choose *Parent area*, create the parent profile with a PIN, then add the children (or take them over from
    the Family Planer).
 4. On a family tablet: open Family Quest from the sidebar, or switch on `direct_access` (and restart the app) and open
-   `http://<home-assistant>:8099` (Family Quest Beta: port 8098) – or scan the QR code under *Parent area › Settings* – then children pick their profile instead of logging into Home Assistant. In the
+   `http://<home-assistant>:8099` (Family Quest Beta: port 8098, Family Quest Dev: 8097) – or scan the QR code under *Parent area › Settings* – then children pick their profile instead of logging into Home Assistant. In the
    browser menu choose *Add to home screen* to start it full screen like an app.
 
-**Beta:** this repository also contains the app **Family Quest Beta** – new versions are tested there first.
-It installs next to Family Quest with its own data, its entities start with `family_quest_beta_`, and it has an
-orange «BETA» band on its icon. Only install it if you want to try new features early.
+**Channels:** this repository contains three apps that install side by side, each with its own data:
+
+| App | Slug / entities | Direct access | Icon | For |
+|---|---|---|---|---|
+| **Family Quest** | `family_quest_` | port 8099 | normal | everybody |
+| **Family Quest Beta** | `family_quest_beta_` | port 8098 | orange «BETA» band | trying the next version early |
+| **Family Quest Dev** | `family_quest_dev_` | port 8097 | purple, «DEV» band | development builds: also games still being reworked (e.g. 24h Endurance, Beat the Bureaucracy) – may break |
+
+Only install Beta or Dev if you want to try new features early. Maintainers: `python3 tools/release.py beta|dev <version> "notes"`
+puts only that app on `main`; `python3 tools/release.py stable` releases Family Quest.
 
 Details: [family_quest/DOCS.md](family_quest/DOCS.md) · Pack format: [docs/pakete.md](docs/pakete.md)
 

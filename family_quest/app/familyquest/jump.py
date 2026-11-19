@@ -40,6 +40,7 @@ import time
 from .cardgames import BOTS, CardGames
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
+from .running import win_reason
 
 KIND = "jump"
 TITLE = "Jump"
@@ -605,13 +606,7 @@ class Jump(CardGames):
             self.db.set_setting("jump_best", best)
         st["records"] = records
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Platz {st['places'][pid]}", ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND, st["places"][pid]))
         if len(st["players"]) >= 2:
             self._champion(st, [p for p, n in (st.get("places") or {}).items() if n == 1])
         if self.add_history:

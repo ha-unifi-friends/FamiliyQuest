@@ -24,6 +24,11 @@ game (a drawing in progress counts as it stands).
 Coins (setting `game_rewards["zeichnen"]`): places 1–3 (a tie shares the place) – only people of the family, only with
 at least two of them, only when at least one turn was played and somebody scored; paid once (flag `paid`, a unique ledger `ref`).
 The view never shows the word to a guesser who has not found it (only the mask) and never the text of a right guess.
+
+Languages (gamewords.py): the state keeps the English key of the word; every view shows it – and the mask and the hint
+letters – in the viewer's language. A guess counts in the guesser's language, the drawer's language and English (the
+German names of the word list too when one of them speaks German), so a mixed table plays together. Tables of before the
+translation hold German words: they are mapped to their key (zeichnen_data.legacy) or shown as they are.
 """
 from __future__ import annotations
 
@@ -36,7 +41,9 @@ import unicodedata
 from .cardgames import CardGames, apply_starter, starter_mode
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
-from .zeichnen_data import CATEGORIES, DEFAULT
+from .gamewords import LANGS, Words, clean_lang
+from .zeichnen_data import CATEGORIES, DEFAULT, legacy
+from .running import win_reason
 
 KIND = "zeichnen"
 TITLE = "Zeichnen & Raten"
@@ -57,7 +64,8 @@ PALETTE = ("#000000", "#7a7a7a", "#e03131", "#f76707", "#fcc419", "#2f9e44", "#1
 SIZES = (1, 2, 3)
 POINTS_DRAWER = 10
 ARTICLES = {"der", "die", "das", "den", "dem", "des", "ein", "eine", "einen", "einem", "einer", "eines",
-            "the", "a", "an", "le", "la", "les", "l", "un", "une"}
+            "the", "a", "an", "le", "la", "les", "l", "un", "une", "il", "lo", "gli", "uno", "una", "el", "los", "las",
+            "de", "het", "een", "o", "os", "as", "um", "uma", "en", "ett"}
 
 
 def rewards_of(db) -> list[int]:
@@ -69,7 +77,13 @@ def category(key: str | None) -> dict:
 
 
 def word_entry(cat: str, name: str) -> dict:
-    return next((w for w in category(cat)["words"] if w["name"] == name), {"name": name, "aliases": []})
+    """The word of the list by its key – or by its German name (a table of before the translation)."""
+    key = legacy(name)
+    for c in [category(cat), *CATEGORIES.values()]:
+        w = next((w for w in c["words"] if w["name"] == key), None)
+        if w:
+            return w
+    return {"name": name, "aliases": [], "unknown": True}
 
 
 # ---------------------------------------------------------------- checking a guess
@@ -143,10 +157,11 @@ def clean_points(p) -> list[float]:
 
 # ================================================================ one table (pure logic on a dict)
 class Table:
-    def __init__(self, st: dict, rng: random.Random | None = None, now=time.time):
+    def __init__(self, st: dict, rng: random.Random | None = None, now=time.time, words: Words | None = None):
         self.st = st
         self.rng = rng or random.Random()
         self.now = now
+        self.words = words or Words()
 
     @property
     def r(self) -> dict:
@@ -164,6 +179,24 @@ class Table:
     def word(self) -> dict | None:
         w = self.st.get("word")
         return word_entry(self.r.get("category"), w) if w else None
+
+    def text(self, key: str | None, lang: str = "en") -> str | None:
+        """A word of the state (a key, or a German word of an old table) in `lang`."""
+        if not key:
+            return key
+        e = word_entry(self.r.get("category"), key)
+        return key if e.get("unknown") else self.words.tr(e["name"], lang)
+
+    def set_lang(self, pid: str, lang: str | None) -> bool:
+        """Remember the language of a player (their guesses count in it, and in the drawer's). True: it changed."""
+        if not lang:
+            return False
+        lang = clean_lang(lang)
+        langs = self.st.setdefault("langs", {})
+        if langs.get(pid) == lang:
+            return False
+        langs[pid] = lang
+        return True
 
     # ---------- the game
     def begin(self) -> None:
@@ -193,7 +226,8 @@ class Table:
     def round(self) -> int:
         return max(0, self.st.get("turn", 0)) // max(1, len(self.order())) + 1
 
-    def choose(self, pid: str, idx: int) -> None:
+    def choose(self, pid: str, idx: int, lang: str | None = None) -> None:
+        self.set_lang(pid, lang)
         if self.st.get("phase") != "choose":
             raise CommunityError("The word is chosen already")
         if pid != self.st.get("drawer"):
@@ -206,27 +240,45 @@ class Table:
 
     def _start_draw(self, word: str, at: float | None = None) -> None:
         now = self.now() if at is None else at
-        pos = letters_of(word)
         self.st["used"].append(word)
         self.st.update(word=word, phase="draw", started=now, deadline=now + int(self.r.get("time") or 80),
-                       choices=[], hint_order=self.rng.sample(pos, len(pos)))
+                       choices=[], hint_order=[], hint_seed=self.rng.randrange(1 << 30))
 
     # ---------- the hints and the mask
-    def revealed(self) -> list[int]:
-        """The letter positions shown to the guessers now: at 50 % and 75 % of the time, at most a third of the letters."""
+    def revealed(self, lang: str = "en") -> list[int]:
+        """The letter positions shown to the guessers now: at 50 % and 75 % of the time, at most a third of the letters
+        – of the word in the viewer's language (every language has its own order of the hint letters)."""
         if not self.r.get("hints") or self.st.get("phase") != "draw" or not self.st.get("word"):
             return []
-        total = len(letters_of(self.st["word"])) // 3
+        w = self.text(self.st["word"], lang) or ""
+        pos = letters_of(w)
+        total = len(pos) // 3
         span = max(1, self.st["deadline"] - self.st["started"])
         frac = (self.now() - self.st["started"]) / span
         k = total if frac >= 0.75 else (total + 1) // 2 if frac >= 0.5 else 0
-        return sorted(self.st["hint_order"][:k])
+        old = self.st.get("hint_order") or []
+        if "hint_seed" not in self.st and w == self.st["word"] and sorted(old) == pos:       # a table of before
+            order = old
+        else:
+            order = random.Random(f"{self.st.get('hint_seed', self.st.get('turn'))}|{w}").sample(pos, len(pos))
+        return sorted(order[:k])
 
-    def mask(self) -> list[str]:
-        """The word for the guessers: "_" per hidden letter, the hint letters, spaces and hyphens as they are."""
-        w = self.st.get("word") or ""
-        shown = set(self.revealed())
+    def mask(self, lang: str = "en") -> list[str]:
+        """The word for the guessers in their language: "_" per hidden letter, the hint letters, spaces and hyphens."""
+        w = self.text(self.st.get("word"), lang) or ""
+        shown = set(self.revealed(lang))
         return [c if (not c.isalnum() or i in shown) else "_" for i, c in enumerate(w)]
+
+    def accepted(self, pid: str, lang: str | None = None) -> dict:
+        """The word as it is checked for a guesser: its names in the guesser's language, the drawer's and English
+        (the German names of the list too when one of them speaks German)."""
+        e = self.word()
+        if e.get("unknown"):
+            return e
+        langs = self.st.get("langs") or {}
+        mine = [l for l in (lang or langs.get(pid), langs.get(self.st.get("drawer"))) if l]
+        names = self.words.forms(e["name"], mine or LANGS, e.get("aliases"))      # nobody's language known: all count
+        return {"name": names[0], "aliases": names[1:]}
 
     # ---------- guessing
     def _check_player(self, pid: str) -> None:
@@ -240,8 +292,9 @@ class Table:
         if len(chat) > MAX_CHAT:
             del chat[: len(chat) - MAX_CHAT]
 
-    def guess(self, pid: str, text: str) -> str:
+    def guess(self, pid: str, text: str, lang: str | None = None) -> str:
         self._check_player(pid)
+        self.set_lang(pid, lang)
         if self.st.get("phase") != "draw":
             raise CommunityError("Nothing to guess right now")
         if pid == self.st.get("drawer"):
@@ -251,7 +304,7 @@ class Table:
         text = " ".join(str(text or "").split())[:MAX_GUESS]
         if not variants(text):
             raise CommunityError("Type a guess")
-        res = check(text, self.word())
+        res = check(text, self.accepted(pid, lang))
         if res == "right":
             k = len(self.st["found"])
             span = max(1, self.st["deadline"] - self.st["started"])
@@ -274,10 +327,11 @@ class Table:
         return res
 
     # ---------- drawing
-    def draw(self, pid: str, ops: list, turn: int | None = None) -> dict:
+    def draw(self, pid: str, ops: list, turn: int | None = None, lang: str | None = None) -> dict:
         """A batch of the drawer: {"c": colour, "w": size, "p": [x, y, …], "e": eraser} starts a stroke, {"p": […]}
         continues the last one, {"u": 1} undoes the last stroke, {"x": 1} clears the picture."""
         self._check_player(pid)
+        self.set_lang(pid, lang)
         if self.st.get("phase") != "draw" or pid != self.st.get("drawer") or (turn is not None and int(turn) != self.st["turn"]):
             raise CommunityError("It is not your turn to draw")
         ev = self.st["strokes"]
@@ -383,9 +437,10 @@ class Zeichnen(CardGames):
         self.rewards = rewards
         self.now = now
         self.rng = rng
+        self.words = Words(db)
 
     def table(self, st: dict) -> Table:
-        return Table(st, self.rng, now=lambda: self.now())
+        return Table(st, self.rng, now=lambda: self.now(), words=self.words)
 
     def default_rules(self, kind: str = KIND) -> dict:
         return self.clean_rules(kind, self.db.get_setting(f"game_rules.{KIND}") or {})
@@ -427,13 +482,7 @@ class Zeichnen(CardGames):
         coins = self.coins_for(st)
         st["paid"], st["coins"] = True, coins
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st, separators=(",", ":")), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Platz {st['places'][pid]}", ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND, st["places"][pid]))
         self._champion(st, [p for p, n in (st.get("places") or {}).items() if n == 1])
         if self.add_history and st.get("log"):
             cat = category(st["rules"].get("category"))
@@ -441,7 +490,7 @@ class Zeichnen(CardGames):
                 if p.get("bot") or p.get("guest"):
                     continue
                 found = sum(1 for e in st["log"] if p["id"] in e["found"])
-                drawn = [e["word"] for e in st["log"] if e["drawer"] == p["id"]]
+                drawn = [legacy(e["word"]) for e in st["log"] if e["drawer"] == p["id"]]
                 try:
                     self.add_history(int(p["id"]), KIND, {
                         "place": (st.get("places") or {}).get(p["id"]), "players": len(st["players"]),
@@ -511,14 +560,14 @@ class Zeichnen(CardGames):
                 self._save(row, st)
             return out
 
-    def choose(self, pid: int, idx: int) -> None:
-        self._act(pid, lambda t: t.choose(str(pid), idx))
+    def choose(self, pid: int, idx: int, lang: str | None = None) -> None:
+        self._act(pid, lambda t: t.choose(str(pid), idx, lang))
 
-    def draw(self, pid: int, ops: list, turn: int | None = None) -> dict:
-        return self._act(pid, lambda t: t.draw(str(pid), ops, turn))
+    def draw(self, pid: int, ops: list, turn: int | None = None, lang: str | None = None) -> dict:
+        return self._act(pid, lambda t: t.draw(str(pid), ops, turn, lang))
 
-    def guess(self, pid: int, text: str) -> str:
-        return self._act(pid, lambda t: t.guess(str(pid), text))
+    def guess(self, pid: int, text: str, lang: str | None = None) -> str:
+        return self._act(pid, lambda t: t.guess(str(pid), text, lang))
 
     def skip(self, pid: int) -> None:
         self._act(pid, lambda t: t.skip())
@@ -538,13 +587,17 @@ class Zeichnen(CardGames):
             else:
                 self.db.x("UPDATE card_game SET status='done', finished_at=datetime('now','localtime') WHERE id=?", row["id"])
 
-    def state(self, kind: str, viewer: int, n: int | None = None, pl: int = 0, turn: int | None = None) -> dict | None:
-        """The view of one player; with a cursor (n, pl, turn) the strokes they do not have yet."""
+    def state(self, kind: str, viewer: int, n: int | None = None, pl: int = 0, turn: int | None = None,
+              lang: str | None = None) -> dict | None:
+        """The view of one player in their language; with a cursor (n, pl, turn) the strokes they do not have yet."""
         with self.lock:
             row = self._row(KIND, viewer)
             if row:
                 st = json.loads(row["state"])
-                if st["phase"] != "lobby" and self.table(st).tick():
+                t = self.table(st)
+                ticked = st["phase"] != "lobby" and t.tick()
+                joined = any(p["id"] == str(viewer) for p in st["players"])
+                if ticked or (joined and st["phase"] != "done" and t.set_lang(str(viewer), lang)):
                     self._save(row, st)
                     row = self.db.q1("SELECT * FROM card_game WHERE id=?", row["id"])
             else:
@@ -555,11 +608,19 @@ class Zeichnen(CardGames):
                 st = json.loads(row["state"])
                 if not any(p["id"] == str(viewer) for p in st["players"]):
                     return None
-        return self._view(row, st, str(viewer), n, pl, turn)
+        return self._view(row, st, str(viewer), n, pl, turn, lang or "en")
 
-    def _view(self, row, st: dict, me: str, n: int | None = None, pl: int = 0, turn: int | None = None) -> dict:
-        """What one player sees – the word only when they draw, found it, or the turn is over."""
+    def _view(self, row, st: dict, me: str, n: int | None = None, pl: int = 0, turn: int | None = None,
+              lang: str = "en") -> dict:
+        """What one player sees, in their language – the word only when they draw, found it, or the turn is over."""
         t = self.table(st)
+        tr = self.words.translator(lang)
+
+        def word(k):
+            if not k:
+                return k
+            e = word_entry(st["rules"].get("category"), k)
+            return k if e.get("unknown") else tr(e["name"])
         ph = st["phase"]
         if (ph == "done" or row["status"] == "done") and ph != "lobby":
             ph = "done"
@@ -583,13 +644,13 @@ class Zeichnen(CardGames):
                "players": players, "joined": joined, "turn": st.get("turn", -1) if ph != "lobby" else None,
                "turns": t.n_turns(), "round": t.round() if ph != "lobby" else 0, "rounds": st["rules"].get("rounds"),
                "drawer": drawer, "me_drawer": bool(drawer) and drawer == me, "found_me": me in found,
-               "choices": list(st.get("choices") or []) if ph == "choose" and me == drawer else None,
-               "word": st.get("word") if sees else None,
-               "mask": t.mask() if ph == "draw" else None, "left_ms": None, "time_ms": None,
+               "choices": [word(c) for c in st.get("choices") or []] if ph == "choose" and me == drawer else None,
+               "word": word(st.get("word")) if sees else None,
+               "mask": t.mask(lang) if ph == "draw" else None, "left_ms": None, "time_ms": None,
                "chat": [], "ranking": st.get("ranking"), "rewards": rewards_of(self.db), "coins_on": people >= 2,
                "palette": list(PALETTE), "max_points": MAX_POINTS, "npts": st.get("npts", 0) if ph == "draw" else 0,
-               "last": (st.get("log") or [None])[-1] if ph in ("reveal", "done") else None,
-               "log": [{"n": e["n"], "drawer": e["drawer"], "word": e["word"], "found": len(e["found"])} for e in st.get("log") or []]
+               "last": {**st["log"][-1], "word": word(st["log"][-1]["word"])} if ph in ("reveal", "done") and st.get("log") else None,
+               "log": [{"n": e["n"], "drawer": e["drawer"], "word": word(e["word"]), "found": len(e["found"])} for e in st.get("log") or []]
                if ph == "done" else None}
         if ph == "choose":
             out["left_ms"] = max(0, int((st.get("choose_until", now) - now) * 1000))

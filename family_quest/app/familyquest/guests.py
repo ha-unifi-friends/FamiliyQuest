@@ -13,11 +13,12 @@ import random
 import secrets
 import time
 
+from .channel import hidden_games
 from .rewards import avatar as av
 
 GUEST = 2
 GUEST_HOURS = 12
-GAMES = ("quiz", "bingo", "poker", "tschau", "karussell", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape")
+GAMES = ("quiz", "bingo", "poker", "tschau", "karussell", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd")
 KEY = "guest_invites"
 COLORS = ["#ff6b6b", "#4f8cff", "#51cf66", "#fcc419", "#845ef7", "#20c997", "#ff922b"]
 
@@ -39,7 +40,7 @@ class Guests:
 
     def invite(self, game: str, on: bool = True, gid: int | None = None) -> dict | None:
         """Open (or close) the invitation for the running game of this kind (chess: this open game)."""
-        if game not in GAMES:
+        if game not in GAMES or game in hidden_games():         # dev games (channel.py): only in the dev channel
             raise GuestError("Unknown game")
         if on and not self.enabled():
             raise GuestError("Guests are switched off in the parent area")
@@ -61,7 +62,7 @@ class Guests:
     def _game_id(self, game: str, gid: int | None = None) -> int | None:
         if game == "schach":                      # several chess games at a time: an open seat of this game (or the newest)
             g = self.fq.schach._game(game, gid=gid)
-        elif game in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
+        elif game in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape", "stempeljagd"):
             g = getattr(self.fq, game)._game(game)
         elif game in ("tschau", "karussell"):
             g = self.fq.cards._game(game)
@@ -71,6 +72,8 @@ class Guests:
 
     def find(self, code: str) -> tuple[str, dict] | None:
         for game, inv in self._invites().items():
+            if game in hidden_games():
+                continue
             if code and secrets.compare_digest(str(code), inv.get("code", "")) and self._game_id(game, inv.get("game_id")) == inv.get("game_id"):
                 return game, inv
         return None
@@ -80,7 +83,8 @@ class Guests:
         if not f or not self.enabled():
             raise GuestError("This invitation is not valid (any more)")
         game, _ = f
-        title = {"bingo": "Bingo", "poker": "Texas Hold'em", "tschau": "Tschau Sepp", "karussell": "Kartenkarussell", "song": "Errate den Song", "domino": "Domino", "paarjagd": "Paarjagd", "werbinich": "Wer bin ich?", "kartenlauf": "Kartenlauf", "stadtland": "Stadt-Land-Fluss", "zeichnen": "Zeichnen & Raten", "wuerfel": "Fünf Würfel", "heimwaerts": "Heimwärts", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "verkehr": "Traffic Cadet", "klatsch": "Klatsch den Beat", "verboten": "Verbotene Wörter", "jass": "Jass", "werwolf": "Werwölfe", "schach": "Schach", "dorfmarkt": "Dorfmarkt", "escape": "Escape Room"}.get(game, "")
+        from .running import TITLES          # English source – the guest page translates it
+        title = {"bingo": "Bingo", "poker": "Texas Hold'em", "song": "Guess the song", **TITLES}.get(game, "")
         if game == "quiz":
             st = self.fq.community.state(0) or {}
             title = st.get("title") or "Quiz"
@@ -92,6 +96,10 @@ class Guests:
         name = " ".join(str(name or "").split())[:20]
         if not name:
             raise GuestError("Please type your name")
+        if info["game"] == "quiz":
+            from .facts import is_facts
+            if is_facts((self.fq.community._game() or {}).get("quiz")):
+                raise GuestError("Guests cannot join «Family Quest Facts» – its questions are about the family")
         taken = {r["name"].lower() for r in self.db.q("SELECT name FROM profile WHERE archived IN (0, 2)")}
         base, n = name, 2
         while name.lower() in taken:
@@ -103,7 +111,7 @@ class Guests:
                         name, "guest", random.choice(COLORS), json.dumps(avatar), json.dumps({"guest": True}), GUEST)
         if info["game"] == "schach":
             self.fq.schach.join("schach", pid, gid=self.find(code)[1].get("game_id"))
-        elif info["game"] in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
+        elif info["game"] in ("domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape", "stempeljagd"):
             getattr(self.fq, info["game"]).join(info["game"], pid)
         elif info["game"] in ("tschau", "karussell"):
             self.fq.cards.join(info["game"], pid)

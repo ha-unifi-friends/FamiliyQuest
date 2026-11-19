@@ -1,5 +1,6 @@
 """Family Quest HA integration: token, API /api/integration/…, parent settings, install into a config folder."""
 import json
+import re
 
 import pytest
 
@@ -167,7 +168,7 @@ def test_install_and_remove(client, ha_config):
     dst = ha_config / "custom_components" / "familyquest"
     assert on["install"]["installed"] and dst.is_dir()
     for name in ("__init__.py", "manifest.json", "config_flow.py", "sensor.py", "binary_sensor.py", "switch.py",
-                 "services.yaml", "translations/en.json", "translations/de.json"):
+                 "services.yaml", "translations/en.json", "translations/de.json", "translations/fr.json"):
         assert (dst / name).is_file(), name
     man = json.loads((dst / "manifest.json").read_text())
     assert man["domain"] == "familyquest" and man["config_flow"] is True and man["requirements"] == []
@@ -234,7 +235,17 @@ def test_component_python_compiles():
         d = json.loads(f.read_text(encoding="utf-8"))
         assert {"config", "entity", "services"} <= set(d), f.name
     en = json.loads((COMPONENT / "translations" / "en.json").read_text())
-    de = json.loads((COMPONENT / "translations" / "de.json").read_text())
+    assert json.loads((COMPONENT / "strings.json").read_text()) == en
     def keys(d, pre=""):
         return {pre + k for k, v in d.items() for _ in [0]} | {x for k, v in d.items() if isinstance(v, dict) for x in keys(v, pre + k + ".")}
-    assert keys(en) == keys(de)
+    def leaves(d):
+        return [x for v in d.values() for x in (leaves(v) if isinstance(v, dict) else [v])]
+    langs = {f.stem for f in (COMPONENT / "translations").glob("*.json")}
+    # the languages of the app (Home Assistant codes): a French Home Assistant shows French entity names
+    assert {"en", "de", "fr", "it", "es", "nl", "pl", "pt-BR", "sv"} <= langs
+    for lang in langs - {"en"}:
+        d = json.loads((COMPONENT / "translations" / f"{lang}.json").read_text(encoding="utf-8"))
+        assert keys(d) == keys(en), lang
+        assert all(isinstance(v, str) and v.strip() for v in leaves(d)), lang
+        for a, b in zip(leaves(en), leaves(d)):                 # placeholders like {account} kept
+            assert set(re.findall(r"\{\w+\}", a)) == set(re.findall(r"\{\w+\}", b)), (lang, a, b)

@@ -3,10 +3,16 @@
 # bis dahin wird mit Drag & Drop (Gemeinde → Bezirk) und Auswahl gelernt.
 id: geo-tg
 titel: Geografie Kanton Thurgau
+titel_i18n: {de: "Geografie Kanton Thurgau", en: "Geography of the canton of Thurgau", fr: "Géographie du canton de Thurgovie", it: "Geografia del Canton Turgovia", es: "Geografía del cantón de Turgovia", nl: "Aardrijkskunde kanton Thurgau", pl: "Geografia kantonu Turgowia", pt: "Geografia do cantão de Turgóvia", sv: "Geografi i kantonen Thurgau"}
 fach: nmg
 stufe: 5. Klasse
+stufe_i18n: {de: "5. Klasse", en: "Year 5", fr: "5e année", it: "5ª classe", es: "5.º curso", nl: "leerjaar 5", pl: "klasa 5", pt: "5º ano", sv: "årskurs 5"}
 version: 2
 quelle: Family Quest (CC0) – Bezirkszuteilung gemäss Gebietsreform 2011, bitte prüfen
+beschreibung: "Der Kanton Thurgau (Schweiz): Bezirke, Nachbarn, Gewässer, Schlösser und Gemeinden – auf Deutsch."
+beschreibung_i18n: {de: "Der Kanton Thurgau (Schweiz): Bezirke, Nachbarn, Gewässer, Schlösser und Gemeinden – auf Deutsch.", en: "The canton of Thurgau (Switzerland): districts, neighbours, lakes and rivers, castles and municipalities – in German.", fr: "Le canton de Thurgovie (Suisse) : districts, voisins, lacs et rivières, châteaux et communes – en allemand.", it: "Il Canton Turgovia (Svizzera): distretti, vicini, acque, castelli e comuni – in tedesco.", es: "El cantón de Turgovia (Suiza): distritos, vecinos, aguas, castillos y municipios – en alemán.", nl: "Het kanton Thurgau (Zwitserland): districten, buren, wateren, kastelen en gemeenten – in het Duits.", pl: "Kanton Turgowia (Szwajcaria): okręgi, sąsiedzi, wody, zamki i gminy – po niemiecku.", pt: "O cantão de Turgóvia (Suíça): distritos, vizinhos, águas, castelos e municípios – em alemão.", sv: "Kantonen Thurgau (Schweiz): distrikt, grannar, sjöar och vattendrag, slott och kommuner – på tyska."}
+optional: true        # German content only: not installed by default – Parent area › Learning packs › More packs
+sprachen: [de]
 einheiten:
   - id: bezirke
     titel: "1 · Die fünf Bezirke"

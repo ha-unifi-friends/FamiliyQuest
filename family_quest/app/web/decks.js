@@ -88,7 +88,7 @@ function cardDialog(deckId, card, done) {
     h("div.row.wrap", h("button.btn", { onclick: () => save(false) }, T("Save")),
       card ? null : h("button.btn.ghost", { onclick: () => save(true) }, "+ ", T("Save and next")),
       card ? h("button.btn.ghost.bad", { onclick: async () => {
-        if (!confirm(I18N.tr(T("Delete this card?")))) return;
+        if (!(await confirmDialog(I18N.tr(T("Delete this card?"))))) return;
         try { await api(`me/decks/cards/${card.id}`, { method: "DELETE" }); m.close(); done(true); } catch (e) { toast(e.message, "bad"); } } }, "🗑️ ", T("Delete")) : null,
       h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { onClose: () => done(true) });
   front.focus();
@@ -119,7 +119,7 @@ async function deckView(id) {
   screen("deck", { back: () => go("deck"), actions: [
         h("button.icon-btn", { title: T("Edit deck"), onclick: () => deckDialog(d.deck, () => deckView(id)) }, "✏️"),
         h("button.icon-btn", { title: T("Delete deck"), onclick: async () => {
-          if (!confirm(I18N.tr(T("Delete the deck «{0}» with all its cards?")).replace("{0}", deckName(d.deck)))) return;
+          if (!(await confirmDialog(I18N.tr(T("Delete the deck «{0}» with all its cards?")).replace("{0}", deckName(d.deck))))) return;
           try { await api("me/decks/" + id, { method: "DELETE" }); go("deck"); } catch (e) { toast(e.message, "bad"); } } }, "🗑️")] },
     h("h1.deck-top", d.deck.icon, " ", C(deckName(d.deck))),
     h("section.card", deckBar(counts), deckLegend(counts),

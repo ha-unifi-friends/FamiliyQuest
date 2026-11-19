@@ -216,6 +216,5 @@ async function paarjagdFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("paarjagd") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Find the pairs – everybody on their own device. Places 1 to 3 win coins at the family table!")),
-         h("div.row.wrap", botsOn("paarjagd") ? h("button.btn", { onclick: () => paarjagdStartDialog(true, () => go("paarjagd")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => paarjagdStartDialog(false, () => go("paarjagd")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("paarjagd") ? () => paarjagdStartDialog(true, () => go("paarjagd")) : null, () => paarjagdStartDialog(false, () => go("paarjagd")))]);
 }

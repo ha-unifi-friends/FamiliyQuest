@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import ipaddress
 import time
+from .i18n import _t
 
 PARENT_PATHS = ("/eltern", "/api/parent/")
 SUPERVISOR_NET = "172.30.32.0/23"     # hassio network: Home Assistant Core (Family Quest HA integration) comes from 172.30.32.1
@@ -41,7 +42,7 @@ def parse(values) -> list[str]:
             else:
                 out.append(str(ipaddress.ip_network(v, strict=False)))
         except ValueError:
-            raise ValueError(f"Not a network: {v}") from None
+            raise ValueError(_t("Not a network: {0}").replace("{0}", str(v))) from None
     return out
 
 
@@ -78,16 +79,16 @@ def is_parent_path(path: str) -> bool:
 
 
 # guest networks (e.g. the guest Wi-Fi): only the guest page and playing a game with an invitation
-GUEST_API = ("/api/community/guest/", "/api/community/quiz", "/api/community/bingo", "/api/community/poker",
+GUEST_API = ("/api/community/guest/", "/api/community/quiz", "/api/community/bingo", "/api/community/poker", "/api/community/song",
              "/api/community/cards/", "/api/community/domino", "/api/community/paarjagd",
              "/api/community/werbinich", "/api/community/kartenlauf", "/api/community/stadtland",
-             "/api/community/zeichnen", "/api/community/wuerfel", "/api/community/heimwaerts", "/api/community/jump", "/api/community/sternlauf", "/api/community/snack", "/api/community/verkehr", "/api/community/klatsch", "/api/community/verboten",
-             "/api/community/jass", "/api/community/werwolf", "/api/community/schach", "/api/community/dorfmarkt", "/api/community/escape")
+             "/api/community/zeichnen", "/api/community/wuerfel", "/api/community/heimwaerts", "/api/community/jump", "/api/community/sternlauf", "/api/community/snack", "/api/community/verkehr", "/api/community/langstrecke", "/api/community/klatsch", "/api/community/verboten",
+             "/api/community/jass", "/api/community/werwolf", "/api/community/schach", "/api/community/dorfmarkt", "/api/community/escape", "/api/community/stempeljagd")
 GUEST_API_DENY = ("/api/community/quiz/start", "/api/community/quiz/next", "/api/community/quiz/end", "/api/community/quiz/abort",
                   "/api/community/bingo/start", "/api/community/bingo/begin", "/api/community/bingo/pause", "/api/community/bingo/end",
                   "/api/community/bingo/rules", "/api/community/quizzes", "/api/community/poker/start",
                   "/api/community/poker/begin", "/api/community/poker/pause", "/api/community/poker/end",
-                  "/api/community/poker/give", "/api/community/poker/rules")
+                  "/api/community/poker/give", "/api/community/poker/rules", "/api/community/song/start")
 GUEST_API_DENY_PARTS = ("/start", "/begin", "/end", "/rules")
 
 
@@ -106,12 +107,14 @@ def is_guest_path(path: str) -> bool:
     if path.startswith("/api/"):
         if path.startswith(("/api/community/cards/", "/api/community/domino/", "/api/community/paarjagd/",
                              "/api/community/werbinich/", "/api/community/kartenlauf/", "/api/community/stadtland/",
-                             "/api/community/zeichnen/", "/api/community/wuerfel/", "/api/community/heimwaerts/", "/api/community/jump/", "/api/community/sternlauf/", "/api/community/snack/", "/api/community/verkehr/", "/api/community/klatsch/", "/api/community/verboten/",
-                             "/api/community/jass/", "/api/community/werwolf/", "/api/community/schach/", "/api/community/dorfmarkt/", "/api/community/escape/")) \
+                             "/api/community/zeichnen/", "/api/community/wuerfel/", "/api/community/heimwaerts/", "/api/community/jump/", "/api/community/sternlauf/", "/api/community/snack/", "/api/community/verkehr/", "/api/community/langstrecke/", "/api/community/klatsch/", "/api/community/verboten/",
+                             "/api/community/jass/", "/api/community/werwolf/", "/api/community/schach/", "/api/community/dorfmarkt/", "/api/community/escape/", "/api/community/stempeljagd/")) \
                 and path.endswith(GUEST_API_DENY_PARTS + ("/skip", "/next", "/override", "/mix", "/delete")):
             return False
         if path.startswith("/api/community/dorfmarkt/") and path.endswith(("/pause", "/resume")):
             return False                     # Dorfmarkt: only whoever leads pauses (chess: both players may)
+        if path.startswith("/api/community/stempeljagd/") and path.endswith(("/nudge", "/admin")):
+            return False                     # Beat the Bureaucracy: only whoever leads helps a team on or sets the administration
         return path.startswith(GUEST_API) and not path.startswith(GUEST_API_DENY)
     last = path.rsplit("/", 1)[-1]
     return "." in last and not path.startswith(("/eltern", "/media", "/family_planer_files"))   # scripts, styles, icons

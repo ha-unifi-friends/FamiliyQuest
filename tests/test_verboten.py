@@ -250,7 +250,7 @@ def test_family_flow_no_leak_coins_once_history_champion(client):
     fq.verboten._save(row, json.loads(row["state"]))                       # saving again pays nothing more
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"verboten:{gid}:%") == 4
     assert all(fq.rewards.balance(int(p), "coins") == before[p] + (8 if p in win else 1) for p in heads)
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"verboten:{gid}:{win[0]}")["reason"] == "Verbotene Wörter – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"verboten:{gid}:{win[0]}")["reason"] == "Forbidden Words – place 1"
     e = next(x for x in client.get("/api/community/history", headers=heads[ex]).json() if x["kind"] == "verboten")
     assert e["data"]["place"] == 1 and e["data"]["points"] == 1 and e["data"]["teams"] and e["data"]["explained"] == 3 and e["data"]["coins"] == 8
     assert fq.db.val("SELECT COUNT(*) FROM history WHERE kind='verboten'") == 4
@@ -285,7 +285,7 @@ def test_guests_play_but_not_lead_and_paths(client):
     hm = login(client, mia, "1111")
     client.post("/api/community/verboten/start", json={}, headers=hm)
     inv = client.post("/api/community/guests", json={"game": "verboten"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Verbotene Wörter"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Forbidden Words"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     for path in ("start", "begin", "end", "skip", "mix"):

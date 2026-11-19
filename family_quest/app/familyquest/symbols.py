@@ -12,6 +12,7 @@ import json
 import re
 
 from .settings import WEB_DIR
+from .i18n import _t
 
 GRID = 12
 LENGTH = 4
@@ -29,7 +30,7 @@ SYMBOLS: dict[str, str] = _load()
 def check_set(symbol_set: list) -> list[str]:
     ids = [str(x) for x in symbol_set or []]
     if len(ids) != GRID or len(set(ids)) != GRID or any(i not in SYMBOLS for i in ids):
-        raise ValueError(f"Choose a set of {GRID} different symbols")
+        raise ValueError(_t("Choose a set of {0} different symbols").replace("{0}", str(GRID)))
     return ids
 
 
@@ -37,7 +38,7 @@ def secret(symbols: list, symbol_set: list[str]) -> str:
     """The string that is hashed: "sym:ball,cat,dog,bike" (validated)."""
     ids = [str(x) for x in symbols or []]
     if len(ids) != LENGTH or len(set(ids)) != LENGTH or any(i not in symbol_set for i in ids):
-        raise ValueError(f"Choose {LENGTH} different symbols")
+        raise ValueError(_t("Choose {0} different symbols").replace("{0}", str(LENGTH)))
     return "sym:" + ",".join(ids)
 
 

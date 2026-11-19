@@ -15,6 +15,9 @@ const PRAISE = [T("Great!"), T("Super!"), T("Well done!"), T("Exactly!"), T("Per
 async function boot() {
   try { S.info = await api("info"); } catch (e) { return fatal(e); }
   if (S.info.sound === false && localStorage.getItem("fq.sound") == null) Sound.on = false;
+  // opened in Home Assistant with the child's own Home Assistant user: logged in without PIN (also instead of another
+  // profile still logged in on this device) – not again in this tab after «Log out» (haKidOff)
+  if (S.info.ha_kid && !haKidOff() && !/^#\/?as\//.test(location.hash)) await haKidLogin().catch(() => {});
   window.addEventListener("hashchange", route);
   ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, idleReset, { passive: true }));
   if ("serviceWorker" in navigator) {
@@ -54,6 +57,7 @@ async function route() {
   if (view === "shop") return shopView();
   if (view === "avatar") return avatarView();
   if (view === "family") return familyView();
+  if (view === "deals") return dealsView(arg);                 // deals (deals.js)
   if (view === "board" && arg) return boardView(+arg);
   if (view === "games") return gamesView();
   if (view === "quiz") return quizView();
@@ -75,6 +79,7 @@ async function route() {
   if (view === "sternlauf") return sternlaufView();
   if (view === "snack") return snackView();
   if (view === "verkehr") return verkehrView();
+  if (view === "langstrecke") return langstreckeView();
   if (view === "klatsch") return klatschView();
   if (view === "verboten") return verbotenView();
   if (view === "jass") return jassView();
@@ -82,8 +87,12 @@ async function route() {
   if (view === "schach") return schachView(arg);
   if (view === "dorfmarkt") return dorfmarktView();
   if (view === "escape") return escapeView();
+  if (view === "stempeljagd") return stempeljagdView();
   if (view === "arcade") return arcadeView(arg);
   if (view === "deck") return arg ? deckView(+arg) : decksView();
+  if (view === "stories") return storiesView();
+  if (view === "codelab") return S.me.codelab ? codelabView() : go("courses");          // 💡 Code Workshop (codelab.js) – dev channel
+  if (view === "advgames") return canPlay("adventuregame") && S.me.stories !== false ? adventureGamesView() : go("games");   // stories.js
   return dashboardView();
 }
 
@@ -92,11 +101,26 @@ const go = path => { if (location.hash === "#/" + path) route(); else location.h
 async function loadMe() {
   S.me = await api("me");
   S.profile = S.me.profile;
+  // deals (deals.js): the menu entry only when this profile may trade, a badge for offers waiting for an answer
+  window.FQ_DEALS_OFF = !(S.me.deals && S.me.deals.on);
+  window.FQ_NAV_BADGES = { deals: S.me.deals ? S.me.deals.turn || 0 : 0 };
+  window.FQ_STORIES = S.me.stories !== false;           // adventure books switched off for this child: no menu entry
   if (S.me.prank) setTimeout(() => inkOverlay(S.me.prank), 400);     // somebody threw an ink bomb meanwhile
   idleReset();
 }
 
+// login with the Home Assistant user of a child (api/kid.py ha-login): only the children's app, never the parent area
+const haKidOff = () => { try { return sessionStorage.getItem("fq.ha.off") === "1"; } catch { return false; } };
+async function haKidLogin() {
+  try { sessionStorage.removeItem("fq.ha.off"); } catch {}
+  const r = await api("ha-login", { method: "POST" });
+  if (!r.token) return false;
+  Auth.kid = r.token; Auth.parent = "";
+  return true;
+}
+
 function logout() {
+  if (S.info && S.info.ha_kid) { try { sessionStorage.setItem("fq.ha.off", "1"); } catch {} }     // no automatic login right away
   Auth.kid = ""; Auth.parent = "";
   S.me = S.profile = null;
   location.hash = "#/";
@@ -165,12 +189,23 @@ function batteryBar(compact = false) {
     h("div.grow.bat-text", h("strong", ...text), sub ? h("div.small.muted", sub) : null), btn);
 }
 
-/** Recharge the battery to full for coins – a confirm dialog first. */
-function rechargeBattery() {
+/** One battery per screen: the chip in the head of the games page; the card of a game and the game corner only say
+ *  what a start costs – the full strip with «Recharge» only when the battery is empty. */
+function batteryHint() {
+  const b = battery();
+  if (!batteryShown() || b.free) return null;
+  if (b.charge <= 0) return h("div.card.bat-sheet", batteryBar(true));
+  return h("p.small.muted.bat-hint", batteryIcon(b), " ", I18N.tr(T("{0} of {1} charged")).replace("{0}", b.charge).replace("{1}", b.cap), " · ", T("Starting costs 🔋1"));
+}
+
+/** Recharge the battery to full for coins – a confirm dialog first. `then`: what comes after (the start dialog of a game). */
+function rechargeBattery(then = null) {
   const b = battery();
   if (!b) return;
-  const coins = Math.floor(((S.me && S.me.balances) || {}).coins || 0), short = b.cost > coins;
+  if (typeof then !== "function") then = null;
+  const me = S.me || {}, coins = Math.floor(me.coins_available ?? (me.balances || {}).coins ?? 0), short = b.cost > coins;   // without deal reservations
   const m = modal(h("div.form.center.bat-dialog", h("h2", "⚡ ", T("Recharge your game battery")), batteryIcon(b, true),
+    then ? h("p.bat-why", "🪫 ", T("Your battery is empty – recharge it to start this game.")) : null,
     h("p", b.cost > 0 ? I18N.tr(T("Recharge to full ({0} segments) for {1} coins?")).replace("{0}", b.cap).replace("{1}", b.cost)
       : I18N.tr(T("Recharge to full ({0} segments) – it costs nothing.")).replace("{0}", b.cap)),
     h("p.small.muted", "🪙 ", I18N.tr(T("You have {0} coins")).replace("{0}", coins)),
@@ -180,12 +215,20 @@ function rechargeBattery() {
       try {
         const r = await api("me/battery/recharge", { method: "POST" });
         S.me.battery = r.battery;
-        if (S.me.balances) S.me.balances.coins = r.coins;
+        S.me.coins_available = r.coins;
         Sound.play("done"); toast(T("Game battery recharged"), "good");
       } catch (e) { toast(e.message, "bad"); }
       try { S.me = await api("me"); } catch {}
       route();
-    } }, "⚡ ", T("Recharge")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+      if (then && !batteryEmpty()) then();
+    } }, "⚡ ", T("Recharge")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel"))),
+    short && then ? h("p.small.muted", T("You can still join a table of somebody else. To start a game yourself, recharge your battery.")) : null));
+}
+// starting a game costs a segment: with an empty battery the start dialogs of all games ask to recharge first (instead
+// of a refusal after filling in the dialog) – joining a table of somebody else does not go through them
+for (const k of Object.keys(window).filter(k => /(StartDialog|SoloDialog)$/.test(k) && typeof window[k] === "function")) {
+  const start = window[k];
+  window[k] = (...a) => batteryEmpty() ? rechargeBattery(() => start(...a)) : start(...a);
 }
 // a start refused because the battery is empty (familyquest/api: 403): offer to recharge right away
 window.FQ_BATTERY_EMPTY = async () => { try { S.me = await api("me"); } catch {} if (batteryEmpty() && !document.querySelector(".bat-dialog")) rechargeBattery(); };
@@ -329,14 +372,15 @@ function topBar(active, opts = {}) {
   const head = h("header.top.fq-head" + (se && (seasonOn() || discoTheme()) ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
     seasonScene(),
     h("div.head-row" + (opts.back ? ".has-back" : ""),
-      h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰"),
+      h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰",
+        (window.FQ_NAV_BADGES || {}).deals ? h("span.deal-badge", String(window.FQ_NAV_BADGES.deals)) : null),
       // load everything anew (e.g. a pet just bought, a game somebody opened)
       h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: () => location.reload() }, "⟳"),
       opts.back ? h("button.icon-btn.back-btn", { title: T("Back"), "aria-label": T("Back"), onclick: opts.back }, "←") : null,
       h("button.me", { onclick: () => go("avatar"), title: T("Me") },
         avatarSvg(me.profile.avatar, 44),
         h("span.me-text", C(me.profile.name, "strong"), h("span.level-chip", "Level " + me.level.level))),
-      h("span.streak", { title: T("Days in a row with the daily goal") }, "🔥 ", h("b", String(me.streak))),
+      h("button.streak", { type: "button", title: T("Days in a row with the daily goal"), onclick: () => toast(I18N.tr(T("Days in a row with the daily goal")) + ": " + me.streak) }, "🔥 ", h("b", String(me.streak))),
       headClock(),
       h("span.grow"),
       opts.actions ? h("div.head-actions", ...[].concat(opts.actions)) : null));
@@ -390,8 +434,12 @@ async function profilesView() {
   const tile = p => h("button.profile-tile", { onclick: () => login(p) }, avatarSvg(p.avatar, 120),
     C(p.name, "strong"), p.has_pin ? h("span.lock", { title: T("With PIN") }, "🔒") : null);
   const parentBtn = h("a.btn.ghost.parent-link", { href: "eltern" }, "🔐 ", T("Parent area"));
+  const hk = S.info.ha_kid;
   const body = h("div.profiles-screen",
     h("div.row.profiles-head", h("h1.grow", T("Log in")), themeBtn(), langPicker()),
+    hk ? h("div.center.ha-kid-login", h("button.btn.big", { onclick: async () => {
+      try { if (await haKidLogin()) { Sound.play("tap"); location.hash = "#/"; route(); } } catch (e) { toast(e.message, "bad"); }
+    } }, "🏠 ", I18N.tr(T("Log in as {0}")).replace("{0}", hk.name))) : null,
     S.info.setup_needed
       ? h("div.card.welcome", h("h2", T("Welcome to Family Quest!")), h("p", T("A parent sets up the profiles first.")),
           h("a.btn.big", { href: "eltern" }, T("Set up now")))
@@ -483,6 +531,7 @@ function dashboardView() {
   if (me.badges.length) sections.push(badgesCard(me.badges));
   screen("home", ...sections);
   petDiedNote(me.pets);
+  dealNote(me.deals);                                   // a new offer, the deal stands … (deals.js)
 }
 
 /** Block time «only a message»: the app shows that it is OfflineTime until it ends. */
@@ -597,7 +646,8 @@ function choresCard(chores) {
       h("span.grow", C(c.summary),
         c.pending ? h("span.chore-note", T("waiting for confirmation")) : null,
         c.redo && !c.done && !c.pending ? h("span.chore-note.redo", T("Please do it once more")) : null,
-        c.weekly ? h("span.chore-note", T("this week")) : null),
+        c.weekly ? h("span.chore-note", T("this week")) : null,
+        c.from ? h("span.chore-note.deal-note", "🤝 ", I18N.tr(T("taken over from {0}")).replace("{0}", c.from)) : null),
       c.points ? h("span.chore-pts", accIcon(c.account) + " " + fmt(c.points)) : null,
       c.energy && batteryShown() ? h("span.chore-pts.chore-energy", { title: T("Energy bonus") }, "🔋+" + c.energy) : null))) : h("p.muted", T("No chores today.")),
     open.length === 0 && chores.length ? h("p.good-text", T("All chores done – thank you!")) : null);
@@ -609,10 +659,11 @@ function pointsCard() {
   const nr = me.next_reward;
   return h("section.card.points", h("h2", "🪙 ", T("Points and goodies")),
     h("div.balances", ...accs.map(a => h("div.balance", h("span.bal-ic", a.icon || "🪙"), h("b", fmt(me.balances[a.key], 1)), h("span.small.muted", a.name)))),
+    me.coins_reserved > 0 ? h("p.small.muted.deal-reserved", "🔒 ", I18N.tr(T("{0} coins reserved in deals")).replace("{0}", fmt(me.coins_reserved))) : null,
     me.internet ? internetCard(me.internet) : null,      // start / pause the internet time right next to the minutes
     nr ? h("div.next-reward", h("div.row", h("span.big-ic", nr.icon), h("span.grow", T("Still {0} until {1}").replace("{0}", fmt(nr.missing)).replace("{1}", nr.name))),
       bar(nr.cost - nr.missing, nr.cost)) : null,
-    me.pending.length ? h("p.small.muted", "⏳ ", T("Waiting for approval:"), " ", me.pending.map(p => p.name).join(", ")) : null,
+    me.pending.length ? h("p.small.muted", "⏳ ", T("Waiting for approval:"), " ", me.pending.map(p => I18N.tr(p.name)).join(", ")) : null,
     h("button.btn.ghost", { onclick: () => go("shop") }, "🛍️ ", T("To the shop")));
 }
 
@@ -698,9 +749,9 @@ function lessonChrome(body, step) {
     h("div.feedback#feedback", { hidden: true }));
 }
 
-function quitLesson() {
+async function quitLesson() {
   const L = S.lesson;
-  if (L && L.i > 0 && L.i < L.s.steps.length && !confirm(I18N.tr(T("Stop the lesson? What you answered so far counts.")))) return;
+  if (L && L.i > 0 && L.i < L.s.steps.length && !(await confirmDialog(I18N.tr(T("Stop the lesson? What you answered so far counts."))))) return;
   if (L && L.i > 0) return finishLesson();
   S.lesson = null;
   location.hash = L ? L.back : "#/";
@@ -1096,23 +1147,30 @@ async function shopView() {
   const accs = d.accounts.filter(a => a.spendable);
   const accIcon = k => (accs.find(a => a.key === k) || {}).icon || "🪙";
   const status = { pending: T("waiting for approval"), approved: T("approved"), rejected: T("declined"), failed: T("did not work") };
-  screen("shop",
-    h("h1", "🛍️ ", T("Shop")),
-    h("div.balances.card", ...accs.map(a => h("div.balance", h("span.bal-ic", a.icon || "🪙"), h("b", fmt(d.balances[a.key], 1)), h("span.small.muted", a.name)))),
-    d.offers.length ? h("div.shop-grid", ...d.offers.map(o => h("div.offer.card" + (o.can ? "" : ".cant"),
+  // the shop is long: chips on top (they stay while scrolling) jump to each part
+  const [games, avatar, xp, pranks] = await Promise.all([unlockGamesSection(), avatarSpecials(), xpBackgrounds(), pranksCard()]);
+  const wishes = d.history.length ? h("section.card", h("h2", T("My wishes")), h("ul.history", ...d.history.map(r =>
+    h("li", h("span", r.icon + " "), h("span.grow", r.name), h("span.small.status." + r.status, status[r.status] || r.status))))) : null;
+  const rewards = d.offers.length ? h("div.shop-grid", ...d.offers.map(o => h("div.offer.card" + (o.can ? "" : ".cant"),
       h("div.offer-ic", o.icon), h("strong", o.name),
       h("div.price", accIcon(o.account) + " " + fmt(o.cost)),
       o.approval ? h("span.small.muted", "👪 ", T("Parents confirm")) : null,
       o.can ? h("button.btn", { onclick: () => redeem(o) }, T("Redeem")) : h("div.small.muted.reason", o.reason),
-      !o.can && o.missing > 0 ? barCount(o.cost - o.missing, o.cost, accIcon(o.account)) : null))) : h("p.muted", T("The shop is still empty.")),
-    await unlockGamesSection(),
-    await avatarSpecials(),
-    await xpBackgrounds(),
-    await pranksCard(),
-    d.history.length ? h("section.card", h("h2", T("My wishes")), h("ul.history", ...d.history.map(r =>
-      h("li", h("span", r.icon + " "), h("span.grow", r.name), h("span.small.status." + r.status, status[r.status] || r.status))))) : null);
+      !o.can && o.missing > 0 ? barCount(o.cost - o.missing, o.cost, accIcon(o.account)) : null))) : h("p.muted", T("The shop is still empty."));
+  const parts = [[rewards, "🎁", T("Rewards")], [games, "🎮", T("Unlock games")], [avatar, "🧑‍🎨", T("Avatar")], [xp, "✨", T("XP")],
+    [pranks, "😈", T("Pranks")], [wishes, "📜", T("My wishes")]].filter(([el]) => el);
+  parts.forEach(([el], i) => { el.id = "shop-part-" + i; el.classList.add("shop-part"); });
+  const chips = parts.length > 2 ? h("nav.shop-chips", { "aria-label": T("Shop") }, ...parts.map(([el, ic, n]) =>
+    h("button.chip-btn", { type: "button", onclick: () => el.scrollIntoView({ behavior: "smooth", block: "start" }) }, ic, " ", n))) : null;
+  screen("shop",
+    h("h1", "🛍️ ", T("Shop")),
+    h("div.balances.card", ...accs.map(a => h("div.balance", h("span.bal-ic", a.icon || "🪙"), h("b", fmt(d.balances[a.key], 1)), h("span.small.muted", a.name)))),
+    chips, rewards, games, avatar, xp, pranks, wishes);
+  // stick right below the header (its height depends on the season scene and the screen)
+  const head = document.querySelector(".fq-head, header.top");
+  if (chips && head) document.documentElement.style.setProperty("--head-h", Math.round(head.getBoundingClientRect().height) + "px");
   async function redeem(o) {
-    if (!confirm(I18N.tr(T("Redeem {0} for {1}?")).replace("{0}", o.name).replace("{1}", fmt(o.cost)))) return;
+    if (!(await confirmDialog(I18N.tr(T("Redeem {0} for {1}?")).replace("{0}", o.name).replace("{1}", fmt(o.cost))))) return;
     try {
       const r = await api("me/redeem", { method: "POST", body: { reward_id: o.id } });
       Sound.play("done");
@@ -1135,7 +1193,7 @@ async function avatarSpecials() {
     catch (e) { toast(e.message, "bad"); }
   };
   const buy = async i => {
-    if (i.rule.cost > 0 && !confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))) return;   // price 0: free, one tap
+    if (i.rule.cost > 0 && !(await confirmDialog(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost)))) return;   // price 0: free, one tap
     try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
     catch (e) { toast(e.message, "bad"); }
   };
@@ -1162,7 +1220,7 @@ async function xpBackgrounds() {
     catch (e) { toast(e.message, "bad"); }
   };
   const get = async i => {
-    if (i.rule.xp > 0 && !confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))) return;
+    if (i.rule.xp > 0 && !(await confirmDialog(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp)))) return;
     try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); Sound.play("done"); confetti(); await wear(i); }
     catch (e) { toast(e.message, "bad"); }
   };
@@ -1183,7 +1241,7 @@ async function pranksCard() {
   let d;
   try { d = await api("me/pranks"); } catch { return null; }
   const buy = async () => {
-    if (!confirm(I18N.tr(T("Buy an ink bomb for {0} coins?")).replace("{0}", d.price))) return;
+    if (!(await confirmDialog(I18N.tr(T("Buy an ink bomb for {0} coins?")).replace("{0}", d.price)))) return;
     try { await api("me/pranks/buy", { method: "POST" }); Sound.play("done"); toast(T("Ink bomb bought!"), "good"); shopView(); }
     catch (e) { toast(e.message, "bad"); }
   };
@@ -1210,7 +1268,7 @@ async function pranksCard() {
   };
   const f = d.fart;
   const buyFart = async () => {
-    if (!confirm(I18N.tr(T("Buy a whoopee cushion for {0} coins?")).replace("{0}", f.price))) return;
+    if (!(await confirmDialog(I18N.tr(T("Buy a whoopee cushion for {0} coins?")).replace("{0}", f.price)))) return;
     try { await api("me/pranks/buy", { method: "POST", body: { kind: "fart" } }); Sound.play("done"); toast(T("Whoopee cushion bought!"), "good"); shopView(); }
     catch (e) { toast(e.message, "bad"); }
   };
@@ -1300,6 +1358,13 @@ async function avatarView() {
   a.items = a.items || {};
   const preview = h("div.av-preview");
   const draw = () => preview.replaceChildren(avatarSvg(a, 200));
+  // names of the avatar options for screen readers (rewards/avatar.py FREE_PARTS)
+  const AV_LABELS = { "hair:short": T("Short hair"), "hair:long": T("Long hair"), "hair:curly": T("Curly hair"), "hair:bun": T("Hair bun"),
+    "hair:spiky": T("Spiky hair"), "hair:ponytail": T("Ponytail"), "hair:bald": T("Bald"), "eyes:round": T("Round eyes"), "eyes:happy": T("Happy eyes"),
+    "eyes:wink": T("Wink"), "eyes:big": T("Big eyes"), "eyes:sad": T("Sad eyes"), "eyes:sleepy": T("Sleepy eyes"), "eyes:dizzy": T("Dizzy eyes"),
+    "eyes:angry": T("Angry eyes"), "mouth:smile": T("Smile"), "mouth:grin": T("Grin"), "mouth:open": T("Open mouth"), "mouth:neutral": T("Neutral mouth"),
+    "mouth:sad": T("Sad mouth"), "mouth:wavy": T("Wavy mouth"), "outfit:tshirt": T("T-shirt"), "outfit:hoodie": T("Hoodie"), "outfit:dress": T("Dress"),
+    "outfit:sweater": T("Sweater"), "outfit:overall": T("Dungarees") };
   const TABS = [["skin", T("Skin")], ["hair", T("Hair")], ["hairColor", T("Hair colour")], ["eyes", T("Eyes")], ["mouth", T("Mouth")],
     ["outfit", T("Clothes")], ["outfitColor", T("Colour")], ["items", T("Items")]];
   let tab = "skin";
@@ -1327,17 +1392,17 @@ async function avatarView() {
     panel.replaceChildren(h("div.av-opts", ...opts.map(v => {
       const isColor = /^#/.test(v);
       const sample = isColor ? h("span.swatch", { style: { background: v } }) : avatarSvg(Object.assign({}, a, { [tab]: v }), 64);
-      return h("button.av-opt" + (a[tab] === v ? ".on" : ""), { onclick: () => { a[tab] = v; draw(); drawPanel(); }, "aria-label": v }, sample);
+      return h("button.av-opt" + (a[tab] === v ? ".on" : ""), { onclick: () => { a[tab] = v; draw(); drawPanel(); }, "aria-label": isColor ? v : I18N.tr(AV_LABELS[tab + ":" + v] || v) }, sample);
     })));
   };
   async function pickItem(i) {
     if (!i.unlocked) {
       if (i.rule.off) return toast(ruleText(i.rule));
       // price 0 (parent area › Shop): free – one tap, no question
-      if (i.rule.cost != null && (i.rule.cost <= 0 || confirm(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost)))) {
+      if (i.rule.cost != null && (i.rule.cost <= 0 || (await confirmDialog(I18N.tr(T("Buy {0} for {1} coins?")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.cost))))) {
         try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
         catch (e) { return toast(e.message, "bad"); }
-      } else if (i.rule.cost == null && i.rule.xp != null && (i.rule.xp <= 0 || confirm(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp)))) {
+      } else if (i.rule.cost == null && i.rule.xp != null && (i.rule.xp <= 0 || (await confirmDialog(I18N.tr(T("Unlock {0} with {1} new XP? Your XP stay as they are.")).replace("{0}", I18N.tr(i.name)).replace("{1}", i.rule.xp))))) {
         try { await api("me/avatar/buy", { method: "POST", body: { item: i.id } }); i.unlocked = true; Sound.play("done"); toast(T("Unlocked!"), "good"); }
         catch (e) { return toast(e.message, "bad"); }
       } else return toast(ruleText(i.rule));
@@ -1450,7 +1515,7 @@ function petMoreRow(d, reload) {
   const more = (d.more || []).filter(m => m.count < m.max);
   if (!more.length) return null;
   const buy = async m => {
-    if (!confirm(I18N.tr(T("Buy one more for {0} coins?")).replace("{0}", m.price))) return;
+    if (!(await confirmDialog(I18N.tr(T("Buy one more for {0} coins?")).replace("{0}", m.price)))) return;
     try { await api("me/pets/more", { method: "POST", body: { kind: m.kind } }); Sound.play("right"); reload(); }
     catch (e) { Sound.play("wrong"); toast(e.message, "bad"); }
   };
@@ -1548,7 +1613,7 @@ function petCardCare(p, cost, reload, d) {
   };
   const rename = async () => {
     if (p.owner) return;                                             // only the owner names the pet
-    const n = prompt(I18N.tr(T("New name for your pet")), p.name);
+    const n = (await promptDialog(I18N.tr(T("New name for your pet")), p.name));
     if (n == null || !n.trim()) return;
     try { await api(`me/pets/${p.id}`, { method: "PUT", body: { name: n } }); reload(); } catch (e) { toast(e.message, "bad"); }
   };
@@ -1678,7 +1743,7 @@ function botDialog(b, emojis, done) {
         body: { name: name.value, emoji: cur.emoji, color: cur.color, level: lvl.value, shared: share.checked } }); m.close(); toast(T("Saved"), "good"); done(); }
       catch (e) { toast(e.message, "bad"); }
     } }, "💾 ", T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")), h("span.grow"),
-      b ? h("button.btn.small.bad", { onclick: async () => { if (!confirm(I18N.tr(T("Delete the bot «{0}»?")).replace("{0}", b.name))) return;
+      b ? h("button.btn.small.bad", { onclick: async () => { if (!(await confirmDialog(I18N.tr(T("Delete the bot «{0}»?")).replace("{0}", b.name)))) return;
         try { await api(`community/bots/${b.id}`, { method: "DELETE" }); m.close(); done(); } catch (e) { toast(e.message, "bad"); } } }, T("Delete")) : null)));
   name.focus();
 }
@@ -1759,7 +1824,8 @@ async function familyView() {
         m.chores && m.chores.reliability != null ? [h("dt", "🧹 " + I18N.tr(T("Chores"))), h("dd", fmt(m.chores.reliability) + " %")] : null,
         showAll && m.level ? [h("dt", "Level"), h("dd", String(m.level))] : null)))) : null,
     h("p.small.muted.center", T("Compared is the effort towards each one's own goal – not the raw points.")),
-    await familyTimeSection(), await councilSection(), await pollsSection(), await boardsSection(), await wichtelnSection(), await historySection());
+    await familyTimeSection(), await councilSection(), await pollsSection(), await boardsSection(),
+    S.me.stories !== false ? storiesCard() : null, await wichtelnSection(), await historySection());
 }
 
 // ---------------------------------------------------------------- games with a price: buy or rent (familyquest/gamepasses.py)
@@ -1768,8 +1834,10 @@ const GAME_INFO = { quiz: ["🎯", T("Family quiz")], bingo: ["🎱", "Bingo"], 
   kartenlauf: ["🏁", T("Card Race")], stadtland: ["🏙️", T("City, Country, River")], zeichnen: ["🎨", T("Draw & Guess")], wuerfel: ["🎲", T("Five Dice")],
   heimwaerts: ["🏠", T("Homeward")], jump: ["🦘", "Jump"], sternlauf: ["🌠", T("Star Runner")], snack: ["🍔", T("Snack Rush")], verkehr: ["🚦", T("Traffic Cadet")],
   klatsch: ["👏", T("Clap the Beat")], verboten: ["🚫", T("Forbidden Words")], jass: ["♣️", T("Jass")], werwolf: ["🐺", T("Werewolves")], schach: ["♟️", T("Chess")],
-  dorfmarkt: ["🏘️", T("Village Market")], escape: ["🗝️", T("Escape Room")], ttt: ["⭕", T("Tic-Tac-Toe")], sudoku: ["🔢", T("Sudoku")], patience: ["🃏", T("Patience")],
+  dorfmarkt: ["🏘️", T("Village Market")], escape: ["🗝️", T("Escape Room")], stempeljagd: ["🏛️", T("Beat the Bureaucracy")], ttt: ["⭕", T("Tic-Tac-Toe")], sudoku: ["🔢", T("Sudoku")], patience: ["🃏", T("Patience")],
   pingpong: ["🏓", T("Ping-Pong")], slots: ["🎰", T("One-armed bandit")], cube: ["🧊", T("Cube solver")] };
+GAME_INFO.langstrecke = ["🏎️", T("24h Endurance")];
+GAME_INFO.adventuregame = ["🗝️", T("Adventure games")];
 const gameInfo = k => GAME_INFO[k] || ["🎮", k];
 const rentText = o => I18N.tr({ day: T("Rent: {0} 🪙 per day"), week: T("Rent: {0} 🪙 per week"), month: T("Rent: {0} 🪙 per month") }[o.period] || T("Rent: {0} 🪙 per week")).replace("{0}", o.rent);
 const buyText = o => I18N.tr(T("Buy: {0} 🪙")).replace("{0}", o.price);
@@ -1785,7 +1853,7 @@ async function gamePass(o, kind, after) {
   const name = I18N.tr(gameInfo(o.game)[1]);
   const q = kind === "buy" ? I18N.tr(T("Buy {0} for {1} coins? It stays yours for good.")).replace("{0}", name).replace("{1}", o.price)
     : I18N.tr(o.rent_until ? T("Rent {0} for {1} coins more? The time is added to the end.") : T("Rent {0} for {1} coins?")).replace("{0}", name).replace("{1}", o.rent);
-  if (!confirm(q)) return;
+  if (!(await confirmDialog(q))) return;
   try {
     await api("me/games/buy", { method: "POST", body: { game: o.game, kind, until: kind === "rent" ? (o.rent_until || "") : null } });
     Sound.play("done"); confetti(); toast(kind === "buy" ? T("Game unlocked – have fun!") : T("Game rented – have fun!"), "good");
@@ -1852,7 +1920,8 @@ async function gamesView() {
     : lockedGame(k) ? [k, trialGame(k) ? await make() : null, lockedGame(k)] : null))).filter(x => x && (x[1] || x[2]));
   const night = await pick([["tschau", canPlay("tschau"), () => cardsFamilyCard("tschau")], ["karussell", canPlay("karussell"), () => cardsFamilyCard("karussell")], ["domino", canPlay("domino"), dominoFamilyCard],
     ["jass", canPlay("jass"), jassFamilyCard], ["poker", canPlay("poker"), pokerFamilyCard], ["dorfmarkt", canPlay("dorfmarkt"), dorfmarktFamilyCard], ["heimwaerts", canPlay("heimwaerts"), heimwaertsFamilyCard],
-    ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
+    ["langstrecke", canPlay("langstrecke"), langstreckeFamilyCard],
+    ["kartenlauf", canPlay("kartenlauf"), kartenlaufFamilyCard], ["werwolf", canPlay("werwolf"), werwolfFamilyCard], ["escape", canPlay("escape"), escapeFamilyCard], ["stempeljagd", canPlay("stempeljagd"), stempeljagdFamilyCard], ["werbinich", canPlay("werbinich"), werbinichFamilyCard],
     ["verboten", canPlay("verboten"), verbotenFamilyCard], ["zeichnen", canPlay("zeichnen"), zeichnenFamilyCard], ["stadtland", canPlay("stadtland"), stadtlandFamilyCard], ["song", canPlay("song"), songFamilyCard],
     ["bingo", canPlay("bingo"), bingoCard], ["schach", canPlay("schach"), schachFamilyCard]]);
   if (!quiz && lockedGame("quiz")) night.unshift(["quiz", trialGame("quiz") ? await quizCard() : null, lockedGame("quiz")]);
@@ -1862,7 +1931,9 @@ async function gamesView() {
   const live = communityBanners(S.me && S.me.community, { gamesOnly: true });
   screen("games", h("div.row.games-head", h("h1.grow", "🎲 ", T("Games")), batteryShown() ? h("button.bat-chip", { onclick: () => battery().free || battery().charge >= battery().cap ? null : rechargeBattery(),
       title: T("Game battery") }, batteryIcon(battery())) : null),
-    partyBanner(), batteryShown() ? h("section.card.bat-card", batteryBar()) : null, timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
+    partyBanner(), batteryShown() && batteryEmpty() ? h("section.card.bat-card", batteryBar()) : null, timeLeftCard("games"), ...(live.length ? [h("div.live-banners", ...live)] : []), quiz,
+    // the adventure games of the family (stories.js): switched on for this child and the library open for it
+    canPlay("adventuregame") && S.me.stories !== false ? adventureGamesCard() : null,
     gameGroup("🎲", T("For a game night"), night), gameGroup("⚡", T("Quick games for in between"), quick), arcadeCard());
 }
 
@@ -1887,7 +1958,8 @@ function lockedTile(k, o, card) {
   const [ic, name] = gameInfo(k);
   return h("button.arcade-tile.game-tile.gp-locked", { onclick: () => gamePassDialog(o, card), title: T("Unlock games") },
     h("span.big-ic", ic), h("strong", I18N.tr(name)),
-    h("span.gp-price", "🔒 ", o.price > 0 ? o.price + " 🪙" : o.rent + " 🪙/" + I18N.tr({ day: T("Day"), week: T("Week"), month: T("Month") }[o.period] || T("Week"))),
+    h("span.gp-price", h("span", "🔒 ", (o.price > 0 ? o.price : o.rent) + " 🪙"),
+      o.price > 0 ? null : h("span", "/" + I18N.tr({ day: T("Day"), week: T("Week"), month: T("Month") }[o.period] || T("Week")))),
     o.tries_left > 0 ? h("span.gp-try-tag", "🎁 ", triesText(o.tries_left)) : null);
 }
 
@@ -1895,7 +1967,7 @@ function lockedTile(k, o, card) {
 function openGameSheet(card) {
   if (S.sheet) S.sheet.close();
   card.classList.add("in-sheet");
-  const m = modal(h("div.game-sheet", batteryShown() ? h("div.card.bat-sheet", batteryBar(true)) : null, card, h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))),
+  const m = modal(h("div.game-sheet", batteryHint(), card, h("button.btn.ghost.small", { onclick: () => m.close() }, T("Close"))),
     { onClose: () => { window.removeEventListener("hashchange", off); if (S.sheet === m) S.sheet = null; } });
   const off = () => m.close();
   window.addEventListener("hashchange", off);
@@ -1924,6 +1996,7 @@ function devicesCard() {
 }
 
 // ---------------------------------------------------------------- course catalogue (language courses, general knowledge)
+const LANG_NAMES = { de: T("German"), en: T("English"), fr: T("French"), it: T("Italian"), es: T("Spanish"), nl: T("Dutch"), pl: T("Polish"), pt: T("Portuguese"), sv: T("Swedish") };
 // the course description in the app language (packs may carry beschreibung_i18n), else in the language of the pack
 function courseText(c) {
   const d = c.descriptions || {}, l = I18N.lang, b = String(I18N.base || l).split("-")[0];
@@ -1934,6 +2007,7 @@ async function coursesView() {
   let list = [];
   try { list = await api("me/courses"); } catch (e) { return toast(e.message, "bad"); }
   const LEVELS = { A1: T("Beginner"), A2: T("Basics"), B1: T("Advanced") };
+  const levelName = l => l === "für alle" ? I18N.tr(T("for everybody")) : l;       // the level of the general knowledge pack
   const groups = new Map();
   for (const c of list) { const k = c.subject.key; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); }
   const toggle = async (c, on) => {
@@ -1948,6 +2022,7 @@ async function coursesView() {
     h("section.card.learn-start",
       h("div.grow", h("strong", T("Daily lesson")), h("div.small.muted", T("A short lesson mixes repetitions and new words."))),
       h("button.btn.big", { onclick: () => startLesson({ mode: "daily" }) }, "▶ ", T("Start"))),
+    me.codelab ? codelabTile() : null,                    // 💡 Code Workshop (codelab.js) – only in the dev channel
     h("section", h("h2", T("Subjects")),
       isParent ? h("p.small.muted", "👀 ", T("As a parent you see all packs to try them out – also drafts. Children only see the packs switched on for them.")) : null,
       subjectGrid(me, true)),
@@ -1956,10 +2031,13 @@ async function coursesView() {
     list.length ? [...groups.values()].map(cs => h("section.card.course", { style: { "--c": cs[0].subject.color } },
       h("h2", cs[0].subject.icon + " ", I18N.tr(cs[0].subject.name)),
       h("div.course-levels", ...cs.sort((a, b) => String(a.level).localeCompare(String(b.level)) || String(a.title).localeCompare(String(b.title))).map(c => h("div.course-level" + (c.on ? ".on" : ""),
-        h("strong", { translate: "no" }, c.level), LEVELS[c.level] ? h("span.small", I18N.tr(LEVELS[c.level])) : null,
+        h("strong", { translate: "no" }, levelName(c.level)), LEVELS[c.level] ? h("span.small", I18N.tr(LEVELS[c.level])) : null,
         // two packs of one subject with the same level («für alle»): the pack title tells them apart
         cs.filter(x => x.level === c.level).length > 1 ? h("b.course-title", { translate: "no" }, c.title) : null,
         C(courseText(c) || c.title, "span.small.muted"),
+        // a pack written in one language only (e.g. German general knowledge) says so in other app languages
+        (c.content_langs || []).length && !c.content_langs.includes(String(I18N.base || I18N.lang).split("-")[0])
+          ? h("span.small.muted", I18N.tr(T("Content in {0}")).replace("{0}", c.content_langs.map(l => langInText(I18N.tr(LANG_NAMES[l] || l))).join(", "))) : null,
         h("span.small.muted", c.units + " " + I18N.tr(T("units")) + " · " + c.cards + " " + I18N.tr(T("cards"))),
         c.on ? h("div.row", h("button.btn.small", { onclick: () => go("pack/" + encodeURIComponent(c.id)) }, "▶ ", T("Continue")),
                  h("button.btn.small.ghost", { onclick: () => toggle(c, false) }, T("Remove")))

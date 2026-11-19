@@ -282,7 +282,7 @@ class Battery:
             if st["charge"] >= st["cap"]:
                 raise BatteryError("Your game battery is full")
             cost = st["cost"]
-            if cost and self.rewards.balance(prof["id"], "coins") < cost:
+            if cost and self.rewards.available(prof["id"]) < cost:
                 raise BatteryError("Not enough coins")
             now = self.now().strftime(FMT)
             lid = self.db.x("INSERT INTO battery_log(profile_id, delta, kind, ref) VALUES(?,?,?,?)",
@@ -342,6 +342,8 @@ class Party:
         kids = body.get("kids", "all")
         if kids != "all":
             if not isinstance(kids, list):
+                raise BatteryError("Choose the children")
+            if not all((isinstance(x, int) and not isinstance(x, bool)) or (isinstance(x, str) and x.isdecimal()) for x in kids):
                 raise BatteryError("Choose the children")
             kids = sorted({int(x) for x in kids if int(x) in kid_ids})
             if not kids:

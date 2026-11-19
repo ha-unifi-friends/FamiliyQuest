@@ -355,6 +355,30 @@ def test_party_scope_unlock_battery_and_expiry(client):
     assert client.get("/api/parent/party", headers=ph).json() is None
 
 
+def test_party_unlock_opens_the_game_corner_without_a_try(client):
+    ph, mia, _ = setup_family(client)
+    hm = login(client, mia, "1111")
+    fq = client.app.state.fq
+    now = clock(fq)
+    client.put("/api/parent/games", json={"access": {"sudoku": {"mode": "all", "profiles": [], "price": 300, "preview": 0}}}, headers=ph)
+    r = client.post("/api/me/games/try", json={"game": "sudoku"}, headers=hm)
+    assert r.status_code == 403 and "No free tries left" in r.json()["detail"]
+    charge = bat(client, hm)["charge"]
+    # party «all games open» (battery as usual): the game opens, no try is needed, a segment is used
+    client.post("/api/parent/party", json={"unlock": True, "battery": False, "limits": False, "for": "3h"}, headers=ph)
+    tick(now)
+    r = client.post("/api/me/games/try", json={"game": "sudoku"}, headers=hm)
+    assert r.status_code == 200 and r.json()["open"] and r.json()["battery"]["charge"] == charge - 1
+    assert fq.db.val("SELECT COUNT(*) FROM game_pass WHERE profile_id=? AND game='sudoku'", mia, default=0) == 0
+    # party with an unlimited battery: no segment either
+    client.post("/api/parent/party", json={"unlock": True, "battery": True, "limits": False, "for": "3h"}, headers=ph)
+    tick(now, 600)
+    r = client.post("/api/me/games/try", json={"game": "sudoku"}, headers=hm)
+    assert r.status_code == 200 and r.json()["open"] and r.json()["battery"]["free"]
+    assert bat(client, hm)["charge"] == charge - 1
+    assert fq.db.val("SELECT COUNT(*) FROM game_pass WHERE profile_id=? AND game='sudoku'", mia, default=0) == 0
+
+
 def test_party_lifts_limits_only_with_the_option_and_can_be_ended(client):
     ph, mia, leo = setup_family(client)
     hm = login(client, mia, "1111")

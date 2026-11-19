@@ -7,6 +7,7 @@ may_lead from cardgames.CardGames, like «Jump»).
 A round («call and response», fixed on the shared game clock – game time 0 = `t0`, a short countdown after the start):
   1. count-in – one bar of four hi-hat clicks at the round's tempo,
   2. listen   – the app plays the pattern (claps over a kick / hi-hat groove); the dots appear on the bar as they sound,
+     then a «ready» bar of four clicks (a run-up to the clap bar),
   3. clap     – the next bar: the same dots stay on the bar, a playhead sweeps over them – clap when it reaches a dot,
   4. results  – a short pause with the points of the round and the live ranking, then the next round.
 The server makes the patterns (random with `secrets`): a bar of 4/4 on a 16th grid (positions 0–15), at least an
@@ -37,6 +38,7 @@ import time
 from .cardgames import BOTS, CardGames
 from .community import CommunityError
 from .pairhunt import places, rewards_of as _rewards_of
+from .running import win_reason
 
 KIND = "klatsch"
 TITLE = "Klatsch den Beat"
@@ -133,10 +135,11 @@ class Table:
 
     @staticmethod
     def times(rd: dict) -> tuple[float, float, float, float]:
-        """count-in, listen, clap, end of the clap bar (game times)."""
+        """count-in, listen, clap, end of the clap bar (game times). Between the listen and the clap bar a second
+        count-in bar («ready»: four clicks) – a run-up, so the first note of the clap bar can be hit."""
         bar = 4 * 60.0 / rd["bpm"]
         s = rd["start"]
-        return s, s + bar, s + 2 * bar, s + 3 * bar
+        return s, s + bar, s + 3 * bar, s + 4 * bar
 
     @staticmethod
     def note_times(rd: dict) -> list[float]:
@@ -330,13 +333,7 @@ class Klatsch(CardGames):
             self.db.set_setting("klatsch_best", best)
         st["records"] = records
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Platz {st['places'][pid]}", ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND, st["places"][pid]))
         if len(st["players"]) >= 2:
             self._champion(st, [p for p, n in (st.get("places") or {}).items() if n == 1])
         if self.add_history:

@@ -16,13 +16,16 @@ Learning in any subject with points, rewards and avatars – for the whole famil
    draw a line; 🔀 brings other symbols). At login the same 12 symbols appear in a new order every time, so a
    watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN or
    no PIN can be chosen instead.
-5. **Packs** – every child starts with all built-in packs; switch packs or whole level packs on and off per child.
+5. **Packs** – every child starts with the built-in packs that work in every language (maths, the English and French
+   units of year 5 – no course of the child's own language); switch packs or whole level packs on and off per child.
+   Packs whose content exists in German only (German grammar, Thurgau geography, the level pack «5. Klasse Thurgau»,
+   general knowledge) are under **Learning packs › ➕ More packs** – one click adds them (or all of them at once).
 
 ## Options
 
 | Option | Meaning |
 | --- | --- |
-| `direct_access` | Also serve the app in the home network on port 8099 (Family Quest Beta: 8098; can be changed under *Network*). Without it only Home Assistant ingress can reach the app. Parent area › Settings shows the link as a QR code. |
+| `direct_access` | On by default (new installations). Also serve the app in the home network on port 8099 (Family Quest Beta: 8098, Family Quest Dev: 8097; can be changed under *Network*). Without it only Home Assistant ingress can reach the app. Parent area › Settings shows the link as a QR code. |
 | `log_level` | Log detail. |
 
 ## Data
@@ -30,6 +33,14 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 Everything lives in `/data/family_quest.db` (SQLite) and `/data/media/` – both part of Home Assistant backups.
 Additional packs can be placed in `/share/family_quest/packs` (YAML files, folders with YAML + pictures, or ZIP files);
 they are read at start. Packs changed in the parent area are not overwritten by the folder copy.
+
+## Channels: Family Quest, Beta and Dev
+
+Three apps of this repository can run side by side, each with its own data and entities: **Family Quest** (stable,
+`family_quest_…`, port 8099), **Family Quest Beta** (the next version for testing, `family_quest_beta_…`, port 8098,
+orange «BETA» icon) and **Family Quest Dev** (development builds, `family_quest_dev_…`, port 8097, purple «DEV» icon).
+Only the dev app has games that are still being reworked (now: 🏛️ Beat the Bureaucracy) and features still in
+development (now: 💡 Code Workshop) – stable and beta do not show them; history entries of earlier games stay.
 
 ## The app: menu and season designs
 
@@ -179,6 +190,46 @@ chores the full points. With *Parents confirm* a ticked-off chore waits for *OK*
 queue) and fires `family_quest_aemtli_erinnerung`. Chores from the Family Planer appear on the dashboard next to them.
 A chore can also carry an **⚡ Energy bonus** – segments of the child's game battery (see Game battery).
 
+## 🤝 Deals (trading between children and with parents)
+
+App menu › **🤝 Deals** (de-CH *Händel*, fr *Échanges*): children trade with each other and with their parents. Each
+side of a deal («I give» / «I get») combines any of these building blocks:
+
+- **🪙 Coins** – only coins. **XP can never be traded.**
+- **🧹 Chores** of the own chore plan: «I do your chore X» – once, or the next N times of a recurring chore (dates are
+  shown). The chore moves to the doer's list («🤝 taken over from Mia») and is no longer the owner's that day. Chores
+  of the built-in planner cannot be traded as a chore – use a free deal for them.
+- **➕ New task** (deals between a parent and a child): «mow the lawn today» – a one-off chore for the child.
+- **🎁 Things**: pets (not in the pet hotel, at a sitter, while pet care is paused, earned with a badge or XP),
+  avatar items bought with coins, games **bought** for good. Rented games cannot be traded (they run out).
+- **✍️ Free deals** without automation («I help you with your homework»): both confirm «Done ✓» at the end.
+
+**Flow:** A sends an offer, B accepts, rejects or makes a counter-offer with the same building blocks – back and forth
+as a chat thread with every version. The deal **stands when both accepted the same version**. Notes below the header
+(«New offer from Leo», «Deal stands!» …) and a badge on ☰ show what waits for an answer.
+
+**Execution:** coins and things of a side are the payment for the services (chores, free text) of the other side.
+Without services on the other side they change hands as soon as the deal stands. Otherwise they are **reserved**:
+reserved coins cannot be spent anywhere (shop, avatar items, game prices, battery recharge, pets, pranks, FamilyTime –
+the app uses one «available balance»), reserved things cannot go into another deal or to the pet hotel / a sitter.
+When a taken-over chore is approved by a parent (or ticked off, for chores without confirmation), its share is paid
+**pro rata** (3 chores for 10 coins: 3 + 3 + 4), the things come with the last one. The chore's own coins go to whoever
+does it – or to the original owner when the deal says so; its **XP always go to who did it**. Chores taken over do not
+count for the «all chores of the week» bonus. **The deal fails** when a taken-over chore is not done by the end of its
+day (week for weekly chores), a parent rejects it («Once more») or it is removed: reservations are released, the open
+taken-over chores go back to their owner (the missed one stays with who missed it), both see why. Free deals: if one
+says «not done», a parent decides – or either of the two sends it to the **family council** (a vote «done / not done»).
+Every transfer has a unique reference and is booked once only.
+
+**Parents** (parent area › **🤝 Deals**): their own deals (they trade too – also from the app), deals waiting for
+their OK, all running and finished deals (open, cancel any deal – reservations are released, chores go back), decide
+disputed free deals, and the **settings**: trading on/off and per child, which building blocks, max coins per deal,
+*big deals need a parent's approval* from a coin threshold (default off, 100 coins), *deals with pets always need
+approval*. A deal with a parent never needs approval. Coins a parent gives are **paid by the parents** (booked to the
+child like a manual booking – no parent account is charged); coins a child gives to a parent leave the child's account.
+Guests cannot trade; nobody can trade with themselves, give what they do not own or put one chore / thing in two
+deals at once.
+
 ## Shopping list (Bring!)
 
 Parent area › Settings › **Shopping list (Bring!)**: the to-do lists of Home Assistant are listed – Bring! lists
@@ -242,7 +293,7 @@ network; wrong tokens are limited like wrong PINs.
 | | sensor *Open chores* | attributes `chores`, `waiting_for_approval` |
 | | sensor *Lessons today* | attribute `learning_minutes_today` |
 | | sensor *Internet minutes left* | only with internet time managed by Family Quest; ∞ = state *unknown* + `unlimited: true` |
-| | sensor *Game time left today*, *Learning time left today* (min) | ∞ = state *unknown* + `unlimited: true`; `used_today` |
+| | sensor *Game time left today*, *Learning time left today* (min) | ∞ = state *unknown* + `unlimited: true` (games: also during a party that lifts the limits, like the app); `used_today` |
 | | binary sensor *Daily goal met*, *Game time used up*, *OfflineTime* | OfflineTime: calendar OfflineTime or a block time of the internet plan |
 | | binary sensor *Internet blocked* | internet time not running (attributes `block_until`, `can_start`) |
 | | **switch** *Internet* | on = the internet time runs. Off pauses it; on starts it with the child's minutes – same rules as in the app (no minutes, block time or OfflineTime: refused) |
@@ -255,6 +306,10 @@ network; wrong tokens are limited like wrong PINs.
   `reason`: like *Book points* in the parent area (shown in the child's history).
 - `familyquest.approve_chore` – `task_id`, `approve` (`false` = «again»).
 - `familyquest.approve_reward` – `redemption_id`, `approve` (`false` = reject).
+
+They are **admin actions**: only Home Assistant administrators (and automations / scripts) may call them – a
+non-admin Home Assistant user gets «unauthorized». The *Internet* switches are normal entities: every Home Assistant
+user who sees them can switch them (always with the rules of the app) – keep them off the dashboards of other users.
 
 Nothing else can be changed from Home Assistant (no profiles, settings, PINs or deletions). The sensors above
 (`sensor.family_quest_…` without unique id) are still written as before, so existing automations keep working;
@@ -362,6 +417,26 @@ Home Assistant with a login). With it the parent area opens in the HA sidebar wi
 only the login in the app, e.g. to join a game or learn along on another device; a parent without PIN does not
 appear in the app's profile list. Without Home Assistant parents need a PIN as before.
 
+**Children and their Home Assistant user (option):** children who have their own Home Assistant user can open their
+app in the Home Assistant sidebar without PIN. Switch on Settings › *Log in with Home Assistant* › *Children may sign
+in with their Home Assistant user* (off by default) and choose the child's Home Assistant user in its profile
+(Profiles › edit › *Home Assistant user*). One Home Assistant user belongs to at most one profile – parent or child.
+- It only works through Home Assistant (ingress): the user is only trusted on requests from the Supervisor proxy; on
+  the app port (tablets) the child logs in with its PIN as before.
+- The child only gets the children's app – never the parent area. *Parent area* from there asks for the parent PIN.
+- *Log out* (or the automatic log-out after a break) ends the login in that tab without logging in again right away;
+  the profile screen then offers *Log in as …* for the child's Home Assistant user. Reloading keeps the tab logged
+  out; opening Family Quest anew (a new tab) logs the child in again.
+- Archived or deleted children, block times, OfflineTime and the network filter apply as with a PIN login.
+
+**The panel for every Home Assistant user:** the Family Quest panel in the sidebar is visible to all Home Assistant
+users, not only administrators (`panel_admin: false`), so children with their own (non-admin) user can open it. What
+opens depends on the user: the parent area for parents linked with their Home Assistant user and for Home Assistant
+administrators; for everybody else (not linked, not an administrator) the children's app with the normal profile
+and PIN screen – a linked child (option above) is logged in there directly. The parent area itself still needs the
+parent PIN or a linked parent Home Assistant user. If Home Assistant cannot tell whether a user is an administrator,
+the children's app opens; *Parent area* there leads to the PIN login.
+
 - **Overview › Failed logins:** every wrong PIN of the last 30 days with time, profile, IP address, MAC address and
   device name (from the UniFi device trackers in Home Assistant, when available) and who normally logs in
   successfully from that address. Requests refused by the network filter are listed as well.
@@ -386,7 +461,8 @@ appear in the app's profile list. Without Home Assistant parents need a PIN as b
   About 60 kinds of questions: chores today / this week / last week / of all time (who of the children, how many),
   XP, levels, streaks, coins earned this week, badges, learning time and lessons, games played this week / last week /
   in the last 7 days / in all, the most popular game, who wins the most games (also «a guest»), family quiz and chess
-  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice), the
+  wins, the last family game, records (Jump, Star Runner, Snack Rush, Traffic Cadet, Clap the Beat, Five Dice, 24h Endurance: most laps and the
+  fastest pit stop), the
   slot machine, the shop (things bought, coins spent, the shopping queen or king, the favourite reward, avatar
   items, pranks), pets (how many, who has the most, who lost the most, the oldest, the most common kind, babies, coins
   of the hamsters, whose pets are cared for best – the average of the care bars of the pets at home), bulletin board
@@ -435,6 +511,226 @@ A board opens full screen (✕ closes it):
 
 Limits: 200 boards, 2000 items and about 3 MB per board, 1000 characters per note, 2000 per text, lines are thinned out
 to 600 points. Everything is in the database, so the backup contains the boards.
+
+### 📚 Library: the family bookshelf (books, interactive books) – and the adventure games
+In the app menu **📚 Library** (formerly «My books»; also a card on the Family page) and in the parent area under **Family**: children and
+parents write books, the whole family reads them. Guests never see them. The library shows two **book types**, shown as
+a badge on every cover and row and as a filter above the shelf (📚 All · 📕 Books · 📖 Interactive books). The third
+type, the **🗝️ adventure games**, is stored the same way (table `story`, type `game`, same API `/api/stories`) but lives
+under **Games**: in the kids' app a card «🗝️ Adventure games» on the games page (below the family quiz) opens their own
+shelf (`#/advgames`: play, continue, own drafts, 📥 Import and + New with the templates); in the parent area under
+**Games › 🛠️ Custom games › 🗝️ Adventure games**. They are a game of their own in the games settings (key
+`adventuregame`: active / inactive, for everybody or chosen children – no bots, no price): switched off for a child (or
+while the child may play no games: game time used up, OfflineTime, block time), the server hides the adventure games
+from its shelf and refuses reading, playing, writing, creating and importing them («Adventure games are switched off
+for you»); parents are never bound. A family that never set it keeps them open after the update (not switched off like
+a really new game).
+- **📕 Book** (picture book) – pages with a picture and a text, read page by page (below).
+- **📖 Interactive book** (formerly «adventure book», type key `adventure`) – reads like a book; at a few pages the
+  reader chooses how it goes on; one or several endings (all may be happy), items (below).
+- **🗝️ Adventure game** – point & click games: rooms, hotspots, items, switches, dialogues and endings (below).
+Visibility (🔒 / 🧒 / 👨‍👩‍👧), approval, rewards, ⭐ ratings, reading progress, the parent area and the privacy rules are
+the same for every type. **+ New book** first asks for the type; a new book of any type is for the **👨‍👩‍👧 whole family**
+(changeable right there and in the editor – with approval on it still waits for a parent once published).
+
+#### 🎨 Own drawings (the drawing editor)
+Every book type draws its own pictures with one **vector drawing editor** (`web/svgpaint.js`) – the pictures are
+**SVG**, not pixels, so they stay sharp on every screen and stay small:
+- **Tools:** 👆 select & move · ✏️ pen (smoothed strokes, 4 widths, stylus pressure) · ╱ line · shapes (▭ rectangle,
+  ⬭ ellipse, ◯ circle, △ triangle, ⬠ polygon – tap the corners, tap the first one again to close) · stamps (⭐ star,
+  ❤️ heart, 🌳 tree, ☁️ cloud, ☀️ sun, 🏠 house, 🚪 door, 🪟 window – drawn as paths) · 🔤 a word of text · 🪣 fill (the
+  tapped shape gets the colour; tapping the background colours it) · 🌄 background (white paper, sky, meadow, grass,
+  sea, beach, night, sunset, room, cave, snow, space – gradients – or see-through). 16 colours plus an own colour,
+  outline on / off for shapes.
+- **A selected shape** has handles: the big corner scales, the side handles stretch, the yellow one above rotates
+  (snaps to 45°); drag to move. The floating bar: 🗑 remove, ⧉ duplicate, ⬆ ⬇ layer, ↻ straighten. ↶ ↷ undo / redo
+  (also Ctrl+Z / Ctrl+Y, Delete). Picking a colour with 👆 recolours the selected shape.
+- **Finger and stylus:** one finger draws, **two fingers zoom and move the picture** (never the page; ⤢ shows the whole
+  picture again). The toolbar is compact (phone 390×740 without scrolling, tablets with a larger picture), light and
+  dark mode.
+- **Two kinds:** a **scene** that fills a page or a room (viewBox 800×600, 4:3, max. **60 KB**) and a **thing / a
+  character** (200×200 with a see-through background – it stands in the scene; max. **20 KB**). A meter shows the size;
+  ✓ *Use picture* sends it to the server, which cleans it (`svgsafe.py`) and gives back what the book keeps.
+- **Editing again:** the SVG is its own shape model – every shape is one element with `translate() rotate() scale()`
+  and the picture is marked `id="fq-draw"`, so ✏️ *Change drawing* opens it shape by shape. A picture from somewhere
+  else (SVG code, an AI) opens as one locked layer to draw on top of.
+- **Stored in the book:** a drawing is cleaned SVG text inside the book data (`{"k": "svg", "v": "<svg …>"}`), not a
+  separate file – so it has exactly the privacy of its book (a 🔒 private book's drawings reach nobody else, parents
+  neither: no endpoint returns them), it is part of every backup (the database), and it goes along in the export.
+- **Where:** 📖 page picture (thing) and page background (scene); 📕 page pictures and the cover (scenes); 🗝️ room
+  backgrounds and variant pictures (scenes), hotspot and item pictures (things, placed on the room like the shipped
+  assets); the shelf shows drawn covers (the first page, the cover, the start room).
+- **Older painted pictures** (PNG files of the earlier painter) are still shown everywhere and can be replaced by a new
+  drawing; photos stay files as before.
+
+#### 📕 Books (picture books)
+- A **cover** (picture, title, author – the title and the colour are set in ⚙️) and up to **60 pages**. Every page has a
+  **layout**: 🖼️ *picture on top* (text below), 🌄 *full-page picture* (the whole picture edge to edge, the text lies on
+  its lower edge – on tablets on the picture) or 📝 *text only* – and a text (max. 600 characters).
+- **Picture** per page: 🏞️ one of the 24 shipped scenes (`web/img/stories`), 😀 an emoji, 🎨 an own drawing (the
+  drawing editor, a scene), 📷 a photo (same upload rules, max. 2 MB) or **</> SVG code** (e.g. from an AI).
+  SVG pictures are **cleaned strictly on the server** (`svgsafe.py`): only drawing elements (path, circle, rect,
+  polygon, g, gradients, clip paths, short text) and presentation attributes survive; `script`, `foreignObject`,
+  `image`, `use`, `style`, links/`href`, `on…` handlers, external `url(…)` references are removed, a DOCTYPE / entity or a
+  file that is not an `<svg>` with a viewBox is refused; max. 60 KB per picture. The app shows them only as an image
+  (`<img>` data URL), where nothing can run.
+- The editor (phone and tablet): cards for the cover and every page with the layout switch, ↑ ↓ to move, 🗑, a
+  character counter; the checker lists pages without text or without picture. ▶ reads the draft.
+- **Reading:** the cover, then page by page – ◀ ▶ buttons, swiping with the finger or the arrow keys, page counter and
+  dots; book typography; «The end» with ⭐ after the last page. The shelf shows «Page 3 of 12» / «▶ Continue» and
+  «✅ Read». Reaching the last page counts as reading it to the end (reading reward, ratings).
+- **Sample book:** «Klonk, the laziest dwarf in the mountain» (12 pages with own SVG illustrations, author
+  «Family Quest») is on the shelf for the whole family, in the language of the app (all 10 languages, Swiss German in
+  Zürich dialect). Nobody can change it; parents hide it (parent area › ✨ Sample books, or ⚙️) and show it again –
+  progress and ratings stay.
+
+#### 🗝️ Adventure games
+Point & click games that the family builds and plays (`adventuregame.py`, `web/adventure.js`). **+ New** (Games › 🗝️ Adventure games) – the templates first:
+an empty game or a template – 🧙 «Escape from the wizard tower», 📦 «The secret of the attic», 🚀 «Lost in the
+spaceship» (4–5 rooms each, small and solvable, with items, a dialogue, a combination and a funny 💀 ending; in all
+app languages, Swiss German in Zürich dialect).
+
+**Building** (the editor, phone and tablet; tabs 🗺️ Map · 🚪 Rooms · 🎒 Things · 💬 Dialogues · ⚙️ Rules):
+- **Rooms:** a picture – one of 10 own room scenes (tower room, library, stone hall, hallway, dark room, spaceship cabin /
+  corridor / bridge, engine room, storage room) or the 24 scenes of the books, an own drawing (drawing editor), a photo or SVG
+  code (cleaned like the picture books) – and a description. ⭐ marks the start room; ▶ tests from any room.
+  **🔀 Changes when …**: up to 3 variants with another text / picture while a condition holds («the light is on»).
+- **Hotspots** (max. 30 per room): ✏️ *Draw hotspot*, choose the kind and drag a rectangle over the thing on the
+  picture (finger or mouse; a tap makes a standard box). Tap to select, drag to move, the round handle resizes –
+  positions are percent of the picture, so they fit every screen. The sheet below: kind, name, a picture on the
+  hotspot (39 own SVG things and characters – doors, keys, chest, lever, lamp, candle, book, potion, rope, stick,
+  ladder, crystal, magnet, battery, cable, key card, button, screen, cauldron, bookshelf, table, bed, box, plant, well,
+  magic wand; wizard, robot, cat, dragon, ghost, knight, pirate, alien, owl – an emoji, an own drawing (a thing with a
+  see-through background), or invisible over the room picture), the look text, «Visible only when» (conditions) and the use rules.
+  - 🚪 **Door:** leads to a room or straight to an ending; optionally «Opens only when» (an item, a switch) with a
+    locked text. «＋ New room» makes the room with a door back.
+  - 📦 **Object:** can be taken (becomes an item; it disappears – or 📦 *stays in the room* and gives its item once,
+    e.g. a chest with a key).
+  - 🧙 **Character:** talks – the first dialogue line.
+- **🎒 Things:** items (name, picture; max. 60), 🚩 switches (things the game remembers; max. 100), 🏁 endings
+  (🏆 win / 💀 lose with their text; max. 20). Removing one removes every reference to it.
+- **💬 Dialogues** (max. 200 lines): a line is what the character says; up to 6 answers, each with an optional
+  condition, actions and the next line (or the end of the talk). 👋 Leave always works.
+- **⚙️ Rules** (max. 200): 🔧 *use* an item on a hotspot («key → chest») or just use a hotspot («pull the lever»),
+  🧪 *combine* two items («stick + rope = fishing rod») – with conditions and actions. The first rule whose
+  condition holds wins. A key on a locked door needs no rule (the door opens when its condition holds).
+- **Conditions** (max. 4, all must hold): has / has not an item, a switch is on / off. **Actions** (max. 8): show a
+  text, give / take away an item, switch on / off, go to a room, end the game.
+- **🗺️ Map:** rooms as boxes (rows by distance from the start room), doors as arrows, 🔒 dashed arrows for locked
+  doors, 🏆/💀 for doors to an ending; tap a room to edit it.
+- **The checker** (on the server, after every automatic save): rooms without name or description, doors leading
+  nowhere, hotspots without name, objects without item, characters without dialogue, a door whose key can never be
+  obtained, items nobody gives, switches that are needed but never switched on, things that do not exist any more
+  (deleted item / switch / room), dialogue dead ends (no answer that always works), incomplete rules, no way to a 🏆
+  ending, rooms no door reaches. Then it **plays every way through the game** (a breadth-first search over room,
+  backpack, switches, taken things and dialogue line; max. 6000 states / 1.5 s): «the game cannot be won» stops
+  publishing; hints (💡, do not stop publishing): rooms that are never reached in play, dialogue lines never said,
+  «players can get stuck in …» (a state from which no way leads to a win any more – they can start again), «too big to
+  test every way». Drafts are saved incomplete; 🚀 needs a game without errors.
+
+**Playing:** the room picture with the hotspots on top (🔍 shows everything you can tap), below the verbs of the
+tapped thing (👁️ Look at, ✋ Take, 💬 Talk, 🚪 Go through, 🔧 Use – only the ones that make sense), the messages and
+the room description; at the bottom the 🎒 backpack: tap an item, then a thing in the room («use with») or another
+item (combine). Dialogues show the character, the line and the answers. Endings: 🏆 / 💀 with their text, «2 of 3 endings
+found», ⭐ rating (not for the own game), ↺ play again. The game runs **on the server** (the player never gets the
+hidden hotspots, rules or the solution, moves are checked), every player's game is saved (▶ Continue on the shelf,
+↺ start again). ▶ in the editor and 👀 for a game waiting for approval play the working copy without saving.
+Phone 390×740 without scrolling, tablets with a larger picture.
+
+**Import / export:** `family-quest-adventuregame/1` (instructions and a field guide for an AI, the background and asset
+ids, `_svg_rules` for own drawings and the wizard tower as a full example – with a drawn room and a drawn item). Readable ids in the file (`room1`, `spot3`,
+`item2` …), conditions as `item:key` / `!flag:light`, actions as `{"give": "key"}`. The import is tolerant (code
+fences and sentences around the JSON, comments, trailing commas, items and switches only named in a hotspot, other
+spellings of actions) and checks everything again; games come in as private drafts. Own drawings go along as inline SVG
+(`"background": {"svg": "<svg …>"}`, `"picture"` / `"icon": {"svg": …}`), cleaned again on import; photos stay out of
+the file. Limits: 40 rooms, 30 hotspots per room, 60 items, 100 switches, 200 dialogue lines, 6 answers, 200 rules,
+20 endings, 2 MB per game.
+
+#### 📖 Interactive books
+
+**Writing** (✏️ Edit, or **+ New book**: title, language, an empty book or a template – 👸 «The princess who didn't
+want to marry» (marry the prince as a friend first, become a dragon tamer or open a bakery – three happy endings),
+🦊 «The little fox's birthday» (for the youngest: which friends, which cake – three happy endings), both 13–14 pages
+with exactly two branch points; and the older choose-your-path stories 🌴 jungle with the lion, 🚀 space, 🏰 haunted
+castle, 🐠 underwater – each a small finished story in all app languages, de-CH in Zürich dialect):
+- A book is a list of **pages**: 📄 **scene**, 🏆 **good ending** (confetti) or 💀 **bad ending** («Try again»; optional –
+  every ending of a book may be a happy one). Each scene has a switch: **➡️ Goes on** (a linear page: one next page,
+  `next` – the reader taps «▶») or **🔀 Choice** (a branch point: 2–4 choices A–D, each pointing to another page). Most
+  pages of a book simply go on; new scenes start as «goes on». **+ Next page** on a page that goes on makes a new
+  linked page right after it (it takes over the old next page and the background). Paths may merge or go back to an
+  earlier page. In the target list «＋ New scene / good ending / bad ending» makes the page right away. Every page
+  carries its **number in a purple circle** (page cards and map), and next to the target list the same purple circle
+  shows the number of the page it leads to. Books of older versions (every scene with choices) stay as they are.
+- **Picture** per page: an emoji, an **own drawing** (the drawing editor above – a thing with a see-through
+  background) or a **photo** (made smaller in the browser, max. 2 MB per picture).
+- **🏞️ Background** per page: 🎨 an **own drawn background** (a scene of the drawing editor), one of 24 own scenes
+  (jungle, beach, deep sea, space, haunted castle, enchanted forest, snowy mountains, desert, pirate ship, crystal cave,
+  city at night, village, dragon's lair, candy land, dinosaur valley, volcano, North Pole, mine, castle in the clouds,
+  train station, school, kids' room, attic, laboratory – small SVG files in `web/img/stories`) or none; the picture
+  sits on top of it, the text stays on the paper below.
+- **🎒 Items:** a scene can give one item («🍌 Banana»); a choice can need one – readers only see it when they have it.
+- **🃏 Pages / 🗺️ Map:** the map shows every page as a box (rows by distance from the first page): thin arrows for
+  pages that go on, arrows with the letter A–D for the choices (🔀 marks a branch point); dashed arrows need an item, red stubs are choices without a target, orange boxes need work, dashed boxes
+  cannot be reached. Tap a box to edit the page.
+- The **checker** lists what is missing: a page that goes on without its next page, a branch point without
+  continuation or with only one choice, choices without target or text, no good ending (one ending is enough), pages
+  that cannot be reached, pages from which no path leads to an ending (endless loops), an item no page gives, a branch
+  point where every choice needs an item. Drafts are saved automatically (also incomplete); **🚀 Publish** needs a complete book. **▶ Try**
+  reads the draft right away (nothing is saved).
+- After publishing, further changes stay in the draft until it is published again – readers see the published version.
+
+**Reading** (tap a cover): like the book reader – the picture across the width, the text in book typography (long text
+scrolls inside the page, the screen itself does not scroll), at the bottom ◀ «Page n» ▶ in reach of the thumb (also
+swipe and the arrow keys). ▶ turns a page that goes on; on a branch point the choices sit as big buttons right above
+◀ ▶. ◀ goes back to the page actually read before (the server keeps each reader's path, `story_read.state`, with
+the backpack of then; endings found stay found). ⏮ back to the start, 🎒 the backpack. Phones on their side show the
+picture left and the text right. Every reader collects their own endings («2 of 5 endings found» on the cover) and gives ⭐ 1–5 after reaching
+an ending (not for the own book).
+
+**Who can read it** (chosen by the author when the book is made and in the editor at any time; new books: 👨‍👩‍👧, imported
+books: 🔒):
+- **🔒 Only me** – only the author can read it, parents neither. Nobody else gets its title, text or pictures from the
+  app; in the parent area parents only see that a private book exists (author, page count, date) and cannot open,
+  change or remove it. Never needs approval. Limits of this privacy: the history of coins / XP keeps the title of a
+  book that once paid a reward (only books the others could read pay – made private later, the entry stays), and
+  backups of Home Assistant / the app (`/data/family_quest.db`) contain every book, private ones too – whoever has a
+  backup can read them. Deleting a profile for good removes its books too.
+- **🧒 Other children** – all children of the family (and the author). Parents see these books only in the parent area
+  (moderation: read, edit, unpublish, remove).
+- **👨‍👩‍👧 Whole family** – children and parents.
+
+**Import / export of picture books:** the same, with the format `family-quest-picturebook/1` (instructions for an AI,
+`_svg_rules` – how to draw safe inline SVG: viewBox 800×600, simple flat shapes, own background, max. 60 KB, no scripts or
+external files, little text –, the library ids and the sample book as an example). Pictures go along as SVG (own drawings
+included), library id or emoji; photos stay out. A file may contain picture books and adventure books together; every book
+comes in as a private draft.
+
+**Import / export** (same idea as the quiz and pack files for an AI): ⚙️ › **Export as a file** saves a book as
+self-describing JSON (`family-quest-story/1`: instructions, field guide and `_svg_rules` for an AI, the background ids,
+the book with pages, `next` (the page that follows a page that goes on – files without it still import), choices, endings, items, emoji pictures, own drawings as inline SVG (`"picture": {"svg": …}`,
+`"background": {"svg": …}`) and backgrounds – photos stay out; the template for the AI is the fox book: mostly linear
+with two branch points and three happy endings, with a drawn page background and a drawn thing as examples). **📥 Import** on
+the shelf: copy the **template for the AI** into any AI chat, describe the idea, paste the answer (sentences and code
+fences around the JSON are fine) or choose a file. Every book comes in as a private draft of whoever imports it (ids,
+authors and anything else from the file are not taken over), the checker shows what is still missing. Every drawing
+is cleaned again (`svgsafe.py`); a drawing that is too large (things 20 KB, scenes 60 KB) or not usable is left out.
+Max. 4 MB, 5 books per file.
+
+**Single-language books:** a book is written in one language (a language tag, chosen when it is made, changeable in ⚙️)
+– there are no translations inside a book. The templates come in every app language.
+
+**Parents** (Family › Library › ⚙️): the bookshelf on/off per child (off: no menu entry, no reading or
+writing), **approval** before the others see a child's book (default off – then a book for 🧒 / 👨‍👩‍👧 waits under
+«Waiting for approval»: 👀 read, ✓ approve, ✗ back to a draft; a new version waits again while the readers keep the
+approved one), rewards for writing: coins / XP per book (default 20 coins, paid once per book when the others can first
+read it – not for private books) and per reader who is somebody else and reaches an ending for the first time
+(default 0, once per reader). Parents edit, unpublish and remove every book that is not private; children edit their
+own.
+
+Limits: 300 books (sample books not counted; 60 per person), 200 pages per adventure book, 60 per picture book, 40 rooms per game (600 characters per
+page); own drawings and SVG pictures: scenes 60 KB, things 20 KB each, 2 MB per book with everything; adventure books: 1500
+characters per page, 120 per choice, 40 per item, 80 per title; photos max. 2 MB each and 300 MB together (in
+`media/_stories`, part of the backup; pictures no book uses are removed).
 
 ### Wichteln (secret gift giving)
 Under the polls, everybody can start a **Wichteln**: enter the occasion (e.g. «Christmas 2026»), choose who takes part
@@ -501,8 +797,24 @@ is remembered on the device; without a choice the system (or the Home Assistant 
 
 The parent area has two pages: **Family** (family council, polls, bulletin boards, Wichteln, history) and **🎲 Games** (every game:
 the family quiz, bingo, guess the song, all live games with their start buttons, coins and photo sets, the running
-games, and the game corner). A **search field** at the top filters the games by name; «⚙️ For all games» holds
-*All on / All off*, who begins a game and whether guests may join.
+games, and the game corner). A **search field** at the top filters the games by name (and opens the games found); «⚙️ For all games» holds
+*All on / All off*, who begins a game and whether guests may join. Every game is a folded section – always folded when
+the page opens (a game running just now shows «● running now»).
+
+Right below the running games comes the group **🛠️ Custom games**: the games with the family's own content, all built
+the same way – head (icon, name, what it is, how many), a row **📥 Import** and **+ New** (starting with the templates),
+the list of what the family has, then «⚙️ Settings» (status, coins …):
+- **🎯 Family quiz** – the quizzes (play, edit, delete, export); Import = a quiz file (export or the answer of an AI);
+  New = the «New quiz» dialog with the templates and the «Family Quest Facts» card.
+- **🧠 Pair Hunt** – the start buttons and the **photo sets** (also used by the pairs game of the game corner); New =
+  a preset (👨‍👩‍👧 Family, 🐾 Pets, 🏖️ Holidays, 🎂 Birthdays, 👵 Grandparents, 🏠 Our home – an empty set with that
+  name) or an empty set; Import = photos (several at once) or a **ZIP file** (`POST /api/parent/memory/import`: JPEG,
+  PNG, WebP, GIF checked by their first bytes, max. 5 MB each, 40 per set, ZIP max. 60 MB) as a new set; ⬇️ on a set
+  exports it as ZIP (`GET /api/parent/memory/sets/{id}/export`, also the photos kept in Home Assistant Media).
+- **🗝️ Adventure games** – every adventure game of the family as a row (title, author, status draft / on the shelf /
+  waiting, who can see it), the ones waiting for approval with 👀 / ✓ / ✗ like in the library, private ones of others
+  only as «🔒 Private adventure game» with the author; Import / New like the library (the template for the AI, the
+  game templates); the status *active / inactive* (no bots, no price).
 
 Every game has a **status**: *active*, *active without bots* or *inactive* (= off), and while active *for everybody* or
 *only chosen children* (tick the children). Parents can always play – and are not bound by «without bots» either.
@@ -510,7 +822,7 @@ Switched-off games disappear from the children's app.
 
 **Active without bots** is offered for the games that can be played with bots: Texas Hold'em, Tschau Sepp,
 Kartenkarussell, Domino, Paarjagd, Kartenlauf, Fünf Würfel, Heimwärts, Jump, Snack Rush, Klatsch den Beat, Jass, Werwölfe, Chess,
-Dorfmarkt, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
+Dorfmarkt, Beat the Bureaucracy, Tic-Tac-Toe and Ping-Pong. Then the app hides «alone against bots», the bot fields of the start dialogs and
 the games against the app, and the server refuses every start with bots («Playing with bots is switched off for this
 game»): family tables get no bots (Kartenlauf plays with the people there, Jass needs 4 people, Werwölfe needs 5), chess
 only against the family or two on one device, Ping-Pong doubles only with people. Jump, Snack Rush and Klatsch den Beat can still be
@@ -619,7 +931,7 @@ app gets `party` in `GET /api/me`.
 
 **The children's Games page** shows the running tables on top, then the family quiz, then two groups of small tiles
 (icon + name): **🎲 For a game night** (Tschau Sepp, Kartenkarussell, Domino, Jass, Texas Hold'em, Dorfmarkt, Heimwärts,
-Kartenlauf, Werwölfe, Escape Room, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
+24h Endurance, Kartenlauf, Werwölfe, Escape Room, Beat the Bureaucracy, Wer bin ich?, Verbotene Wörter, Zeichnen & Raten, Stadt-Land-Fluss, Guess the song,
 Bingo, Chess) and **⚡ Quick games for in between** (Paarjagd, Fünf Würfel, Jump, Klatsch den Beat, Star Runner, Snack
 Rush, Traffic Cadet, duels for two), and the game corner at the end. A tile with a running table has a pulsing dot; a
 tap opens the game's card in a sheet with its usual buttons (family table, alone against bots, join, rules).
@@ -668,7 +980,7 @@ Won while the other side still has 0 points: **🏆 Pollona!** – highlighted i
 
 Games → **🧠 Paarjagd**: the pairs game live – everybody turns the cards on their own device. Play **alone against
 bots** or open a **family table** (bots and guests via QR code like Domino). Who starts chooses (remembered): the
-cards (the emoji sets or the parents' photo sets from Settings › Pairs game), **6, 8, 12 or 18 pairs**, the bots and
+cards (the emoji sets or the parents' photo sets from Games › Custom games › Pair Hunt), **6, 8, 12 or 18 pairs**, the bots and
 how well they remember cards (easy / normal / hard) and the **card back** (tap one; the family crest when there is
 one). On your turn you turn two cards: a **pair** is yours and you go again; **no pair**: everybody sees both cards
 for a moment, then they turn back and the next player goes. When all pairs are found the most pairs win – a tie
@@ -683,7 +995,8 @@ The existing Pairs game in the game corner (one device, take turns) stays as it 
 
 Games → **🎭 Wer bin ich?**: the guessing game live – everybody on their own device. Who opens the **family table**
 chooses a category (animals, jobs, food & fruit, countries, Swiss places & mountains, fairy tales & legends, things at
-home, sports, famous people – the characters are German names, fixed in this version). Only people play: the family
+home, sports, famous people – every device shows the characters in its own language, and «I am …» counts in every
+language of the players at the table). Only people play: the family
 and guests via QR code – no bots, and at least two players. At the start everybody gets a different character at
 random. Each device shows the characters of **all the others**; your own stays «❓» until you found it or gave up
 (the server never sends it to you before).
@@ -780,7 +1093,8 @@ Games → **🎨 Zeichnen & Raten**: one draws, the others guess – live, every
 (the family and guests via QR code, no bots), 2 to 8 players. Who opens the **family table** chooses (remembered):
 
 - **the words**: Animals, Jobs, Food & fruit, Things at home, Sports or **Mixed** (the default) – about 40 simple,
-  drawable German words each (`zeichnen_data.py`);
+  drawable words each (`zeichnen_data.py`), in the language of each device (the word, the letter mask and the hints);
+  a guess counts in the guesser's language and in the drawer's, so a mixed table plays together;
 - **how often everybody draws**: 1, 2 or 3 times (in seat order); **time to draw** 60 / 80 / 120 seconds;
 - **hints** on / off: some letters of the word appear at 50 % and 75 % of the time (at most a third of the letters).
 
@@ -1048,6 +1362,76 @@ played to the end at a family table with **at least two people of the family** �
 the winner gets the «No. 1» hat. Every person of the family gets a history entry (place, points, cars, accidents, angry
 drivers).
 
+### 24h Endurance (24-Stunden-Rennen)
+
+Games › For a game night › **🏎️ 24h Endurance**: a **short, fast team race** on the fictional **Circuit des Tannes**.
+Every team is a racing stable with **one car**; the family splits into 1–4 teams at the table (1–5 people per team,
+guests via QR code join a team too), **bot teams** race along. Alone you race against bot teams. A family table needs
+at least two cars (without bots: two teams of people).
+
+- **Team look in the lobby:** every team chooses its **colour** (palette of 8, each colour once), its **country** (66
+  countries in four groups – Europe, Americas, Asia & Middle East, Africa & Oceania – alphabetical in the viewer's
+  language, or «no country»; the suggestion is the family's own country from the app's language, e.g. de-CH → 🇨🇭) and
+  its **car number** (1–99, each number once). The flag is shown on the car, in the standings and on the podium (emoji
+  flags; where the device has none, e.g. Windows, the country code as a small chip).
+- **24 race hours in 5 / 8 / 12 minutes** (default 8). The race clock starts at 15:00 and runs through **dusk, night
+  (headlights, a shorter view) and dawn** into the next afternoon. **Rain showers** (on by default): sudden showers of
+  30–55 s every 1–2 minutes; everybody sees the forecast («Rain in ~20 s»). **Winner: the most laps** (then distance, then who reached the line first).
+- **Intro:** the drivers run to their cars, doors close, engines roar, five red lights → **GO!** (about 6 s).
+- **One short lap (about 20–30 s), then the car drives into the pits by itself – after every lap.** At every stop the
+  **driver changes**: the next person of the team drives (in turn), the driver joins the crew. Two people take turns;
+  alone (or when the whole crew is offline) the **garage** prepares: every stop takes a fixed **5 s** (+4 s after an
+  overheat), tyres by the forecast – and the garage plugs the spare battery in only **8 s after the stop** (fair, not
+  perfect: the spare is usually 80–100 % at the next stop).
+- **Driver:** three lanes – swipe or ◀ ▶ (←/→) to dodge oil, cones and slow cars; **hold 🚀 Gas** (↑ / Space) for full
+  speed, **🛑 Brake** (↓) to brake, neither = lifted off. Full throttle heats the engine; in the **red it overheats**:
+  the car limps to the pits and the engine is swapped there (no retirement). **Two chicanes** per lap: **braking zones**
+  with boards at 150 / 100 / 50 m – too fast into a chicane (by day and dry over 23, in the rain or at night over 18
+  «m/s») and the car goes **off into the gravel** (3 s very slow); then change the lane past the **kerbs** (touching one
+  slows a little; in the rain or at night the kerbs reach the middle lane). Juniors – and everybody in the first two
+  laps – get a big «🛑 Brake!» hint. **Slicks in the rain** and **rain tyres in the dry** are slower (and slicks slide).
+  Other cars never block you: a car close to yours in your lane is drawn moving over to a free lane while overtaking.
+- **Electric car – the battery 🔋:** the battery (0–100 %) drains by the metre, **much faster at full throttle** (0.16 %
+  per metre – flat out a full battery does *not* last a lap) **than lifted** (0.07 % per metre – a lifted lap needs
+  about 45 %); braking gives a little back. The driver sees 🔋 % in green / orange / red and **«Save energy!»** when the
+  charge won't last the rest of the lap at a normal mix of full throttle and lifting (blinking big while pressing the
+  gas). **Empty → «⚠️ Emergency drive mode»:** the car crawls (about 50 km/h) to the pits with its hazard lights on –
+  no retirement, but it costs a lot of time.
+- **Exactly two batteries per team:** the one in the car and **one spare**. At **every stop they are swapped** (part of
+  the stop, a fixed 1 s): the spare goes into the car **with whatever charge it has**, the used one comes out and has to
+  be charged during the next lap. It only charges while it is **plugged in**: 4 % per second (empty → full in 25 s,
+  about a lap) from the moment the crew plugged it in – computed on the server from its own timestamps (plug-in time,
+  swap time), never from a number the app sends. Plugged in late (other jobs first) → not full at the next stop → the
+  next driver has to drive slower. The driver's screen shows «spare 🔋 63 % ⚡» rising.
+- **Pit crew** (everybody else of the team) – during the lap on their phones: **🔌 charge the spare battery** (tap
+  «Plug in» – first!; the charge rises on every crew phone, a cable animates while it charges), **🛞 lay out 4 tyres**
+  (choose ☀️ slicks or 🌧️ rain tyres, tap the 4 spots) and, only after an overheat, **🔧 prepare the spare engine**
+  (hold 2 s). Each finished job shows ✓ (also for the driver). A bar shows when the car comes in.
+- **The stop** – a big stopwatch, the car in its pit box, the battery swap (the used one goes to the charger), the crew
+  at work and cheering stands for the whole team: **2 s** (stop and driver change) **+ 1 s battery swap, +4 s for tyres
+  not ready, engine swap +6 s (+2 s if prepared)**. A job only counts if it was finished before the car arrived. A
+  super fast stop (≤ 4 s) gets a cheer. The next driver sees the charge of the battery going in («🔋 63 % – Save
+  energy!»).
+- Trackside banners now and then (own, invented: Family Quest, Home Assistant with an own house icon, «Snowman Tyres»).
+- Now and then **fans camp beside the track** (tents, a camper van, a campfire at night) waving a sign «I ❤️ #7 🇨🇭» –
+  mostly with the viewer's own car number and flag, sometimes for another team.
+- **Difficulty:** junior (fewer things on the track, the engine heats slower, the braking hint always) or normal.
+  **Bots** (easy / normal / hard) dodge, manage the temperature and the battery (they lift off when it would not last
+  the lap), brake for the chicanes, plug their spare in first and prepare their stops (easier bots miss more jobs, plug
+  in late or pick the wrong tyres). A driver whose app is silent for 6 s gets the **autopilot**.
+
+The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for a
+smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane, gas /
+brake); the crew's jobs are actions timed by the server (plug in, a tyre on a spot, start / stop holding). Who leads may end the
+race early: ranked as it stands, no coins. Parents › Games › 24h Endurance: the defaults (race length, weather,
+difficulty, people per team), active / without bots / inactive, the coins.
+
+**Coins for places 1–3:** default 10 / 5 / 2 for every person of the family in that team, paid once, only for a race
+run to the end at a family table with **at least two people of the family** – not alone, not for guests or bots; the
+winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (garage stops do not
+count; also questions in «Family Quest Facts»). Every person of the family gets a history entry (place, laps, team,
+best pit stop, drives, stops).
+
 ### Klatsch den Beat
 
 Games → **👏 Klatsch den Beat**: a live rhythm game – **everybody plays at the same time**, each on their own device.
@@ -1056,7 +1440,7 @@ files), then everybody **claps it back** on the big clap button. Play **alone** 
 practice bots) or open a **family table** (1 to 8 players, optionally with bots; guests via QR code). Turn the sound on!
 
 - **A round** (call and response): a **count-in** of four clicks, then **listen** – the pattern sounds over the groove and
-  its dots light up on a bar of 16 steps; then the **clap bar** – the same dots stay, a playhead sweeps over them, clap
+  its dots light up on a bar of 16 steps; then a **run-up** of four clicks («get ready»); then the **clap bar** – the same dots stay, a playhead sweeps over them, clap
   when it reaches a dot. A short pause shows your points and the live ranking, then the next round starts by itself.
   We chose this variant over notes sliding to a hit line: you hear the beat first (the fun part of clapping along) and
   the dots still help children who cannot remember the whole pattern.
@@ -1086,8 +1470,9 @@ Games → **🚫 Verbotene Wörter**: the explaining game – one explains a wor
 others guess aloud. Everybody has the app on their own device; the talking happens at the table. Only people play (the
 family and guests via QR code, no bots), 2 to 8 players. Who opens the **family table** chooses (remembered):
 
-- **the cards**: Easy (younger children), Normal or Mixed – about 370 built-in German cards, each with a word and
-  5 forbidden words (`verboten_cards.json`);
+- **the cards**: Easy (younger children), Normal or Mixed – about 370 built-in cards, each with a word and
+  5 forbidden words (`verboten_cards.json`), shown in the language of each device – the forbidden words are the obvious
+  ones of that language;
 - **time per turn**: 30 / 45 / 60 / 90 / 120 seconds (default 60); **how often everybody explains**: 1–4 times;
 - **«Skip» costs** nothing or 1 point; **two teams with 4 or more players** on / off.
 
@@ -1366,6 +1751,89 @@ and won gets them (together: everybody, when out; two teams: the winning team) �
 people of the family**, never to guests, paid once. Every person of the family gets a history entry (out or not, rooms,
 time, hints, team); the winners get the «No. 1» hat.
 
+### Beat the Bureaucracy
+
+*Only in the app «Family Quest Dev» for now – it is being reworked before it comes to the beta.*
+
+Games → **🏛️ Beat the Bureaucracy** (de «Besiege die Bürokratie», de-CH «Bsieg d Bürokratie», fr «Vaincre la
+bureaucratie» …): a light-hearted family party game in the wonderfully complicated town hall of an invented town
+(«Little Red-Tapington» – every language has its own funny name, e.g. «Bürokratingen», «Paperasse-sur-Tampon»). An own
+parody with own texts: no real country, authority, law, person or brand. 2 to 4 teams – one device per team (one or
+more people around it), the family on their own devices, guests via QR code, bots (easy / normal / hard) – or a child
+alone against bot teams. About 20–30 minutes, from about 7 years.
+
+**Goal:** every team wants its building project approved (it picks one of 8 – tree house with a rope ladder, garage
+with a water slide, pizza oven in the garden, hamster palace, a pond for exactly one duck, lemonade stand with a
+drive-through, igloo with a doorbell, garden shed shaped like a rocket – or they are drawn at random). The permit
+needs 5, 7 or 9 stamps (game length short / normal / long); the first team with all stamps wins, the others are
+ranked by their stamps.
+
+**The town hall** (a cross-section on the screen, with a display board «Now serving 047 → Counter 2» that goes
+«ding-dong»): Counter 1 «General information» (knows nothing, kindly refers you on), 2 «Office for Building Matters»
+(open only on Tuesdays and at new moon – one round is one day of a Monday–Friday week, the moon goes round in 8
+rounds), 3 «Office for Green Spaces» (asks whether the tree agrees), 4 «Commission for Slowness» (meets every 3
+rounds; in between your application goes on the pile and is decided at the next meeting – 70 % approved), the
+archive in the basement (fetches the missing document – sometimes first the form you need for the form) and the
+coffee kitchen (a trick card, a rumour and better relations). The clerks chat with each other in speech bubbles
+(weekend plans, the coffee machine, the plastic plant …) while the queue waits.
+
+**A turn:** optionally play a trick card, then tap a counter. At counters 1–4 the **scene** comes first (decided per
+counter and round, the same for everybody; the first contact with a counter is always the appointment question):
+- «Do you have an appointment?» – «Yes» only with a 📅 appointment card. «No»: «We are fully booked for the next 9
+  months» (in a completely empty waiting room) – then one argument: insist politely, «it's urgent», «only a tiny
+  question», 🥐 croissants or 🤝 «my cousin works here». The clerk's mood (grumpy, sleepy, chatty, cheerful) changes
+  the chance. If it works, the clerk phones a colleague with a sigh («I have a citizen here who seems to be very
+  important …») and you get an audience; if not, come back another day.
+- A huge queue (the display does not move while the clerks chat): wait patiently (50 %: it is your turn – else your
+  place is kept for your next turn) or try one of three tricks (back from the toilet, «only a signature», delivery
+  person, a big official folder, a stroller with a doll, croissants for the queue) – each with its own chance and a
+  funny consequence when caught: back to the end of the queue, the queue complains (−1 relation) or the clerk closes
+  the counter for the day.
+- Nobody there: straight to the audience.
+
+At the audience you hand in a missing document (a stamp) – or an **authority card** of that counter is revealed
+(about 40 cards): a stamp, two stamps, a referral («Not responsible – go to counter 4»; the next turn must go there,
+ping-pong between counters is counted), a document is needed («Form B-12 in triplicate, blue only», «a certified copy
+of the original» – in the folder: a stamp, else it is missing until fetched from the archive), lunch break (miss the
+next turn), holiday («so is the substitute»), a grumpy clerk, a trick card, the tree, or a **mini-game**: an absurd
+form (tick the boxes before they slide away), stamping yourself at the right moment, bureaucratic speak («according
+to article 7, paragraph 3, item pancake …» – which item was it?). The server checks every mini-game (the stamp timing
+by its own clock); with mini-games switched off, and for bots, a chance decides.
+
+**Trick cards** (at most 4 in the hand, 2 at the start): 📅 appointment, 🥐 croissants (opens almost every door, and
+the clerk's good mood draws two cards – the better one counts), 🤝 connections (a sure way in, or cancel a
+referral), 💌 small gift (+2 stamps – but the 🕵️ order inspector catches it with 35 %: a fine stamp −1 and back to
+counter 1; the rules say playfully that this is only a joke in the game and that friendliness and patience work much
+better in real life), 📎 complete folder (protects once against «something is missing»), 🗣️ stay friendly (the next
+grumpy clerk melts: a stamp), ⚖️ objection and 📣 talk to the mayor (+1 stamp, referrals and waiting forgotten – every
+team once per game).
+
+**Objections ⚖️** («The pizza oven casts a shadow on our garden gnome», «The slide does not fit the townscape», «The
+tree house is far too cheerful» …): the other team defends with an expert report (a document from the folder –
+always works), neighbours' signatures (45 % + 15 % per relation) or a compromise (75 %; the project gets a funny
+condition, e.g. «We paint the slide beige», printed on the permit). A successful objection costs a stamp.
+
+**Events** at the start of a round (from round 2, 30 %): 📜 new regulation (all documents in the folders are invalid),
+💻 system migration (this round the counters give no stamps – «computer says no»), 🎉 open day (all counters open,
+no queues, no appointments).
+
+**Mode «The Administration»:** one seat plays the administration – a person (who opens the table, or whoever the
+leader picks in the lobby) or a bot («family against the administration»). It plays once per round, last: an
+authority card on a builder team (referral, lunch break, new regulation, an absurd form to fill in first, a stamp
+revoked) or opens / closes a counter (at most two closed). The builders defend automatically with 🤝 / 🗣️ / 📎. The
+administration wins when nobody has the permit after 10 / 15 / 22 rounds (short / normal / long).
+
+**The end:** the building permit certificate with all stamps (office and day) and the condition of a compromise, the
+ranking and the **funniest moments** («Leo was sent to counter 4 six times», «Mia heard «fully booked for 9 months»
+3 times», …). Who leads can help a team that does not act (☰ › Help the team on turn: its step is done as a bot
+would) and end the game. The whole game is in the database – it survives a restart and reconnects.
+
+**Coins for places 1–3:** set by the parents in Games › Beat the Bureaucracy (default 10 / 5 / 2), paid once, only
+for a game played to the end at a family table with at least two people of the family – never alone against bots,
+never for guests or bots. Everybody of the family gets a history entry (with referrals and the time to the permit:
+the special quiz «Family Quest Facts» asks who was sent to another counter most often in one game and who got the
+permit the fastest).
+
 ### Game corner
 
 Family → **🕹️ Game corner**: small games that run on the device itself (only a duel on two devices goes over
@@ -1415,7 +1883,7 @@ the server; best times stay in this browser), shown when family games are on for
   table stays; the server draws the outcome first with the win chances of the reels scaled to that return, then shows
   reels that fit it.
 
-**Photo sets** (parent area › Games › Paarjagd › «Own pictures: photo sets»): upload photos into named sets (every
+**Photo sets** (parent area › Games › 🛠️ Custom games › 🧠 Pair Hunt): upload photos into named sets (every
 photo becomes a pair; a set needs at least 3 photos) – used by the Paarjagd and the pairs game. **Family crest**
 (parent area › Settings): design the family crest – name, an emoji, two colours and a
 pattern (plain, split, quartered, diagonal band, chevron). Photos no set uses any more are deleted when you save.
@@ -1486,10 +1954,75 @@ shows how many cards are due.
 
 Repeating the own cards gives no points (own cards could be made very easy).
 
+## 💡 Code Workshop (block programming)
+**Only in Family Quest Dev for now** (`channel.DEV_FEATURES`): in stable and beta the tile, the routes, the parent
+section and the API (`/api/codelab/*` → 404) do not exist.
+
+Children learn to program with blocks – made for a phone in portrait. On the **Learning** page a tile «💡 Code Workshop»
+opens three parts: **🧩 Puzzles**, **🎨 My programs** and **👨‍👩‍👧 Family programs**. Time in the workshop counts as
+**learning time** (the daily learning limit and the learning hours of the child), not as game time: the app sends a
+heartbeat every 30 s while it is open (at most 45 s per heartbeat are booked); with the limit used up the workshop does
+not open (saving still works).
+
+**The editor:** the stage on top (480 × 360, 0/0 in the middle; ▴ hides it, landscape: stage left, code right), the
+sprite tabs (🖼️ Stage for the backdrops, one tab per sprite – tap the open one for its settings: name, costumes, size,
+direction, turning style, duplicate, delete – ＋ for a new sprite), the code as a **vertical list**: a script starts with
+an event ⚡, blocks inside C blocks (repeat, if) are indented with a coloured bracket. **Tap a gap** (the caret ＋) and
+then a **block card** in the drawer below (chips per category) – it is inserted there; after «repeat» the caret goes into
+the loop. Values: tap them – a big number pad (directions with arrows), pickers for sprites, costumes, backdrops,
+arrows and messages; conditions (◇) get a value block (touching?, = < >, and / or / not, random). **Long press** a block:
+a menu (duplicate, switch off, up / down, delete) – keep holding and **drag** it (with everything inside) to another
+gap. ↶ ↷ undo / redo; programs save themselves. Stopped, a sprite can be dragged on the stage to its start place.
+**▶ Start** (always from the start positions), **⏹**, **🐢 slow motion** (the running block lights up), tap a sprite or
+swipe / the arrow pad / the arrow keys for the events.
+
+**Blocks (stage 1):** ⚡ when ▶ Start is pressed, when this sprite is tapped, when arrow ← → ↑ ↓ is pressed, when I receive
+✉️ …, send ✉️ … to all · 🏃 move, turn ↻ / ↺, go to x/y, go to (a sprite / random place), glide, point in direction, change
+x / y, if on edge bounce · 🎨 say / think for n s, switch costume / backdrop, next costume, change / set size, show / hide ·
+🔁 repeat n, repeat forever, if, if-else, wait, wait until, stop everything · ❓ touching (a sprite / the edge)?, random,
+= < >, and / or / not (puzzles also «way blocked?»). The engine (web/codelab.js) is our own interpreter – no code of the
+child is run as JavaScript: every script is a thread that yields once per frame in loops and waits, at most 100 threads
+and 12 sprites, a loop that runs for ever without a pause gets a friendly hint. Sprites: 16 own drawings with 2–3
+costumes (`web/img/codelab/`), own sprites and backdrops with the drawing editor; backdrops from the library scenes and
+the rooms of the adventure games.
+
+**🧩 Puzzles** (`familyquest/codelab_levels.json`): 15 levels in 3 worlds on a grid – «bring the fox to the star»:
+👣 step by step (move, turn), 🔁 loops (only one step per «move», block limits, a loop in a loop, repeat forever), ⚡ events
+and if (tap the fox, steer with arrows, «if way blocked? turn else move»). Only the blocks of the level are in the drawer;
+⭐⭐⭐ for few blocks, a 💡 hint, 👣 step by step. A stone or the edge ends a try, a loop that runs more than 1000 blocks
+too. The server checks a solution again (`codelab.simulate`: the same rules, the taps / arrows given are replayed), keeps
+the best ⭐ and the fewest blocks per child and pays **XP / coins once per level** on the first solve (parent setting,
+default 10 XP). Levels open one after the other (parents: all).
+
+**🎨 Own programs:** templates «Empty program», «Dancing cat», «Catch the star», «Greeting card». Who sees a program –
+like the books: **🔒 only me** (parents neither; in the parent area only that it exists), **🧒 other children**,
+**👨‍👩‍👧 whole family** (default). Who may see it plays it; **🔀 Remix** makes an own copy (the card names the original).
+Only the author changes a program; parents remove shared ones. The server checks every program (`clean_program`): only
+known blocks, every value of its type, at most 12 sprites, 800 blocks, 12 nested levels, 700 KB (own drawings cleaned
+like in the books); 60 programs per person, 300 per family. A deleted profile takes its programs along.
+
+**Parent area › Learning packs › 💡 Code Workshop:** on / off per child, the reward for a first solved level, the puzzle
+progress per child (levels, ⭐ per world), the shared programs (open in the app, remove) and the private ones only as
+«exists».
+
 ## Language courses and general knowledge
 
 Learning app › **Language courses & more**: everybody (children and adults) chooses a language and a level and
-starts it – German (for English speakers), French, English and Spanish (for German speakers), each in three levels
+starts it – German, French, English and Spanish, each in three levels
 A1 Beginner, A2 Basics, B1 Advanced, plus **General knowledge** (inventions, buildings, history, science, space, art,
-sport …). The units of a course unlock one after the other; the exercises mix choice, typing, pairs, listening, gap
+sport … – German questions, so a parent adds it first under «More packs»). The units of a course unlock one after the other; the exercises mix choice, typing, pairs, listening, gap
 sentences and flash cards. Courses are not switched on automatically (`standard: false`, `selbst: true` in the pack).
+
+**In every app language:** titles, units and descriptions appear in the app language, and the courses ask in the
+learner's language – a French child learning English sees «bonjour → good morning», a Swedish child «god morgon → good
+morning» (all 9 app languages; own languages fall back to the family language, the language of the parent area, then
+English). A course is never offered in the language it teaches (no French course for French speakers). The learning
+progress belongs to the card, not to the text: switching the language keeps it.
+
+**Packs in one language only** (general knowledge, German, Thurgau geography, «5. Klasse Thurgau»): not installed in a
+new family. Parent area › Learning packs › **➕ More packs** shows them with their content language («🇩🇪 Content in
+German») – **Add** (or **Add all German-language packs**) makes them available, then switch them on per child; for
+German-speaking families the section is at the top. **⋯ › Remove from the family** puts a pack back (switched off for
+every child, the progress is kept). On updating, nothing a child learnt with is touched: packs nobody has go to «More
+packs»; in families whose language is not German, German-only packs that were switched on automatically and never
+used are switched off once (when the parent area is opened for the first time after the update).

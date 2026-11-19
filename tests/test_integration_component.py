@@ -37,6 +37,13 @@ def _stubs() -> dict[str, types.ModuleType]:
         def __init__(self, *a, **kw):
             super().__init__(kw.get("translation_key"))
 
+    class Unauthorized(HomeAssistantError):
+        def __init__(self, context=None, **kw):
+            super().__init__("unauthorized")
+
+    class UnknownUser(Unauthorized):
+        pass
+
     class UpdateFailed(Exception):
         pass
 
@@ -108,7 +115,8 @@ def _stubs() -> dict[str, types.ModuleType]:
         "homeassistant.core": _mod("homeassistant.core", HomeAssistant=object, ServiceCall=object, ServiceResponse=dict,
                                    SupportsResponse=enum.Enum("SupportsResponse", "NONE OPTIONAL ONLY"), callback=lambda f: f),
         "homeassistant.exceptions": _mod("homeassistant.exceptions", HomeAssistantError=HomeAssistantError,
-                                         ConfigEntryAuthFailed=ConfigEntryAuthFailed, ServiceValidationError=ServiceValidationError),
+                                         ConfigEntryAuthFailed=ConfigEntryAuthFailed, ServiceValidationError=ServiceValidationError,
+                                         Unauthorized=Unauthorized, UnknownUser=UnknownUser),
         "homeassistant.const": _mod("homeassistant.const", PERCENTAGE="%", UnitOfTime=UnitOfTime),
         "homeassistant.helpers": _mod("homeassistant.helpers", config_validation=cv),
         "homeassistant.helpers.config_validation": cv,
@@ -218,7 +226,12 @@ def test_entities_devices_and_values(comp, fq, family):
     assert by_id[f"{inst}_family_total_xp"]._attr_device_info["identifiers"] == {("familyquest", f"{inst}_family")}
     # child devices: one per child, linked to the family device
     s = by_id[f"{inst}_{mia}_balance_coins"]
-    assert s.native_value == 7 and s._attr_translation_placeholders == {"account": "Coins"}
+    # built-in account with its default name: translated by Home Assistant (balance_coins), an own name stays as it is
+    assert s.native_value == 7 and s._attr_translation_key == "balance_coins" and not hasattr(s, "_attr_translation_placeholders")
+    own = comp["sensor"].BalanceSensor(coord, mia, {"key": "stars", "name": "Sterne"})
+    assert own._attr_translation_key == "balance" and own._attr_translation_placeholders == {"account": "Sterne"}
+    renamed = comp["sensor"].BalanceSensor(coord, mia, {"key": "coins", "name": "Batzen"})
+    assert renamed._attr_translation_key == "balance" and renamed._attr_translation_placeholders == {"account": "Batzen"}
     assert s._attr_device_info["name"] == "Mia" and s._attr_device_info["via_device"] == ("familyquest", f"{inst}_family")
     assert by_id[f"{inst}_{mia}_balance_internet"].native_value == 20
     assert by_id[f"{inst}_{mia}_internet_minutes"].native_value == 20
@@ -281,6 +294,38 @@ def test_coordinator_errors_and_actions(comp, fq, family):
     assert asyncio.run(coord._async_update_data())["children"]
     asyncio.run(coord.async_action("add_points", child="Leo", account="coins", amount=5, reason="HA"))
     assert fq.rewards.balance(leo, "coins") == 5
+
+
+def test_actions_are_admin_services(comp, fq, family):
+    """add_points / approve_*: Home Assistant admins and automations (no user) only – like async_register_admin_service."""
+    mia, leo = family
+    entry, coord, api, added = _setup(comp, fq)
+    entry.state = sys.modules["homeassistant.config_entries"].ConfigEntryState.LOADED
+    exc = sys.modules["homeassistant.exceptions"]
+    users = {"admin": types.SimpleNamespace(is_admin=True), "kid": types.SimpleNamespace(is_admin=False)}
+    services = {}
+
+    async def get_user(uid):
+        return users.get(uid)
+    hass = types.SimpleNamespace(
+        services=types.SimpleNamespace(async_register=lambda dom, name, fn, schema=None, supports_response=None:
+                                       services.__setitem__(name, fn)),
+        config_entries=types.SimpleNamespace(async_entries=lambda dom: [entry]),
+        auth=types.SimpleNamespace(async_get_user=get_user))
+    assert asyncio.run(comp["pkg"].async_setup(hass, {}))
+    assert set(services) == set(comp["pkg"].SERVICE_SCHEMAS)
+
+    def call(user):
+        return types.SimpleNamespace(service="add_points", return_response=True, context=types.SimpleNamespace(user_id=user),
+                                     data={"child": "Leo", "account": "coins", "amount": 3, "reason": "HA"})
+    with pytest.raises(exc.Unauthorized):
+        asyncio.run(services["add_points"](call("kid")))
+    with pytest.raises(exc.UnknownUser):
+        asyncio.run(services["add_points"](call("gone")))
+    assert fq.rewards.balance(leo, "coins") == 0
+    assert asyncio.run(services["add_points"](call("admin")))["ok"]
+    asyncio.run(services["add_points"](call(None)))                  # an automation
+    assert fq.rewards.balance(leo, "coins") == 6
 
 
 def test_constants_match_the_addon(comp):

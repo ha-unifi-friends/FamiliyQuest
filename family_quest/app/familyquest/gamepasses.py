@@ -22,6 +22,7 @@ from __future__ import annotations
 import calendar
 from datetime import datetime, timedelta
 
+from . import memo
 from .i18n import _t
 
 PERIODS = ("day", "week", "month")
@@ -92,7 +93,8 @@ class GamePasses:
         self.now = datetime.now            # the tests move time
 
     def _rows(self, pid: int) -> dict[str, dict]:
-        return {r["game"]: r for r in self.db.q("SELECT * FROM game_pass WHERE profile_id=?", pid)}
+        rows = memo.get(("game_pass", pid), lambda: self.db.q("SELECT * FROM game_pass WHERE profile_id=?", pid))
+        return {r["game"]: dict(r) for r in rows}
 
     def status(self, pid: int, game: str, row: dict | None = None, now: datetime | None = None) -> dict:
         """{"bought": bool, "rent_until": "…" | None (only a running rent), "left_s": seconds of the rent left}"""
@@ -176,9 +178,9 @@ class GamePasses:
                 raise PassError("This game cannot be bought")
             if self.status(pid, game)["bought"]:
                 raise PassError("You have this game already")
-            if self.rewards.balance(pid, "coins") < price:
+            if self.rewards.available(pid) < price:
                 raise PassError("Not enough coins")
-            self.rewards.book(pid, "coins", -float(price), "game_buy", _t("Game bought") + f": {title}", f"game:buy:{game}:{pid}")
+            self.rewards.book(pid, "coins", -float(price), "game_buy", _t("Game bought: {0}").replace("{0}", title), f"game:buy:{game}:{pid}")
             self.db.x("""INSERT INTO game_pass(profile_id, game, bought, bought_at) VALUES(?,?,1,?)
                          ON CONFLICT(profile_id, game) DO UPDATE SET bought=1, bought_at=excluded.bought_at""",
                       pid, game, self.now().strftime(FMT))
@@ -197,11 +199,11 @@ class GamePasses:
                 raise PassError("You have this game already")
             if seen_until is not None and (seen_until or None) != st["rent_until"]:
                 raise PassError("The rent was just extended – look again")
-            if self.rewards.balance(pid, "coins") < cost:
+            if self.rewards.available(pid) < cost:
                 raise PassError("Not enough coins")
             start = datetime.strptime(st["rent_until"], FMT) if st["rent_until"] else now.replace(microsecond=0)
             until = add_period(start, period).strftime(FMT)
-            self.rewards.book(pid, "coins", -float(cost), "game_rent", _t("Game rented") + f": {title}", f"game:rent:{game}:{pid}:{until}")
+            self.rewards.book(pid, "coins", -float(cost), "game_rent", _t("Game rented: {0}").replace("{0}", title), f"game:rent:{game}:{pid}:{until}")
             self.db.x("""INSERT INTO game_pass(profile_id, game, rent_until) VALUES(?,?,?)
                          ON CONFLICT(profile_id, game) DO UPDATE SET rent_until=excluded.rent_until""", pid, game, until)
         return self.status(pid, game)

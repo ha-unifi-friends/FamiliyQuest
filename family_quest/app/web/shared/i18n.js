@@ -21,7 +21,8 @@ window.I18N = (() => {
   function load(dict) {
     for (const [k, v] of Object.entries(dict)) {
       if (!v || v === k) continue;
-      if (!/\{\d+\}/.test(k)) { exact.set(k, v); continue; }
+      exact.set(k, v);                     // also a template itself: I18N.tr(T("{0} rooms")) → "{0} salles" (short keys have no pattern)
+      if (!/\{\d+\}/.test(k)) continue;
       const order = [], re = new RegExp("^" + k.split(/(\{\d+\})/).map(p => { const m = p.match(/^\{(\d+)\}$/); if (m) { order.push(+m[1]); return "(.*?)"; } return esc(p); }).join("") + "$", "s");
       const parts = k.split(/\{\d+\}/), pre = parts[0], ent = { re, order, v, statics: parts.filter(Boolean).sort((a, b) => b.length - a.length), weight: parts.join("").replace(/\s/g, "").length };
       if (pre.length >= 2) { const b = pre.slice(0, 2); (byPrefix.get(b) || byPrefix.set(b, []).get(b)).push(ent); }
@@ -139,11 +140,11 @@ function langPicker() {
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const cust = I18N.custom.find(l => l.code === I18N.pref);
   const cur = cust ? [cust.code, cust.name] : I18N.LANGS.find(([k]) => k === I18N.pref) || I18N.LANGS[0];
-  wrap.innerHTML = `<button type="button" class="icon-btn lang-btn" aria-haspopup="menu" aria-expanded="false" title="Language: ${esc(cur[1])}" aria-label="Language: ${esc(cur[1])}">${cust ? `<span class="emoji-flag">${esc(cust.flag || "🗣️")}</span>` : flagSvg(cur[0])}</button><div class="lang-menu" role="menu" hidden></div>`;
+  wrap.innerHTML = `<button type="button" class="icon-btn lang-btn" aria-haspopup="menu" aria-expanded="false" title="${esc(I18N.tr(T("Language: {0}")).replace("{0}", cur[1]))}" aria-label="${esc(I18N.tr(T("Language: {0}")).replace("{0}", cur[1]))}">${cust ? `<span class="emoji-flag">${esc(cust.flag || "🗣️")}</span>` : flagSvg(cur[0])}</button><div class="lang-menu" role="menu" hidden></div>`;
   const btn = wrap.firstChild, menu = wrap.lastChild;
   const fill = () => { menu.innerHTML = I18N.LANGS.map(([k, n]) => `<button type="button" role="menuitemradio" data-lang="${k}" aria-checked="${k === I18N.pref}" translate="no">${flagSvg(k)}<span>${k === "auto" ? "Auto" : n}</span><svg class="ck" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 5 5 9-10"/></svg></button>`).join("") +
     I18N.custom.map(l => `<button type="button" role="menuitemradio" data-lang="${esc(l.code)}" data-base="${esc(l.base)}" aria-checked="${l.code === I18N.pref}" translate="no"><span class="emoji-flag">${esc(l.flag || "🗣️")}</span><span>${esc(l.name)}</span><svg class="ck" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 5 5 9-10"/></svg></button>`).join(""); };
-  fill(); I18N.languages.then(() => { fill(); if (cust == null && I18N.custom.some(l => l.code === I18N.pref)) { const l = I18N.custom.find(x => x.code === I18N.pref); btn.innerHTML = `<span class="emoji-flag">${esc(l.flag || "🗣️")}</span>`; btn.title = "Language: " + l.name; } });
+  fill(); I18N.languages.then(() => { fill(); if (cust == null && I18N.custom.some(l => l.code === I18N.pref)) { const l = I18N.custom.find(x => x.code === I18N.pref); btn.innerHTML = `<span class="emoji-flag">${esc(l.flag || "🗣️")}</span>`; btn.title = I18N.tr(T("Language: {0}")).replace("{0}", l.name); } });
   const close = () => { menu.hidden = true; btn.setAttribute("aria-expanded", "false"); };
   btn.addEventListener("click", e => { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute("aria-expanded", String(!menu.hidden)); });
   menu.addEventListener("click", e => { const b = e.target.closest("[data-lang]"); if (!b) return; close(); if (b.dataset.lang !== I18N.pref) I18N.set(b.dataset.lang, b.dataset.base); });
@@ -153,4 +154,10 @@ function langPicker() {
   document.addEventListener("click", onClick);
   document.addEventListener("keydown", onKey);
   return wrap;
+}
+
+// a language name inside a sentence: «Contenu en allemand» – lower case where the language writes it so (not de, en, nl)
+function langInText(name) {
+  const b = String(I18N.base || I18N.lang || "").split("-")[0];
+  return ["fr", "it", "es", "pl", "pt", "sv"].includes(b) ? String(name).toLowerCase() : name;
 }

@@ -42,8 +42,8 @@ let MK_BOARD = null;                                    // from the server: [{t,
 const mkField = f => (MK_BOARD && MK_BOARD[f]) || {};
 const mkFieldName = f => I18N.tr((MK_FIELD[mkField(f).key] || ["", "?"])[1]);
 const mkFieldIcon = f => (MK_FIELD[mkField(f).key] || ["❔"])[0];
-const mkMoney = n => Number(n || 0).toLocaleString("de-CH") + " Taler";
-const mkTaler = n => h("span.mk-taler", { translate: "no" }, h("i", "T"), Number(n || 0).toLocaleString("de-CH"));
+const mkMoney = n => Number(n || 0).toLocaleString(I18N.locale) + " Taler";
+const mkTaler = n => h("span.mk-taler", { translate: "no" }, h("i", "T"), Number(n || 0).toLocaleString(I18N.locale));
 
 // ---------------------------------------------------------------- the board (viewBox 0 0 1120 1120)
 // 36 fields clockwise from the bottom left corner: corners 160 × 160, the other fields 100 × 160.
@@ -640,7 +640,7 @@ function dorfmarktLive(box, me, back) {
       msg = h("strong.mk-debt", "⚠️ ", say(tr(T("You owe {0} – sell or mortgage something"), mkMoney(-me2.money))));
       B(["🪄 ", T("Sell automatically")], () => act("liquidate"));
       B(["📋 ", T("My fields")], myFields, ".ghost");
-      B(["💸 ", T("Give up")], () => { if (confirm(I18N.tr(T("Give up? You are bankrupt and out of the game.")))) act("give_up"); }, ".ghost");
+      B(["💸 ", T("Give up")], async () => { if ((await confirmDialog(I18N.tr(T("Give up? You are bankrupt and out of the game."))))) act("give_up"); }, ".ghost");
     } else if (my && stage === "done") {
       msg = h("strong.mk-turnmsg", T("Build, trade – or end your turn."));
       B(["✔ ", T("End turn")], () => act("end_turn"));
@@ -687,6 +687,5 @@ async function dorfmarktFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("dorfmarkt") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Buy the shops of the village, build market stands and collect rent – who is the richest at the end? Places 1 to 3 win coins at the family table.")),
-         h("div.row.wrap", botsOn("dorfmarkt") ? h("button.btn", { onclick: () => dorfmarktStartDialog(true, () => go("dorfmarkt")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => dorfmarktStartDialog(false, () => go("dorfmarkt")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("dorfmarkt") ? () => dorfmarktStartDialog(true, () => go("dorfmarkt")) : null, () => dorfmarktStartDialog(false, () => go("dorfmarkt")))]);
 }

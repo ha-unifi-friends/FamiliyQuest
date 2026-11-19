@@ -20,6 +20,7 @@ import json
 import secrets
 from datetime import datetime, timedelta
 
+from .channel import hidden_games, visible
 from .community import CommunityError
 from .i18n import _t
 
@@ -31,9 +32,9 @@ GAMES = {"quiz": ("🎯", _t("Family quiz")), "bingo": ("🎱", "Bingo"), "song"
          "tschau": ("🂡", "Tschau Sepp"), "karussell": ("🎠", _t("Card Carousel")), "domino": ("🁫", "Domino"),
          "paarjagd": ("🧠", _t("Pair Hunt")), "werbinich": ("🎭", _t("Who am I?")), "kartenlauf": ("🏁", _t("Card Race")),
          "stadtland": ("🏙️", _t("City, Country, River")), "zeichnen": ("🎨", _t("Draw & Guess")), "wuerfel": ("🎲", _t("Five Dice")),
-         "heimwaerts": ("🏠", _t("Homeward")), "jump": ("🦘", "Jump"), "klatsch": ("👏", _t("Clap the Beat")),
+         "heimwaerts": ("🏠", _t("Homeward")), "jump": ("🦘", "Jump"), "langstrecke": ("🏎️", _t("24h Endurance")), "klatsch": ("👏", _t("Clap the Beat")),
          "verboten": ("🚫", _t("Forbidden Words")), "jass": ("♣️", _t("Jass")), "werwolf": ("🐺", _t("Werewolves")),
-         "schach": ("♟️", _t("Chess")), "dorfmarkt": ("🏘️", _t("Village Market")), "poker": ("🃏", "Texas Hold'em"),
+         "schach": ("♟️", _t("Chess")), "dorfmarkt": ("🏘️", _t("Village Market")), "stempeljagd": ("🏛️", _t("Beat the Bureaucracy")), "poker": ("🃏", "Texas Hold'em"),
          "ttt": ("⭕", _t("Tic-Tac-Toe")), "pingpong": ("🏓", _t("Ping-Pong"))}
 BOARD_ICON = "🎲"
 
@@ -45,7 +46,7 @@ def _norm(s: str) -> str:
 def choice_of(game: str | None, title: str | None) -> tuple[str, str, bool]:
     """A wish → (key, title, app game?). Key «g:tschau» or «t:monopoly» – the same game wished twice is one option."""
     if game:
-        if game not in GAMES:
+        if game not in GAMES or game in hidden_games():
             raise CommunityError("Unknown game")
         return "g:" + game, GAMES[game][1], True
     t = " ".join(str(title or "").split())[:MAX_TITLE]
@@ -94,7 +95,7 @@ class FamilyTimeGames:
         """The family games this person may wish: parents all, children those switched on for them (parent area ›
         Games) – an OfflineTime just now does not matter, the wish is for later."""
         if prof.get("role") == "parent":
-            return list(GAMES)
+            return list(visible(GAMES))                 # dev games (channel.py): only in the dev channel
         acc = self.fq.games_access()
         return [g for g in GAMES if g in acc and (acc[g]["mode"] == "all" or (acc[g]["mode"] == "some" and prof["id"] in acc[g]["profiles"]))]
 
@@ -218,7 +219,7 @@ class FamilyTimeGames:
             return {**st, "events": [], "games": []}
         self.tick(now)
         members = self.members()
-        return {**st, "coins": self.fq.rewards.balance(prof["id"], "coins"),
+        return {**st, "coins": self.fq.rewards.available(prof["id"]),
                 "games": [{"key": g, "icon": GAMES[g][0], "title": GAMES[g][1]} for g in self.allowed_games(prof)],
                 "events": [self._view(e, prof, now, members) for e in self.upcoming(now)]}
 
@@ -436,11 +437,11 @@ class FamilyTimeGames:
             r = self._row(eid)
             if r["status"] == "set":
                 raise CommunityError("This FamilyTime has a game already")
-            if self.fq.rewards.balance(prof["id"], "coins") < st["price"]:
+            if self.fq.rewards.available(prof["id"]) < st["price"]:
                 raise CommunityError("Not enough coins")
             self.fq.rewards.book(prof["id"], "coins", -float(st["price"]), "familytime_game", "FamilyTime: " + t, f"familytime:{eid}")
             self._set(eid, key, t, "bought", prof["id"], st["price"])
-        return {"price": st["price"], "coins": self.fq.rewards.balance(prof["id"], "coins")}
+        return {"price": st["price"], "coins": self.fq.rewards.available(prof["id"])}
 
     def event_gone(self, eid: int) -> None:
         """The event is deleted or no longer a FamilyTime: a bought game gives the coins back, the rest goes."""

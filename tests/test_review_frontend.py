@@ -13,9 +13,9 @@ def src(name):
 def test_shop_price_zero_is_free_not_missing():
     kid = src("kid.js")
     assert "i.rule.xp && !i.rule.off" not in kid and "i.rule.xp != null && !i.rule.off" in kid      # XP items with price 0 shown
-    assert "if (i.rule.cost && confirm(" not in kid and "else if (i.rule.xp && confirm(" not in kid   # pickItem: 0 is a price
+    assert "if (i.rule.cost && (await confirmDialog(" not in kid and "else if (i.rule.xp && (await confirmDialog(" not in kid   # pickItem: 0 is a price
     assert "r.cost != null ? (r.cost > 0" in kid and "r.xp != null ? (r.xp > 0" in kid                  # ruleText: «Free»
-    assert 'i.rule.cost > 0 && !confirm(' in kid and 'i.rule.xp > 0 && !confirm(' in kid               # no question for 0
+    assert 'i.rule.cost > 0 && !(await confirmDialog(' in kid and 'i.rule.xp > 0 && !(await confirmDialog(' in kid   # no question for 0
 
 
 def test_poker_banner_names_who_deals():

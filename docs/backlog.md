@@ -5,6 +5,60 @@ Ideas and planned work for Family Quest, roughly in order. Done items move to th
 ## Next
 
 1. **Detailed canton coats of arms** – the quiz uses simplified pixel symbols; detailed drawings would need a source that allows it
+2. **Multilingual learning packs (rest)** – the language courses, maths and the year-5 English / French units ask in all
+   9 app languages (`quellsprachen`, `titel_i18n`, `frage_i18n`). Still German only (optional, «More packs»):
+   **general knowledge** (146 questions + options, would need `frage_i18n` / `antwort_i18n` / `optionen_i18n` and a
+   check of every fact per language – Swiss history unit maybe replaced per country), **German year 5** (grammar of
+   German as a first language – an equivalent per language would be new content, not a translation), **Thurgau
+   geography** and the level pack **«5. Klasse Thurgau»** (regional – other regions as own packs). Also: listening
+   (TTS) of prompts in the learner's language, Italian as a course language, own family languages (x-…) as prompt
+   language via a parent-supplied column.
+
+## Only in «Family Quest Dev» – rework before the beta
+
+These games are in the code (with their tests), but only the dev app has them (`family_quest/app/familyquest/channel.py`,
+`DEV_GAMES`; the dev app is written by `tools/publish_dev.py` with the marker `app/CHANNEL` = `dev`). Stable and beta
+leave them out everywhere (games lists, access settings, FamilyTime, Facts, guests, API 404); old history entries
+still show. Once reworked, take the game out of `DEV_GAMES` and it is in the next beta.
+
+- ~~**🏎️ 24h Endurance** (`langstrecke`)~~ – done: reworked into the short version (a pit stop after every lap,
+  automatic driver change, the crew prepares tyres / fuel / spare engine during the lap, rain and tyre choice, two
+  chicanes with braking zones, team colour / country / number) and back in the beta.
+- **🏛️ Beat the Bureaucracy** (`stempeljagd`) – too complex to play: rework before beta (fewer counters, rules and
+  special cards; a game that explains itself while playing).
+
+### 💡 Code Workshop – stages 2 and 3 (stage 1 is in the dev app)
+
+Stage 1 (editor, engine, events / motion / looks / control / minimal sensing, 15 puzzles, own programs with templates,
+visibility and remix) is only in Family Quest Dev (`channel.DEV_FEATURES`) – test it with children, then into the beta.
+
+- **Stage 2:** 🔊 sound (play sound: bell, drum, meow, boing … · play note with a mini keyboard); 🔴 variables (new variable
+  «points», «lives» · set / change by · show on the stage); more sensing (key pressed?, distance to, x / y position,
+  direction, size, touching colour?, math + − × ÷, join texts); «repeat until», «when sprite touches …», colour effects;
+  more puzzle levels (about 30 in 5 worlds: variables «count the apples», messages); 🤖 import / export in an AI-friendly
+  JSON format with a prompt box (`aiPromptBox`, like the books); the avatar of the child as a sprite; templates «Maze» and
+  «Ping-Pong»; a Facts question «Who solved most code levels?»; coins per shared program (parent setting).
+- **Stage 3:** own blocks (functions with parameters), clones, lists; a «share as book page» link; a small gallery of the
+  family with ⭐ ratings.
+
+### «Fischen» – multiplayer fishing (simple)
+
+User wishes (2026-11-18): keep casting / reeling **simple**; **many rarity levels**; **several fish per rarity**;
+**no** two-person team catch. Open question to the user: variant A (tournament, everything resets) or B (persistent
+gear and islands, with a «same gear for all» option at family tables) – proposed: **B**.
+
+- **Simple controls:** one tap «Cast» (automatic throw), wait, one tap when the float dips (generous window, about
+  1.5 s, Junior even longer), then hold a single «Reel» button until the fish is in (no tension balancing). Missed =
+  the fish is gone, cast again.
+- **Rarity levels (8):** Common ⚪, Uncommon 🟢, Rare 🔵, Very rare 🔷, Epic 🟣, Legendary 🟡, Mythic 🔴, Secret 🌈 –
+  6–10 fish per level and island (plus funny junk catches: boot, rubber duck, message in a bottle).
+- **Luck** = rod + bait + boat + island + time of day + weather: shifts the rarity chances up, never guarantees. Higher
+  rarity = more money.
+- **Shop** (in-game money): rods, baits, boat, islands (village pond, mountain lake, coral reef, ice hole, volcano
+  lagoon, fog island).
+- **Events:** day / night, weather, golden swarm. Fish encyclopedia, collection badges, records (Facts quiz).
+- **Multiplayer:** everybody fishes at the same time on their own phone, avatars on the pier, a banner for rare
+  catches. Coins for places 1–3, game battery, bots.
 
 ## Ideas
 

@@ -2,10 +2,14 @@
 # Deutsch 5, Englisch 2, Französisch 2, Mathematik 5, NMG 5 Lektionen pro Woche.
 stufenpaket: tg-5-klasse
 titel: 5. Klasse Thurgau
+titel_i18n: {de: "5. Klasse Thurgau", en: "Year 5 Thurgau (Switzerland)", fr: "5e année Thurgovie (Suisse)", it: "5ª classe Turgovia (Svizzera)", es: "5.º curso Turgovia (Suiza)", nl: "Leerjaar 5 Thurgau (Zwitserland)", pl: "Klasa 5 Turgowia (Szwajcaria)", pt: "5º ano Turgóvia (Suíça)", sv: "Årskurs 5 Thurgau (Schweiz)"}
 stufe: 5. Klasse
+stufe_i18n: {de: "5. Klasse", en: "Year 5", fr: "5e année", it: "5ª classe", es: "5.º curso", nl: "leerjaar 5", pl: "klasa 5", pt: "5º ano", sv: "årskurs 5"}
 kanton: TG
 lehrplan: Lehrplan Volksschule Thurgau (Lehrplan 21)
 version: 1
+optional: true        # German content only: not installed by default – Parent area › Learning packs › More packs
+sprachen: [de]
 faecher: [deutsch, mathematik, nmg, englisch, franzoesisch]
 semester:
   - id: s1

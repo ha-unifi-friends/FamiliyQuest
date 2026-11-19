@@ -1,0 +1,185 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Family Quest",
+        "description": "Conecta la app Family Quest. En Family Quest: Zona de padres › Ajustes › «Integración HA de Family Quest» – actívala y copia el token.",
+        "data": {
+          "url": "Dirección de la app Family Quest",
+          "token": "Token de integración"
+        },
+        "data_description": {
+          "url": "En Home Assistant OS: http://<nombre de host del add-on>:8099 (sugerido).",
+          "token": "Se muestra una sola vez en la zona de padres de Family Quest (empieza por fqi_)."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Nuevo token de integración",
+        "description": "El token fue rechazado. Crea un token nuevo en Family Quest (Zona de padres › Ajustes › «Integración HA de Family Quest») y pégalo aquí.",
+        "data": {
+          "token": "Token de integración"
+        },
+        "data_description": {
+          "token": "Se muestra una sola vez en la zona de padres de Family Quest (empieza por fqi_)."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Token incorrecto, o la integración está desactivada en Family Quest.",
+      "cannot_connect": "No se puede acceder a Family Quest en esta dirección."
+    },
+    "abort": {
+      "already_configured": "Este Family Quest ya está configurado.",
+      "reauth_successful": "El nuevo token funciona."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "xp_today": {
+        "name": "XP hoy"
+      },
+      "total_xp": {
+        "name": "XP total"
+      },
+      "level": {
+        "name": "Nivel"
+      },
+      "streak": {
+        "name": "Racha"
+      },
+      "goal_progress": {
+        "name": "Progreso del objetivo del día"
+      },
+      "chores_open": {
+        "name": "Tareas de casa pendientes"
+      },
+      "lessons_today": {
+        "name": "Lecciones hoy"
+      },
+      "internet_minutes": {
+        "name": "Minutos de internet restantes"
+      },
+      "game_time_left": {
+        "name": "Tiempo de juego restante hoy"
+      },
+      "learn_time_left": {
+        "name": "Tiempo de aprendizaje restante hoy"
+      },
+      "family_total_xp": {
+        "name": "XP total de la familia"
+      },
+      "family_xp_today": {
+        "name": "XP de la familia hoy"
+      },
+      "running_games": {
+        "name": "Juegos en curso"
+      },
+      "open_votes": {
+        "name": "Votaciones y encuestas abiertas"
+      },
+      "pending_approvals": {
+        "name": "Esperando aprobación"
+      },
+      "balance": {
+        "name": "{account}"
+      },
+      "balance_coins": {
+        "name": "Monedas"
+      },
+      "balance_internet": {
+        "name": "Minutos de internet"
+      }
+    },
+    "binary_sensor": {
+      "goal_met": {
+        "name": "Objetivo del día cumplido"
+      },
+      "internet_blocked": {
+        "name": "Internet bloqueado"
+      },
+      "game_time_used_up": {
+        "name": "Tiempo de juego agotado"
+      },
+      "offline_time": {
+        "name": "OfflineTime"
+      }
+    },
+    "switch": {
+      "internet": {
+        "name": "Internet"
+      }
+    }
+  },
+  "services": {
+    "add_points": {
+      "name": "Añadir puntos",
+      "description": "Registrar puntos (o una corrección) para un niño, como «Registrar puntos» en la zona de padres.",
+      "fields": {
+        "child": {
+          "name": "Niño",
+          "description": "Nombre o id del niño."
+        },
+        "account": {
+          "name": "Cuenta",
+          "description": "Clave de la cuenta, p. ej. coins o internet."
+        },
+        "amount": {
+          "name": "Cantidad",
+          "description": "Puntos que añadir (negativos para quitar)."
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Se muestra en el historial del niño."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Solo hace falta si hay más de un Family Quest configurado."
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Aprobar tarea",
+      "description": "Confirmar (o devolver con approve: false) una tarea que espera aprobación.",
+      "fields": {
+        "task_id": {
+          "name": "Id de la tarea",
+          "description": "task_id del atributo `chores` de «Esperando aprobación»."
+        },
+        "approve": {
+          "name": "Aprobar",
+          "description": "true = hecho, false = hay que repetirlo."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Solo hace falta si hay más de un Family Quest configurado."
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Aprobar recompensa",
+      "description": "Aprobar o rechazar una recompensa que un niño quiere canjear.",
+      "fields": {
+        "redemption_id": {
+          "name": "Id del canje",
+          "description": "redemption_id del atributo `rewards` de «Esperando aprobación»."
+        },
+        "approve": {
+          "name": "Aprobar",
+          "description": "true = hecho, false = hay que repetirlo."
+        },
+        "config_entry_id": {
+          "name": "Family Quest",
+          "description": "Solo hace falta si hay más de un Family Quest configurado."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "Family Quest no está configurado o no está cargado."
+    },
+    "several_entries": {
+      "message": "Hay más de un Family Quest configurado – elige uno con config_entry_id."
+    }
+  }
+}

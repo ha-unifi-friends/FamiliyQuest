@@ -7,7 +7,7 @@
 const ZR_ICON = "🎨";
 const zrName = () => I18N.tr(T("Draw & Guess"));
 const zrCoins = list => list.join(" / ") + " 🪙";
-// the category titles in the language of the app (the words themselves are German content)
+// the category titles in the language of the app (the server sends the words and the mask in it too – familyquest/gamewords.py)
 const ZR_CATS = { tiere: T("Animals"), berufe: T("Jobs"), essen: T("Food & fruit"), gegenstaende: T("Things at home"), sport: T("Sports"), gemischt: T("Mixed") };
 const zrCat = c => c ? (ZR_CATS[c.key] ? I18N.tr(ZR_CATS[c.key]) : c.title) : "";
 const ZR_PALETTE = ["#000000", "#7a7a7a", "#e03131", "#f76707", "#fcc419", "#2f9e44", "#1c7ed6", "#7048e8", "#8b5a2b", "#f06595"];
@@ -21,6 +21,7 @@ function zeichnenRulesView(rules, rewards) {
     T("The others see the drawing live and type their guesses. Wrong guesses are shown to everybody, a right one is not."),
     rules && rules.hints ? T("Hints: some letters of the word appear at half and three quarters of the time.") : null,
     T("Capitals, accents, umlauts (ä = ae) and der / die / das do not matter; with longer words one typo is fine. «Close!» – only you see it."),
+    T("Everybody sees the word in their own language: guess in yours or in the drawer's – both count."),
     T("Points: the faster you guess, the more you get (up to 100). The drawer gets 10 points for everybody who guessed it."),
     rewards ? I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", zrCoins(rewards)) : null,
     T("Coins only at a table with at least two people of the family – not for guests.")].filter(Boolean);
@@ -409,7 +410,7 @@ function zeichnenLive(box, me, back) {
         h("button.zr-tool", { type: "button", title: I18N.tr(T("Clear")), onclick: clear }, "🗑️"));
     };
     const undo = () => { if (!painter.canUndo()) return; painter.op({ u: 1 }); outq.push({ u: 1 }); cur = null; };
-    const clear = () => { if (!painter.canUndo()) return; if (!confirm(I18N.tr(T("Clear the whole picture?")))) return; painter.op({ x: 1 }); outq.push({ x: 1 }); cur = null; };
+    const clear = async () => { if (!painter.canUndo()) return; if (!(await confirmDialog(I18N.tr(T("Clear the whole picture?"))))) return; painter.op({ x: 1 }); outq.push({ x: 1 }); cur = null; };
     drawTools();
     // the pointer: normalised coordinates, three decimals, points closer than a little step are skipped
     let down = null, lastPt = null, count = st.npts || 0;

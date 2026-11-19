@@ -11,11 +11,13 @@ from .. import loginlog, symbols, themes
 from ..chores import ChoreError
 from ..internet import InternetError
 from ..db import profile_settings
+from ..channel import feature_visible
 from ..learning.lesson import LearnError
+from ..packs import i18n as pack_i18n
 from ..rewards import avatar as av
 from ..rewards.shop import ShopError
 from ..pets import KINDS as PET_KINDS, REBUY_COST, PetError
-from .auth import INGRESS_IP, KID_MAX_AGE, Learner, app_of, check_pin, hash_pin, valid_pin
+from .auth import KID_MAX_AGE, Learner, app_of, check_pin, ha_kid, ha_user, hash_pin, valid_pin, via_ingress
 
 router = APIRouter(prefix="/api")
 
@@ -61,14 +63,19 @@ def info(request: Request) -> dict:
     fq = app_of(request)
     s = fq.db.all_settings()
     return {"version": fq.settings.version,
-            "setup_needed": not fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0),
+            "setup_needed": (setup := not fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0)),
+            # first start through Home Assistant: the name of the HA user – the first parent is linked with it
+            "setup_ha_user": (u["name"] or u["user"]) if setup and (u := ha_user(request)) else None,
             "ha": bool(fq.ha and fq.ha.connected), "planer": bool(fq.ha and fq.ha.planer_available),
             "ai": False, "sound": s.get("sound", True),
             "family_visibility": s.get("family_visibility"), "kid_max_age": KID_MAX_AGE,
             # parent area only in Home Assistant: on the app port (tablets) it is not offered at all
             "parent_ha_only": bool(s.get("parent_ha_only")),
-            "via_ha": bool(request.client and request.client.host == INGRESS_IP),
-            "season": themes.active(s.get("themes"))}
+            "via_ha": via_ingress(request),
+            # a child opened the app with its own Home Assistant user (ingress, parents allow it): log in without PIN
+            "ha_kid": {"id": kid["id"], "name": kid["name"]} if (kid := ha_kid(fq, request)) else None,
+            "season": themes.active(s.get("themes")),
+            "codelab": feature_visible("codelab")}           # 💡 Code Workshop: only in the dev channel (channel.DEV_FEATURES)
 
 
 @router.get("/app-link")
@@ -120,6 +127,18 @@ def login(body: LoginIn, request: Request) -> dict:
     return out
 
 
+@router.post("/ha-login")
+def ha_login(request: Request) -> dict:
+    """Children's app without PIN for a child whose Home Assistant user is linked with its profile – only through Home
+    Assistant ingress and only when the parents switched it on. Only the learning-app login, never the parent area."""
+    fq = app_of(request)
+    p = ha_kid(fq, request)
+    if not p:
+        return {"linked": False}
+    loginlog.record(fq, request, "profile", p["id"], True)
+    return {"linked": True, "token": fq.tokens.make(p["id"], "kid"), "profile": fq.profile_public(p)}
+
+
 @router.post("/setup")
 def setup(body: SetupIn, request: Request) -> dict:
     """First start: create the parent profile (PIN required)."""
@@ -128,8 +147,12 @@ def setup(body: SetupIn, request: Request) -> dict:
         raise HTTPException(409, "Already set up")
     if not body.name.strip() or not valid_pin(body.pin):
         raise HTTPException(400, "Name and a PIN with 4–8 digits are required")
-    pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash) VALUES(?, 'parent', '#495057', ?)",
-                  body.name.strip()[:40], hash_pin(body.pin))
+    # opened through Home Assistant: the first parent is linked with that Home Assistant user right away – the parent
+    # area then opens without PIN (the PIN stays for the app on the tablets)
+    u = ha_user(request)
+    st = {"ha_user_id": u["id"], "ha_user_name": u["name"] or u["user"]} if u else {}
+    pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash, settings) VALUES(?, 'parent', '#495057', ?, ?)",
+                  body.name.strip()[:40], hash_pin(body.pin), json.dumps(st))
     return {"parent_token": fq.tokens.make(pid, "parent"), "token": fq.tokens.make(pid, "kid"),
             "profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid))}
 
@@ -201,10 +224,14 @@ def courses(request: Request, prof: dict = Learner) -> list[dict]:
     fq = app_of(request)
     mine = {r["pack_id"] for r in fq.db.q("SELECT pack_id FROM pack_profile WHERE profile_id=?", prof["id"])}
     out = []
+    viewer = pack_i18n.viewer()
     for p in fq.packs.all(status="active", kind="pack"):
         s = p.summary()
         if s.get("self_service"):
-            out.append({k: s.get(k) for k in ("id", "title", "subject", "level", "lang", "src_lang", "icon", "color", "description", "descriptions")}
+            if viewer and p.lang == viewer and p.id not in mine:
+                continue                     # a course of the learner's own language (the French course for French speakers)
+            out.append({k: s.get(k) for k in ("id", "title", "subject", "level", "lang", "src_lang", "src_langs", "icon", "color",
+                                               "description", "descriptions", "content_langs")}
                        | {"units": len(s.get("units") or []), "cards": sum(u["count"] for u in s.get("units") or []), "on": p.id in mine})
     return out
 
@@ -298,7 +325,7 @@ def avatar(request: Request, prof: dict = Learner) -> dict:
     return {"avatar": {**a, "pet": pet} if pet else a, **cat,
             "mood_text": json.loads(prof["settings"] or "{}").get("mood_text") or "",
             "mood": json.loads(prof["settings"] or "{}").get("mood") or "",
-            "coins": fq.rewards.balance(prof["id"], "coins"), "level": level,
+            "coins": fq.rewards.available(prof["id"]), "level": level,
             "new_xp": new_xp_left(fq, prof["id"])}
 
 
@@ -388,7 +415,7 @@ def buy_item(body: BuyIn, request: Request, prof: dict = Learner) -> dict:
     with fq.db.tx():
         if fq.db.q1("SELECT 1 FROM unlock WHERE profile_id=? AND item=?", prof["id"], body.item):
             return {"ok": True}
-        if fq.rewards.balance(prof["id"], "coins") < cost:
+        if fq.rewards.available(prof["id"]) < cost:
             raise HTTPException(400, "Not enough yet")
         if cost > 0:                                   # price 0 (parent area › Shop): free – nothing to book
             fq.rewards.book(prof["id"], "coins", -cost, "avatar", av.ITEMS[body.item][0], f"avatar:{body.item}")
@@ -560,7 +587,7 @@ class GamePassIn(BaseModel):
 def games_shop(request: Request, prof: dict = Learner) -> dict:
     """The priced games this child may play once bought or rented – with what it has (bought, rented until)."""
     fq = app_of(request)
-    return {"games": fq.game_offers(prof), "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"games": fq.game_offers(prof), "coins": fq.rewards.available(prof["id"])}
 
 
 @router.post("/me/games/buy")
@@ -569,7 +596,7 @@ def games_buy(body: GamePassIn, request: Request, prof: dict = Learner) -> dict:
     fq = app_of(request)
     if prof.get("role") != "kid":
         raise HTTPException(400, "Parents always play for free")
-    if body.game not in fq.GAMES or body.game not in fq.games_open_to(prof):
+    if body.game not in fq.GAMES or body.game not in fq.games_open_to(prof, party=False):   # a party does not last
         raise HTTPException(403, "This game is switched off for you")
     a = fq.games_access()[body.game]
     try:
@@ -646,7 +673,7 @@ def battery_recharge(request: Request, prof: dict = Learner) -> dict:
         raise HTTPException(400, str(e)) from None
     if fq.ha:
         fq.ha.profile_changed(prof["id"])
-    return {"battery": st, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"battery": st, "coins": fq.rewards.available(prof["id"])}
 
 
 # ---------------------------------------------------------------- game corner: one-armed bandit (slots.py)
@@ -693,7 +720,7 @@ def pet_more(body: PetMoreIn, request: Request, prof: dict = Learner) -> dict:
     """One more pet of a kind the child already has (same price as in the shop)."""
     fq = app_of(request)
     pet = _pet(fq.pets.buy_another, prof["id"], body.kind)
-    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"pet": pet, "coins": fq.rewards.available(prof["id"])}
 
 
 @router.post("/me/pets/{pet_id}/breed")
@@ -722,7 +749,7 @@ def pet_hotel(pet_id: int, body: PetHotelIn, request: Request, prof: dict = Lear
     """The Family Quest pet hotel: paid per day at once."""
     fq = app_of(request)
     pet = _pet(fq.pets.hotel, prof["id"], pet_id, body.days)
-    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"pet": pet, "coins": fq.rewards.available(prof["id"])}
 
 
 @router.post("/me/pets/{pet_id}/fetch")
@@ -730,7 +757,7 @@ def pet_fetch(pet_id: int, request: Request, prof: dict = Learner) -> dict:
     """Take the pet back from the sitter or from the hotel."""
     fq = app_of(request)
     pet = _pet(fq.pets.fetch, prof["id"], pet_id)
-    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"pet": pet, "coins": fq.rewards.available(prof["id"])}
 
 
 @router.post("/me/pets/{pet_id}/{action}")
@@ -739,7 +766,7 @@ def pet_action(pet_id: int, action: str, request: Request, prof: dict = Learner)
         raise HTTPException(404, "Unknown action")
     fq = app_of(request)
     pet = _pet(fq.pets.act, prof["id"], pet_id, action)
-    return {"pet": pet, "coins": fq.rewards.balance(prof["id"], "coins")}
+    return {"pet": pet, "coins": fq.rewards.available(prof["id"])}
 
 
 @router.put("/me/pets/{pet_id}")

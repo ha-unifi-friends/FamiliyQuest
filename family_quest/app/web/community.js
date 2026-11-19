@@ -71,6 +71,9 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.verkehr) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("verkehr") },
     h("span.big-ic", "🚦"), h("span.grow", h("strong", T("Traffic Cadet")), h("br"),
       h("span.small", c.verkehr.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.langstrecke) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("langstrecke") },
+    h("span.big-ic", "🏎️"), h("span.grow", h("strong", T("24h Endurance")), h("br"),
+      h("span.small", c.langstrecke.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.klatsch) out.push(h("button.card.banner.quiz-banner", { onclick: () => { try { KbAudio.ensure(); } catch {} go("klatsch"); } },
     h("span.big-ic", "👏"), h("span.grow", h("strong", T("Clap the Beat")), h("br"),
       h("span.small", c.klatsch.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -89,6 +92,9 @@ function communityBanners(c, { gamesOnly = false } = {}) {
   if (c.escape) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("escape") },
     h("span.big-ic", "🗝️"), h("span.grow", h("strong", T("Escape Room")), h("br"),
       h("span.small", c.escape.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
+  if (c.stempeljagd) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("stempeljagd") },
+    h("span.big-ic", "🏛️"), h("span.grow", h("strong", T("Beat the Bureaucracy")), h("br"),
+      h("span.small", c.stempeljagd.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
   if (c.dorfmarkt) out.push(h("button.card.banner.quiz-banner", { onclick: () => go("dorfmarkt") },
     h("span.big-ic", "🏘️"), h("span.grow", h("strong", T("Village Market")), h("br"),
       h("span.small", c.dorfmarkt.joined ? T("You are in – let's go!") : T("is running – join in!"))), h("span.big-ic", "➜")));
@@ -451,7 +457,7 @@ async function pollsSection(me = S.profile) {
       voted || closed ? results : null,
       !closed && voted ? h("button.link.small", { onclick: e => { e.currentTarget.replaceWith(ballot()); } }, T("Change my answer")) : null,
       manage ? h("div.row", !closed ? h("button.btn.small.ghost", { onclick: () => call2(`community/polls/${p.id}/close`, { method: "POST" }) }, "🏁 ", T("Close the poll")) : null,
-        h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Remove this poll?"))) && call2(`community/polls/${p.id}`, { method: "DELETE" }) }, T("Remove"))) : null);
+        h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Remove this poll?")))) && call2(`community/polls/${p.id}`, { method: "DELETE" }) }, T("Remove"))) : null);
   }
   draw();
   return sec;
@@ -518,8 +524,8 @@ async function familyTimeSection(me = S.profile, { settings = null } = {}) {
     const out = [head];
     if (e.game) {
       out.push(h("div.row.ftg-game", h("span.big-ic", e.game.icon), h("div.grow", h("small.muted", T("We play")), h("br"), C(ftTitle(e.game), "strong"), h("br"), h("span.small.muted", ftHow(e.game)))));
-      if (parent) out.push(h("div.row.wrap.ftg-ctl", h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(e.game.how === "bought"
-        ? T("Remove the game? {0} gets the coins back.") : T("Remove the game?")).replace("{0}", e.game.by || "?")) && call2(base + "/remove", { method: "POST" }) }, "✕ ", T("Remove the game"))));
+      if (parent) out.push(h("div.row.wrap.ftg-ctl", h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(e.game.how === "bought"
+        ? T("Remove the game? {0} gets the coins back.") : T("Remove the game?")).replace("{0}", e.game.by || "?"))) && call2(base + "/remove", { method: "POST" }) }, "✕ ", T("Remove the game"))));
       return h("div.topic.ftg-ev", ...out);
     }
     // the wishes – the same game wished twice is one line (and one option of the vote)
@@ -558,7 +564,7 @@ async function familyTimeSection(me = S.profile, { settings = null } = {}) {
     if (e.can_buy) out.push(h("div.row.wrap.ftg-buy",
       h("button.btn.small.ftg-buy-btn", { disabled: d.coins < d.price, onclick: () => pickDialog("🪙 " + I18N.tr(T("Fix a game")), d.games,
         I18N.tr(T("For {0} coins the game is set firmly on this FamilyTime – the wishes and the vote end.")).replace("{0}", d.price),
-        v => confirm(I18N.tr(T("Pay {0} coins?")).replace("{0}", d.price)) && call2(base + "/buy", { method: "POST", body: v }, T("The game is set!"))) },
+        async v => (await confirmDialog(I18N.tr(T("Pay {0} coins?")).replace("{0}", d.price))) && call2(base + "/buy", { method: "POST", body: v }, T("The game is set!"))) },
         "🪙 ", I18N.tr(T("Fix a game for {0} coins")).replace("{0}", d.price)),
       d.coins < d.price ? h("span.small.muted", I18N.tr(T("You have {0} coins")).replace("{0}", Math.floor(d.coins))) : null));
     if (parent) out.push(h("div.row.wrap.ftg-ctl",
@@ -566,7 +572,7 @@ async function familyTimeSection(me = S.profile, { settings = null } = {}) {
       e.status === "vote" ? h("button.btn.small", { onclick: () => call2(base + "/end", { method: "POST" }) }, "🏁 ", T("End the vote")) : null,
       h("button.btn.small.ghost", { onclick: () => pickDialog("🎲 " + I18N.tr(T("Set a game")), d.games, null, v => call2(base + "/set", { method: "POST", body: v }), [...groups.values()]) }, "🎲 ", T("Set a game")),
       ["wish", "vote", "tie"].includes(e.status) ? h("button.btn.small.ghost", { onclick: () => call2(base + "/skip", { method: "POST" }) }, "⏭ ", T("Skip the vote")) : null,
-      e.wishes.length ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Clear all wishes and votes?"))) && call2(base + "/clear", { method: "POST" }) }, "🧹 ", T("Clear wishes")) : null));
+      e.wishes.length ? h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Clear all wishes and votes?")))) && call2(base + "/clear", { method: "POST" }) }, "🧹 ", T("Clear wishes")) : null));
     return h("div.topic.ftg-ev", ...out);
   }
   draw();
@@ -650,7 +656,7 @@ async function wichtelnSection(me = S.profile) {
           catch (err) { e.target.checked = !e.target.checked; toast(err.message, "bad"); } } }), T("Present ready")) : null;
         return h("div.topic", h("div.row", h("span.grow"),
             (w.created_by === me.id || me.role === "parent") ? h("button.icon-btn", { title: T("Delete"), onclick: async () => {
-              if (!confirm(I18N.tr(T("Delete «{0}»?")).replace("{0}", w.title))) return;
+              if (!(await confirmDialog(I18N.tr(T("Delete «{0}»?")).replace("{0}", w.title)))) return;
               try { await api(`community/wichteln/${w.id}`, { method: "DELETE" }); draw(); } catch (e) { toast(e.message, "bad"); } } }, "🗑️") : null),
           h("p.small.muted", I18N.tr(T("With: {0}")).replace("{0}", w.people.map(p => p.name).join(", ")),
             w.rules.no_parent_pairs ? [" · ", I18N.tr(T("parents not among each other"))] : null, w.rules.no_kid_pairs ? [" · ", I18N.tr(T("children not among each other"))] : null),
@@ -727,7 +733,7 @@ async function councilSection(me = S.profile) {
         h("div.row", inp, h("button.btn.small", { onclick: () => inp.value.trim() && call2(`community/council/${t.id}/proposals`, { method: "POST", body: { text: inp.value } }) }, "+ ", T("Add idea"))),
         manage ? h("div.row.wrap",
           h("button.btn.small.good", { disabled: t.proposals.length < 2, title: t.proposals.length < 2 ? T("At least two ideas") : "", onclick: () => voteDialog(t) }, "🗳️ ", T("Start the vote")),
-          h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Remove this topic?"))) && call2(`community/council/${t.id}`, { method: "DELETE" }) }, T("Remove"))) : null);
+          h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Remove this topic?")))) && call2(`community/council/${t.id}`, { method: "DELETE" }) }, T("Remove"))) : null);
     }
     const bothTxt = t.both_sides ? " · 👨‍👩‍👧 " + I18N.tr(T("parents and children")) : "";
     if (t.status === "vote") return h("div.topic", headRow, by, h("p.small", "⚖️ ", MAJ[maj], bothTxt),
@@ -798,6 +804,11 @@ function historyText(e) {
     : I18N.tr(T("Traffic Cadet alone: {0} points")).replace("{0}", d.score))
     + " · 🚗" + (d.passed || 0) + " 💥" + (d.accidents || 0) + " 😡" + (d.angry || 0) + (d.record ? " · 🎉 " + I18N.tr(T("New personal best!")) : "")
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
+  if (e.kind === "langstrecke") return ["🏎️", (d.players > 1
+    ? I18N.tr(T("24h Endurance: place {0} of {1} · {2} laps")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.laps)
+    : I18N.tr(T("24h Endurance alone: {0} laps")).replace("{0}", d.laps)) + (d.team ? " · " + d.team : "")
+    + (d.best_pit ? " · 🅿️ " + Number(d.best_pit).toFixed(1) + " s" : "") + (d.record ? " · 🎉 " + I18N.tr(T("New record!")) : "")
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 && d.players > 1 ? "🏆" : ""];
   if (e.kind === "klatsch") return ["👏", (d.players > 1
     ? I18N.tr(T("Klatsch den Beat: place {0} of {1} · {2}")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", pts(d.score))
     : I18N.tr(T("Klatsch den Beat alone: {0}")).replace("{0}", pts(d.score))) + " · " + I18N.tr(T("{0} % on the beat")).replace("{0}", d.acc || 0)
@@ -814,8 +825,13 @@ function historyText(e) {
     + " · " + I18N.tr(chReason(d.reason)) + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.result === "win" ? "🏆" : ""];
   if (e.kind === "escape") return ["🗝️", (d.out ? I18N.tr(T("Escape Room: out after {0} rooms in {1}")) : I18N.tr(T("Escape Room: {0} of {1} rooms"))).replace("{0}", d.rooms).replace("{1}", d.out ? Math.floor((d.time || 0) / 60) + ":" + String((d.time || 0) % 60).padStart(2, "0") : d.of)
     + (d.teams ? " · " + I18N.tr(d.won ? T("our team won") : T("in a team")) : "") + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.won ? "🏆" : ""];
-  if (e.kind === "dorfmarkt") return ["🏘️", I18N.tr(T("Dorfmarkt: place {0} of {1} · {2} Taler")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", Number(d.worth || 0).toLocaleString("de-CH"))
+  if (e.kind === "stempeljagd") return ["🏛️", (d.admin ? I18N.tr(T("Beat the Bureaucracy: played the administration – place {0} of {1}")).replace("{0}", d.place).replace("{1}", d.players)
+    : I18N.tr(T("Beat the Bureaucracy: place {0} of {1} · {2} of {3} stamps")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.stamps).replace("{3}", d.target))
     + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "dorfmarkt") return ["🏘️", I18N.tr(T("Dorfmarkt: place {0} of {1} · {2} Taler")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", Number(d.worth || 0).toLocaleString(I18N.locale))
+    + (d.coins ? " · +" + d.coins + " 🪙" : ""), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "poker") return ["🃏", I18N.tr(T("Texas Hold'em: place {0} of {1} · {2} chips")).replace("{0}", d.place).replace("{1}", d.players).replace("{2}", d.chips), d.place === 1 ? "🏆" : ""];
+  if (e.kind === "cards") return [d.game === "Tschau Sepp" ? "🂡" : "🎠", I18N.tr(T("{0}: place {1} of {2}")).replace("{0}", I18N.tr(d.game || "")).replace("{1}", d.place).replace("{2}", d.players), d.place === 1 ? "🏆" : ""];
   return ["•", e.kind, ""];
 }
 
@@ -855,8 +871,9 @@ async function quizzesView() {
 }
 
 // list of quizzes with start / edit / delete, templates, editor – for profile `me`
-// `actions`: the head row of the section the «+ New quiz» button goes into
-async function quizzesPanel(box, me, onStarted, { actions } = {}) {
+// `actions`: the head row of the section the «+ New quiz» button goes into – `withImport`: also «📥 Import» (a quiz file)
+// next to it, «+ New» (parent area › Games › Custom games); `onCount(n)`: the number of quizzes
+async function quizzesPanel(box, me, onStarted, { actions, withImport = false, onCount = null } = {}) {
   let quizzes = [], templates = [], live = null, facts = null;
   try { [quizzes, templates, live, facts] = await Promise.all([api("community/quizzes"), api("community/templates"), api("community/quiz").catch(() => null),
     api("community/quizzes/facts").catch(() => null)]); }
@@ -871,7 +888,8 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
         catch (e) { toast(e.message, "bad"); }
       } }, "▶ ", T("Start")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   };
-  const reload = () => quizzesPanel(box, me, onStarted, { actions });
+  const reload = () => quizzesPanel(box, me, onStarted, { actions, withImport, onCount });
+  if (onCount) onCount(quizzes.length);
   // «Family Quest Facts»: a special quiz – the server makes new questions from the family's own data at every start
   const factsStart = () => {
     const count = h("select", ...(facts.counts || [5, 10, 15, 20]).map(n => h("option", { value: n, selected: n === 10 }, String(n))));
@@ -915,10 +933,11 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
     const aiBox = h("div.ai-box",
       h("div.row.wrap",
         h("button.btn.small", { onclick: () => file.click() }, "⬆️ ", T("Import")),
-        h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: "api/ai-template/quiz", download: "family-quest-quiz-template.json" }, "⬇️ ", T("Download template")),
         quizzes.length ? h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all")) : null,
         file),
-      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")));
+      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")),
+      aiPromptBox(T("Make me a family quiz about [topic, e.g. animals of Switzerland].\n[10] questions for players aged [8] to [45], language: [English].\nMix the question types: multiple choice, pictures, estimates and map questions."),
+        { template: "api/ai-template/quiz", name: "family-quest-quiz-template.json" }));
     // templates first (one tap), the own quiz next to it; AI and import folded away – rarely needed
     m = modal(h("div.form", h("div.row.wrap", h("h2.grow", "🎯 ", T("New quiz")),
         h("button.btn", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz"))),
@@ -929,16 +948,26 @@ async function quizzesPanel(box, me, onStarted, { actions } = {}) {
       h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
     drawTemplates();
   };
-  const newBtn = h("button.btn", { onclick: newQuiz }, "+ ", T("New quiz"));
-  if (actions) actions.replaceChildren(...[...actions.children].filter(x => !x.classList.contains("new-quiz")), Object.assign(newBtn, { className: newBtn.className + " new-quiz" }));
+  const newBtn = h("button.btn", { onclick: newQuiz }, "+ ", withImport ? T("New") : T("New quiz"));
+  // «📥 Import»: a quiz file (an export or the answer of an AI) – the same as «With an AI or from a file» in «New quiz»
+  const impFile = h("input.new-quiz", { type: "file", accept: ".json,.txt,.md,application/json,text/plain", hidden: true, onchange: async () => {
+    const f = impFile.files[0]; if (!f) return;
+    try {
+      const r = await api("community/quizzes/import", { method: "POST", body: { text: await f.text() } });
+      toast(I18N.tr(T("{0} quizzes imported")).replace("{0}", r.ids.length), "good"); reload();
+    } catch (e) { toast(e.message, "bad"); }
+    impFile.value = "";
+  } });
+  const impBtn = withImport ? [h("button.btn.ghost.new-quiz", { onclick: () => impFile.click() }, "📥 ", T("Import")), impFile] : [];
+  if (actions) actions.replaceChildren(...[...actions.children].filter(x => !x.classList.contains("new-quiz")), ...impBtn, Object.assign(newBtn, { className: newBtn.className + " new-quiz" }));
   const del = async q => {
-    if (!confirm(I18N.tr(T("Delete this quiz?")))) return;
+    if (!(await confirmDialog(I18N.tr(T("Delete this quiz?"))))) return;
     try { await api(`community/quizzes/${q.id}`, { method: "DELETE" }); reload(); } catch (e) { toast(e.message, "bad"); }
   };
   // a quiz running just now: open it – parents (and whoever leads it) can cancel it right here
   const running = live && Array.isArray(live.players) && live.status !== "done" ? live : null;
   const cancel = async () => {
-    if (!confirm(I18N.tr(T("Cancel the running quiz?")))) return;
+    if (!(await confirmDialog(I18N.tr(T("Cancel the running quiz?"))))) return;
     try { await api("community/quiz/abort", { method: "POST" }); toast(T("Quiz cancelled"), "good"); } catch (e) { toast(e.message, "bad"); }
     reload();
   };

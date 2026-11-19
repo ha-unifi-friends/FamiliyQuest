@@ -289,7 +289,7 @@ def test_family_table_simultaneous_coins_once_and_history(client):
     client.get("/api/community/wuerfel", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"wuerfel:{gid}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"wuerfel:{gid}:{mia}")["reason"] == "Fünf Würfel – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"wuerfel:{gid}:{mia}")["reason"] == "Five Dice – place 1"
     hist = fq.community.history(mia)
     assert hist[0]["kind"] == "wuerfel" and hist[0]["data"]["place"] == 1 and hist[0]["data"]["coins"] == 8
     assert fq.db.val("SELECT COUNT(*) FROM history WHERE kind='__family__'") in (0, 1)
@@ -338,7 +338,7 @@ def test_guests_join_and_play_but_cannot_lead(client):
     hm = login(client, mia, "1111")
     client.post("/api/community/wuerfel/start", json={"bots": 0}, headers=hm)
     inv = client.post("/api/community/guests", json={"game": "wuerfel"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Fünf Würfel"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Five Dice"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     for path in ("start", "begin", "end"):

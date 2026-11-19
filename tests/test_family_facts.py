@@ -173,6 +173,45 @@ def test_xp_only_with_the_family_view_everything(fq):
     assert not {"xp_most", "xp_total", "xp_week", "level_of", "coins_rich"} & set(g)
 
 
+def test_shop_pets_birthdays_coins_only_with_the_family_view_everything(fq):
+    ids = family(fq)
+    for _ in range(3):
+        fq.rewards.book(ids["Mia"], "coins", -50, "avatar", "Hut", "")
+    fq.rewards.book(ids["Leo"], "coins", -10, "redeem", "Ice cream", "redemption:1")
+    t = datetime.now().isoformat()
+    fq.db.x("INSERT INTO pet(profile_id, kind, name, born_at, updated_at) VALUES(?, 'cat', 'Minka', ?, ?)", ids["Mia"], t, t)
+    for i in range(4):
+        fq.rewards.book(ids["Leo"], "coins", -1, "slots_bet", "", "")
+    fq.rewards.book(ids["Leo"], "coins", 20, "slots_win", "", "")
+    for title, day in (("Mia", "2015-01-03"), ("Leo", "2017-06-20")):
+        fq.db.x("INSERT INTO family_event(kind, title, start, \"end\") VALUES('birthday', ?, ?, ?)", title, day, day)
+    g = gens(fq)
+    gated = {"shopping_queen", "shop_items", "pets_total", "birthday_next", "slots_spins", "slots_jackpot"}
+    assert gated <= set(g)
+    fq.db.set_setting("family_visibility", "percent")
+    assert not gated & set(gens(fq))
+    assert not [k for k in gens(fq) if k.startswith(("shop", "pet", "slots", "birthday"))]
+
+
+def test_guests_cannot_join_a_running_facts_quiz(client):
+    from tests.test_api import setup_family
+    ph, mia, leo = setup_family(client)
+    fq = client.app.state.fq
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    seed_for_api(fq, {"Mia": mia, "Leo": leo})
+    assert client.post("/api/community/quiz/facts/start", json={"count": 5}, headers=hm).status_code == 200
+    r = client.post("/api/community/guests", json={"game": "quiz"}, headers=hm)
+    code = r.json()["invite"]["code"]
+    r = client.post("/api/community/guest/join", json={"code": code, "name": "Oma"})
+    assert r.status_code == 400 and "Guests cannot join" in r.json()["detail"]
+    assert not fq.db.q("SELECT 1 FROM profile WHERE role='guest'")          # no guest profile left behind
+    gid = fq.db.x("INSERT INTO profile(name, role, archived) VALUES('Opa', 'guest', 2)")
+    with pytest.raises(CommunityError):
+        fq.community.join(gid)
+    fq.community.join(leo)                                                  # the family plays
+    assert leo in fq.community._game()["players"]
+
+
 def test_choose_count_variety_and_focus():
     cands = [{"gen": f"w{i}", "scope": "week", "q": "?", "right": "a", "wrong": ["b"]} for i in range(8)]
     cands += [{"gen": f"a{i}", "scope": "all", "q": "?", "right": "a", "wrong": ["b"]} for i in range(8)]

@@ -203,9 +203,15 @@ class Community:
             g = self._game()
             if not g:
                 raise CommunityError("No family quiz is running")
+            if pid not in g["players"] and self._guest_in_facts(g, pid):
+                raise CommunityError("Guests cannot join «Family Quest Facts» – its questions are about the family")
             if pid not in g["players"]:
                 g["players"].append(pid)
                 self.db.x("UPDATE quiz_game SET players=? WHERE id=?", json.dumps(g["players"]), g["id"])
+
+    def _guest_in_facts(self, g: dict, pid: int) -> bool:
+        from .facts import is_facts
+        return is_facts(g.get("quiz")) and self.db.val("SELECT role FROM profile WHERE id=?", pid) == "guest"
 
     def leave(self, pid: int) -> None:
         with self.lock:
@@ -551,11 +557,11 @@ class Community:
     def family_result(self, people: list, winners: list) -> None:
         """The end of a family game (at least two people of the family): the winners wear the «No. 1» hat until the
         next family game they play in; everybody else of the family at the table takes it off. Guests and bots do not count."""
-        ids = {int(p) for p in people if str(p).isdigit()}
+        ids = {int(p) for p in people if str(p).isdecimal()}
         rows = [r for r in self.db.q("SELECT id, role, settings FROM profile WHERE archived=0") if r["id"] in ids and r["role"] in ("kid", "parent")]
         if len(rows) < 2:
             return
-        win = {int(w) for w in winners if str(w).isdigit()} & {r["id"] for r in rows}
+        win = {int(w) for w in winners if str(w).isdecimal()} & {r["id"] for r in rows}
         if not win:                                     # nobody of the family won (a guest, a bot, or no points): no change
             return
         for r in rows:
@@ -567,10 +573,23 @@ class Community:
                     st.pop("champion", None)
                 self.db.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(st), r["id"])
 
-    def history(self, pid: int, limit: int = 50) -> list[dict]:
+    def history(self, pid: int, limit: int = 50, lang: str | None = None) -> list[dict]:
+        """The entries; the words of the word games (stored as English keys – older entries in German) in `lang`."""
         rows = self.db.q("SELECT id, kind, data, at FROM history WHERE profile_id=? ORDER BY id DESC LIMIT ?", pid, limit)
+        tr = None
         for r in rows:
             r["data"] = json.loads(r["data"])
+            d = r["data"]
+            if r["kind"] in ("werbinich", "zeichnen") and isinstance(d, dict):
+                if tr is None:
+                    from .gamewords import Words
+                    tr = Words(self.db).translator(lang or "en")
+                if r["kind"] == "werbinich" and isinstance(d.get("char"), str):
+                    from .whoami_data import legacy
+                    d["char"] = tr(legacy(d["char"]))
+                elif r["kind"] == "zeichnen" and isinstance(d.get("drawn"), list):
+                    from .zeichnen_data import legacy as zlegacy
+                    d["drawn"] = [tr(zlegacy(w)) if isinstance(w, str) else w for w in d["drawn"]]
         return rows
 
     # ================================================================ polls

@@ -14,7 +14,7 @@ const JA_MODES = { obe: ["⬇", T("Obenabe")], une: ["⬆", T("Undeufe")] };
 // the sign and the name of a game (a suit as trump, Obenabe, Undeufe)
 function jaMode(mode) {
   if (JA_MODES[mode]) return [JA_MODES[mode][0], I18N.tr(JA_MODES[mode][1])];
-  if (SWISS_SUITS[mode]) return [SWISS_SUITS[mode][0], SWISS_SUITS[mode][1]];
+  if (SWISS_SUITS[mode]) return [SWISS_SUITS[mode][0], I18N.tr(SWISS_SUITS[mode][1])];
   if (FRENCH_SUITS[mode]) return [FRENCH_SUITS[mode][0], I18N.tr(FRENCH_SUITS[mode][1])];
   return ["?", ""];
 }
@@ -32,7 +32,7 @@ function jassRulesView(r, rewards) {
     T("Points: Ass 11, König 4, Ober 3, Under 2, 10 10 – in Obenabe and Undeufe the 8 counts 8 (Undeufe: the 6 counts 11, the Ass nothing). The last trick +5: 157 per round, all 9 tricks (Match) +100."),
     r.weis !== false ? T("Weis with your first card: 3 in a row 20, 4 in a row 50, 5 in a row 100 (each more +50), 4 Under 200, 4 Nell 150, 4 Ass / König / Ober / 10 100. Only the team with the best Weis counts all of its Weis.") : null,
     r.stoeck !== false ? T("Stöck: König and Ober of trump in one hand – 20 points, always.") : null,
-    r.mult ? T("Multipliers: Rosen / Schellen (♥ ♦) ×1, Schilten / Eicheln (♠ ♣) ×2, Obenabe / Undeufe ×3.") : null,
+    r.mult ? T("Multipliers: Roses / Bells (♥ ♦) ×1, Shields / Acorns (♠ ♣) ×2, Obenabe / Undeufe ×3.") : null,
     r.goal === "rounds" ? I18N.tr(T("The team with more points after {0} rounds wins.")).replace("{0}", r.rounds)
       : I18N.tr(T("The first team with {0} points wins (counted at the end of a round).")).replace("{0}", r.target),
     rewards ? I18N.tr(T("Coins for each person of the family in the winning team: {0}")).replace("{0}", jaCoins(rewards[0])) : null,
@@ -45,7 +45,7 @@ async function jassStartDialog(solo, onStarted) {
   let r = {};
   try { r = await api("community/jass/rules"); } catch {}
   const sel = (v, list) => h("select", ...list.map(([k, n]) => h("option", { value: k, selected: String(v) === String(k) }, n)));
-  const deck = sel(r.deck || "swiss", [["swiss", T("Swiss cards (Schellen, Schilten, Rosen, Eicheln)")], ["french", T("French cards (♠ ♥ ♦ ♣)")]]);
+  const deck = sel(r.deck || "swiss", [["swiss", T("Swiss cards (Bells, Shields, Roses, Acorns)")], ["french", T("French cards (♠ ♥ ♦ ♣)")]]);
   const level = sel(r.level || "normal", [["easy", T("easy")], ["normal", T("normal")], ["hard", T("hard")]]);
   const goal = sel(r.goal === "rounds" ? "r" + r.rounds : "p" + (r.target || 1000),
     [...[500, 1000, 1500, 2500].map(n => ["p" + n, I18N.tr(T("{0} points")).replace("{0}", n)]),
@@ -73,7 +73,7 @@ async function jassStartDialog(solo, onStarted) {
     h("div.cards-rules",
       h("label.check", weis, T("Weis (declared with the first card)")),
       h("label.check", stoeck, T("Stöck (König + Ober of trump: 20)")),
-      h("label.check", mult, T("Multipliers: ×2 for Schilten / Eicheln (♠ ♣), ×3 for Obenabe / Undeufe")),
+      h("label.check", mult, T("Multipliers: ×2 for Shields / Acorns (♠ ♣), ×3 for Obenabe / Undeufe")),
       solo || !botsOn("jass") ? null : h("label.check", partners, T("Two people with two bots play together as partners"))),
     picker.el,
     h("div.field", h("b", T("Card back")), backPrev),
@@ -327,6 +327,5 @@ async function jassFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("jass") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("The Swiss card game Schieber: 2 against 2 with Trumpf, Obenabe and Undeufe, Weis and Stöck – with bots, the family and guests.")),
-         h("div.row.wrap", botsOn("jass") ? h("button.btn", { onclick: () => jassStartDialog(true, () => go("jass")) }, "🤖 ", T("With 3 bots")) : null,
-           h("button.btn.ghost", { onclick: () => jassStartDialog(false, () => go("jass")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("jass") ? () => jassStartDialog(true, () => go("jass")) : null, () => jassStartDialog(false, () => go("jass")))]);
 }

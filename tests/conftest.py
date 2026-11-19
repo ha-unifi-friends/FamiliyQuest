@@ -13,6 +13,16 @@ from familyquest.settings import BUILTIN_PACKS, Settings  # noqa: E402
 def pytest_configure(config):
     config.addinivalue_line("markers", "game_prices: the real default game prices, rents and free tries (gamepasses.py)")
     config.addinivalue_line("markers", "battery: the game battery switched on as by default (battery.py)")
+    config.addinivalue_line("markers", "dev_channel: run as the «Family Quest Dev» app (channel.py: the dev games exist)")
+
+
+@pytest.fixture(autouse=True)
+def _channel(request, monkeypatch):
+    """The tests run as the normal app (stable / beta: no dev games) – tests marked `dev_channel` as «Family Quest
+    Dev». FQ_TEST_CHANNEL=dev runs the whole suite as the dev app."""
+    from familyquest import channel
+    dev = request.node.get_closest_marker("dev_channel") or os.environ.get("FQ_TEST_CHANNEL") == "dev"
+    monkeypatch.setattr(channel, "_channel", "dev" if dev else "")
 
 
 @pytest.fixture(autouse=True)

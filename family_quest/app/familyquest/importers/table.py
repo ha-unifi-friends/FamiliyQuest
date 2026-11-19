@@ -10,6 +10,7 @@ from pathlib import Path
 from ..packs.loader import PackError
 from ..packs.schema import slug
 from .common import draft_from_dict, suggest_meta  # noqa: F401  (suggest_meta re-exported for the API)
+from ..i18n import _t
 
 TABLE_EXT = (".csv", ".tsv", ".xlsx", ".xlsm")
 GUESS = {
@@ -36,7 +37,7 @@ def _rows(name: str, raw: bytes) -> list[list[str]]:
         try:
             wb = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
         except Exception as e:  # noqa: BLE001 – openpyxl raises many types
-            raise PackError(f"Excel file cannot be read: {e}") from None
+            raise PackError(_t("Excel file cannot be read: {0}").replace("{0}", str(e))) from None
         ws = wb.worksheets[0]
         return [["" if v is None else str(v).strip() for v in row] for row in ws.iter_rows(values_only=True)]
     for enc in ("utf-8-sig", "cp1252", "latin-1"):

@@ -517,6 +517,10 @@ class HAService:
                     await asyncio.to_thread(self.fq.pets.tick)
                 except Exception:  # noqa: BLE001
                     log.exception("pet tick failed")
+                try:
+                    await asyncio.to_thread(self.fq.deals.tick)     # deals: missed taken-over chores, council results
+                except Exception:  # noqa: BLE001
+                    log.exception("deal tick failed")
 
     def _remind(self) -> None:
         if not self.connected:
@@ -751,6 +755,21 @@ class HAService:
             if st["entity_id"].startswith("person.") and a.get("user_id"):
                 out.append({"id": a["user_id"], "name": a.get("friendly_name") or st["entity_id"][7:], "person": st["entity_id"]})
         return sorted(out, key=lambda u: u["name"].lower())
+
+    def user_is_admin(self, uid: str) -> bool | None:
+        """Is this Home Assistant user an administrator? (Ingress opens the parent area only for them and linked
+        parents – other users get the children's app.) None = unknown (Home Assistant not reachable). Cached 5 min."""
+        cache = self.__dict__.setdefault("_admins", {})
+        hit = cache.get("users")
+        if not hit or time.time() - hit[0] > 300:
+            try:
+                users = self._sync(self.client.command({"type": "config/auth/list"}), 5)
+            except Exception as e:  # noqa: BLE001
+                log.warning("Home Assistant users not readable: %s", e)
+                return None
+            hit = cache["users"] = (time.time(), {u.get("id"): bool(u.get("is_admin") or "system-admin" in (u.get("group_ids") or []))
+                                                  for u in users or [] if isinstance(u, dict)})
+        return hit[1].get(uid, False) if hit[1] else None
 
     def todo_lists(self) -> list[dict]:
         """All to-do lists of Home Assistant with the integration they come from (e.g. «bring» for Bring!)."""

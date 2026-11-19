@@ -83,6 +83,18 @@ class Rewards:
     def balance(self, pid: int, account: str) -> float:
         return float(self.db.val("SELECT SUM(amount) FROM ledger WHERE profile_id=? AND account=?", pid, account, default=0))
 
+    def reserved(self, pid: int, account: str = "coins") -> float:
+        """Coins promised in a deal that stands (deals.py) and not paid yet – they cannot be spent meanwhile."""
+        if account != "coins":
+            return 0.0
+        return float(self.db.val("SELECT SUM(amount-paid) FROM deal_hold WHERE profile_id=? AND kind='coins' AND active=1",
+                                 pid, default=0) or 0)
+
+    def available(self, pid: int, account: str = "coins") -> float:
+        """The balance that can be spent: coins reserved in deals (deals.py) are not – every shop, game price, battery
+        recharge, pet cost … checks this one."""
+        return self.balance(pid, account) - self.reserved(pid, account)
+
     def balances(self, pid: int) -> dict[str, float]:
         out = {a["key"]: 0.0 for a in self.accounts()}
         for r in self.db.q("SELECT account, SUM(amount) s FROM ledger WHERE profile_id=? GROUP BY account", pid):
@@ -101,6 +113,13 @@ class Rewards:
             except Exception:  # noqa: BLE001
                 log.exception("book listener failed")
         return {"id": lid, "account": account, "amount": amount, "event": event, "reason": reason}
+
+    def book_once(self, pid: int, account: str, amount: float, event: str = "", reason: str = "", ref: str = "") -> dict | None:
+        """Book unless a ledger row with this ref exists – checked and booked in one transaction (None: booked before)."""
+        with self.db.tx():
+            if self.db.q1("SELECT 1 FROM ledger WHERE ref=?", ref):
+                return None
+            return self.book(pid, account, amount, event, reason, ref)
 
     def _add_daily(self, pid: int, xp: float = 0, seconds: int = 0, lessons: int = 0) -> None:
         d = today().isoformat()

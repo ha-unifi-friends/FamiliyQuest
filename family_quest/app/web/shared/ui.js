@@ -1,6 +1,21 @@
 // Small helpers shared by the children's app and the parent area. No framework, no build step.
 "use strict";
 
+// optional parts are passed as null / undefined / false everywhere (like in h()): the DOM methods would print them as
+// the text «null» – leave them out instead (append, prepend, replaceChildren, before, after, replaceWith)
+(() => {
+  const keep = x => x != null && x !== false;
+  for (const proto of [Element.prototype, DocumentFragment.prototype, CharacterData.prototype]) {
+    for (const k of ["append", "prepend", "replaceChildren", "before", "after", "replaceWith"]) {
+      const orig = proto[k];
+      if (typeof orig !== "function" || orig._fqKeep) continue;
+      const fn = function (...xs) { return orig.apply(this, xs.some(x => !keep(x)) ? xs.filter(keep) : xs); };
+      fn._fqKeep = true;
+      proto[k] = fn;
+    }
+  }
+})();
+
 // h("div.card#x", {onclick, translate: "no"}, child, "text", [more])
 function h(sel, attrs, ...kids) {
   if (attrs == null || typeof attrs !== "object" || attrs instanceof Node || Array.isArray(attrs)) { kids.unshift(attrs); attrs = {}; }
@@ -63,6 +78,8 @@ async function apiOnce(path, { method = "GET", body, form, parent = false } = {}
   // the parent area acts as the parent – a child still logged in on this device must not be used there
   if (Auth.kid && !window.FQ_PARENT_AREA) headers["X-FQ-Token"] = Auth.kid;
   if (Auth.parent) headers["X-FQ-Parent"] = Auth.parent;
+  // the language of the app: the word games show their words in it (familyquest/gamewords.py)
+  if (window.I18N && I18N.lang) headers["X-FQ-Lang"] = I18N.lang;
   let payload;
   if (form) payload = form;
   else if (body !== undefined) { headers["Content-Type"] = "application/json"; payload = JSON.stringify(body); }
@@ -76,7 +93,19 @@ async function apiOnce(path, { method = "GET", body, form, parent = false } = {}
     if (r.status === 403 && window.FQ_BATTERY_EMPTY && /^Your game battery is empty/.test(msg)) setTimeout(window.FQ_BATTERY_EMPTY, 300);
     throw new ApiError(r.status, msg);
   }
-  return data;
+  return botNamesTr(data);
+}
+
+// the built-in bots have German names (familyquest/cardgames.py, werwolf.py) – shown in the app language («Eule Olga» → «Chouette Olga»).
+// Names are drawn as content (translate="no"), so they are translated here, where the game states come in.
+const BOT_NAMES = new Set([T("Fuchs Fridolin"), T("Bär Bruno"), T("Eule Olga"), T("Frosch Fritz"), T("Katze Kiki"), T("Hase Hoppel"), T("Pinguin Pino"),
+  T("Igel Ida"), T("Maus Mimi"), T("Dachs Dani"), T("Reh Rosi"), T("Biber Benno")]);
+function botNamesTr(v, depth = 0) {
+  if (typeof v === "string") return BOT_NAMES.has(v) ? I18N.tr(v) : v;
+  if (!v || typeof v !== "object" || depth > 8 || I18N.lang === "en") return v;
+  if (Array.isArray(v)) { for (let i = 0; i < v.length; i++) if (v[i] && (typeof v[i] === "object" || BOT_NAMES.has(v[i]))) v[i] = botNamesTr(v[i], depth + 1); return v; }
+  for (const k in v) { const x = v[k]; if (x && (typeof x === "object" || BOT_NAMES.has(x))) v[k] = botNamesTr(x, depth + 1); }
+  return v;
 }
 
 // ---------------------------------------------------------------- feedback
@@ -88,6 +117,14 @@ function toast(msg, kind = "") {
   setTimeout(() => t.classList.add("out"), 2600);
   setTimeout(() => t.remove(), 3100);
 }
+
+// a hint only in a tooltip (title) cannot be read on a phone: a tap on such a small badge (🔥 streak, 👑, 🔒 …) shows it
+document.addEventListener("click", e => {
+  const el = e.target.closest && e.target.closest("[title]");
+  if (!el || el.closest("button, a, input, select, textarea, label, summary, [role=button], .modal-back, .drawer, svg") || !el.title.trim()) return;
+  if (getSelection && String(getSelection()).length) return;          // selecting text
+  toast(el.title);
+});
 
 const Sound = {
   ctx: null,
@@ -286,16 +323,100 @@ function symbolPad({ title, symbols, mode = "enter", length = 4, onSubmit, cance
   return box;
 }
 
+// keyboard and screen readers in a dialog or a drawer: focus goes in (the first control – on touch screens the dialog
+// itself, so no keyboard pops up), Tab stays inside, Escape closes the topmost one only, focus returns to the opener
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+function focusTrap(back, box, close) {
+  const opener = document.activeElement;
+  const items = () => [...box.querySelectorAll(FOCUSABLE)].filter(e => e.getClientRects().length && !e.closest("[hidden], [inert]"));
+  const top = () => [...document.querySelectorAll(".modal-back, .drawer-back")].pop() === back;
+  const key = e => {
+    if (!back.isConnected) return release();
+    if (!top()) return;
+    if (e.key === "Escape") { e.preventDefault(); close(); return; }
+    if (e.key !== "Tab") return;
+    const l = items();
+    if (!l.length) { e.preventDefault(); box.focus(); return; }
+    const i = l.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); l[l.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === l.length - 1)) { e.preventDefault(); l[0].focus(); }
+  };
+  const release = (restore = true) => {
+    document.removeEventListener("keydown", key);
+    if (restore && opener && opener.isConnected && typeof opener.focus === "function" && !document.querySelector(".modal-back, .drawer-back")) opener.focus({ preventScroll: true });
+  };
+  document.addEventListener("keydown", key);
+  if (!box.hasAttribute("tabindex")) box.tabIndex = -1;
+  requestAnimationFrame(() => {
+    if (!back.isConnected || box.contains(document.activeElement)) return;
+    const auto = box.querySelector("[autofocus]");
+    const first = auto || (matchMedia("(pointer: coarse)").matches ? null : items().find(e => e.tagName !== "SUMMARY"));
+    (first || box).focus({ preventScroll: true });
+  });
+  return release;
+}
+
 function modal(content, { onClose, wide = false } = {}) {
   const back = h("div.modal-back", { onclick: e => { if (e.target === back) close(); } });
   const box = h("div.modal" + (wide ? ".wide" : ""), { role: "dialog", "aria-modal": "true" }, content);
   back.append(box);
-  const close = () => { back.remove(); document.removeEventListener("keydown", esc); onClose && onClose(); };
-  const esc = e => { if (e.key === "Escape") close(); };
-  document.addEventListener("keydown", esc);
+  let release = null;
+  const close = () => { if (!back.isConnected) return; back.remove(); release && release(); onClose && onClose(); };
   back.addEventListener("cancel", close);
   document.body.append(back);
+  release = focusTrap(back, box, close);
   return { close, box };
+}
+
+// the app's own «OK / Cancel» and «enter a name» dialogs instead of the browser's confirm() / prompt() (those look
+// foreign, block the page and cannot be styled): await confirmDialog(text) → true / false; await promptDialog(text, value) → text / null
+function confirmDialog(msg, { ok = T("OK"), cancel = T("Cancel"), danger = null } = {}) {
+  const text = I18N.tr(msg);
+  if (danger == null) danger = /delete|remove|end|resign|give up|reset|replace|clear|throw|lösch|entfern/i.test(String(msg));
+  return new Promise(resolve => {
+    let answer = false;
+    const done = v => { answer = v; m.close(); };
+    const m = modal(h("div.form.ask-dlg", h("p.ask-text", text),
+      h("div.row.ask-btns", h("button.btn" + (danger ? ".bad" : ""), { type: "button", autofocus: true, onclick: () => done(true) }, I18N.tr(ok)),
+        h("button.btn.ghost", { type: "button", onclick: () => done(false) }, I18N.tr(cancel)))), { onClose: () => resolve(answer) });
+    m.box.setAttribute("role", "alertdialog");
+  });
+}
+function promptDialog(msg, value = "", { ok = T("OK"), cancel = T("Cancel"), maxLength = 200 } = {}) {
+  return new Promise(resolve => {
+    let answer = null;
+    const input = h("input", { type: "text", value: value == null ? "" : String(value), maxLength, autofocus: true,
+      onkeydown: e => { if (e.key === "Enter") { e.preventDefault(); done(input.value); } } });
+    const done = v => { answer = v; m.close(); };
+    const m = modal(h("div.form.ask-dlg", h("label.field", h("span.ask-text", I18N.tr(msg)), input),
+      h("div.row.ask-btns", h("button.btn", { type: "button", onclick: () => done(input.value) }, I18N.tr(ok)),
+        h("button.btn.ghost", { type: "button", onclick: () => done(null) }, I18N.tr(cancel)))), { onClose: () => resolve(answer) });
+    requestAnimationFrame(() => input.select());
+  });
+}
+
+// tabs (e.g. a long dialog in parts): tabbed([{ key, label, content: [...] }]) → { el, bar, show(key), setVisible(key, on), reveal(el) }
+function tabbed(tabs) {
+  const btns = {}, panes = {};
+  let cur = null;
+  const order = tabs.map(t => t.key);
+  const visible = k => !btns[k].hidden;
+  const show = k => {
+    if (!panes[k]) return;
+    cur = k;
+    for (const x of order) { const on = x === k; btns[x].setAttribute("aria-selected", String(on)); btns[x].tabIndex = on ? 0 : -1; panes[x].hidden = !on; }
+    btns[k].scrollIntoView({ block: "nearest", inline: "nearest" });
+  };
+  const move = (k, d) => { const l = order.filter(visible); const n = l[(l.indexOf(k) + d + l.length) % l.length]; show(n); btns[n].focus(); };
+  const bar = h("div.tabbar", { role: "tablist" }, ...tabs.map(t => (btns[t.key] = h("button.tab", { type: "button", role: "tab", id: "tab-" + t.key,
+    onclick: () => show(t.key), onkeydown: e => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); move(t.key, e.key === "ArrowRight" ? 1 : -1); } } }, t.label))));
+  for (const t of tabs) panes[t.key] = h("div.tab-pane", { role: "tabpanel", "aria-labelledby": "tab-" + t.key }, ...[].concat(t.content));
+  show(order[0]);
+  return {
+    el: h("div.tabbed", bar, ...order.map(k => panes[k])), bar, show,
+    setVisible: (k, on) => { btns[k].hidden = !on; if (!on && cur === k) show(order.find(visible)); },
+    reveal: el => { const k = order.find(x => panes[x].contains(el)); if (k) { btns[k].hidden = false; show(k); } },
+  };
 }
 
 function themeInit() {
@@ -413,7 +534,9 @@ function crestSvg(c, { ribbon = true } = {}) {
 
 // ---------------------------------------------------------------- ☰ the menu of the app (also on the planner page)
 const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learning")], ["deck", "📇", T("My card box")], ["shop", "🛍️", T("Shop")],
-  ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]];
+  ...(window.FQ_STORIES === false ? [] : [["stories", "📚", T("Library")]]),       // stories.js – off per child (kid.js)
+  ["avatar", "🧑‍🎨", T("Me")], ["family", "👨‍👩‍👧", T("Family")], ["deals", "🤝", T("Deals")], ["games", "🎲", T("Games")], ["planer", "📅", T("Planner")]]
+  .filter(([k]) => k !== "deals" || !window.FQ_DEALS_OFF);      // deals (deals.js): hidden when trading is off for this profile
 
 // ---------------------------------------------------------------- ☰ in a running game: rules, guests, actions, language
 // gameMenu({ rules, invite, actions, onLeave }) → the ☰ button for the header of a live game.
@@ -427,8 +550,8 @@ function gameMenu({ rules = null, invite = null, actions = [], onLeave = null } 
 }
 
 function openGameMenu({ rules, invite, actions, onLeave }) {
-  const close = () => { back.remove(); document.removeEventListener("keydown", esc); window.removeEventListener("hashchange", close); };
-  const esc = e => { if (e.key === "Escape") close(); };
+  let release = null;
+  const close = () => { back.remove(); release && release(); window.removeEventListener("hashchange", close); };
   window.addEventListener("hashchange", close);              // another page: the menu of the game goes away
   const item = (ic, label, fn, cls = "") => h("button.drawer-item" + cls, { onclick: () => { close(); fn(); } }, h("span.foot-ic", ic), h("span", label));
   const showRules = () => { const view = typeof rules === "function" ? rules() : rules;
@@ -441,13 +564,13 @@ function openGameMenu({ rules, invite, actions, onLeave }) {
     h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", T("Game"))),
     rules ? item("📜", T("Rules"), showRules) : null,
     invite ? item("👥", T("Invite guests"), () => guestInvite(...[].concat(invite))) : null,
-    ...acts.map(a => item(a.ic || "▶", a.label, () => { if (a.confirm && !confirm(I18N.tr(a.confirm))) return; a.onclick(); }, a.danger ? ".danger" : "")),
+    ...acts.map(a => item(a.ic || "▶", a.label, async () => { if (a.confirm && !(await confirmDialog(I18N.tr(a.confirm)))) return; a.onclick(); }, a.danger ? ".danger" : "")),
     h("hr"),
     footLang(), footTheme(), soundItem,
     onLeave ? item("🚪", T("Leave the game"), onLeave) : null);
   const back = h("div.drawer-back.game-menu-back", { onclick: e => { if (e.target === back) close(); } }, drawer);
   document.body.append(back);
-  document.addEventListener("keydown", esc);
+  release = focusTrap(back, drawer, close);
   requestAnimationFrame(() => back.classList.add("open"));
 }
 
@@ -497,14 +620,39 @@ async function downloadApi(path, name) {
   } catch (e) { toast(e.message, "bad"); }
 }
 
-function aiTemplateButtons(kind) {
-  const url = `api/ai-template/${kind}`;
-  return h("div.row.wrap",
-    h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: url, download: `family-quest-${kind}-template.json` }, "⬇️ ", T("Template for the AI")),
-    h("button.btn.small.ghost", { onclick: async () => {
-      try { await navigator.clipboard.writeText(await (await fetch(url)).text()); toast(T("Copied – paste it into the chat of your AI"), "good"); }
-      catch { toast(T("Copying did not work – use the download"), "bad"); }
-    } }, "📋 ", T("Copy for the AI")));
+// «Made with your AI» (packs, quizzes, books, adventure games): one example prompt for an AI chat – a monospace block with
+// the parts to fill in [like this] highlighted, «📋 Copy prompt» (the prompt + the template in one go, the template is a
+// self-describing JSON: familyquest/ai_format.py, stories.py, picturebooks.py, adventuregame.py) and «⬇️ Template»
+function aiPromptBox(promptText, { template, name } = {}) {
+  const text = I18N.tr(promptText) + (template ? "\n" + I18N.tr(T("Use exactly the format of the attached Family Quest template and answer only with the JSON.")) : "");
+  const pre = h("pre.ai-prompt-text", { translate: "no", tabindex: "0" },
+    ...text.split(/(\[[^\]\n]+\])/).map((p, i) => i % 2 ? h("mark.ai-ph", p) : p));
+  let tplText = null, tplLoad = null;          // fetched ahead: the copy itself happens right in the tap (Safari, http)
+  const load = () => tplLoad || (tplLoad = !template ? Promise.resolve("") :
+    fetch(template).then(r => r.ok ? r.text() : "").catch(() => "").then(t => (tplText = t)));
+  load();
+  const selectPrompt = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); pre.focus(); };
+  const copy = async () => {
+    if (tplText == null) await load();
+    const all = text + (tplText ? "\n\n" + tplText : "");
+    let ok = false;
+    try { await navigator.clipboard.writeText(all); ok = true; } catch {}
+    if (!ok) {                                  // no clipboard API (plain http in the home network): the old way
+      const ta = h("textarea", { readonly: true, style: { position: "fixed", top: "0", left: "0", opacity: "0", width: "1px", height: "1px" } });
+      ta.value = all; (pre.closest("dialog, .modal") || document.body).append(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+    }
+    if (ok) return toast(I18N.tr(tplText ? T("Copied – paste it into the chat of your AI") : T("Copied")), "good");
+    selectPrompt();
+    toast(I18N.tr(T("Copying is blocked here – the prompt is selected: copy it yourself and attach the template file.")), "bad");
+  };
+  return h("div.ai-prompt",
+    h("div.ai-prompt-head", h("b", "💬 ", T("Example prompt")),
+      h("button.btn.small.ai-copy", { type: "button", onclick: copy }, "📋 ", T("Copy prompt"))),
+    pre,
+    template ? h("p.small.muted", T("«Copy prompt» copies the prompt together with the template. Paste it into the chat of your AI (ChatGPT, Claude, Gemini …) and replace the highlighted [parts].")) : null,
+    template ? h("div.row.wrap", h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: template, download: name || "family-quest-template.json" }, "⬇️ ", T("Template for the AI"))) : null);
 }
 
 // link to the parent area: when it is only offered in Home Assistant, straight to the Family Quest panel there
@@ -523,8 +671,8 @@ async function parentAreaHref() {
 }
 
 function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, onSeason = null }) {
-  const close = () => { back.remove(); document.removeEventListener("keydown", esc); };
-  const esc = e => { if (e.key === "Escape") close(); };
+  let release = null;
+  const close = () => { back.remove(); release && release(); };
   const soundItem = h("button.foot-item", { onclick: () => { Sound.on = !Sound.on; drawSound(); } });
   const drawSound = () => soundItem.replaceChildren(h("span.foot-ic", Sound.on ? "🔊" : "🔇"), h("span", Sound.on ? T("Sound on") : T("Sound off")));
   drawSound();
@@ -533,7 +681,8 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   const parentItem = h("a.foot-item.parent-item", { href: "eltern" }, h("span.foot-ic", "🔐"), h("span", T("Parent area")));
   const drawer = h("nav.drawer", { role: "dialog", "aria-label": T("Menu") },
     h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", "Family Quest")),
-    ...APP_NAV().map(([k, ic, n]) => h("button.drawer-item" + (k === active ? ".on" : ""), { onclick: () => { close(); onGo(k); } }, h("span.foot-ic", ic), h("span", n))),
+    ...APP_NAV().map(([k, ic, n]) => h("button.drawer-item" + (k === active ? ".on" : ""), { onclick: () => { close(); onGo(k); } }, h("span.foot-ic", ic), h("span", n),
+      (window.FQ_NAV_BADGES || {})[k] ? h("span.deal-badge", String(window.FQ_NAV_BADGES[k])) : null)),
     h("hr"),
     footLang(), footTheme(), soundItem, seasonItem,
     h("button.foot-item", { onclick: () => { close(); onLogout(); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),
@@ -541,8 +690,16 @@ function openAppMenu({ active, onGo, onLogout, season = null, seasonOn = true, o
   parentAreaHref().then(href => { parentItem.href = href; });
   const back = h("div.drawer-back", { onclick: e => { if (e.target === back) close(); } }, drawer);
   document.body.append(back);
-  document.addEventListener("keydown", esc);
+  release = focusTrap(back, drawer, close);
   requestAnimationFrame(() => back.classList.add("open"));
+}
+
+// the card of a game (app › Games): the same two choices in the same order everywhere – «🤖 Alone against bots» (the
+// main button; null when bots are switched off for the game) and «👨‍👩‍👧 Open a family table»
+function gameStartRow(solo, table, { bots = true } = {}) {
+  return h("div.row.wrap.game-start-row",
+    solo ? h("button.btn", { onclick: solo }, bots ? "🤖 " : "🙋 ", bots ? T("Alone against bots") : T("Alone")) : null,
+    h("button.btn" + (solo ? ".ghost" : ""), { onclick: table }, "👨‍👩‍👧 ", T("Open a family table")));
 }
 
 // a game page opened directly (link, bookmark) while no table is open: in the app the child can open one right here –
@@ -556,6 +713,7 @@ function noTableActions(game, back) {
     jass: () => jassStartDialog(false, again), kartenlauf: () => kartenlaufStartDialog(false, again), klatsch: () => klatschStartDialog(false, again),
     paarjagd: () => paarjagdStartDialog(false, again), song: () => songStartDialog(again), stadtland: () => stadtlandStartDialog(again),
     verboten: () => verbotenStartDialog(again), werwolf: () => werwolfStartDialog(again), werbinich: () => werbinichStartDialog(again),
-    wuerfel: () => wuerfelStartDialog(false, again), zeichnen: () => zeichnenStartDialog(again) }[game];
+    wuerfel: () => wuerfelStartDialog(false, again), zeichnen: () => zeichnenStartDialog(again),
+    stempeljagd: () => stempeljagdStartDialog(false, again) }[game];
   return h("div.row.center.wrap", fn ? h("button.btn", { onclick: () => fn() }, "👨‍👩‍👧 ", T("Open a family table")) : null, backBtn);
 }

@@ -4,15 +4,17 @@ from __future__ import annotations
 import json
 import random
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from .api.auth import Throttle, Tokens
 from .bingo import Bingo
 from .poker import Poker
 from .cardgames import CardGames
+from .channel import ChannelGames, feature_visible
 from .community import Community
 from .chores import Chores
 from .internet import InternetTime
+from . import memo
 from .db import Database, profile_settings
 from . import timelimits
 from .learning.lesson import Learning
@@ -74,6 +76,8 @@ class FamilyQuest:
         self.snack = Snack(self.db, self.community.add_history, self.rewards)
         from .verkehr import Verkehr
         self.verkehr = Verkehr(self.db, self.community.add_history, self.rewards)
+        from .langstrecke import Langstrecke
+        self.langstrecke = Langstrecke(self.db, self.community.add_history, self.rewards)
         from .klatsch import Klatsch
         self.klatsch = Klatsch(self.db, self.community.add_history, self.rewards)
         from .verboten import Verboten
@@ -88,9 +92,11 @@ class FamilyQuest:
         self.dorfmarkt = Dorfmarkt(self.db, self.community.add_history, self.rewards)
         from .escape import Escape
         self.escape = Escape(self.db, self.community.add_history, self.rewards)
+        from .stempeljagd import Stempeljagd
+        self.stempeljagd = Stempeljagd(self.db, self.community.add_history, self.rewards)   # «Beat the Bureaucracy»
         # games without bots (parent area › Games): the engines ask before bots take a seat (cardgames.CardGames.bots_off)
-        for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.snack, self.verkehr, self.klatsch,
-                    self.jass, self.werwolf, self.dorfmarkt):
+        for eng in (self.cards, self.domino, self.paarjagd, self.kartenlauf, self.wuerfel, self.heimwaerts, self.jump, self.sternlauf, self.snack, self.verkehr, self.langstrecke, self.klatsch,
+                    self.jass, self.werwolf, self.dorfmarkt, self.stempeljagd):
             eng.no_bots = self.table_without_bots
         from .songquiz import SongQuiz
         self.lan_base = None      # http://<Home Assistant IP>:<port of the direct access> – for sounds on speakers
@@ -121,6 +127,14 @@ class FamilyQuest:
         self.wichteln = Wichteln(self.db, lambda: self.planer_host)
         from .boards import Boards
         self.boards = Boards(self.db)
+        from .stories import Stories
+        self.stories = Stories(self.db, self.rewards, settings.media_dir)
+        # the adventure games of the library are a game of their own (parent area › Games): switched off for a child,
+        # it can neither play nor write them – parents always
+        self.stories.games_ok = lambda prof: prof.get("role") == "parent" or "adventuregame" in self.games_for(prof)
+        from .codelab import Codelab
+        self.codelab = Codelab(self.db, self.rewards)              # 💡 Code Workshop (codelab.py) – learning time
+        self.codelab.hours_ok = self._learning_hours_ok
         from .duel import Duels
         self.duels = Duels(lambda pid: (self.db.q1("SELECT name FROM profile WHERE id=?", pid) or {"name": "?"})["name"])
         from .pong4 import Doubles
@@ -131,6 +145,10 @@ class FamilyQuest:
         self.guests = Guests(self)
         self.calendar = FamilyCalendar(self)
         self.familytime = FamilyTimeGames(self)
+        from .deals import Deals
+        self.deals = Deals(self)                                    # children trade with each other and with parents (deals.py)
+        self.chores.deals = self.deals
+        self.pets.locked = lambda pet_id: self.deals.locked("pet", pet_id)
         self.internet.offline = lambda pid: self.calendar.blocks(pid, "internet")
         self.shop.internet = self.internet
         self.tokens = Tokens(settings.secret)
@@ -139,6 +157,15 @@ class FamilyQuest:
         self.ha = None            # set by main when Home Assistant is available (ha.service.HAService)
         self.planer_host = None   # Family Planer core (planer.host.PlanerHost), started by main
         self.on_mood: list = []   # fn(profile_row) – a child set its avatar to «sad»
+
+    def _learning_hours_ok(self, prof: dict) -> bool:
+        """Within the learning hours of the profile (profile setting «learning_hours», as for the lessons)?"""
+        from .learning.lesson import LearnError, Learning
+        try:
+            Learning._check_hours(profile_settings(prof))
+        except LearnError:
+            return False
+        return True
 
     def _away_days(self, pid: int) -> set[str]:
         """Days the Family Planer has this profile away on holiday («away» decision) – pet care pauses then."""
@@ -172,8 +199,15 @@ class FamilyQuest:
 
     # the games that can be played with bots (alone against bots, bots at the table, chess / Tic-Tac-Toe / Ping-Pong
     # against the computer, Werwölfe filled up with bots) – the parents can switch the bots off per game
-    BOT_GAMES = ("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "ttt", "pingpong")
-    GAMES = ("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "ttt", "sudoku", "patience", "pingpong", "slots", "cube")
+    # games still in development (channel.DEV_GAMES) are left out outside the dev channel
+    BOT_GAMES = ChannelGames(("poker", "tschau", "karussell", "domino", "paarjagd", "kartenlauf", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "jass", "werwolf", "schach", "dorfmarkt", "stempeljagd", "ttt", "pingpong"))
+    GAMES = ChannelGames(("quiz", "bingo", "song", "poker", "tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd", "ttt", "sudoku", "patience", "pingpong", "slots", "cube",
+                          "adventuregame"))
+    # games that were open before they became a game of their own (the adventure games of the library): open when the
+    # parents never decided on them – not switched off like a really new game after an update
+    OPEN_WHEN_NEW = frozenset({"adventuregame"})
+    # games without coins: no price, no rent (the adventure games – content of the family, like the library)
+    FREE_GAMES = frozenset({"adventuregame"})
 
     def _login_fingerprint(self, pid: int) -> str | None:
         p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
@@ -183,6 +217,10 @@ class FamilyQuest:
         return hashlib.sha256(f"{p['created_at']}|{p['pin_hash'] or ''}|{p['archived']}".encode()).hexdigest()[:12]
 
     def games_access(self) -> dict:
+        """_games_access once per request (memo.py) – a copy per call (the parent area changes and saves it)."""
+        return {g: dict(a) for g, a in memo.get("games_access", self._games_access).items()}
+
+    def _games_access(self) -> dict:
         """Per game: {"mode": all | some | off, "profiles": [...], "bots": bool, "price": coins, "rent": coins,
         "period": day | week | month} (+ "luck" 1–10 for the one-armed bandit) – from the older single switch when not
         set yet. Price and rent: what a child pays to buy / rent the game (gamepasses.py) – 0 and 0 = free; "preview":
@@ -212,6 +250,8 @@ class FamilyQuest:
                    "preview": num(a.get("preview", gp.DEFAULT_PREVIEW), gp.DEFAULT_PREVIEW, 0, gp.MAX_PREVIEW)}
             if g == "slots":
                 out["luck"] = num(a.get("luck", DEFAULT_LUCK), DEFAULT_LUCK, 1, 10)
+            if g in self.FREE_GAMES:
+                out.update(price=0, rent=0)
             return out
         if not acc:
             mode = self.db.get_setting("games") or "all"
@@ -221,7 +261,7 @@ class FamilyQuest:
         # open – if they restricted any game, a new one starts switched off until they decide
         stored = [(acc.get(g) or {}).get("mode", "all") for g in self.GAMES if g in acc]
         new_mode = "all" if all(m == "all" for m in stored) else "off"
-        return {g: {"mode": (acc.get(g) or {}).get("mode", "all") if g in acc else new_mode,
+        return {g: {"mode": (acc.get(g) or {}).get("mode", "all") if g in acc else "all" if g in self.OPEN_WHEN_NEW else new_mode,
                     "profiles": list((acc.get(g) or {}).get("profiles") or []),
                     "bots": (acc.get(g) or {}).get("bots") is not False or g not in self.BOT_GAMES,
                     **money(g, acc.get(g) or {})} for g in self.GAMES}
@@ -240,7 +280,7 @@ class FamilyQuest:
         """For the game engines: may no bot sit at this table? Not when a parent plays along (parents decide)."""
         if (self.games_access().get(kind) or {}).get("bots", True):
             return False
-        ids = [int(x) for x in people if str(x).isdigit()]
+        ids = [int(x) for x in people if str(x).isdecimal()]
         if ids and self.db.q1(f"SELECT id FROM profile WHERE role='parent' AND id IN ({','.join('?' * len(ids))})", *ids):
             return False
         return True
@@ -260,9 +300,16 @@ class FamilyQuest:
         p = self.party_for(prof)
         return bool(p and p["limits"])
 
+    def game_status(self, prof: dict, now: datetime | None = None) -> dict:
+        """The daily game time as the app, the parent area and Home Assistant show it: {"left": minutes (None:
+        unlimited – parents, no limit, a party that lifts the limits), "unlimited", "used_up", "party"}."""
+        lifted = prof.get("role") == "kid" and self.party_lifts(prof)
+        left = None if lifted else timelimits.left(self.db, prof, "game", now)
+        return {"left": left, "unlimited": left is None, "used_up": left == 0, "party": lifted}
+
     def game_used_up(self, prof: dict) -> bool:
         """The daily game time of this child is used up (not during a party that lifts the limits)."""
-        return timelimits.used_up(self.db, prof, "game") and not self.party_lifts(prof)
+        return self.game_status(prof)["used_up"]
 
     def use_charge(self, prof: dict, game: str) -> tuple[str | None, int | None]:
         """Starting a game costs a segment of the game battery (battery.py): "free", "same", "new" (+ log id) or None."""
@@ -279,9 +326,10 @@ class FamilyQuest:
         blk = self.internet.block(prof)                            # block time of the internet plan: games or the whole app
         return bool(blk and (blk["mode"] == "app" or (blk["mode"] == "games" and not lift)))
 
-    def games_open_to(self, prof: dict) -> list[str]:
-        """The games the parents switched on for this profile (parent area › Games) – price, time and blocks aside."""
-        if prof["role"] == "parent" or self.party_unlocks(prof):     # party mode «unlock all games»
+    def games_open_to(self, prof: dict, party: bool = True) -> list[str]:
+        """The games the parents switched on for this profile (parent area › Games) – price, time and blocks aside.
+        `party`: the party mode «unlock all games» opens all of them (not for buying or renting: that is for good)."""
+        if prof["role"] == "parent" or (party and self.party_unlocks(prof)):     # party mode «unlock all games»
             return list(self.GAMES)
         return [g for g, a in self.games_access().items() if a["mode"] == "all" or (a["mode"] == "some" and prof["id"] in a["profiles"])]
 
@@ -320,7 +368,7 @@ class FamilyQuest:
         – None for parents, games switched off for the child, free or unlocked games and while games are blocked."""
         if prof.get("role") != "kid" or game not in self.GAMES or self._games_blocked(prof, time):
             return None
-        if game not in self.games_open_to(prof):
+        if self.party_unlocks(prof) or game not in self.games_open_to(prof):    # party «all games open»: no try needed
             return None
         a = self.games_access()[game]
         from .gamepasses import priced
@@ -399,6 +447,7 @@ class FamilyQuest:
         out["sternlauf"] = self.sternlauf.summary("sternlauf", pid) if "sternlauf" in ok else None
         out["snack"] = self.snack.summary("snack", pid) if "snack" in ok else None
         out["verkehr"] = self.verkehr.summary("verkehr", pid) if "verkehr" in ok else None
+        out["langstrecke"] = self.langstrecke.summary("langstrecke", pid) if "langstrecke" in ok else None
         out["klatsch"] = self.klatsch.summary("klatsch", pid) if "klatsch" in ok else None
         out["verboten"] = self.verboten.summary("verboten", pid) if "verboten" in ok else None
         out["jass"] = self.jass.summary("jass", pid) if "jass" in ok else None
@@ -406,6 +455,7 @@ class FamilyQuest:
         out["schach"] = self.schach.summary("schach", pid) if "schach" in ok else None
         out["dorfmarkt"] = self.dorfmarkt.summary("dorfmarkt", pid) if "dorfmarkt" in ok else None
         out["escape"] = self.escape.summary("escape", pid) if "escape" in ok else None
+        out["stempeljagd"] = self.stempeljagd.summary("stempeljagd", pid) if "stempeljagd" in ok else None
         out["duel"] = self.duels.summary(pid) if "ttt" in ok else None
         out["pong4"] = self.pong4.summary(pid) if "pingpong" in ok else None
         out["boards_new"] = self.boards.new_count(pid)       # bulletin boards: not a game, for everybody of the family
@@ -483,6 +533,12 @@ class FamilyQuest:
             "pets": self.pets.summary(pid),
             "battery": self.battery.state(prof),              # game battery (battery.py) – None for parents
             "party": self.party_public(prof),                 # party mode for this child (banner, disco theme)
+            "deals": self.deals.summary(prof),                # deals waiting for an answer, news (deals.py)
+            "coins_reserved": self.rewards.reserved(pid),     # promised in a deal that stands – cannot be spent
+            "coins_available": self.rewards.available(pid),   # what can be spent («enough coins?» in the app)
+            "stories": self.stories.enabled_for(prof),        # adventure books (stories.py) – off per child by the parents
+            # 💡 Code Workshop (codelab.py) – only in the dev channel (channel.DEV_FEATURES), off per child by the parents
+            "codelab": feature_visible("codelab") and self.codelab.enabled_for(prof),
         }
 
     def party_public(self, prof: dict) -> dict | None:
@@ -496,7 +552,7 @@ class FamilyQuest:
         """Minutes left today: family games, learning, internet – None = unlimited (parents always)."""
         net = self.internet.state(prof) if prof.get("role") == "kid" else None
         unlimited = not net or (net.get("budget") or {}).get("unlimited")
-        return {"games": None if self.party_lifts(prof) else timelimits.left(self.db, prof, "game"), "learn": timelimits.left(self.db, prof, "learn"),
+        return {"games": self.game_status(prof)["left"], "learn": timelimits.left(self.db, prof, "learn"),
                 "internet": None if unlimited else net["minutes"]}
 
     def _offline_lock(self, prof: dict) -> dict | None:

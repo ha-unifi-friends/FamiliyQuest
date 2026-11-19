@@ -16,7 +16,7 @@ import httpx
 import yaml
 from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from ..weather import WeatherError
 from ..dashboard import DashboardError
@@ -31,7 +31,8 @@ from ..packs.registry import SUBJECTS, subject_meta
 from .. import loginlog, netfilter, symbols
 from ..rewards.engine import BADGES, EVENTS
 from ..rewards.shop import KINDS, ShopError
-from .auth import INGRESS_IP, Parent, PARENT_MAX_AGE, app_of, check_pin, hash_pin, valid_pin
+from .auth import INGRESS_IP, Parent, PARENT_MAX_AGE, app_of, check_pin, ha_user, hash_pin, profile_of_ha_user, valid_pin
+from ..i18n import _t
 
 router = APIRouter(prefix="/api/parent")
 
@@ -79,7 +80,12 @@ class AccountIn(BaseModel):
     sort: int = 0
 
 
-class RuleIn(BaseModel):
+class FiniteIn(BaseModel):
+    """Amounts and costs: JSON may carry Infinity / NaN (or 1e999) – refused (422), a ledger sum would break."""
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
+class RuleIn(FiniteIn):
     event: str
     account: str
     amount: float
@@ -89,7 +95,7 @@ class RuleIn(BaseModel):
     active: bool = True
 
 
-class RewardIn(BaseModel):
+class RewardIn(FiniteIn):
     name: str
     kind: str = "voucher"
     account: str = "coins"
@@ -107,7 +113,7 @@ class DecideIn(BaseModel):
     note: str = ""
 
 
-class GoalIn(BaseModel):
+class GoalIn(FiniteIn):
     profile_id: int | None = None
     kind: str = "unit"
     title: str = ""
@@ -118,7 +124,7 @@ class GoalIn(BaseModel):
     active: bool = True
 
 
-class BookIn(BaseModel):
+class BookIn(FiniteIn):
     profile_id: int
     account: str
     amount: float
@@ -136,23 +142,22 @@ class UrlIn(BaseModel):
 
 
 # ---------------------------------------------------------------- login
-def ha_user(request: Request) -> dict | None:
-    """The Home Assistant user – only trusted when the request really comes through Home Assistant ingress
-    (the Supervisor proxy sets these headers; on the direct port anybody could send them)."""
-    if not request.client or request.client.host != INGRESS_IP:
-        return None
-    uid = request.headers.get("x-remote-user-id")
-    if not uid:
-        return None
-    return {"id": uid, "name": request.headers.get("x-remote-user-display-name") or request.headers.get("x-remote-user-name") or "",
-            "user": request.headers.get("x-remote-user-name") or ""}
-
-
+# ha_user (the trusted Home Assistant user of an ingress request) lives in auth.py – also used by the children's app
 def _parent_of_ha_user(fq, uid: str) -> dict | None:
-    for p in fq.db.q("SELECT * FROM profile WHERE role='parent' AND archived=0"):
-        if profile_settings(p).get("ha_user_id") == uid:
-            return p
-    return None
+    return profile_of_ha_user(fq, uid, "parent")
+
+
+def _ha_user_taken(fq, uid: str, pid: int | None) -> None:
+    """One Home Assistant user belongs to at most one profile (parent or child): another active profile with it is
+    refused, an archived one gives it up."""
+    for p in fq.db.q("SELECT * FROM profile WHERE id<>?", pid or 0):
+        st = profile_settings(p)
+        if st.get("ha_user_id") != uid:
+            continue
+        if not p["archived"]:
+            raise HTTPException(400, "This Home Assistant user is already linked with another profile")
+        st.pop("ha_user_id", None); st.pop("ha_user_name", None)
+        fq.db.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(st), p["id"])
 
 
 @router.post("/ha-login")
@@ -164,7 +169,8 @@ def ha_login(request: Request) -> dict:
         return {"ha_user": None}
     p = _parent_of_ha_user(fq, u["id"])
     if not p:
-        return {"ha_user": u, "linked": False}
+        # a child's Home Assistant user: never the parent area without PIN – and no offer to link it with a parent
+        return {"ha_user": u, "linked": False, "kid": bool(profile_of_ha_user(fq, u["id"], "kid"))}
     loginlog.record(fq, request, "parent", p["id"], True)
     return {"parent_token": fq.tokens.make(p["id"], "parent"), "profile": fq.profile_public(p), "max_age": PARENT_MAX_AGE,
             "ha_user": u, "linked": True}
@@ -182,11 +188,7 @@ def ha_link(body: HaLinkIn, request: Request, me: dict = Parent) -> dict:
     if body.on:
         if not u:
             raise HTTPException(400, "Open the parent area through Home Assistant to link your user")
-        for p in fq.db.q("SELECT * FROM profile WHERE role='parent'"):
-            st = profile_settings(p)
-            if st.get("ha_user_id") == u["id"] and p["id"] != me["id"]:
-                st.pop("ha_user_id", None); st.pop("ha_user_name", None)
-                fq.db.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(st), p["id"])
+        _ha_user_taken(fq, u["id"], me["id"])
     st = profile_settings(me)
     if body.on:
         st.update(ha_user_id=u["id"], ha_user_name=u["name"] or u["user"])
@@ -283,12 +285,13 @@ def meta(request: Request, me: dict = Parent) -> dict:
             "ha_status": _ha_status(fq),
             "ai": ai_draft.available(fq), "version": fq.settings.version, "me": fq.profile_public(me),
             "ha_user": ha_user(request), "my_ha_user": profile_settings(me).get("ha_user_name") if profile_settings(me).get("ha_user_id") else None,
-            "parent_ha_only": bool(fq.db.get_setting("parent_ha_only"))}
+            "parent_ha_only": bool(fq.db.get_setting("parent_ha_only")), "kid_ha_login": bool(fq.db.get_setting("kid_ha_login"))}
 
 
 @router.get("/overview")
 def overview(request: Request, me: dict = Parent) -> dict:
     fq = app_of(request)
+    fq.packs.note_family_lang(request.headers.get("x-fq-lang"))     # the family language for the packs (packs/i18n.py)
     return {"kids": fq.overview(), "pending": fq.shop.list("pending"), "family_goal": fq.family_goal(),
             "chores_pending": fq.chores.pending()}
 
@@ -366,17 +369,17 @@ def _pin_hash(body: ProfileIn, settings: dict, current: str | None) -> str | Non
 
 
 def _set_ha_user(fq, body: ProfileIn, settings: dict, pid: int | None) -> None:
-    """Link the parent profile with a Home Assistant user (only one profile per user)."""
-    if body.ha_user_id is None or body.role != "parent":
+    """Link the profile with a Home Assistant user (only one profile per user): a parent opens the parent area with it,
+    a child its app (when «Children may sign in with their Home Assistant user» is on)."""
+    if body.ha_user_id is None:
         return
     if not body.ha_user_id:
         settings.pop("ha_user_id", None); settings.pop("ha_user_name", None)
         return
-    for p in fq.db.q("SELECT * FROM profile WHERE role='parent'"):
-        st = profile_settings(p)
-        if st.get("ha_user_id") == body.ha_user_id and p["id"] != pid:
-            st.pop("ha_user_id", None); st.pop("ha_user_name", None)
-            fq.db.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(st), p["id"])
+    if len(body.ha_user_id) > 100:
+        raise HTTPException(400, "Unknown Home Assistant user")
+    if body.ha_user_id != settings.get("ha_user_id"):
+        _ha_user_taken(fq, body.ha_user_id, pid)
     settings.update(ha_user_id=body.ha_user_id, ha_user_name=(body.ha_user_name or "")[:60])
 
 
@@ -520,6 +523,10 @@ def delete_profile(pid: int, request: Request, name: str = "", mode: str = "arch
     if mode == "archive":
         fq.db.x("UPDATE profile SET archived=1 WHERE id=?", pid)
     else:
+        fq.deals.profile_removed(pid)                   # open deals end, chores taken over go back
+        fq.stories.author_removed(pid)                  # its books (private ones too) – never inherited by a new profile
+        fq.codelab.author_removed(pid)                  # its programs of the Code Workshop (private ones too)
+        fq.db.x("UPDATE pet SET sitter_id=NULL, sit_until=NULL WHERE sitter_id=?", pid)
         for t in fq.db.q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):
             cols = {c["name"] for c in fq.db.q(f"PRAGMA table_info({t['name']})")}
             if "profile_id" in cols and t["name"] != "profile":
@@ -549,6 +556,7 @@ def restore_profile(pid: int, request: Request, me: dict = Parent) -> dict:
 @router.get("/packs")
 def packs(request: Request, me: dict = Parent) -> dict:
     fq = app_of(request)
+    fq.packs.note_family_lang(request.headers.get("x-fq-lang"))     # the family language (packs/i18n.py)
     act: dict[str, list[int]] = {}
     for r in fq.db.q("SELECT pack_id, profile_id FROM pack_profile"):
         act.setdefault(r["pack_id"], []).append(r["profile_id"])
@@ -592,11 +600,38 @@ def activate(body: ActivateIn, request: Request, me: dict = Parent) -> dict:
     return {"ok": True}
 
 
+class InstallIn(BaseModel):
+    ids: list[str]
+    on: bool = True
+
+
+@router.post("/packs/install")
+def packs_install(body: InstallIn, request: Request, me: dict = Parent) -> dict:
+    """«More packs»: add packs to the family (on) or put them back (off – switched off for every child, the learning
+    progress stays). Only packs of the app's folders that are optional."""
+    fq = app_of(request)
+    done = []
+    for pid in body.ids[:50]:
+        p = fq.packs.get(pid)
+        if not p or not p.optional or p.source not in ("builtin", "share"):
+            continue
+        if body.on and p.status == "available":
+            fq.packs.install(pid)
+        elif not body.on and p.status != "available":
+            fq.packs.uninstall(pid)
+        else:
+            continue
+        done.append(pid)
+    return {"ok": True, "done": done}
+
+
 @router.post("/packs/{pack_id}/status")
 def pack_status(pack_id: str, body: StatusIn, request: Request, me: dict = Parent) -> dict:
     fq = app_of(request)
     if body.status not in ("active", "draft", "disabled"):
         raise HTTPException(400, "Unknown status")
+    if not fq.packs.get(pack_id):
+        raise HTTPException(404, "Unknown pack")
     fq.packs.set_status(pack_id, body.status)
     return {"ok": True}
 
@@ -934,11 +969,13 @@ def book(body: BookIn, request: Request, me: dict = Parent) -> dict:
 
 @router.get("/ledger/{pid}")
 def ledger(pid: int, request: Request, me: dict = Parent) -> list[dict]:
-    return app_of(request).db.q("SELECT * FROM ledger WHERE profile_id=? ORDER BY id DESC LIMIT 100", pid)
+    from ..running import ledger_reason          # older German game entries in the English form the app translates
+    return [{**r, "reason": ledger_reason(r["reason"])} for r in
+            app_of(request).db.q("SELECT * FROM ledger WHERE profile_id=? ORDER BY id DESC LIMIT 100", pid)]
 
 
 # ---------------------------------------------------------------- chore plan (Ämtliplan)
-class ChoreIn(BaseModel):
+class ChoreIn(FiniteIn):
     name: str
     icon: str = "🧹"
     points: float = 10
@@ -1029,6 +1066,7 @@ def settings(request: Request, me: dict = Parent) -> dict:
 def _public_settings(fq) -> dict:
     s = fq.db.all_settings()
     s.pop("ha_integration", None)        # token hash: only through /api/parent/integration
+    s.pop("ha_integration_poll", None)
     return s
 
 
@@ -1047,11 +1085,11 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         ip = loginlog.client_ip(request)
         for k in ("allowed_networks", "parent_networks"):
             if not netfilter.allowed(ip, nets.get(k, fq.db.get_setting(k) or [])):
-                raise HTTPException(400, f"This would lock you out – your device ({ip}) is not in these networks")
+                raise HTTPException(400, _t("This would lock you out – your device ({0}) is not in these networks").replace("{0}", ip))
         guests = nets.get("guest_networks", fq.db.get_setting("guest_networks") or [])
         family = nets.get("allowed_networks", fq.db.get_setting("allowed_networks") or [])
         if guests and netfilter.allowed(ip, guests) and not (family and netfilter.allowed(ip, family)):
-            raise HTTPException(400, f"This would lock you out – your device ({ip}) would only be a guest")
+            raise HTTPException(400, _t("This would lock you out – your device ({0}) would only be a guest").replace("{0}", ip))
         body = {**body, **nets}
     if body.get("parent_ha_only"):
         u = ha_user(request)
@@ -1065,6 +1103,8 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         if isinstance(v, list):
             return all(finite(x) for x in v)
         return True
+    if "kid_ha_login" in body and not isinstance(body["kid_ha_login"], bool):
+        raise HTTPException(400, "Unknown setting")
     if "game_starter" in body and body["game_starter"] not in ("dice", "leader", "choose"):
         raise HTTPException(400, "Unknown setting")
     for k, v in body.items():
@@ -1446,7 +1486,12 @@ def games(body: GamesIn, request: Request, me: dict = Parent) -> dict:
     return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
 
 
-REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verkehr", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape")       # live games with coins for places 1–3 (game_rewards)
+REWARD_GAMES = ("paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "verkehr", "langstrecke", "sternlauf", "snack", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd")       # live games with coins for places 1–3 (game_rewards)
+
+
+def _reward_games() -> tuple:
+    from ..channel import visible
+    return visible(REWARD_GAMES)                 # dev games (channel.py) only in the dev channel
 
 
 @router.get("/game-rewards")
@@ -1454,7 +1499,7 @@ def game_rewards_get(request: Request, me: dict = Parent) -> dict:
     """Coins for places 1, 2, 3 of the live games (Paarjagd, «Wer bin ich?», Kartenlauf, Stadt-Land-Fluss, «Zeichnen & Raten», «Fünf Würfel», «Heimwärts», «Verbotene Wörter», «Jass», «Werwölfe», «Schach», «Dorfmarkt») – only family tables with at least two people."""
     from ..pairhunt import rewards_of
     db = app_of(request).db
-    return {k: rewards_of(db, k) for k in REWARD_GAMES}
+    return {k: rewards_of(db, k) for k in _reward_games()}
 
 
 @router.put("/game-rewards")
@@ -1463,13 +1508,13 @@ def game_rewards_put(request: Request, body: dict = Body(...), me: dict = Parent
     fq = app_of(request)
     out = dict(fq.db.get_setting("game_rewards") or {})
     for k, v in body.items():
-        if k not in REWARD_GAMES:
+        if k not in _reward_games():
             raise HTTPException(400, "Unknown game")
         if not isinstance(v, list) or len(v) != 3 or not all(type(x) is int and 0 <= x <= 1000 for x in v):
             raise HTTPException(400, "Three numbers of coins (0 to 1000) are needed")
         out[k] = v
     fq.db.set_setting("game_rewards", out)
-    return {k: rewards_of(fq.db, k) for k in REWARD_GAMES}
+    return {k: rewards_of(fq.db, k) for k in _reward_games()}
 
 
 # ---------------------------------------------------------------- failed logins, network filter
@@ -1722,6 +1767,30 @@ async def memory_photo(request: Request, file: UploadFile = File(...), me: dict 
     return {"name": name, "url": f"media/{memorygame.FOLDER}/{name}"}
 
 
+@router.post("/memory/import")
+async def memory_import(request: Request, file: UploadFile = File(...), me: dict = Parent) -> dict:
+    """A photo set from a ZIP file: the pictures are copied into the photo folder – the set itself is saved with
+    PUT /memory (like after uploading single photos)."""
+    from .. import memorygame
+    raw = await file.read(memorygame.ZIP_MAX + 1)
+    if len(raw) > memorygame.ZIP_MAX:
+        raise HTTPException(400, "The ZIP file is too large (max. 60 MB)")
+    try:
+        return {"names": memorygame.import_zip(app_of(request), raw)}
+    except memorygame.MemoryError_ as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.get("/memory/sets/{sid}/export")
+def memory_export(sid: str, request: Request, me: dict = Parent) -> Response:
+    from .. import memorygame
+    try:
+        name, raw = memorygame.export_zip(app_of(request), sid)
+    except memorygame.MemoryError_ as e:
+        raise HTTPException(404, str(e)) from None
+    return Response(raw, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
 # ---------------------------------------------------------------- running games: end one or all (running.py)
 @router.get("/games/running")
 def games_running(request: Request, me: dict = Parent) -> list[dict]:
@@ -1781,11 +1850,11 @@ def memory_ha_media(request: Request, body: dict = Body(...), me: dict = Parent)
 
 @router.get("/ha/users")
 def ha_users(request: Request, me: dict = Parent) -> list[dict]:
-    """Home Assistant users (persons with a login) to link with parent profiles, and which profile has them."""
+    """Home Assistant users (persons with a login) to link with profiles (parents and children), and which profile has them."""
     fq = app_of(request)
     if not (fq.ha and fq.ha.connected):
         return []
-    linked = {profile_settings(p).get("ha_user_id"): p["name"] for p in fq.db.q("SELECT * FROM profile WHERE role='parent' AND archived=0")}
+    linked = {profile_settings(p).get("ha_user_id"): p["name"] for p in fq.db.q("SELECT * FROM profile WHERE archived=0")}
     return [{**u, "linked_to": linked.get(u["id"])} for u in fq.ha.users()]
 
 

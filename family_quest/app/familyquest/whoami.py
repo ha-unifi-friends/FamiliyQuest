@@ -17,6 +17,9 @@ Rules:
   their character gets no place).
 Coins (setting `game_rewards["werbinich"]`): places 1–3 – only at a table with at least two people of the family,
 never for guests. Paid once (flag `paid` in the state, a unique `ref` per player in the ledger).
+Languages (gamewords.py): the characters are English keys (the state keeps their index); every view shows them in the
+viewer's language. «I am …» counts in every language of the players at the table (and English; the German names of the
+list too when a German speaking player is there). Questions and answers are the players' own words – not translated.
 """
 from __future__ import annotations
 
@@ -29,7 +32,9 @@ import unicodedata
 from .cardgames import CardGames, apply_starter, starter_mode
 from .community import CommunityError
 from .pairhunt import rewards_of as _rewards_of
-from .whoami_data import CATEGORIES, DEFAULT
+from .gamewords import LANGS, Words, clean_lang
+from .whoami_data import CATEGORIES, DEFAULT, legacy
+from .running import win_reason
 
 KIND = "werbinich"
 TITLE = "Wer bin ich?"
@@ -37,7 +42,9 @@ EMOJI = "🎭"
 VOTES = ("yes", "no", "unknown")
 MAX_TEXT = 140
 FILLERS = {"ich", "bin", "der", "die", "das", "den", "dem", "des", "ein", "eine", "einer", "einen", "eines",
-           "the", "a", "an", "le", "la", "les", "l", "un", "une"}
+           "the", "a", "an", "le", "la", "les", "l", "un", "une", "i", "am", "im", "je", "suis", "io", "sono", "il", "lo",
+           "gli", "uno", "una", "yo", "soy", "el", "los", "las", "ik", "ben", "de", "het", "een", "jestem", "eu", "sou",
+           "o", "os", "as", "um", "uma", "jag", "ar", "en", "ett"}
 
 
 def rewards_of(db) -> list[int]:
@@ -86,10 +93,29 @@ def category(key: str) -> dict:
 
 # ================================================================ one table (pure logic on a dict)
 class Table:
-    def __init__(self, st: dict, rng: random.Random | None = None, now=time.time):
+    def __init__(self, st: dict, rng: random.Random | None = None, now=time.time, words: Words | None = None):
         self.st = st
         self.rng = rng or random.Random()
         self.now = now
+        self.words = words or Words()
+
+    def set_lang(self, pid: str, lang: str | None) -> bool:
+        """Remember the language of a player («I am …» counts in all languages at the table). True: it changed."""
+        if not lang:
+            return False
+        lang = clean_lang(lang)
+        langs = self.st.setdefault("langs", {})
+        if langs.get(pid) == lang:
+            return False
+        langs[pid] = lang
+        return True
+
+    def accepted(self, pid: str, lang: str | None = None) -> dict:
+        """The character of a player as a guess is checked: its names in every language at the table and English."""
+        c = self.char_of(pid)
+        langs = [l for l in (*(self.st.get("langs") or {}).values(), lang) if l]
+        names = self.words.forms(c["name"], langs or LANGS, c.get("aliases"))      # no language known: all count
+        return {"name": names[0], "aliases": names[1:]}
 
     def order(self) -> list[str]:
         return [p["id"] for p in self.st["players"]]
@@ -200,14 +226,15 @@ class Table:
             self._pass(q["asker"])
 
     # ---------- guessing, giving up
-    def guess(self, pid: str, text: str) -> bool:
+    def guess(self, pid: str, text: str, lang: str | None = None) -> bool:
         self._check_turn(pid)
+        self.set_lang(pid, lang)
         if self.st.get("question"):
             raise CommunityError("Close the question first")
         text = " ".join(str(text or "").split())[:MAX_TEXT]
         if not norm(text):
             raise CommunityError("Type who you are")
-        ok = matches(text, self.char_of(pid))
+        ok = matches(text, self.accepted(pid, lang))
         self.st["last"] = {"type": "guess", "player": pid, "text": text, "ok": ok, "t": self.now()}
         if ok:
             self.st["found"].append(pid)
@@ -264,6 +291,7 @@ class Whoami(CardGames):
     def __init__(self, db, add_history=None, rewards=None):
         super().__init__(db, add_history)
         self.rewards = rewards
+        self.words = Words(db)
 
     def default_rules(self, kind: str = KIND) -> dict:
         return self.clean_rules(kind, self.db.get_setting(f"game_rules.{KIND}") or {})
@@ -294,13 +322,7 @@ class Whoami(CardGames):
         coins = self.coins_for(st)
         st["paid"], st["coins"] = True, coins
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Platz {st['places'][pid]}", ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND, st["places"][pid]))
         self._champion(st, [p for p, n in (st.get("places") or {}).items() if n == 1])
         if self.add_history:
             t = Table(st)
@@ -362,7 +384,7 @@ class Whoami(CardGames):
             Table(st).deal()
             self._save(row, st)
 
-    def _act(self, pid: int, fn):
+    def _act(self, pid: int, fn, lang: str | None = None):
         with self.lock:
             row = self._row(KIND, pid)
             if not row:
@@ -370,24 +392,27 @@ class Whoami(CardGames):
             st = json.loads(row["state"])
             if st["phase"] == "lobby":
                 raise CommunityError("The game has not started yet")
-            out = fn(Table(st))
+            t = Table(st, words=self.words)
+            if any(p["id"] == str(pid) for p in st["players"]):
+                t.set_lang(str(pid), lang)
+            out = fn(t)
             self._save(row, st)
             return out
 
-    def ask(self, pid: int, text: str = "") -> None:
-        self._act(pid, lambda t: t.ask(str(pid), text))
+    def ask(self, pid: int, text: str = "", lang: str | None = None) -> None:
+        self._act(pid, lambda t: t.ask(str(pid), text), lang)
 
-    def answer(self, pid: int, vote: str) -> None:
-        self._act(pid, lambda t: t.answer(str(pid), vote))
+    def answer(self, pid: int, vote: str, lang: str | None = None) -> None:
+        self._act(pid, lambda t: t.answer(str(pid), vote), lang)
 
-    def close(self, pid: int, lead: bool = False) -> None:
-        self._act(pid, lambda t: t.close(str(pid), lead))
+    def close(self, pid: int, lead: bool = False, lang: str | None = None) -> None:
+        self._act(pid, lambda t: t.close(str(pid), lead), lang)
 
-    def guess(self, pid: int, text: str) -> bool:
-        return self._act(pid, lambda t: t.guess(str(pid), text))
+    def guess(self, pid: int, text: str, lang: str | None = None) -> bool:
+        return self._act(pid, lambda t: t.guess(str(pid), text, lang), lang)
 
-    def give_up(self, pid: int) -> None:
-        self._act(pid, lambda t: t.give_up(str(pid)))
+    def give_up(self, pid: int, lang: str | None = None) -> None:
+        self._act(pid, lambda t: t.give_up(str(pid)), lang)
 
     def skip(self, pid: int) -> None:
         self._act(pid, lambda t: t.skip())
@@ -405,9 +430,16 @@ class Whoami(CardGames):
             else:
                 self.db.x("UPDATE card_game SET status='done', finished_at=datetime('now','localtime') WHERE id=?", row["id"])
 
-    def state(self, kind: str, viewer: int) -> dict | None:
+    def state(self, kind: str, viewer: int, lang: str | None = None) -> dict | None:
+        """The view of one player in their language."""
         with self.lock:
             row = self._row(KIND, viewer)
+            if row:
+                st = json.loads(row["state"])
+                if st["phase"] in ("lobby", "play") and any(p["id"] == str(viewer) for p in st["players"]) \
+                        and Table(st).set_lang(str(viewer), lang):
+                    self._save(row, st)
+                    row = self.db.q1("SELECT * FROM card_game WHERE id=?", row["id"])
             if not row:
                 row = self.db.q1("""SELECT * FROM card_game WHERE kind=? AND status='done' AND finished_at >= datetime('now','localtime','-10 minutes')
                                     AND solo=0 ORDER BY id DESC LIMIT 1""", KIND)
@@ -416,11 +448,13 @@ class Whoami(CardGames):
             st = json.loads(row["state"])
             if row["status"] == "done" and not any(p["id"] == str(viewer) for p in st["players"]):
                 return None
-        return self._view(row, st, str(viewer))
+        return self._view(row, st, str(viewer), lang or "en")
 
-    def _view(self, row, st: dict, me: str) -> dict:
-        """What one player sees: every character except their own while it is hidden."""
-        t = Table(st)
+    def _view(self, row, st: dict, me: str, lang: str = "en") -> dict:
+        """What one player sees, in their language: every character except their own while it is hidden."""
+        t = Table(st, words=self.words)
+        tr = self.words.translator(lang)
+        name = lambda n: tr(legacy(n)) if n else n  # noqa: E731
         cat = category(st["rules"].get("category"))
         done, coins = st.get("done") or {}, st.get("coins") or {}
         over = st["phase"] == "done" or row["status"] == "done"
@@ -433,7 +467,7 @@ class Whoami(CardGames):
             shown = c is not None and (p["id"] != me or over or p["id"] in done)
             d = done.get(p["id"]) or {}
             players.append({"id": p["id"], "name": p["name"], "avatar": p.get("avatar"), "guest": bool(p.get("guest")),
-                            "char": c["name"] if shown else None, "hidden": c is not None and not shown,
+                            "char": name(c["name"]) if shown else None, "hidden": c is not None and not shown,
                             "status": d.get("how") or "playing", "place": (st.get("places") or {}).get(p["id"]) or d.get("place"),
                             "questions": asked.get(p["id"], 0), "coins": coins.get(p["id"], 0)})
         q = st.get("question")
@@ -453,7 +487,8 @@ class Whoami(CardGames):
                 "turn": st.get("turn") if playing else None, "my_turn": playing and st.get("turn") == me and not q,
                 "question": question, "last_q": log[-1] if log else None,
                 "my_log": [e for e in log if e["asker"] == me][-30:],
-                "last": st.get("last"), "ranking": st.get("ranking"), "finished_me": me in done,
+                "last": {**st["last"], "char": name(st["last"]["char"])} if (st.get("last") or {}).get("char") else st.get("last"),
+                "ranking": st.get("ranking"), "finished_me": me in done,
                 "rewards": rewards_of(self.db), "coins_on": people >= 2}
 
     def summary(self, kind: str, pid: int) -> dict | None:

@@ -15,10 +15,11 @@ import logging
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request
 from fastapi.responses import Response
 from fastapi.routing import APIRoute
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .. import timelimits
 from ..community import CommunityError
+from ..gamewords import lang_of
 from ..guests import GUEST, GUEST_HOURS, GuestError
 from .auth import Learner, app_of, learner
 
@@ -79,7 +80,7 @@ def game_of(path: str) -> str | None:
     head = part[0]
     if head in ("quiz", "quizzes", "templates"):
         return "quiz"
-    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape"):
+    if head in ("bingo", "poker", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd"):
         return head
     if head == "cards" and len(part) > 1:
         return part[1]
@@ -229,6 +230,12 @@ def _bots_not_remembered(fq, kind: str, forced: bool):
             fq.db.set_setting(key, after)
 
 
+class FiniteIn(BaseModel):
+    """A body with numbers from the apps (realtime sync, quiz answers): JSON may carry Infinity / NaN (or 1e999) – such
+    a number is refused (422), it would break the game state (int() → OverflowError, the JSON answer of every poll)."""
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
 def _run(fn, *args):
     try:
         return fn(*args)
@@ -237,7 +244,7 @@ def _run(fn, *args):
 
 
 # ---------------------------------------------------------------- quiz: playing
-class AnswerIn(BaseModel):
+class AnswerIn(FiniteIn):
     idx: int
     choice: int | None = None
     value: float | None = None           # estimation question
@@ -439,7 +446,7 @@ def quiz_abort(request: Request, prof: dict = Gamer) -> dict | None:
 
 
 # ---------------------------------------------------------------- bingo
-class BingoStartIn(BaseModel):
+class BingoStartIn(FiniteIn):
     interval: float | None = None
     win: str | None = None          # line | two_lines | full
 
@@ -927,7 +934,7 @@ def _lead_whoami(fq, prof: dict) -> None:
 
 @router.get("/werbinich")
 def whoami_state(request: Request, prof: dict = Playing) -> dict | None:
-    return app_of(request).werbinich.state("werbinich", prof["id"])
+    return app_of(request).werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.get("/werbinich/rules")
@@ -939,14 +946,14 @@ def whoami_rules(request: Request, prof: dict = Gamer) -> dict:
 def whoami_start(body: WhoamiStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _run(fq.werbinich.start, "werbinich", prof["id"], body.model_dump())
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/join")
 def whoami_join(request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
     _run(fq.werbinich.join, "werbinich", prof["id"])
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/begin")
@@ -954,21 +961,21 @@ def whoami_begin(request: Request, body: BeginIn | None = None, prof: dict = Gam
     fq = app_of(request)
     _lead_whoami(fq, prof)
     _run(fq.werbinich.begin, "werbinich", prof["id"], (body or BeginIn()).starter)
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/ask")
 def whoami_ask(body: WhoamiTextIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.werbinich.ask, prof["id"], body.text)
-    return fq.werbinich.state("werbinich", prof["id"])
+    _run(fq.werbinich.ask, prof["id"], body.text, lang_of(request))
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/answer")
 def whoami_answer(body: WhoamiVoteIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.werbinich.answer, prof["id"], body.vote)
-    return fq.werbinich.state("werbinich", prof["id"])
+    _run(fq.werbinich.answer, prof["id"], body.vote, lang_of(request))
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/close")
@@ -976,21 +983,21 @@ def whoami_close(request: Request, prof: dict = Playing) -> dict | None:
     """The asker closes their question early – or who leads the game."""
     fq = app_of(request)
     _run(fq.werbinich.close, prof["id"], prof["role"] != "guest" and fq.werbinich.may_lead("werbinich", prof))
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/guess")
 def whoami_guess(body: WhoamiTextIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.werbinich.guess, prof["id"], body.text)
-    return fq.werbinich.state("werbinich", prof["id"])
+    _run(fq.werbinich.guess, prof["id"], body.text, lang_of(request))
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/giveup")
 def whoami_give_up(request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.werbinich.give_up, prof["id"])
-    return fq.werbinich.state("werbinich", prof["id"])
+    _run(fq.werbinich.give_up, prof["id"], lang_of(request))
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/skip")
@@ -999,7 +1006,7 @@ def whoami_skip(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_whoami(fq, prof)
     _run(fq.werbinich.skip, prof["id"])
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 @router.post("/werbinich/end")
@@ -1007,7 +1014,7 @@ def whoami_end(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_whoami(fq, prof)
     fq.werbinich.end("werbinich", prof["id"])
-    return fq.werbinich.state("werbinich", prof["id"])
+    return fq.werbinich.state("werbinich", prof["id"], lang=lang_of(request))
 
 
 # ---------------------------------------------------------------- Kartenlauf (familyquest/kartenlauf.py)
@@ -1425,7 +1432,7 @@ class JumpStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class JumpSyncIn(BaseModel):
+class JumpSyncIn(FiniteIn):
     t: float | None = None                                   # the game time of the app (seconds)
     jumps: list[float] = Field(default_factory=list, max_length=40)   # new jumps (game times)
     hits: list[list[float]] = Field(default_factory=list, max_length=20)   # new hits: [obstacle index, game time]
@@ -1501,7 +1508,7 @@ class SternlaufStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class SternlaufSyncIn(BaseModel):
+class SternlaufSyncIn(FiniteIn):
     # the app's own new inputs: [game time (s), "l" | "r" | "u" | "d"] – the server replays them on the course
     inputs: list[tuple[float, str]] = Field(default_factory=list, max_length=40)
 
@@ -1575,7 +1582,7 @@ class SnackStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class SnackSyncIn(BaseModel):
+class SnackSyncIn(FiniteIn):
     t: float | None = None                                               # the game time of the app (seconds)
     serves: list[list[float]] = Field(default_factory=list, max_length=30)   # [customer index, game time]
     angry: list[int] = Field(default_factory=list, max_length=30)            # customers that left angry
@@ -1652,7 +1659,7 @@ class VerkehrStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class VerkehrSyncIn(BaseModel):
+class VerkehrSyncIn(FiniteIn):
     t: float | None = None                                   # the game time of the app (seconds)
     events: list[list[int]] = Field(default_factory=list, max_length=40)   # new switches: [global tick, group, 1 green / 0 red]
 
@@ -1728,6 +1735,149 @@ def verkehr_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.verkehr.state("verkehr", prof["id"])
 
 
+# ---------------------------------------------------------------- «24h Endurance» (familyquest/langstrecke.py)
+class LangstreckeStartIn(BaseModel):
+    solo: bool = False                   # alone (private) against bot teams
+    bots: int | None = None              # 0–5 bot cars
+    level: str | None = None             # the bots: easy | normal | hard
+    minutes: int | None = None           # 5 | 8 | 12 real minutes for 24 race hours
+    weather: int | None = None           # 1: sudden rain showers (default)
+    difficulty: str | None = None        # junior | normal
+    team_size: int | None = None         # 1–5 people per team
+    teams: int | None = None             # 1–4 teams of people at a family table
+    country: str | None = Field(default=None, max_length=2)    # the family's own country (from the app's language) as the suggestion
+    bot_ids: list[int | str] = []
+
+
+class LangstreckeSyncIn(FiniteIn):
+    inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "l"|"r"|"u", value]
+
+
+class LangstreckeTeamIn(BaseModel):
+    team: int
+
+
+class LangstreckePrepIn(BaseModel):
+    action: str = Field(max_length=10)   # plug | tyre | slicks | rain | eng_on | eng_off
+    spot: int | None = None              # tyre: the spot 0–3
+
+
+class LangstreckeLookIn(BaseModel):
+    color: str | None = Field(default=None, max_length=10)     # one of the palette (langstrecke.TEAM_STYLES)
+    country: str | None = Field(default=None, max_length=2)    # langstrecke.COUNTRIES, "" = no country
+    num: int | None = None                                     # the car number 1–99
+
+
+class LangstreckeRulesIn(BaseModel):
+    minutes: int | None = None
+    weather: int | None = None
+    difficulty: str | None = None
+    team_size: int | None = None
+    teams: int | None = None
+
+
+def _lead_langstrecke(fq, prof: dict) -> None:
+    if not fq.langstrecke.may_lead("langstrecke", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/langstrecke")
+def langstrecke_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).langstrecke.state("langstrecke", prof["id"])
+
+
+@router.get("/langstrecke/rules")
+def langstrecke_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).langstrecke.rules_info()
+
+
+@router.put("/langstrecke/rules")
+def langstrecke_defaults(body: LangstreckeRulesIn, request: Request, prof: dict = Gamer) -> dict:
+    """Parent area: the defaults of the race (duration, weather, difficulty, team size, teams)."""
+    if prof.get("role") != "parent":
+        raise HTTPException(403, "Only parents")
+    fq = app_of(request)
+    fq.langstrecke.set_defaults(body.model_dump())
+    return fq.langstrecke.rules_info()
+
+
+@router.post("/langstrecke/start")
+def langstrecke_start(body: LangstreckeStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    forced = _no_bots(fq, prof, "langstrecke", body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
+    with _bots_not_remembered(fq, "langstrecke", forced):
+        _run(fq.langstrecke.start, "langstrecke", prof["id"], body.model_dump(exclude={"solo", "bot_ids", "country"}), body.solo, bots, body.country)
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/join")
+def langstrecke_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.langstrecke.join, "langstrecke", prof["id"])
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/team")
+def langstrecke_team(body: LangstreckeTeamIn, request: Request, prof: dict = Playing) -> dict | None:
+    """In the lobby: sit down in another team."""
+    fq = app_of(request)
+    _run(fq.langstrecke.choose_team, prof["id"], body.team)
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/look")
+def langstrecke_look(body: LangstreckeLookIn, request: Request, prof: dict = Playing) -> dict | None:
+    """In the lobby: the colour, the country and the car number of my team."""
+    fq = app_of(request)
+    _run(fq.langstrecke.choose_look, prof["id"], body.color, body.country, body.num)
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/mix")
+def langstrecke_mix(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_langstrecke(fq, prof)
+    _run(fq.langstrecke.shuffle, prof["id"])
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/begin")
+def langstrecke_begin(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_langstrecke(fq, prof)
+    _run(fq.langstrecke.begin, "langstrecke", prof["id"])
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
+@router.post("/langstrecke/sync")
+def langstrecke_sync(body: LangstreckeSyncIn, request: Request, prof: dict = Playing) -> dict | None:
+    """Every app keeps in touch here; the driver's app also reports its inputs (only the current driver's count)."""
+    fq = app_of(request)
+    return _run(fq.langstrecke.report, prof["id"], body.inputs)
+
+
+@router.post("/langstrecke/prep")
+def langstrecke_prep(body: LangstreckePrepIn, request: Request, prof: dict = Playing) -> dict:
+    """A job of the pit crew during the lap (spare battery, tyres, spare engine) – checked and timed by the server."""
+    fq = app_of(request)
+    out = _run(fq.langstrecke.prep, prof["id"], body.action, body.spot)
+    return {**(out or {}), "state": fq.langstrecke.state("langstrecke", prof["id"])}
+
+
+@router.post("/langstrecke/end")
+def langstrecke_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_langstrecke(fq, prof)
+    fq.langstrecke.end("langstrecke", prof["id"])
+    return fq.langstrecke.state("langstrecke", prof["id"])
+
+
 # ---------------------------------------------------------------- «Klatsch den Beat» (familyquest/klatsch.py)
 class KlatschStartIn(BaseModel):
     solo: bool = False                   # alone (private) – optionally with practice bots
@@ -1737,7 +1887,7 @@ class KlatschStartIn(BaseModel):
     bot_ids: list[int | str] = []
 
 
-class KlatschSyncIn(BaseModel):
+class KlatschSyncIn(FiniteIn):
     round: int | None = None                                       # the round of these taps
     taps: list[float] = Field(default_factory=list, max_length=64)  # the taps of this round (game times, delay subtracted)
 
@@ -1832,7 +1982,7 @@ def _lead_zeichnen(fq, prof: dict) -> None:
 def zeichnen_state(request: Request, n: int | None = None, pl: int = 0, t: int | None = None, prof: dict = Playing) -> dict | None:
     """The view; with the cursor n (events the app has), pl (points of its last event) and t (the turn) only the new
     strokes of the drawing come along."""
-    return app_of(request).zeichnen.state("zeichnen", prof["id"], n, pl, t)
+    return app_of(request).zeichnen.state("zeichnen", prof["id"], n, pl, t, lang=lang_of(request))
 
 
 @router.get("/zeichnen/rules")
@@ -1844,14 +1994,14 @@ def zeichnen_rules(request: Request, prof: dict = Gamer) -> dict:
 def zeichnen_start(body: ZeichnenStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _run(fq.zeichnen.start, "zeichnen", prof["id"], body.model_dump())
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/join")
 def zeichnen_join(request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
     _run(fq.zeichnen.join, "zeichnen", prof["id"])
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/begin")
@@ -1859,27 +2009,27 @@ def zeichnen_begin(request: Request, body: BeginIn | None = None, prof: dict = G
     fq = app_of(request)
     _lead_zeichnen(fq, prof)
     _run(fq.zeichnen.begin, "zeichnen", prof["id"], (body or BeginIn()).starter)
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/choose")
 def zeichnen_choose(body: ZeichnenChooseIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    _run(fq.zeichnen.choose, prof["id"], body.idx)
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    _run(fq.zeichnen.choose, prof["id"], body.idx, lang_of(request))
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/draw")
 def zeichnen_draw(body: ZeichnenDrawIn, request: Request, prof: dict = Playing) -> dict:
     """A batch of strokes of the drawer (sent every ~120 ms while drawing) – a short answer, not the whole view."""
-    return _run(app_of(request).zeichnen.draw, prof["id"], body.ops, body.turn)
+    return _run(app_of(request).zeichnen.draw, prof["id"], body.ops, body.turn, lang_of(request))
 
 
 @router.post("/zeichnen/guess")
 def zeichnen_guess(body: ZeichnenGuessIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
-    res = _run(fq.zeichnen.guess, prof["id"], body.text)
-    return {**(fq.zeichnen.state("zeichnen", prof["id"]) or {}), "result": res}
+    res = _run(fq.zeichnen.guess, prof["id"], body.text, lang_of(request))
+    return {**(fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request)) or {}), "result": res}
 
 
 @router.post("/zeichnen/skip")
@@ -1888,7 +2038,7 @@ def zeichnen_skip(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_zeichnen(fq, prof)
     _run(fq.zeichnen.skip, prof["id"])
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 @router.post("/zeichnen/end")
@@ -1896,7 +2046,7 @@ def zeichnen_end(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_zeichnen(fq, prof)
     fq.zeichnen.end("zeichnen", prof["id"])
-    return fq.zeichnen.state("zeichnen", prof["id"])
+    return fq.zeichnen.state("zeichnen", prof["id"], lang=lang_of(request))
 
 
 # ---------------------------------------------------------------- «Verbotene Wörter» (familyquest/verboten.py)
@@ -1921,7 +2071,7 @@ def _lead_verboten(fq, prof: dict) -> None:
 
 @router.get("/verboten")
 def verboten_state(request: Request, prof: dict = Playing) -> dict | None:
-    return app_of(request).verboten.state("verboten", prof["id"])
+    return app_of(request).verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.get("/verboten/rules")
@@ -1933,14 +2083,14 @@ def verboten_rules(request: Request, prof: dict = Gamer) -> dict:
 def verboten_start(body: VerbotenStartIn, request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _run(fq.verboten.start, "verboten", prof["id"], body.model_dump())
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/join")
 def verboten_join(request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
     _run(fq.verboten.join, "verboten", prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/mix")
@@ -1949,7 +2099,7 @@ def verboten_mix(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_verboten(fq, prof)
     _run(fq.verboten.mix, prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/begin")
@@ -1957,7 +2107,7 @@ def verboten_begin(request: Request, body: BeginIn | None = None, prof: dict = G
     fq = app_of(request)
     _lead_verboten(fq, prof)
     _run(fq.verboten.begin, "verboten", prof["id"], (body or BeginIn()).starter)
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/go")
@@ -1965,14 +2115,14 @@ def verboten_go(request: Request, prof: dict = Playing) -> dict | None:
     """The explainer is ready: the clock starts, the first card comes."""
     fq = app_of(request)
     _run(fq.verboten.go, prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/mark")
 def verboten_mark(body: VerbotenMarkIn, request: Request, prof: dict = Playing) -> dict | None:
     fq = app_of(request)
     _run(fq.verboten.mark, prof["id"], body.n, body.result, body.guesser)
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/skip")
@@ -1981,7 +2131,7 @@ def verboten_skip(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_verboten(fq, prof)
     _run(fq.verboten.skip, prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 @router.post("/verboten/end")
@@ -1989,7 +2139,7 @@ def verboten_end(request: Request, prof: dict = Gamer) -> dict | None:
     fq = app_of(request)
     _lead_verboten(fq, prof)
     fq.verboten.end("verboten", prof["id"])
-    return fq.verboten.state("verboten", prof["id"])
+    return fq.verboten.state("verboten", prof["id"], lang=lang_of(request))
 
 
 # ---------------------------------------------------------------- «Escape Room» (familyquest/escape.py)
@@ -2496,6 +2646,113 @@ def dorfmarkt_end(request: Request, prof: dict = Gamer) -> dict | None:
     return fq.dorfmarkt.state("dorfmarkt", prof["id"])
 
 
+# ---------------------------------------------------------------- «Beat the Bureaucracy» (familyquest/stempeljagd.py)
+class StempeljagdStartIn(BaseModel):
+    solo: bool = False                   # alone against bots (private)
+    bots: int | None = None              # 0–3 bot teams
+    level: str | None = None             # easy | normal | hard
+    bot_ms: int | None = None            # reaction time of the bots in ms (0 = at once)
+    length: str | None = None            # short | normal | long (5 / 7 / 9 stamps)
+    mode: str | None = None              # teams | admin (one team plays the administration)
+    admin: str | None = Field(default=None, max_length=12)    # admin mode: "bot" or "host"
+    minigames: bool | None = None        # absurd forms, stamping, bureaucratic speak
+    projects: str | None = None          # pick | random
+    bot_ids: list[int | str] = []
+
+
+class StempeljagdActIn(BaseModel):
+    action: str = Field(max_length=20)   # project | play | go | appt | argue | queue | react | mini | defend | end_turn | admin_card | admin_toggle
+    key: str | None = Field(default=None, max_length=20)
+    trick: str | None = Field(default=None, max_length=20)
+    target: str | None = Field(default=None, max_length=20)
+    counter: str | None = Field(default=None, max_length=20)
+    yes: bool = False
+    use: bool = False
+    idx: int | None = Field(default=None, ge=0, le=9)
+    ticked: int | None = Field(default=None, ge=0, le=20)
+    answer: int | None = Field(default=None, ge=0, le=9)
+
+
+class StempeljagdAdminIn(BaseModel):
+    who: str = Field(max_length=20)      # "teams" (no administration), "bot" or the id of a seated person
+
+
+def _lead_stempeljagd(fq, prof: dict) -> None:
+    if not fq.stempeljagd.may_lead("stempeljagd", prof):
+        raise HTTPException(403, "Only who started the game (or a parent) leads it")
+
+
+@router.get("/stempeljagd")
+def stempeljagd_state(request: Request, prof: dict = Playing) -> dict | None:
+    return app_of(request).stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.get("/stempeljagd/rules")
+def stempeljagd_rules(request: Request, prof: dict = Gamer) -> dict:
+    return app_of(request).stempeljagd.rules_info()
+
+
+@router.post("/stempeljagd/start")
+def stempeljagd_start(body: StempeljagdStartIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    forced = _no_bots(fq, prof, "stempeljagd", body.solo or body.bot_ids or (body.bots or 0) > 0)
+    if forced:
+        body.bots = 0
+    bots = None
+    if body.bot_ids:
+        from ..cardgames import BOTS
+        bots = fq.bots.pick(prof["id"], body.bot_ids, 3, body.level or "normal", BOTS)
+    with _bots_not_remembered(fq, "stempeljagd", forced):
+        _run(fq.stempeljagd.start, "stempeljagd", prof["id"], body.model_dump(exclude={"solo", "bot_ids"}), body.solo, bots)
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/join")
+def stempeljagd_join(request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.stempeljagd.join, "stempeljagd", prof["id"])
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/admin")
+def stempeljagd_admin(body: StempeljagdAdminIn, request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_stempeljagd(fq, prof)
+    _run(fq.stempeljagd.set_admin, prof["id"], body.who)
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/begin")
+def stempeljagd_begin(request: Request, body: BeginIn | None = None, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_stempeljagd(fq, prof)
+    _run(fq.stempeljagd.begin, "stempeljagd", prof["id"], (body or BeginIn()).starter)
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/act")
+def stempeljagd_act(body: StempeljagdActIn, request: Request, prof: dict = Playing) -> dict | None:
+    fq = app_of(request)
+    _run(fq.stempeljagd.act, prof["id"], body.action, body.model_dump(exclude={"action"}))
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/nudge")
+def stempeljagd_nudge(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_stempeljagd(fq, prof)
+    _run(fq.stempeljagd.nudge, prof["id"])
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
+@router.post("/stempeljagd/end")
+def stempeljagd_end(request: Request, prof: dict = Gamer) -> dict | None:
+    fq = app_of(request)
+    _lead_stempeljagd(fq, prof)
+    fq.stempeljagd.end("stempeljagd", prof["id"])
+    return fq.stempeljagd.state("stempeljagd", prof["id"])
+
+
 # ---------------------------------------------------------------- guests
 class InviteIn(BaseModel):
     game: str                       # quiz | bingo
@@ -2523,10 +2780,10 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
-    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape"):
+    if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape", "stempeljagd"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
-                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
-                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}.get(body.game, fq.cards)
+                 "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "langstrecke": fq.langstrecke, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
+                 "jass": fq.jass, "werwolf": fq.werwolf, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape, "stempeljagd": fq.stempeljagd}.get(body.game, fq.cards)
         running, lead = games._game(body.game), games.may_lead(body.game, prof)
     else:
         game = {"quiz": fq.community, "bingo": fq.bingo, "poker": fq.poker, "song": fq.songs}.get(body.game)
@@ -2772,7 +3029,7 @@ def history(request: Request, profile_id: int | None = None, prof: dict = Learne
         if prof["role"] != "parent":
             raise HTTPException(403, "Only your own history")
         pid = profile_id
-    return app_of(request).community.history(pid)
+    return app_of(request).community.history(pid, lang=lang_of(request))
 
 
 # ---------------------------------------------------------------- pairs game (game corner): photo sets and family crest
@@ -2830,7 +3087,7 @@ def duel_invite(body: DuelIn, request: Request, me: dict = Gamer) -> dict:
         raise HTTPException(400, str(e).replace("{0}", opp["name"])) from None
 
 
-class PongIn(BaseModel):
+class PongIn(FiniteIn):
     pad: float
     ball: dict | None = None
     points: dict | None = None
@@ -2945,7 +3202,7 @@ def pong4_start(request: Request, me: dict = Gamer) -> dict:
     return _p4(lambda: app_of(request).pong4.start(me["id"]))
 
 
-class Pong4Sync(BaseModel):
+class Pong4Sync(FiniteIn):
     pad: float
     bots: dict | None = None
     ball: dict | None = None
@@ -3117,7 +3374,7 @@ class BoardEditIn(BaseModel):
     archived: bool | None = None
 
 
-class BoardSyncIn(BaseModel):
+class BoardSyncIn(FiniteIn):
     since: int = 0
     ops: list[dict[str, Any]] = Field(default=[], max_length=200)
     presence: dict[str, Any] | None = None

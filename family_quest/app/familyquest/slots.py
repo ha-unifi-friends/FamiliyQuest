@@ -72,9 +72,9 @@ def clean_luck(v) -> int:
     try:
         n = int(v)
     except (TypeError, ValueError):
-        raise ValueError("Luck: 1 to 10") from None
+        raise ValueError(_t("Luck: 1 to 10")) from None
     if not 1 <= n <= 10:
-        raise ValueError("Luck: 1 to 10")
+        raise ValueError(_t("Luck: 1 to 10"))
     return n
 
 
@@ -168,7 +168,7 @@ class Slots:
                 "price": int(a.get("price") or 0), "rent": int(a.get("rent") or 0),
                 "period": a.get("period") or "week", "bet": BET, "max": PLAYS_PER_DAY,
                 "left": max(0, PLAYS_PER_DAY - self.plays_today(pid)),
-                "coins": self.rewards.balance(pid, "coins"),
+                "coins": self.rewards.available(pid),
                 "symbols": EMOJI, "three": THREE, "cherries": CHERRIES}
 
     def spin(self, pid: int) -> dict:
@@ -178,7 +178,7 @@ class Slots:
                 raise SlotError("Buy the slot machine first")
             if self.plays_today(pid) >= PLAYS_PER_DAY:
                 raise SlotError("That was all for today – come back tomorrow")
-            if self.rewards.balance(pid, "coins") < BET:
+            if self.rewards.available(pid) < BET:
                 raise SlotError("Not enough coins")
             if not owned and not self.try_play(pid):       # a free try: one spin (counted in this transaction)
                 raise SlotError("Buy the slot machine first")
@@ -186,5 +186,5 @@ class Slots:
             win = payout(reels)
             self.rewards.book(pid, "coins", -float(BET), "slots_bet", _t("One-armed bandit"), "slots")
             if win:
-                self.rewards.book(pid, "coins", float(win), "slots_win", _t("One-armed bandit") + f" {''.join(EMOJI[r] for r in reels)}", "slots")
+                self.rewards.book(pid, "coins", float(win), "slots_win", _t("One-armed bandit {0}").replace("{0}", "".join(EMOJI[r] for r in reels)), "slots")
         return {**self.state(pid), "reels": reels, "win": win, "jackpot": win >= THREE["star"]}

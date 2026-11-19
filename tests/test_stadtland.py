@@ -290,7 +290,7 @@ def test_family_flow_view_does_not_leak_coins_once_history(client):
     fq.stadtland._save(row, json.loads(row["state"]))                      # saving again pays nothing more
     assert fq.rewards.balance(mia, "coins") == before[0] + 8
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"stadtland:{gid}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"stadtland:{gid}:{mia}")["reason"] == "Stadt-Land-Fluss – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"stadtland:{gid}:{mia}")["reason"] == "City, Country, River – place 1"
     e = next(x for x in client.get("/api/community/history", headers=hm).json() if x["kind"] == "stadtland")
     assert e["data"]["place"] == 1 and e["data"]["points"] == 55 and e["data"]["rounds"] == 1 and e["data"]["coins"] == 8
     assert fq.db.val("SELECT COUNT(*) FROM history WHERE kind='stadtland'") == 2
@@ -321,7 +321,7 @@ def test_guests_play_but_not_lead_no_coins_with_one_family_person(client):
     client.post("/api/community/stadtland/start", json={"cats": ["stadt", "land", "fluss"], "rounds": 3}, headers=hm)
     assert client.post("/api/community/stadtland/begin", headers=hm).status_code == 400              # alone: wait
     inv = client.post("/api/community/guests", json={"game": "stadtland"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Stadt-Land-Fluss"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "City, Country, River"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     for path in ("start", "begin", "end", "next", "override"):

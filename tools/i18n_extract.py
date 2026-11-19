@@ -6,6 +6,9 @@
 
 Sources: T("…") in the web app, _t("…") in Python, and error messages passed to
 HTTPException / LearnError / ShopError / PackError (they end up in toasts).
+The puzzle texts of the Code Workshop (familyquest/codelab_levels.json). Word content kept as data: the cards of «Verbotene Wörter» (familyquest/verboten_cards.json) – every card's word and
+its five forbidden words joined with " · " (familyquest/gamewords.py). The word lists of «Zeichnen & Raten» and
+«Wer bin ich?» are _t("…") in zeichnen_data.py / whoami_data.py.
 """
 from __future__ import annotations
 
@@ -24,7 +27,7 @@ STR = r'"((?:[^"\\]|\\.)*)"'
 JS_PATTERNS = [re.compile(r"\bT\(" + STR + r"\)")]
 PY_PATTERNS = [re.compile(r"\b_t\(" + STR + r"\)"),
                re.compile(r"HTTPException\(\d+,\s*" + STR + r"\)"),
-               re.compile(r"(?:BatteryError|LearnError|ShopError|PackError|ChoreError|BackupError|InternetError|ImportError_|CommunityError|LimitError|DeviceError|MemoryError_|DuelError|DoublesError|DeckError|ThemeError|PetError|PassError|IntegrationError)\(" + STR + r"\)")]
+               re.compile(r"(?:BatteryError|LearnError|ShopError|PackError|ChoreError|BackupError|InternetError|ImportError_|CommunityError|LimitError|DeviceError|MemoryError_|DuelError|DoublesError|DeckError|ThemeError|PetError|PassError|IntegrationError|PrankError|SlotError|GuestError|CalendarError|WeatherError|TranslationError|DashboardError)\(" + STR + r"\)")]
 EXTRA = ["Level", "Family Quest", "Family Quest – Parents", "Family Quest needs JavaScript.", "XP"]
 
 
@@ -32,8 +35,28 @@ def unescape(s: str) -> str:
     return json.loads('"' + s + '"')
 
 
+def card_keys() -> set[str]:
+    """The keys of the forbidden-words cards: the word and its forbidden words as one text."""
+    data = json.loads((PY / "verboten_cards.json").read_text(encoding="utf-8"))
+    out: set[str] = set()
+    for cards in data["levels"].values():
+        for c in cards:
+            out.add(c["word"])
+            out.add(" · ".join(c["taboo"]))
+    return out
+
+
+def codelab_keys() -> set[str]:
+    """The texts of the Code Workshop puzzles (familyquest/codelab_levels.json): world and level titles, goals, hints."""
+    data = json.loads((PY / "codelab_levels.json").read_text(encoding="utf-8"))
+    out = {w["title"] for w in data["worlds"]}
+    for lv in data["levels"]:
+        out.update(lv[k] for k in ("title", "goal", "hint"))
+    return out
+
+
 def keys() -> list[str]:
-    found: set[str] = set(EXTRA)
+    found: set[str] = set(EXTRA) | card_keys() | codelab_keys()
     for f in list(WEB.glob("*.js")) + list((WEB / "shared").glob("*.js")):
         text = f.read_text(encoding="utf-8")
         for p in JS_PATTERNS:

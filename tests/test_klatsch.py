@@ -196,7 +196,7 @@ def test_family_table_coins_once_history_and_hat(client):
     client.get("/api/community/klatsch", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"klatsch:{st['game']}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"klatsch:{st['game']}:{mia}")["reason"] == "Klatsch den Beat – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"klatsch:{st['game']}:{mia}")["reason"] == "Clap the Beat – place 1"
     hist = fq.community.history(mia)
     assert hist[0]["kind"] == "klatsch" and hist[0]["data"]["place"] == 1 and hist[0]["data"]["coins"] == 8
     assert hist[0]["data"]["acc"] == 100 and hist[0]["data"]["record"]
@@ -264,7 +264,7 @@ def test_guests_join_and_play_but_cannot_lead(client):
     hm = login(client, mia, "1111")
     client.post("/api/community/klatsch/start", json={"bots": 0}, headers=hm)
     inv = client.post("/api/community/guests", json={"game": "klatsch"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Klatsch den Beat"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Clap the Beat"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     for path in ("start", "begin", "end"):

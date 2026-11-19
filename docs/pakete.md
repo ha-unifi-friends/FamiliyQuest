@@ -37,6 +37,34 @@ Eine Karte kann statt der Sprachschlüssel auch `frage` und `antwort` haben. Wei
 | `satz` | Satz mit `___` für den Lückentext |
 | `hinweis` | Tipp, der bei der Frage steht |
 
+## Mehrsprachige Pakete
+
+Ein Paket kann in allen App-Sprachen erscheinen. Die Frage wird in der Sprache des Lernenden gezeigt (App-Sprache des
+Geräts, sonst Familiensprache = Sprache des Elternbereichs, sonst Englisch, sonst die `quellsprache`); die Antwortseite
+(`sprache`) bleibt. Der Lernfortschritt hängt an der Karte (Schlüssel aus der `quellsprache`), ein Sprachwechsel
+verliert also nichts. Ein Sprachkurs wird nie in der Sprache gefragt, die er unterrichtet, und Lernenden mit dieser
+Muttersprache gar nicht angeboten (kein Französischkurs für französischsprachige Kinder).
+
+```yaml
+quellsprache: de                       # Kanon: daraus entsteht der Kartenschlüssel – nicht nachträglich ändern
+quellsprachen: [en, it, es, nl, pl, pt, sv]   # weitere Fragesprachen, die jede Karte trägt
+titel_i18n: {de: "Französisch A1 – Einstieg", fr: "Français A1 – Débutant", …}
+stufe_i18n: {de: "5. Klasse", fr: "5e année", …}
+beschreibung_i18n: {fr: "…", …}
+einheiten:
+  - id: zahlen
+    titel: Zahlen
+    titel_i18n: {fr: "Les nombres", …}
+    karten:
+      - {de: eins, fr: un, en: one, it: uno, …}                       # Frage je nach Sprache, Antwort fr
+      - {frage: "être – je", antwort: suis, satz: "Je ___ content."}  # neutral: gleich für alle
+      - {frage: "Partizip – sehen", frage_i18n: {fr: "Participe – sehen", …}, antwort: gesehen, satz: "…"}
+```
+
+**Pakete in einer Sprache:** `optional: true` und `sprachen: [de]` – solche Pakete werden bei einer neuen Installation
+nicht installiert, sondern stehen im Elternbereich unter **➕ Weitere Pakete** (Status `available`) und sind dort mit
+der Inhaltssprache beschriftet. «Hinzufügen» macht sie aktiv, danach werden sie pro Kind eingeschaltet.
+
 ## Übungstypen
 
 | `uebungen` | Lernform |

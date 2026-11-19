@@ -46,7 +46,7 @@ function klBoardSvg(mySeat, seatsUsed) {
     parts.push(start ? `<circle cx="${x}" cy="${y}" r="9" class="kl-field start" style="fill:color-mix(in srgb, ${KL_COLORS[s]} 35%, #fff);stroke:${KL_COLORS[s]}"/>`
       : `<circle cx="${x}" cy="${y}" r="6.3" class="kl-field${f % 16 === 15 ? " entry" : ""}"${f % 16 === 15 ? ` style="stroke:${KL_COLORS[(s + 1) % 4]}"` : ""}/>`);
   }
-  parts.push(`<text x="200" y="196" class="kl-logo">🏁</text><text x="200" y="216" class="kl-logo-t">Kartenlauf</text>`);
+  parts.push(`<text x="200" y="196" class="kl-logo">🏁</text><text x="200" y="216" class="kl-logo-t">${I18N.tr(T("Card Race")).replace(/[<&]/g, "")}</text>`);
   return parts.join("");
 }
 
@@ -440,6 +440,5 @@ async function kartenlaufFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("kartenlauf") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Race your marbles around the board with cards – kick the others back to the kennel, play in teams. Places 1 to 3 win coins at the family table!")),
-         h("div.row.wrap", botsOn("kartenlauf") ? h("button.btn", { onclick: () => kartenlaufStartDialog(true, () => go("kartenlauf")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => kartenlaufStartDialog(false, () => go("kartenlauf")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("kartenlauf") ? () => kartenlaufStartDialog(true, () => go("kartenlauf")) : null, () => kartenlaufStartDialog(false, () => go("kartenlauf")))]);
 }

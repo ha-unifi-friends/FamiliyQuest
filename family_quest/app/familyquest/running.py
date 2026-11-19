@@ -2,26 +2,57 @@
 
 Family tables and tables alone against bots of all live games: the family quiz, bingo, guess the song, poker and the
 games of the `card_game` table (Tschau Sepp, Kartenkarussell, Domino, Paarjagd, Wer bin ich?, Kartenlauf,
-Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Verkehrskadett, Snack Rush, Klatsch den Beat, Verbotene Wörter, Jass, Werwölfe,
-Schach, Dorfmarkt, Escape Room). Ending works like the «End» button of whoever leads the game.
+Stadt-Land-Fluss, Zeichnen & Raten, Fünf Würfel, Heimwärts, Jump, Verkehrskadett, 24-Stunden-Rennen, Snack Rush, Klatsch den Beat, Verbotene Wörter, Jass, Werwölfe,
+Schach, Dorfmarkt, Escape Room, Beat the Bureaucracy). Ending works like the «End» button of whoever leads the game.
 Chess games can be paused (status "paused" – listed as paused); ending one ends it without a result and without coins.
 """
 from __future__ import annotations
 
 import json
+import re
+
+from . import memo
+from .channel import hidden_games
+from .i18n import _t
 
 TITLES = {"tschau": "Tschau Sepp", "karussell": "Card Carousel", "domino": "Domino", "paarjagd": "Pair Hunt",
           "werbinich": "Who am I?", "kartenlauf": "Card Race", "stadtland": "City, Country, River", "zeichnen": "Draw & Guess",
-          "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "verkehr": "Traffic Cadet", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market", "escape": "Escape Room"}
+          "wuerfel": "Five Dice", "heimwaerts": "Homeward", "jump": "Jump", "sternlauf": "Star Runner", "snack": "Snack Rush", "verkehr": "Traffic Cadet", "langstrecke": "24h Endurance", "klatsch": "Clap the Beat", "verboten": "Forbidden Words", "jass": "Jass", "werwolf": "Werewolves", "schach": "Chess", "dorfmarkt": "Village Market", "escape": "Escape Room", "stempeljagd": "Beat the Bureaucracy"}
 ICONS = {"quiz": "🎯", "bingo": "🎱", "song": "🎵", "poker": "🃏", "tschau": "🂡", "karussell": "🎠", "domino": "🁫",
-         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "sternlauf": "🌠", "snack": "🍔", "verkehr": "🚦", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️", "escape": "🗝️"}
+         "paarjagd": "🧠", "werbinich": "🎭", "kartenlauf": "🏁", "stadtland": "🏙️", "zeichnen": "🎨", "wuerfel": "🎲", "heimwaerts": "🏠", "jump": "🦘", "sternlauf": "🌠", "snack": "🍔", "verkehr": "🚦", "langstrecke": "🏎️", "klatsch": "👏", "verboten": "🚫", "jass": "♣️", "werwolf": "🐺", "schach": "♟️", "dorfmarkt": "🏘️", "escape": "🗝️", "stempeljagd": "🏛️"}
+
+
+# ---------------------------------------------------------------- the coins of a game in the ledger
+# English source text, translated where the ledger is shown («Five Dice – place 1» → «Cinq dés – place 1»)
+REASON_KEYS = (_t("{0} – place {1}"), _t("{0} – victory"))
+# the German titles of older entries («Fünf Würfel – Platz 1»), mapped when the ledger is read
+_OLD_TITLES = {"Domino": "domino", "Dorfmarkt": "dorfmarkt", "Escape Room": "escape", "Heimwärts": "heimwaerts", "Jass": "jass",
+               "Jump": "jump", "Kartenlauf": "kartenlauf", "Klatsch den Beat": "klatsch", "Paarjagd": "paarjagd", "Schach": "schach",
+               "Snack Rush": "snack", "Stadt-Land-Fluss": "stadtland", "Sternschnuppen-Lauf": "sternlauf", "Verbotene Wörter": "verboten",
+               "Traffic Cadet": "verkehr", "Werwölfe": "werwolf", "Wer bin ich?": "werbinich", "Fünf Würfel": "wuerfel",
+               "Zeichnen & Raten": "zeichnen"}
+_OLD_REASON = re.compile(r"^(.+) – (?:Platz (\d+)|Sieg)$")
+
+
+def win_reason(kind: str, place: int | None = None) -> str:
+    """The ledger reason of the coins for a game: «Five Dice – place 2» / «Chess – victory»."""
+    title = TITLES.get(kind, kind)
+    return f"{title} – place {place}" if place else f"{title} – victory"
+
+
+def ledger_reason(reason: str) -> str:
+    """An older ledger entry in German («Fünf Würfel – Platz 1») in today's English form, so the app can translate it."""
+    m = _OLD_REASON.match(reason or "")
+    if not m or m.group(1) not in _OLD_TITLES:
+        return reason
+    return win_reason(_OLD_TITLES[m.group(1)], int(m.group(2)) if m.group(2) else None)
 
 
 def _games(fq) -> dict:
     """The object that leads the tables of a card_game kind."""
     return {"tschau": fq.cards, "karussell": fq.cards, "domino": fq.domino, "paarjagd": fq.paarjagd,
             "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf, "stadtland": fq.stadtland, "zeichnen": fq.zeichnen,
-            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "snack": fq.snack, "verkehr": fq.verkehr, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf, "schach": fq.schach, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape}
+            "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "sternlauf": fq.sternlauf, "snack": fq.snack, "verkehr": fq.verkehr, "langstrecke": fq.langstrecke, "klatsch": fq.klatsch, "verboten": fq.verboten, "jass": fq.jass, "werwolf": fq.werwolf, "schach": fq.schach, "dorfmarkt": fq.dorfmarkt, "escape": fq.escape, "stempeljagd": fq.stempeljagd}
 
 
 def _name(fq, pid) -> str:
@@ -33,6 +64,18 @@ def _people(players) -> int:
 
 
 def running(fq) -> list[dict]:
+    """The running tables of every game – once per request (memo.py), a copy per call."""
+    return [dict(t) for t in memo.get("running", lambda: _running(fq))]
+
+
+def _running(fq) -> list[dict]:
+    names: dict = {}
+
+    def _name(fq, pid) -> str:                         # the names of all hosts with one query
+        if not names:
+            names.update({r["id"]: r["name"] for r in fq.db.q("SELECT id, name FROM profile")})
+            names.setdefault(None, "")
+        return names.get(pid, "") or ""
     out = []
     g = fq.community._game()
     if g:
@@ -57,7 +100,7 @@ def running(fq) -> list[dict]:
                     "solo": bool(st.get("solo")), "host": _name(fq, r["host_id"]), "players": _people(st.get("players")),
                     "host_id": r["host_id"], "members": _ids(st.get("players"))})
     for r in fq.db.q("SELECT * FROM card_game WHERE status!='done' ORDER BY id"):
-        if r["kind"] not in TITLES:
+        if r["kind"] not in TITLES or r["kind"] in hidden_games():    # dev games (channel.py): only in the dev channel
             continue
         st = json.loads(r["state"] or "{}")
         players = st.get("players")

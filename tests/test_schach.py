@@ -358,7 +358,7 @@ def test_guests_join_open_seat(client):
     gid = client.post("/api/community/schach/start", json={"mode": "duel", "color": "white"}, headers=hm).json()["game"]
     inv = client.post("/api/community/guests", json={"game": "schach"}, headers=hm).json()["invite"]
     assert inv["game_id"] == gid
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Schach"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Chess"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     assert client.post("/api/community/schach/start", json={"mode": "bot"}, headers=hg).status_code in (401, 403)

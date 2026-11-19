@@ -584,7 +584,7 @@ def test_family_table_moves_trade_coins_once_and_history(client):
     client.get("/api/community/dorfmarkt", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"dorfmarkt:{gid}:%") == 2
-    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"dorfmarkt:{gid}:{mia}")["reason"] == "Dorfmarkt – Platz 1"
+    assert fq.db.q1("SELECT reason FROM ledger WHERE ref=?", f"dorfmarkt:{gid}:{mia}")["reason"] == "Village Market – place 1"
     hist = fq.community.history(mia)
     assert hist[0]["kind"] == "dorfmarkt" and hist[0]["data"]["place"] == 1 and hist[0]["data"]["coins"] == 8
     prof = fq.db.q1("SELECT settings FROM profile WHERE id=?", mia)
@@ -633,7 +633,7 @@ def test_guests_join_and_play_but_cannot_lead(client):
     hm = login(client, mia, "1111")
     client.post("/api/community/dorfmarkt/start", json={"bots": 0}, headers=hm)
     inv = client.post("/api/community/guests", json={"game": "dorfmarkt"}, headers=hm).json()["invite"]
-    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Dorfmarkt"
+    assert client.get("/api/community/guest/info", params={"code": inv["code"]}).json()["title"] == "Village Market"
     g = client.post("/api/community/guest/join", json={"code": inv["code"], "name": "Oma"}).json()
     hg = {"X-FQ-Token": g["token"]}
     for path in ("start", "begin", "end", "pause"):

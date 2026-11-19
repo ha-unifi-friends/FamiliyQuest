@@ -47,6 +47,7 @@ import time
 from .cardgames import BOTS, BOT_DELAY, CardGames, bot_delay
 from .community import CommunityError
 from .pairhunt import rewards_of as _rewards_of
+from .running import win_reason
 
 KIND = "jass"
 TITLE = "Jass"
@@ -590,13 +591,7 @@ class Jass(CardGames):
         coins = self.coins_for(st)
         st["paid"], st["coins"] = True, coins
         self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
-        for pid, amount in coins.items():
-            ref = f"{KIND}:{row['id']}:{pid}"
-            if self.rewards and not self.db.q1("SELECT id FROM ledger WHERE ref=?", ref):
-                try:
-                    self.rewards.book(int(pid), "coins", amount, "game_win", f"{TITLE} – Platz 1", ref=ref)
-                except Exception:  # noqa: BLE001
-                    pass
+        self._payout(KIND, row["id"], coins, lambda pid: win_reason(KIND, 1))
         tot = st.get("totals") or [0, 0]
         if tot[0] != tot[1]:                                            # a tie: nobody gets the «No. 1» hat
             self._champion(st, [p for p, n in (st.get("places") or {}).items() if n == 1])

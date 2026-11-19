@@ -20,15 +20,20 @@ rounds (or when somebody passes the point limit) the lowest points win.
 from __future__ import annotations
 
 import json
+import logging
 import secrets
 import random
 import threading
 import time
 
 from .community import CommunityError
+from .i18n import _t
 
-BOTS = [("Fuchs Fridolin", "🦊"), ("Bär Bruno", "🐻"), ("Eule Olga", "🦉"), ("Frosch Fritz", "🐸"), ("Katze Kiki", "🐱"),
-        ("Hase Hoppel", "🐰"), ("Pinguin Pino", "🐧"), ("Igel Ida", "🦔")]
+log = logging.getLogger("familyquest.cardgames")
+
+# the bots' names: German source, translated in the app (keys in web/i18n)
+BOTS = [(_t("Fuchs Fridolin"), "🦊"), (_t("Bär Bruno"), "🐻"), (_t("Eule Olga"), "🦉"), (_t("Frosch Fritz"), "🐸"), (_t("Katze Kiki"), "🐱"),
+        (_t("Hase Hoppel"), "🐰"), (_t("Pinguin Pino"), "🐧"), (_t("Igel Ida"), "🦔")]
 BOT_DELAY = 1.4                      # seconds before a bot moves (default – the reaction time is set at the start: bot_ms)
 
 # ---------------------------------------------------------------- the two games
@@ -46,7 +51,7 @@ GAMES = {
     "karussell": {
         "title": "Kartenkarussell",
         "defaults": {"hand": 7, "rounds": 1, "stack": True, "penalty": 2, "bots": 2, "level": "normal", "back": "classic", "bot_ms": 1400},
-        "calls": ("Letzte!", "Fertig!"),
+        "calls": (_t("Last card!"), _t("Done!")),          # «Letzte!» / «Fertig!» – translated in the app
     },
 }
 
@@ -365,6 +370,7 @@ def apply_starter(st: dict, mode: str, chosen=None, leader=None) -> str:
 
 
 class CardGames:
+    rewards = None     # rewards.engine.Rewards of the games that pay coins (_payout)
     no_bots = None     # hook (services.table_without_bots): (kind, ids of the people) → True when no bot may sit at the table
 
     def __init__(self, db, add_history=None):
@@ -440,6 +446,17 @@ class CardGames:
                         self.add_history(int(pid), "cards", {"game": GAMES[st["kind"]]["title"], "place": i + 1, "players": len(st["players"])})
                     except Exception:  # noqa: BLE001
                         pass
+
+    def _payout(self, kind: str, table_id: int, coins: dict, reason) -> None:
+        """The coins of a finished table: once per player (ledger ref kind:table:player – Rewards.book_once);
+        `reason(pid)` is the ledger text. A failed booking never stops the end of the game."""
+        if not self.rewards:
+            return
+        for pid, amount in coins.items():
+            try:
+                self.rewards.book_once(int(pid), "coins", amount, "game_win", reason(pid), ref=f"{kind}:{table_id}:{pid}")
+            except Exception:  # noqa: BLE001
+                log.exception("game coins failed")
 
     def _champion(self, st: dict, winners: list) -> None:
         """A family game is over: the «No. 1» hat goes to the winners (community.family_result) – not alone against

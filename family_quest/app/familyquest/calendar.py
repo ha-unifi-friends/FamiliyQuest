@@ -18,6 +18,8 @@ import time
 from datetime import date, datetime, timedelta
 
 import httpx
+from . import memo
+from .i18n import _t
 
 OPENHOLIDAYS = "https://openholidaysapi.org"
 # the 26 cantons (ISO 3166-2:CH) – names stay as they are (proper names)
@@ -85,7 +87,7 @@ def clean_event(e: dict) -> dict:
     options = {}
     if kind == "offlinetime":           # what OfflineTime does: internet off and / or app games locked – for whom
         options = {"internet": bool(o.get("internet")), "games": bool(o.get("games")),
-                   "profiles": sorted({int(x) for x in o.get("profiles") or [] if str(x).isdigit()})}
+                   "profiles": sorted({int(x) for x in o.get("profiles") or [] if str(x).isdecimal()})}
     return {"title": title, "start": start, "end": end, "all_day": all_day,
             "icon": str(e.get("icon") or "").strip()[:8], "color": str(e.get("color") or "")[:9],
             "kind": kind, "note": str(e.get("note") or "").strip()[:500],
@@ -238,8 +240,8 @@ class FamilyCalendar:
 
     def own(self, start: str, end: str) -> list[dict]:
         """Own events that touch the days start … end (ISO dates, end included)."""
-        rows = self.db.q("""SELECT * FROM family_event WHERE substr(start,1,10) <= ? AND substr(end,1,10) >= ?
-                            ORDER BY start, title""", end, start)
+        rows = memo.get(("family_event", start, end), lambda: self.db.q(
+            """SELECT * FROM family_event WHERE substr(start,1,10) <= ? AND substr(end,1,10) >= ? ORDER BY start, title""", end, start))
         return [{**r, "all_day": bool(r["all_day"]), "readonly": False, "options": json.loads(r.get("options") or "{}")} for r in rows]
 
     # ---------- FamilyTime and OfflineTime
@@ -321,7 +323,7 @@ class FamilyCalendar:
                     for h in r.json():
                         out.append(self._holiday(h, kind, canton, lang))
         except (httpx.HTTPError, ValueError) as e:
-            raise CalendarError(f"The holiday service cannot be reached: {e}") from None
+            raise CalendarError(_t("The holiday service cannot be reached: {0}").replace("{0}", str(e))) from None
         out = [e for e in out if e]
         out.sort(key=lambda e: e["start"])
         self._holiday_cache[key] = (time.time(), out)

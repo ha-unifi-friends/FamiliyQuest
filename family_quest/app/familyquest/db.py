@@ -12,7 +12,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
+from . import memo
 from .i18n import _t
+
+# a migration starting with this runs with the foreign keys switched off (a table rebuild: DROP TABLE must not cascade)
+FK_OFF = "-- foreign keys off\n"
 
 MIGRATIONS: list[str] = [
     # 1 – base schema
@@ -652,6 +656,157 @@ MIGRATIONS: list[str] = [
     );
     ALTER TABLE chore ADD COLUMN energy INTEGER NOT NULL DEFAULT 0;
     """,
+    # 38 – deals (deals.py): children trade with each other and with parents – coins, chores, avatar items, pets, bought
+    # games, free text. Every offer / counter-offer is a version; the deal stands when both accepted the same one. What
+    # will be given is reserved (deal_hold); chores taken over move to the doer (chore_task.from_id / deal_id). Every
+    # transfer has a unique ref in deal_pay – booked once only.
+    """
+    CREATE TABLE deal(
+        id INTEGER PRIMARY KEY,
+        a_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,     -- who made the first offer
+        b_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'open',     -- open | approval | running | done | rejected | withdrawn | declined | failed | cancelled
+        version INTEGER NOT NULL DEFAULT 1,
+        terms TEXT NOT NULL,                     -- {"a": [items a gives], "b": [items b gives]} of the current version
+        by_id INTEGER,                           -- who made the current version
+        accepted TEXT NOT NULL DEFAULT '[]',     -- profiles that accepted the current version
+        progress TEXT NOT NULL DEFAULT '{}',     -- execution: chore tasks per side, what is done and paid, free text confirmations
+        reason TEXT,                             -- why it failed / was cancelled
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        stood_at TEXT,
+        ended_at TEXT
+    );
+    CREATE INDEX deal_a ON deal(a_id, status);
+    CREATE INDEX deal_b ON deal(b_id, status);
+    CREATE TABLE deal_msg(
+        id INTEGER PRIMARY KEY,
+        deal_id INTEGER NOT NULL REFERENCES deal(id) ON DELETE CASCADE,
+        profile_id INTEGER,                      -- NULL = the app (deal stands, chore done, failed …)
+        kind TEXT NOT NULL,
+        data TEXT NOT NULL DEFAULT '{}',
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE INDEX deal_msg_deal ON deal_msg(deal_id, id);
+    CREATE TABLE deal_seen(
+        deal_id INTEGER NOT NULL REFERENCES deal(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        msg_id INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY(deal_id, profile_id)
+    );
+    CREATE TABLE deal_hold(
+        id INTEGER PRIMARY KEY,
+        deal_id INTEGER NOT NULL REFERENCES deal(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL,             -- who gives it
+        kind TEXT NOT NULL,                      -- coins | pet | avatar | game
+        ref TEXT NOT NULL DEFAULT '',            -- pet id / avatar item / game
+        amount REAL NOT NULL DEFAULT 0,          -- coins reserved …
+        paid REAL NOT NULL DEFAULT 0,            -- … and already paid (reserved = amount - paid)
+        active INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE INDEX deal_hold_profile ON deal_hold(profile_id, active);
+    CREATE TABLE deal_pay(ref TEXT PRIMARY KEY, at TEXT NOT NULL DEFAULT (datetime('now','localtime')));
+    ALTER TABLE chore_task ADD COLUMN from_id INTEGER;     -- taken over in a deal from this profile
+    ALTER TABLE chore_task ADD COLUMN deal_id INTEGER;
+    """,
+    # 39 – adventure books (stories.py): branching stories of the family – the working copy of the author, the published
+    # copy the readers see, a copy waiting for parent approval; per reader the page, items, endings found and ⭐
+    """
+    CREATE TABLE story(
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        emoji TEXT NOT NULL DEFAULT '📖',
+        color INTEGER NOT NULL DEFAULT 0,
+        lang TEXT NOT NULL DEFAULT 'en',
+        author_id INTEGER,
+        data TEXT NOT NULL,                      -- JSON {start, pages}: the working copy
+        live TEXT,                               -- the published copy (NULL: not published)
+        pending TEXT,                            -- sent for parent approval
+        visibility TEXT NOT NULL DEFAULT 'me',   -- who reads it besides the author: me (nobody) | kids (the children) | family
+        approved INTEGER NOT NULL DEFAULT 0,     -- the published copy may be shown to the others (approval, if switched on)
+        rewarded INTEGER NOT NULL DEFAULT 0,     -- the writing reward is paid (once per book, when the others first see it)
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        published_at TEXT
+    );
+    CREATE TABLE story_read(
+        story_id INTEGER NOT NULL REFERENCES story(id) ON DELETE CASCADE,
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        page INTEGER,
+        items TEXT NOT NULL DEFAULT '[]',
+        endings TEXT NOT NULL DEFAULT '[]',      -- ending pages found
+        finished INTEGER NOT NULL DEFAULT 0,     -- endings reached (also the same one again)
+        rating INTEGER,                          -- 1…5 stars after finishing
+        rewarded INTEGER NOT NULL DEFAULT 0,     -- the author got the reading reward for this reader
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        PRIMARY KEY(story_id, profile_id)
+    );
+    """,
+    # 40 – book types on the shelf (stories.py, picturebooks.py): 📕 picture books, 📖 adventure books, 🗝️ adventure games
+    # (reserved, not built yet); `sample` marks the ready-made sample books of the app (texts in every language)
+    """
+    ALTER TABLE story ADD COLUMN type TEXT NOT NULL DEFAULT 'adventure';   -- picture | adventure | game
+    ALTER TABLE story ADD COLUMN sample TEXT;                               -- key of a shipped sample book (author: Family Quest)
+    """,
+    # 41 – 🗝️ adventure games (adventuregame.py): the saved game of every player (room, inventory, switches, taken things,
+    # the dialogue line, the ending) – resume where they stopped; NULL: not started / started again
+    """
+    ALTER TABLE story_read ADD COLUMN state TEXT;
+    """,
+    # 42 – profile ids are never used again (AUTOINCREMENT): a new profile must not inherit what a deleted one left
+    # (books by author_id, ledger rows, …) – the sequence starts above every id ever seen. Rebuilt with the foreign
+    # keys off (FK_OFF, see migrate()). An index on ledger(ref): «booked once» checks by ref.
+    FK_OFF + """
+    CREATE TABLE profile_new(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'kid',          -- kid | parent | guest
+        color TEXT NOT NULL DEFAULT '#4f8cff',
+        avatar TEXT NOT NULL DEFAULT '{}',
+        pin_hash TEXT,
+        settings TEXT NOT NULL DEFAULT '{}',
+        planer_person_id TEXT,
+        archived INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO profile_new(id, name, role, color, avatar, pin_hash, settings, planer_person_id, archived, created_at)
+        SELECT id, name, role, color, avatar, pin_hash, settings, planer_person_id, archived, created_at FROM profile;
+    DROP TABLE profile;
+    ALTER TABLE profile_new RENAME TO profile;
+    INSERT INTO sqlite_sequence(name, seq) SELECT 'profile', 0 WHERE NOT EXISTS (SELECT 1 FROM sqlite_sequence WHERE name='profile');
+    UPDATE sqlite_sequence SET seq=MAX(seq, COALESCE((SELECT MAX(id) FROM profile), 0), COALESCE((SELECT MAX(author_id) FROM story), 0),
+        COALESCE((SELECT MAX(profile_id) FROM ledger), 0), COALESCE((SELECT MAX(from_id) FROM chore_task), 0)) WHERE name='profile';
+    CREATE INDEX ledger_ref ON ledger(ref);
+    """,
+    # 43 – 💡 Code Workshop (codelab.py): own block programs of the family (visibility like the books) and the puzzle
+    # progress of every person (best ⭐, fewest blocks, the last try)
+    """
+    CREATE TABLE codelab_project(
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        author_id INTEGER,
+        data TEXT NOT NULL,                      -- JSON program (codelab.clean_program)
+        visibility TEXT NOT NULL DEFAULT 'family',   -- me (nobody else, parents neither) | kids | family
+        blocks INTEGER NOT NULL DEFAULT 0,
+        sprites INTEGER NOT NULL DEFAULT 0,
+        cover TEXT,                              -- library costume shown on the card
+        remix_of INTEGER,                        -- the program it was copied from (may be gone)
+        remix_title TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE INDEX codelab_project_author ON codelab_project(author_id);
+    CREATE TABLE codelab_progress(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        level TEXT NOT NULL,
+        stars INTEGER NOT NULL DEFAULT 0,        -- best result
+        blocks INTEGER,                          -- fewest blocks of a solution
+        program TEXT,                            -- the last try (scripts of the fox)
+        solved_at TEXT,                          -- first solved
+        updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        PRIMARY KEY(profile_id, level)
+    );
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -699,6 +854,7 @@ DEFAULT_SETTINGS = {
     "games_profiles": [],                # with "some": the children who may play
     "games_access": None,                # per game {"mode", "profiles"} (services.games_access) – replaces the two above
     "parent_ha_only": False,             # parent area only through Home Assistant (linked HA user), no PIN login
+    "kid_ha_login": False,               # children with a linked Home Assistant user open their app in HA without PIN
     "allowed_networks": [],              # mini firewall: networks (CIDR) that may use the app – empty = all
     "guest_networks": [],                # guest Wi-Fi: only games with a QR code invitation (no family login)
     "parent_networks": [],               # … that may open the parent area – empty = all
@@ -714,12 +870,15 @@ DEFAULT_SETTINGS = {
     "hamster_coins_per_day": 15,         # the hamster mines (default: 5 more than a day in the pet hotel) this many coins per day while it is healthy (pets.py)
     "pet_shop_currency": "coins",        # pet shop (outfits, houses, furniture): coins | xp | mixed (the child chooses)
     "lesson_perfect_coins": 5,           # coins for a lesson without a single mistake (on top of «lesson finished»)
-    "game_rewards": {"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "verkehr": [10, 5, 2], "sternlauf": [10, 5, 2], "snack": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2], "escape": [10, 5, 2]},   # live games: coins for places 1, 2, 3 (pairhunt.py, whoami.py, kartenlauf.py, stadtland.py, zeichnen.py, wuerfel.py, heimwaerts.py, jump.py, snack.py, klatsch.py, verboten.py; jass.py: place 1 only; werwolf.py: place 1 for the winning side; schach.py: [win against family, against the hard bot, against the normal bot]; dorfmarkt.py; escape.py: place 1 only) – family tables with ≥ 2 people
+    "game_rewards": {"paarjagd": [10, 5, 2], "werbinich": [10, 5, 2], "kartenlauf": [10, 5, 2], "stadtland": [10, 5, 2], "zeichnen": [10, 5, 2], "wuerfel": [10, 5, 2], "heimwaerts": [10, 5, 2], "jump": [10, 5, 2], "verkehr": [10, 5, 2], "langstrecke": [10, 5, 2], "sternlauf": [10, 5, 2], "snack": [10, 5, 2], "klatsch": [10, 5, 2], "verboten": [10, 5, 2], "jass": [10, 5, 2], "werwolf": [10, 5, 2], "schach": [10, 5, 2], "dorfmarkt": [10, 5, 2], "escape": [10, 5, 2], "stempeljagd": [10, 5, 2]},   # live games: coins for places 1, 2, 3 (pairhunt.py, whoami.py, kartenlauf.py, stadtland.py, zeichnen.py, wuerfel.py, heimwaerts.py, jump.py, snack.py, klatsch.py, verboten.py; jass.py: place 1 only; werwolf.py: place 1 for the winning side; schach.py: [win against family, against the hard bot, against the normal bot]; dorfmarkt.py; escape.py: place 1 only; stempeljagd.py) – family tables with ≥ 2 people
     "memory": None,                      # pairs game: own photo sets and the family crest (memorygame.py)
     "familytime_wishes": True,           # FamilyTime: game wishes, the vote and buying a game (familytime.py) – off: children see nothing
     "familytime_game_price": 150,        # coins a child pays to set the game of a FamilyTime firmly (0 = buying off)
     "familytime_vote_hours": 24,         # the wishes close (and the vote starts) this many hours before the FamilyTime
     "planer_points_account": "coins",    # built-in planner: its points and this account are one balance ("" = separate)
+    "deals": None,                       # deals between children and with parents (deals.py) – None = defaults (deals.DEFAULT)
+    "stories": None,                     # adventure books (stories.py): children off, approval, rewards – None = stories.DEFAULT
+    "codelab": None,                     # 💡 Code Workshop (codelab.py): children off, puzzle rewards – None = codelab.DEFAULT
 }
 
 DEFAULT_PROFILE_SETTINGS = {
@@ -795,6 +954,7 @@ class Database:
 
     def x(self, sql: str, *args: Any) -> int:
         """Run a write. INSERT → new rowid (0 when OR IGNORE skipped the row), else the number of changed rows."""
+        memo.clear()                                   # the request reads what it writes (memo.py)
         with self.lock:
             cur = self.conn.execute(sql, args)
             if sql.lstrip()[:6].upper() == "INSERT":
@@ -803,10 +963,11 @@ class Database:
 
     # ---------- settings ----------
     def get_setting(self, key: str, default: Any = None) -> Any:
-        r = self.q1("SELECT value FROM setting WHERE key=?", key)
-        if r is None:
+        # the stored text once per request (memo.py) – parsed every time, so callers may change what they get
+        raw = memo.get(("setting", key), lambda: (self.q1("SELECT value FROM setting WHERE key=?", key) or {}).get("value"))
+        if raw is None:
             return DEFAULT_SETTINGS.get(key, default)
-        return json.loads(r["value"])
+        return json.loads(raw)
 
     def set_setting(self, key: str, value: Any) -> None:
         self.x("INSERT INTO setting(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -823,7 +984,18 @@ class Database:
         with self.lock:
             ver = self.conn.execute("PRAGMA user_version").fetchone()["user_version"]
             for i, sql in enumerate(MIGRATIONS[ver:], start=ver + 1):
-                self.conn.executescript("BEGIN;" + sql + f";PRAGMA user_version={i};COMMIT;")
+                fk_off = sql.startswith(FK_OFF)
+                if fk_off:                                 # only outside a transaction (SQLite ignores it inside)
+                    self.conn.execute("PRAGMA foreign_keys=OFF")
+                try:
+                    self.conn.executescript("BEGIN;" + sql + f";PRAGMA user_version={i};COMMIT;")
+                except BaseException:
+                    if self.conn.in_transaction:
+                        self.conn.execute("ROLLBACK")
+                    raise
+                finally:
+                    if fk_off:
+                        self.conn.execute("PRAGMA foreign_keys=ON")
                 if i == 1:
                     self._seed()
 
