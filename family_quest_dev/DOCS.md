@@ -1351,7 +1351,8 @@ at least two cars (without bots: two teams of people).
 - **One short lap (about 20–30 s), then the car drives into the pits by itself – after every lap.** At every stop the
   **driver changes**: the next person of the team drives (in turn), the driver joins the crew. Two people take turns;
   alone (or when the whole crew is offline) the **garage** prepares: every stop takes a fixed **5 s** (+4 s after an
-  overheat), tyres by the forecast.
+  overheat), tyres by the forecast – and the garage plugs the spare battery in only **8 s after the stop** (fair, not
+  perfect: the spare is usually 80–100 % at the next stop).
 - **Driver:** three lanes – swipe or ◀ ▶ (←/→) to dodge oil, cones and slow cars; **hold 🚀 Gas** (↑ / Space) for full
   speed, **🛑 Brake** (↓) to brake, neither = lifted off. Full throttle heats the engine; in the **red it overheats**:
   the car limps to the pits and the engine is swapped there (no retirement). **Two chicanes** per lap: **braking zones**
@@ -1360,23 +1361,38 @@ at least two cars (without bots: two teams of people).
   slows a little; in the rain or at night the kerbs reach the middle lane). Juniors – and everybody in the first two
   laps – get a big «🛑 Brake!» hint. **Slicks in the rain** and **rain tyres in the dry** are slower (and slicks slide).
   Other cars never block you: a car close to yours in your lane is drawn moving over to a free lane while overtaking.
-- **Pit crew** (everybody else of the team) – during the lap on their phones: **🛞 lay out 4 tyres** (choose ☀️ slicks or
-  🌧️ rain tyres, tap the 4 spots), **⛽ fill the canister** (hold, let go in the green zone 80–100 %; too much spills
-  and the canister starts empty again) and, only after an overheat, **🔧 prepare the spare engine** (hold 2 s). Each
-  finished job shows ✓ (also for the driver). A bar shows when the car comes in.
-- **The stop** – a big stopwatch, the car in its pit box, the crew at work and cheering stands for the whole team:
-  **3 s** (stop and driver change) **+4 s for tyres not ready, +4 s for fuel not ready, engine swap +6 s (+2 s if
-  prepared)**. A job only counts if it was finished before the car arrived. A super fast stop (≤ 4 s) gets a cheer.
+- **Electric car – the battery 🔋:** the battery (0–100 %) drains by the metre, **much faster at full throttle** (0.16 %
+  per metre – flat out a full battery does *not* last a lap) **than lifted** (0.07 % per metre – a lifted lap needs
+  about 45 %); braking gives a little back. The driver sees 🔋 % in green / orange / red and **«Save energy!»** when the
+  charge won't last the rest of the lap at a normal mix of full throttle and lifting (blinking big while pressing the
+  gas). **Empty → «⚠️ Emergency drive mode»:** the car crawls (about 50 km/h) to the pits with its hazard lights on –
+  no retirement, but it costs a lot of time.
+- **Exactly two batteries per team:** the one in the car and **one spare**. At **every stop they are swapped** (part of
+  the stop, a fixed 1 s): the spare goes into the car **with whatever charge it has**, the used one comes out and has to
+  be charged during the next lap. It only charges while it is **plugged in**: 4 % per second (empty → full in 25 s,
+  about a lap) from the moment the crew plugged it in – computed on the server from its own timestamps (plug-in time,
+  swap time), never from a number the app sends. Plugged in late (other jobs first) → not full at the next stop → the
+  next driver has to drive slower. The driver's screen shows «spare 🔋 63 % ⚡» rising.
+- **Pit crew** (everybody else of the team) – during the lap on their phones: **🔌 charge the spare battery** (tap
+  «Plug in» – first!; the charge rises on every crew phone, a cable animates while it charges), **🛞 lay out 4 tyres**
+  (choose ☀️ slicks or 🌧️ rain tyres, tap the 4 spots) and, only after an overheat, **🔧 prepare the spare engine**
+  (hold 2 s). Each finished job shows ✓ (also for the driver). A bar shows when the car comes in.
+- **The stop** – a big stopwatch, the car in its pit box, the battery swap (the used one goes to the charger), the crew
+  at work and cheering stands for the whole team: **2 s** (stop and driver change) **+ 1 s battery swap, +4 s for tyres
+  not ready, engine swap +6 s (+2 s if prepared)**. A job only counts if it was finished before the car arrived. A
+  super fast stop (≤ 4 s) gets a cheer. The next driver sees the charge of the battery going in («🔋 63 % – Save
+  energy!»).
 - Trackside banners now and then (own, invented: Family Quest, Home Assistant with an own house icon, «Snowman Tyres»).
 - Now and then **fans camp beside the track** (tents, a camper van, a campfire at night) waving a sign «I ❤️ #7 🇨🇭» –
   mostly with the viewer's own car number and flag, sometimes for another team.
 - **Difficulty:** junior (fewer things on the track, the engine heats slower, the braking hint always) or normal.
-  **Bots** (easy / normal / hard) dodge, manage the temperature, brake for the chicanes and prepare their stops (easier
-  bots miss more jobs or pick the wrong tyres). A driver whose app is silent for 6 s gets the **autopilot**.
+  **Bots** (easy / normal / hard) dodge, manage the temperature and the battery (they lift off when it would not last
+  the lap), brake for the chicanes, plug their spare in first and prepare their stops (easier bots miss more jobs, plug
+  in late or pick the wrong tyres). A driver whose app is silent for 6 s gets the **autopilot**.
 
 The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for a
 smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane, gas /
-brake); the crew's jobs are actions timed by the server (a tyre on a spot, start / stop holding). Who leads may end the
+brake); the crew's jobs are actions timed by the server (plug in, a tyre on a spot, start / stop holding). Who leads may end the
 race early: ranked as it stands, no coins. Parents › Games › 24h Endurance: the defaults (race length, weather,
 difficulty, people per team), active / without bots / inactive, the coins.
 
