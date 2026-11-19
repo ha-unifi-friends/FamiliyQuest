@@ -1212,7 +1212,6 @@
  "Dino nest": "Nid de dino",
  "Dinosaur": "Dinosaure",
  "Dinosaur valley": "Vallée des dinosaures",
- "Direct access is off: the code opens the app inside Home Assistant. In Home Assistant open the app → Configuration and switch on direct_access, so the children's devices can open it without a Home Assistant login.": "L'accès direct est désactivé : le code ouvre l'appli dans Home Assistant. Dans Home Assistant, ouvrez l'appli → Configuration et activez direct_access pour que les appareils des enfants puissent l'ouvrir sans connexion à Home Assistant.",
  "Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.": "L'accès direct est encore désactivé : dans Home Assistant, ouvrez l'app → Configuration, activez direct_access et redémarrez l'app.",
  "Direct access is switched off – open Family Quest from Home Assistant": "L'accès direct est désactivé – ouvre Family Quest depuis Home Assistant",
  "Direction": "Direction",

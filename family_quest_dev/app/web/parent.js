@@ -179,14 +179,20 @@ async function releaseNotes() {
 // the app is and how the children sign in
 function appLinkDialog(href) {
   const link = new URL(href, location.href).href, direct = !!(P.appLink && P.appLink.port) || !(P.info && P.info.via_ha);
-  const m = modal(h("div.form.app-link-dlg", h("h2", "⭐ ", T("Family Quest App")),
+  const close = () => m.close();
+  // without direct access the address is the Home Assistant ingress one – no use for the children's devices
+  // (long QR code, 401 without a Home Assistant login): only the hint how to switch it on
+  const m = direct ? modal(h("div.form.app-link-dlg", h("h2", "⭐ ", T("Family Quest App")),
     h("p", T("The children use their own app: scan the code with the phone or tablet, pick your profile and enter your PIN.")),
     h("div.center.app-link-qr", qrSvg(link)),
     h("p.small.center", { translate: "no" }, h("a", { href: link, target: "_blank", rel: "noopener" }, link)),
-    direct ? h("p.small.muted", "📶 ", T("Works in the home Wi-Fi.")) : h("p.small.muted", "ℹ️ ", T("Direct access is off: the code opens the app inside Home Assistant. In Home Assistant open the app → Configuration and switch on direct_access, so the children's devices can open it without a Home Assistant login.")),
-    h("div.row.wrap", h("a.btn", { href: link, target: "_blank", rel: "noopener", onclick: () => m.close() }, "↗ ", T("Open in a new tab")),
+    h("p.small.muted", "📶 ", T("Works in the home Wi-Fi.")),
+    h("div.row.wrap", h("a.btn", { href: link, target: "_blank", rel: "noopener", onclick: close }, "↗ ", T("Open in a new tab")),
       h("button.btn.ghost", { onclick: () => { m.close(); printPoster(link); } }, "🖨️ ", T("Print poster")),
-      h("button.btn.ghost", { onclick: () => m.close() }, T("Close")))));
+      h("button.btn.ghost", { onclick: close }, T("Close")))))
+    : modal(h("div.form.app-link-dlg", h("h2", "⭐ ", T("Family Quest App")),
+      h("p.app-link-off", "ℹ️ ", T("Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.")),
+      h("div.row.wrap", h("button.btn", { onclick: close }, T("Close")))));
 }
 
 function appLinkAttrs({ dialog = false } = {}) {
