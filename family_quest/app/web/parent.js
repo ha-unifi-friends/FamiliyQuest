@@ -199,6 +199,7 @@ function appLinkDialog(href) {
     h("p.small.muted", "📶 ", T("Works in the home Wi-Fi.")),
     h("div.row.wrap", h("a.btn", { href: link, target: "_blank", rel: "noopener", onclick: close }, "↗ ", T("Open in a new tab")),
       h("button.btn.ghost", { onclick: () => { m.close(); printPoster(link); } }, "🖨️ ", T("Print poster")),
+      h("button.btn.ghost", { onclick: () => { m.close(); installAppDialog({ forOther: true, link }); } }, "📲 ", T("Install app")),
       h("button.btn.ghost", { onclick: close }, T("Close")))))
     : modal(h("div.form.app-link-dlg", h("h2", "⭐ ", T("Family Quest App")),
       h("p.app-link-off", "ℹ️ ", T("Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.")),
@@ -1469,7 +1470,7 @@ async function choresView(main) {
 // «+ To-do». They call the planer in the frame (planer/host.js FQ_PLANER_DO) – same windows, PIN rules and API calls.
 // «Refresh» (the planer pulls calendars and lists again) is the app's ⟳ button (planerRefresh). Settings: below.
 function planerChoresSection(...more) {
-  const frame = planerFrame("planer?mode=parent#/aemtliplan", T("Chore plan"));
+  const frame = planerFrame("planner?mode=parent#/aemtliplan", T("Chore plan"));
   const act = kind => {
     const w = frame.contentWindow;
     if (!w || !w.FQ_PLANER_DO) return;
@@ -1495,7 +1496,7 @@ function planerChoresSection(...more) {
 function planerSettingsSection() {
   const box = h("details.card.sec.fold.planer-settings", h("summary", h("h2", "⚙️ " + I18N.tr(T("Planner settings")))));
   box.addEventListener("toggle", () => {
-    if (box.open && !box.querySelector(".planer-frame")) box.append(planerFrame("planer?mode=parent#/einstellungen", T("Planner settings")));
+    if (box.open && !box.querySelector(".planer-frame")) box.append(planerFrame("planner?mode=parent#/einstellungen", T("Planner settings")));
   });
   return box;
 }

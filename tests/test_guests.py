@@ -45,8 +45,9 @@ def test_guest_network(client):
     client.post("/api/community/bingo/start", json={}, headers=h)
     code = client.post("/api/community/guests", json={"game": "bingo"}, headers=h).json()["invite"]["code"]
     # from the guest network: guest page, scripts, join and play – nothing else
-    assert guest.get("/gast").status_code == 200 and guest.get("/shared/ui.js").status_code == 200
-    assert guest.get("/").status_code == 403 and guest.get("/eltern").status_code == 403
+    assert guest.get("/guest").status_code == 200 and guest.get("/shared/ui.js").status_code == 200
+    assert guest.get("/").status_code == 403 and guest.get("/parents").status_code == 403
+    assert guest.get("/gast?c=" + code).status_code == 200                          # the old address of printed QR codes
     assert guest.get("/api/profiles").status_code == 403
     assert guest.post("/api/login", json={"profile_id": mia, "pin": "1111"}).status_code == 403
     g = {"X-FQ-Token": guest.post("/api/community/guest/join", json={"code": code, "name": "Gotti"}).json()["token"]}

@@ -116,7 +116,7 @@ def test_ingress_start_page_per_home_assistant_user(client, monkeypatch):
     monkeypatch.setattr(client.app.state.fq, "ha", HA())
     assert "parent.js" in ingress.get("/", headers={"X-Remote-User-Id": "u-admin"}).text
     assert "kid.js" in ingress.get("/", headers=other).text
-    assert "parent.js" in ingress.get("/eltern", headers=KID).text                      # the parent area itself: PIN login
+    assert "parent.js" in ingress.get("/parents", headers=KID).text                      # the parent area itself: PIN login
 
 
 def test_user_is_admin_from_home_assistant():

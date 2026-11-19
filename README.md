@@ -200,7 +200,7 @@ python3 -m venv .venv && .venv/bin/pip install -r family_quest/requirements.txt 
 cd family_quest/app && FQ_DATA_DIR=/tmp/fq FQ_HA_DISABLED=1 ../../.venv/bin/uvicorn familyquest.main:app_factory --factory --port 8099
 ```
 
-Open <http://localhost:8099> (children) and <http://localhost:8099/eltern> (parents). The web app has no build step
+Open <http://localhost:8099> (children) and <http://localhost:8099/parents> (parents). The web app has no build step
 (plain JavaScript, no framework); the backend is FastAPI with SQLite in `/data`.
 
 ## License
