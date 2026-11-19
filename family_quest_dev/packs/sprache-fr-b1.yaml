@@ -1,10 +1,12 @@
 # Französisch B1 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
 id: sprache-fr-b1
 titel: "Französisch B1 – Fortgeschritten"
+titel_i18n: {de: "Französisch B1 – Fortgeschritten", en: "French B1 – Intermediate", fr: "Français B1 – Avancé", it: "Francese B1 – Avanzato", es: "Francés B1 – Avanzado", nl: "Frans B1 – Gevorderd", pl: "Francuski B1 – Średnio zaawansowany", pt: "Francês B1 – Avançado", sv: "Franska B1 – Fortsättning"}
 fach: franzoesisch
 stufe: "B1"
 sprache: fr
 quellsprache: de
+quellsprachen: [en, it, es, nl, pl, pt, sv]
 version: 1
 quelle: Family Quest (eigene Inhalte, CC0)
 icon: "🇫🇷"
@@ -24,143 +26,152 @@ selbst: true
 einheiten:
   - id: arbeit-schule
     titel: Arbeit und Ausbildung
+    titel_i18n: {de: "Arbeit und Ausbildung", en: "Work and training", fr: "Travail et formation", it: "Lavoro e formazione", es: "Trabajo y formación", nl: "Werk en opleiding", pl: "Praca i nauka zawodu", pt: "Trabalho e formação", sv: "Arbete och utbildning"}
     icon: "💼"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: die Stelle, fr: le poste}
-      - {de: das Vorstellungsgespräch, fr: l'entretien d'embauche, emoji: "🤝"}
-      - {de: der Lebenslauf, fr: le CV, auch: [le curriculum vitae], emoji: "📄"}
-      - {de: der Lohn, fr: le salaire, emoji: "💰"}
-      - {de: die Lehre, fr: l'apprentissage}
-      - {de: das Praktikum, fr: le stage}
-      - {de: der Arbeitskollege, fr: le collègue, auch: [le collegue]}
-      - {de: die Prüfung, fr: l'examen, emoji: "📝"}
-      - {de: die Note, fr: la note}
-      - {de: sich bewerben, fr: postuler}
-      - {de: kündigen, fr: démissionner, auch: [demissionner]}
-      - {de: die Sitzung, fr: la réunion, auch: [la reunion], emoji: "👥"}
+      - {de: "die Stelle", fr: "le poste", en: "the job (position)", it: "il posto di lavoro", es: "el puesto de trabajo", nl: "de baan", pl: "stanowisko pracy", pt: "a vaga de emprego", sv: "tjänsten"}
+      - {de: "das Vorstellungsgespräch", fr: "l'entretien d'embauche", en: "the job interview", it: "il colloquio di lavoro", es: "la entrevista de trabajo", nl: "het sollicitatiegesprek", pl: "rozmowa kwalifikacyjna", pt: "a entrevista de emprego", sv: "anställningsintervjun", emoji: "🤝"}
+      - {de: "der Lebenslauf", fr: "le CV", en: "the CV", it: "il curriculum", es: "el currículum", nl: "het cv", pl: "życiorys (CV)", pt: "o currículo", sv: "cv:t", auch: ["le curriculum vitae"], emoji: "📄"}
+      - {de: "der Lohn", fr: "le salaire", en: "the wages", it: "lo stipendio", es: "el sueldo", nl: "het loon", pl: "wypłata", pt: "o salário", sv: "lönen", emoji: "💰"}
+      - {de: "die Lehre", fr: "l'apprentissage", en: "the apprenticeship", it: "l'apprendistato", es: "el aprendizaje (formación profesional)", nl: "de leerlingplaats", pl: "praktyka zawodowa", pt: "o estágio profissional", sv: "lärlingsutbildningen"}
+      - {de: "das Praktikum", fr: "le stage", en: "the internship", it: "il tirocinio", es: "las prácticas", nl: "de stage", pl: "staż", pt: "o estágio", sv: "praktiken"}
+      - {de: "der Arbeitskollege", fr: "le collègue", en: "the colleague (man)", it: "il collega", es: "el compañero de trabajo", nl: "de collega (man)", pl: "kolega z pracy", pt: "o colega de trabalho", sv: "arbetskamraten (man)", auch: ["le collegue"]}
+      - {de: "die Prüfung", fr: "l'examen", en: "the exam", it: "l'esame", es: "el examen", nl: "het examen", pl: "egzamin", pt: "a prova", sv: "provet", emoji: "📝"}
+      - {de: "die Note", fr: "la note", en: "the mark", it: "il voto", es: "la nota", nl: "het cijfer", pl: "ocena", pt: "a nota", sv: "betyget"}
+      - {de: "sich bewerben", fr: "postuler", en: "to apply (for a job)", it: "candidarsi", es: "solicitar un puesto", nl: "solliciteren", pl: "ubiegać się o pracę", pt: "candidatar-se", sv: "att söka (ett jobb)"}
+      - {de: "kündigen", fr: "démissionner", en: "to resign", it: "dare le dimissioni", es: "dimitir", nl: "ontslag nemen", pl: "złożyć wypowiedzenie", pt: "pedir demissão", sv: "att säga upp sig", auch: ["demissionner"]}
+      - {de: "die Sitzung", fr: "la réunion", en: "the meeting", it: "la riunione", es: "la reunión", nl: "de vergadering", pl: "zebranie", pt: "a reunião", sv: "mötet", auch: ["la reunion"], emoji: "👥"}
   - id: meinung
     titel: Seine Meinung sagen
+    titel_i18n: {de: "Seine Meinung sagen", en: "Saying what you think", fr: "Donner son avis", it: "Dire la propria opinione", es: "Decir tu opinión", nl: "Je mening zeggen", pl: "Wyrażanie swojego zdania", pt: "Dar a sua opinião", sv: "Säga vad man tycker"}
     icon: "💭"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {de: "Meiner Meinung nach …", fr: "À mon avis …", auch: ["A mon avis …", "À mon avis ...", "A mon avis ..."]}
-      - {de: "Ich finde, dass …", fr: "Je trouve que …", auch: ["Je trouve que ..."]}
-      - {de: "Ich bin einverstanden.", fr: "Je suis d'accord."}
-      - {de: "Ich bin nicht einverstanden.", fr: "Je ne suis pas d'accord."}
-      - {de: "Da hast du recht.", fr: "Tu as raison."}
-      - {de: "Da irrst du dich.", fr: "Tu as tort."}
-      - {de: "Das kommt darauf an.", fr: "Ça dépend.", auch: ["Ca depend.", "Ça dépend"]}
-      - {de: "Einerseits … andererseits …", fr: "D'un côté … de l'autre …", auch: ["D'un côté ... de l'autre ...", "D'un cote … de l'autre …"]}
-      - {de: "Ich bin überzeugt, dass …", fr: "Je suis convaincu que …", auch: ["Je suis convaincue que …", "Je suis convaincu que ..."]}
-      - {de: "Was denkst du darüber?", fr: "Qu'est-ce que tu en penses ?", auch: ["Qu'est-ce que tu en penses?", "Tu en penses quoi ?"]}
+      - {de: "Meiner Meinung nach …", fr: "À mon avis …", en: "In my opinion …", it: "Secondo me …", es: "En mi opinión …", nl: "Volgens mij …", pl: "Moim zdaniem …", pt: "Na minha opinião …", sv: "Enligt min åsikt …", auch: ["A mon avis …", "À mon avis ...", "A mon avis ..."]}
+      - {de: "Ich finde, dass …", fr: "Je trouve que …", en: "I think that …", it: "Penso che …", es: "Creo que …", nl: "Ik vind dat …", pl: "Uważam, że …", pt: "Eu acho que …", sv: "Jag tycker att …", auch: ["Je trouve que ..."]}
+      - {de: "Ich bin einverstanden.", fr: "Je suis d'accord.", en: "I agree.", it: "Sono d'accordo.", es: "Estoy de acuerdo.", nl: "Ik ben het ermee eens.", pl: "Zgadzam się.", pt: "Eu concordo.", sv: "Jag håller med."}
+      - {de: "Ich bin nicht einverstanden.", fr: "Je ne suis pas d'accord.", en: "I don't agree.", it: "Non sono d'accordo.", es: "No estoy de acuerdo.", nl: "Ik ben het er niet mee eens.", pl: "Nie zgadzam się.", pt: "Eu não concordo.", sv: "Jag håller inte med."}
+      - {de: "Da hast du recht.", fr: "Tu as raison.", en: "You're right.", it: "Hai ragione.", es: "Tienes razón.", nl: "Je hebt gelijk.", pl: "Masz rację.", pt: "Você tem razão.", sv: "Du har rätt."}
+      - {de: "Da irrst du dich.", fr: "Tu as tort.", en: "You're wrong.", it: "Ti sbagli.", es: "Te equivocas.", nl: "Je vergist je.", pl: "Mylisz się.", pt: "Você está enganado.", sv: "Du har fel."}
+      - {de: "Das kommt darauf an.", fr: "Ça dépend.", en: "It depends.", it: "Dipende.", es: "Depende.", nl: "Het hangt ervan af.", pl: "To zależy.", pt: "Depende.", sv: "Det beror på.", auch: ["Ca depend.", "Ça dépend"]}
+      - {de: "Einerseits … andererseits …", fr: "D'un côté … de l'autre …", en: "On the one hand … on the other hand …", it: "Da un lato … dall'altro …", es: "Por un lado … por otro …", nl: "Aan de ene kant … aan de andere kant …", pl: "Z jednej strony … z drugiej strony …", pt: "Por um lado … por outro …", sv: "Å ena sidan … å andra sidan …", auch: ["D'un côté ... de l'autre ...", "D'un cote … de l'autre …"]}
+      - {de: "Ich bin überzeugt, dass …", fr: "Je suis convaincu que …", en: "I'm convinced that …", it: "Sono convinto che …", es: "Estoy convencido de que …", nl: "Ik ben ervan overtuigd dat …", pl: "Jestem przekonany, że …", pt: "Estou convencido de que …", sv: "Jag är övertygad om att …", auch: ["Je suis convaincue que …", "Je suis convaincu que ..."]}
+      - {de: "Was denkst du darüber?", fr: "Qu'est-ce que tu en penses ?", en: "What do you think about it?", it: "Cosa ne pensi?", es: "¿Qué piensas de eso?", nl: "Wat denk jij ervan?", pl: "Co o tym myślisz?", pt: "O que você pensa sobre isso?", sv: "Vad tycker du om det?", auch: ["Qu'est-ce que tu en penses?", "Tu en penses quoi ?"]}
   - id: umwelt
     titel: Umwelt
+    titel_i18n: {de: "Umwelt", en: "Environment", fr: "L'environnement", it: "L'ambiente", es: "El medio ambiente", nl: "Het milieu", pl: "Środowisko", pt: "O meio ambiente", sv: "Miljön"}
     icon: "🌍"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: die Umwelt, fr: l'environnement, emoji: "🌍"}
-      - {de: der Klimawandel, fr: le changement climatique, emoji: "🌡️"}
-      - {de: die Verschmutzung, fr: la pollution, emoji: "🏭"}
-      - {de: der Abfall, fr: les déchets, auch: [les dechets], emoji: "🗑️"}
-      - {de: recyceln, fr: recycler, emoji: "♻️"}
-      - {de: Energie sparen, fr: économiser l'énergie, auch: [economiser l'energie], emoji: "💡"}
-      - {de: die Sonnenenergie, fr: l'énergie solaire, auch: [l'energie solaire], emoji: "☀️"}
-      - {de: die Natur, fr: la nature, emoji: "🌲"}
-      - {de: schützen, fr: protéger, auch: [proteger]}
-      - {de: verschwenden, fr: gaspiller}
-      - {de: umweltfreundlich, fr: écologique, auch: [ecologique]}
-      - {de: der öffentliche Verkehr, fr: les transports en commun, emoji: "🚋"}
+      - {de: "die Umwelt", fr: "l'environnement", en: "the environment", it: "l'ambiente", es: "el medio ambiente", nl: "het milieu", pl: "środowisko", pt: "o meio ambiente", sv: "miljön", emoji: "🌍"}
+      - {de: "der Klimawandel", fr: "le changement climatique", en: "climate change", it: "il cambiamento climatico", es: "el cambio climático", nl: "de klimaatverandering", pl: "zmiana klimatu", pt: "a mudança climática", sv: "klimatförändringen", emoji: "🌡️"}
+      - {de: "die Verschmutzung", fr: "la pollution", en: "pollution", it: "l'inquinamento", es: "la contaminación", nl: "de vervuiling", pl: "zanieczyszczenie", pt: "a poluição", sv: "föroreningarna", emoji: "🏭"}
+      - {de: "der Abfall", fr: "les déchets", en: "the rubbish", it: "i rifiuti", es: "la basura", nl: "het afval", pl: "śmieci", pt: "o lixo", sv: "soporna", auch: ["les dechets"], emoji: "🗑️"}
+      - {de: "recyceln", fr: "recycler", en: "to recycle", it: "riciclare", es: "reciclar", nl: "recyclen", pl: "recyklingować", pt: "reciclar", sv: "att återvinna", emoji: "♻️"}
+      - {de: "Energie sparen", fr: "économiser l'énergie", en: "to save energy", it: "risparmiare energia", es: "ahorrar energía", nl: "energie besparen", pl: "oszczędzać energię", pt: "economizar energia", sv: "att spara energi", auch: ["economiser l'energie"], emoji: "💡"}
+      - {de: "die Sonnenenergie", fr: "l'énergie solaire", en: "solar energy", it: "l'energia solare", es: "la energía solar", nl: "de zonne-energie", pl: "energia słoneczna", pt: "a energia solar", sv: "solenergin", auch: ["l'energie solaire"], emoji: "☀️"}
+      - {de: "die Natur", fr: "la nature", en: "nature", it: "la natura", es: "la naturaleza", nl: "de natuur", pl: "przyroda", pt: "a natureza", sv: "naturen", emoji: "🌲"}
+      - {de: "schützen", fr: "protéger", en: "to protect", it: "proteggere", es: "proteger", nl: "beschermen", pl: "chronić", pt: "proteger", sv: "att skydda", auch: ["proteger"]}
+      - {de: "verschwenden", fr: "gaspiller", en: "to waste", it: "sprecare", es: "desperdiciar", nl: "verspillen", pl: "marnować", pt: "desperdiçar", sv: "att slösa"}
+      - {de: "umweltfreundlich", fr: "écologique", en: "environmentally friendly", it: "ecologico", es: "ecológico", nl: "milieuvriendelijk", pl: "ekologiczny", pt: "ecológico", sv: "miljövänlig", auch: ["ecologique"]}
+      - {de: "der öffentliche Verkehr", fr: "les transports en commun", en: "public transport", it: "i mezzi pubblici", es: "el transporte público", nl: "het openbaar vervoer", pl: "transport publiczny", pt: "o transporte público", sv: "kollektivtrafiken", emoji: "🚋"}
   - id: medien
     titel: Medien
+    titel_i18n: {de: "Medien", en: "Media", fr: "Les médias", it: "I media", es: "Los medios", nl: "Media", pl: "Media", pt: "A mídia", sv: "Medier"}
     icon: "📱"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: die Zeitung, fr: le journal, emoji: "📰"}
-      - {de: die Nachrichten, fr: les informations, auch: [les infos], emoji: "📺"}
-      - {de: die Sendung, fr: l'émission, auch: [l'emission]}
-      - {de: das Handy, fr: le portable, emoji: "📱"}
-      - {de: die sozialen Netzwerke, fr: les réseaux sociaux, auch: [les reseaux sociaux]}
-      - {de: der Bildschirm, fr: l'écran, auch: [l'ecran], emoji: "🖥️"}
-      - {de: herunterladen, fr: télécharger, auch: [telecharger], emoji: "⬇️"}
-      - {de: teilen, fr: partager}
-      - {de: der Artikel, fr: l'article}
-      - {de: die Falschmeldung, fr: la fausse information, auch: [la fake news]}
-      - {de: das Passwort, fr: le mot de passe, emoji: "🔒"}
-      - {de: die Werbung, fr: la publicité, auch: [la publicite, la pub]}
+      - {de: "die Zeitung", fr: "le journal", en: "the newspaper", it: "il giornale", es: "el periódico", nl: "de krant", pl: "gazeta", pt: "o jornal", sv: "tidningen", emoji: "📰"}
+      - {de: "die Nachrichten", fr: "les informations", en: "the news", it: "il telegiornale", es: "las noticias", nl: "het nieuws", pl: "wiadomości", pt: "as notícias", sv: "nyheterna", auch: ["les infos"], emoji: "📺"}
+      - {de: "die Sendung", fr: "l'émission", en: "the programme", it: "il programma", es: "el programa", nl: "het programma", pl: "program (w telewizji)", pt: "o programa", sv: "programmet", auch: ["l'emission"]}
+      - {de: "das Handy", fr: "le portable", en: "the mobile phone", it: "il cellulare", es: "el móvil", nl: "de mobiele telefoon", pl: "komórka", pt: "o celular", sv: "mobilen", emoji: "📱"}
+      - {de: "die sozialen Netzwerke", fr: "les réseaux sociaux", en: "social networks", it: "i social network", es: "las redes sociales", nl: "de sociale netwerken", pl: "portale społecznościowe", pt: "as redes sociais", sv: "sociala nätverk", auch: ["les reseaux sociaux"]}
+      - {de: "der Bildschirm", fr: "l'écran", en: "the screen", it: "lo schermo", es: "la pantalla", nl: "het scherm", pl: "ekran", pt: "a tela", sv: "skärmen", auch: ["l'ecran"], emoji: "🖥️"}
+      - {de: "herunterladen", fr: "télécharger", en: "to download", it: "scaricare", es: "descargar", nl: "downloaden", pl: "pobierać", pt: "baixar", sv: "att ladda ner", auch: ["telecharger"], emoji: "⬇️"}
+      - {de: "teilen", fr: "partager", en: "to share", it: "condividere", es: "compartir", nl: "delen", pl: "udostępniać", pt: "compartilhar", sv: "att dela"}
+      - {de: "der Artikel", fr: "l'article", en: "the article", it: "l'articolo", es: "el artículo", nl: "het artikel", pl: "artykuł", pt: "o artigo", sv: "artikeln"}
+      - {de: "die Falschmeldung", fr: "la fausse information", en: "fake news", it: "la notizia falsa", es: "la noticia falsa", nl: "het nepnieuws", pl: "fałszywa wiadomość", pt: "a notícia falsa", sv: "den falska nyheten", auch: ["la fake news"]}
+      - {de: "das Passwort", fr: "le mot de passe", en: "the password", it: "la password", es: "la contraseña", nl: "het wachtwoord", pl: "hasło", pt: "a senha", sv: "lösenordet", emoji: "🔒"}
+      - {de: "die Werbung", fr: "la publicité", en: "advertising", it: "la pubblicità", es: "la publicidad", nl: "de reclame", pl: "reklama", pt: "a publicidade", sv: "reklamen", auch: ["la publicite", "la pub"]}
   - id: gefuehle
     titel: Gefühle
+    titel_i18n: {de: "Gefühle", en: "Feelings", fr: "Les sentiments", it: "I sentimenti", es: "Los sentimientos", nl: "Gevoelens", pl: "Uczucia", pt: "Os sentimentos", sv: "Känslor"}
     icon: "😊"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: glücklich, fr: heureux, auch: [heureuse], emoji: "😊"}
-      - {de: traurig, fr: triste, emoji: "😢"}
-      - {de: wütend, fr: en colère, auch: [en colere, fâché], emoji: "😠"}
-      - {de: enttäuscht, fr: déçu, auch: [déçue, decu], emoji: "😞"}
-      - {de: stolz, fr: fier, auch: [fière, fiere]}
-      - {de: nervös, fr: nerveux, auch: [nerveuse], emoji: "😬"}
-      - {de: überrascht, fr: surpris, auch: [surprise], emoji: "😮"}
-      - {de: Angst haben, fr: avoir peur, emoji: "😨"}
-      - {de: sich langweilen, fr: s'ennuyer, emoji: "🥱"}
-      - {de: sich freuen, fr: se réjouir, auch: [se rejouir]}
-      - {de: "Das macht mich traurig.", fr: "Ça me rend triste.", auch: ["Ca me rend triste."]}
-      - {de: "Ich mache mir Sorgen.", fr: "Je m'inquiète.", auch: ["Je m'inquiete."]}
+      - {de: "glücklich", fr: "heureux", en: "happy", it: "felice", es: "feliz", nl: "gelukkig", pl: "szczęśliwy", pt: "feliz", sv: "lycklig", auch: ["heureuse"], emoji: "😊"}
+      - {de: "traurig", fr: "triste", en: "sad", it: "triste", es: "triste", nl: "verdrietig", pl: "smutny", pt: "triste", sv: "ledsen", emoji: "😢"}
+      - {de: "wütend", fr: "en colère", en: "angry", it: "arrabbiato", es: "enfadado", nl: "boos", pl: "wściekły", pt: "bravo", sv: "arg", auch: ["en colere", "fâché"], emoji: "😠"}
+      - {de: "enttäuscht", fr: "déçu", en: "disappointed", it: "deluso", es: "decepcionado", nl: "teleurgesteld", pl: "rozczarowany", pt: "decepcionado", sv: "besviken", auch: ["déçue", "decu"], emoji: "😞"}
+      - {de: "stolz", fr: "fier", en: "proud", it: "orgoglioso", es: "orgulloso", nl: "trots", pl: "dumny", pt: "orgulhoso", sv: "stolt", auch: ["fière", "fiere"]}
+      - {de: "nervös", fr: "nerveux", en: "nervous", it: "nervoso", es: "nervioso", nl: "zenuwachtig", pl: "zdenerwowany", pt: "nervoso", sv: "nervös", auch: ["nerveuse"], emoji: "😬"}
+      - {de: "überrascht", fr: "surpris", en: "surprised", it: "sorpreso", es: "sorprendido", nl: "verrast", pl: "zaskoczony", pt: "surpreso", sv: "överraskad", auch: ["surprise"], emoji: "😮"}
+      - {de: "Angst haben", fr: "avoir peur", en: "to be afraid", it: "avere paura", es: "tener miedo", nl: "bang zijn", pl: "bać się", pt: "ter medo", sv: "att vara rädd", emoji: "😨"}
+      - {de: "sich langweilen", fr: "s'ennuyer", en: "to be bored", it: "annoiarsi", es: "aburrirse", nl: "zich vervelen", pl: "nudzić się", pt: "ficar entediado", sv: "att ha tråkigt", emoji: "🥱"}
+      - {de: "sich freuen", fr: "se réjouir", en: "to be happy (about something)", it: "essere contento", es: "alegrarse", nl: "blij zijn", pl: "cieszyć się", pt: "ficar contente", sv: "att glädja sig", auch: ["se rejouir"]}
+      - {de: "Das macht mich traurig.", fr: "Ça me rend triste.", en: "That makes me sad.", it: "Questo mi rende triste.", es: "Eso me pone triste.", nl: "Dat maakt me verdrietig.", pl: "To mnie smuci.", pt: "Isso me deixa triste.", sv: "Det gör mig ledsen.", auch: ["Ca me rend triste."]}
+      - {de: "Ich mache mir Sorgen.", fr: "Je m'inquiète.", en: "I'm worried.", it: "Sono preoccupato.", es: "Estoy preocupado.", nl: "Ik maak me zorgen.", pl: "Martwię się.", pt: "Estou preocupado.", sv: "Jag är orolig.", auch: ["Je m'inquiete."]}
   - id: redewendungen
     titel: Redewendungen
+    titel_i18n: {de: "Redewendungen", en: "Idioms", fr: "Expressions", it: "Modi di dire", es: "Expresiones", nl: "Uitdrukkingen", pl: "Idiomy", pt: "Expressões", sv: "Uttryck"}
     icon: "🗣️"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {de: "Schwein haben (Glück haben)", fr: "avoir de la chance", emoji: "🍀"}
-      - {de: "Es regnet in Strömen.", fr: "Il pleut des cordes.", emoji: "🌧️"}
-      - {de: "einen Frosch im Hals haben", fr: "avoir un chat dans la gorge", emoji: "🐱"}
-      - {de: "keine Lust haben", fr: "ne pas avoir envie"}
-      - {de: "Das ist nicht mein Ding.", fr: "Ce n'est pas mon truc."}
-      - {de: "Es ist kinderleicht.", fr: "C'est simple comme bonjour."}
-      - {de: "sehr früh aufstehen", fr: "se lever aux aurores", emoji: "🌅"}
-      - {de: "Nicht der Rede wert.", fr: "Il n'y a pas de quoi."}
-      - {de: "jemanden auf den Arm nehmen", fr: "faire marcher quelqu'un"}
-      - {de: "Mir ist es egal.", fr: "Ça m'est égal.", auch: ["Ca m'est egal."]}
-      - {de: "Ich habe die Nase voll.", fr: "J'en ai marre."}
-      - {de: "Es kostet ein Vermögen.", fr: "Ça coûte les yeux de la tête.", auch: ["Ca coute les yeux de la tete."], emoji: "💸"}
+      - {de: "Schwein haben (Glück haben)", fr: "avoir de la chance", en: "to be lucky", it: "avere fortuna", es: "tener suerte", nl: "geluk hebben", pl: "mieć szczęście", pt: "ter sorte", sv: "att ha tur", emoji: "🍀"}
+      - {de: "Es regnet in Strömen.", fr: "Il pleut des cordes.", en: "It's pouring with rain.", it: "Piove a dirotto.", es: "Llueve a cántaros.", nl: "Het regent pijpenstelen.", pl: "Leje jak z cebra.", pt: "Está chovendo canivetes.", sv: "Det ösregnar.", emoji: "🌧️"}
+      - {de: "einen Frosch im Hals haben", fr: "avoir un chat dans la gorge", en: "to have a frog in your throat", it: "avere la voce rauca", es: "tener carraspera", nl: "een kikker in je keel hebben", pl: "mieć chrypkę", pt: "estar rouco", sv: "att vara hes", emoji: "🐱"}
+      - {de: "keine Lust haben", fr: "ne pas avoir envie", en: "not to feel like it", it: "non avere voglia", es: "no tener ganas", nl: "geen zin hebben", pl: "nie mieć ochoty", pt: "não estar a fim", sv: "att inte ha lust"}
+      - {de: "Das ist nicht mein Ding.", fr: "Ce n'est pas mon truc.", en: "It's not my thing.", it: "Non fa per me.", es: "No es lo mío.", nl: "Dat is niks voor mij.", pl: "To nie moja bajka.", pt: "Não é a minha praia.", sv: "Det är inte min grej."}
+      - {de: "Es ist kinderleicht.", fr: "C'est simple comme bonjour.", en: "It's child's play.", it: "È un gioco da ragazzi.", es: "Es pan comido.", nl: "Het is kinderspel.", pl: "To dziecinnie proste.", pt: "É moleza.", sv: "Det är en barnlek."}
+      - {de: "sehr früh aufstehen", fr: "se lever aux aurores", en: "to get up at the crack of dawn", it: "alzarsi all'alba", es: "madrugar mucho", nl: "heel vroeg opstaan", pl: "wstać skoro świt", pt: "acordar muito cedo", sv: "att gå upp i ottan", emoji: "🌅"}
+      - {de: "Nicht der Rede wert.", fr: "Il n'y a pas de quoi.", en: "Don't mention it.", it: "Non c'è di che.", es: "No hay de qué.", nl: "Graag gedaan.", pl: "Nie ma za co.", pt: "Não há de quê.", sv: "Ingen orsak."}
+      - {de: "jemanden auf den Arm nehmen", fr: "faire marcher quelqu'un", en: "to pull someone's leg", it: "prendere in giro qualcuno", es: "tomarle el pelo a alguien", nl: "iemand voor de gek houden", pl: "nabierać kogoś", pt: "zoar com alguém", sv: "att lura någon"}
+      - {de: "Mir ist es egal.", fr: "Ça m'est égal.", en: "I don't mind.", it: "Per me è uguale.", es: "Me da igual.", nl: "Het maakt me niet uit.", pl: "Wszystko mi jedno.", pt: "Tanto faz.", sv: "Det spelar ingen roll för mig.", auch: ["Ca m'est egal."]}
+      - {de: "Ich habe die Nase voll.", fr: "J'en ai marre.", en: "I'm fed up.", it: "Ne ho abbastanza.", es: "Estoy harto.", nl: "Ik heb er genoeg van.", pl: "Mam tego dość.", pt: "Estou de saco cheio.", sv: "Jag har fått nog."}
+      - {de: "Es kostet ein Vermögen.", fr: "Ça coûte les yeux de la tête.", en: "It costs a fortune.", it: "Costa un occhio della testa.", es: "Cuesta un ojo de la cara.", nl: "Het kost een fortuin.", pl: "To kosztuje majątek.", pt: "Custa os olhos da cara.", sv: "Det kostar skjortan.", auch: ["Ca coute les yeux de la tete."], emoji: "💸"}
   - id: conditionnel
     titel: "Conditionnel – würde, könnte"
+    titel_i18n: {de: "Conditionnel – würde, könnte", en: "Conditionnel – would, could", fr: "Conditionnel – je voudrais, je pourrais", it: "Conditionnel – vorrei, potrei", es: "Conditionnel – querría, podría", nl: "Conditionnel – zou, kon", pl: "Conditionnel – chciałbym, mógłbym", pt: "Conditionnel – gostaria, poderia", sv: "Conditionnel – skulle, kunde"}
     icon: "✍️"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "vouloir – je (conditionnel)", antwort: voudrais, satz: "Je ___ un café, s'il vous plaît.", optionen: [voudrais, veux, voudrai, voulais]}
-      - {frage: "pouvoir – tu (conditionnel)", antwort: pourrais, satz: "Tu ___ m'aider ?", optionen: [pourrais, peux, pourras, pouvais]}
-      - {frage: "aimer – j' (conditionnel)", antwort: aimerais, satz: "J'___ vivre à la mer.", optionen: [aimerais, aime, aimerai, aimais]}
-      - {frage: "devoir – vous (conditionnel)", antwort: devriez, satz: "Vous ___ dormir plus.", optionen: [devriez, devez, devrez, deviez]}
-      - {frage: "être – ce (conditionnel)", antwort: serait, satz: "Ce ___ génial !", optionen: [serait, est, sera, était]}
-      - {frage: "avoir – nous (conditionnel)", antwort: aurions, satz: "Si nous avions de l'argent, nous ___ une maison.", optionen: [aurions, avons, aurons, avions]}
-      - {frage: "faire – ils (conditionnel)", antwort: feraient, satz: "Avec plus de temps, ils ___ du sport.", optionen: [feraient, font, feront, faisaient]}
-      - {frage: "aller – elle (conditionnel)", antwort: irait, satz: "Si elle pouvait, elle ___ au Canada.", optionen: [irait, va, ira, allait]}
-      - {frage: "savoir – tu (conditionnel)", antwort: saurais, satz: "Tu ___ où est la poste ?", optionen: [saurais, sais, sauras, savais]}
+      - {frage: "vouloir – je (conditionnel)", antwort: "voudrais", satz: "Je ___ un café, s'il vous plaît.", optionen: ["voudrais", "veux", "voudrai", "voulais"]}
+      - {frage: "pouvoir – tu (conditionnel)", antwort: "pourrais", satz: "Tu ___ m'aider ?", optionen: ["pourrais", "peux", "pourras", "pouvais"]}
+      - {frage: "aimer – j' (conditionnel)", antwort: "aimerais", satz: "J'___ vivre à la mer.", optionen: ["aimerais", "aime", "aimerai", "aimais"]}
+      - {frage: "devoir – vous (conditionnel)", antwort: "devriez", satz: "Vous ___ dormir plus.", optionen: ["devriez", "devez", "devrez", "deviez"]}
+      - {frage: "être – ce (conditionnel)", antwort: "serait", satz: "Ce ___ génial !", optionen: ["serait", "est", "sera", "était"]}
+      - {frage: "avoir – nous (conditionnel)", antwort: "aurions", satz: "Si nous avions de l'argent, nous ___ une maison.", optionen: ["aurions", "avons", "aurons", "avions"]}
+      - {frage: "faire – ils (conditionnel)", antwort: "feraient", satz: "Avec plus de temps, ils ___ du sport.", optionen: ["feraient", "font", "feront", "faisaient"]}
+      - {frage: "aller – elle (conditionnel)", antwort: "irait", satz: "Si elle pouvait, elle ___ au Canada.", optionen: ["irait", "va", "ira", "allait"]}
+      - {frage: "savoir – tu (conditionnel)", antwort: "saurais", satz: "Tu ___ où est la poste ?", optionen: ["saurais", "sais", "sauras", "savais"]}
   - id: imparfait-pc
     titel: "Imparfait oder passé composé?"
+    titel_i18n: {de: "Imparfait oder passé composé?", en: "Imparfait or passé composé?", fr: "Imparfait ou passé composé ?", it: "Imparfait o passé composé?", es: "¿Imparfait o passé composé?", nl: "Imparfait of passé composé?", pl: "Imparfait czy passé composé?", pt: "Imparfait ou passé composé?", sv: "Imparfait eller passé composé?"}
     icon: "✍️"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "faire – il (Beschreibung früher)", antwort: faisait, satz: "Quand j'étais petit, il ___ toujours beau.", optionen: [faisait, a fait]}
-      - {frage: "sonner – le téléphone (plötzlich)", antwort: a sonné, auch: [a sonne], satz: "Je dormais quand le téléphone ___.", optionen: [a sonné, sonnait]}
-      - {frage: "jouer – nous (Gewohnheit)", antwort: jouions, satz: "Chaque été, nous ___ dans le jardin.", optionen: [jouions, avons joué]}
-      - {frage: "rencontrer – j' (einmaliges Ereignis)", antwort: ai rencontré, auch: [ai rencontre], satz: "Hier, j'___ mon ancien prof.", optionen: [ai rencontré, rencontrais]}
-      - {frage: "avoir – elle (Zustand)", antwort: avait, satz: "Elle ___ peur du noir quand elle était petite.", optionen: [avait, a eu]}
-      - {frage: "commencer – il (plötzlich)", antwort: a commencé, auch: [a commence], satz: "Nous marchions quand il ___ à pleuvoir.", optionen: [a commencé, commençait]}
-      - {frage: "habiter – ils (früher, Dauer)", antwort: habitaient, satz: "Avant, ils ___ à Genève.", optionen: [habitaient, ont habité]}
-      - {frage: "tomber – tu (einmaliges Ereignis)", antwort: es tombé, auch: [es tombée, es tombe], satz: "Tu ___ de vélo samedi ?", optionen: [es tombé, tombais]}
-      - {frage: "regarder – je (Hintergrund)", antwort: regardais, satz: "Je ___ la télé quand tu es arrivé.", optionen: [regardais, ai regardé]}
-      - {frage: "finir – le film (Abschluss)", antwort: a fini, satz: "Le film ___ à minuit.", optionen: [a fini, finissait]}
+      - {frage: "faire – il (Beschreibung früher)", antwort: "faisait", satz: "Quand j'étais petit, il ___ toujours beau.", optionen: ["faisait", "a fait"], frage_i18n: {"en": "faire – il (description, in the past)", "it": "faire – il (descrizione nel passato)", "es": "faire – il (descripción en el pasado)", "nl": "faire – il (beschrijving vroeger)", "pl": "faire – il (opis w przeszłości)", "pt": "faire – il (descrição no passado)", "sv": "faire – il (beskrivning förr)"}}
+      - {frage: "sonner – le téléphone (plötzlich)", antwort: "a sonné", auch: ["a sonne"], satz: "Je dormais quand le téléphone ___.", optionen: ["a sonné", "sonnait"], frage_i18n: {"en": "sonner – le téléphone (suddenly)", "it": "sonner – le téléphone (all'improvviso)", "es": "sonner – le téléphone (de repente)", "nl": "sonner – le téléphone (plotseling)", "pl": "sonner – le téléphone (nagle)", "pt": "sonner – le téléphone (de repente)", "sv": "sonner – le téléphone (plötsligt)"}}
+      - {frage: "jouer – nous (Gewohnheit)", antwort: "jouions", satz: "Chaque été, nous ___ dans le jardin.", optionen: ["jouions", "avons joué"], frage_i18n: {"en": "jouer – nous (habit)", "it": "jouer – nous (abitudine)", "es": "jouer – nous (costumbre)", "nl": "jouer – nous (gewoonte)", "pl": "jouer – nous (zwyczaj)", "pt": "jouer – nous (hábito)", "sv": "jouer – nous (vana)"}}
+      - {frage: "rencontrer – j' (einmaliges Ereignis)", antwort: "ai rencontré", auch: ["ai rencontre"], satz: "Hier, j'___ mon ancien prof.", optionen: ["ai rencontré", "rencontrais"], frage_i18n: {"en": "rencontrer – j' (one-off event)", "it": "rencontrer – j' (evento unico)", "es": "rencontrer – j' (hecho puntual)", "nl": "rencontrer – j' (eenmalige gebeurtenis)", "pl": "rencontrer – j' (jednorazowe zdarzenie)", "pt": "rencontrer – j' (fato único)", "sv": "rencontrer – j' (enstaka händelse)"}}
+      - {frage: "avoir – elle (Zustand)", antwort: "avait", satz: "Elle ___ peur du noir quand elle était petite.", optionen: ["avait", "a eu"], frage_i18n: {"en": "avoir – elle (state)", "it": "avoir – elle (stato)", "es": "avoir – elle (estado)", "nl": "avoir – elle (toestand)", "pl": "avoir – elle (stan)", "pt": "avoir – elle (estado)", "sv": "avoir – elle (tillstånd)"}}
+      - {frage: "commencer – il (plötzlich)", antwort: "a commencé", auch: ["a commence"], satz: "Nous marchions quand il ___ à pleuvoir.", optionen: ["a commencé", "commençait"], frage_i18n: {"en": "commencer – il (suddenly)", "it": "commencer – il (all'improvviso)", "es": "commencer – il (de repente)", "nl": "commencer – il (plotseling)", "pl": "commencer – il (nagle)", "pt": "commencer – il (de repente)", "sv": "commencer – il (plötsligt)"}}
+      - {frage: "habiter – ils (früher, Dauer)", antwort: "habitaient", satz: "Avant, ils ___ à Genève.", optionen: ["habitaient", "ont habité"], frage_i18n: {"en": "habiter – ils (in the past, for a long time)", "it": "habiter – ils (prima, per molto tempo)", "es": "habiter – ils (antes, durante mucho tiempo)", "nl": "habiter – ils (vroeger, lange tijd)", "pl": "habiter – ils (dawniej, przez dłuższy czas)", "pt": "habiter – ils (antes, por muito tempo)", "sv": "habiter – ils (förr, under lång tid)"}}
+      - {frage: "tomber – tu (einmaliges Ereignis)", antwort: "es tombé", auch: ["es tombée", "es tombe"], satz: "Tu ___ de vélo samedi ?", optionen: ["es tombé", "tombais"], frage_i18n: {"en": "tomber – tu (one-off event)", "it": "tomber – tu (evento unico)", "es": "tomber – tu (hecho puntual)", "nl": "tomber – tu (eenmalige gebeurtenis)", "pl": "tomber – tu (jednorazowe zdarzenie)", "pt": "tomber – tu (fato único)", "sv": "tomber – tu (enstaka händelse)"}}
+      - {frage: "regarder – je (Hintergrund)", antwort: "regardais", satz: "Je ___ la télé quand tu es arrivé.", optionen: ["regardais", "ai regardé"], frage_i18n: {"en": "regarder – je (background)", "it": "regarder – je (sfondo)", "es": "regarder – je (trasfondo)", "nl": "regarder – je (achtergrond)", "pl": "regarder – je (tło)", "pt": "regarder – je (pano de fundo)", "sv": "regarder – je (bakgrund)"}}
+      - {frage: "finir – le film (Abschluss)", antwort: "a fini", satz: "Le film ___ à minuit.", optionen: ["a fini", "finissait"], frage_i18n: {"en": "finir – le film (end)", "it": "finir – le film (conclusione)", "es": "finir – le film (final)", "nl": "finir – le film (afsluiting)", "pl": "finir – le film (zakończenie)", "pt": "finir – le film (conclusão)", "sv": "finir – le film (avslutning)"}}
   - id: relativpronomen
     titel: "qui, que, où, dont"
+    titel_i18n: {de: "qui, que, où, dont", en: "qui, que, où, dont", fr: "qui, que, où, dont", it: "qui, que, où, dont", es: "qui, que, où, dont", nl: "qui, que, où, dont", pl: "qui, que, où, dont", pt: "qui, que, où, dont", sv: "qui, que, où, dont"}
     icon: "✍️"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "Relativpronomen – Subjekt (Person)", antwort: qui, satz: "C'est la fille ___ chante dans la chorale.", optionen: [qui, que, où, dont]}
-      - {frage: "Relativpronomen – Objekt", antwort: que, satz: "Le livre ___ je lis est passionnant.", optionen: [qui, que, où, dont]}
-      - {frage: "Relativpronomen – Ort", antwort: où, auch: [ou], satz: "La ville ___ j'habite est petite.", optionen: [qui, que, où, dont]}
-      - {frage: "Relativpronomen – parler de", antwort: dont, satz: "C'est le film ___ je t'ai parlé.", optionen: [qui, que, où, dont]}
-      - {frage: "Relativpronomen – Subjekt (Sache)", antwort: qui, satz: "Le bus ___ part à huit heures est plein.", optionen: [qui, que, où, dont]}
-      - {frage: "Relativpronomen – Zeit", antwort: où, auch: [ou], satz: "Le jour ___ je suis né, il neigeait.", optionen: [qui, que, où, dont]}
-      - {frage: "Relativpronomen – Objekt (Person)", antwort: que, satz: "La prof ___ nous aimons part à la retraite.", optionen: [qui, que, où, dont]}
-      - {frage: "Relativpronomen – avoir besoin de", antwort: dont, satz: "Voici l'outil ___ tu as besoin.", optionen: [qui, que, où, dont]}
+      - {frage: "Relativpronomen – Subjekt (Person)", antwort: "qui", satz: "C'est la fille ___ chante dans la chorale.", optionen: ["qui", "que", "où", "dont"], frage_i18n: {"en": "Relative pronoun – subject (person)", "it": "Pronome relativo – soggetto (persona)", "es": "Pronombre relativo – sujeto (persona)", "nl": "Betrekkelijk voornaamwoord – onderwerp (persoon)", "pl": "Zaimek względny – podmiot (osoba)", "pt": "Pronome relativo – sujeito (pessoa)", "sv": "Relativt pronomen – subjekt (person)"}}
+      - {frage: "Relativpronomen – Objekt", antwort: "que", satz: "Le livre ___ je lis est passionnant.", optionen: ["qui", "que", "où", "dont"], frage_i18n: {"en": "Relative pronoun – object", "it": "Pronome relativo – oggetto", "es": "Pronombre relativo – objeto", "nl": "Betrekkelijk voornaamwoord – lijdend voorwerp", "pl": "Zaimek względny – dopełnienie", "pt": "Pronome relativo – objeto", "sv": "Relativt pronomen – objekt"}}
+      - {frage: "Relativpronomen – Ort", antwort: "où", auch: ["ou"], satz: "La ville ___ j'habite est petite.", optionen: ["qui", "que", "où", "dont"], frage_i18n: {"en": "Relative pronoun – place", "it": "Pronome relativo – luogo", "es": "Pronombre relativo – lugar", "nl": "Betrekkelijk voornaamwoord – plaats", "pl": "Zaimek względny – miejsce", "pt": "Pronome relativo – lugar", "sv": "Relativt pronomen – plats"}}
+      - {frage: "Relativpronomen – parler de", antwort: "dont", satz: "C'est le film ___ je t'ai parlé.", optionen: ["qui", "que", "où", "dont"], frage_i18n: {"en": "Relative pronoun – parler de", "it": "Pronome relativo – parler de", "es": "Pronombre relativo – parler de", "nl": "Betrekkelijk voornaamwoord – parler de", "pl": "Zaimek względny – parler de", "pt": "Pronome relativo – parler de", "sv": "Relativt pronomen – parler de"}}
+      - {frage: "Relativpronomen – Subjekt (Sache)", antwort: "qui", satz: "Le bus ___ part à huit heures est plein.", optionen: ["qui", "que", "où", "dont"], frage_i18n: {"en": "Relative pronoun – subject (thing)", "it": "Pronome relativo – soggetto (cosa)", "es": "Pronombre relativo – sujeto (cosa)", "nl": "Betrekkelijk voornaamwoord – onderwerp (ding)", "pl": "Zaimek względny – podmiot (rzecz)", "pt": "Pronome relativo – sujeito (coisa)", "sv": "Relativt pronomen – subjekt (sak)"}}
+      - {frage: "Relativpronomen – Zeit", antwort: "où", auch: ["ou"], satz: "Le jour ___ je suis né, il neigeait.", optionen: ["qui", "que", "où", "dont"], frage_i18n: {"en": "Relative pronoun – time", "it": "Pronome relativo – tempo", "es": "Pronombre relativo – tiempo", "nl": "Betrekkelijk voornaamwoord – tijd", "pl": "Zaimek względny – czas", "pt": "Pronome relativo – tempo", "sv": "Relativt pronomen – tid"}}
+      - {frage: "Relativpronomen – Objekt (Person)", antwort: "que", satz: "La prof ___ nous aimons part à la retraite.", optionen: ["qui", "que", "où", "dont"], frage_i18n: {"en": "Relative pronoun – object (person)", "it": "Pronome relativo – oggetto (persona)", "es": "Pronombre relativo – objeto (persona)", "nl": "Betrekkelijk voornaamwoord – lijdend voorwerp (persoon)", "pl": "Zaimek względny – dopełnienie (osoba)", "pt": "Pronome relativo – objeto (pessoa)", "sv": "Relativt pronomen – objekt (person)"}}
+      - {frage: "Relativpronomen – avoir besoin de", antwort: "dont", satz: "Voici l'outil ___ tu as besoin.", optionen: ["qui", "que", "où", "dont"], frage_i18n: {"en": "Relative pronoun – avoir besoin de", "it": "Pronome relativo – avoir besoin de", "es": "Pronombre relativo – avoir besoin de", "nl": "Betrekkelijk voornaamwoord – avoir besoin de", "pl": "Zaimek względny – avoir besoin de", "pt": "Pronome relativo – avoir besoin de", "sv": "Relativt pronomen – avoir besoin de"}}

@@ -1,10 +1,12 @@
 # Englisch B1 – Sprachkurs (eigene Inhalte, Family Quest, CC0)
 id: "sprache-en-b1"
 titel: "Englisch B1 – Fortgeschritten"
+titel_i18n: {de: "Englisch B1 – Fortgeschritten", en: "English B1 – Intermediate", fr: "Anglais B1 – Avancé", it: "Inglese B1 – Avanzato", es: "Inglés B1 – Avanzado", nl: "Engels B1 – Gevorderd", pl: "Angielski B1 – Średnio zaawansowany", pt: "Inglês B1 – Avançado", sv: "Engelska B1 – Fortsättning"}
 fach: "englisch"
 stufe: "B1"
 sprache: "en"
 quellsprache: "de"
+quellsprachen: [fr, it, es, nl, pl, pt, sv]
 version: 1
 quelle: "Family Quest (eigene Inhalte, CC0)"
 icon: "🇬🇧"
@@ -24,141 +26,150 @@ selbst: true
 einheiten:
   - id: work-school
     titel: "Arbeit und Ausbildung"
+    titel_i18n: {de: "Arbeit und Ausbildung", en: "Work and training", fr: "Travail et formation", it: "Lavoro e formazione", es: "Trabajo y formación", nl: "Werk en opleiding", pl: "Praca i nauka zawodu", pt: "Trabalho e formação", sv: "Arbete och utbildning"}
     icon: "💼"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "die Bewerbung", en: "the application", auch: ["application", "the job application", "job application"], emoji: "📄"}
-      - {de: "das Vorstellungsgespräch", en: "the job interview", auch: ["job interview", "the interview", "interview"], emoji: "🤝"}
-      - {de: "der Lebenslauf", en: "the CV", auch: ["CV", "the résumé", "résumé", "the resume", "resume"], emoji: "📃"}
-      - {de: "die Erfahrung", en: "the experience", auch: ["experience"]}
-      - {de: "der Kollege / die Kollegin", en: "the colleague", auch: ["colleague"], emoji: "👥"}
-      - {de: "der Chef / die Chefin", en: "the boss", auch: ["boss", "the manager", "manager"], emoji: "👔"}
-      - {de: "das Gehalt", en: "the salary", auch: ["salary", "the pay", "pay"], emoji: "💶"}
-      - {de: "die Prüfung", en: "the exam", auch: ["exam", "the examination", "examination"], emoji: "📝"}
-      - {de: "die Note", en: "the mark", auch: ["mark", "the grade", "grade"]}
-      - {de: "die Frist", en: "the deadline", auch: ["deadline"], emoji: "⏳"}
-      - {de: "die Lehre", en: "the apprenticeship", auch: ["apprenticeship"], emoji: "🛠️"}
+      - {de: "die Bewerbung", en: "the application", fr: "la candidature", it: "la candidatura", es: "la solicitud de empleo", nl: "de sollicitatie", pl: "podanie o pracę", pt: "a candidatura", sv: "ansökan", auch: ["application", "the job application", "job application"], emoji: "📄"}
+      - {de: "das Vorstellungsgespräch", en: "the job interview", fr: "l'entretien d'embauche", it: "il colloquio di lavoro", es: "la entrevista de trabajo", nl: "het sollicitatiegesprek", pl: "rozmowa kwalifikacyjna", pt: "a entrevista de emprego", sv: "anställningsintervjun", auch: ["job interview", "the interview", "interview"], emoji: "🤝"}
+      - {de: "der Lebenslauf", en: "the CV", fr: "le CV", it: "il curriculum", es: "el currículum", nl: "het cv", pl: "życiorys (CV)", pt: "o currículo", sv: "cv:t", auch: ["CV", "the résumé", "résumé", "the resume", "resume"], emoji: "📃"}
+      - {de: "die Erfahrung", en: "the experience", fr: "l'expérience", it: "l'esperienza", es: "la experiencia", nl: "de ervaring", pl: "doświadczenie", pt: "a experiência", sv: "erfarenheten", auch: ["experience"]}
+      - {de: "der Kollege / die Kollegin", en: "the colleague", fr: "le collègue / la collègue", it: "il collega / la collega", es: "el compañero / la compañera de trabajo", nl: "de collega", pl: "kolega / koleżanka z pracy", pt: "o colega / a colega", sv: "kollegan", auch: ["colleague"], emoji: "👥"}
+      - {de: "der Chef / die Chefin", en: "the boss", fr: "le chef / la cheffe", it: "il capo / la capa", es: "el jefe / la jefa", nl: "de baas", pl: "szef / szefowa", pt: "o chefe / a chefe", sv: "chefen", auch: ["boss", "the manager", "manager"], emoji: "👔"}
+      - {de: "das Gehalt", en: "the salary", fr: "le salaire", it: "lo stipendio", es: "el sueldo", nl: "het salaris", pl: "pensja", pt: "o salário", sv: "lönen", auch: ["salary", "the pay", "pay"], emoji: "💶"}
+      - {de: "die Prüfung", en: "the exam", fr: "l'examen", it: "l'esame", es: "el examen", nl: "het examen", pl: "egzamin", pt: "a prova", sv: "provet", auch: ["exam", "the examination", "examination"], emoji: "📝"}
+      - {de: "die Note", en: "the mark", fr: "la note", it: "il voto", es: "la nota", nl: "het cijfer", pl: "ocena", pt: "a nota", sv: "betyget", auch: ["mark", "the grade", "grade"]}
+      - {de: "die Frist", en: "the deadline", fr: "la date limite", it: "la scadenza", es: "el plazo", nl: "de deadline", pl: "termin", pt: "o prazo", sv: "tidsfristen", auch: ["deadline"], emoji: "⏳"}
+      - {de: "die Lehre", en: "the apprenticeship", fr: "l'apprentissage", it: "l'apprendistato", es: "el aprendizaje (formación profesional)", nl: "de leerlingplaats", pl: "praktyka zawodowa", pt: "o estágio profissional", sv: "lärlingsutbildningen", auch: ["apprenticeship"], emoji: "🛠️"}
   - id: opinions
     titel: "Meinungen äussern"
+    titel_i18n: {de: "Meinungen äussern", en: "Giving opinions", fr: "Donner son avis", it: "Esprimere opinioni", es: "Dar tu opinión", nl: "Je mening geven", pl: "Wyrażanie opinii", pt: "Dar opiniões", sv: "Säga sin åsikt"}
     icon: "🗣️"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {de: "Meiner Meinung nach …", en: "In my opinion …", auch: ["In my opinion", "In my view …", "In my view"]}
-      - {de: "Ich finde, dass …", en: "I think that …", auch: ["I think that", "I think …", "I think"]}
-      - {de: "Da bin ich ganz deiner Meinung.", en: "I totally agree with you.", auch: ["I completely agree with you.", "I fully agree with you.", "I totally agree."]}
-      - {de: "Da bin ich nicht sicher.", en: "I'm not so sure about that.", auch: ["I'm not sure about that.", "I am not so sure about that.", "I am not sure about that."]}
-      - {de: "Das sehe ich anders.", en: "I see it differently.", auch: ["I see things differently.", "I don't see it that way."]}
-      - {de: "Einerseits … andererseits …", en: "On the one hand … on the other hand …", auch: ["On the one hand, on the other hand", "on the one hand … on the other hand"]}
-      - {de: "Das ist ein guter Punkt.", en: "That's a good point.", auch: ["That is a good point."]}
-      - {de: "Was hältst du davon?", en: "What do you think about it?", auch: ["What do you think of it?", "What do you think?"]}
-      - {de: "Es kommt darauf an.", en: "It depends.", auch: ["That depends."]}
-      - {de: "Ehrlich gesagt …", en: "To be honest …", auch: ["To be honest", "Honestly …", "Honestly"]}
+      - {de: "Meiner Meinung nach …", en: "In my opinion …", fr: "À mon avis …", it: "Secondo me …", es: "En mi opinión …", nl: "Volgens mij …", pl: "Moim zdaniem …", pt: "Na minha opinião …", sv: "Enligt min åsikt …", auch: ["In my opinion", "In my view …", "In my view"]}
+      - {de: "Ich finde, dass …", en: "I think that …", fr: "Je trouve que …", it: "Penso che …", es: "Creo que …", nl: "Ik vind dat …", pl: "Uważam, że …", pt: "Eu acho que …", sv: "Jag tycker att …", auch: ["I think that", "I think …", "I think"]}
+      - {de: "Da bin ich ganz deiner Meinung.", en: "I totally agree with you.", fr: "Je suis tout à fait d'accord avec toi.", it: "Sono completamente d'accordo con te.", es: "Estoy totalmente de acuerdo contigo.", nl: "Daar ben ik het helemaal mee eens.", pl: "Całkowicie się z tobą zgadzam.", pt: "Concordo totalmente com você.", sv: "Jag håller helt med dig.", auch: ["I completely agree with you.", "I fully agree with you.", "I totally agree."]}
+      - {de: "Da bin ich nicht sicher.", en: "I'm not so sure about that.", fr: "Je n'en suis pas si sûr.", it: "Non ne sono così sicuro.", es: "No estoy tan seguro.", nl: "Daar ben ik niet zo zeker van.", pl: "Nie jestem tego pewien.", pt: "Não tenho tanta certeza.", sv: "Det är jag inte så säker på.", auch: ["I'm not sure about that.", "I am not so sure about that.", "I am not sure about that."]}
+      - {de: "Das sehe ich anders.", en: "I see it differently.", fr: "Je vois ça autrement.", it: "Io la vedo diversamente.", es: "Yo lo veo de otra manera.", nl: "Ik zie dat anders.", pl: "Ja widzę to inaczej.", pt: "Eu vejo isso de outro jeito.", sv: "Jag ser det annorlunda.", auch: ["I see things differently.", "I don't see it that way."]}
+      - {de: "Einerseits … andererseits …", en: "On the one hand … on the other hand …", fr: "D'un côté … de l'autre …", it: "Da un lato … dall'altro …", es: "Por un lado … por otro …", nl: "Aan de ene kant … aan de andere kant …", pl: "Z jednej strony … z drugiej strony …", pt: "Por um lado … por outro …", sv: "Å ena sidan … å andra sidan …", auch: ["On the one hand, on the other hand", "on the one hand … on the other hand"]}
+      - {de: "Das ist ein guter Punkt.", en: "That's a good point.", fr: "C'est un bon argument.", it: "È un'ottima osservazione.", es: "Es un buen punto.", nl: "Dat is een goed punt.", pl: "To dobry argument.", pt: "É um bom ponto.", sv: "Det är en bra poäng.", auch: ["That is a good point."]}
+      - {de: "Was hältst du davon?", en: "What do you think about it?", fr: "Qu'est-ce que tu en penses ?", it: "Cosa ne pensi?", es: "¿Qué te parece?", nl: "Wat vind jij ervan?", pl: "Co o tym myślisz?", pt: "O que você acha disso?", sv: "Vad tycker du om det?", auch: ["What do you think of it?", "What do you think?"]}
+      - {de: "Es kommt darauf an.", en: "It depends.", fr: "Ça dépend.", it: "Dipende.", es: "Depende.", nl: "Het hangt ervan af.", pl: "To zależy.", pt: "Depende.", sv: "Det beror på.", auch: ["That depends."]}
+      - {de: "Ehrlich gesagt …", en: "To be honest …", fr: "Pour être honnête …", it: "A dire il vero …", es: "La verdad es que …", nl: "Eerlijk gezegd …", pl: "Szczerze mówiąc …", pt: "Para ser sincero …", sv: "Ärligt talat …", auch: ["To be honest", "Honestly …", "Honestly"]}
   - id: environment
     titel: "Umwelt und Natur"
+    titel_i18n: {de: "Umwelt und Natur", en: "Environment and nature", fr: "L'environnement et la nature", it: "Ambiente e natura", es: "El medio ambiente y la naturaleza", nl: "Milieu en natuur", pl: "Środowisko i przyroda", pt: "O meio ambiente e a natureza", sv: "Miljö och natur"}
     icon: "🌍"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "die Umwelt", en: "the environment", auch: ["environment"], emoji: "🌍"}
-      - {de: "der Klimawandel", en: "climate change", auch: ["the climate change"], emoji: "🌡️"}
-      - {de: "die Umweltverschmutzung", en: "pollution", auch: ["the pollution"], emoji: "🏭"}
-      - {de: "recyceln", en: "to recycle", auch: ["recycle"], emoji: "♻️"}
-      - {de: "der Abfall", en: "the rubbish", auch: ["rubbish", "the waste", "waste", "the trash", "trash", "the garbage", "garbage"], emoji: "🗑️"}
-      - {de: "die Energie", en: "the energy", auch: ["energy"], emoji: "⚡"}
-      - {de: "erneuerbar", en: "renewable", emoji: "🌬️"}
-      - {de: "sparen", en: "to save", auch: ["save"], emoji: "💡"}
-      - {de: "der Wald", en: "the forest", auch: ["forest", "the woods", "woods"], emoji: "🌲"}
-      - {de: "die Tierart", en: "the species", auch: ["species"], emoji: "🐾"}
-      - {de: "schützen", en: "to protect", auch: ["protect"], emoji: "🛡️"}
+      - {de: "die Umwelt", en: "the environment", fr: "l'environnement", it: "l'ambiente", es: "el medio ambiente", nl: "het milieu", pl: "środowisko", pt: "o meio ambiente", sv: "miljön", auch: ["environment"], emoji: "🌍"}
+      - {de: "der Klimawandel", en: "climate change", fr: "le changement climatique", it: "il cambiamento climatico", es: "el cambio climático", nl: "de klimaatverandering", pl: "zmiana klimatu", pt: "a mudança climática", sv: "klimatförändringen", auch: ["the climate change"], emoji: "🌡️"}
+      - {de: "die Umweltverschmutzung", en: "pollution", fr: "la pollution", it: "l'inquinamento", es: "la contaminación", nl: "de vervuiling", pl: "zanieczyszczenie środowiska", pt: "a poluição", sv: "föroreningarna", auch: ["the pollution"], emoji: "🏭"}
+      - {de: "recyceln", en: "to recycle", fr: "recycler", it: "riciclare", es: "reciclar", nl: "recyclen", pl: "recyklingować", pt: "reciclar", sv: "att återvinna", auch: ["recycle"], emoji: "♻️"}
+      - {de: "der Abfall", en: "the rubbish", fr: "les déchets", it: "i rifiuti", es: "la basura", nl: "het afval", pl: "śmieci", pt: "o lixo", sv: "soporna", auch: ["rubbish", "the waste", "waste", "the trash", "trash", "the garbage", "garbage"], emoji: "🗑️"}
+      - {de: "die Energie", en: "the energy", fr: "l'énergie", it: "l'energia", es: "la energía", nl: "de energie", pl: "energia", pt: "a energia", sv: "energin", auch: ["energy"], emoji: "⚡"}
+      - {de: "erneuerbar", en: "renewable", fr: "renouvelable", it: "rinnovabile", es: "renovable", nl: "hernieuwbaar", pl: "odnawialny", pt: "renovável", sv: "förnybar", emoji: "🌬️"}
+      - {de: "sparen", en: "to save", fr: "économiser", it: "risparmiare", es: "ahorrar", nl: "besparen", pl: "oszczędzać", pt: "economizar", sv: "att spara", auch: ["save"], emoji: "💡"}
+      - {de: "der Wald", en: "the forest", fr: "la forêt", it: "il bosco", es: "el bosque", nl: "het bos", pl: "las", pt: "a floresta", sv: "skogen", auch: ["forest", "the woods", "woods"], emoji: "🌲"}
+      - {de: "die Tierart", en: "the species", fr: "l'espèce animale", it: "la specie animale", es: "la especie animal", nl: "de diersoort", pl: "gatunek zwierząt", pt: "a espécie animal", sv: "djurarten", auch: ["species"], emoji: "🐾"}
+      - {de: "schützen", en: "to protect", fr: "protéger", it: "proteggere", es: "proteger", nl: "beschermen", pl: "chronić", pt: "proteger", sv: "att skydda", auch: ["protect"], emoji: "🛡️"}
   - id: media
     titel: "Medien und Technik"
+    titel_i18n: {de: "Medien und Technik", en: "Media and technology", fr: "Médias et technologie", it: "Media e tecnologia", es: "Medios y tecnología", nl: "Media en techniek", pl: "Media i technologia", pt: "Mídia e tecnologia", sv: "Medier och teknik"}
     icon: "📱"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "die Nachrichten", en: "the news", auch: ["news"], emoji: "📰"}
-      - {de: "die Zeitung", en: "the newspaper", auch: ["newspaper"], emoji: "🗞️"}
-      - {de: "die Werbung", en: "the advert", auch: ["advert", "the ad", "ad", "the advertisement", "advertisement", "the commercial", "commercial"], emoji: "📺"}
-      - {de: "die Sendung", en: "the programme", auch: ["programme", "the program", "program", "the show", "show"], emoji: "📺"}
-      - {de: "herunterladen", en: "to download", auch: ["download"], emoji: "⬇️"}
-      - {de: "hochladen", en: "to upload", auch: ["upload"], emoji: "⬆️"}
-      - {de: "das Passwort", en: "the password", auch: ["password"], emoji: "🔑"}
-      - {de: "die sozialen Medien", en: "social media", auch: ["the social media"], emoji: "📱"}
-      - {de: "der Bildschirm", en: "the screen", auch: ["screen"], emoji: "🖥️"}
-      - {de: "teilen", en: "to share", auch: ["share"], emoji: "🔗"}
-      - {de: "das Abonnement", en: "the subscription", auch: ["subscription"], emoji: "🔔"}
+      - {de: "die Nachrichten", en: "the news", fr: "les informations", it: "il telegiornale", es: "las noticias", nl: "het nieuws", pl: "wiadomości", pt: "as notícias", sv: "nyheterna", auch: ["news"], emoji: "📰"}
+      - {de: "die Zeitung", en: "the newspaper", fr: "le journal", it: "il giornale", es: "el periódico", nl: "de krant", pl: "gazeta", pt: "o jornal", sv: "tidningen", auch: ["newspaper"], emoji: "🗞️"}
+      - {de: "die Werbung", en: "the advert", fr: "la publicité", it: "la pubblicità", es: "el anuncio", nl: "de reclame", pl: "reklama", pt: "o anúncio", sv: "reklamen", auch: ["advert", "the ad", "ad", "the advertisement", "advertisement", "the commercial", "commercial"], emoji: "📺"}
+      - {de: "die Sendung", en: "the programme", fr: "l'émission", it: "il programma", es: "el programa", nl: "het programma", pl: "program (w telewizji)", pt: "o programa", sv: "programmet", auch: ["programme", "the program", "program", "the show", "show"], emoji: "📺"}
+      - {de: "herunterladen", en: "to download", fr: "télécharger", it: "scaricare", es: "descargar", nl: "downloaden", pl: "pobierać", pt: "baixar", sv: "att ladda ner", auch: ["download"], emoji: "⬇️"}
+      - {de: "hochladen", en: "to upload", fr: "mettre en ligne", it: "caricare", es: "subir", nl: "uploaden", pl: "wrzucać (do internetu)", pt: "enviar (fazer upload)", sv: "att ladda upp", auch: ["upload"], emoji: "⬆️"}
+      - {de: "das Passwort", en: "the password", fr: "le mot de passe", it: "la password", es: "la contraseña", nl: "het wachtwoord", pl: "hasło", pt: "a senha", sv: "lösenordet", auch: ["password"], emoji: "🔑"}
+      - {de: "die sozialen Medien", en: "social media", fr: "les réseaux sociaux", it: "i social media", es: "las redes sociales", nl: "de sociale media", pl: "media społecznościowe", pt: "as redes sociais", sv: "sociala medier", auch: ["the social media"], emoji: "📱"}
+      - {de: "der Bildschirm", en: "the screen", fr: "l'écran", it: "lo schermo", es: "la pantalla", nl: "het scherm", pl: "ekran", pt: "a tela", sv: "skärmen", auch: ["screen"], emoji: "🖥️"}
+      - {de: "teilen", en: "to share", fr: "partager", it: "condividere", es: "compartir", nl: "delen", pl: "udostępniać", pt: "compartilhar", sv: "att dela", auch: ["share"], emoji: "🔗"}
+      - {de: "das Abonnement", en: "the subscription", fr: "l'abonnement", it: "l'abbonamento", es: "la suscripción", nl: "het abonnement", pl: "subskrypcja", pt: "a assinatura", sv: "prenumerationen", auch: ["subscription"], emoji: "🔔"}
   - id: feelings
     titel: "Gefühle"
+    titel_i18n: {de: "Gefühle", en: "Feelings", fr: "Les sentiments", it: "I sentimenti", es: "Los sentimientos", nl: "Gevoelens", pl: "Uczucia", pt: "Os sentimentos", sv: "Känslor"}
     icon: "😊"
     uebungen: [auswahl, eintippen, paare, hoeren, karteikarte]
     karten:
-      - {de: "stolz", en: "proud", emoji: "🦁"}
-      - {de: "enttäuscht", en: "disappointed", emoji: "😞"}
-      - {de: "aufgeregt (freudig)", en: "excited", emoji: "🤩"}
-      - {de: "nervös", en: "nervous", emoji: "😬"}
-      - {de: "erleichtert", en: "relieved", emoji: "😌"}
-      - {de: "wütend", en: "angry", emoji: "😠"}
-      - {de: "verlegen", en: "embarrassed", emoji: "😳"}
-      - {de: "einsam", en: "lonely", emoji: "🥀"}
-      - {de: "neidisch", en: "jealous", auch: ["envious"], emoji: "😒"}
-      - {de: "dankbar", en: "grateful", auch: ["thankful"], emoji: "🙏"}
-      - {de: "verwirrt", en: "confused", emoji: "😕"}
-      - {de: "gelangweilt", en: "bored", emoji: "🥱"}
+      - {de: "stolz", en: "proud", fr: "fier", it: "orgoglioso", es: "orgulloso", nl: "trots", pl: "dumny", pt: "orgulhoso", sv: "stolt", emoji: "🦁"}
+      - {de: "enttäuscht", en: "disappointed", fr: "déçu", it: "deluso", es: "decepcionado", nl: "teleurgesteld", pl: "rozczarowany", pt: "decepcionado", sv: "besviken", emoji: "😞"}
+      - {de: "aufgeregt (freudig)", en: "excited", fr: "tout excité (de joie)", it: "emozionato (felice)", es: "emocionado (de alegría)", nl: "opgewonden (blij)", pl: "podekscytowany (radośnie)", pt: "animado (de alegria)", sv: "förväntansfull (glad)", emoji: "🤩"}
+      - {de: "nervös", en: "nervous", fr: "nerveux", it: "nervoso", es: "nervioso", nl: "zenuwachtig", pl: "zdenerwowany", pt: "nervoso", sv: "nervös", emoji: "😬"}
+      - {de: "erleichtert", en: "relieved", fr: "soulagé", it: "sollevato", es: "aliviado", nl: "opgelucht", pl: "z ulgą", pt: "aliviado", sv: "lättad", emoji: "😌"}
+      - {de: "wütend", en: "angry", fr: "en colère", it: "arrabbiato", es: "enfadado", nl: "boos", pl: "wściekły", pt: "bravo", sv: "arg", emoji: "😠"}
+      - {de: "verlegen", en: "embarrassed", fr: "gêné", it: "imbarazzato", es: "avergonzado", nl: "verlegen", pl: "zawstydzony", pt: "envergonhado", sv: "generad", emoji: "😳"}
+      - {de: "einsam", en: "lonely", fr: "seul (solitaire)", it: "solo (solitario)", es: "solo (solitario)", nl: "eenzaam", pl: "samotny", pt: "sozinho (solitário)", sv: "ensam", emoji: "🥀"}
+      - {de: "neidisch", en: "jealous", fr: "jaloux", it: "geloso", es: "celoso", nl: "jaloers", pl: "zazdrosny", pt: "com ciúmes", sv: "avundsjuk", auch: ["envious"], emoji: "😒"}
+      - {de: "dankbar", en: "grateful", fr: "reconnaissant", it: "grato", es: "agradecido", nl: "dankbaar", pl: "wdzięczny", pt: "grato", sv: "tacksam", auch: ["thankful"], emoji: "🙏"}
+      - {de: "verwirrt", en: "confused", fr: "perdu (confus)", it: "confuso", es: "confundido", nl: "in de war", pl: "zdezorientowany", pt: "confuso", sv: "förvirrad", emoji: "😕"}
+      - {de: "gelangweilt", en: "bored", fr: "qui s'ennuie", it: "annoiato", es: "aburrido", nl: "verveeld", pl: "znudzony", pt: "entediado", sv: "uttråkad", emoji: "🥱"}
   - id: present-perfect
     titel: "Present Perfect"
+    titel_i18n: {de: "Present Perfect", en: "Present perfect", fr: "Present perfect", it: "Present perfect", es: "Present perfect", nl: "Present perfect", pl: "Present perfect", pt: "Present perfect", sv: "Present perfect"}
     icon: "✅"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "I – schon gemacht", antwort: "have", satz: "I ___ already finished my homework.", optionen: ["have", "has", "had", "am"]}
-      - {frage: "she – noch nie", antwort: "has", satz: "She ___ never been to Australia.", optionen: ["have", "has", "had", "is"]}
-      - {frage: "Partizip – see", antwort: "seen", satz: "Have you ever ___ a whale?", optionen: ["seen", "saw", "see", "seeing"]}
-      - {frage: "Partizip – write", antwort: "written", satz: "He has ___ three emails today.", optionen: ["written", "wrote", "writed", "write"]}
-      - {frage: "Partizip – lose", antwort: "lost", satz: "Oh no! I've ___ my keys.", optionen: ["lost", "losed", "lose", "losing"]}
-      - {frage: "seit (Zeitpunkt)", antwort: "since", satz: "We have lived here ___ 2019.", optionen: ["since", "for", "ago", "from"]}
-      - {frage: "seit (Zeitdauer)", antwort: "for", satz: "They have known each other ___ ten years.", optionen: ["since", "for", "ago", "during"]}
-      - {frage: "noch nicht", antwort: "yet", satz: "Has the film started ___?", optionen: ["yet", "already", "still", "ever"]}
-      - {frage: "je / jemals", antwort: "ever", satz: "Have you ___ eaten sushi?", optionen: ["ever", "never", "yet", "already"]}
-      - {frage: "gerade eben", antwort: "just", satz: "I have ___ arrived at the station.", optionen: ["just", "yet", "ever", "since"]}
+      - {frage: "I – schon gemacht", antwort: "have", satz: "I ___ already finished my homework.", optionen: ["have", "has", "had", "am"], frage_i18n: {"fr": "I – déjà fait", "it": "I – già fatto", "es": "I – ya hecho", "nl": "I – al gedaan", "pl": "I – już zrobione", "pt": "I – já feito", "sv": "I – redan gjort"}}
+      - {frage: "she – noch nie", antwort: "has", satz: "She ___ never been to Australia.", optionen: ["have", "has", "had", "is"], frage_i18n: {"fr": "she – jamais", "it": "she – mai", "es": "she – nunca", "nl": "she – nog nooit", "pl": "she – nigdy", "pt": "she – nunca", "sv": "she – aldrig"}}
+      - {frage: "Partizip – see", antwort: "seen", satz: "Have you ever ___ a whale?", optionen: ["seen", "saw", "see", "seeing"], frage_i18n: {"fr": "Participe – see", "it": "Participio – see", "es": "Participio – see", "nl": "Voltooid deelwoord – see", "pl": "Imiesłów – see", "pt": "Particípio – see", "sv": "Particip – see"}}
+      - {frage: "Partizip – write", antwort: "written", satz: "He has ___ three emails today.", optionen: ["written", "wrote", "writed", "write"], frage_i18n: {"fr": "Participe – write", "it": "Participio – write", "es": "Participio – write", "nl": "Voltooid deelwoord – write", "pl": "Imiesłów – write", "pt": "Particípio – write", "sv": "Particip – write"}}
+      - {frage: "Partizip – lose", antwort: "lost", satz: "Oh no! I've ___ my keys.", optionen: ["lost", "losed", "lose", "losing"], frage_i18n: {"fr": "Participe – lose", "it": "Participio – lose", "es": "Participio – lose", "nl": "Voltooid deelwoord – lose", "pl": "Imiesłów – lose", "pt": "Particípio – lose", "sv": "Particip – lose"}}
+      - {frage: "seit (Zeitpunkt)", antwort: "since", satz: "We have lived here ___ 2019.", optionen: ["since", "for", "ago", "from"], frage_i18n: {"fr": "depuis (un moment précis)", "it": "da (un momento preciso)", "es": "desde (un momento)", "nl": "sinds (een tijdstip)", "pl": "od (punkt w czasie)", "pt": "desde (um momento)", "sv": "sedan (en tidpunkt)"}}
+      - {frage: "seit (Zeitdauer)", antwort: "for", satz: "They have known each other ___ ten years.", optionen: ["since", "for", "ago", "during"], frage_i18n: {"fr": "depuis (une durée)", "it": "da (una durata)", "es": "desde hace (una duración)", "nl": "sinds (een tijdsduur)", "pl": "od (okres czasu)", "pt": "há (uma duração)", "sv": "i (en tidsperiod)"}}
+      - {frage: "noch nicht", antwort: "yet", satz: "Has the film started ___?", optionen: ["yet", "already", "still", "ever"], frage_i18n: {"fr": "pas encore", "it": "non ancora", "es": "todavía no", "nl": "nog niet", "pl": "jeszcze nie", "pt": "ainda não", "sv": "inte än"}}
+      - {frage: "je / jemals", antwort: "ever", satz: "Have you ___ eaten sushi?", optionen: ["ever", "never", "yet", "already"], frage_i18n: {"fr": "déjà (une fois)", "it": "mai (qualche volta)", "es": "alguna vez", "nl": "ooit", "pl": "kiedykolwiek", "pt": "alguma vez", "sv": "någonsin"}}
+      - {frage: "gerade eben", antwort: "just", satz: "I have ___ arrived at the station.", optionen: ["just", "yet", "ever", "since"], frage_i18n: {"fr": "à l'instant", "it": "proprio ora", "es": "acabar de", "nl": "net", "pl": "właśnie", "pt": "acabar de", "sv": "precis"}}
   - id: conditionals
     titel: "If-Sätze (Bedingungen)"
+    titel_i18n: {de: "If-Sätze (Bedingungen)", en: "If-clauses (conditions)", fr: "Phrases en if (conditions)", it: "Frasi con if (condizioni)", es: "Oraciones con if (condiciones)", nl: "If-zinnen (voorwaarden)", pl: "Zdania z if (warunki)", pt: "Frases com if (condições)", sv: "If-satser (villkor)"}
     icon: "🔀"
     uebungen: [lueckentext, auswahl]
     karten:
-      - {frage: "Typ 1 – Wenn es regnet …", antwort: "rains", satz: "If it ___ tomorrow, we will stay at home.", optionen: ["rains", "will rain", "rained", "would rain"]}
-      - {frage: "Typ 1 – Folge", antwort: "will", satz: "If you study hard, you ___ pass the exam.", optionen: ["will", "would", "are", "did"]}
-      - {frage: "Typ 1 – Folge (verneint)", antwort: "won't", satz: "If we don't hurry, we ___ catch the bus.", optionen: ["won't", "wouldn't", "don't", "didn't"]}
-      - {frage: "Typ 2 – Wenn ich … hätte", antwort: "had", satz: "If I ___ more money, I would travel the world.", optionen: ["had", "have", "will have", "would have"]}
-      - {frage: "Typ 2 – Folge", antwort: "would", satz: "If she lived closer, she ___ visit us more often.", optionen: ["would", "will", "does", "did"]}
-      - {frage: "Typ 2 – an deiner Stelle", antwort: "were", satz: "If I ___ you, I would ask the teacher.", optionen: ["were", "am", "will be", "be"]}
-      - {frage: "Typ 2 – könnte", antwort: "could", satz: "If I could fly, I ___ go anywhere.", optionen: ["could", "can", "will", "did"]}
-      - {frage: "Typ 0 – Tatsache", antwort: "boils", satz: "If you heat water to 100 degrees, it ___.", optionen: ["boils", "boiled", "would boil", "boiling"]}
-      - {frage: "unless – ausser wenn", antwort: "unless", satz: "You won't get better ___ you rest.", optionen: ["unless", "if", "when", "because"]}
+      - {frage: "Typ 1 – Wenn es regnet …", antwort: "rains", satz: "If it ___ tomorrow, we will stay at home.", optionen: ["rains", "will rain", "rained", "would rain"], frage_i18n: {"fr": "Type 1 – S'il pleut …", "it": "Tipo 1 – Se piove …", "es": "Tipo 1 – Si llueve …", "nl": "Type 1 – Als het regent …", "pl": "Typ 1 – Jeśli pada …", "pt": "Tipo 1 – Se chover …", "sv": "Typ 1 – Om det regnar …"}}
+      - {frage: "Typ 1 – Folge", antwort: "will", satz: "If you study hard, you ___ pass the exam.", optionen: ["will", "would", "are", "did"], frage_i18n: {"fr": "Type 1 – conséquence", "it": "Tipo 1 – conseguenza", "es": "Tipo 1 – consecuencia", "nl": "Type 1 – gevolg", "pl": "Typ 1 – skutek", "pt": "Tipo 1 – consequência", "sv": "Typ 1 – följd"}}
+      - {frage: "Typ 1 – Folge (verneint)", antwort: "won't", satz: "If we don't hurry, we ___ catch the bus.", optionen: ["won't", "wouldn't", "don't", "didn't"], frage_i18n: {"fr": "Type 1 – conséquence (négative)", "it": "Tipo 1 – conseguenza (negativa)", "es": "Tipo 1 – consecuencia (negativa)", "nl": "Type 1 – gevolg (ontkennend)", "pl": "Typ 1 – skutek (przeczenie)", "pt": "Tipo 1 – consequência (negativa)", "sv": "Typ 1 – följd (nekad)"}}
+      - {frage: "Typ 2 – Wenn ich … hätte", antwort: "had", satz: "If I ___ more money, I would travel the world.", optionen: ["had", "have", "will have", "would have"], frage_i18n: {"fr": "Type 2 – Si j'avais …", "it": "Tipo 2 – Se avessi …", "es": "Tipo 2 – Si tuviera …", "nl": "Type 2 – Als ik … had", "pl": "Typ 2 – Gdybym miał …", "pt": "Tipo 2 – Se eu tivesse …", "sv": "Typ 2 – Om jag hade …"}}
+      - {frage: "Typ 2 – Folge", antwort: "would", satz: "If she lived closer, she ___ visit us more often.", optionen: ["would", "will", "does", "did"], frage_i18n: {"fr": "Type 2 – conséquence", "it": "Tipo 2 – conseguenza", "es": "Tipo 2 – consecuencia", "nl": "Type 2 – gevolg", "pl": "Typ 2 – skutek", "pt": "Tipo 2 – consequência", "sv": "Typ 2 – följd"}}
+      - {frage: "Typ 2 – an deiner Stelle", antwort: "were", satz: "If I ___ you, I would ask the teacher.", optionen: ["were", "am", "will be", "be"], frage_i18n: {"fr": "Type 2 – à ta place", "it": "Tipo 2 – al posto tuo", "es": "Tipo 2 – yo que tú", "nl": "Type 2 – als ik jou was", "pl": "Typ 2 – na twoim miejscu", "pt": "Tipo 2 – no seu lugar", "sv": "Typ 2 – om jag vore du"}}
+      - {frage: "Typ 2 – könnte", antwort: "could", satz: "If I could fly, I ___ go anywhere.", optionen: ["could", "can", "will", "did"], frage_i18n: {"fr": "Type 2 – pourrait", "it": "Tipo 2 – potrebbe", "es": "Tipo 2 – podría", "nl": "Type 2 – zou kunnen", "pl": "Typ 2 – mógłby", "pt": "Tipo 2 – poderia", "sv": "Typ 2 – skulle kunna"}}
+      - {frage: "Typ 0 – Tatsache", antwort: "boils", satz: "If you heat water to 100 degrees, it ___.", optionen: ["boils", "boiled", "would boil", "boiling"], frage_i18n: {"fr": "Type 0 – un fait", "it": "Tipo 0 – un fatto", "es": "Tipo 0 – un hecho", "nl": "Type 0 – feit", "pl": "Typ 0 – fakt", "pt": "Tipo 0 – um fato", "sv": "Typ 0 – fakta"}}
+      - {frage: "unless – ausser wenn", antwort: "unless", satz: "You won't get better ___ you rest.", optionen: ["unless", "if", "when", "because"], frage_i18n: {"fr": "unless – sauf si", "it": "unless – a meno che", "es": "unless – a menos que", "nl": "unless – tenzij", "pl": "unless – chyba że", "pt": "unless – a menos que", "sv": "unless – om inte"}}
   - id: phrasal-verbs
     titel: "Phrasal Verbs"
+    titel_i18n: {de: "Phrasal Verbs", en: "Phrasal verbs", fr: "Phrasal verbs", it: "Phrasal verbs", es: "Phrasal verbs", nl: "Phrasal verbs", pl: "Phrasal verbs", pt: "Phrasal verbs", sv: "Phrasal verbs"}
     icon: "🧩"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {de: "aufgeben", en: "to give up", auch: ["give up"]}
-      - {de: "herausfinden", en: "to find out", auch: ["find out"]}
-      - {de: "sich um jemanden kümmern", en: "to look after someone", auch: ["look after someone", "to look after", "look after", "to take care of someone", "take care of someone"]}
-      - {de: "sich auf etwas freuen", en: "to look forward to something", auch: ["look forward to something", "to look forward to", "look forward to"]}
-      - {de: "aufwachsen", en: "to grow up", auch: ["grow up"]}
-      - {de: "absagen", en: "to call off", auch: ["call off", "to cancel", "cancel"]}
-      - {de: "sich mit jemandem gut verstehen", en: "to get on with someone", auch: ["get on with someone", "to get along with someone", "get along with someone", "to get on with", "get on with"]}
-      - {de: "etwas nachschlagen", en: "to look something up", auch: ["look something up", "to look up", "look up"]}
-      - {de: "anziehen (Kleidung)", en: "to put on", auch: ["put on"]}
-      - {de: "aufräumen", en: "to tidy up", auch: ["tidy up", "to clean up", "clean up"]}
-      - {de: "ausgehen (zu Ende gehen)", en: "to run out", auch: ["run out", "to run out of", "run out of"]}
+      - {de: "aufgeben", en: "to give up", fr: "abandonner", it: "arrendersi", es: "rendirse", nl: "opgeven", pl: "poddać się", pt: "desistir", sv: "att ge upp", auch: ["give up"]}
+      - {de: "herausfinden", en: "to find out", fr: "découvrir", it: "scoprire", es: "averiguar", nl: "erachter komen", pl: "dowiedzieć się", pt: "descobrir", sv: "att ta reda på", auch: ["find out"]}
+      - {de: "sich um jemanden kümmern", en: "to look after someone", fr: "s'occuper de quelqu'un", it: "prendersi cura di qualcuno", es: "cuidar de alguien", nl: "voor iemand zorgen", pl: "opiekować się kimś", pt: "cuidar de alguém", sv: "att ta hand om någon", auch: ["look after someone", "to look after", "look after", "to take care of someone", "take care of someone"]}
+      - {de: "sich auf etwas freuen", en: "to look forward to something", fr: "avoir hâte de quelque chose", it: "non vedere l'ora di qualcosa", es: "tener ganas de algo", nl: "ergens naar uitkijken", pl: "cieszyć się na coś", pt: "estar ansioso por algo", sv: "att se fram emot något", auch: ["look forward to something", "to look forward to", "look forward to"]}
+      - {de: "aufwachsen", en: "to grow up", fr: "grandir", it: "crescere", es: "crecer", nl: "opgroeien", pl: "dorastać", pt: "crescer", sv: "att växa upp", auch: ["grow up"]}
+      - {de: "absagen", en: "to call off", fr: "annuler", it: "annullare", es: "cancelar", nl: "afzeggen", pl: "odwołać", pt: "cancelar", sv: "att ställa in", auch: ["call off", "to cancel", "cancel"]}
+      - {de: "sich mit jemandem gut verstehen", en: "to get on with someone", fr: "bien s'entendre avec quelqu'un", it: "andare d'accordo con qualcuno", es: "llevarse bien con alguien", nl: "goed met iemand overweg kunnen", pl: "dobrze się z kimś dogadywać", pt: "se dar bem com alguém", sv: "att komma bra överens med någon", auch: ["get on with someone", "to get along with someone", "get along with someone", "to get on with", "get on with"]}
+      - {de: "etwas nachschlagen", en: "to look something up", fr: "chercher quelque chose (dans un livre)", it: "cercare qualcosa (sul dizionario)", es: "buscar algo (en un libro)", nl: "iets opzoeken", pl: "sprawdzić coś (w słowniku)", pt: "procurar algo (no dicionário)", sv: "att slå upp något", auch: ["look something up", "to look up", "look up"]}
+      - {de: "anziehen (Kleidung)", en: "to put on", fr: "mettre (un vêtement)", it: "mettersi (un vestito)", es: "ponerse (ropa)", nl: "aantrekken (kleren)", pl: "założyć (ubranie)", pt: "vestir (uma roupa)", sv: "att ta på sig (kläder)", auch: ["put on"]}
+      - {de: "aufräumen", en: "to tidy up", fr: "ranger", it: "mettere in ordine", es: "ordenar", nl: "opruimen", pl: "posprzątać", pt: "arrumar", sv: "att städa", auch: ["tidy up", "to clean up", "clean up"]}
+      - {de: "ausgehen (zu Ende gehen)", en: "to run out", fr: "manquer (il n'y en a plus)", it: "finire (non essercene più)", es: "acabarse", nl: "opraken", pl: "skończyć się (zabraknąć)", pt: "acabar (não ter mais)", sv: "att ta slut", auch: ["run out", "to run out of", "run out of"]}
   - id: idioms
     titel: "Redewendungen"
+    titel_i18n: {de: "Redewendungen", en: "Idioms", fr: "Expressions", it: "Modi di dire", es: "Expresiones", nl: "Uitdrukkingen", pl: "Idiomy", pt: "Expressões", sv: "Uttryck"}
     icon: "💡"
     uebungen: [auswahl, eintippen, hoeren, karteikarte]
     karten:
-      - {de: "Das ist ein Kinderspiel.", en: "It's a piece of cake.", auch: ["It is a piece of cake.", "It's a piece of cake"]}
-      - {de: "Toi, toi, toi! / Viel Glück!", en: "Break a leg!", auch: ["Break a leg", "Good luck!", "Good luck"]}
-      - {de: "Ich bin völlig fertig.", en: "I'm exhausted.", auch: ["I am exhausted.", "I'm worn out.", "I am worn out."]}
-      - {de: "Es regnet in Strömen.", en: "It's pouring with rain.", auch: ["It's pouring.", "It is pouring with rain.", "It's raining cats and dogs.", "It is raining cats and dogs."]}
-      - {de: "Das ist nicht mein Ding.", en: "It's not my cup of tea.", auch: ["It is not my cup of tea.", "It's not my thing.", "It is not my thing."]}
-      - {de: "Ich drücke dir die Daumen.", en: "I'll keep my fingers crossed for you.", auch: ["I'll keep my fingers crossed.", "Fingers crossed!", "Fingers crossed"]}
-      - {de: "Wir sitzen im selben Boot.", en: "We're in the same boat.", auch: ["We are in the same boat."]}
-      - {de: "Lass dir Zeit.", en: "Take your time.", auch: ["Take your time"]}
-      - {de: "Besser spät als nie.", en: "Better late than never.", auch: ["Better late than never"]}
-      - {de: "Das ergibt Sinn.", en: "That makes sense.", auch: ["That makes sense"]}
+      - {de: "Das ist ein Kinderspiel.", en: "It's a piece of cake.", fr: "C'est un jeu d'enfant.", it: "È un gioco da ragazzi.", es: "Es pan comido.", nl: "Dat is een eitje.", pl: "To bułka z masłem.", pt: "É moleza.", sv: "Det är en barnlek.", auch: ["It is a piece of cake.", "It's a piece of cake"]}
+      - {de: "Toi, toi, toi! / Viel Glück!", en: "Break a leg!", fr: "Bonne chance ! (Merde !)", it: "In bocca al lupo!", es: "¡Mucha suerte!", nl: "Succes!", pl: "Połamania nóg!", pt: "Boa sorte!", sv: "Lycka till!", auch: ["Break a leg", "Good luck!", "Good luck"]}
+      - {de: "Ich bin völlig fertig.", en: "I'm exhausted.", fr: "Je suis épuisé.", it: "Sono distrutto.", es: "Estoy agotado.", nl: "Ik ben doodop.", pl: "Jestem wykończony.", pt: "Estou exausto.", sv: "Jag är helt slut.", auch: ["I am exhausted.", "I'm worn out.", "I am worn out."]}
+      - {de: "Es regnet in Strömen.", en: "It's pouring with rain.", fr: "Il pleut des cordes.", it: "Piove a dirotto.", es: "Llueve a cántaros.", nl: "Het regent pijpenstelen.", pl: "Leje jak z cebra.", pt: "Está chovendo canivetes.", sv: "Det ösregnar.", auch: ["It's pouring.", "It is pouring with rain.", "It's raining cats and dogs.", "It is raining cats and dogs."]}
+      - {de: "Das ist nicht mein Ding.", en: "It's not my cup of tea.", fr: "Ce n'est pas mon truc.", it: "Non fa per me.", es: "No es lo mío.", nl: "Dat is niks voor mij.", pl: "To nie moja bajka.", pt: "Não é a minha praia.", sv: "Det är inte min grej.", auch: ["It is not my cup of tea.", "It's not my thing.", "It is not my thing."]}
+      - {de: "Ich drücke dir die Daumen.", en: "I'll keep my fingers crossed for you.", fr: "Je croise les doigts pour toi.", it: "Incrocio le dita per te.", es: "Cruzo los dedos por ti.", nl: "Ik duim voor je.", pl: "Trzymam za ciebie kciuki.", pt: "Estou torcendo por você.", sv: "Jag håller tummarna för dig.", auch: ["I'll keep my fingers crossed.", "Fingers crossed!", "Fingers crossed"]}
+      - {de: "Wir sitzen im selben Boot.", en: "We're in the same boat.", fr: "Nous sommes dans le même bateau.", it: "Siamo sulla stessa barca.", es: "Estamos en el mismo barco.", nl: "We zitten in hetzelfde schuitje.", pl: "Jedziemy na tym samym wózku.", pt: "Estamos no mesmo barco.", sv: "Vi sitter i samma båt.", auch: ["We are in the same boat."]}
+      - {de: "Lass dir Zeit.", en: "Take your time.", fr: "Prends ton temps.", it: "Prenditi il tuo tempo.", es: "Tómate tu tiempo.", nl: "Neem de tijd.", pl: "Nie spiesz się.", pt: "Não tenha pressa.", sv: "Ta den tid du behöver.", auch: ["Take your time"]}
+      - {de: "Besser spät als nie.", en: "Better late than never.", fr: "Mieux vaut tard que jamais.", it: "Meglio tardi che mai.", es: "Más vale tarde que nunca.", nl: "Beter laat dan nooit.", pl: "Lepiej późno niż wcale.", pt: "Antes tarde do que nunca.", sv: "Bättre sent än aldrig.", auch: ["Better late than never"]}
+      - {de: "Das ergibt Sinn.", en: "That makes sense.", fr: "C'est logique.", it: "Ha senso.", es: "Tiene sentido.", nl: "Dat is logisch.", pl: "To ma sens.", pt: "Faz sentido.", sv: "Det låter vettigt.", auch: ["That makes sense"]}

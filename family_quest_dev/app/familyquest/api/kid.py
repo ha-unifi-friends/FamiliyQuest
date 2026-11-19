@@ -13,10 +13,11 @@ from ..internet import InternetError
 from ..db import profile_settings
 from ..channel import feature_visible
 from ..learning.lesson import LearnError
+from ..packs import i18n as pack_i18n
 from ..rewards import avatar as av
 from ..rewards.shop import ShopError
 from ..pets import KINDS as PET_KINDS, REBUY_COST, PetError
-from .auth import INGRESS_IP, KID_MAX_AGE, Learner, app_of, check_pin, hash_pin, valid_pin
+from .auth import KID_MAX_AGE, Learner, app_of, check_pin, ha_kid, hash_pin, valid_pin, via_ingress
 
 router = APIRouter(prefix="/api")
 
@@ -68,7 +69,9 @@ def info(request: Request) -> dict:
             "family_visibility": s.get("family_visibility"), "kid_max_age": KID_MAX_AGE,
             # parent area only in Home Assistant: on the app port (tablets) it is not offered at all
             "parent_ha_only": bool(s.get("parent_ha_only")),
-            "via_ha": bool(request.client and request.client.host == INGRESS_IP),
+            "via_ha": via_ingress(request),
+            # a child opened the app with its own Home Assistant user (ingress, parents allow it): log in without PIN
+            "ha_kid": {"id": kid["id"], "name": kid["name"]} if (kid := ha_kid(fq, request)) else None,
             "season": themes.active(s.get("themes")),
             "codelab": feature_visible("codelab")}           # 💡 Code Workshop: only in the dev channel (channel.DEV_FEATURES)
 
@@ -120,6 +123,18 @@ def login(body: LoginIn, request: Request) -> dict:
     if p["role"] == "parent" and not fq.db.get_setting("parent_ha_only"):
         out["parent_token"] = fq.tokens.make(p["id"], "parent")
     return out
+
+
+@router.post("/ha-login")
+def ha_login(request: Request) -> dict:
+    """Children's app without PIN for a child whose Home Assistant user is linked with its profile – only through Home
+    Assistant ingress and only when the parents switched it on. Only the learning-app login, never the parent area."""
+    fq = app_of(request)
+    p = ha_kid(fq, request)
+    if not p:
+        return {"linked": False}
+    loginlog.record(fq, request, "profile", p["id"], True)
+    return {"linked": True, "token": fq.tokens.make(p["id"], "kid"), "profile": fq.profile_public(p)}
 
 
 @router.post("/setup")
@@ -203,10 +218,14 @@ def courses(request: Request, prof: dict = Learner) -> list[dict]:
     fq = app_of(request)
     mine = {r["pack_id"] for r in fq.db.q("SELECT pack_id FROM pack_profile WHERE profile_id=?", prof["id"])}
     out = []
+    viewer = pack_i18n.viewer()
     for p in fq.packs.all(status="active", kind="pack"):
         s = p.summary()
         if s.get("self_service"):
-            out.append({k: s.get(k) for k in ("id", "title", "subject", "level", "lang", "src_lang", "icon", "color", "description", "descriptions")}
+            if viewer and p.lang == viewer and p.id not in mine:
+                continue                     # a course of the learner's own language (the French course for French speakers)
+            out.append({k: s.get(k) for k in ("id", "title", "subject", "level", "lang", "src_lang", "src_langs", "icon", "color",
+                                               "description", "descriptions", "content_langs")}
                        | {"units": len(s.get("units") or []), "cards": sum(u["count"] for u in s.get("units") or []), "on": p.id in mine})
     return out
 
