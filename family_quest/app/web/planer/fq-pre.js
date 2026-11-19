@@ -64,7 +64,7 @@ window.FQN = (() => {
     .fqe .sec{margin:22px 0 10px}.fqe .add .sec{margin-top:0}.fqe .foot{color:var(--muted)!important}
     .fc,.fq,.pre,.sg,.sz,.pc,.tab,.tb,.addp,.chip,.seg button,.in,.sel,.t,.ib,button.add,.day{min-height:44px!important}
     .rmp,.x{min-width:44px!important;min-height:44px!important}
-    .fqe .tl .in{min-width:0}
+    .fqe .tl .in{min-width:0}.tb[data-chpin],.tb[data-lock]{display:none!important}
     @media (max-width:560px){.fqe .ar{flex-wrap:wrap}.fqe .ar .pn{flex:1;width:auto}.fqe .days{order:5;flex:1 1 100%;flex-wrap:nowrap}.fqe .day{flex:1 1 0;width:auto!important;min-width:0}}
   `;
   const sheet = new CSSStyleSheet();

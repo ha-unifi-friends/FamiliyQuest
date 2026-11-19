@@ -114,6 +114,23 @@ class FqHaCard extends HTMLElement {
 }
 if (!customElements.get("ha-card")) customElements.define("ha-card", FqHaCard);
 
+// ---------------------------------------------------------------- no planner PIN in Family Quest
+// The old Family Planer ran on one shared screen and asked for a parent PIN for every change. In Family Quest the
+// signed-in profile is the identity (familyquest/planer/websocket.py): parents (also signed in with Home Assistant)
+// just do it, a child gets a clear «only parents» message instead of a PIN pad. pin.js asks FQ_NO_PIN (build_fq.py).
+const FQ_DENIED = ["parent_only", "parent_network", "own_only", "points_parent"];
+window.FQ_NO_PIN = async (store, type, data, CANCEL) => {
+  try { return await store.ws(type, data || {}); }
+  catch (e) {
+    if (e && FQ_DENIED.includes(e.code)) { toast(e.message, "bad"); throw CANCEL; }
+    throw e;
+  }
+};
+window.FQ_NO_PIN.change = CANCEL => {                     // «Change PIN»: the parents' PINs are in Family Quest
+  toast(I18N.tr("Parent PINs are changed in Family Quest: parent area → Profiles"));
+  return Promise.reject(CANCEL);
+};
+
 // ---------------------------------------------------------------- connection (Home Assistant websocket format)
 class FqConnection {
   constructor() {
@@ -142,6 +159,7 @@ class FqConnection {
       if (m.type === "result") {
         const p = this._pending.get(m.id); if (!p) return;
         this._pending.delete(m.id);
+        if (!m.success && m.error && FQ_DENIED.includes(m.error.code)) m.error = { ...m.error, message: I18N.tr(m.error.message) };
         m.success ? p.resolve(m.result) : p.reject(m.error || { code: "error", message: "error" });
       }
     };

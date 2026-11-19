@@ -90,6 +90,13 @@ REPLACE += [
     ("const tabs = ORDER.map((id) => TABS.find((x) => x.id === id)).filter((x) => x && ",
      "const tabs = ORDER.map((id) => TABS.find((x) => x.id === id)).filter((x) => x && !(window.FQ_PARENT_AREA && x.id === 'chores') && "),
 ]
+# no planner PIN in Family Quest: the signed-in profile decides (web/planer/host.js FQ_NO_PIN, planer/websocket.py)
+REPLACE += [
+    ("  async function ensure(store, ctx) {\n", "  async function ensure(store, ctx) {\n    if (window.FQ_NO_PIN) return '';\n"),
+    ("  async function call(store, type, data, ctx) {\n", "  async function call(store, type, data, ctx) {\n    if (window.FQ_NO_PIN) return window.FQ_NO_PIN(store, type, data, CANCEL);\n"),
+    ("    change: (store, ctx) => change(store, ctx, ' '),\n    unlocked: (store) => !!cached(store),",
+     "    change: (store, ctx) => (window.FQ_NO_PIN ? window.FQ_NO_PIN.change(CANCEL) : change(store, ctx, ' ')),\n    unlocked: (store) => !!window.FQ_NO_PIN || !!cached(store),"),
+]
 # trade marks: activity suggestion without a brand name
 REPLACE += [("lego: ['🧱', 'Lego-Challenge', 'Lego challenge']", "lego: ['🧱', 'Bauklotz-Challenge', 'Building block challenge']")]
 for old, new in REPLACE:

@@ -5225,6 +5225,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
   }
 
   async function ensure(store, ctx) {
+    if (window.FQ_NO_PIN) return '';
     const t = cached(store); if (t) return t;
     if (store.snap && store.snap.pin_default) return change(store, ctx);
     let note = '';
@@ -5239,6 +5240,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
   }
 
   async function call(store, type, data, ctx) {
+    if (window.FQ_NO_PIN) return window.FQ_NO_PIN(store, type, data, CANCEL);
     for (let i = 0; i < 3; i += 1) {
       const token = await ensure(store, ctx);
       try { return await store.ws(type, { ...(data || {}), token }); } catch (e) {
@@ -5253,8 +5255,8 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
 
   window.FPPIN = {
     call, ensure, CANCEL,
-    change: (store, ctx) => change(store, ctx, ' '),
-    unlocked: (store) => !!cached(store),
+    change: (store, ctx) => (window.FQ_NO_PIN ? window.FQ_NO_PIN.change(CANCEL) : change(store, ctx, ' ')),
+    unlocked: (store) => !!window.FQ_NO_PIN || !!cached(store),
     lock: (store) => tokens.delete(store),
     token: (store) => cached(store),
   };
