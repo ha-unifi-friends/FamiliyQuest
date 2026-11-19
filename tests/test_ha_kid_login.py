@@ -146,3 +146,20 @@ def test_user_is_admin_from_home_assistant():
     svc2._sync = fail
     svc2.client = C()
     assert svc2.user_is_admin("a") is None
+
+
+def test_setup_through_ha_links_the_first_parent(client):
+    """First start opened through Home Assistant: the first parent is linked with that HA user (no PIN in HA)."""
+    direct = client
+    client = _ingress(direct)
+    hdr = {"x-remote-user-id": "u-papa", "x-remote-user-display-name": "Papa"}
+    info = client.get("/api/info", headers=hdr).json()
+    assert info["setup_needed"] and info["setup_ha_user"] == "Papa"
+    r = client.post("/api/setup", json={"name": "Papa", "pin": "1234"}, headers=hdr)
+    assert r.status_code == 200, r.text
+    from familyquest.db import profile_settings
+    p = client.app.state.fq.db.q1("SELECT * FROM profile WHERE role='parent'")
+    assert profile_settings(p).get("ha_user_id") == "u-papa"
+    assert client.get("/api/info", headers=hdr).json()["setup_ha_user"] is None
+    # on the direct port the headers count for nothing
+    assert direct.get("/api/info", headers=hdr).json()["setup_ha_user"] is None

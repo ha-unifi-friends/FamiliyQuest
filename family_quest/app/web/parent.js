@@ -84,13 +84,14 @@ async function call(path, opts) {
 
 // ---------------------------------------------------------------- setup and login
 function setupView() {
-  const name = h("input", { type: "text", placeholder: T("Your name"), "aria-label": T("Your name") });
+  const name = h("input", { type: "text", placeholder: T("Your name"), "aria-label": T("Your name"), value: P.info.setup_ha_user || "" });
   let step = 1, first = "";
   const box = h("div.card.login-card",
     h("img", { src: "img/icon.svg", alt: "", width: 72, height: 72 }),
     h("h1", T("Welcome to Family Quest")),
     h("p", T("First create the parent profile. It is always protected by a PIN.")),
     h("label.field", T("Your name"), name),
+    P.info.setup_ha_user ? h("p.small.muted", "🏠 ", I18N.tr(T("Your parent profile is linked with the Home Assistant user «{0}»: here in Home Assistant you need no PIN. The PIN is for the app on the tablets.")).replace("{0}", P.info.setup_ha_user)) : null,
     h("button.btn.big", { onclick: () => { if (!name.value.trim()) return name.focus(); pinStep(); } }, T("Next")),
     langPicker());
   app.replaceChildren(h("div.login", box));

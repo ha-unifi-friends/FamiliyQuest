@@ -17,7 +17,7 @@ from ..packs import i18n as pack_i18n
 from ..rewards import avatar as av
 from ..rewards.shop import ShopError
 from ..pets import KINDS as PET_KINDS, REBUY_COST, PetError
-from .auth import KID_MAX_AGE, Learner, app_of, check_pin, ha_kid, hash_pin, valid_pin, via_ingress
+from .auth import KID_MAX_AGE, Learner, app_of, check_pin, ha_kid, ha_user, hash_pin, valid_pin, via_ingress
 
 router = APIRouter(prefix="/api")
 
@@ -63,7 +63,9 @@ def info(request: Request) -> dict:
     fq = app_of(request)
     s = fq.db.all_settings()
     return {"version": fq.settings.version,
-            "setup_needed": not fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0),
+            "setup_needed": (setup := not fq.db.val("SELECT COUNT(*) FROM profile WHERE role='parent' AND archived=0", default=0)),
+            # first start through Home Assistant: the name of the HA user – the first parent is linked with it
+            "setup_ha_user": (u["name"] or u["user"]) if setup and (u := ha_user(request)) else None,
             "ha": bool(fq.ha and fq.ha.connected), "planer": bool(fq.ha and fq.ha.planer_available),
             "ai": False, "sound": s.get("sound", True),
             "family_visibility": s.get("family_visibility"), "kid_max_age": KID_MAX_AGE,
@@ -145,8 +147,12 @@ def setup(body: SetupIn, request: Request) -> dict:
         raise HTTPException(409, "Already set up")
     if not body.name.strip() or not valid_pin(body.pin):
         raise HTTPException(400, "Name and a PIN with 4–8 digits are required")
-    pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash) VALUES(?, 'parent', '#495057', ?)",
-                  body.name.strip()[:40], hash_pin(body.pin))
+    # opened through Home Assistant: the first parent is linked with that Home Assistant user right away – the parent
+    # area then opens without PIN (the PIN stays for the app on the tablets)
+    u = ha_user(request)
+    st = {"ha_user_id": u["id"], "ha_user_name": u["name"] or u["user"]} if u else {}
+    pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash, settings) VALUES(?, 'parent', '#495057', ?, ?)",
+                  body.name.strip()[:40], hash_pin(body.pin), json.dumps(st))
     return {"parent_token": fq.tokens.make(pid, "parent"), "token": fq.tokens.make(pid, "kid"),
             "profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid))}
 
