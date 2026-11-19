@@ -186,6 +186,51 @@ section **🎲 FamilyTime games** lists the FamilyTime events of the next 60 day
   switch the whole feature on/off (off: children see nothing of it), the coin price, the hours before the start when
   the wishes close.
 
+## 📈 Analytics (parent area)
+
+The menu item **📈 Analytics** in the parent area has two tabs.
+
+**📊 Dashboards** (opens first): several reports side by side on a grid of 4 columns (one column on phones).
+- The **standard dashboard** is there from the start (coins and XP per week, games per game, chores done or open, the
+  weather per child, game time per day). It can be changed and renamed, not removed. **⋯** makes new dashboards,
+  renames or deletes them; the list at the top switches between them.
+- The **timeline** at the top sets the period for every tile – it replaces the date filter of the reports. 📅 or the
+  title opens the period picker: quick ranges (today, yesterday, this week / month / quarter / year, the last 7, 30 or
+  365 days, the last 12 months) and a month calendar (tap the first and the last day; the calendar icon switches to the
+  months; arrow keys move between days, Esc closes). **◀ ▶** step back and forward by the length of the period,
+  **Now** goes back to the current period of the same kind, **⋮** chooses day, week, month, year or rolling 12 months.
+  The titles follow the language of the app («Dez.–Nov.» / «2025–2026»). Every dashboard remembers its period.
+- **✏️ Edit**: drag a report (a template or one of «My reports») onto the grid, or tap it / «+ Add report» to put it at
+  the end. Tiles are moved by dragging their head (⠿) or with ◀ ▶, resized by dragging the corner or with ↔ (1–4
+  columns) and ↕ (small / medium / tall); ✏️ gives a tile its own title, ✕ removes it. Dragging works with mouse,
+  pen and finger (pointer events).
+
+**📋 Reports**:
+- **Templates** – ready-made reports (coins per child and week, coins earned and spent, XP per week, correct answers
+  and accuracy per subject, learning minutes, games played per game, games / wins / coins per child, chores done, rewards
+  redeemed, game time, internet minutes used, battery used per game, the weather of the day and its bonus/malus points,
+  books read). A tap fills the ad-hoc report.
+- **My reports** – reports you saved, with ✏️ rename and 🗑️ delete.
+- **Ad-hoc report** – choose a data source (points & coins, learning answers, learning days, games played, chores,
+  rewards, game time, game battery, weather of the day, books read), then drag dimensions (person, day, week, month,
+  year, weekday, and per source e.g. account, category, subject, game, chore, reward, status, weather) and measures
+  (count, coins, XP, minutes, wins, …) into **Columns** (series / colours), **Rows** (categories, the x-axis), **Data**
+  (the numbers) and **Group** (one table or chart per value) – or tap a chip and then a zone. At most 3 dimensions and
+  4 measures. Filters: 7 days / 30 days / this year / all and the people. The icons below the report choose table,
+  pivot (with totals), bars, stacked bars, 100 % stacked bars, line, area or donut – our own SVG charts with legend
+  and tooltips (tap or hover), in light and dark mode. With several measures every chart shows one of them (one axis
+  per chart). **⭐ Save as my report** keeps it under «My reports».
+
+What it counts: the ledger (coins, XP, internet minutes used from earned minutes), the learning answers and learning
+days, the game history (places and coins of the family games), the chore plan, the shop (redeemed rewards), the
+minutes of family games (time limits), the game battery log, the behaviour weather and the books read. Private books
+(«Only me») are never counted and no titles of books or quizzes appear. Guests are never part of a report.
+
+Safety: the server only knows a fixed list of sources, dimensions and measures – a report names them by key, never
+with SQL or free text; anything else is refused. The query runs read-only with a time limit and at most 2000 rows.
+Parents only. Saved reports and dashboards are settings (`analytics_reports`, `analytics_dashboards`) and part of
+every backup.
+
 ## Kiosk dashboard
 
 Parent area → **🖥️ Dashboard**: a read-only page for a wall tablet, TV or old phone – any browser, no login.
