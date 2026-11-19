@@ -59,6 +59,17 @@ move their dates and add **own designs** (name, icon, colour, scene, from – to
 come first. Children can switch the scene off on their device in the ☰ menu. During a **🎉 party** the children's app
 shows the **🪩 Disco** design (see Party mode).
 
+**Live weather and daylight:** under **Settings › 🎨 Season designs › 🌦️ Weather for the designs** you pick a weather
+entity of Home Assistant (default «None»). Then the scene shows the weather outside – rain, snow, storm, fog, clouds or
+sun, with the wind – also on days without a design (the everyday scene with the weather, like the Family Planer card).
+It is the same setting as the weather of the Family Planer cards (planner «Seasons & weather»): one choice for both.
+**Day and night follow the sun** (on by default) turns the scene to night, dusk and dawn with `sun.sun`; off, or
+without Home Assistant, night is 20–6 by the clock. The app asks every 5 minutes (`GET /api/season-live`, signed-in
+profiles; the server reuses the answer for 3 minutes and sends only the weather kind, temperature, wind and the light –
+no entity ids) and only redraws the scene when it looks different, so the animations keep running. The children's
+☰ switch and «reduce motion» are respected; the party disco stays as it is. Parent API `GET/PUT /api/parent/season-live`
+(`{"weather": "weather.home" | null, "sun": true}`).
+
 ## Points and rewards
 
 - **Accounts:** XP (progress, never spent), Coins (spendable), Internet minutes (off by default) – add your own.

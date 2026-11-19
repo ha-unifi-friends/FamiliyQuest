@@ -1423,10 +1423,41 @@ function themesSection() {
     sec.replaceChildren(sec.firstChild,
       h("p.small.muted", T("The header of the app shows the animated scene of the design of the day – like the Family Planer. Children can switch it off on their device in the ☰ menu.")),
       h("ul.list", ...d.designs.map(x => row(x, x.builtin ? null : ++ownIdx))),
-      h("button.btn.ghost", { onclick: () => ownDialog(null, null) }, "+ ", T("Own design")));
+      h("button.btn.ghost", { onclick: () => ownDialog(null, null) }, "+ ", T("Own design")), live);
   };
+  const live = seasonLiveBox();
   call("parent/themes").then(draw).catch(() => {});
   return sec;
+}
+
+/** Live weather and daylight of the scenes (seasonlive.py): the weather entity is the one of the Family Planer
+ *  (one setting for the planner cards and the app), the sun switch only for the app. */
+function seasonLiveBox() {
+  const none = () => h("option", { value: "" }, I18N.tr(T("None")));
+  const sel = h("select.grow", none()), sun = h("input", { type: "checkbox", checked: true }), now = h("div.small.muted");
+  const keep = v => { if (v && ![...sel.options].some(o => o.value === v)) sel.append(h("option", { value: v }, v)); sel.value = v || ""; };
+  const show = d => {
+    sun.checked = d.sun; keep(d.weather);
+    const l = d.live, w = l && l.wx;
+    const light = l && l.night != null ? (l.night ? T("Night") : l.dusk === "dawn" ? T("Dawn") : l.dusk === "dusk" ? T("Dusk") : T("Day")) : null;
+    now.replaceChildren(...(w || light ? [T("Now"), ": ", w ? w.icon + (w.temp != null ? " " + w.temp + w.unit : "") : "", w && light ? " · " : "", light || ""] : []));
+  };
+  const save = async body => { try { show(await call("parent/season-live", { method: "PUT", body })); toast(T("Saved"), "good"); } catch (e) { /* call shows the error */ } };
+  sel.onchange = () => save({ weather: sel.value || null });
+  sun.onchange = () => save({ sun: sun.checked });
+  call("parent/season-live").then(d => {
+    show(d);
+    if (d.ha || P.meta.ha) call("parent/ha/entities?domain=weather").then(list => {
+      const v = sel.value;
+      sel.replaceChildren(none(), ...list.map(e => h("option", { value: e.entity_id }, (e.name && e.name !== e.entity_id ? e.name + " – " : "") + e.entity_id)));
+      keep(v);
+    }).catch(() => {});
+  }).catch(() => {});
+  return h("div.form.live-box",
+    h("h3", { "data-ik": "Weather for the designs" }, "🌦️ ", T("Weather for the designs")),
+    h("div.row", sel),
+    h("label.row", sun, " ", h("span", { "data-ik": "Day and night follow the sun" }, T("Day and night follow the sun"))),
+    now);
 }
 
 function weatherBox(part) {
