@@ -854,7 +854,6 @@ DEFAULT_SETTINGS = {
     "games_profiles": [],                # with "some": the children who may play
     "games_access": None,                # per game {"mode", "profiles"} (services.games_access) – replaces the two above
     "parent_ha_only": False,             # parent area only through Home Assistant (linked HA user), no PIN login
-    "kid_ha_login": False,               # children with a linked Home Assistant user open their app in HA without PIN
     "ha_app_login": False,               # «Sign in with Home Assistant» in the app on the direct port (haauth.py)
     "ha_app_login_url": "",              # … the address of Home Assistant for the browsers – "" = automatic
     "allowed_networks": [],              # mini firewall: networks (CIDR) that may use the app – empty = all

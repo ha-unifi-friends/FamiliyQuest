@@ -50,12 +50,12 @@ def _link(client, ph, pid, name, uid, role="kid", **extra):
     assert r.status_code == 200, r.text
 
 
-def _family(client, kids=True, on=True):
+def _family(client, on=True):
     ph, mia, leo = setup_family(client)
     papa = next(p for p in client.get("/api/profiles").json() if p["name"] == "Papa")["id"]
     _link(client, ph, mia, "Mia", "u-mia")
     _link(client, ph, papa, "Papa", "u-papa", "parent")
-    client.put("/api/parent/settings", json={"kid_ha_login": kids, "ha_app_login": on}, headers=ph)
+    client.put("/api/parent/settings", json={"ha_app_login": on}, headers=ph)
     return ph, mia, leo, papa
 
 
@@ -110,11 +110,11 @@ def test_kid_signs_in_and_tokens_are_revoked(client, fake_ha):
     assert db.val("SELECT COUNT(*) FROM login_log WHERE profile_id=? AND ok=1", mia, default=0) >= 1
 
 
-def test_kid_only_with_the_option(client, fake_ha):
-    _family(client, kids=False)
+def test_linked_kid_always_can(client, fake_ha):
+    _family(client)
+    client.app.state.fq.db.set_setting("kid_ha_login", False)      # the former switch (still stored) changes nothing
     r, _, _ = _flow(client, "code-mia")
-    assert r.status_code == 403 and "not linked" in r.json()["detail"]
-    assert fake_ha["revoked"] == ["ref-code-mia"]
+    assert r.status_code == 200 and r.json()["profile"]["name"] == "Mia"
 
 
 def test_parent_gets_the_app_login_like_with_the_pin(client, fake_ha):

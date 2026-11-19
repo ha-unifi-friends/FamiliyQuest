@@ -11,7 +11,11 @@
   body { background: #141414; margin: 0; }
   #planer-root { min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
   html.fq-in-parent #planer-root { padding-bottom: 0; }
-  html.fq-in-parent body { background: var(--bg); }
+  html.fq-in-parent body { background: var(--card); }
+  /* parent area: no top bar of its own (clock, season, buttons) – its functions are buttons in the section head of
+     the parent area (parent.js planerChoresSection); the views sit flush in the section card */
+  html.fq-in-parent family-planer-nav-card { display: none !important; }
+  html.fq-in-parent family-planer-panel { padding: 0 !important; min-height: 0 !important; background: var(--card) !important; }
   .fq-wait { color: #aaa; padding: 40px; text-align: center; font-family: system-ui, sans-serif; }
 </style>
 <script>

@@ -287,7 +287,7 @@ def meta(request: Request, me: dict = Parent) -> dict:
             "ha_status": _ha_status(fq),
             "ai": ai_draft.available(fq), "version": fq.settings.version, "me": fq.profile_public(me),
             "ha_user": ha_user(request), "my_ha_user": profile_settings(me).get("ha_user_name") if profile_settings(me).get("ha_user_id") else None,
-            "parent_ha_only": bool(fq.db.get_setting("parent_ha_only")), "kid_ha_login": bool(fq.db.get_setting("kid_ha_login"))}
+            "parent_ha_only": bool(fq.db.get_setting("parent_ha_only"))}
 
 
 @router.get("/overview")
@@ -1069,6 +1069,7 @@ def _public_settings(fq) -> dict:
     s = fq.db.all_settings()
     s.pop("ha_integration", None)        # token hash: only through /api/parent/integration
     s.pop("ha_integration_poll", None)
+    s.pop("kid_ha_login", None)          # former switch – a linked child always may sign in with Home Assistant
     return s
 
 
@@ -1105,9 +1106,8 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         if isinstance(v, list):
             return all(finite(x) for x in v)
         return True
-    for k in ("kid_ha_login", "ha_app_login"):
-        if k in body and not isinstance(body[k], bool):
-            raise HTTPException(400, "Unknown setting")
+    if "ha_app_login" in body and not isinstance(body["ha_app_login"], bool):
+        raise HTTPException(400, "Unknown setting")
     if "ha_app_login_url" in body:
         from ..haauth import clean_url
         try:

@@ -6,7 +6,7 @@ Home Assistant shows its login page (password, two-factor – whatever the user 
 code. The add-on exchanges that code itself (server side) at <HA>/auth/token, asks Home Assistant who the user is
 (websocket «auth/current_user» with the user's own access token) and revokes the Home Assistant tokens right away:
 Family Quest keeps only the identity, never a Home Assistant token. The Home Assistant user is then mapped to the
-profile linked with it (profile setting ha_user_id): a child (only with «kid_ha_login»), or a parent – both get the same
+profile linked with it (profile setting ha_user_id): a child or a parent – both get the same
 login a PIN login in the app gives.
 
 State: a short-lived signed state carries a hash of a random nonce that only the starting browser tab knows
@@ -40,11 +40,9 @@ class HAAuthError(Exception):
 
 # ---------------------------------------------------------------- who may use it
 def linked_profiles(fq) -> list[dict]:
-    """The profiles that can sign in with Home Assistant: linked parents, linked children when «kid_ha_login» is on."""
+    """The profiles that can sign in with Home Assistant: every profile linked with a Home Assistant user."""
     from .db import profile_settings
-    kids = bool(fq.db.get_setting("kid_ha_login"))
-    return [p for p in fq.db.q("SELECT * FROM profile WHERE archived=0 ORDER BY id")
-            if profile_settings(p).get("ha_user_id") and (p["role"] == "parent" or kids)]
+    return [p for p in fq.db.q("SELECT * FROM profile WHERE archived=0 ORDER BY id") if profile_settings(p).get("ha_user_id")]
 
 
 def available(fq) -> bool:

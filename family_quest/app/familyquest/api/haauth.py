@@ -8,7 +8,6 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from .. import haauth, loginlog
-from ..db import profile_settings
 from .auth import Parent, app_of, profile_of_ha_user, via_ingress
 
 router = APIRouter()
@@ -69,8 +68,6 @@ async def finish(body: FinishIn, request: Request) -> dict:
         loginlog.record(fq, request, "profile", None, False)
         raise HTTPException(403, str(e)) from None
     p = profile_of_ha_user(fq, user["id"])
-    if p and p["role"] == "kid" and not fq.db.get_setting("kid_ha_login"):
-        p = None
     if not p:
         loginlog.record(fq, request, "profile", None, False)
         raise HTTPException(403, "Your Home Assistant user is not linked with a profile – ask your parents")
@@ -93,9 +90,7 @@ async def settings(request: Request, me: dict = Parent) -> dict:
             "auto": await haauth.browser_base(fq, f"{request.url.scheme}://{host}/") if not fq.db.get_setting("ha_app_login_url")
             else None,
             "suggestions": await haauth.suggestions(fq),
-            "linked": [{"id": p["id"], "name": p["name"], "role": p["role"]} for p in haauth.linked_profiles(fq)],
-            "linked_kids_off": sum(1 for p in fq.db.q("SELECT * FROM profile WHERE archived=0 AND role='kid'")
-                                   if profile_settings(p).get("ha_user_id")) if not fq.db.get_setting("kid_ha_login") else 0}
+            "linked": [{"id": p["id"], "name": p["name"], "role": p["role"]} for p in haauth.linked_profiles(fq)]}
 
 
 @router.post("/api/parent/ha-app-login/test")

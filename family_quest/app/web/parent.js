@@ -685,15 +685,13 @@ async function profileDialog(p, persons, role = "kid") {
     drawPin();
   });
   // children (option): the Home Assistant user opens the children's app in Home Assistant without PIN – never the parent area
-  const haLabel = h("span"), haHint = h("span.hint"), haWarn = h("span.hint.warn");
+  const haLabel = h("span"), haHint = h("span.hint");
   const haPart = h("div.form", h("h3", "🏠 ", T("Home Assistant user")),
-    h("label.field", haLabel, haUser, haInfo, haHint, haWarn));
+    h("label.field", haLabel, haUser, haInfo, haHint));
   const syncHa = kid => {
     haLabel.textContent = I18N.tr(kid ? T("Logs in to the children's app as") : T("Logs in to the parent area as"));
     haHint.textContent = I18N.tr(kid ? T("This child opens Family Quest in the Home Assistant sidebar and in the app on tablets («Sign in with Home Assistant») without PIN – only the children's app, never the parent area.")
       : T("This parent opens the parent area in the Home Assistant sidebar without PIN and signs in to the app on tablets with «Sign in with Home Assistant»."));
-    haWarn.textContent = kid && !P.meta.kid_ha_login ? I18N.tr(T("Only works when «Children may sign in with their Home Assistant user» is switched on in Settings.")) : "";
-    haWarn.hidden = !haWarn.textContent;
   };
   // PIN: children get the picture PIN first (4 symbols), digits or no PIN on request; parents always digits
   const symbolKind = (p.settings && p.settings.pin_kind) === "symbols";
@@ -2168,9 +2166,8 @@ async function photoSets(onCount = null) {
 function haLoginSection(s) {
   const u = P.meta.ha_user, mine = P.meta.my_ha_user;
   const only = h("input", { type: "checkbox", checked: !!s.parent_ha_only, disabled: !(u && mine) && !s.parent_ha_only });
-  const kids = h("input", { type: "checkbox", checked: !!s.kid_ha_login });
   return section("🏠 " + I18N.tr(T("Log in with Home Assistant")),
-    h("p.small.muted", T("Parents who open Family Quest in Home Assistant (sidebar) come into the parent area without PIN once their Home Assistant user is linked. The PIN stays for the app on tablets and for the direct address.")),
+    h("p.small.muted", T("Link a Home Assistant user with a profile (Profiles › edit, for parents and children). Parents then open the parent area in the Home Assistant sidebar without PIN; children open their app there without PIN – never the parent area. With the option below both also sign in on tablets and phones with «Sign in with Home Assistant». Profiles without a linked user log in with their PIN.")),
     h("div.row.wrap",
       h("span.grow", mine ? ["✓ ", I18N.tr(T("Linked with «{0}»")).replace("{0}", mine)] : u ? I18N.tr(T("You are logged in to Home Assistant as «{0}».")).replace("{0}", u.name || u.user)
         : I18N.tr(T("Open the parent area through Home Assistant to link your user."))),
@@ -2178,13 +2175,12 @@ function haLoginSection(s) {
         : u ? h("button.btn.small", { onclick: async () => { await call("parent/ha-link", { method: "POST", body: { on: true } }); P.meta = await call("parent/meta"); toast(T("Linked with Home Assistant"), "good"); render(); } }, "🔗 ", T("Link my user")) : null),
     h("label.check", only, h("span", T("Parent area only through Home Assistant (no PIN login for the parent area)"))),
     h("p.small.muted", T("Then the app port (tablets, phones) is only for the children's app – the parent area opens only in the Home Assistant sidebar with your Home Assistant login. No second port is needed.")),
-    h("label.check", kids, h("span", T("Children may sign in with their Home Assistant user"))),
-    h("p.small.muted", T("For each child choose its Home Assistant user in the profile (Profiles › edit). In the Home Assistant sidebar the child then comes into its app without PIN – never into the parent area. Home Assistant users that are neither linked nor administrators get the children's app with the normal login.")),
+    h("p.small.muted", T("Home Assistant users that are neither linked nor administrators get the children's app with the normal login.")),
     h("button.btn.small", { onclick: async () => {
       try {
-        await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked, kid_ha_login: kids.checked } });
-        P.meta.kid_ha_login = kids.checked; s.parent_ha_only = only.checked; s.kid_ha_login = kids.checked; toast(T("Saved"), "good");
-      } catch (e) { only.checked = !!s.parent_ha_only; kids.checked = !!s.kid_ha_login; }
+        await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked } });
+        s.parent_ha_only = only.checked; toast(T("Saved"), "good");
+      } catch (e) { only.checked = !!s.parent_ha_only; }
     } }, "💾 ", T("Save")),
     haAppLoginBox());
 }
@@ -2204,7 +2200,6 @@ function haAppLoginBox() {
       h("label.check", on, h("span", T("Allow sign-in with Home Assistant in the app (tablets, phones)"))),
       h("p.small.muted", T("The login screen of the app shows «Sign in with Home Assistant». It opens the login page of Home Assistant (with two-factor authentication when the user has it) and comes back signed in – as the profile linked with that Home Assistant user. Family Quest keeps no Home Assistant password or token.")),
       h("p.small", names ? [T("Can sign in:"), " ", C(names)] : h("span.muted", T("Nobody can sign in yet – link a Home Assistant user with a profile (Profiles › edit)."))),
-      st.linked_kids_off ? h("p.small.muted", T("Children only when «Children may sign in with their Home Assistant user» is switched on.")) : null,
       h("label.field", T("Home Assistant address for the sign-in"), url),
       h("p.small.muted", st.auto ? I18N.tr(T("Empty = automatic: {0}")).replace("{0}", st.auto) : T("Empty = automatic (this host with the port of Home Assistant)."),
         " ", T("The tablets must reach Home Assistant at this address.")),

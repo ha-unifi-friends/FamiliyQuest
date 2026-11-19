@@ -163,10 +163,8 @@ def profile_of_ha_user(fq, uid: str | None, role: str | None = None) -> dict | N
 
 
 def ha_kid(fq, request: Request) -> dict | None:
-    """The child whose Home Assistant user opened the app through ingress – only when the parents allow it
-    (setting «kid_ha_login»). Gives the children's app, never the parent area."""
-    if not fq.db.get_setting("kid_ha_login"):
-        return None
+    """The child whose Home Assistant user opened the app through ingress (linked in its profile – the link is the
+    permission, there is no extra switch). Gives the children's app, never the parent area."""
     u = ha_user(request)
     return profile_of_ha_user(fq, u["id"], "kid") if u else None
 
