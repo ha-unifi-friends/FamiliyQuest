@@ -664,7 +664,7 @@ async function parentAreaHref() {
     const i = await api("info");
     if (i.parent_ha_only && !i.via_ha) {
       const p = await api("ha-panel");
-      if (p.slug) href = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/hassio/ingress/${p.slug}`;
+      if (p.slug) href = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}${p.path || "/app/" + p.slug}`;
     }
   } catch { /* «parents» explains where the parent area is */ }
   return (_parentHref = href);

@@ -34,7 +34,7 @@ _PANEL: dict = {}
 
 async def ha_panel(s) -> dict:
     """Where the Family Quest panel is in Home Assistant: add-on slug plus HA port and https – the browser adds its own host
-    (http://<host>:8123/hassio/ingress/<slug> – works for every user and leads to the HA login first). Asked once from the Supervisor and kept."""
+    (http://<host>:8123/app/<slug>, older HA /hassio/ingress/<slug> – works for every user and leads to the HA login first). Asked once from the Supervisor and kept."""
     if _PANEL or not s.ha_token:
         return dict(_PANEL)
     base = os.environ.get("FQ_SUPERVISOR_URL", "http://supervisor")

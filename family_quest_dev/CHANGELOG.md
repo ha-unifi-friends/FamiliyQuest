@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1-dev.16
+
+- Fixed: the link from the app to the parent area gave a 404 on newer Home Assistant – it now opens /app/<slug> (older Home Assistant versions are recognised automatically)
+- Party mode banner: a spotlight shines into the disco ball, which throws soft coloured beams into the background
+- Bolder, larger refresh icon in the header
+
 ## 1.1.1-dev.15
 
 - Everything from 1.1.1-beta.19 plus the dev-only Code Workshop and «Beat the Bureaucracy»
