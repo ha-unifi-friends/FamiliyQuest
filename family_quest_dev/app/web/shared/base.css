@@ -4084,3 +4084,24 @@ button.cw-slot::after { content: ""; position: absolute; inset: -4px; }
 .cw-plist-p li { flex-wrap: wrap; gap: 6px; }
 .cw-plist-p li > .grow { min-width: min(220px, 60%); }
 .cw-ptable td { white-space: nowrap; }
+
+/* «📲 Install app» (shared/ui.js installAppDialog): the steps with the phone's own buttons drawn inline */
+.pwa-dlg { max-width: 520px; }
+.pwa-dlg h2 { margin-top: 0; }
+.pwa-seg { display: flex; width: 100%; }
+.pwa-seg button { flex: 1; min-height: 44px; }
+.pwa-now { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 12px; background: var(--good-bg); }
+.pwa-now { margin-bottom: 10px; }
+.pwa-now p { margin: 0; flex: 1 1 180px; }
+.pwa-block { border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; margin-top: 10px; }
+.pwa-block.here { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.pwa-block h3 { margin: 2px 0 6px; font-size: 1.02rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pwa-block h3 .chip { font-size: .75rem; padding: 2px 8px; font-weight: 600; }
+.pwa-block > p { margin: 6px 0 2px; }
+.pwa-steps { margin: 0; padding-left: 1.4em; display: grid; gap: 8px; }
+.pwa-steps li { padding-left: 2px; }
+.pwa-step { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pwa-ic { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  border-radius: 9px; background: var(--hover); color: #0a84ff; border: 1px solid var(--line); }
+[data-theme="dark"] .pwa-ic { color: #4da3ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pwa-ic { color: #4da3ff; } }
