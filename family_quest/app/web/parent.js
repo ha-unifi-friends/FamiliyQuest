@@ -126,7 +126,7 @@ async function loginView(auto = true) {
   };
   const card = h("div.card.login-card");
   const digits = () => card.replaceChildren(...[
-    h("div.row", h("a.link", appLinkAttrs(), "⭐ Family Quest App ↗"), h("span.grow"), themeBtn(), langPicker()),
+    h("div.row", h("a.link", appLinkAttrs({ dialog: true }), "⭐ Family Quest App ↗"), h("span.grow"), themeBtn(), langPicker()),
     linked ? h("div.center", h("button.btn", { onclick: () => loginView(true) }, "🏠 ", I18N.tr(T("Log in as {0}")).replace("{0}", haUser.name || haUser.user)))
       : haUser ? h("p.small.muted.center", "🏠 ", I18N.tr(T("Home Assistant user: {0}")).replace("{0}", haUser.name || haUser.user)) : null,
     pinPad({ title: T("Parent PIN"), length: 4, maxLength: 8, cancel: false, onSubmit: async pin => done(await api("parent/login", { method: "POST", body: { pin } })) }),
@@ -175,7 +175,25 @@ async function releaseNotes() {
 
 // link to the kid app: in Home Assistant through the direct access (http://<host>:<port>/app) – an ingress address opened
 // in a new tab outside of Home Assistant (Safari from the companion app) only shows «401: Unauthorized»
-function appLinkAttrs() {
+// «⭐ Family Quest App»: a dialog with the QR code of the kids' app, print and open in a new tab – so it is clear where
+// the app is and how the children sign in
+function appLinkDialog(href) {
+  const link = new URL(href, location.href).href, direct = !!(P.appLink && P.appLink.port) || !(P.info && P.info.via_ha);
+  const m = modal(h("div.form.app-link-dlg", h("h2", "⭐ ", T("Family Quest App")),
+    h("p", T("The children use their own app: scan the code with the phone or tablet, pick your profile and enter your PIN.")),
+    h("div.center.app-link-qr", qrSvg(link)),
+    h("p.small.center", { translate: "no" }, h("a", { href: link, target: "_blank", rel: "noopener" }, link)),
+    direct ? h("p.small.muted", "📶 ", T("Works in the home Wi-Fi.")) : h("p.small.muted", "ℹ️ ", T("Direct access is off: the code opens the app inside Home Assistant. In Home Assistant open the app → Configuration and switch on direct_access, so the children's devices can open it without a Home Assistant login.")),
+    h("div.row.wrap", h("a.btn", { href: link, target: "_blank", rel: "noopener", onclick: () => m.close() }, "↗ ", T("Open in a new tab")),
+      h("button.btn.ghost", { onclick: () => { m.close(); printPoster(link); } }, "🖨️ ", T("Print poster")),
+      h("button.btn.ghost", { onclick: () => m.close() }, T("Close")))));
+}
+
+function appLinkAttrs({ dialog = false } = {}) {
+  if (dialog) {
+    const a = appLinkAttrs();
+    return { ...a, onclick: e => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; e.preventDefault(); appLinkDialog(a.href); } };
+  }
   const base = { rel: "noopener", translate: "no" };
   if (!P.info || !P.info.via_ha) return { ...base, href: "app", target: "_blank" };
   const l = P.appLink;
@@ -194,7 +212,7 @@ function render() {
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
       // four items one below the other, written out: app, light / dark, language, log out
-      h("a.foot-item", appLinkAttrs(), h("span.foot-ic", "⭐"), h("span", "Family Quest App")),
+      h("a.foot-item", appLinkAttrs({ dialog: true }), h("span.foot-ic", "⭐"), h("span", "Family Quest App")),
       footTheme(), footLang(),
       h("button.foot-item", { onclick: () => { Auth.parent = ""; loginView(false); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),
       h("button.foot-item", { onclick: releaseNotes }, h("span.foot-ic", "📝"), h("span", T("Release notes"))),
@@ -2079,6 +2097,7 @@ async function photoSets(onCount = null) {
 function haLoginSection(s) {
   const u = P.meta.ha_user, mine = P.meta.my_ha_user;
   const only = h("input", { type: "checkbox", checked: !!s.parent_ha_only, disabled: !(u && mine) && !s.parent_ha_only });
+  const kids = h("input", { type: "checkbox", checked: !!s.kid_ha_login });
   return section("🏠 " + I18N.tr(T("Log in with Home Assistant")),
     h("p.small.muted", T("Parents who open Family Quest in Home Assistant (sidebar) come into the parent area without PIN once their Home Assistant user is linked. The PIN stays for the app on tablets and for the direct address.")),
     h("div.row.wrap",
@@ -2088,9 +2107,13 @@ function haLoginSection(s) {
         : u ? h("button.btn.small", { onclick: async () => { await call("parent/ha-link", { method: "POST", body: { on: true } }); P.meta = await call("parent/meta"); toast(T("Linked with Home Assistant"), "good"); render(); } }, "🔗 ", T("Link my user")) : null),
     h("label.check", only, h("span", T("Parent area only through Home Assistant (no PIN login for the parent area)"))),
     h("p.small.muted", T("Then the app port (tablets, phones) is only for the children's app – the parent area opens only in the Home Assistant sidebar with your Home Assistant login. No second port is needed.")),
+    h("label.check", kids, h("span", T("Children may sign in with their Home Assistant user"))),
+    h("p.small.muted", T("For each child choose its Home Assistant user in the profile (Profiles › edit). In the Home Assistant sidebar the child then comes into its app without PIN – never into the parent area. Home Assistant users that are neither linked nor administrators get the children's app with the normal login.")),
     h("button.btn.small", { onclick: async () => {
-      try { await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked } }); toast(T("Saved"), "good"); }
-      catch (e) { only.checked = !only.checked; }
+      try {
+        await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked, kid_ha_login: kids.checked } });
+        P.meta.kid_ha_login = kids.checked; s.parent_ha_only = only.checked; s.kid_ha_login = kids.checked; toast(T("Saved"), "good");
+      } catch (e) { only.checked = !!s.parent_ha_only; kids.checked = !!s.kid_ha_login; }
     } }, "💾 ", T("Save")));
 }
 
