@@ -19,6 +19,7 @@ from .api import community, decks, integration as integration_api, kid, parent, 
 from .api import stories as stories_api
 from .api import codelab as codelab_api
 from . import loginlog, memo, netfilter
+from .packs import i18n as pack_i18n
 from .channel import feature_visible, hidden_games
 from .api import deals as deals_api
 from .api.auth import INGRESS_IP
@@ -138,9 +139,11 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         """Around everything (added last = outermost): one memo per request (memo.py) – settings, the games access,
         the running tables … are read once per request instead of dozens of times."""
         token = memo.begin()
+        lang = pack_i18n.set_viewer(request.headers.get("x-fq-lang"))     # packs in the viewer's language (packs/i18n.py)
         try:
             return await call_next(request)
         finally:
+            pack_i18n.reset_viewer(lang)
             memo.end(token)
 
     app.include_router(kid.router)
@@ -163,9 +166,24 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     def index(request: Request):
         # through Home Assistant («Open Web UI», sidebar) the address opens the parent area; on the direct port
         # (tablets, phones of the children) it stays the app
-        from .api.auth import INGRESS_IP
-        via_ha = bool(request.client and request.client.host == INGRESS_IP)
-        return page("eltern.html" if via_ha else "index.html")
+        return page("eltern.html" if _ingress_parent_area(request) else "index.html")
+
+    def _ingress_parent_area(request: Request) -> bool:
+        """Through Home Assistant the panel is open to every Home Assistant user (panel_admin: false): the parent area
+        for linked parents and Home Assistant administrators, the children's app for everybody else (a child linked
+        with its Home Assistant user logs in there without PIN). The parent area itself still needs its login."""
+        from .api.auth import ha_kid, ha_user, profile_of_ha_user, via_ingress
+        if not via_ingress(request):
+            return False
+        u = ha_user(request)
+        if not u:
+            return True                           # no user known (older Home Assistant): as before
+        fq = app.state.fq
+        if profile_of_ha_user(fq, u["id"], "parent"):
+            return True
+        if ha_kid(fq, request):
+            return False
+        return bool(fq.ha and fq.ha.connected and fq.ha.user_is_admin(u["id"]))
 
     @app.get("/app", include_in_schema=False)
     def kid_app():

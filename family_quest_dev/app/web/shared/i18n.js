@@ -155,3 +155,9 @@ function langPicker() {
   document.addEventListener("keydown", onKey);
   return wrap;
 }
+
+// a language name inside a sentence: «Contenu en allemand» – lower case where the language writes it so (not de, en, nl)
+function langInText(name) {
+  const b = String(I18N.base || I18N.lang || "").split("-")[0];
+  return ["fr", "it", "es", "pl", "pt", "sv"].includes(b) ? String(name).toLowerCase() : name;
+}

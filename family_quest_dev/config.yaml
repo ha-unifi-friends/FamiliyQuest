@@ -1,5 +1,5 @@
 name: "Family Quest Dev"
-version: "1.1.1-dev.10"
+version: "1.1.1-dev.11"
 stage: experimental
 slug: family_quest_dev
 description: "DEV – Organize your family life with gamification – learning, chores, planner and games"
@@ -16,6 +16,7 @@ ingress: true
 ingress_port: 8099
 panel_icon: mdi:school
 panel_title: "Family Quest Dev"
+panel_admin: false
 ports:
   8099/tcp: 8097
 ports_description:

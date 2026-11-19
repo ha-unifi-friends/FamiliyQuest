@@ -854,6 +854,7 @@ DEFAULT_SETTINGS = {
     "games_profiles": [],                # with "some": the children who may play
     "games_access": None,                # per game {"mode", "profiles"} (services.games_access) – replaces the two above
     "parent_ha_only": False,             # parent area only through Home Assistant (linked HA user), no PIN login
+    "kid_ha_login": False,               # children with a linked Home Assistant user open their app in HA without PIN
     "allowed_networks": [],              # mini firewall: networks (CIDR) that may use the app – empty = all
     "guest_networks": [],                # guest Wi-Fi: only games with a QR code invitation (no family login)
     "parent_networks": [],               # … that may open the parent area – empty = all

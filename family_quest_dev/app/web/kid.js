@@ -15,6 +15,9 @@ const PRAISE = [T("Great!"), T("Super!"), T("Well done!"), T("Exactly!"), T("Per
 async function boot() {
   try { S.info = await api("info"); } catch (e) { return fatal(e); }
   if (S.info.sound === false && localStorage.getItem("fq.sound") == null) Sound.on = false;
+  // opened in Home Assistant with the child's own Home Assistant user: logged in without PIN (also instead of another
+  // profile still logged in on this device) – not again in this tab after «Log out» (haKidOff)
+  if (S.info.ha_kid && !haKidOff() && !/^#\/?as\//.test(location.hash)) await haKidLogin().catch(() => {});
   window.addEventListener("hashchange", route);
   ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, idleReset, { passive: true }));
   if ("serviceWorker" in navigator) {
@@ -106,7 +109,18 @@ async function loadMe() {
   idleReset();
 }
 
+// login with the Home Assistant user of a child (api/kid.py ha-login): only the children's app, never the parent area
+const haKidOff = () => { try { return sessionStorage.getItem("fq.ha.off") === "1"; } catch { return false; } };
+async function haKidLogin() {
+  try { sessionStorage.removeItem("fq.ha.off"); } catch {}
+  const r = await api("ha-login", { method: "POST" });
+  if (!r.token) return false;
+  Auth.kid = r.token; Auth.parent = "";
+  return true;
+}
+
 function logout() {
+  if (S.info && S.info.ha_kid) { try { sessionStorage.setItem("fq.ha.off", "1"); } catch {} }     // no automatic login right away
   Auth.kid = ""; Auth.parent = "";
   S.me = S.profile = null;
   location.hash = "#/";
@@ -420,8 +434,12 @@ async function profilesView() {
   const tile = p => h("button.profile-tile", { onclick: () => login(p) }, avatarSvg(p.avatar, 120),
     C(p.name, "strong"), p.has_pin ? h("span.lock", { title: T("With PIN") }, "🔒") : null);
   const parentBtn = h("a.btn.ghost.parent-link", { href: "eltern" }, "🔐 ", T("Parent area"));
+  const hk = S.info.ha_kid;
   const body = h("div.profiles-screen",
     h("div.row.profiles-head", h("h1.grow", T("Log in")), themeBtn(), langPicker()),
+    hk ? h("div.center.ha-kid-login", h("button.btn.big", { onclick: async () => {
+      try { if (await haKidLogin()) { Sound.play("tap"); location.hash = "#/"; route(); } } catch (e) { toast(e.message, "bad"); }
+    } }, "🏠 ", I18N.tr(T("Log in as {0}")).replace("{0}", hk.name))) : null,
     S.info.setup_needed
       ? h("div.card.welcome", h("h2", T("Welcome to Family Quest!")), h("p", T("A parent sets up the profiles first.")),
           h("a.btn.big", { href: "eltern" }, T("Set up now")))
@@ -1978,6 +1996,7 @@ function devicesCard() {
 }
 
 // ---------------------------------------------------------------- course catalogue (language courses, general knowledge)
+const LANG_NAMES = { de: T("German"), en: T("English"), fr: T("French"), it: T("Italian"), es: T("Spanish"), nl: T("Dutch"), pl: T("Polish"), pt: T("Portuguese"), sv: T("Swedish") };
 // the course description in the app language (packs may carry beschreibung_i18n), else in the language of the pack
 function courseText(c) {
   const d = c.descriptions || {}, l = I18N.lang, b = String(I18N.base || l).split("-")[0];
@@ -2016,6 +2035,9 @@ async function coursesView() {
         // two packs of one subject with the same level («für alle»): the pack title tells them apart
         cs.filter(x => x.level === c.level).length > 1 ? h("b.course-title", { translate: "no" }, c.title) : null,
         C(courseText(c) || c.title, "span.small.muted"),
+        // a pack written in one language only (e.g. German general knowledge) says so in other app languages
+        (c.content_langs || []).length && !c.content_langs.includes(String(I18N.base || I18N.lang).split("-")[0])
+          ? h("span.small.muted", I18N.tr(T("Content in {0}")).replace("{0}", c.content_langs.map(l => langInText(I18N.tr(LANG_NAMES[l] || l))).join(", "))) : null,
         h("span.small.muted", c.units + " " + I18N.tr(T("units")) + " · " + c.cards + " " + I18N.tr(T("cards"))),
         c.on ? h("div.row", h("button.btn.small", { onclick: () => go("pack/" + encodeURIComponent(c.id)) }, "▶ ", T("Continue")),
                  h("button.btn.small.ghost", { onclick: () => toggle(c, false) }, T("Remove")))
