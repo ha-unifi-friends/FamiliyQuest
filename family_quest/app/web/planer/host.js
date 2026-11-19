@@ -238,6 +238,7 @@ async function startPlaner(root) {
   const narrow = () => matchMedia("(max-width: 870px)").matches;
   panel.narrow = narrow();
   window.addEventListener("resize", () => { const n = narrow(); if (n !== panel._narrow) panel.narrow = n; });
+  try { window.FQ_ME = await conn.sendMessagePromise({ type: "fq/me" }); } catch { window.FQ_ME = null; }   // own person: new to-dos
   let hass = await fqHass(conn);
   panel.hass = hass;
   root.replaceChildren(panel);

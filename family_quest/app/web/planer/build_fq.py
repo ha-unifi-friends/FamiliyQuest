@@ -97,6 +97,18 @@ REPLACE += [
     ("    change: (store, ctx) => change(store, ctx, ' '),\n    unlocked: (store) => !!cached(store),",
      "    change: (store, ctx) => (window.FQ_NO_PIN ? window.FQ_NO_PIN.change(CANCEL) : change(store, ctx, ' ')),\n    unlocked: (store) => !!window.FQ_NO_PIN || !!cached(store),"),
 ]
+# the picture tab of the settings: no «everything else opens with the parent PIN» hint (there is no planner PIN)
+REPLACE += [
+    ("return `<div class=\"hint3\">${esc(lbl('Jede und jeder darf hier ein Bild zusammenstellen – ohne PIN.",
+     "return `<div class=\"hint3\"${window.FQ_NO_PIN ? ' hidden' : ''}>${esc(lbl('Jede und jeder darf hier ein Bild zusammenstellen – ohne PIN."),
+]
+# to-dos: a new one is for the signed-in person first (a child may only add its own)
+REPLACE += [
+    ("const pid = this._person || (s.persons[0] && s.persons[0].id);",
+     "const pid = this._person || (window.FQ_ME && window.FQ_ME.person) || (s.persons[0] && s.persons[0].id);"),
+    ("const sel = persons.find((p) => p.id === this._person) || persons[0];",
+     "const sel = persons.find((p) => p.id === (this._person || (window.FQ_ME && window.FQ_ME.person))) || persons[0];"),
+]
 # trade marks: activity suggestion without a brand name
 REPLACE += [("lego: ['🧱', 'Lego-Challenge', 'Lego challenge']", "lego: ['🧱', 'Bauklotz-Challenge', 'Building block challenge']")]
 for old, new in REPLACE:

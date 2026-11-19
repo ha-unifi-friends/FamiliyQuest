@@ -104,6 +104,8 @@ async def _handle(fq, host, conn: hacompat.ActiveConnection, msg: dict) -> None:
         await _todo_subscribe(host, conn, mid, str(msg.get("entity_id", "")))
     elif t == "weather/subscribe_forecast":
         await _weather_subscribe(host, conn, mid, str(msg.get("entity_id", "")), msg.get("forecast_type", "daily"))
+    elif t == "fq/me":                                   # who is signed in: the own planner person, parent or not
+        conn.send_result(mid, {"person": getattr(conn, "fq_person", None), "parent": conn.user.is_admin})
     elif t == "lovelace/config":
         conn.send_result(mid, None)
     elif t == "unsubscribe_events" or t == "unsubscribe":

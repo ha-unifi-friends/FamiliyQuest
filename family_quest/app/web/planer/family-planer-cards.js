@@ -4338,7 +4338,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
     _flash(m) { this._msg = m; this._render(); clearTimeout(this._mt); this._mt = setTimeout(() => { this._msg = ''; this._render(); }, 3500); }
     async _add() {
       const s = this._snap(); const title = String(this._text || '').trim(); if (!title || !s) return;
-      const pid = this._person || (s.persons[0] && s.persons[0].id);
+      const pid = this._person || (window.FQ_ME && window.FQ_ME.person) || (s.persons[0] && s.persons[0].id);
       const def = this._defSize(s); const size = this._size || def;
       try {
         await window.FPPIN.call(this._store, 'family_planer/todo/save', { person_id: pid, title, ...(size !== def ? { size } : {}) }, { lang: this._cfg.lang, host: this });
@@ -4374,7 +4374,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
       if (!this.shadowRoot || !this._cfg) return;
       const s = this._snap(); const T = this.T; if (!s) { this.shadowRoot.innerHTML = ''; return; }
       const persons = s.persons || []; const todos = s.todos || [];
-      const sel = persons.find((p) => p.id === this._person) || persons[0];
+      const sel = persons.find((p) => p.id === (this._person || (window.FQ_ME && window.FQ_ME.person))) || persons[0];
       const groups = persons.map((p) => ({ p, list: todos.filter((x) => x.person_id === p.id) })).filter((g) => g.list.length);
       const d = this._dlg;
       const dlg = !d ? '' : `<div class="ov"><div class="dlg"><div class="dh">${esc(fmt(d.kind === 'del' ? T.delAsk : d.it.done ? T.reopen : T.ask, { t: d.it.title }))}</div>
@@ -5097,7 +5097,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
       if (!p || !A) return '';
       const pic = (q, size) => { const loc = (this._avLocal || {})[q.id]; const img = loc || q.image || '';
         return FX.avatarHtml ? FX.avatarHtml({ name: q.name, farbe: COLOR(q.color), ...(/^(av2?:|svg:|img:)/.test(img) ? { bild: img } : {}) }, size) : ''; };
-      return `<div class="hint3">${esc(lbl('Jede und jeder darf hier ein Bild zusammenstellen – ohne PIN. Alles andere öffnet die Eltern-PIN oben rechts.', 'Anyone may build a picture here – no PIN needed. Everything else opens with the parent PIN at the top right.'))}</div>
+      return `<div class="hint3"${window.FQ_NO_PIN ? ' hidden' : ''}>${esc(lbl('Jede und jeder darf hier ein Bild zusammenstellen – ohne PIN. Alles andere öffnet die Eltern-PIN oben rechts.', 'Anyone may build a picture here – no PIN needed. Everything else opens with the parent PIN at the top right.'))}</div>
         <div class="avps">${ps.map((q) => `<button class="avpb${q.id === p.id ? ' on' : ''}" style="--c:${COLOR(q.color)}" data-avp="${esc(q.id)}">${pic(q, 40)}<span>${esc(q.name)}</span></button>`).join('')}</div>
         <div class="avwrap">${A.builder(this._avCode(p), COLOR(p.color), lang, this._avtab, ((s.points || {})[p.id] || {}).unlocked || [], { name: p.name, vis: this._avsv })}</div>
         <div class="upl"><label class="sg">${esc(lbl('Eigenes Foto hochladen', 'Upload own photo'))}<input type="file" accept="image/*" data-avup hidden></label><small>${esc(lbl('Wird quadratisch zugeschnitten und nur in Family Quest gespeichert.', 'Cropped to a square and stored only in Family Quest.'))}</small></div>`;

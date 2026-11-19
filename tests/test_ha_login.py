@@ -40,7 +40,10 @@ def test_parent_with_home_assistant_user_and_no_pin(client):
     assert client.post("/api/parent/profiles", json={"name": "Mama", "role": "parent"}, headers=ph).status_code == 400
     r = client.post("/api/parent/profiles", json={"name": "Mama", "role": "parent", "ha_user_id": "u-mama", "ha_user_name": "Mama"}, headers=ph)
     assert r.status_code == 200, r.text
-    assert "Mama" not in [p["name"] for p in client.get("/api/profiles").json()]          # no PIN: no login in the app
+    # no PIN: in the app only with «Sign in with Home Assistant» (on by default) – shown, but no PIN-less login
+    assert "Mama" in [p["name"] for p in client.get("/api/profiles").json()]
+    client.app.state.fq.db.set_setting("ha_app_login", False)
+    assert "Mama" not in [p["name"] for p in client.get("/api/profiles").json()]          # switched off: hidden again
     ingress = TestClient(client.app, client=("172.30.32.2", 50000))
     r = ingress.post("/api/parent/ha-login", headers={"X-Remote-User-Id": "u-mama", "X-Remote-User-Name": "mama"}).json()
     assert r["linked"] and r["profile"]["name"] == "Mama"
