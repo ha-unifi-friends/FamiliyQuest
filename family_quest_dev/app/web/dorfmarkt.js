@@ -640,7 +640,7 @@ function dorfmarktLive(box, me, back) {
       msg = h("strong.mk-debt", "⚠️ ", say(tr(T("You owe {0} – sell or mortgage something"), mkMoney(-me2.money))));
       B(["🪄 ", T("Sell automatically")], () => act("liquidate"));
       B(["📋 ", T("My fields")], myFields, ".ghost");
-      B(["💸 ", T("Give up")], () => { if (confirm(I18N.tr(T("Give up? You are bankrupt and out of the game.")))) act("give_up"); }, ".ghost");
+      B(["💸 ", T("Give up")], async () => { if ((await confirmDialog(I18N.tr(T("Give up? You are bankrupt and out of the game."))))) act("give_up"); }, ".ghost");
     } else if (my && stage === "done") {
       msg = h("strong.mk-turnmsg", T("Build, trade – or end your turn."));
       B(["✔ ", T("End turn")], () => act("end_turn"));
@@ -687,6 +687,5 @@ async function dorfmarktFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("dorfmarkt") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Buy the shops of the village, build market stands and collect rent – who is the richest at the end? Places 1 to 3 win coins at the family table.")),
-         h("div.row.wrap", botsOn("dorfmarkt") ? h("button.btn", { onclick: () => dorfmarktStartDialog(true, () => go("dorfmarkt")) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => dorfmarktStartDialog(false, () => go("dorfmarkt")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn("dorfmarkt") ? () => dorfmarktStartDialog(true, () => go("dorfmarkt")) : null, () => dorfmarktStartDialog(false, () => go("dorfmarkt")))]);
 }

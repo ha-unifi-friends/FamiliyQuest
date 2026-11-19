@@ -22,7 +22,7 @@ body.kiosk { font-size: clamp(16px, 1.25vw, 22px); }
 .k-chores ul, .k-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; }
 .k-chores li { display: flex; gap: 8px; align-items: center; font-size: 1.1em; }
 .k-ic { width: 1.6em; text-align: center; }
-.k-alldone { font-weight: 800; color: var(--good); font-size: 1.2em; }
+.k-alldone { font-weight: 800; color: var(--good-text); font-size: 1.2em; }
 .k-family { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: inherit; }
 .k-family h3 { margin: 0; }
 .k-list li { padding-bottom: 6px; border-bottom: 1px solid var(--line); }

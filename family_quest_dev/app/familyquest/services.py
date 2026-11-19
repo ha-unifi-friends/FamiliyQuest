@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import random
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from .api.auth import Throttle, Tokens
 from .bingo import Bingo
@@ -14,6 +14,7 @@ from .channel import ChannelGames
 from .community import Community
 from .chores import Chores
 from .internet import InternetTime
+from . import memo
 from .db import Database, profile_settings
 from . import timelimits
 from .learning.lesson import Learning
@@ -204,6 +205,10 @@ class FamilyQuest:
         return hashlib.sha256(f"{p['created_at']}|{p['pin_hash'] or ''}|{p['archived']}".encode()).hexdigest()[:12]
 
     def games_access(self) -> dict:
+        """_games_access once per request (memo.py) – a copy per call (the parent area changes and saves it)."""
+        return {g: dict(a) for g, a in memo.get("games_access", self._games_access).items()}
+
+    def _games_access(self) -> dict:
         """Per game: {"mode": all | some | off, "profiles": [...], "bots": bool, "price": coins, "rent": coins,
         "period": day | week | month} (+ "luck" 1–10 for the one-armed bandit) – from the older single switch when not
         set yet. Price and rent: what a child pays to buy / rent the game (gamepasses.py) – 0 and 0 = free; "preview":
@@ -263,7 +268,7 @@ class FamilyQuest:
         """For the game engines: may no bot sit at this table? Not when a parent plays along (parents decide)."""
         if (self.games_access().get(kind) or {}).get("bots", True):
             return False
-        ids = [int(x) for x in people if str(x).isdigit()]
+        ids = [int(x) for x in people if str(x).isdecimal()]
         if ids and self.db.q1(f"SELECT id FROM profile WHERE role='parent' AND id IN ({','.join('?' * len(ids))})", *ids):
             return False
         return True
@@ -283,9 +288,16 @@ class FamilyQuest:
         p = self.party_for(prof)
         return bool(p and p["limits"])
 
+    def game_status(self, prof: dict, now: datetime | None = None) -> dict:
+        """The daily game time as the app, the parent area and Home Assistant show it: {"left": minutes (None:
+        unlimited – parents, no limit, a party that lifts the limits), "unlimited", "used_up", "party"}."""
+        lifted = prof.get("role") == "kid" and self.party_lifts(prof)
+        left = None if lifted else timelimits.left(self.db, prof, "game", now)
+        return {"left": left, "unlimited": left is None, "used_up": left == 0, "party": lifted}
+
     def game_used_up(self, prof: dict) -> bool:
         """The daily game time of this child is used up (not during a party that lifts the limits)."""
-        return timelimits.used_up(self.db, prof, "game") and not self.party_lifts(prof)
+        return self.game_status(prof)["used_up"]
 
     def use_charge(self, prof: dict, game: str) -> tuple[str | None, int | None]:
         """Starting a game costs a segment of the game battery (battery.py): "free", "same", "new" (+ log id) or None."""
@@ -302,9 +314,10 @@ class FamilyQuest:
         blk = self.internet.block(prof)                            # block time of the internet plan: games or the whole app
         return bool(blk and (blk["mode"] == "app" or (blk["mode"] == "games" and not lift)))
 
-    def games_open_to(self, prof: dict) -> list[str]:
-        """The games the parents switched on for this profile (parent area › Games) – price, time and blocks aside."""
-        if prof["role"] == "parent" or self.party_unlocks(prof):     # party mode «unlock all games»
+    def games_open_to(self, prof: dict, party: bool = True) -> list[str]:
+        """The games the parents switched on for this profile (parent area › Games) – price, time and blocks aside.
+        `party`: the party mode «unlock all games» opens all of them (not for buying or renting: that is for good)."""
+        if prof["role"] == "parent" or (party and self.party_unlocks(prof)):     # party mode «unlock all games»
             return list(self.GAMES)
         return [g for g, a in self.games_access().items() if a["mode"] == "all" or (a["mode"] == "some" and prof["id"] in a["profiles"])]
 
@@ -343,7 +356,7 @@ class FamilyQuest:
         – None for parents, games switched off for the child, free or unlocked games and while games are blocked."""
         if prof.get("role") != "kid" or game not in self.GAMES or self._games_blocked(prof, time):
             return None
-        if game not in self.games_open_to(prof):
+        if self.party_unlocks(prof) or game not in self.games_open_to(prof):    # party «all games open»: no try needed
             return None
         a = self.games_access()[game]
         from .gamepasses import priced
@@ -510,6 +523,7 @@ class FamilyQuest:
             "party": self.party_public(prof),                 # party mode for this child (banner, disco theme)
             "deals": self.deals.summary(prof),                # deals waiting for an answer, news (deals.py)
             "coins_reserved": self.rewards.reserved(pid),     # promised in a deal that stands – cannot be spent
+            "coins_available": self.rewards.available(pid),   # what can be spent («enough coins?» in the app)
             "stories": self.stories.enabled_for(prof),        # adventure books (stories.py) – off per child by the parents
         }
 
@@ -524,7 +538,7 @@ class FamilyQuest:
         """Minutes left today: family games, learning, internet – None = unlimited (parents always)."""
         net = self.internet.state(prof) if prof.get("role") == "kid" else None
         unlimited = not net or (net.get("budget") or {}).get("unlimited")
-        return {"games": None if self.party_lifts(prof) else timelimits.left(self.db, prof, "game"), "learn": timelimits.left(self.db, prof, "learn"),
+        return {"games": self.game_status(prof)["left"], "learn": timelimits.left(self.db, prof, "learn"),
                 "internet": None if unlimited else net["minutes"]}
 
     def _offline_lock(self, prof: dict) -> dict | None:

@@ -30,6 +30,18 @@ async function boot() {
   if (P.tab === "weather") P.tab = "overview";
   if (!TABS.some(t => t[0] === P.tab) && P.tab !== "import") P.tab = "overview";
   render();
+  // browser / Android back and forward change only the hash: show that page (open dialogs close)
+  if (!P.hashWatch) {
+    P.hashWatch = true;
+    window.addEventListener("hashchange", () => {
+      if (!Auth.parent) return;
+      let t = location.hash.replace("#", "") || "overview";
+      if (t === "weather" || (!TABS.some(x => x[0] === t) && t !== "import")) t = "overview";
+      if (t === P.tab) return;
+      document.querySelectorAll(".modal-back").forEach(b => b.dispatchEvent(new Event("cancel")));
+      P.tab = t; render(); scrollTo(0, 0);
+    });
+  }
 }
 
 async function refreshToken() {
@@ -107,7 +119,7 @@ async function loginView(auto = true) {
   const done = async r => {
     Auth.parent = r.parent_token;
     // first PIN login through Home Assistant: offer to skip the PIN next time
-    if (haUser && !linked && confirm(I18N.tr(T("Log in with your Home Assistant user «{0}» from now on – without PIN?")).replace("{0}", haUser.name || haUser.user))) {
+    if (haUser && !linked && (await confirmDialog(I18N.tr(T("Log in with your Home Assistant user «{0}» from now on – without PIN?")).replace("{0}", haUser.name || haUser.user)))) {
       try { await api("parent/ha-link", { method: "POST", body: { on: true } }); toast(T("Linked with Home Assistant"), "good"); } catch (e) { toast(e.message, "bad"); }
     }
     boot();
@@ -196,13 +208,25 @@ function render() {
   Element.prototype.append.call(main, spinner);
   // phone: the side bar is a ☰ menu that slides in from the left; a slim bar shows ☰ and the page
   const back = h("div.side-back", { onclick: () => closeNav() });
-  const closeNav = () => { nav.classList.remove("open"); back.classList.remove("open"); };
+  // the closed menu is off screen: not reachable with Tab or a screen reader (inert) – on wide screens it is the side bar
+  const narrow = matchMedia("(max-width: 820px)");
+  const setInert = () => { nav.inert = narrow.matches && !nav.classList.contains("open"); };
+  narrow.onchange = setInert;
+  let navOpener = null;
+  const closeNav = () => { const was = nav.classList.contains("open"); nav.classList.remove("open"); back.classList.remove("open"); setInert();
+    if (was && navOpener && navOpener.isConnected && nav.contains(document.activeElement)) navOpener.focus(); };
+  const openNav = () => { navOpener = document.activeElement; nav.classList.add("open"); back.classList.add("open"); setInert();
+    requestAnimationFrame(() => (nav.querySelector("button.on") || nav.querySelector("button")).focus({ preventScroll: true })); };
+  nav.addEventListener("keydown", e => { if (e.key === "Escape" && nav.classList.contains("open")) closeNav(); });
   nav.addEventListener("click", e => { if (e.target.closest(".side > button, .side-foot button, .side-foot a")) closeNav(); });
   const cur = TABS.find(t => t[0] === (P.tab === "import" ? "packs" : P.tab)) || TABS[0];
   const mob = h("header.mob-bar",
-    h("button.icon-btn.mob-menu", { "aria-label": T("Menu"), title: T("Menu"), onclick: () => { nav.classList.add("open"); back.classList.add("open"); } }, "☰"),
+    h("button.icon-btn.mob-menu", { "aria-label": T("Menu"), title: T("Menu"), onclick: openNav }, "☰"),
     h("span.mob-ic", cur[1]), h("strong.mob-title", cur[2]), h("span.grow"), refreshBtn());
   app.replaceChildren(h("div.layout", nav, back, h("div.main-wrap", mob, main)));
+  setInert();
+  const titled = () => { const t = main.querySelector("h1"); mob.classList.toggle("titled", !t || t.getBoundingClientRect().bottom < mob.getBoundingClientRect().bottom); };
+  window.onscroll = titled; setTimeout(titled, 600);
   const views = { deals: dealsParentView, dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, goals: goalsView, settings: settingsView };
   // a page that cannot load shows why and offers to try again – instead of an empty or broken page
   views[P.tab](main).catch(e => {
@@ -650,35 +674,48 @@ async function profileDialog(p, persons, role = "kid") {
         : T("Children: 4 digits, optional. Parents: 4–8 digits, required."))));
     } else pinArea.replaceChildren(h("p.small.muted", kid ? T("The child logs in without a PIN.") : T("No login in the app – the parent area opens with the Home Assistant user.")));
   };
-  const syncRole = () => { kidPart.hidden = timePart.hidden = f.role.value !== "kid"; if (batteryPart) batteryPart.hidden = f.role.value !== "kid"; parentPart.hidden = f.role.value !== "parent"; haPart.hidden = f.role.value !== "parent" || !P.meta.ha; drawPin(); };
+  // the dialog in parts (tabs): profile · learning · time & battery · internet & devices – Save / Cancel always at the bottom,
+  // «Remove» set apart at the end of the profile tab
+  const danger = !isNew && p.id !== P.meta.me.id ? h("div.danger-zone", h("h3", "⚠️ ", T("Remove profile")),
+    h("p.small.muted", T("Archive the profile or delete it for good – you confirm it in the next step.")),
+    h("button.btn.small.bad", { type: "button", onclick: remove }, "🗑 ", T("Remove"))) : null;
+  const tabs = tabbed([
+    { key: "profile", label: "👤 " + I18N.tr(T("Profile")), content: [
+      h("div.grid2", h("label.field", T("Name"), f.name), h("label.field", T("Role"), f.role), h("label.field", T("Colour"), f.color)),
+      haPart, h("div.form", pinHead, kindBtns, pinArea),
+      isNew ? null : h("div.form", h("h3", "🧑‍🎨 ", T("Avatar")), avBox),
+      persons.length ? h("label.field", T("Person in the Family Planer"), f.planer, h("span.hint", T("Shows the chores of this person and counts them."))) : null,
+      parentPart, danger] },
+    { key: "learn", label: "📚 " + I18N.tr(T("Learning")), content: [
+      h("div.grid2", h("label.field", T("Daily goal (XP)"), f.daily_goal), h("label.field", T("Exercises per lesson"), f.lesson_length),
+        h("label.field", T("New cards per lesson"), f.new_per_lesson),
+        h("label.field", T("Learning hours"), f.learning_hours, h("span.hint", T("Empty = always. Example: 07:00-20:00"))),
+        h("label.field", T("Log out after minutes without touch"), f.auto_logout_min, h("span.hint", T("0 = never"))))] },
+    { key: "time", label: "⏱️ " + I18N.tr(T("Time & battery")), content: [timePart, batteryPart] },
+    { key: "net", label: "🌐 " + I18N.tr(T("Internet & devices")), content: [kidPart, P.meta.ha ? h("div.form", h("h3", "🏠 ", T("Devices")), devBox) : null] },
+  ]);
+  const syncRole = () => {
+    const kid = f.role.value === "kid";
+    kidPart.hidden = timePart.hidden = !kid; if (batteryPart) batteryPart.hidden = !kid; parentPart.hidden = kid; haPart.hidden = kid || !P.meta.ha;
+    tabs.setVisible("time", kid); tabs.setVisible("net", kid || !!P.meta.ha);
+    drawPin();
+  };
   f.role.addEventListener("change", syncRole); syncRole();
-  const m = modal(h("div.form",
+  const m = modal(h("div.form.profile-dlg",
     h("h2", isNew ? (p.role === "parent" ? T("New parent") : T("New child")) : T("Edit profile")),
-    h("div.grid2", h("label.field", T("Name"), f.name), h("label.field", T("Role"), f.role), h("label.field", T("Colour"), f.color),
-    ),
-    haPart, pinHead, kindBtns, pinArea,
-    isNew ? null : h("h3", "🧑‍🎨 ", T("Avatar")), isNew ? null : avBox,
-    h("h3", T("Learning")),
-    h("div.grid2", h("label.field", T("Daily goal (XP)"), f.daily_goal), h("label.field", T("Exercises per lesson"), f.lesson_length),
-      h("label.field", T("New cards per lesson"), f.new_per_lesson),
-      h("label.field", T("Learning hours"), f.learning_hours, h("span.hint", T("Empty = always. Example: 07:00-20:00"))),
-      h("label.field", T("Log out after minutes without touch"), f.auto_logout_min, h("span.hint", T("0 = never")))),
-    timePart, batteryPart,
-    P.meta.ha ? h("h3", "🏠 ", T("Devices")) : null, P.meta.ha ? devBox : null,
-    kidPart, parentPart,
-    persons.length ? h("label.field", T("Person in the Family Planer"), f.planer, h("span.hint", T("Shows the chores of this person and counts them."))) : null,
-    h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")), h("span.grow"),
-      !isNew && p.id !== P.meta.me.id ? h("button.btn.small.bad", { onclick: remove }, T("Remove")) : null)), { wide: true });
+    tabs.el,
+    h("div.dlg-foot", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
+  const focusIn = el => { tabs.reveal(el); el.focus(); };
   async function save() {
     let pin = changing && f.pin.value || null, pinSymbols;
     if (changing && pinKind === "none") pin = p.has_pin ? "" : null;
     if (changing && pinKind === "symbols") {
       pin = null;
       const v = pad && pad.value();
-      if (!v || v.symbols.length !== 4) return toast(T("Choose 4 symbols"), "bad");
+      if (!v || v.symbols.length !== 4) { tabs.show("profile"); return toast(T("Choose 4 symbols"), "bad"); }
       pinSymbols = v;
     }
-    if (changing && pinKind === "digits" && !pin && p.has_pin) { f.pin.focus(); return toast(T("Enter the new digit PIN"), "bad"); }
+    if (changing && pinKind === "digits" && !pin && p.has_pin) { focusIn(f.pin); return toast(T("Enter the new digit PIN"), "bad"); }
     const isParent = f.role.value === "parent";
     const body = { name: f.name.value, role: f.role.value, color: f.color.value, pin, planer_person_id: f.planer.value || null,
       ...(isParent && P.meta.ha ? { ha_user_id: haUser.value, ha_user_name: haUser.selectedOptions[0]?.dataset.name || "" } : {}),
@@ -690,8 +727,8 @@ async function profileDialog(p, persons, role = "kid") {
         ...(isParent ? {} : { game_limit: gameLimit.value(), learn_limit: learnLimit.value() }),
         ...(P.meta.ha ? { devices: [...devSel] } : {}) } };
     if (isParent && !body.ha_user_id && (pin === "" || (!p.has_pin && !body.pin))) {
-      if (P.meta.ha) { haUser.focus(); return toast(T("Parents need a Home Assistant user or a PIN"), "bad"); }
-      f.pin.focus(); return toast(T("Parents always need a PIN (4–8 digits)"), "bad");
+      if (P.meta.ha) { focusIn(haUser); return toast(T("Parents need a Home Assistant user or a PIN"), "bad"); }
+      focusIn(f.pin); return toast(T("Parents always need a PIN (4–8 digits)"), "bad");
     }
     const saved = await call(isNew ? "parent/profiles" : `parent/profiles/${p.id}`, { method: isNew ? "POST" : "PUT", body });
     if (saved && saved.parent_token) Auth.parent = saved.parent_token;
@@ -823,7 +860,7 @@ async function packsView(main) {
       h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   }
   async function setStatus(id, status) { await call(`parent/packs/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } }); render(); }
-  async function del(p) { if (!confirm(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
+  async function del(p) { if (!(await confirmDialog(I18N.tr(T("Delete {0}? Learning progress for it is lost.")).replace("{0}", p.title)))) return; await call(`parent/packs/${encodeURIComponent(p.id)}`, { method: "DELETE" }); render(); }
 }
 
 async function download(id, format = "zip") {
@@ -965,6 +1002,7 @@ async function packEditor(id, { afterSave } = {}) {
 // ---------------------------------------------------------------- import
 async function importView(main) {
   const file = h("input", { type: "file", accept: ".yaml,.yml,.json,.zip,.csv,.tsv,.xlsx" + (P.meta.ai ? ",.pdf,.png,.jpg,.jpeg,.webp" : "") });
+  const paste = h("textarea.ai-paste", { rows: 6, placeholder: "{ … }", spellcheck: false });
   const out = h("div");
   const drop = h("label.drop", file, h("span.big-ic", "📄"), h("strong", T("Choose or drop a file")),
     h("span.small.muted", P.meta.ai ? T("YAML, JSON, ZIP, CSV, Excel, PDF or photo") : T("YAML, JSON, ZIP, CSV or Excel")));
@@ -979,9 +1017,17 @@ async function importView(main) {
       P.meta.ai ? h("p.small.muted", "📸 ", T("Photo or PDF of a word list: the AI of Home Assistant reads it and makes a draft. Packs from school material stay private.")) :
         h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section("🤖 " + I18N.tr(T("Made with your AI")),
-      h("p", T("Learning material that fits your child's school year and textbook: the template – and every JSON export of a pack – is a JSON file that explains itself to an AI (instructions and every field). Give it to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3», «the words on this photo» or «add 10 cards». Save the answer as a .json file and upload it above. Then check the draft, publish it and assign it to your children.")),
+      h("p", T("Learning material that fits your child's school year and textbook: the template – and every JSON export of a pack – is a JSON file that explains itself to an AI (instructions and every field). Give it to your favourite AI (ChatGPT, Claude, Gemini …) and say what you need – e.g. «French vocabulary, 5th grade, unit 3», «the words on this photo» or «add 10 cards». Paste the answer below (or save it as a .json file and upload it above). Then check the draft, publish it and assign it to your children.")),
       aiPromptBox(T("Make me a learning pack for Family Quest.\nSubject: [e.g. French vocabulary]\nSchool year: [e.g. 5th grade]\nTopic or textbook unit: [e.g. unit 3 – at school]\nAbout [20] cards, my child speaks [English]."),
-        { template: "api/ai-template/pack", name: "family-quest-pack-template.json" })));
+        { template: "api/ai-template/pack", name: "family-quest-pack-template.json" }),
+      // the answer of the AI pasted right here – no file needed (like the import of the library)
+      h("label.field", T("Paste the answer of the AI here …"), paste),
+      h("div.row", h("button.btn", { onclick: importPaste }, "📥 ", T("Import")))));
+  async function importPaste() {
+    const t = paste.value.trim();                 // text or ``` fences around the JSON: the import reads past them
+    if (!t) { paste.focus(); return toast(T("Paste the answer of the AI first"), "bad"); }
+    await upload(new File([t], "ai-answer.json", { type: "application/json" }));
+  }
   async function upload(f) {
     const fd = new FormData(); fd.append("file", f);
     out.replaceChildren(h("p", "⏳ ", T("Reading…")));
@@ -1236,7 +1282,7 @@ async function choresView(main) {
     h("p.small.muted", T("The built-in planner has the bigger chore plan (days, rhythm, time to do it, special chores, awards). Its chores also appear on the children's start page.")),
     planerFrame("planer?mode=parent#/aemtliplan", T("Chore plan")),
     h("div.row", own.some(c => c.frequency !== "once") ? h("button.btn.ghost", { onclick: async () => {
-        if (!confirm(I18N.tr(T("Move the chores of this list into the Planner? They are switched off here (their history stays).")))) return;
+        if (!(await confirmDialog(I18N.tr(T("Move the chores of this list into the Planner? They are switched off here (their history stays)."))))) return;
         const r = await call("planer/chores/take-over", { method: "POST" });
         toast(I18N.tr(T("{0} chores moved to the Planner")).replace("{0}", r.moved.length), "good");
         if (r.kept.length) toast(I18N.tr(T("One-off chores stay here – create them as special chores in the Planner: {0}")).replace("{0}", r.kept.join(", ")));
@@ -1302,7 +1348,7 @@ function choreDialog(c, kids) {
     m.close(); toast(T("Saved"), "good"); render();
   }
   async function remove() {
-    if (!confirm(I18N.tr(T("Remove this chore? Chores already done stay in the history.")))) return;
+    if (!(await confirmDialog(I18N.tr(T("Remove this chore? Chores already done stay in the history."))))) return;
     await call(`parent/chores/${c.id}`, { method: "DELETE" }); m.close(); render();
   }
 }
@@ -1623,7 +1669,7 @@ function partyCard() {
     const sw = h("input.party-switch", { type: "checkbox", role: "switch", checked: !!p, "aria-label": T("Party mode"),
       onchange: async () => {
         if (sw.checked) { sw.checked = false; return partyDialog(kids, draw); }
-        if (!confirm(I18N.tr(T("End the party mode?")))) { sw.checked = true; return; }
+        if (!(await confirmDialog(I18N.tr(T("End the party mode?"))))) { sw.checked = true; return; }
         await call("parent/party", { method: "DELETE" }); toast(T("Party mode ended"), "good"); draw();
       } });
     const who = p ? (p.kids === "all" ? I18N.tr(T("all children")) : p.kids.map(id => (kids.find(k => k.id === id) || {}).name || "?").join(", ")) : "";
@@ -1667,13 +1713,29 @@ function partyDialog(kids, after) {
 
 function gameAccess(kids, data) {
   let acc = data.access, returns = data.slots_returns || {};
-  const botGames = new Set(data.bot_games || []), bars = {};
+  const botGames = new Set(data.bot_games || []), bars = {}, chipRows = {};
   const save = async k => {
     try { const r = await call("parent/games", { method: "PUT", body: { access: k ? { [k]: acc[k] } : acc } }); acc = r.access; returns = r.slots_returns || returns; toast(T("Saved"), "good"); } catch {}
-    Object.keys(bars).forEach(draw);
+    new Set([...Object.keys(bars), ...Object.keys(chipRows)]).forEach(draw);
+  };
+  // the folded row of a game shows its settings at a glance: status, who, price / rent
+  const drawChips = k => {
+    const a = acc[k] || { mode: "all", profiles: [], bots: true }, row = chipRows[k];
+    if (!row) return;
+    const state = a.mode === "off" ? "off" : a.bots === false ? "nobots" : "on";
+    const per = I18N.tr({ day: T("Day"), week: T("Week"), month: T("Month") }[a.period || "week"] || T("Week"));
+    row.replaceChildren(
+      state === "off" ? chip("✕ " + I18N.tr(T("Inactive")), "bad") : chip(state === "nobots" ? "🚫 " + I18N.tr(T("Active without bots")) : "✓ " + I18N.tr(T("Active")), "good"),
+      state !== "off" && a.mode === "some" ? chip("👥 " + I18N.tr(T("Only chosen children"))) : null,
+      state === "off" || FREE_GAMES.has(k) ? null : a.price > 0 || a.rent > 0
+        ? null : chip(I18N.tr(T("Free"))),
+      state !== "off" && a.price > 0 ? chip("🪙 " + fmt(a.price)) : null,
+      state !== "off" && a.rent > 0 ? chip("🔁 " + fmt(a.rent) + " 🪙/" + per) : null);
   };
   const draw = k => {
+    drawChips(k);
     const a = acc[k] || { mode: "all", profiles: [], bots: true }, bar = bars[k];
+    if (!bar) return;
     const state = a.mode === "off" ? "off" : a.bots === false ? "nobots" : "on";
     const set = v => { acc[k] = v === "off" ? { ...a, mode: "off" } : { ...a, mode: a.mode === "off" ? "all" : a.mode, bots: v === "on" }; save(k); };
     bar.classList.toggle("off", state === "off");                  // the section is dimmed (parent.css)
@@ -1689,6 +1751,7 @@ function gameAccess(kids, data) {
   };
   return {
     bar: k => { if (!bars[k]) { bars[k] = h("div.game-status"); setTimeout(() => draw(k)); } return bars[k]; },
+    chips: k => { if (!chipRows[k]) { chipRows[k] = h("span.game-chips"); drawChips(k); } return chipRows[k]; },
     allTo: mode => { for (const [k] of GAME_LIST) if (k in acc) acc[k] = { ...(acc[k] || { profiles: [] }), mode }; return save(null); },
   };
 }
@@ -1900,7 +1963,7 @@ async function photoSets(onCount = null) {
     setsBox.replaceChildren(...(d.sets.length ? [] : [h("p.small.muted.sb-empty", T("Nothing here yet – start with «+ New»."))]), ...d.sets.map((st, i) => h("div.card.qe",
     h("div.row", h("input.grow", { type: "text", maxlength: 60, value: st.name, placeholder: I18N.tr(T("e.g. Our holidays")), oninput: e => { st.name = e.target.value; } }),
       st.id && st.photos.length ? h("button.icon-btn", { title: T("Export as ZIP file"), onclick: () => downloadApi(`parent/memory/sets/${st.id}/export`, "family-quest-photos.zip") }, "⬇️") : null,
-      h("button.icon-btn", { title: T("Delete"), onclick: () => { if (confirm(I18N.tr(T("Delete the photo set «{0}»?")).replace("{0}", st.name || "–"))) { d.sets.splice(i, 1); drawSets(); save(true); } } }, "🗑️")),
+      h("button.icon-btn", { title: T("Delete"), onclick: async () => { if ((await confirmDialog(I18N.tr(T("Delete the photo set «{0}»?")).replace("{0}", st.name || "–")))) { d.sets.splice(i, 1); drawSets(); save(true); } } }, "🗑️")),
     h("div.mm-thumbs", ...st.photos.map((ph, j) => h("div.mm-thumb", h("img", { src: memPhotoUrl(ph), alt: "", loading: "lazy" }),
       h("button", { title: T("Remove photo"), onclick: () => { st.photos.splice(j, 1); drawSets(); } }, "✕")))),
     h("div.row.wrap",
@@ -2018,7 +2081,7 @@ async function integrationSection() {
         st.last_poll ? h("p.small.muted", I18N.tr(T("Home Assistant last asked: {0}")).replace("{0}", st.last_poll.replace("T", " "))) : null,
         h("div.row.wrap",
           h("button.btn.small.ghost", { onclick: async () => {
-            if (!confirm(I18N.tr(T("Make a new token? Home Assistant asks for the new one; the old token stops working.")))) return;
+            if (!(await confirmDialog(I18N.tr(T("Make a new token? Home Assistant asks for the new one; the old token stops working."))))) return;
             apply(await call("parent/integration/token", { method: "POST" }));
           } }, "🔄 ", T("New token")),
           h("button.btn.small.ghost", { onclick: async () => { apply(await call("parent/integration/install", { method: "POST" })); toast(T("Copied to Home Assistant – restart Home Assistant"), "good"); } },
@@ -2026,7 +2089,7 @@ async function integrationSection() {
       : [h("p.small.muted", T("Off: Home Assistant gets no data and the token does not work.")),
         comp.installed ? h("div.row.wrap", h("span.small.grow", I18N.tr(T("Still installed in {0}")).replace("{0}", comp.path)),
           h("button.btn.small.ghost", { onclick: async () => {
-            if (!confirm(I18N.tr(T("Remove the component from Home Assistant? Delete the integration under Devices & services first, then restart Home Assistant.")))) return;
+            if (!(await confirmDialog(I18N.tr(T("Remove the component from Home Assistant? Delete the integration under Devices & services first, then restart Home Assistant."))))) return;
             apply(await call("parent/integration/component", { method: "DELETE" })); toast(T("Removed – restart Home Assistant"), "good");
           } }, "🗑️ ", T("Remove from Home Assistant"))) : null]].flat(2).filter(x => x != null));
   }
@@ -2134,11 +2197,11 @@ function runningGamesBox() {
   const draw = list => {
     if (!list.length) return box.replaceChildren();
     const endOne = async g => {
-      if (!confirm(I18N.tr(T("End «{0}» now?")).replace("{0}", I18N.tr(g.title)))) return;
+      if (!(await confirmDialog(I18N.tr(T("End «{0}» now?")).replace("{0}", I18N.tr(g.title))))) return;
       try { draw((await call("parent/games/end", { method: "POST", body: { key: g.key } })).running); toast(T("Game ended"), "good"); render(); } catch {}
     };
     const endAll = async () => {
-      if (!confirm(I18N.tr(T("End all {0} running games?")).replace("{0}", list.length))) return;
+      if (!(await confirmDialog(I18N.tr(T("End all {0} running games?")).replace("{0}", list.length)))) return;
       try { draw((await call("parent/games/end", { method: "POST", body: { all: true } })).running); toast(T("All games ended"), "good"); render(); } catch {}
     };
     box.replaceChildren(sectionAdd("⏹ " + I18N.tr(T("Running games")),
@@ -2210,7 +2273,7 @@ async function gamesView(main) {
     const flat = content.flat(Infinity).filter(x => x != null && x !== false);
     const settings = flat.filter(x => x.classList && x.classList.contains("pj-rewards")), play = flat.filter(x => !settings.includes(x));
     return h("details.card.sec.game-sec", { "data-game": k },
-      h("summary.sec-head", h("h2", title, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null), h("div.head-actions", ...[].concat(actions))),
+      h("summary.sec-head", h("h2", title, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null), h("div.head-actions", ...[].concat(actions)), access.chips(k)),
       play.length ? h("div.game-play", ...play) : null,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
   };
@@ -2222,7 +2285,7 @@ async function gamesView(main) {
     if (head) actions.append(Object.assign(head, { className: head.className + " cg-app" }));      // «↗ Open in the app»: at the end of the row
     const el = h("details.card.sec.game-sec.cg-sec", { "data-game": k },
       h("summary.sec-head", h("h2", ic, " ", I18N.tr(name), " ", count, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null),
-        h("p.small.muted.cg-desc", desc)),
+        access.chips(k), h("p.small.muted.cg-desc", desc)),
       actions, list,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
     return { el, actions, list, count: n => { count.textContent = String(n); } };
@@ -2239,7 +2302,7 @@ async function gamesView(main) {
       quizLive(box, me, () => showLive());
     };
     const end = async () => {
-      if (!confirm(I18N.tr(T("End the running quiz?")))) return;
+      if (!(await confirmDialog(I18N.tr(T("End the running quiz?"))))) return;
       try { await call("community/quiz/abort", { method: "POST" }); } catch {}
       showLive();
     };
@@ -2629,7 +2692,7 @@ function planerSection(s) {
     h("p.small.muted", T("Chores"), ": ", String(sum.chores), " · ", T("Lists"), ": ", String(sum.lists), " · ", T("Rewards"), ": ", String(sum.rewards), " · ", T("To-dos"), ": ", String(sum.todos)),
     h("p.warn-text", T("The planner in Family Quest is replaced by this one. Persons are matched to the profiles by name, new persons become profiles, points are added up. Download a backup first.")),
     h("div.row", h("button.btn.bad", { onclick: async () => {
-      if (!confirm(I18N.tr(T("Really take over this Family Planer?")))) return;
+      if (!(await confirmDialog(I18N.tr(T("Really take over this Family Planer?"))))) return;
       await go(); toast(T("Family Planer taken over"), "good"); setTimeout(() => location.reload(), 800);
     } }, "📥 ", T("Take over now")), h("button.btn.ghost", { onclick: () => { box.replaceChildren(); file.value = ""; } }, T("Cancel")))));
   file.addEventListener("change", async () => {
@@ -2693,7 +2756,7 @@ function backupSection() {
       h("p.warn-text", T("Restoring replaces ALL current data (profiles, learning progress, points, chores, planner, packs).")),
       h("p.small.muted", "🛟 ", T("Before restoring, the current data are saved once more as before-restore.zip in the data folder of the app.")),
       h("div.row", h("button.btn.bad", { onclick: async e => {
-        if (!confirm(I18N.tr(T("Really replace all data with this backup?")))) return;
+        if (!(await confirmDialog(I18N.tr(T("Really replace all data with this backup?"))))) return;
         const btn = e.currentTarget; btn.disabled = true;
         try { await call("parent/restore-upload", { method: "POST", body: { upload } }); }
         catch { btn.disabled = false; return; }
@@ -2767,12 +2830,12 @@ async function translationsSection() {
     const langTools = cur ? h("div.row",
       h("span.muted", T("Starts from"), " ", nameOf(cur.base)),
       h("button.btn.small.ghost", { onclick: async () => {
-        const n = prompt(I18N.tr(T("Name")), cur.name); if (n == null) return;
-        const fl = prompt(I18N.tr(T("Symbol")), cur.flag || ""); if (fl == null) return;
+        const n = (await promptDialog(I18N.tr(T("Name")), cur.name)); if (n == null) return;
+        const fl = (await promptDialog(I18N.tr(T("Symbol")), cur.flag || "")); if (fl == null) return;
         await call(`parent/translations/languages/${cur.code}`, { method: "PUT", body: { name: n, flag: fl } }); draw();
       } }, "✏️ ", T("Rename")),
       h("button.btn.small.bad", { onclick: async () => {
-        if (!confirm(I18N.tr(T("Delete this language with all its texts?")))) return;
+        if (!(await confirmDialog(I18N.tr(T("Delete this language with all its texts?"))))) return;
         await call(`parent/translations/languages/${cur.code}`, { method: "DELETE" }); lang = "de-DE"; draw();
       } }, "🗑 ", T("Delete"))) : null;
 
@@ -2803,7 +2866,7 @@ async function translationsSection() {
       try {
         await call(`parent/translations/${lang}`, { method: "PUT", body: { texts: changed, merge: true } });
         toast(T("Saved"), "good");
-        if (lang === I18N.lang) { if (confirm(I18N.tr(T("Reload the page now to see the new texts?")))) location.reload(); else draw(); } else draw();
+        if (lang === I18N.lang) { if ((await confirmDialog(I18N.tr(T("Reload the page now to see the new texts?"))))) location.reload(); else draw(); } else draw();
       } catch (e) { toast(e.message, "bad"); }
     } }, "💾 ", T("Save texts"));
     box.replaceChildren(
@@ -2971,7 +3034,7 @@ function eventDialog(e) {
     offBox, note,
     e.game ? h("p.small.ftg-line", e.game.icon + " ", C(ftGameLine(e.game)), " · ", h("button.link.small", { type: "button", onclick: () => { m.close(); P.tab = "community"; location.hash = "community"; render(); } }, T("FamilyTime games ›"))) : null,
     h("div.row", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")), h("span.grow"),
-      !isNew ? h("button.btn.small.bad", { onclick: async () => { if (!confirm(I18N.tr(T("Delete this event?")))) return; await call(`parent/calendar/${e.id}`, { method: "DELETE" }); m.close(); render(); } }, "🗑 ", T("Delete")) : null)));
+      !isNew ? h("button.btn.small.bad", { onclick: async () => { if (!(await confirmDialog(I18N.tr(T("Delete this event?"))))) return; await call(`parent/calendar/${e.id}`, { method: "DELETE" }); m.close(); render(); } }, "🗑 ", T("Delete")) : null)));
   title.focus();
   async function save() {
     const body = { title: title.value, start: from.value, end: to.value || from.value, icon: icon.value, note: note.value, kind,
@@ -3041,7 +3104,7 @@ function importSection(sources) {
     sources.length ? h("div", h("h3", T("Imports")), h("ul.list", ...sources.map(src => h("li.row",
       h("span.grow", C(src.source.replace(/^holidays:/, "🏖️ ").replace(/^file:/, "📄 ")), h("span.small.muted", " · " + src.n + " · " + fmtDate(src.first.slice(0, 10)) + " – " + fmtDate(src.last.slice(0, 10)))),
       h("button.btn.small.ghost", { onclick: async () => {
-        if (!confirm(I18N.tr(T("Remove all {0} events of this import?")).replace("{0}", src.n))) return;
+        if (!(await confirmDialog(I18N.tr(T("Remove all {0} events of this import?")).replace("{0}", src.n)))) return;
         await call(`parent/calendar/source/${encodeURIComponent(src.source)}`, { method: "DELETE" }); render();
       } }, "🗑 ", T("Remove")))))) : null);
 }
@@ -3106,7 +3169,7 @@ async function dashboardView(main) {
       h("div.row.wrap",
         h("a.btn", { href: "dashboard?key=" + encodeURIComponent(c.key), target: "_blank", rel: "noopener" }, "👀 ", T("Open")),
         h("button.btn.ghost", { onclick: async () => {
-          if (!confirm(I18N.tr(T("Make a new link? Screens with the old link stop showing the dashboard.")))) return;
+          if (!(await confirmDialog(I18N.tr(T("Make a new link? Screens with the old link stop showing the dashboard."))))) return;
           await call("parent/dashboard/key", { method: "POST" }); toast(T("New link made"), "good"); render();
         } }, "🔄 ", T("New link")))))
       : h("p.muted", T("Switch the dashboard on and save – then the link appears here.")));

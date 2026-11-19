@@ -139,7 +139,7 @@ function verbotenLive(box, me, back) {
       actions: [
         { ic: "🔀", label: T("Mix teams"), hidden: !lead || st.phase !== "lobby" || !st.teams, onclick: () => act("mix") },
         { ic: "⏭", label: T("Skip turn"), hidden: !lead || !playing,
-          onclick: () => { if (confirm(I18N.tr(T("Skip the turn of {0}?")).replace("{0}", who(st.explainer)))) act("skip"); } },
+          onclick: async () => { if ((await confirmDialog(I18N.tr(T("Skip the turn of {0}?")).replace("{0}", who(st.explainer))))) act("skip"); } },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game? The points so far count."), onclick: () => act("end") }],
       onLeave: st.status !== "done" ? () => { stop(); back(); } : null });
     return h("div.quiz-head.dm-head.vw-head", h("div.row.head-title", menu, h("h1", VW_ICON, " ", vwName())), h("div.row",

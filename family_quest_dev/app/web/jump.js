@@ -631,6 +631,5 @@ async function jumpFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("jump") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Jump over the obstacles in your own lane – everybody gets the same ones, and it gets faster. The last one running wins coins at the family table.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => jumpStartDialog(true, () => go("jump")) }, JU_ICON, " ", T("Alone")),
-           h("button.btn.ghost", { onclick: () => jumpStartDialog(false, () => go("jump")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(() => jumpStartDialog(true, () => go("jump")), () => jumpStartDialog(false, () => go("jump")))]);
 }

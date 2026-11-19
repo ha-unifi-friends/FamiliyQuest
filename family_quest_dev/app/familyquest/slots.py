@@ -186,5 +186,5 @@ class Slots:
             win = payout(reels)
             self.rewards.book(pid, "coins", -float(BET), "slots_bet", _t("One-armed bandit"), "slots")
             if win:
-                self.rewards.book(pid, "coins", float(win), "slots_win", _t("One-armed bandit") + f" {''.join(EMOJI[r] for r in reels)}", "slots")
+                self.rewards.book(pid, "coins", float(win), "slots_win", _t("One-armed bandit {0}").replace("{0}", "".join(EMOJI[r] for r in reels)), "slots")
         return {**self.state(pid), "reels": reels, "win": win, "jackpot": win >= THREE["star"]}

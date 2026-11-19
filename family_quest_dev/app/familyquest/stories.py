@@ -59,6 +59,7 @@ FOLDER = "_stories"
 KINDS = ("scene", "good", "bad")
 LANGS = ("en", "de-DE", "de-CH", "fr-FR", "it-IT", "es-ES", "nl-NL", "pl-PL", "pt-BR", "sv-SE")
 MAX_BOOKS = 300
+MAX_PER_AUTHOR = 60              # books of one person (one child cannot fill the family's shelf)
 MAX_PAGES = 200
 MAX_CHOICES = 4
 MIN_CHOICES = 2
@@ -79,6 +80,8 @@ BACKGROUNDS = {"jungle": "Jungle", "beach": "Beach and island", "deepsea": "Deep
                "northpole": "North Pole", "mine": "Underground mine", "clouds": "Castle in the clouds", "station": "Train station",
                "school": "School", "kidsroom": "Kids' room", "attic": "Attic", "lab": "Laboratory"}
 VISIBILITY = ("me", "kids", "family")   # only the author (parents neither) · the children and the author · everybody
+GC_EVERY = 3600                 # seconds between two picture clean-ups after autosaves (Stories._gc)
+COVER_CACHE = 2000              # book texts whose shelf data is kept (Stories._cover_meta)
 BACK_MAX = 300                  # pages a reader can turn back
 IMG_NAME = re.compile(r"s-[0-9a-f]{16}\.(jpg|png|webp|gif)")
 DEFAULT = {"off": [], "approval": False, "write_coins": 20, "write_xp": 0, "read_coins": 0, "read_xp": 0, "samples_off": []}
@@ -310,6 +313,24 @@ def size_of(data: dict | None) -> int:
     """Pages of a book – rooms of a game."""
     data = data or {}
     return len(data["rooms"]) if "rooms" in data else len(data.get("pages") or [])
+
+
+def cover_meta(kind: str, data: dict) -> dict:
+    """What the shelf needs of a book (the published copy, else the working copy): cover, endings, start, pages."""
+    data = data or {}
+    if kind == "picture":
+        return {"n": len(data.get("pages") or []), "cover": (data.get("cover") or {}).get("pic"), "cover_bg": None,
+                "ends": [], "start": None, "scenes": []}
+    if kind == "game":
+        first = next((x for x in data.get("rooms") or [] if x["id"] == data.get("start")), None)
+        bg = (first or {}).get("bg")
+        return {"cover": bg if bg and bg["k"] in ("img", "svg") else None, "cover_bg": bg["v"] if bg and bg["k"] == "lib" else None,
+                "ends": endings(data), "start": data.get("start"), "scenes": []}
+    pages = data.get("pages") or []
+    first = next((p for p in pages if p["id"] == data.get("start")), None)
+    return {"cover": first["pic"] if first and first.get("pic") and first["pic"]["k"] in ("img", "svg") else None,
+            "cover_bg": first.get("bg") if first else None, "ends": endings(data), "start": data.get("start"),
+            "scenes": [p["id"] for p in pages if p.get("kind") == "scene"]}
 
 
 def clean_as(kind: str, data, folder: Path | None = None) -> dict:
@@ -720,6 +741,8 @@ class Stories:
         self.folder = Path(media_dir) / FOLDER
         # may this person play and write adventure games (parent area › Games: «Adventure games» active for the child)?
         self.games_ok = lambda prof: True
+        self._covers: dict[tuple, dict] = {}     # _cover_meta: what the shelf shows of a book text
+        self._gc_at = 0.0                        # last picture clean-up (_gc)
 
     def _types(self, prof: dict) -> tuple:
         """The book types this person sees and writes – adventure games only while that game is open to them."""
@@ -735,7 +758,7 @@ class Stories:
         from .picturebooks import SAMPLES
         s = dict(s)
         if isinstance(d.get("off"), list):
-            s["off"] = sorted({int(x) for x in d["off"] if isinstance(x, int) or str(x).isdigit()})
+            s["off"] = sorted({int(x) for x in d["off"] if isinstance(x, int) or str(x).isdecimal()})
         if "approval" in d:
             s["approval"] = bool(d["approval"])
         if isinstance(d.get("samples_off"), list):
@@ -861,6 +884,16 @@ class Stories:
         return {**b, "title": s["title"], "lang": s["lang"]}, s["data"]
 
     # ---------------------------------------------------------------- the shelf
+    def _cover_meta(self, kind: str, raw: str) -> dict:
+        """cover_meta of a stored book text – cached per text (the shelf is opened often, books change rarely)."""
+        key = (kind, len(raw), hash(raw))
+        got = self._covers.get(key)
+        if got is None:
+            if len(self._covers) >= COVER_CACHE:
+                self._covers.clear()
+            got = self._covers[key] = cover_meta(kind, json.loads(raw))
+        return got
+
     def shelf(self, prof: dict, oversee: bool = False, lang: str | None = None) -> dict:
         self._need(prof)
         pid, parent = prof["id"], self._parent(prof)
@@ -874,7 +907,16 @@ class Stories:
             """SELECT story_id, COUNT(*) AS readers, AVG(rating) AS avg, COUNT(rating) AS votes FROM story_read
                WHERE finished > 0 GROUP BY story_id""")}
         books, privates, sample_list = [], [], []
-        for b in self.db.q("SELECT * FROM story ORDER BY COALESCE(published_at, updated_at) DESC, id DESC"):
+        # the book texts (up to MAX_BYTES each) only for the books this person may see – and parsed once per version
+        # (_cover_meta); pages and «changed» come from SQLite, others' private books are never read or parsed
+        rows = self.db.q("""SELECT id, title, emoji, color, lang, author_id, visibility, approved, rewarded, created_at, updated_at,
+                                   published_at, type, sample, live IS NOT NULL AS live, pending IS NOT NULL AS pending,
+                                   live IS NOT NULL AND live != data AS changed,
+                                   COALESCE(json_array_length(data, CASE WHEN type='game' THEN '$.rooms' ELSE '$.pages' END), 0) AS size,
+                                   CASE WHEN visibility='me' AND (author_id IS NULL OR author_id != ?) THEN NULL
+                                        ELSE COALESCE(live, data) END AS raw
+                            FROM story ORDER BY COALESCE(published_at, updated_at) DESC, id DESC""", pid)
+        for b in rows:
             mine = b["author_id"] == pid and not b["sample"]
             a = people.get(b["author_id"]) or {"id": None, "name": "?", "avatar": {}}
             if b["type"] not in types:                         # adventure games switched off for this child
@@ -882,57 +924,49 @@ class Stories:
             if b["sample"]:
                 if b["sample"] not in samples:
                     continue
-                b, live = self._localized(b, lang)
-                data = live
+                b, data = self._localized(b, lang)
+                b.update(live=True, changed=False, size=size_of(data))
+                meta = cover_meta(b["type"], data)
                 a = {"id": None, "name": "Family Quest", "avatar": {}}
             elif self._private(prof, b):
                 if oversee:                                    # parents: only that it exists – no title, no content
                     privates.append({"id": b["id"], "private": True, "visibility": "me", "type": b["type"],
                                      "author": {"id": a["id"], "name": a["name"], "avatar": a["avatar"]},
-                                     "pages": size_of(json.loads(b["data"])), "created_at": b["created_at"], "updated_at": b["updated_at"]})
+                                     "pages": b["size"], "created_at": b["created_at"], "updated_at": b["updated_at"]})
                 continue
             elif not (mine or (oversee and not b["live"]) or self.visible(prof, b, oversee)):
                 continue
             else:
-                live = json.loads(b["live"]) if b["live"] else None
-                data = json.loads(b["data"])
+                meta = self._cover_meta(b["type"], b["raw"])
+            live = bool(b["live"])                             # meta: of the published copy (else the working copy)
             r = reads.get(b["id"])
             st = stats.get(b["id"]) or {}
             book = {
                 "id": b["id"], "type": b["type"], "title": b["title"], "emoji": b["emoji"], "color": b["color"], "lang": b["lang"],
                 "author": {"id": a["id"], "name": a["name"], "avatar": a["avatar"]}, "mine": mine, "sample": b["sample"],
-                "edit": self._may_edit(prof, b), "live": bool(live), "pending": bool(b["pending"]),
+                "edit": self._may_edit(prof, b), "live": live, "pending": bool(b["pending"]),
                 "visibility": b["visibility"], "shared": bool(live and b["approved"] and b["visibility"] != "me"),
-                "changed": bool(live) and live != data and not b["sample"], "pages": size_of(data),
+                "changed": bool(b["changed"]) and not b["sample"], "pages": b["size"],
                 "finished": (r or {}).get("finished", 0),
                 "rating": round(st["avg"], 1) if st.get("avg") else None, "votes": st.get("votes", 0),
                 "readers": st.get("readers", 0), "my_rating": (r or {}).get("rating"),
                 "updated_at": b["updated_at"], "published_at": b["published_at"]}
+            ends = meta["ends"] if live else []
             if b["type"] == "picture":
-                n = len((live or data)["pages"])
+                n = meta["n"]
                 at = min(max((r or {}).get("page") or 0, 0), n) if live else 0
-                book.update({"cover": (live or data).get("cover", {}).get("pic"), "cover_bg": None, "endings": 0, "found": 0,
+                book.update({"cover": meta["cover"], "cover_bg": None, "endings": 0, "found": 0,
                              "at": at, "reading": bool(live and 0 < at < n)})
             elif b["type"] == "game":
-                ends = endings(live)
                 found = [e for e in json.loads(r["endings"]) if e in ends] if r else []
-                src = live or data
-                first = next((x for x in src["rooms"] if x["id"] == src.get("start")), None)
-                bg = (first or {}).get("bg")
                 st = json.loads(r["state"]) if r and r.get("state") else None
-                book.update({"cover": bg if bg and bg["k"] in ("img", "svg") else None, "cover_bg": bg["v"] if bg and bg["k"] == "lib" else None,
-                             "endings": len(ends), "found": len(found),
+                book.update({"cover": meta["cover"], "cover_bg": meta["cover_bg"], "endings": len(ends), "found": len(found),
                              "reading": bool(live and isinstance(st, dict) and not st.get("end")
-                                             and (st.get("room") != live.get("start") or st.get("inv") or st.get("flags")))})
+                                             and (st.get("room") != meta["start"] or st.get("inv") or st.get("flags")))})
             else:
-                ends = endings(live)
                 found = [e for e in json.loads(r["endings"]) if e in ends] if r else []
-                cover = (live or data).get("pages") or []
-                first = next((p for p in cover if p["id"] == (live or data).get("start")), None)
-                book.update({"cover": first["pic"] if first and first.get("pic") and first["pic"]["k"] in ("img", "svg") else None,
-                             "cover_bg": first.get("bg") if first else None, "endings": len(ends), "found": len(found),
-                             "reading": bool(r and live and r["page"] != live["start"]
-                                             and any(p["id"] == r["page"] and p.get("kind") == "scene" for p in live["pages"]))})
+                book.update({"cover": meta["cover"], "cover_bg": meta["cover_bg"], "endings": len(ends), "found": len(found),
+                             "reading": bool(r and live and r["page"] != meta["start"] and r["page"] in meta["scenes"])})
             if b["sample"]:
                 book["hidden"] = b["sample"] in hidden
                 if not book["hidden"] or oversee:
@@ -951,6 +985,13 @@ class Stories:
     def _count(self) -> int:
         return int(self.db.val("SELECT COUNT(*) FROM story WHERE sample IS NULL", default=0))
 
+    def _room_for(self, prof: dict, n: int = 1) -> None:
+        if self._count() + n > MAX_BOOKS:
+            raise CommunityError("The bookshelf is full – remove an old book first")
+        mine = int(self.db.val("SELECT COUNT(*) FROM story WHERE sample IS NULL AND author_id=?", prof["id"], default=0))
+        if mine + n > MAX_PER_AUTHOR:
+            raise CommunityError("You have written as many books as one person can keep – remove an old one first")
+
     # ---------------------------------------------------------------- writing
     def create(self, prof: dict, title: str = "", emoji: str = "📖", color: int = 0, lang: str = "en", tpl: str | None = None,
                visibility: str = "family", kind: str = "adventure") -> int:
@@ -958,8 +999,7 @@ class Stories:
         if kind not in CREATABLE:
             raise CommunityError("Unknown book type")
         self._need_type(prof, kind)
-        if self._count() >= MAX_BOOKS:
-            raise CommunityError("The bookshelf is full – remove an old book first")
+        self._room_for(prof)
         if tpl and kind == "adventure":
             t = template(tpl, lang)
             m = self._meta(title or t["title"], t["emoji"], t["color"], lang if lang in LANGS else t["lang"])
@@ -984,8 +1024,7 @@ class Stories:
         books = import_books(text)
         for b in books:
             self._need_type(prof, b["type"])
-        if self._count() + len(books) > MAX_BOOKS:
-            raise CommunityError("The bookshelf is full – remove an old book first")
+        self._room_for(prof, len(books))
         return [self.db.x("INSERT INTO story(title, emoji, color, lang, author_id, data, visibility, type) VALUES(?,?,?,?,?,?,'me',?)",
                           b["title"], b["emoji"], 0, b["lang"], prof["id"], json.dumps(b["data"], ensure_ascii=False), b["type"])
                 for b in books]
@@ -1046,17 +1085,22 @@ class Stories:
         self._shared(b["id"])
 
     def publish(self, prof: dict, sid: int) -> str:
-        """Publish the working copy: «live» – or «pending» when a parent has to approve it first (never for «only me»)."""
+        """Publish the working copy: «live» – or «pending» when a parent has to approve it first (never for «only me»).
+        The checker runs before the transaction (a game's search takes a while); inside only: still the same text?"""
+        b = self._edit(prof, sid)
+        if blocking_as(b["type"], json.loads(b["data"]), b["title"]):
+            raise CommunityError("The book is not finished yet – the checker shows what is missing")
+        checked = (b["data"], b["title"])
         with self.db.tx():
             b = self._edit(prof, sid)
-            data = json.loads(b["data"])
-            if blocking_as(b["type"], data, b["title"]):
-                raise CommunityError("The book is not finished yet – the checker shows what is missing")
+            if (b["data"], b["title"]) != checked:                   # saved meanwhile: check that version again
+                raise CommunityError("The book was changed meanwhile – try again")
             need = self._approval(prof)
             if b["visibility"] != "me" and need:
                 self.db.x("UPDATE story SET pending=? WHERE id=?", b["data"], sid)
                 return "pending"
             self._go_live(b, b["data"], approved=not need)
+        self._gc(force=True)
         return "live"
 
     def _go_live(self, b: dict, raw: str, approved: bool = True) -> None:
@@ -1075,12 +1119,15 @@ class Stories:
     def approve(self, prof: dict, sid: int) -> None:
         if not self._parent(prof):
             raise CommunityError("Only a parent can approve a book")
+        b = self._book(sid)
+        if not b["pending"] or b["visibility"] == "me":
+            raise CommunityError("This book does not wait for approval")
+        if blocking_as(b["type"], json.loads(b["pending"]), b["title"]):
+            raise CommunityError("The book is not finished yet – the checker shows what is missing")
         with self.db.tx():
-            b = self._book(sid)
-            if not b["pending"] or b["visibility"] == "me":
-                raise CommunityError("This book does not wait for approval")
-            if blocking_as(b["type"], json.loads(b["pending"]), b["title"]):
-                raise CommunityError("The book is not finished yet – the checker shows what is missing")
+            again = self._book(sid)
+            if (again["pending"], again["title"], again["visibility"]) != (b["pending"], b["title"], b["visibility"]):
+                raise CommunityError("The book was changed meanwhile – try again")
             self._go_live(b, b["pending"])
 
     def reject(self, prof: dict, sid: int) -> None:
@@ -1103,7 +1150,15 @@ class Stories:
         with self.db.tx():
             self.db.x("DELETE FROM story_read WHERE story_id=?", sid)
             self.db.x("DELETE FROM story WHERE id=?", sid)
-        self._gc()
+        self._gc(force=True)
+
+    def author_removed(self, pid: int) -> None:
+        """A profile is deleted for good: its books go too (with the readers' progress and the pictures only they use) –
+        a later profile must never see them (profile ids are not used again either, db.py migration 42)."""
+        with self.db.tx():
+            self.db.x("DELETE FROM story_read WHERE story_id IN (SELECT id FROM story WHERE author_id=? AND sample IS NULL)", pid)
+            self.db.x("DELETE FROM story WHERE author_id=? AND sample IS NULL", pid)
+        self._gc(force=True)
 
     def sample_hidden(self, prof: dict, key: str, hidden: bool) -> None:
         from .picturebooks import SAMPLES
@@ -1147,8 +1202,13 @@ class Stories:
                                      else _t("The drawing is too large (max. 60 KB)")) from None
             raise CommunityError("This is not a usable SVG picture (<svg viewBox=…> with simple shapes)") from None
 
-    def _gc(self) -> None:
-        """Remove pictures no book uses any more (not fresh uploads: the book that uses them is not saved yet)."""
+    def _gc(self, force: bool = False) -> None:
+        """Remove pictures no book uses any more (not fresh uploads: the book that uses them is not saved yet) – it reads
+        every book: after an autosave at most every GC_EVERY seconds, after deleting / publishing always."""
+        now = time.time()
+        if not force and now - self._gc_at < GC_EVERY:
+            return
+        self._gc_at = now
         if not self.folder.is_dir():
             return
         used = set()
@@ -1415,6 +1475,8 @@ class Stories:
         if not data["rooms"]:
             raise CommunityError("The game has no rooms yet")
         ix = A.Index(data)
+        if state is not None and not A.valid_state(state):
+            raise A.PlayError(_t("This is not possible"))
         st = A.clean_state(data, state) if isinstance(state, dict) else A.new_state(data, room)
         msgs = A.act(ix, st, move) if move else []
         ends = endings(data)

@@ -1292,6 +1292,5 @@ async function langstreckeFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("langstrecke") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("Short laps and a pit stop after every lap: one drives, the others charge the spare battery and get the tyres ready – then the next one drives.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => langstreckeStartDialog(false, () => go("langstrecke")) }, "👨‍👩‍👧 ", T("Open a family table")),
-           h("button.btn.ghost", { onclick: () => langstreckeStartDialog(true, () => go("langstrecke")) }, LE_ICON, " ", T("Alone")))]);
+         gameStartRow(() => langstreckeStartDialog(true, () => go("langstrecke")), () => langstreckeStartDialog(false, () => go("langstrecke")))]);
 }

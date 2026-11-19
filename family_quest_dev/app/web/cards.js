@@ -253,6 +253,5 @@ async function cardsFamilyCard(kind) {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go(kind) }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", kind === "tschau" ? T("The Swiss card game: shed your cards, say «Tschau» and «Sepp»!") : I18N.tr(T("Shed your cards – colours, numbers and special cards. Say «{0}» in time!")).replace("{0}", I18N.tr(T("Last card!")))),
-         h("div.row.wrap", botsOn(kind) ? h("button.btn", { onclick: () => cardsStartDialog(kind, true, () => go(kind)) }, "🤖 ", T("Alone against bots")) : null,
-           h("button.btn.ghost", { onclick: () => cardsStartDialog(kind, false, () => go(kind)) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(botsOn(kind) ? () => cardsStartDialog(kind, true, () => go(kind)) : null, () => cardsStartDialog(kind, false, () => go(kind)))]);
 }

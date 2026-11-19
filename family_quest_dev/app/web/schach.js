@@ -88,7 +88,7 @@ async function schachPanel(me, open) {
   const draw = o => {
     const mine = o.games || [], inv = (o.open || []).filter(g => g.host !== me.id), others = o.others || [];
     const del = async g => {
-      if (!confirm(I18N.tr(g.status === "lobby" ? T("Delete this invitation?") : T("Delete this paused game?")))) return;
+      if (!(await confirmDialog(I18N.tr(g.status === "lobby" ? T("Delete this invitation?") : T("Delete this paused game?"))))) return;
       try { draw(await api(`community/schach/${g.id}/delete`, { method: "POST", body: {} })); toast(T("Deleted"), "good"); } catch (e) { toast(e.message, "bad"); }
     };
     const label = g => {
@@ -264,9 +264,9 @@ function schachLive(box, me, back, gid) {
     return h("div.row.center.ch-ctl",
       st.status === "paused" ? h("button.btn.small", { onclick: () => act("resume") }, "▶ ", T("Continue")) : null,
       st.status === "running" && st.mode !== "local" ? h("button.btn.small.ghost", { disabled: st.draw_offer === st.my_side || st.draw_declined,
-        onclick: () => { if (confirm(I18N.tr(T("Offer a draw?")))) act("draw", { action: "offer" }); } }, "½ ", T("Offer draw")) : null,
-      st.status === "running" && st.mode === "local" ? h("button.btn.small.ghost", { onclick: () => { if (confirm(I18N.tr(T("Agree to a draw?")))) act("draw", { action: "offer" }); } }, "½ ", T("Draw by agreement")) : null,
-      h("button.btn.small.ghost", { onclick: () => { if (confirm(I18N.tr(st.mode === "local" ? (st.turn === "w" ? T("White resigns?") : T("Black resigns?")) : T("Resign this game?")))) act("resign"); } }, "🏳 ", T("Resign")));
+        onclick: async () => { if ((await confirmDialog(I18N.tr(T("Offer a draw?"))))) act("draw", { action: "offer" }); } }, "½ ", T("Offer draw")) : null,
+      st.status === "running" && st.mode === "local" ? h("button.btn.small.ghost", { onclick: async () => { if ((await confirmDialog(I18N.tr(T("Agree to a draw?"))))) act("draw", { action: "offer" }); } }, "½ ", T("Draw by agreement")) : null,
+      h("button.btn.small.ghost", { onclick: async () => { if ((await confirmDialog(I18N.tr(st.mode === "local" ? (st.turn === "w" ? T("White resigns?") : T("Black resigns?")) : T("Resign this game?"))))) act("resign"); } }, "🏳 ", T("Resign")));
   }
   function result() {
     const r = st.result || {};

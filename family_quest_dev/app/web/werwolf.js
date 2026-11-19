@@ -266,7 +266,7 @@ function werwolfLive(box, me, back) {
     if (!nextLabel) return null;
     return h("div.row.center.host-bar.ww-bar",
       h("button.btn", { title: T("Moves on – e.g. when somebody is idle"),
-        onclick: () => { if (st.phase !== "vote" || confirm(I18N.tr(T("Move on now?")))) act("next"); } }, nextLabel[0], nextLabel[1]));
+        onclick: async () => { if (st.phase !== "vote" || (await confirmDialog(I18N.tr(T("Move on now?"))))) act("next"); } }, nextLabel[0], nextLabel[1]));
   }
 
   function leadLine() {
@@ -354,8 +354,8 @@ function werwolfLive(box, me, back) {
       pot.poison ? [h("p.small", "☠️ ", T("Poison somebody? (optional)")),
         grid(living().filter(p => p.id !== myId), { pick: p => toggleSel(p.id, 1), chosen: sel, cls: ".ww-small" })]
         : h("p.small.muted", "✖️ ", T("The poison potion is used up")),
-      h("button.btn.big.ww-go", { onclick: () => {
-        if (sel[0] && !confirm(fill(T("Poison {0}?"), who(sel[0])))) return;
+      h("button.btn.big.ww-go", { onclick: async () => {
+        if (sel[0] && !(await confirmDialog(fill(T("Poison {0}?"), who(sel[0]))))) return;
         doAct({ action: "potion", heal, poison: sel[0] || null });
       } }, "😴 ", T("Done – close your eyes")));
   }

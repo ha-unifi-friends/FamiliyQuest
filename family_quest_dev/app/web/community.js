@@ -457,7 +457,7 @@ async function pollsSection(me = S.profile) {
       voted || closed ? results : null,
       !closed && voted ? h("button.link.small", { onclick: e => { e.currentTarget.replaceWith(ballot()); } }, T("Change my answer")) : null,
       manage ? h("div.row", !closed ? h("button.btn.small.ghost", { onclick: () => call2(`community/polls/${p.id}/close`, { method: "POST" }) }, "🏁 ", T("Close the poll")) : null,
-        h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Remove this poll?"))) && call2(`community/polls/${p.id}`, { method: "DELETE" }) }, T("Remove"))) : null);
+        h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Remove this poll?")))) && call2(`community/polls/${p.id}`, { method: "DELETE" }) }, T("Remove"))) : null);
   }
   draw();
   return sec;
@@ -524,8 +524,8 @@ async function familyTimeSection(me = S.profile, { settings = null } = {}) {
     const out = [head];
     if (e.game) {
       out.push(h("div.row.ftg-game", h("span.big-ic", e.game.icon), h("div.grow", h("small.muted", T("We play")), h("br"), C(ftTitle(e.game), "strong"), h("br"), h("span.small.muted", ftHow(e.game)))));
-      if (parent) out.push(h("div.row.wrap.ftg-ctl", h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(e.game.how === "bought"
-        ? T("Remove the game? {0} gets the coins back.") : T("Remove the game?")).replace("{0}", e.game.by || "?")) && call2(base + "/remove", { method: "POST" }) }, "✕ ", T("Remove the game"))));
+      if (parent) out.push(h("div.row.wrap.ftg-ctl", h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(e.game.how === "bought"
+        ? T("Remove the game? {0} gets the coins back.") : T("Remove the game?")).replace("{0}", e.game.by || "?"))) && call2(base + "/remove", { method: "POST" }) }, "✕ ", T("Remove the game"))));
       return h("div.topic.ftg-ev", ...out);
     }
     // the wishes – the same game wished twice is one line (and one option of the vote)
@@ -564,7 +564,7 @@ async function familyTimeSection(me = S.profile, { settings = null } = {}) {
     if (e.can_buy) out.push(h("div.row.wrap.ftg-buy",
       h("button.btn.small.ftg-buy-btn", { disabled: d.coins < d.price, onclick: () => pickDialog("🪙 " + I18N.tr(T("Fix a game")), d.games,
         I18N.tr(T("For {0} coins the game is set firmly on this FamilyTime – the wishes and the vote end.")).replace("{0}", d.price),
-        v => confirm(I18N.tr(T("Pay {0} coins?")).replace("{0}", d.price)) && call2(base + "/buy", { method: "POST", body: v }, T("The game is set!"))) },
+        async v => (await confirmDialog(I18N.tr(T("Pay {0} coins?")).replace("{0}", d.price))) && call2(base + "/buy", { method: "POST", body: v }, T("The game is set!"))) },
         "🪙 ", I18N.tr(T("Fix a game for {0} coins")).replace("{0}", d.price)),
       d.coins < d.price ? h("span.small.muted", I18N.tr(T("You have {0} coins")).replace("{0}", Math.floor(d.coins))) : null));
     if (parent) out.push(h("div.row.wrap.ftg-ctl",
@@ -572,7 +572,7 @@ async function familyTimeSection(me = S.profile, { settings = null } = {}) {
       e.status === "vote" ? h("button.btn.small", { onclick: () => call2(base + "/end", { method: "POST" }) }, "🏁 ", T("End the vote")) : null,
       h("button.btn.small.ghost", { onclick: () => pickDialog("🎲 " + I18N.tr(T("Set a game")), d.games, null, v => call2(base + "/set", { method: "POST", body: v }), [...groups.values()]) }, "🎲 ", T("Set a game")),
       ["wish", "vote", "tie"].includes(e.status) ? h("button.btn.small.ghost", { onclick: () => call2(base + "/skip", { method: "POST" }) }, "⏭ ", T("Skip the vote")) : null,
-      e.wishes.length ? h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Clear all wishes and votes?"))) && call2(base + "/clear", { method: "POST" }) }, "🧹 ", T("Clear wishes")) : null));
+      e.wishes.length ? h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Clear all wishes and votes?")))) && call2(base + "/clear", { method: "POST" }) }, "🧹 ", T("Clear wishes")) : null));
     return h("div.topic.ftg-ev", ...out);
   }
   draw();
@@ -656,7 +656,7 @@ async function wichtelnSection(me = S.profile) {
           catch (err) { e.target.checked = !e.target.checked; toast(err.message, "bad"); } } }), T("Present ready")) : null;
         return h("div.topic", h("div.row", h("span.grow"),
             (w.created_by === me.id || me.role === "parent") ? h("button.icon-btn", { title: T("Delete"), onclick: async () => {
-              if (!confirm(I18N.tr(T("Delete «{0}»?")).replace("{0}", w.title))) return;
+              if (!(await confirmDialog(I18N.tr(T("Delete «{0}»?")).replace("{0}", w.title)))) return;
               try { await api(`community/wichteln/${w.id}`, { method: "DELETE" }); draw(); } catch (e) { toast(e.message, "bad"); } } }, "🗑️") : null),
           h("p.small.muted", I18N.tr(T("With: {0}")).replace("{0}", w.people.map(p => p.name).join(", ")),
             w.rules.no_parent_pairs ? [" · ", I18N.tr(T("parents not among each other"))] : null, w.rules.no_kid_pairs ? [" · ", I18N.tr(T("children not among each other"))] : null),
@@ -733,7 +733,7 @@ async function councilSection(me = S.profile) {
         h("div.row", inp, h("button.btn.small", { onclick: () => inp.value.trim() && call2(`community/council/${t.id}/proposals`, { method: "POST", body: { text: inp.value } }) }, "+ ", T("Add idea"))),
         manage ? h("div.row.wrap",
           h("button.btn.small.good", { disabled: t.proposals.length < 2, title: t.proposals.length < 2 ? T("At least two ideas") : "", onclick: () => voteDialog(t) }, "🗳️ ", T("Start the vote")),
-          h("button.btn.small.ghost", { onclick: () => confirm(I18N.tr(T("Remove this topic?"))) && call2(`community/council/${t.id}`, { method: "DELETE" }) }, T("Remove"))) : null);
+          h("button.btn.small.ghost", { onclick: async () => (await confirmDialog(I18N.tr(T("Remove this topic?")))) && call2(`community/council/${t.id}`, { method: "DELETE" }) }, T("Remove"))) : null);
     }
     const bothTxt = t.both_sides ? " · 👨‍👩‍👧 " + I18N.tr(T("parents and children")) : "";
     if (t.status === "vote") return h("div.topic", headRow, by, h("p.small", "⚖️ ", MAJ[maj], bothTxt),
@@ -961,13 +961,13 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
   const impBtn = withImport ? [h("button.btn.ghost.new-quiz", { onclick: () => impFile.click() }, "📥 ", T("Import")), impFile] : [];
   if (actions) actions.replaceChildren(...[...actions.children].filter(x => !x.classList.contains("new-quiz")), ...impBtn, Object.assign(newBtn, { className: newBtn.className + " new-quiz" }));
   const del = async q => {
-    if (!confirm(I18N.tr(T("Delete this quiz?")))) return;
+    if (!(await confirmDialog(I18N.tr(T("Delete this quiz?"))))) return;
     try { await api(`community/quizzes/${q.id}`, { method: "DELETE" }); reload(); } catch (e) { toast(e.message, "bad"); }
   };
   // a quiz running just now: open it – parents (and whoever leads it) can cancel it right here
   const running = live && Array.isArray(live.players) && live.status !== "done" ? live : null;
   const cancel = async () => {
-    if (!confirm(I18N.tr(T("Cancel the running quiz?")))) return;
+    if (!(await confirmDialog(I18N.tr(T("Cancel the running quiz?"))))) return;
     try { await api("community/quiz/abort", { method: "POST" }); toast(T("Quiz cancelled"), "good"); } catch (e) { toast(e.message, "bad"); }
     reload();
   };

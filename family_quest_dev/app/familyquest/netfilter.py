@@ -79,7 +79,7 @@ def is_parent_path(path: str) -> bool:
 
 
 # guest networks (e.g. the guest Wi-Fi): only the guest page and playing a game with an invitation
-GUEST_API = ("/api/community/guest/", "/api/community/quiz", "/api/community/bingo", "/api/community/poker",
+GUEST_API = ("/api/community/guest/", "/api/community/quiz", "/api/community/bingo", "/api/community/poker", "/api/community/song",
              "/api/community/cards/", "/api/community/domino", "/api/community/paarjagd",
              "/api/community/werbinich", "/api/community/kartenlauf", "/api/community/stadtland",
              "/api/community/zeichnen", "/api/community/wuerfel", "/api/community/heimwaerts", "/api/community/jump", "/api/community/sternlauf", "/api/community/snack", "/api/community/verkehr", "/api/community/langstrecke", "/api/community/klatsch", "/api/community/verboten",
@@ -88,7 +88,7 @@ GUEST_API_DENY = ("/api/community/quiz/start", "/api/community/quiz/next", "/api
                   "/api/community/bingo/start", "/api/community/bingo/begin", "/api/community/bingo/pause", "/api/community/bingo/end",
                   "/api/community/bingo/rules", "/api/community/quizzes", "/api/community/poker/start",
                   "/api/community/poker/begin", "/api/community/poker/pause", "/api/community/poker/end",
-                  "/api/community/poker/give", "/api/community/poker/rules")
+                  "/api/community/poker/give", "/api/community/poker/rules", "/api/community/song/start")
 GUEST_API_DENY_PARTS = ("/start", "/begin", "/end", "/rules")
 
 

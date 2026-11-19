@@ -692,6 +692,5 @@ async function sternlaufFamilyCard() {
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("sternlauf") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
       : [h("p.muted", T("The lantern of the village went out! Run along the forest path, dodge logs, branches and rocks and catch the star sparks – everybody runs the same course at the same time.")),
-         h("div.row.wrap", h("button.btn", { onclick: () => sternlaufStartDialog(true, () => go("sternlauf")) }, SR_ICON, " ", T("Alone")),
-           h("button.btn.ghost", { onclick: () => sternlaufStartDialog(false, () => go("sternlauf")) }, "👨‍👩‍👧 ", T("Open a family table")))]);
+         gameStartRow(() => sternlaufStartDialog(true, () => go("sternlauf")), () => sternlaufStartDialog(false, () => go("sternlauf")))]);
 }
