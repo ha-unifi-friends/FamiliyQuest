@@ -221,7 +221,7 @@ function appLinkAttrs({ dialog = false } = {}) {
 
 // ---------------------------------------------------------------- layout
 // load the page anew – well visible top right (phone: in the bar with ☰)
-const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: () => location.reload() }, "⟳");
+const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: async e => { e.currentTarget.disabled = true; await planerRefresh(); location.reload(); } }, "⟳");
 
 function render() {
   const nav = h("nav.side", h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn()),
@@ -1014,7 +1014,7 @@ async function download(id, format = "zip") {
 
 // Phone photos are large: scale down to max. 1024 px as JPEG before uploading.
 // photos made smaller (and turned into JPEG) in the browser before the upload – also iPhone photos (HEIC), which Safari can read
-async function shrinkPhoto(file, max = 1024) {
+async function shrinkPhoto(file, max = 1024, { short = false } = {}) {
   if (file.type === "image/gif") return file;                       // keep animations
   const heic = /hei[cf]$/i.test(file.type) || /\.hei[cf]$/i.test(file.name || "");
   if (!/^image\//.test(file.type) && !heic) return file;
@@ -1026,7 +1026,7 @@ async function shrinkPhoto(file, max = 1024) {
   try {
     const bmp = await decode();
     const w0 = bmp.width || bmp.naturalWidth, h0 = bmp.height || bmp.naturalHeight;
-    const k = Math.min(1, max / Math.max(w0, h0));
+    const k = Math.min(1, max / (short ? Math.min(w0, h0) : Math.max(w0, h0)));   // short: the shorter edge counts
     const cv = h("canvas", { width: Math.round(w0 * k), height: Math.round(h0 * k) });
     cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
     const alpha = /^image\/(png|webp)$/.test(file.type);          // keep transparency (a drawn crest) – photos become JPEG
@@ -1418,9 +1418,7 @@ async function choresView(main) {
         h("div.small", ...e.profiles.map(pid => C(kidName(pid), "span.plan-kid")))))))))));
   const status = { open: "○", pending: "⏳", done: "✓" };
   const own = d.chores.filter(c => c.active);
-  const planerBox = section("📅 " + I18N.tr(T("One chore plan: the Planner")),
-    h("p.small.muted", T("The built-in planner has the bigger chore plan (days, rhythm, time to do it, special chores, awards). Its chores also appear on the children's start page.")),
-    planerFrame("planer?mode=parent#/aemtliplan", T("Chore plan")),
+  const planerBox = planerChoresSection(
     h("div.row", own.some(c => c.frequency !== "once") ? h("button.btn.ghost", { onclick: async () => {
         if (!(await confirmDialog(I18N.tr(T("Move the chores of this list into the Planner? They are switched off here (their history stays)."))))) return;
         const r = await call("planer/chores/take-over", { method: "POST" });
@@ -1442,7 +1440,52 @@ async function choresView(main) {
           c.assign === "rotate" ? I18N.tr(T("rotating")) : I18N.tr(T("fixed")), ": ", C(c.profiles.map(kidName).join(", ")), " · ",
           c.kind === "duty" ? I18N.tr(T("duty")) : I18N.tr(T("bonus")), " · +" + fmt(c.points), c.energy ? " · 🔋+" + c.energy : "",
           c.confirm ? " · 👪 " + I18N.tr(T("parents confirm")) : "", c.active ? "" : " · " + I18N.tr(T("switched off")))),
-      h("button.btn.small.ghost", { onclick: () => choreDialog(c, kids) }, "✏️ ", T("Edit")))))));
+      h("button.btn.small.ghost", { onclick: () => choreDialog(c, kids) }, "✏️ ", T("Edit")))))),
+    planerSettingsSection());
+}
+
+// 📅 The Family Planer's chore plan in the parent area (planer?mode=parent in a frame). The planer's own top bar
+// (clock, season, its buttons) is hidden there (planer.html) – its functions are buttons in this section head:
+// 🏖️ holidays (only when the planer checks holidays; the number = holidays waiting for a decision), «+ Special chore»,
+// «+ To-do». They call the planer in the frame (planer/host.js FQ_PLANER_DO) – same windows, PIN rules and API calls.
+// «Refresh» (the planer pulls calendars and lists again) is the app's ⟳ button (planerRefresh). Settings: below.
+function planerChoresSection(...more) {
+  const frame = planerFrame("planer?mode=parent#/aemtliplan", T("Chore plan"));
+  const act = kind => {
+    const w = frame.contentWindow;
+    if (!w || !w.FQ_PLANER_DO) return;
+    if (frame.getBoundingClientRect().top < 0) frame.scrollIntoView({ block: "start", behavior: "smooth" });   // its windows open at its top
+    w.FQ_PLANER_DO(kind);
+  };
+  const dot = h("span.chip.warn.planer-dot", { hidden: true });
+  const vac = h("button.btn.small.ghost", { hidden: true, title: T("Holidays and absences in the calendar: who is away, are chores paused?"),
+    onclick: () => act("vac") }, "🏖️ ", T("Holidays"), dot);
+  frame.addEventListener("fq-planer-state", e => {
+    const st = e.detail || {};
+    vac.hidden = !st.vac; vac.classList.toggle("on", !!st.open);
+    dot.hidden = !st.pending; dot.textContent = st.pending ? String(st.pending) : "";
+  });
+  return sectionAdd("📅 " + I18N.tr(T("One chore plan: the Planner")), [vac,
+      h("button.btn.small.ghost", { onclick: () => act("special") }, "+ ", T("Special chore")),
+      h("button.btn.small.ghost", { onclick: () => act("todo") }, "+ ", T("To-do"))],
+    h("p.small.muted", T("The built-in planner has the bigger chore plan (days, rhythm, time to do it, special chores, awards). Its chores also appear on the children's start page.")),
+    frame, ...more);
+}
+
+// ⚙️ the planer's settings (persons, points, holidays, lists …, with the planer's own parent PIN) – folded at the
+// bottom like the settings of the other sections; the frame loads only when opened
+function planerSettingsSection() {
+  const box = h("details.card.sec.fold.planer-settings", h("summary", h("h2", "⚙️ " + I18N.tr(T("Planner settings")))));
+  box.addEventListener("toggle", () => {
+    if (box.open && !box.querySelector(".planer-frame")) box.append(planerFrame("planer?mode=parent#/einstellungen", T("Planner settings")));
+  });
+  return box;
+}
+
+// the app's ⟳ button: on the Chores page the planer first pulls its calendars and lists again (at most 8 s)
+function planerRefresh() {
+  const w = [...document.querySelectorAll(".planer-frame")].map(f => f.contentWindow).find(x => x && x.FQ_PLANER_DO);
+  return w ? Promise.race([w.FQ_PLANER_DO("refresh"), new Promise(r => setTimeout(r, 8000))]).catch(() => {}) : Promise.resolve();
 }
 
 function choreDialog(c, kids) {
@@ -2000,27 +2043,42 @@ async function haMediaPicker({ single = false } = {}) {
 }
 
 // photos for the pairs game and the crest: upload from this device or take them from Home Assistant Media
+// The cards of the pairs game are small: the shorter edge becomes at most PHOTO_EDGE px (sharp enough on phones and
+// tablets, a few KB per photo instead of megabytes).
+const PHOTO_EDGE = 240;
 const Photos = {
-  async upload(file) {
-    const fd = new FormData(); fd.append("file", await shrinkPhoto(file, 800), "foto.jpg");
+  async upload(file, edge = PHOTO_EDGE) {          // the crest (printed on the poster) passes a larger edge
+    const fd = new FormData(); fd.append("file", await shrinkPhoto(file, edge, { short: true }), "foto.jpg");
     return (await api("parent/memory/photo", { method: "POST", form: fd })).name;
   },
-  async uploadAll(files) {                                 // every photo on its own – one bad file does not stop the others
+  async uploadAll(files, edge) {                           // every photo on its own – one bad file does not stop the others
     const out = [];
     for (const file of files) {
-      try { out.push(await Photos.upload(file)); } catch (e) { toast(`${file.name}: ${e.message}`, "bad"); }
+      try { out.push(await Photos.upload(file, edge)); } catch (e) { toast(`${file.name}: ${e.message}`, "bad"); }
     }
     return out;
   },
-  pick(multiple, then) {
+  pick(multiple, then, edge) {
     const f = h("input", { type: "file", accept: "image/*,.heic,.heif", multiple });
-    f.onchange = async () => { const names = await Photos.uploadAll([...f.files]); if (names.length) await then(names); };
+    f.onchange = async () => { const names = await Photos.uploadAll([...f.files], edge); if (names.length) await then(names); };
     f.click();
   },
-  async fromHa(single, then) {
+  async fromHa(single, then, edge) {
     const paths = await haMediaPicker({ single });
     if (!paths || !paths.length) return;
-    try { const r = await call("parent/memory/ha-media", { method: "POST", body: { paths } }); await then(r.names); } catch {}
+    // a small copy of every picture (the original in Home Assistant Media stays as it is); a picture that cannot be
+    // loaded here falls back to the reference «ha:<path>» as before
+    const names = [], refs = [];
+    for (const rel of paths) {
+      try {
+        const res = await fetch("api/parent/ha-media/file?path=" + encodeURIComponent(rel), { headers: { "X-FQ-Parent": Auth.parent } });
+        if (!res.ok) throw new Error(res.status);
+        const blob = await res.blob();
+        names.push(await Photos.upload(new File([blob], rel.split("/").pop() || "foto.jpg", { type: blob.type || "image/jpeg" }), edge));
+      } catch { refs.push(rel); }
+    }
+    if (refs.length) try { names.push(...(await call("parent/memory/ha-media", { method: "POST", body: { paths: refs } })).names); } catch {}
+    if (names.length) await then(names);
   },
 };
 
@@ -2059,8 +2117,8 @@ async function crestSection() {
         ...Object.entries(PATTERNS).map(([k, n]) => h("option", { value: k, selected: crest.pattern === k }, I18N.tr(n)))))),
     h("label.field", T("Colours"), h("div.row", color(0), color(1))));
   const drawPictureRow = () => { drawnFields.hidden = !!crest.image; pictureRow.replaceChildren(...[
-    h("button.btn.small.ghost", { onclick: () => Photos.pick(false, setImage) }, "📷 ", T("Upload picture")),
-    h("button.btn.small.ghost", { onclick: () => Photos.fromHa(true, setImage) }, "🏠 ", T("From Home Assistant Media")),
+    h("button.btn.small.ghost", { onclick: () => Photos.pick(false, setImage, 800) }, "📷 ", T("Upload picture")),
+    h("button.btn.small.ghost", { onclick: () => Photos.fromHa(true, setImage, 800) }, "🏠 ", T("From Home Assistant Media")),
     crest.image ? h("button.btn.small.ghost", { onclick: () => { crest.image = null; drawCrest(); drawPictureRow(); } }, "✕ ", T("Remove picture")) : null].filter(Boolean)); };
   const crestForm = h("div.form",
     h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: T("e.g. Miller") })),
@@ -2362,14 +2420,15 @@ function openInApp(path) {
 const appBtn = path => h("button.btn.small.ghost", { title: T("Opens the game in the app in a new tab"), onclick: () => openInApp(path) }, "↗ ", T("Open in the app"));
 
 // the planner in a frame (same origin): on phones as tall as its content – no second scroll area inside the page
+// the frame is as high as the planer's content (no scrolling inside a scrolling page; planer.html drops its min-height
+// in the parent area) – its windows open at its top, the section head scrolls there first (planerChoresSection)
 function planerFrame(src, title) {
   const f = h("iframe.planer-frame", { src, title: I18N.tr(title) });
   const fit = () => {
     if (!f.isConnected) return clearInterval(timer);
-    if (innerWidth > 700) { f.style.height = ""; return; }
     try {
-      const d = f.contentDocument && f.contentDocument.documentElement;
-      if (d) f.style.height = Math.max(400, d.scrollHeight) + "px";
+      const root = f.contentDocument && f.contentDocument.getElementById("planer-root");
+      if (root && root.offsetHeight) f.style.height = Math.max(200, Math.ceil(root.getBoundingClientRect().height) + 4) + "px";
     } catch {}
   };
   const timer = setInterval(fit, 700);

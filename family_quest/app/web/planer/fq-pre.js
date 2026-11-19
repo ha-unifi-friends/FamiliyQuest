@@ -59,6 +59,11 @@ window.FQN = (() => {
     .day.on{color:var(--c)!important;border-color:var(--c)!important;background:var(--cb)!important}
     .new,.nw,.newbox{border-color:var(--line)!important;background:transparent!important}
     .pn{color:var(--fg)!important}
+    .fqe .head{margin:0 0 4px}.fqe .badge,.fqe .title,.fqe .hsp,.fqe .hadd{display:none!important}.fqe .subt{margin:0;font-size:14px}
+    .fqe .sec,.card>h2,.card>h3{font-size:17px!important;font-weight:700!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
+    .fqe .sec{margin:22px 0 10px}.fqe .add .sec{margin-top:0}.fqe .foot{color:var(--muted)!important}
+    .fc,.fq,.pre,.sg,.sz,.pc,.tab,.tb,.addp,.chip,.seg button,.in,.sel,.t,.ib,button.add,.day{min-height:44px!important}
+    .rmp,.x{min-width:44px!important;min-height:44px!important}
   `;
   const sheet = new CSSStyleSheet();
   try { sheet.replaceSync(css); } catch { return; }

@@ -513,3 +513,4 @@
 /* «Sign in with Home Assistant» (direct port): on the login screen and below a PIN pad */
 .ha-kid-login { margin: 8px 0 16px; }
 .ha-pin-alt { margin-top: 12px; }
+.ha-auth-error { color: var(--bad-text); text-align: center; padding: 12px 16px; margin: 0 0 16px; }

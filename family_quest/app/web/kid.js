@@ -134,12 +134,13 @@ async function haAppFinish() {
   let nonce = "";
   try { nonce = sessionStorage.getItem("fq.ha.nonce") || ""; sessionStorage.removeItem("fq.ha.nonce"); } catch {}
   history.replaceState(null, "", location.pathname + location.search + "#/");
-  if (!q.get("code")) return toast(T("Sign-in with Home Assistant was cancelled"), "bad");
+  // the reason stays on the login screen (a toast is gone before a child has read it)
+  if (!q.get("code")) { S.haError = I18N.tr(T("Sign-in with Home Assistant was cancelled")); return; }
   try {
     const r = await api("ha-auth/finish", { method: "POST", body: { code: q.get("code"), state: q.get("state") || "", nonce } });
     Auth.kid = r.token; Auth.parent = r.parent_token || "";
     Sound.play("tap");
-  } catch (e) { setTimeout(() => toast(e.message, "bad"), 300); }
+  } catch (e) { S.haError = e.message; }
 }
 const haAppButton = () => h("button.btn.big.ha-app-login", { onclick: haAppLogin }, "🏠 ", T("Sign in with Home Assistant"));
 
@@ -465,6 +466,7 @@ async function profilesView() {
       try { if (await haKidLogin()) { Sound.play("tap"); location.hash = "#/"; route(); } } catch (e) { toast(e.message, "bad"); }
     } }, "🏠 ", I18N.tr(T("Log in as {0}")).replace("{0}", hk.name))) : null,
     !hk && S.info.ha_app_login && !S.info.setup_needed ? h("div.center.ha-kid-login", haAppButton()) : null,
+    S.haError ? h("p.card.ha-auth-error", { role: "alert" }, "⚠️ ", S.haError) : null,
     S.info.setup_needed
       ? h("div.card.welcome", h("h2", T("Welcome to Family Quest!")), h("p", T("A parent sets up the profiles first.")),
           h("a.btn.big", { href: "eltern" }, T("Set up now")))
@@ -474,6 +476,7 @@ async function profilesView() {
       h("button.parent-chip", { onclick: () => login(p) }, avatarSvg(p.avatar, 36), C(p.name)))) : null,
     parentBtn);
   app.replaceChildren(body);
+  S.haError = "";
   parentBtn.href = await parentAreaHref();
 }
 
