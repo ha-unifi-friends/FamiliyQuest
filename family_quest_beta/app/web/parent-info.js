@@ -64,7 +64,7 @@ const PARENT_INFO = {
   [T("Access from the network")]: T("Which networks may open the app directly (without Home Assistant): e.g. the home network yes, the guest network only for game guests."),
   [T("Backup & restore")]: T("Download everything (database, Planer data, pack pictures) as one file, or restore such a file. Make a backup before big changes."),
   [T("Shopping list (Bring!)")]: T("Connects the Family Quest shopping list with a todo list of Home Assistant, e.g. Bring!: items are synchronised both ways."),
-  [T("One chore plan: the Planner")]: T("The Family Planer is built in: chores, to-dos, lists and awards. Here you open its settings and link its persons with the Family Quest profiles."),
+  [T("One chore plan: the Planner")]: T("The Family Planer is built in: chores, to-dos, lists and awards. «Holidays» shows who is away and whether chores pause. Its settings (persons, points, lists, holidays …) are folded at the bottom of this page."),
   [T("Take over an existing Family Planer")]: T("If the Family Planer integration already runs in Home Assistant, take over its persons, chores and settings once."),
   [T("Templates: school and public holidays")]: T("Add the school and public holidays of a canton to the calendar with one click."),
   [T("Import a calendar file")]: T("Add events from an ICS or CSV file. Duplicates are marked; you choose which events to take."),

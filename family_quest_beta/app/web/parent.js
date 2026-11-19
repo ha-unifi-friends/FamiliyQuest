@@ -16,7 +16,7 @@ async function boot() {
   if (P.info.setup_needed) return setupView();
   if (P.info.parent_ha_only && !P.info.via_ha) {
     let ha = null;
-    try { const p = await api("ha-panel"); if (p.slug) ha = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/${p.slug}`; } catch (e) { /* no link then */ }
+    try { const p = await api("ha-panel"); if (p.slug) ha = `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/hassio/ingress/${p.slug}`; } catch (e) { /* no link then */ }
     return app.replaceChildren(h("div.login", h("div.card.login-card.center",
       h("h2", "🏠 ", T("Parent area")), h("p", T("The parent area opens only in Home Assistant – in the sidebar under Family Quest.")),
       h("div.row.center", ha ? h("a.btn", { href: ha }, "🏠 ", T("Open in Home Assistant")) : null,
@@ -84,14 +84,29 @@ async function call(path, opts) {
 
 // ---------------------------------------------------------------- setup and login
 function setupView() {
-  const name = h("input", { type: "text", placeholder: T("Your name"), "aria-label": T("Your name") });
+  const name = h("input", { type: "text", placeholder: T("Your name"), "aria-label": T("Your name"), value: P.info.setup_ha_user || "" });
+  const viaHA = !!P.info.setup_ha_user;            // through Home Assistant with a known user: the PIN is optional
   let step = 1, first = "";
+  const create = async pin => {
+    const r = await api("setup", { method: "POST", body: { name: name.value.trim(), pin: pin || "" } });
+    Auth.parent = r.parent_token;
+    P.info.setup_needed = false;
+    toast(T("Done! Now add the children."), "good");
+    location.hash = "#profiles";
+    boot();
+  };
   const box = h("div.card.login-card",
     h("img", { src: "img/icon.svg", alt: "", width: 72, height: 72 }),
     h("h1", T("Welcome to Family Quest")),
-    h("p", T("First create the parent profile. It is always protected by a PIN.")),
+    h("p", viaHA ? T("First create the parent profile.") : T("First create the parent profile. It is always protected by a PIN.")),
     h("label.field", T("Your name"), name),
-    h("button.btn.big", { onclick: () => { if (!name.value.trim()) return name.focus(); pinStep(); } }, T("Next")),
+    viaHA ? h("p.small.muted", "🏠 ", I18N.tr(T("Your parent profile is linked with the Home Assistant user «{0}»: you need no PIN. On tablets and phones you sign in with «Sign in with Home Assistant» – or you set a PIN later in your profile.")).replace("{0}", P.info.setup_ha_user)) : null,
+    viaHA ? h("button.btn.big", { onclick: async () => {
+      if (!name.value.trim()) return name.focus();
+      try { await create(""); } catch (e) { toast(e.message, "bad"); }
+    } }, "✓ ", T("Create")) : null,
+    h("button.btn" + (viaHA ? ".ghost.small" : ".big"), { onclick: () => { if (!name.value.trim()) return name.focus(); pinStep(); } },
+      viaHA ? "🔑 " + I18N.tr(T("Also choose a PIN")) : T("Next")),
     langPicker());
   app.replaceChildren(h("div.login", box));
   function pinStep() {
@@ -99,12 +114,7 @@ function setupView() {
       onSubmit: async pin => {
         if (step === 1) { first = pin; step = 2; return pinStep(); }
         if (pin !== first) { step = 1; throw new Error(I18N.tr(T("The PINs do not match"))); }
-        const r = await api("setup", { method: "POST", body: { name: name.value.trim(), pin } });
-        Auth.parent = r.parent_token;
-        P.info.setup_needed = false;
-        toast(T("Done! Now add the children."), "good");
-        location.hash = "#profiles";
-        boot();
+        await create(pin);
       } }));
   }
 }
@@ -211,7 +221,7 @@ function appLinkAttrs({ dialog = false } = {}) {
 
 // ---------------------------------------------------------------- layout
 // load the page anew – well visible top right (phone: in the bar with ☰)
-const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: () => location.reload() }, "⟳");
+const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"), "aria-label": T("Refresh"), onclick: async e => { e.currentTarget.disabled = true; await planerRefresh(); location.reload(); } }, "⟳");
 
 function render() {
   const nav = h("nav.side", h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn()),
@@ -282,7 +292,7 @@ async function overviewView(main) {
   async function decide(id, approve) { await call(`parent/redemptions/${id}`, { method: "POST", body: { approve } }); toast(approve ? T("Approved") : T("Declined"), "good"); render(); }
   const chorePend = d.chores_pending.length ? section("🧹 " + I18N.tr(T("Chores to confirm")), choreConfirmList(d.chores_pending, render)) : null;
   const kids = d.kids.map(k => h("section.card.kid",
-    h("div.row", avatarSvg(k.profile.avatar, 56), h("div.grow", C(k.profile.name, "h2"), h("span.muted", I18N.tr(T("Level {0}")).replace("{0}", k.level.level) + " · 🔥 " + k.streak),
+    h("div.row", avatarSvg(k.profile.avatar, 56), h("div.grow", C(k.profile.name, "h2"), h("span.muted", I18N.tr(T("Level {0}")).replace("{0}", k.level.level) + " · 🔥 " + k.streak), " ", loginChip(k.profile),
       k.sad_since ? h("div.mood-note", "😢 ", T("feels sad"), " (", T("since"), " ",
         new Date(k.sad_since).toLocaleString(I18N.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }), ")") : null,
       k.mood_text || k.mood ? h("div.mood-text", h("span.mood-emoji", k.mood || "💬"), " ", T("Today I feel …"), " ", k.mood_text ? C("«" + k.mood_text + "»", "strong") : null,
@@ -418,11 +428,18 @@ function bookDialog(profile) {
 }
 
 // ---------------------------------------------------------------- profiles
+// how a profile signs in (profile setting «login», see the profile dialog)
+const LOGIN_CHIP = { none: ["🪄", T("No sign-in")], pin: ["🔢", T("PIN")], ha: ["🏠", T("Home Assistant only")], pin_ha: ["🔢🏠", T("PIN or Home Assistant")] };
+function loginChip(p) {
+  const c = LOGIN_CHIP[p.login];
+  return c ? h("span.chip.login-chip", { title: I18N.tr(T("Sign-in")) }, c[0], " ", c[1]) : null;
+}
 function profileCards(list, persons) {
   if (!list.length) return h("p.muted", T("Nobody yet."));
   return h("div.profile-cards", ...list.map(p => h("div.card.pcard", avatarSvg(p.avatar, 72),
-    h("div.grow", C(p.name, "h2"), h("div.small.muted", p.role === "parent" ? T("Parent") : T("Child"), p.has_pin ? " · 🔒 PIN" : "",
+    h("div.grow", C(p.name, "h2"), h("div.small.muted", p.role === "parent" ? T("Parent") : T("Child"),
       p.planer_person_id ? " · 📅 Family Planer" : "", p.id === P.meta.me.id ? " · " + I18N.tr(T("that's you")) : ""),
+      loginChip(p),
       p.role === "kid" ? h("div.small", T("Daily goal"), ": ", p.settings.daily_goal + " XP · ", T("Lesson"), ": ", p.settings.lesson_length) : null,
       p.role === "parent" && p.settings.notify_service ? h("div.small", "🔔 ", C(p.settings.notify_service)) : null),
     h("button.btn.small.ghost", { onclick: () => profileDialog(p, persons) }, "✏️ ", T("Edit")))));
@@ -571,7 +588,7 @@ async function profileDialog(p, persons, role = "kid") {
     name: h("input", { type: "text", value: p.name }),
     role: h("select", h("option", { value: "kid", selected: p.role === "kid" }, T("Child")), h("option", { value: "parent", selected: p.role === "parent" }, T("Parent"))),
     color: h("input", { type: "color", value: p.color }),
-    pin: h("input", { type: "password", inputmode: "numeric", placeholder: p.has_pin ? T("unchanged") : T("no PIN"), autocomplete: "new-password" }),
+    pin: h("input", { type: "password", inputmode: "numeric", autocomplete: "new-password" }),
     daily_goal: h("input", { type: "number", min: 5, max: 1000, value: s.daily_goal }),
     lesson_length: h("input", { type: "number", min: 4, max: 40, value: s.lesson_length }),
     new_per_lesson: h("input", { type: "number", min: 0, max: 20, value: s.new_per_lesson }),
@@ -653,60 +670,87 @@ async function profileDialog(p, persons, role = "kid") {
   const avBox = h("div", h("p.small.muted", "…"));
   let avatar = null;
   if (!isNew) call(`parent/profiles/${p.id}/avatar`).then(d => { avatar = JSON.parse(JSON.stringify(d.avatar)); avBox.replaceChildren(avatarEditorBox(d, avatar)); }).catch(() => avBox.replaceChildren());
-  // parents: the Home Assistant user opens the parent area – a PIN is only needed for the app without Home Assistant;
-  // children: it opens the children's app in Home Assistant (option in Settings)
-  const haUser = h("select", h("option", { value: "" }, "– " + I18N.tr(T("none")) + " –"),
-    p.settings && p.settings.ha_user_id ? h("option", { value: p.settings.ha_user_id, selected: true, "data-name": p.settings.ha_user_name || "" }, p.settings.ha_user_name || p.settings.ha_user_id) : null);
+  // 🔐 Sign-in: one explicit choice per profile (profile setting «login», enforced by the server – db.login_mode):
+  // 🪄 no sign-in (tap, children only) · 🔢 PIN · 🏠 Home Assistant only · 🔢🏠 PIN or Home Assistant.
+  // The Home Assistant user shows only for the Home Assistant options, the PIN entry only for the PIN options.
+  const hasHaLink = !!(p.settings && p.settings.ha_user_id);
+  const haOk = () => !!(P.meta.ha || hasHaLink);          // without Home Assistant (and no link yet) the HA options are off
+  let loginMode = p.login || (isNew ? (role === "parent" ? (P.meta.ha ? "ha" : "pin") : "none")
+    : p.has_pin ? (hasHaLink ? "pin_ha" : "pin") : hasHaLink ? "ha" : (p.role === "parent" ? "pin" : "none"));
+  const usesPin = () => loginMode === "pin" || loginMode === "pin_ha";
+  const usesHa = () => loginMode === "ha" || loginMode === "pin_ha";
+  const haUser = h("select", h("option", { value: "" }, "– " + I18N.tr(T("Choose a Home Assistant user")) + " –"),
+    hasHaLink ? h("option", { value: p.settings.ha_user_id, selected: true, "data-name": p.settings.ha_user_name || "" }, p.settings.ha_user_name || p.settings.ha_user_id) : null);
   const haInfo = h("span.hint");
   if (P.meta.ha) call("parent/ha/users").then(list => {
     const cur = p.settings && p.settings.ha_user_id;
-    haUser.replaceChildren(h("option", { value: "" }, "– " + I18N.tr(T("none")) + " –"), ...list.map(u => h("option", { value: u.id, selected: u.id === cur, "data-name": u.name },
+    haUser.replaceChildren(h("option", { value: "" }, "– " + I18N.tr(T("Choose a Home Assistant user")) + " –"), ...list.map(u => h("option", { value: u.id, selected: u.id === cur, "data-name": u.name },
       u.name + (u.linked_to && u.id !== cur ? " (" + u.linked_to + ")" : ""))));
     if (cur && !list.some(u => u.id === cur)) haUser.append(h("option", { value: cur, selected: true, "data-name": p.settings.ha_user_name || "" }, p.settings.ha_user_name || cur));
     if (!list.length) haInfo.textContent = I18N.tr(T("No Home Assistant user found – a user needs a person in Home Assistant (Settings › People)."));
   }).catch(() => {});
-  // children (option): the Home Assistant user opens the children's app in Home Assistant without PIN – never the parent area
-  const haLabel = h("span"), haHint = h("span.hint"), haWarn = h("span.hint.warn");
-  const haPart = h("div.form", h("h3", "🏠 ", T("Home Assistant user")),
-    h("label.field", haLabel, haUser, haInfo, haHint, haWarn));
+  // choosing a Home Assistant user: the name comes along (unless the parent typed one)
+  let autoName = isNew ? "" : null;
+  haUser.addEventListener("change", () => {
+    const n = haUser.value ? haUser.selectedOptions[0]?.dataset.name || "" : "";
+    if (n && (!f.name.value.trim() || f.name.value === autoName)) { f.name.value = n; autoName = n; }
+  });
+  const haLabel = h("span"), haHint = h("span.hint");
+  const haPart = h("div.login-sub", h("label.field", haLabel, haUser, haInfo, haHint));
   const syncHa = kid => {
     haLabel.textContent = I18N.tr(kid ? T("Logs in to the children's app as") : T("Logs in to the parent area as"));
-    haHint.textContent = I18N.tr(kid ? T("This child opens Family Quest in the Home Assistant sidebar without PIN – only the children's app, never the parent area.")
-      : T("This parent opens the parent area in the Home Assistant sidebar without PIN."));
-    haWarn.textContent = kid && !P.meta.kid_ha_login ? I18N.tr(T("Only works when «Children may sign in with their Home Assistant user» is switched on in Settings.")) : "";
-    haWarn.hidden = !haWarn.textContent;
+    haHint.textContent = I18N.tr(kid ? T("Home Assistant sidebar and «Sign in with Home Assistant» on tablets – only the children's app, never the parent area.")
+      : T("Home Assistant sidebar opens the parent area; on tablets «Sign in with Home Assistant»."));
   };
-  // PIN: children get the picture PIN first (4 symbols), digits or no PIN on request; parents always digits
+  // PIN: children a picture PIN (4 symbols) or digits, parents digits – an existing PIN stays unless «Change PIN»
   const symbolKind = (p.settings && p.settings.pin_kind) === "symbols";
-  let pinKind = p.has_pin ? (symbolKind && p.role !== "parent" ? "symbols" : "digits") : (p.role === "parent" ? (P.meta.ha ? "none" : "digits") : "symbols");
+  let pinKind = p.has_pin ? (symbolKind && p.role !== "parent" ? "symbols" : "digits") : (p.role === "parent" ? "digits" : "symbols");
   let pad = null;
   const pinArea = h("div");
   const kindBtns = h("div.pin-kind");
-  // editing an existing profile keeps its PIN – the choice only opens with «Change PIN»
-  let changing = isNew || (f.role.value === "parent" && !p.has_pin && !P.meta.ha);
-  const pinHead = h("h3");
+  let changing = isNew || !p.has_pin;
+  const pinForm = h("div.login-sub", kindBtns, pinArea);
   const drawPin = () => {
     const kid = f.role.value === "kid";
-    const viaHA = !kid && P.meta.ha;              // parents with Home Assistant: the HA user, the PIN is optional
-    pinHead.replaceChildren("🔐 ", viaHA ? I18N.tr(T("PIN for the app (optional)")) : "PIN");
-    if (!kid && !viaHA && !p.has_pin) changing = true;      // without Home Assistant parents need a PIN
+    if (!kid && pinKind === "symbols") pinKind = "digits";
     if (!changing) {
       kindBtns.replaceChildren();
       pinArea.replaceChildren(h("div.row",
-        h("span.small.muted", p.has_pin ? "✓ " + I18N.tr(symbolKind ? T("Picture PIN is set.") : T("Digit PIN is set.")) : I18N.tr(T("No PIN"))),
-        h("button.btn.small.ghost", { type: "button", onclick: () => { changing = true; drawPin(); } }, "🔑 ", p.has_pin ? T("Change PIN") : T("Set a PIN"))));
+        h("span.small.muted", "✓ " + I18N.tr(symbolKind && kid ? T("Picture PIN is set.") : T("Digit PIN is set."))),
+        h("button.btn.small.ghost", { type: "button", onclick: () => { changing = true; drawPin(); } }, "🔑 ", T("Change PIN"))));
       return;
     }
-    if (!kid && !viaHA && pinKind === "none") pinKind = "digits";
-    if (!kid && pinKind === "symbols") pinKind = "digits";
-    kindBtns.replaceChildren(...[...(kid ? [["symbols", "🐱 " + I18N.tr(T("Symbols"))]] : []), ["digits", "🔢 " + I18N.tr(T("Digits"))], ...(kid || viaHA ? [["none", T("No PIN")]] : [])]
+    kindBtns.replaceChildren(...(kid ? [["symbols", "🐱 " + I18N.tr(T("Symbols"))], ["digits", "🔢 " + I18N.tr(T("Digits"))]] : [])
       .map(([k, n]) => h("button.btn.small" + (pinKind === k ? "" : ".ghost"), { type: "button", onclick: () => { pinKind = k; pad = null; drawPin(); } }, n)));
-    if (pinKind === "symbols") {
-        pinArea.replaceChildren(pad = pad || symbolPad({ mode: "set", cancel: false }));
-    } else if (pinKind === "digits") {
-      pinArea.replaceChildren(h("label.field", "PIN", f.pin, h("span.hint", viaHA ? T("4–8 digits – to log in in the app on another device, e.g. to join a game or learn along.")
-        : T("Children: 4 digits, optional. Parents: 4–8 digits, required."))));
-    } else pinArea.replaceChildren(h("p.small.muted", kid ? T("The child logs in without a PIN.") : T("No login in the app – the parent area opens with the Home Assistant user.")));
+    if (pinKind === "symbols") pinArea.replaceChildren(pad = pad || symbolPad({ mode: "set", cancel: false }));
+    else pinArea.replaceChildren(h("label.field", p.has_pin ? T("New PIN") : "PIN", f.pin, h("span.hint", kid ? T("4 digits") : T("4–8 digits"))));
+  };
+  const LOGIN_OPTS = [
+    ["none", "🪄", T("No sign-in – tap the profile"), () => T("The child taps its picture and is in – no PIN, no Home Assistant.")],
+    ["pin", "🔢", T("PIN"), kid => kid ? T("A picture PIN or a 4-digit PIN – on every device.") : T("A digit PIN (4–8 digits) – in the app and the parent area.")],
+    ["ha", "🏠", T("Home Assistant only"), () => T("Only with the linked Home Assistant user (sidebar, «Sign in with Home Assistant» on tablets) – no PIN.")],
+    ["pin_ha", "🔢🏠", T("PIN or Home Assistant"), () => T("Both ways: the PIN on any device, or the linked Home Assistant user.")],
+  ];
+  const loginList = h("div.login-opts", { role: "radiogroup" });
+  const loginHint = h("p.small.muted");
+  const loginForm = h("div.form.login-box", h("h3", "🔐 ", T("Sign-in")), loginList, loginHint, haPart, pinForm);
+  const drawLogin = () => {
+    const kid = f.role.value === "kid";
+    if (!kid && loginMode === "none") loginMode = "pin";          // parents always sign in
+    if (!haOk() && usesHa()) loginMode = kid ? "none" : "pin";
+    loginList.replaceChildren(...LOGIN_OPTS.filter(o => kid || o[0] !== "none").map(([k, icon, label, expl]) => {
+      const off = (k === "ha" || k === "pin_ha") && !haOk();
+      return h("label.login-opt" + (loginMode === k ? ".on" : "") + (off ? ".off" : ""),
+        h("input", { type: "radio", name: "fq-login", value: k, checked: loginMode === k, disabled: off,
+          onchange: () => { loginMode = k; drawLogin(); } }),
+        h("span.login-ic", { "aria-hidden": "true" }, icon),
+        h("span.login-txt", h("strong", label), h("span.small.muted", expl(kid))));
+    }));
+    loginHint.textContent = !haOk() ? I18N.tr(T("Home Assistant is not connected – the Home Assistant options need it.")) : "";
+    loginHint.hidden = !loginHint.textContent;
+    haPart.hidden = !usesHa();
+    pinForm.hidden = !usesPin();
+    drawPin();
   };
   // the dialog in parts (tabs): profile · learning · time & battery · internet & devices – Save / Cancel always at the bottom,
   // «Remove» set apart at the end of the profile tab
@@ -716,7 +760,7 @@ async function profileDialog(p, persons, role = "kid") {
   const tabs = tabbed([
     { key: "profile", label: "👤 " + I18N.tr(T("Profile")), content: [
       h("div.grid2", h("label.field", T("Name"), f.name), h("label.field", T("Role"), f.role), h("label.field", T("Colour"), f.color)),
-      haPart, h("div.form", pinHead, kindBtns, pinArea),
+      loginForm,
       isNew ? null : h("div.form", h("h3", "🧑‍🎨 ", T("Avatar")), avBox),
       persons.length ? h("label.field", T("Person in the Family Planer"), f.planer, h("span.hint", T("Shows the chores of this person and counts them."))) : null,
       parentPart, danger] },
@@ -730,9 +774,9 @@ async function profileDialog(p, persons, role = "kid") {
   ]);
   const syncRole = () => {
     const kid = f.role.value === "kid";
-    kidPart.hidden = timePart.hidden = !kid; if (batteryPart) batteryPart.hidden = !kid; parentPart.hidden = kid; haPart.hidden = !P.meta.ha; syncHa(kid);
+    kidPart.hidden = timePart.hidden = !kid; if (batteryPart) batteryPart.hidden = !kid; parentPart.hidden = kid; syncHa(kid);
     tabs.setVisible("time", kid); tabs.setVisible("net", kid || !!P.meta.ha);
-    drawPin();
+    drawLogin();
   };
   f.role.addEventListener("change", syncRole); syncRole();
   const m = modal(h("div.form.profile-dlg",
@@ -741,18 +785,22 @@ async function profileDialog(p, persons, role = "kid") {
     h("div.dlg-foot", h("button.btn", { onclick: save }, T("Save")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
   const focusIn = el => { tabs.reveal(el); el.focus(); };
   async function save() {
-    let pin = changing && f.pin.value || null, pinSymbols;
-    if (changing && pinKind === "none") pin = p.has_pin ? "" : null;
-    if (changing && pinKind === "symbols") {
-      pin = null;
-      const v = pad && pad.value();
-      if (!v || v.symbols.length !== 4) { tabs.show("profile"); return toast(T("Choose 4 symbols"), "bad"); }
-      pinSymbols = v;
+    // the sign-in decides what is sent: the PIN only for the PIN options, the Home Assistant user only for the HA options
+    let pin = null, pinSymbols;
+    if (usesPin() && changing) {
+      if (pinKind === "symbols") {
+        const v = pad && pad.value();
+        if (!v || v.symbols.length !== 4) { tabs.show("profile"); return toast(T("Choose 4 symbols"), "bad"); }
+        pinSymbols = v;
+      } else {
+        pin = f.pin.value || null;
+        if (!pin) { focusIn(f.pin); return toast(p.has_pin ? T("Enter the new digit PIN") : T("Set a PIN for this sign-in"), "bad"); }
+      }
     }
-    if (changing && pinKind === "digits" && !pin && p.has_pin) { focusIn(f.pin); return toast(T("Enter the new digit PIN"), "bad"); }
+    if (usesHa() && !haUser.value) { focusIn(haUser); return toast(T("Choose the Home Assistant user for this sign-in"), "bad"); }
     const isParent = f.role.value === "parent";
-    const body = { name: f.name.value, role: f.role.value, color: f.color.value, pin, planer_person_id: f.planer.value || null,
-      ...(P.meta.ha ? { ha_user_id: haUser.value, ha_user_name: haUser.selectedOptions[0]?.dataset.name || "" } : {}),
+    const body = { name: f.name.value, role: f.role.value, color: f.color.value, pin, planer_person_id: f.planer.value || null, login: loginMode,
+      ha_user_id: usesHa() ? haUser.value : "", ha_user_name: usesHa() ? haUser.selectedOptions[0]?.dataset.name || "" : "",
       ...(pinSymbols ? { pin_symbols: pinSymbols.symbols, symbol_set: pinSymbols.set } : {}),
       settings: { daily_goal: +f.daily_goal.value, lesson_length: +f.lesson_length.value, new_per_lesson: +f.new_per_lesson.value,
         learning_hours: f.learning_hours.value.trim(), auto_logout_min: +f.auto_logout_min.value, internet_entity: f.internet_entity.value,
@@ -760,10 +808,6 @@ async function profileDialog(p, persons, role = "kid") {
         internet_rule: f.internet_rule.value, internet_rule_blocks: f.internet_rule_blocks.checked, internet_plan: plan.value(),
         ...(isParent ? {} : { game_limit: gameLimit.value(), learn_limit: learnLimit.value() }),
         ...(P.meta.ha ? { devices: [...devSel] } : {}) } };
-    if (isParent && !body.ha_user_id && (pin === "" || (!p.has_pin && !body.pin))) {
-      if (P.meta.ha) { focusIn(haUser); return toast(T("Parents need a Home Assistant user or a PIN"), "bad"); }
-      focusIn(f.pin); return toast(T("Parents always need a PIN (4–8 digits)"), "bad");
-    }
     const saved = await call(isNew ? "parent/profiles" : `parent/profiles/${p.id}`, { method: isNew ? "POST" : "PUT", body });
     if (saved && saved.parent_token) Auth.parent = saved.parent_token;
     if (avatar) await call(`parent/profiles/${p.id}/avatar`, { method: "PUT", body: { avatar } });
@@ -993,7 +1037,7 @@ async function download(id, format = "zip") {
 
 // Phone photos are large: scale down to max. 1024 px as JPEG before uploading.
 // photos made smaller (and turned into JPEG) in the browser before the upload – also iPhone photos (HEIC), which Safari can read
-async function shrinkPhoto(file, max = 1024) {
+async function shrinkPhoto(file, max = 1024, { short = false } = {}) {
   if (file.type === "image/gif") return file;                       // keep animations
   const heic = /hei[cf]$/i.test(file.type) || /\.hei[cf]$/i.test(file.name || "");
   if (!/^image\//.test(file.type) && !heic) return file;
@@ -1005,7 +1049,7 @@ async function shrinkPhoto(file, max = 1024) {
   try {
     const bmp = await decode();
     const w0 = bmp.width || bmp.naturalWidth, h0 = bmp.height || bmp.naturalHeight;
-    const k = Math.min(1, max / Math.max(w0, h0));
+    const k = Math.min(1, max / (short ? Math.min(w0, h0) : Math.max(w0, h0)));   // short: the shorter edge counts
     const cv = h("canvas", { width: Math.round(w0 * k), height: Math.round(h0 * k) });
     cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
     const alpha = /^image\/(png|webp)$/.test(file.type);          // keep transparency (a drawn crest) – photos become JPEG
@@ -1068,11 +1112,7 @@ async function packEditor(id, { afterSave } = {}) {
         }) }, "📷 ", T("Add photos as cards"))),
       h("p.small.muted", T("Own photos: one card per photo – write the answer (e.g. the name) next to it. Shown in «Pairs», quiz and flash cards.")));
   }
-  function pickPhotos(multiple, cb) {
-    const inp = h("input", { type: "file", accept: "image/*", multiple });
-    inp.onchange = () => inp.files.length && cb([...inp.files]);
-    inp.click();
-  }
+  function pickPhotos(multiple, cb) { pickFiles({ accept: "image/*", multiple }, cb); }
   async function uploadPhoto(file) {
     try {
       const blob = await shrinkPhoto(file);
@@ -1397,9 +1437,7 @@ async function choresView(main) {
         h("div.small", ...e.profiles.map(pid => C(kidName(pid), "span.plan-kid")))))))))));
   const status = { open: "○", pending: "⏳", done: "✓" };
   const own = d.chores.filter(c => c.active);
-  const planerBox = section("📅 " + I18N.tr(T("One chore plan: the Planner")),
-    h("p.small.muted", T("The built-in planner has the bigger chore plan (days, rhythm, time to do it, special chores, awards). Its chores also appear on the children's start page.")),
-    planerFrame("planer?mode=parent#/aemtliplan", T("Chore plan")),
+  const planerBox = planerChoresSection(
     h("div.row", own.some(c => c.frequency !== "once") ? h("button.btn.ghost", { onclick: async () => {
         if (!(await confirmDialog(I18N.tr(T("Move the chores of this list into the Planner? They are switched off here (their history stays)."))))) return;
         const r = await call("planer/chores/take-over", { method: "POST" });
@@ -1421,7 +1459,51 @@ async function choresView(main) {
           c.assign === "rotate" ? I18N.tr(T("rotating")) : I18N.tr(T("fixed")), ": ", C(c.profiles.map(kidName).join(", ")), " · ",
           c.kind === "duty" ? I18N.tr(T("duty")) : I18N.tr(T("bonus")), " · +" + fmt(c.points), c.energy ? " · 🔋+" + c.energy : "",
           c.confirm ? " · 👪 " + I18N.tr(T("parents confirm")) : "", c.active ? "" : " · " + I18N.tr(T("switched off")))),
-      h("button.btn.small.ghost", { onclick: () => choreDialog(c, kids) }, "✏️ ", T("Edit")))))));
+      h("button.btn.small.ghost", { onclick: () => choreDialog(c, kids) }, "✏️ ", T("Edit")))))),
+    planerSettingsSection());
+}
+
+// 📅 The Family Planer's chore plan in the parent area (planer?mode=parent in a frame). The planer's own top bar
+// (clock, season, its buttons) is hidden there (planer.html) – its functions are buttons in this section head:
+// 🏖️ holidays (only when the planer checks holidays; the number = holidays waiting for a decision), «+ Special chore»,
+// «+ To-do». They call the planer in the frame (planer/host.js FQ_PLANER_DO) – same windows, PIN rules and API calls.
+// «Refresh» (the planer pulls calendars and lists again) is the app's ⟳ button (planerRefresh). Settings: below.
+function planerChoresSection(...more) {
+  const frame = planerFrame("planer?mode=parent#/aemtliplan", T("Chore plan"));
+  const act = kind => {
+    const w = frame.contentWindow;
+    if (!w || !w.FQ_PLANER_DO) return;
+    w.FQ_PLANER_DO(kind);
+  };
+  const dot = h("span.chip.warn.planer-dot", { hidden: true });
+  const vac = h("button.btn.small.ghost", { hidden: true, title: T("Holidays and absences in the calendar: who is away, are chores paused?"),
+    onclick: () => act("vac") }, "🏖️ ", T("Holidays"), dot);
+  frame.addEventListener("fq-planer-state", e => {
+    const st = e.detail || {};
+    vac.hidden = !st.vac; vac.classList.toggle("on", !!st.open);
+    dot.hidden = !st.pending; dot.textContent = st.pending ? String(st.pending) : "";
+  });
+  return sectionAdd("📅 " + I18N.tr(T("One chore plan: the Planner")), [vac,
+      h("button.btn.small.ghost", { onclick: () => act("special") }, "+ ", T("Special chore")),
+      h("button.btn.small.ghost", { onclick: () => act("todo") }, "+ ", T("To-do"))],
+    h("p.small.muted", T("The built-in planner has the bigger chore plan (days, rhythm, time to do it, special chores, awards). Its chores also appear on the children's start page.")),
+    frame, ...more);
+}
+
+// ⚙️ the planer's settings (persons, points, holidays, lists …, with the planer's own parent PIN) – folded at the
+// bottom like the settings of the other sections; the frame loads only when opened
+function planerSettingsSection() {
+  const box = h("details.card.sec.fold.planer-settings", h("summary", h("h2", "⚙️ " + I18N.tr(T("Planner settings")))));
+  box.addEventListener("toggle", () => {
+    if (box.open && !box.querySelector(".planer-frame")) box.append(planerFrame("planer?mode=parent#/einstellungen", T("Planner settings")));
+  });
+  return box;
+}
+
+// the app's ⟳ button: on the Chores page the planer first pulls its calendars and lists again (at most 8 s)
+function planerRefresh() {
+  const w = [...document.querySelectorAll(".planer-frame")].map(f => f.contentWindow).find(x => x && x.FQ_PLANER_DO);
+  return w ? Promise.race([w.FQ_PLANER_DO("refresh"), new Promise(r => setTimeout(r, 8000))]).catch(() => {}) : Promise.resolve();
 }
 
 function choreDialog(c, kids) {
@@ -1979,27 +2061,56 @@ async function haMediaPicker({ single = false } = {}) {
 }
 
 // photos for the pairs game and the crest: upload from this device or take them from Home Assistant Media
+// The cards of the pairs game are small: the shorter edge becomes at most PHOTO_EDGE px (sharp enough on phones and
+// tablets, a few KB per photo instead of megabytes).
+const PHOTO_EDGE = 240;
+// a file dialog that works reliably in phone browsers and the Home Assistant app: the input must be part of the page
+// while the dialog is open (a detached one is sometimes collected before «change» fires); removed afterwards
+function pickFiles({ accept = "image/*", multiple = false } = {}, then) {
+  const inp = h("input", { type: "file", accept, multiple, style: { position: "fixed", left: "-1000px", top: "0", opacity: "0" } });
+  const done = () => setTimeout(() => inp.remove(), 1000);
+  inp.addEventListener("change", () => { const files = [...inp.files]; done(); if (files.length) then(files); });
+  inp.addEventListener("cancel", done);
+  document.body.append(inp);
+  inp.click();
+}
+
 const Photos = {
-  async upload(file) {
-    const fd = new FormData(); fd.append("file", await shrinkPhoto(file, 800), "foto.jpg");
-    return (await api("parent/memory/photo", { method: "POST", form: fd })).name;
+  async upload(file, edge = PHOTO_EDGE) {          // the crest (printed on the poster) passes a larger edge
+    const blob = await shrinkPhoto(file, edge, { short: true });
+    for (let attempt = 0; ; attempt++) {            // one more try after a network hiccup (phones on Wi-Fi)
+      const fd = new FormData(); fd.append("file", blob, "foto.jpg");
+      try { return (await api("parent/memory/photo", { method: "POST", form: fd })).name; }
+      catch (e) { if (attempt >= 1 || /\b(400|413|415)\b|large|photos? \(/i.test(e.message || "")) throw e; await new Promise(r => setTimeout(r, 800)); }
+    }
   },
-  async uploadAll(files) {                                 // every photo on its own – one bad file does not stop the others
+  async uploadAll(files, edge) {                           // every photo on its own – one bad file does not stop the others
     const out = [];
-    for (const file of files) {
-      try { out.push(await Photos.upload(file)); } catch (e) { toast(`${file.name}: ${e.message}`, "bad"); }
+    for (const [i, file] of files.entries()) {
+      if (files.length > 1) toast("⏳ " + I18N.tr(T("Uploading photo {0} of {1} …")).replace("{0}", i + 1).replace("{1}", files.length));
+      try { out.push(await Photos.upload(file, edge)); } catch (e) { toast(`${file.name}: ${e.message}`, "bad"); }
     }
     return out;
   },
-  pick(multiple, then) {
-    const f = h("input", { type: "file", accept: "image/*,.heic,.heif", multiple });
-    f.onchange = async () => { const names = await Photos.uploadAll([...f.files]); if (names.length) await then(names); };
-    f.click();
+  pick(multiple, then, edge) {
+    pickFiles({ accept: "image/*", multiple }, async files => { const names = await Photos.uploadAll(files, edge); if (names.length) await then(names); });
   },
-  async fromHa(single, then) {
+  async fromHa(single, then, edge) {
     const paths = await haMediaPicker({ single });
     if (!paths || !paths.length) return;
-    try { const r = await call("parent/memory/ha-media", { method: "POST", body: { paths } }); await then(r.names); } catch {}
+    // a small copy of every picture (the original in Home Assistant Media stays as it is); a picture that cannot be
+    // loaded here falls back to the reference «ha:<path>» as before
+    const names = [], refs = [];
+    for (const rel of paths) {
+      try {
+        const res = await fetch("api/parent/ha-media/file?path=" + encodeURIComponent(rel), { headers: { "X-FQ-Parent": Auth.parent } });
+        if (!res.ok) throw new Error(res.status);
+        const blob = await res.blob();
+        names.push(await Photos.upload(new File([blob], rel.split("/").pop() || "foto.jpg", { type: blob.type || "image/jpeg" }), edge));
+      } catch { refs.push(rel); }
+    }
+    if (refs.length) try { names.push(...(await call("parent/memory/ha-media", { method: "POST", body: { paths: refs } })).names); } catch {}
+    if (names.length) await then(names);
   },
 };
 
@@ -2038,8 +2149,7 @@ async function crestSection() {
         ...Object.entries(PATTERNS).map(([k, n]) => h("option", { value: k, selected: crest.pattern === k }, I18N.tr(n)))))),
     h("label.field", T("Colours"), h("div.row", color(0), color(1))));
   const drawPictureRow = () => { drawnFields.hidden = !!crest.image; pictureRow.replaceChildren(...[
-    h("button.btn.small.ghost", { onclick: () => Photos.pick(false, setImage) }, "📷 ", T("Upload picture")),
-    h("button.btn.small.ghost", { onclick: () => Photos.fromHa(true, setImage) }, "🏠 ", T("From Home Assistant Media")),
+    h("button.btn.small.ghost", { onclick: () => Photos.pick(false, setImage, 800) }, "📷 ", T("Upload picture")),
     crest.image ? h("button.btn.small.ghost", { onclick: () => { crest.image = null; drawCrest(); drawPictureRow(); } }, "✕ ", T("Remove picture")) : null].filter(Boolean)); };
   const crestForm = h("div.form",
     h("label.field", T("Family name"), inp("name", { maxlength: 40, placeholder: T("e.g. Miller") })),
@@ -2086,7 +2196,6 @@ async function photoSets(onCount = null) {
     h("div.mm-thumbs", ...st.photos.map((ph, j) => h("div.mm-thumb", h("img", { src: memPhotoUrl(ph), alt: "", loading: "lazy" }),
       h("button", { title: T("Remove photo"), onclick: () => { st.photos.splice(j, 1); drawSets(); } }, "✕")))),
     h("div.row.wrap",
-      h("button.btn.ghost.small", { onclick: () => Photos.fromHa(false, addTo(st)) }, "🏠 ", T("From Home Assistant Media")),
       h("button.btn.ghost.small", { onclick: () => Photos.pick(true, addTo(st)) }, "📷 ", T("Add photos"))),
     h("p.small.muted", I18N.tr(T("Photos: {0}")).replace("{0}", st.photos.length), st.photos.length < 3 ? [" – ", T("at least 3 photos for a game")] : null))));
   };
@@ -2105,37 +2214,15 @@ async function photoSets(onCount = null) {
         ...PHOTO_PRESETS().map(([ic, n]) => tile(ic, n, () => add(ic + " " + I18N.tr(n))))),
       h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
   };
-  // «📥 Import»: photos (several at once) or a ZIP file with photos (e.g. an exported set) – becomes a new set
-  const importDialog = () => {
-    const name = h("input", { type: "text", maxlength: 60, placeholder: I18N.tr(T("e.g. Our holidays")) });
-    const file = h("input", { type: "file", multiple: true, accept: "image/*,.heic,.heif,.zip,application/zip" });
-    const go = async () => {
-      const files = [...file.files];
-      if (!files.length) return toast(T("Choose photos or a ZIP file"), "bad");
-      btn.disabled = true; btn.textContent = "⏳ " + I18N.tr(T("Uploading …"));
-      let names = [];
-      for (const z of files.filter(f => /\.zip$/i.test(f.name) || f.type === "application/zip")) {
-        const fd = new FormData(); fd.append("file", z, z.name);
-        try { names.push(...(await api("parent/memory/import", { method: "POST", form: fd })).names); } catch (e) { toast(`${z.name}: ${e.message}`, "bad"); }
-      }
-      names.push(...await Photos.uploadAll(files.filter(f => !(/\.zip$/i.test(f.name) || f.type === "application/zip"))));
-      names = [...new Set(names)].slice(0, 40);
-      m.close();
-      if (!names.length) return;
-      const zip = files.find(f => /\.zip$/i.test(f.name));
-      await add(name.value.trim() || (zip ? zip.name.replace(/\.zip$/i, "").replace(/^family-quest-photos-/, "") : I18N.tr(T("Photos {0}")).replace("{0}", d.sets.length + 1)), names);
-    };
-    const btn = h("button.btn", { onclick: go }, "📥 ", T("Import"));
-    const m = modal(h("div.form", h("h2", "📥 ", T("Import a photo set")),
-      h("label.field", T("Name"), name),
-      h("label.field", T("Photos or a ZIP file"), file, h("span.hint", T("Up to 40 photos (JPEG, PNG, WebP, GIF), max. 5 MB each – a ZIP file like the export of a set."))),
-      h("div.row", btn, h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
-  };
+  // «📥 Import»: one or several photos at once – becomes a new set
+  const importDialog = () => pickFiles({ accept: "image/*", multiple: true }, async files => {
+    const names = [...new Set(await Photos.uploadAll(files))].slice(0, 40);
+    if (names.length) await add(I18N.tr(T("Photos {0}")).replace("{0}", d.sets.length + 1), names);
+  });
   drawSets();
   return { newDialog, importDialog, el: h("div.mm-box",
     h("p.small.muted", T("In the game corner the children find pairs – with animals, fruit … or with your own photos. Every photo becomes a pair.")),
-    h("p.small.muted", T("Take the photos from Home Assistant Media (Media → My media) or upload them from this device. Chosen photos are copied into Family Quest right away.")),
-    h("div.row.wrap", haMediaOpenBtn()),
+    h("p.small.muted", T("Upload the photos from this device – several at once are fine. They are made small automatically.")),
     setsBox,
     h("div.row", h("button.btn", { onclick: () => save() }, "💾 ", T("Save")))) };
 }
@@ -2145,9 +2232,8 @@ async function photoSets(onCount = null) {
 function haLoginSection(s) {
   const u = P.meta.ha_user, mine = P.meta.my_ha_user;
   const only = h("input", { type: "checkbox", checked: !!s.parent_ha_only, disabled: !(u && mine) && !s.parent_ha_only });
-  const kids = h("input", { type: "checkbox", checked: !!s.kid_ha_login });
   return section("🏠 " + I18N.tr(T("Log in with Home Assistant")),
-    h("p.small.muted", T("Parents who open Family Quest in Home Assistant (sidebar) come into the parent area without PIN once their Home Assistant user is linked. The PIN stays for the app on tablets and for the direct address.")),
+    h("p.small.muted", T("Link a Home Assistant user with a profile (Profiles › edit, for parents and children). Parents then open the parent area in the Home Assistant sidebar without PIN; children open their app there without PIN – never the parent area. With the option below both also sign in on tablets and phones with «Sign in with Home Assistant». Profiles without a linked user log in with their PIN.")),
     h("div.row.wrap",
       h("span.grow", mine ? ["✓ ", I18N.tr(T("Linked with «{0}»")).replace("{0}", mine)] : u ? I18N.tr(T("You are logged in to Home Assistant as «{0}».")).replace("{0}", u.name || u.user)
         : I18N.tr(T("Open the parent area through Home Assistant to link your user."))),
@@ -2155,14 +2241,56 @@ function haLoginSection(s) {
         : u ? h("button.btn.small", { onclick: async () => { await call("parent/ha-link", { method: "POST", body: { on: true } }); P.meta = await call("parent/meta"); toast(T("Linked with Home Assistant"), "good"); render(); } }, "🔗 ", T("Link my user")) : null),
     h("label.check", only, h("span", T("Parent area only through Home Assistant (no PIN login for the parent area)"))),
     h("p.small.muted", T("Then the app port (tablets, phones) is only for the children's app – the parent area opens only in the Home Assistant sidebar with your Home Assistant login. No second port is needed.")),
-    h("label.check", kids, h("span", T("Children may sign in with their Home Assistant user"))),
-    h("p.small.muted", T("For each child choose its Home Assistant user in the profile (Profiles › edit). In the Home Assistant sidebar the child then comes into its app without PIN – never into the parent area. Home Assistant users that are neither linked nor administrators get the children's app with the normal login.")),
+    h("p.small.muted", T("Home Assistant users that are neither linked nor administrators get the children's app with the normal login.")),
     h("button.btn.small", { onclick: async () => {
       try {
-        await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked, kid_ha_login: kids.checked } });
-        P.meta.kid_ha_login = kids.checked; s.parent_ha_only = only.checked; s.kid_ha_login = kids.checked; toast(T("Saved"), "good");
-      } catch (e) { only.checked = !!s.parent_ha_only; kids.checked = !!s.kid_ha_login; }
-    } }, "💾 ", T("Save")));
+        await call("parent/settings", { method: "PUT", body: { parent_ha_only: only.checked } });
+        s.parent_ha_only = only.checked; toast(T("Saved"), "good");
+      } catch (e) { only.checked = !!s.parent_ha_only; }
+    } }, "💾 ", T("Save")),
+    haAppLoginBox());
+}
+
+// «Sign in with Home Assistant» in the app on tablets and phones (direct port, api/haauth.py)
+function haAppLoginBox() {
+  const box = h("div.ha-app-box");
+  (async () => {
+    let st;
+    try { st = await call("parent/ha-app-login"); } catch { return; }
+    const on = h("input", { type: "checkbox", checked: st.on });
+    const url = h("input", { type: "url", value: st.url, placeholder: st.auto || "http://192.168.1.10:8123", "aria-label": T("Home Assistant address for the sign-in"), autocomplete: "off" });
+    const result = h("p.small");
+    const names = st.linked.map(p => p.name).join(", ");
+    box.replaceChildren(
+      h("h3", "📱 ", T("Sign in with Home Assistant in the app")),
+      h("label.check", on, h("span", T("Allow sign-in with Home Assistant in the app (tablets, phones)"))),
+      h("p.small.muted", T("The login screen of the app shows «Sign in with Home Assistant». It opens the login page of Home Assistant (with two-factor authentication when the user has it) and comes back signed in – as the profile linked with that Home Assistant user. Family Quest keeps no Home Assistant password or token.")),
+      h("p.small", names ? [T("Can sign in:"), " ", C(names)] : h("span.muted", T("Nobody can sign in yet – link a Home Assistant user with a profile (Profiles › edit)."))),
+      h("label.field", T("Home Assistant address for the sign-in"), url),
+      h("p.small.muted", st.auto ? I18N.tr(T("Empty = automatic: {0}")).replace("{0}", st.auto) : T("Empty = automatic (this host with the port of Home Assistant)."),
+        " ", T("The tablets must reach Home Assistant at this address.")),
+      st.suggestions.length ? h("div.row.wrap.small", h("span.muted", T("From Home Assistant:")),
+        ...st.suggestions.map(u => h("button.btn.small.ghost", { type: "button", onclick: () => { url.value = u; } }, C(u)))) : null,
+      h("div.row.wrap",
+        h("button.btn.small.ghost", { type: "button", onclick: async () => {
+          result.textContent = "…";
+          let r;
+          try { r = await call("parent/ha-app-login/test", { method: "POST", body: { url: url.value.trim() } }); } catch (e) { result.textContent = ""; return; }
+          // this device: an answer at all (no-cors) means the address is reachable from here
+          let here = false;
+          try { await fetch(r.url + "/auth/providers", { mode: "no-cors", cache: "no-store" }); here = true; } catch {}
+          result.replaceChildren((here ? "✓ " : "✗ ") + I18N.tr(here ? T("This device reaches Home Assistant at {0}.") : T("This device does not reach Home Assistant at {0}.")).replace("{0}", r.url),
+            h("br"), (r.server ? "✓ " : "✗ ") + I18N.tr(r.server ? T("Family Quest reaches Home Assistant.") : T("Family Quest does not reach Home Assistant at this address.")));
+        } }, "🔍 ", T("Test")),
+        h("button.btn.small", { type: "button", onclick: async () => {
+          try {
+            const r = await call("parent/settings", { method: "PUT", body: { ha_app_login: on.checked, ha_app_login_url: url.value.trim() } });
+            url.value = r.ha_app_login_url || ""; toast(T("Saved"), "good");
+          } catch (e) { /* call() shows the error */ }
+        } }, "💾 ", T("Save"))),
+      result);
+  })();
+  return box;
 }
 
 // ---------------------------------------------------------------- Family Quest HA integration (custom component)
@@ -2300,14 +2428,15 @@ function openInApp(path) {
 const appBtn = path => h("button.btn.small.ghost", { title: T("Opens the game in the app in a new tab"), onclick: () => openInApp(path) }, "↗ ", T("Open in the app"));
 
 // the planner in a frame (same origin): on phones as tall as its content – no second scroll area inside the page
+// the frame is as high as the planer's content (no scrolling inside a scrolling page; planer.html drops its min-height
+// in the parent area) – its windows open in the part visible on the screen (planer/host.js FQ_VIS)
 function planerFrame(src, title) {
   const f = h("iframe.planer-frame", { src, title: I18N.tr(title) });
   const fit = () => {
     if (!f.isConnected) return clearInterval(timer);
-    if (innerWidth > 700) { f.style.height = ""; return; }
     try {
-      const d = f.contentDocument && f.contentDocument.documentElement;
-      if (d) f.style.height = Math.max(400, d.scrollHeight) + "px";
+      const root = f.contentDocument && f.contentDocument.getElementById("planer-root");
+      if (root && root.offsetHeight) f.style.height = Math.max(200, Math.ceil(root.getBoundingClientRect().height) + 4) + "px";
     } catch {}
   };
   const timer = setInterval(fit, 700);
@@ -2403,16 +2532,19 @@ async function gamesView(main) {
   };
   // 🛠️ Custom games: the same structure for each – what it is and how many, «📥 Import» and «+ New» (templates first),
   // the own content (quizzes, photo sets, adventure games), then the settings (status, coins)
-  const csec = (k, desc, head, ...settings) => {
+  // the same order everywhere: play (family table / alone / ↗ in the app), then the own content under its title with
+  // «+ New» (and «📥 Import» where it makes sense) next to that title, then the settings
+  const csec = (k, desc, head, contentTitle, ...settings) => {
     const [, ic, name] = GAME_LIST.find(g => g[0] === k);
     const count = h("span.chip.cg-count", "…"), actions = h("div.row.wrap.cg-actions"), list = h("div.cg-list");
-    if (head) actions.append(Object.assign(head, { className: head.className + " cg-app" }));      // «↗ Open in the app»: at the end of the row
+    const play = h("div.row.wrap.cg-play-btns"), playRow = h("div.game-play.cg-play", play, head ? Object.assign(head, { className: head.className + " cg-app" }) : null);
     const el = h("details.card.sec.game-sec.cg-sec", { "data-game": k },
       h("summary.sec-head", h("h2", ic, " ", I18N.tr(name), " ", count, runningNow.has(k) ? h("span.chip.run-chip", "● ", T("running now")) : null),
         access.chips(k), h("p.small.muted.cg-desc", desc)),
-      actions, list,
+      playRow,
+      h("div.row.wrap.cg-content-head", h("h3.cg-sub.grow", contentTitle), actions), list,
       h("div.game-settings", h("div.small.muted.game-settings-h", "⚙️ ", T("Settings")), access.bar(k), ...settings));
-    return { el, actions, list, count: n => { count.textContent = String(n); } };
+    return { el, actions, list, play, count: n => { count.textContent = String(n); } };
   };
   const live = h("div"), quizzes = h("div"), bingo = h("div"), poker = h("div"), cardBoxes = { tschau: h("div"), karussell: h("div") }, domino = h("div"), paarjagd = h("div"), werbinich = h("div"), kartenlauf = h("div"), stadtland = h("div"), zeichnen = h("div"), wuerfel = h("div"), heimwaerts = h("div"), jump = h("div"), sternlauf = h("div"), snack = h("div"), verkehr = h("div"), klatsch = h("div"), verboten = h("div"), jass = h("div"), werwolf = h("div"), schach = h("div"), dorfmarkt = h("div"), escape = h("div"), stempeljagd = h("div");
   const langstrecke = h("div");
@@ -2480,9 +2612,9 @@ async function gamesView(main) {
           h("button.btn.ghost", { onclick: () => dominoStartDialog(true, open) }, "🤖 ", T("Alone against bots")))));
   };
   // Pair Hunt: play, then its own content – the photo sets (shared with the pairs game of the game corner)
-  const pjPlay = h("div.game-play"), pjSets = h("div"), pjRewards = h("div");
-  const cPair = csec("paarjagd", T("Find the pairs – with animals, fruit … or your own photo sets. Every photo becomes a pair."), appBtn("paarjagd"), pjRewards);
-  cPair.list.append(pjPlay, pjSets);
+  const pjPlay = h("div"), pjSets = h("div"), pjRewards = h("div");
+  const cPair = csec("paarjagd", T("Find the pairs – with animals, fruit … or your own photo sets. Every photo becomes a pair."), appBtn("paarjagd"), "📷 " + I18N.tr(T("Photo sets")), pjRewards);
+  cPair.play.append(pjPlay); cPair.list.append(pjSets);
   paarjagd.append(cPair.el);
   const showPaarjagd = async () => {
     let g = null; try { g = await call("community/paarjagd"); } catch {}
@@ -2493,8 +2625,8 @@ async function gamesView(main) {
           h("button.btn.ghost", { onclick: () => paarjagdStartDialog(true, open) }, "🤖 ", T("Alone against bots"))));
     pjRewards.replaceChildren(await gameRewardsRow("paarjagd"));
     const ps = await photoSets(cPair.count);
-    cPair.actions.prepend(h("button.btn.ghost", { onclick: ps.importDialog }, "📥 ", T("Import")), h("button.btn", { onclick: ps.newDialog }, "+ ", T("New")));
-    pjSets.replaceChildren(h("h3.cg-sub", "📷 ", T("Photo sets")), ps.el);
+    cPair.actions.replaceChildren(h("button.btn", { onclick: ps.newDialog }, "+ ", T("New")));
+    pjSets.replaceChildren(ps.el);
   };
   const showWerbinich = async () => {
     let g = null; try { g = await call("community/werbinich"); } catch {}
@@ -2695,11 +2827,12 @@ async function gamesView(main) {
   const factsOn = h("input", { type: "checkbox", checked: s.quiz_facts !== false, onchange: async () => {
     await call("parent/settings", { method: "PUT", body: { quiz_facts: factsOn.checked } }); toast(T("Saved"), "good"); } });
   const factsSet = h("div.pj-rewards", h("label.check", factsOn, h("span", "📊 ", T("Special quiz «Family Quest Facts»: questions from our own data (chores, games, records, shop, pets) – nothing from the parent area"))));
-  const cQuiz = csec("quiz", T("Your own quizzes and the templates – everybody plays on their own device."), appBtn("quiz"), factsSet);
+  const cQuiz = csec("quiz", T("Your own quizzes and the templates – everybody plays on their own device."), appBtn("quiz"), "🎯 " + I18N.tr(T("Quizzes")), factsSet);
   cQuiz.list.append(live, quizzes);
   const quiz = h("div", cQuiz.el);
   // adventure games: the ones of the family (stories.js storyShelf, type «game») – approve, edit, import, new
-  const cAdv = csec("adventuregame", T("Point & click: rooms, things to find, riddles and characters – made by the family or from a template."), null);
+  const cAdv = csec("adventuregame", T("Point & click: rooms, things to find, riddles and characters – made by the family or from a template."), null, "🗝️ " + I18N.tr(T("Adventure games")));
+  cAdv.play.append(h("button.btn", { onclick: () => openInApp("advgames") }, "🧭 ", T("Play alone")));
   const adventuregame = h("div", cAdv.el);
   const blocks = { quiz, adventuregame, bingo, song, tschau: cardBoxes.tschau, karussell: cardBoxes.karussell, domino, paarjagd, werbinich, kartenlauf, stadtland, zeichnen, wuerfel,
     langstrecke,
@@ -2746,7 +2879,7 @@ async function gamesView(main) {
   showLive(); showBingo(); showSong(); showPoker(); showCards("tschau"); showCards("karussell"); showDomino(); showPaarjagd(); showWerbinich(); showKartenlauf(); showStadtland(); showZeichnen(); showWuerfel(); showHeimwaerts(); showJump(); showSternlauf(); showSnack(); showVerkehr(); showKlatsch(); showVerboten(); showJass(); showWerwolf(); showSchach(); showDorfmarkt(); showEscape();
   if (blocks.langstrecke) showLangstrecke();
   if (blocks.stempeljagd) showStempeljagd();
-  quizzesPanel(quizzes, me, showLive, { actions: cQuiz.actions, withImport: true, onCount: cQuiz.count });
+  quizzesPanel(quizzes, me, showLive, { actions: cQuiz.actions, withImport: true, onCount: cQuiz.count, play: cQuiz.play });
   if (blocks.adventuregame) storyShelf(cAdv.list, { types: ["game"], actions: cAdv.actions, onCount: cAdv.count });
 }
 

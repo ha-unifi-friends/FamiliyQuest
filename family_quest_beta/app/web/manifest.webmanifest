@@ -1,6 +1,6 @@
 {
-  "name": "Family Quest",
-  "short_name": "Family Quest",
+  "name": "Family Quest Beta",
+  "short_name": "Family Quest Beta",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

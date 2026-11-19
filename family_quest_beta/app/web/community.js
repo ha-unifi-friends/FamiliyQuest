@@ -294,18 +294,20 @@ function quizLive(box, me, back) {
     if (!st) return show(h("section.card.center", h("div.big-ic", "🎯"), h("h2", T("No family quiz right now")),
       h("p.muted", T("Start one from the list of quizzes – everybody can join on their own device.")), h("button.btn", { onclick: back }, T("Back"))));
     // ☰: guests (everybody of the family), stop for whoever leads, language
+    // a multilingual quiz: everybody picks the language of the questions on their own device – in ☰ like the app language
+    const pickQLang = () => {
+      const m = modal(h("div.form", h("h2", "🌐 ", T("Language of the questions")),
+        ...langs.map(l => h("button.btn" + (l === lang ? "" : ".ghost"), { onclick: () => {
+          qlang = l; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} m.close(); last = ""; draw(raw); } },
+          C((QUIZ_LANG_NAMES[l] || l) + " (" + l.toUpperCase() + ")"))),
+        h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+    };
     const menu = gameMenu({ invite: !me.guest && st.status !== "done" ? "quiz" : null,
-      actions: [{ ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
+      actions: [{ ic: "🌐", label: I18N.tr(T("Language of the questions")) + ": " + lang.toUpperCase(), hidden: langs.length < 2, onclick: pickQLang },
+        { ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
       onLeave: () => { full(false); stop(); back(); } });
-    // a multilingual quiz: everybody picks the language of the questions on their own device
-    // the language of the questions (not the app language in ☰): a small caption says what the select is for
-    const langSel = langs.length > 1 ? h("label.quiz-lang-box", { title: T("Language of the questions") },
-      h("span.quiz-lang-cap", T("Questions")),
-      h("select.quiz-lang", { "aria-label": T("Language of the questions"),
-        onchange: e => { qlang = e.target.value; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} last = ""; draw(raw); } },
-        ...langs.map(l => h("option", { value: l, selected: l === lang, title: QUIZ_LANG_NAMES[l] || l }, "🌐 " + l.toUpperCase() + " ▾")))) : null;
     const head = h("div.quiz-head.ql-head", h("div.row.head-title", menu, h("h1", h("span.ql-ic", "🎯 "), C(st.title))),
-      h("div.row", langSel, st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null));
+      h("div.row", st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null));
     // only the main action stays as a big button – everything else is in ☰
     const hostBar = isHost(st) && st.status !== "done" ? h("div.row.center.host-bar",
       h("button.btn", { onclick: () => act("next") }, st.status === "lobby" ? "▶ " + I18N.tr(T("Start")) : st.status === "question" ? I18N.tr(T("Show answer")) :
@@ -873,7 +875,7 @@ async function quizzesView() {
 // list of quizzes with start / edit / delete, templates, editor – for profile `me`
 // `actions`: the head row of the section the «+ New quiz» button goes into – `withImport`: also «📥 Import» (a quiz file)
 // next to it, «+ New» (parent area › Games › Custom games); `onCount(n)`: the number of quizzes
-async function quizzesPanel(box, me, onStarted, { actions, withImport = false, onCount = null } = {}) {
+async function quizzesPanel(box, me, onStarted, { actions, withImport = false, onCount = null, play = null } = {}) {
   let quizzes = [], templates = [], live = null, facts = null;
   try { [quizzes, templates, live, facts] = await Promise.all([api("community/quizzes"), api("community/templates"), api("community/quiz").catch(() => null),
     api("community/quizzes/facts").catch(() => null)]); }
@@ -888,7 +890,15 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
         catch (e) { toast(e.message, "bad"); }
       } }, "▶ ", T("Start")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   };
-  const reload = () => quizzesPanel(box, me, onStarted, { actions, withImport, onCount });
+  const reload = () => quizzesPanel(box, me, onStarted, { actions, withImport, onCount, play });
+  // parent area › Custom games: «Open a family table» – pick the quiz (or Family Quest Facts), then start it
+  if (play) play.replaceChildren(h("button.btn", { onclick: () => {
+    const m = modal(h("div.form", h("h2", "👨‍👩‍👧 ", T("Open a family table")), h("p.small.muted", T("Which quiz shall we play?")),
+      facts && facts.enabled ? h("button.btn.ghost", { onclick: () => { m.close(); factsStart(); } }, "📊 ", T("Family Quest Facts")) : null,
+      ...quizzes.map(q => h("button.btn.ghost", { onclick: () => { m.close(); start(q); } }, "🎯 ", C(quizTitle(q.title, q.langs)))),
+      quizzes.length ? null : h("p.muted", T("No quiz yet – make one with «+ New».")),
+      h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  } }, "👨‍👩‍👧 ", T("Open a family table")));
   if (onCount) onCount(quizzes.length);
   // «Family Quest Facts»: a special quiz – the server makes new questions from the family's own data at every start
   const factsStart = () => {

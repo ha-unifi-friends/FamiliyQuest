@@ -57,8 +57,13 @@ async def planer_ws(websocket: WebSocket, token: str = "", parent: str = "") -> 
     if kid is None and par is None:
         await websocket.close(code=4401)
         return
-    if par is None and kid is not None and _parent_in_app(fq, token, ip):
-        par = kid
+    via_ha = (websocket.client and websocket.client.host) == INGRESS_IP
+    denied = "parent_only"                               # what a non-parent connection hears on a parent action
+    if par is None and kid is not None:
+        if _parent_in_app(fq, token, ip, via_ha):
+            par = kid
+        elif fq.db.val("SELECT role FROM profile WHERE id=?", kid) == "parent":
+            denied = "parent_network"                    # a parent, but not from where the parent area is allowed
     host = fq.planer_host
     if host is None:
         await websocket.close(code=4503)
@@ -77,6 +82,7 @@ async def planer_ws(websocket: WebSocket, token: str = "", parent: str = "") -> 
     # a child ticks off only the chores of its own person in the planner
     bridge = getattr(host, "bridge", None)
     conn.fq_person = None if par is not None else (bridge.person_of(kid) if bridge else "")
+    conn.fq_denied = denied
     try:
         while True:
             msg = await websocket.receive_json()
@@ -98,6 +104,8 @@ async def _handle(fq, host, conn: hacompat.ActiveConnection, msg: dict) -> None:
         await _todo_subscribe(host, conn, mid, str(msg.get("entity_id", "")))
     elif t == "weather/subscribe_forecast":
         await _weather_subscribe(host, conn, mid, str(msg.get("entity_id", "")), msg.get("forecast_type", "daily"))
+    elif t == "fq/me":                                   # who is signed in: the own planner person, parent or not
+        conn.send_result(mid, {"person": getattr(conn, "fq_person", None), "parent": conn.user.is_admin})
     elif t == "lovelace/config":
         conn.send_result(mid, None)
     elif t == "unsubscribe_events" or t == "unsubscribe":
@@ -158,17 +166,15 @@ async def _weather_subscribe(host, conn, mid: int, entity: str, kind: str) -> No
 
 
 # ---------------------------------------------------------------- a parent in the app
-APP_PARENT_MAX_AGE = 12 * 3600       # a parent's login in the app counts as a parent (no planner PIN) for 12 hours
-
-
-def _parent_in_app(fq, kid_token: str, ip: str) -> bool:
-    """The app token of a parent profile – fresh (12 h), from the parent networks and not when the parent area is only
-    for Home Assistant: then the planner asks for its PIN as before (a family tablet stays safe)."""
+def _parent_in_app(fq, kid_token: str, ip: str, via_ha: bool = False) -> bool:
+    """The app login of a parent profile (with the PIN or with the linked Home Assistant user) is a parent in the
+    planner – no second PIN: the signed-in profile is the identity. Only from where the parent area is allowed: the
+    parent networks, and only through Home Assistant when the parent area is set to «only in Home Assistant»."""
     from .. import netfilter
-    pid = fq.tokens.read(kid_token, "kid", APP_PARENT_MAX_AGE)
-    if pid is None or fq.db.val("SELECT role FROM profile WHERE id=?", pid) != "parent":
+    pid = fq.tokens.read(kid_token, "kid", KID_MAX_AGE)
+    if pid is None or fq.db.val("SELECT role FROM profile WHERE id=? AND archived=0", pid) != "parent":
         return False
-    return not netfilter.check(fq, ip, "/api/parent/") and not fq.db.get_setting("parent_ha_only")
+    return not netfilter.check(fq, ip, "/api/parent/") and (via_ha or not fq.db.get_setting("parent_ha_only"))
 
 
 def _privileged(request: Request, prof: dict) -> bool:
@@ -179,7 +185,8 @@ def _privileged(request: Request, prof: dict) -> bool:
     if fq.tokens.read(request.headers.get("x-fq-parent"), "parent", PARENT_MAX_AGE) == prof["id"]:
         return True
     from .. import loginlog
-    return _parent_in_app(fq, request.headers.get("x-fq-token") or "", loginlog.client_ip(request))
+    from .auth import via_ingress
+    return _parent_in_app(fq, request.headers.get("x-fq-token") or "", loginlog.client_ip(request), via_ingress(request))
 
 
 # ---------------------------------------------------------------- REST pass-throughs (learner or parent token)
