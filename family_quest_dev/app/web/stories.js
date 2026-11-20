@@ -147,9 +147,7 @@ async function storiesSection() {
   const box = h("div.sb-wrap");
   const set = h("details.sb-settings", h("summary", { "data-ik": "sb.settings" }, "⚙️ ", T("Settings for the bookshelf")));
   set.addEventListener("toggle", () => { if (set.open && !set.dataset.done) { set.dataset.done = "1"; storiesSettings(set); } });
-  sec.append(h("h2", "📚 ", T("Library")),
-    h("p.small.muted", T("Children and parents write books and interactive books, the whole family reads them. Parents can edit, unpublish and remove every book except the private ones. The adventure games are under Games.")),
-    box, set);
+  sec.append(h("h2", "📚 ", T("Library")), box, set);
   await storyShelf(box, { byType: true, types: LIBRARY_TYPES });   // one box per type, each with its own import / new
   return sec;
 }
@@ -278,14 +276,13 @@ async function storyShelf(box, opts = {}) {
     const done = (id, type) => sbEdit(id, type, draw);
     // parent area: a box per type – 📕 books, 📖 adventure books, 🗝️ adventure games – each with its own import and new
     const typeBox = k => {
-      const [ic, , plural, what] = T_[k], on = (d.creatable || []).includes(k);
+      const [ic, , plural] = T_[k], on = (d.creatable || []).includes(k);
       const shelf = onShelf.filter(b => b.type === k), own = mine.filter(b => b.type === k), fam = others.filter(b => b.type === k);
       return h("section.sb-sec.sb-typebox.t-" + k,
         h("div.sec-head", h("h2", h("span", { translate: "no" }, ic), " ", plural),
           on ? h("div.head-actions",
             h("button.btn.ghost", { onclick: () => storyImportDialog(done, k) }, "📥 ", T("Import")),
             h("button.btn", { onclick: () => storyNewDialog(done, d.creatable, k) }, "+ ", T("New"))) : null),
-        h("p.small.muted", what),
         shelf.length ? h("div.sb-shelf", ...shelf.map(cover)) : h("p.small.muted.sb-empty", T("Nothing on the shelf yet.")),
         own.length ? [h("h3.sb-sub", "✏️ ", T("Mine")), h("div.sb-rows", ...own.map(row))] : null,
         fam.length ? [h("h3.sb-sub", "📝 ", T("Drafts of the family")), h("div.sb-rows", ...fam.map(row))] : null);
@@ -305,10 +302,8 @@ async function storyShelf(box, opts = {}) {
       pend.length ? h("section.sb-sec.sb-wait", h("h2", "⏳ ", T("Waiting for approval")), ...pend.map(approveRow)) : null,
       ...types.map(typeBox),
       d.oversee && samples.length ? h("section.sb-sec", h("h2", "✨ ", T("Sample books")),
-        h("p.small.muted", T("Ready-made books of Family Quest for the whole family, in the language of the app. Hide them if you do not want them on the shelf.")),
         h("div.sb-rows", ...samples.map(sampleRow))) : null,
       (d.private || []).length ? h("section.sb-sec", h("h2", "🔒 ", T("Private books")),
-        h("p.small.muted", T("Only their authors can read these books – parents neither. You see only that they exist.")),
         h("div.sb-rows", ...d.private.map(privRow))) : null);
     const one = types.length === 1 ? types[0] : null;       // a shelf of one type: no filter chips, import / new for that type
     sbSet(box,
