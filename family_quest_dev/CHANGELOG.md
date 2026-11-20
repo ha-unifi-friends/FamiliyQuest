@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1-dev.1
+
+- Invite guests: with a guest WiFi QR code from Home Assistant (e.g. UniFi image entity, chosen in Settings › Home Assistant) the dialog has a switch «🎲 Game | 📶 Guest WiFi» – guests join the WiFi first, then the game; the picture is only shown on signed-in family devices
+
 ## 1.1.1-dev.27
 
 - Security: Content-Security-Policy on every page – only Family Quest's own scripts run; pictures and files under /media are served sandboxed, unknown file types only as download

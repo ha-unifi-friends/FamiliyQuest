@@ -320,6 +320,52 @@ async function firewallSection(s) {
 
 // ---------------------------------------------------------------- Family Planer (built in)
 // one-off: take over the data of a Family Planer integration that ran in Home Assistant before
+// guest Wi-Fi QR code: an image entity of Home Assistant (UniFi makes one per guest network) – «Invite guests»
+// (community.js guestInvite) then switches between the game's QR code and this one (api/kid.py guest-wifi-qr)
+function guestWifiSection(s) {
+  let cur = s.guest_wifi_qr || "", url = null;
+  const none = () => h("option", { value: "" }, T("None"));
+  const sel = h("select.grow", { "aria-label": T("Guest WiFi QR code") }, none());
+  const keep = v => { if (v && ![...sel.options].some(o => o.value === v)) sel.append(h("option", { value: v }, v)); sel.value = v || ""; };
+  const img = h("img.gw-img", { alt: T("Guest WiFi QR code"), hidden: true });
+  const status = h("p.small.gw-status");
+  const wifiish = e => /wi-?fi|wlan|qr|guest|gast|invit/i.test(e.entity_id + " " + (e.name || ""));
+  keep(cur);
+  if (P.meta.ha) call("parent/ha/entities?domain=image").then(list => {
+    list.sort((a, b) => wifiish(b) - wifiish(a) || String(a.name || a.entity_id).localeCompare(String(b.name || b.entity_id)));
+    sel.replaceChildren(none(), ...list.map(e => h("option", { value: e.entity_id }, (e.name && e.name !== e.entity_id ? e.name + " – " : "") + e.entity_id)));
+    keep(cur);
+    if (!list.length && !cur) status.replaceChildren(I18N.tr(T("No image entity found in Home Assistant.")));
+  }).catch(() => {});
+  else status.replaceChildren(I18N.tr(T("Home Assistant is not connected")));
+  // the preview: the picture exactly as the family's devices get it
+  const preview = async () => {
+    if (url) { URL.revokeObjectURL(url); url = null; }
+    img.hidden = true; img.removeAttribute("src");
+    if (!cur) return status.replaceChildren(I18N.tr(T("Off – «Invite guests» shows only the game's QR code.")));
+    status.replaceChildren("…");
+    try {
+      const r = await fetch("api/guest-wifi-qr", { headers: Auth.parent ? { "X-FQ-Parent": Auth.parent } : {} });
+      if (!r.ok) throw 0;
+      url = URL.createObjectURL(await r.blob());
+      img.src = url; img.hidden = false;
+      status.replaceChildren("✓ ", I18N.tr(T("Shown in «Invite guests» under «📶 Guest WiFi».")));
+    } catch { status.replaceChildren("✗ ", I18N.tr(T("Home Assistant gives no picture for this entity right now."))); }
+  };
+  sel.addEventListener("change", async () => {
+    try {
+      const r = await call("parent/settings", { method: "PUT", body: { guest_wifi_qr: sel.value || null } });
+      cur = r.guest_wifi_qr || ""; toast(T("Saved"), "good");
+    } catch { keep(cur); }
+    preview();
+  });
+  preview();
+  return section("📶 " + I18N.tr(T("Guest WiFi QR code")),
+    h("label.field", h("span", T("Image entity with the QR code"), fieldInfo(T("UniFi in Home Assistant has an image entity with the QR code of each WiFi network, e.g. image.guest_wifi_qr_code. Entities with WiFi or QR in their name are listed first."))),
+      h("div.row", sel)),
+    status, h("div.qr-box.guest-qr", img));
+}
+
 // shopping list: a to-do list of Home Assistant (Bring!, the HA shopping list …) as a smart list in the planner
 function shoppingSection() {
   const box = h("div", h("p.small.muted", "…"));
@@ -685,6 +731,7 @@ async function settingsStatus(main) {
       haApp ? t(haApp.on ? T("app sign-in on") : T("app sign-in off")) : null,
       s.parent_ha_only ? t(T("parent area only in Home Assistant")) : null].filter(Boolean).join(" · ");
     const nets = (s.allowed_networks || []).length + (s.parent_networks || []).length, guests = (s.guest_networks || []).length;
+    st.guestwifi = s.guest_wifi_qr || t(T("None"));
     st.network = (nets ? n(T("IP restriction active (1 network)"), T("IP restriction active ({0} networks)"), nets) : t(T("No restrictions")))
       + (guests ? " · " + n(T("1 guest network"), T("{0} guest networks"), guests) : "");
   }
@@ -779,6 +826,7 @@ async function settingsView(main) {
         h("label.field.span2", h("span", T("Push messages for approvals"), fieldInfo(T("Notify service of the Companion app – with buttons OK / No."))), f.notify_service, dl)),
       h("label.check", f.planer_points, T("Also book learning coins as Family Planer points")),
       h("label.field", T("Factor for Family Planer points"), f.planer_points_factor), saveBtn())),
+    fold("guestwifi", "📶 " + I18N.tr(T("Guest WiFi QR code")), guestWifiSection(s)),
     fold("shopping", "🛒 " + I18N.tr(T("Shopping list (Bring!)")), shoppingSection()),
     group("set.system", "🛠️", T("System")),
     fold("backup", "💾 " + I18N.tr(T("Backup & restore")), backupSection()),

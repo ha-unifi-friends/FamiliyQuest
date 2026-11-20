@@ -136,8 +136,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
                                 f"<title>Family Quest</title><body style='font-family:system-ui;text-align:center;padding:40px'>"
                                 f"<h1>🔒</h1><p>{msg}.</p><p style='color:#888'>{html_escape(ip)}</p>", status_code=403)
         resp = await call_next(request)
-        if request.url.path.startswith("/api/"):
-            resp.headers["Cache-Control"] = "no-store"
+        if request.url.path.startswith("/api/") and "no-store" not in resp.headers.get("Cache-Control", ""):
+            resp.headers["Cache-Control"] = "no-store"       # (an answer may say more, e.g. «private, no-store»)
         return resp
 
     @app.middleware("http")

@@ -286,6 +286,10 @@ nav.bottom button.on { color: var(--accent); background: var(--hover); }
 .emoji-flag { display: inline-flex; align-items: center; justify-content: center; font-size: 1.15em; line-height: 1; width: auto; height: auto; }
 .lang-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
 .guest-qr svg { width: min(260px, 70vw); height: auto; }
+/* «Invite guests» with the guest Wi-Fi QR code (community.js guestInvite): switch «Game | Guest WiFi» */
+.gi-seg { display: flex; margin: 0 auto 8px; max-width: 320px; }
+.gi-seg button { flex: 1 1 0; min-height: 44px; white-space: nowrap; }
+.guest-qr img { display: block; width: min(260px, 70vw); height: auto; margin: 0 auto; border-radius: 8px; background: #fff; image-rendering: pixelated; }
 
 /* Texas Hold'em */
 .pk-table { background: radial-gradient(ellipse at center, #1f7a4d 0%, #145c39 70%); border-radius: 120px / 60px; padding: 22px 18px;
