@@ -932,24 +932,20 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
     const regionSel = h("select", { style: { width: "auto", minWidth: "160px" }, onchange: e => { region = e.target.value; try { localStorage.setItem("fq.tplRegion", region); } catch {} drawTemplates(); } },
       ...Object.entries(TPL_REGIONS).filter(([k]) => k === "all" || templates.some(t => t.region === k))
         .map(([k, n]) => h("option", { value: k, selected: k === region }, I18N.tr(n))));
-    // … or made by an AI: the template for the AI, then upload its answer (a JSON file)
-    const file = h("input", { type: "file", accept: ".json,.txt,.md,application/json,text/plain", hidden: true, onchange: async () => {
-      const f = file.files[0]; if (!f) return;
+    // a quiz file (the answer of an AI or an export): imported, the dialog closes
+    const importText = async text => {
       try {
-        const r = await api("community/quizzes/import", { method: "POST", body: { text: await f.text() } });
+        const r = await api("community/quizzes/import", { method: "POST", body: { text } });
         toast(I18N.tr(T("{0} quizzes imported")).replace("{0}", r.ids.length), "good"); m.close(); reload();
       } catch (e) { toast(e.message, "bad"); }
-      file.value = "";
-    } });
-    // … or made by an AI: download the template for the AI, then import its answer (a JSON file)
+    };
+    // … or made by an AI: the shared box (template, prompt, copy, hint, upload of the JSON file the AI gives back –
+    // an exported quiz file goes the same way)
     const aiBox = h("div.ai-box",
-      h("div.row.wrap",
-        h("button.btn.small", { onclick: () => file.click() }, "⬆️ ", T("Import")),
-        quizzes.length ? h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all")) : null,
-        file),
-      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")),
       aiPromptBox(T("Make me a family quiz about [topic, e.g. animals of Switzerland].\n[10] questions for players aged [8] to [45], language: [English].\nMix the question types: multiple choice, pictures, estimates and map questions."),
-        { template: "api/ai-template/quiz", name: "family-quest-quiz-template.json" }));
+        { template: "api/ai-template/quiz", name: "family-quest-quiz-template.json", accept: ".json,.txt,.md,application/json,text/plain", onFile: (f, text) => importText(text) }),
+      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")),
+      quizzes.length ? h("div.row.wrap", h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all"))) : null);
     // templates first (one tap), the own quiz next to it; AI and import folded away – rarely needed
     m = modal(h("div.form", h("div.row.wrap", h("h2.grow", "🎯 ", T("New quiz")),
         h("button.btn", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz"))),
@@ -965,7 +961,7 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
   const impFile = h("input.new-quiz", { type: "file", accept: ".json,.txt,.md,application/json,text/plain", hidden: true, onchange: async () => {
     const f = impFile.files[0]; if (!f) return;
     try {
-      const r = await api("community/quizzes/import", { method: "POST", body: { text: await f.text() } });
+      const r = await api("community/quizzes/import", { method: "POST", body: { text: (await f.text()).replace(/^\uFEFF/, "") } });
       toast(I18N.tr(T("{0} quizzes imported")).replace("{0}", r.ids.length), "good"); reload();
     } catch (e) { toast(e.message, "bad"); }
     impFile.value = "";

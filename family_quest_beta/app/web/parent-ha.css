@@ -139,6 +139,13 @@ html.ha .field-row > div.field { font-weight: 400; color: var(--muted); font-siz
 /* settings: the four groups (App, Personalisation, Home Assistant, System) – a heading above their folds */
 html h2.set-group { margin: 22px 4px 0; font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; }
 html h1 + h2.set-group { margin-top: 4px; }
+html .page-head + h2.set-group, html .page-head + .party-card + h2.set-group { margin-top: 4px; }
+/* a fold opened by an old address (#goals, #dashboard …) scrolls to the top – below the sticky bar of phones */
+details.set-fold { scroll-margin-top: 72px; }
+/* a group heading with buttons on its right (e.g. «Running games» › End all) */
+.set-group-row { display: flex; align-items: flex-end; gap: 8px 12px; flex-wrap: wrap; }
+.set-group-row > h2.set-group { flex: 1 1 auto; margin-bottom: 0; }
+.set-group-row > .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 /* the expand chevron of every fold in the parent area (details > summary): one component – on the right, big, bold,
    with contrast in light and dark; ▸ folded, ▾ open */
 :root { --chev: #2b3142; }
