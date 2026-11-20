@@ -293,11 +293,8 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .chip.bad { background: var(--bad-bg); color: var(--bad-text); }
 /* Games page › 🛠️ Custom games (quiz, Pair Hunt, adventure games): the same structure – head with what it is and how
    many, 📥 Import / + New, the own content, the settings */
-.cg-group { margin: 0 0 18px; padding: 12px 12px 2px; border: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 18px;
-  background: color-mix(in srgb, var(--accent) 6%, transparent); }
-.cg-group > .cg-title { margin: 2px 4px 2px; }
-.cg-group > p { margin: 0 4px 10px; }
-.cg-group > div > .card { margin-bottom: 10px; }
+/* a group of the Games page: its heading (setGroup) and its games sit right on the page – no box of its own */
+.cg-group, .run-group { display: contents; }
 .cg-sec > summary.sec-head { flex-wrap: wrap; }
 .cg-sec .cg-desc { flex: 1 1 100%; margin: 2px 0 0; }
 .cg-count { font-size: .75rem; padding: 2px 8px; margin-left: 4px; vertical-align: middle; }
