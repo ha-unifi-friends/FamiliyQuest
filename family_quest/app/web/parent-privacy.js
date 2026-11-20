@@ -240,8 +240,8 @@ async function privacyView(main) {
         : T("Off: nothing is counted, no clean-up runs and no badge. The retention periods stay saved.")))),
     h("div.pv-hint", h("span", "ℹ️"), h("p.small", T("Older copies can still be in your backups and in the history of Home Assistant. Delete old backups too if the data should be gone everywhere."))),
     // groups on the page background with their folds, like «Family» and «Settings» (the master switch stays on top)
-    setGroup("pv.keep", "⏳", T("Retention")), retention,
-    setGroup("pv.clean", "🧹", T("Clean-up")), cleanup, past, child);
+    setGroup("pv.keep", "🗓️", T("Retention")), retention,
+    setGroup("pv.clean", "🗑️", T("Clean-up")), cleanup, past, child);
   const tr = k => I18N.tr(k), same = (a, b) => a.unit === b.unit && (a.unit === "forever" || a.n === b.n);
   const changedN = d.kinds.filter(k => !same(k.retention, k.default)).length, due = kindsDue.reduce((a, k) => a + k.count, 0);
   retention.dataset.fold = "retention";

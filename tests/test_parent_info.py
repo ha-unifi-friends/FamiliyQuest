@@ -193,13 +193,46 @@ def test_settings_in_four_groups():
     body = view[view.index('main.append(h("h1", T("Settings"))'):view.index("// the status in the rows")]
     order = re.findall(r'^    (?:group\("(set\.\w+)"|fold\("(\w+)")', body, re.M)
     order = [g or f for g, f in order]
-    assert order == ["set.app", "link", "themes", "levels", "learning",
+    assert order == ["set.app", "link", "themes", "dashboard", "kiosk", "levels", "learning",
                      "set.personal", "texts", "weather",
                      "set.ha", "halogin", "integration", "ha", "shopping",
                      "set.system", "backup", "network", "planer", "about"], order
     keys, _ = info_keys()
     assert {"set.app", "set.personal", "set.ha", "set.system"} <= keys
     assert 'T("Season, time of day & weather designs")' in body and 'T("Bonus/malus points")' in body
+    # the kiosk dashboard lives in «App» now: no menu item of its own, the old address opens its fold
+    tabs = src[src.index("const TABS = ["):src.index("];", src.index("const TABS = ["))]
+    assert '"dashboard"' not in tabs and "dashboard: dashboardView" not in src and "async function dashboardView" not in src
+    assert 'dashboard: ["settings", "dashboard"]' in src and "foldToShow(main)" in view
+    assert "const dash = await dashboardSections();" in view and 'fold("dashboard", "🖥️ "' in body and 'fold("kiosk", "🔗 "' in body
+
+
+def test_group_headings_on_the_background():
+    """Overview, Games, Calendar, Privacy: group headings (one shared helper setGroup) on the page background, the boxes
+    below; every group has its ⓘ in all 9 languages."""
+    src = _src("parent.js")
+    assert src.count("function setGroup(") == 1 and 'h("h2.set-group", { "data-ik": ik }' in src
+    assert "const group = (ik" not in src                                   # Family and Settings use the shared helper too
+    ov = _fn(src, "async function overviewView(main)")
+    order = [ov.index(x) for x in ['setGroup("ov.kids", "🧒", T("Children"))', "...(kids.length ? kids",
+                                   'setGroup("Parents", "👪", T("Parents"))', 'profileCards(profiles.filter(p => p.role === "parent")',
+                                   "await archivedSection()", "failBox);"]]
+    assert order == sorted(order), order
+    assert 'section("👪 "' not in ov
+    games = _fn(src, "async function gamesView(main)")
+    for g in ['setGroup("Custom games"', "setGroup(name, ic, name)", 'setGroup("games.all"']:
+        assert g in games, g
+    assert 'h("h2.cg-title"' not in games
+    assert 'setGroup("Running games"' in _fn(src, "function runningGamesBox()")
+    cal = _fn(src, "async function calendarView(main)")
+    assert 'setGroup("cal.templates"' in cal and 'setGroup("cal.sources"' in cal and 'foldBoxes(main, "cal")' in cal
+    pv = _src("parent-privacy.js")
+    assert 'setGroup("pv.keep"' in pv and 'setGroup("pv.clean"' in pv and 'foldBoxes(main, "pv")' in pv
+    assert pv.index('h("section.card.pv-master"') < pv.index('setGroup("pv.keep"')         # the master switch on top
+    keys, _ = info_keys()
+    pv_keys = set(re.findall(r'^  "([\w.]+)": T\(', pv, re.M))
+    iks = set(re.findall(r'setGroup\("([^"]+)"', src + pv)) - {"name"}
+    assert not sorted(iks - keys - pv_keys), sorted(iks - keys - pv_keys)
 
 
 # ---------------------------------------------------------------- folds everywhere, Family / History pages, game groups

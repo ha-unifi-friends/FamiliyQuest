@@ -242,3 +242,38 @@ def test_ui_info_texts_and_translations():
     de = json.loads((web / "i18n" / "de-DE.json").read_text(encoding="utf-8"))
     ch = json.loads((web / "i18n" / "de-CH.json").read_text(encoding="utf-8"))
     assert de["My reports"] == "Meine Berichte" and ch["My reports"] == "Mini Bricht"
+
+
+def test_bubble_chart_and_its_template(fam):
+    """«Bubbles»: Rows = x categories, Columns = y categories, the first measure = the area – a known chart type, its
+    template (game time by weekday and child) is valid and gives a weekday × child matrix."""
+    from familyquest.analytics import CHARTS
+    fq, mia, leo = fam
+    assert "bubble" in CHARTS
+    tpl = next(t for t in TEMPLATES if t["key"] == "gametime_matrix")
+    assert tpl["spec"]["chart"] == "bubble" and tpl["spec"]["rows"] == ["weekday"] and tpl["spec"]["columns"] == ["child"]
+    spec = clean_spec(tpl["spec"])
+    assert spec["chart"] == "bubble"
+    for m in range(25):
+        fq.db.x("INSERT INTO play_minute(profile_id, day, minute) VALUES(?, '2026-11-16', ?)", mia, 600 + m)
+    for m in range(10):
+        fq.db.x("INSERT INTO play_minute(profile_id, day, minute) VALUES(?, '2026-11-17', ?)", leo, 600 + m)
+    r = Analytics(fq.db, fq.weather).query(spec, today=TODAY)
+    got = {(row[0], row[1]): row[2] for row in r["rows"]}
+    assert got[(0, mia)] == 25 and got[(1, leo)] == 10, got                 # Monday · Mia, Tuesday · Leo
+    from pathlib import Path
+    web = Path(__file__).resolve().parent.parent / "family_quest/app/web"
+    js = (web / "parent-analytics.js").read_text(encoding="utf-8")
+    assert '["bubble", T("Bubbles")' in js and 'type === "bubble"' in js
+    for lang in ["de-DE", "de-CH", "fr-FR", "it-IT", "es-ES", "nl-NL", "pl-PL", "pt-BR", "sv-SE"]:
+        d = json.loads((web / "i18n" / f"{lang}.json").read_text(encoding="utf-8"))
+        assert d["Bubbles"] and d["Game time by weekday and child"], lang
+
+
+def test_bubble_tile_on_a_dashboard(client):
+    ph = setup_family(client)[0]
+    d = client.post("/api/parent/analytics/dashboards", json={"name": "Spielzeit"}, headers=ph).json()
+    tiles = [{"ref": "t:gametime_matrix", "w": 2, "h": "m"}, {"ref": "t:coins_week", "w": 2, "h": "m", "chart": "bubble"}]
+    r = client.put(f"/api/parent/analytics/dashboards/{d['id']}", json={"tiles": tiles}, headers=ph)
+    assert r.status_code == 200, r.text
+    assert [(t["ref"], t.get("chart")) for t in r.json()["tiles"]] == [("t:gametime_matrix", None), ("t:coins_week", "bubble")]
