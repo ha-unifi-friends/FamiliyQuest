@@ -511,6 +511,8 @@ function dorfmarktLive(box, me, back) {
   }
 
   // ---------- the screen
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !st.solo && !me.guest && st.status !== "done" ? "dorfmarkt" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
@@ -528,7 +530,7 @@ function dorfmarktLive(box, me, back) {
     // ☰: rules, guests, the actions of whoever leads (pause / resume, end), language
     const lead_ = isHost() && st.status !== "done";
     const menu = gameMenu({ rules: () => dorfmarktRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: !st.solo && !me.guest && st.status !== "done" ? "dorfmarkt" : null,
+      invite: invite(),
       actions: [
         { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Resume") : T("Pause"), hidden: !lead_ || st.phase !== "play", onclick: () => lead("pause", { on: !st.paused }) },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead_, confirm: T("End the game?"), onclick: () => lead("end").then(() => { stop(); back(); }) }],
@@ -551,7 +553,7 @@ function dorfmarktLive(box, me, back) {
       if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
         h("button.btn.big", { onclick: () => lead("join") }, "🙋 ", T("Join"))), lobbySeats(), host);
       return show(close, head, h("section.card.center", h("h2", T("Waiting for the start …")),
-        h("p.muted", T("Everybody joins on their own device.")), lobbySeats(),
+        h("p.muted", T("Everybody joins on their own device.")), lobbySeats(), inviteBtn(invite()),
         st.coins_on ? h("p.small", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", mkCoins(st.rewards))) : null), host);
     }
     buildBoard();

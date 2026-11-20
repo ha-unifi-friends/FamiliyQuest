@@ -360,6 +360,14 @@
 .guest-main { max-width: 640px; margin: 0 auto; padding: 16px; }
 .guest-join { display: grid; gap: 14px; justify-items: center; margin-top: 8vh; margin-top: 8dvh; }
 .guest-join input { max-width: 320px; text-align: center; font-size: 1.2rem; }
+/* the guest's avatar (gast.js avatarPicker): quick picks + «🎲 Random» + «✏️ Customize» */
+.guest-join:has(.guest-avs) { margin-top: 2vh; margin-top: 2dvh; }
+.guest-av-q { margin: 0 0 -6px; }
+.guest-avs { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; max-width: 420px; }
+.guest-av { padding: 3px; border-radius: 50%; border: 3px solid var(--line); background: var(--card); line-height: 0; cursor: pointer; }
+.guest-av.on { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.guest-av-btn { min-height: 44px; }
+.guest-av-btn.on { border-color: var(--accent); color: var(--accent); }
 .alarm-banner { display: flex; align-items: center; gap: 14px; border-left: 6px solid #f59f00; }
 .net-inline > .grow { flex: 1 1 170px; min-width: 0; } .net-inline .net-clock { white-space: nowrap; }
 @media (max-width: 520px) { .net-inline .btn.big { flex: 1 1 100%; } }

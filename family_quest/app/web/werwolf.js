@@ -125,6 +125,8 @@ function werwolfLive(box, me, back) {
   const voiceOn = () => { try { return localStorage.getItem("fq.ww.voice") !== "0"; } catch { return true; } };
   const living = () => st.players.filter(p => p.alive);
 
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !me.guest && st.phase === "lobby" ? "werwolf" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
@@ -188,7 +190,7 @@ function werwolfLive(box, me, back) {
     const lead = isLead() && st.status !== "done";
     const skip = { night: ["⏭", T("Next")], hunter: ["⏭", T("No shot")] }[st.phase];
     const menu = gameMenu({ rules: () => werwolfRulesView(st.coins_on ? st.rewards : null),
-      invite: !me.guest && st.phase === "lobby" ? "werwolf" : null,
+      invite: invite(),
       actions: [
         { ic: "🎭", label: T("Roles"), hidden: !lead || st.phase !== "lobby", onclick: lobbyRoles },
         { ic: skip ? skip[0] : "⏭", label: skip ? skip[1] : "", hidden: !lead || !skip, confirm: T("Move on now?"), onclick: () => act("next") },
@@ -241,7 +243,7 @@ function werwolfLive(box, me, back) {
     return h("section.card.center.ww-lobby", h("h2", st.joined ? T("Waiting for the start …") : T("Play along on this device?")),
       st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")),
       h("p.small.muted", fill(T("{0} players – {1} to {2} can play."), n, st.min_humans || 2, st.max), " ", I18N.tr(st.no_bots ? T("Playing with bots is switched off – at least 5 people are needed.") : T("Fewer than 5? Bots fill the table."))),
-      grid(st.players, { cls: ".ww-seats" }),
+      grid(st.players, { cls: ".ww-seats" }), inviteBtn(invite()),
       bots ? h("p.small.ww-bots", "🤖 ", fill(T("{0} bots join when the game starts."), bots)) : null,
       st.deck ? h("div.sl-chips.ww-deck", ...wwDeckChips(st.deck, n + bots), h("span.chip", "☀️ ", st.rules.talk / 60 + " min")) : null,
       st.deck_error ? h("p.small.ww-warn", "⚠️ ", T(st.deck_error)) : null,

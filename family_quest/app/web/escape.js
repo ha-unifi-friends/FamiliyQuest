@@ -145,6 +145,8 @@ function escapeLive(box, me, back) {
     else { try { Sound.play("wrong"); } catch {} toast(I18N.tr(T("Not quite – try again! (+{0} s)")).replace("{0}", st.wrong_s), "bad"); }
   }
 
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !me.guest && st.status !== "done" && st.phase === "lobby" ? "escape" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
@@ -163,7 +165,7 @@ function escapeLive(box, me, back) {
       if (!st.joined) return show(close, head(), h("section.card.center", h("p", T("Play along on this device?")),
         h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), hostBar());
       return show(close, head(), h("section.card.center", h("h2", T("Waiting for the start …")),
-        h("p.muted", T("Everybody joins on their own device.")), seats(), ruleChips(),
+        h("p.muted", T("Everybody joins on their own device.")), seats(), inviteBtn(invite()), ruleChips(),
         st.coins_on ? h("p.small", "🪙 ", I18N.tr(T("Coins for each person of the family in the team that escaped and won: {0}")).replace("{0}", erCoins(st.rewards[0]))) : null), hostBar());
     }
     const rm = room();
@@ -184,7 +186,7 @@ function escapeLive(box, me, back) {
   function head() {
     const lead = isHost() && st.status !== "done";
     const menu = gameMenu({ rules: () => escapeRulesView(st),
-      invite: !me.guest && st.status !== "done" && st.phase === "lobby" ? "escape" : null,
+      invite: invite(),
       actions: [
         { ic: "🔀", label: T("Mix teams"), hidden: !lead || st.phase !== "lobby" || !st.teams, onclick: () => act("mix") },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game? Nobody escapes then."), onclick: () => act("end") }],

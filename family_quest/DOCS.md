@@ -2145,6 +2145,18 @@ grandparents scan it with their phone in the home network (direct access must be
 – nothing else of the app is open to them. Guests are deleted with everything they did after 12 hours. Parents can
 switch guests off under Settings → Games.
 
+**👥 Invite guests** is in the ☰ menu of every family game and, while the game waits for its start, also as a button
+in the lobby box («Waiting for the start …») – below the players on a phone, top right in the box on a wide screen. It
+is shown to everybody of the family at a family table (not alone against bots, not to guests, not in a finished game).
+
+**The guest's avatar**: on the guest page, below the name, guests pick one of eight quick looks (women, men, grandma,
+grandpa and two more – different skin and hair), **🎲 Random** (the default: a random avatar as before) or
+**✏️ Customize** – the avatar builder of the parent area with the free parts and the free items only (glasses, braces,
+hair clips); shop, level, badge and season items cannot be chosen. The server checks the avatar like a child's
+(unknown parts fall back to the default, unknown items are dropped, a shop item is refused). During the game the guest
+changes it under ☰ → **🧑‍🎨 My avatar** (`PUT /api/guest/avatar`, guest token only): the seat at the table shows the new
+avatar (on the other devices with the next change at the table).
+
 **Guest networks** (Settings → Access from the network): devices in these address ranges – e.g. your guest
 Wi-Fi – can only open the guest page and play with an invitation; no family login, no app, no parent area.
 

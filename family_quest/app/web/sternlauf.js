@@ -602,6 +602,8 @@ function sternlaufLive(box, me, back) {
       h("b.sr-rank", r.out != null ? "💥" : String(k + 1)), seatIcon(r.p, 20), C(r.p.name, "span.sr-nm"),
       h("span.sr-pts", String(r.pts)))));
   }
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !st.solo && !me.guest && st.status !== "done" ? "sternlauf" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     const sig = JSON.stringify(st && [st.game, st.phase, st.status, st.joined, st.players.map(p => [p.id, p.place]), st.phase === "lobby" ? st.players.length : 0]);
@@ -613,7 +615,7 @@ function sternlaufLive(box, me, back) {
     if (!st) return show(h("section.card.center", h("div.big-ic", SR_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     // ☰: rules, guests, End (whoever leads), language – only the main action (Start) stays as a big button
     const menu = gameMenu({ rules: () => sternlaufRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: !st.solo && !me.guest && st.status !== "done" ? "sternlauf" : null,
+      invite: invite(),
       actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
         onclick: () => act("end").then(() => { if (!st || st.phase !== "done") { stop(); back(); } }) }],
       onLeave: running ? () => { stop(); back(); } : null });
@@ -626,7 +628,7 @@ function sternlaufLive(box, me, back) {
       if (!st.joined) return show(head, h("section.card.center", story, h("p", T("Play along on this device?")),
         h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), lobbySeats(), host);
       return show(head, h("section.card.center", h("h2", T("Waiting for the start …")), story,
-        h("p.muted", T("Everybody joins on their own device.")), lobbySeats(),
+        h("p.muted", T("Everybody joins on their own device.")), lobbySeats(), inviteBtn(invite()),
         st.coins_on ? h("p.small", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", srCoins(st.rewards))) : null), host);
     }
     // the run

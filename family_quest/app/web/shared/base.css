@@ -290,6 +290,14 @@ nav.bottom button.on { color: var(--accent); background: var(--hover); }
 .gi-seg { display: flex; margin: 0 auto 8px; max-width: 320px; }
 .gi-seg button { flex: 1 1 0; min-height: 44px; white-space: nowrap; }
 .guest-qr img { display: block; width: min(260px, 70vw); height: auto; margin: 0 auto; border-radius: 8px; background: #fff; image-rendering: pixelated; }
+/* «👥 Invite guests» in the lobby box of a live game (ui.js inviteBtn): below the players on a phone, top right on a wide screen */
+.lobby-invite { display: flex; margin: 10px auto 0; }
+@supports selector(:has(*)) {
+  @media (min-width: 760px) {
+    .card:has(> .lobby-invite) { position: relative; }
+    .card > .lobby-invite { position: absolute; top: 12px; right: 12px; margin: 0; }
+  }
+}
 
 /* Texas Hold'em */
 .pk-table { background: radial-gradient(ellipse at center, #1f7a4d 0%, #145c39 70%); border-radius: 120px / 60px; padding: 22px 18px;
@@ -4133,3 +4141,14 @@ button.cw-slot::after { content: ""; position: absolute; inset: -4px; }
   border-radius: 9px; background: var(--hover); color: #0a84ff; border: 1px solid var(--line); }
 [data-theme="dark"] .pwa-ic { color: #4da3ff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pwa-ic { color: #4da3ff; } }
+
+/* compact avatar editor (shared/avatar.js avatarEditorBox): parent area › profile dialog, guest page «Customize» */
+.av-editor.compact { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: start; }
+.av-editor.compact .av-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.av-editor.compact .av-tabs button { border: 0; border-radius: 99px; padding: 6px 12px; background: var(--hover); font-weight: 700; color: var(--fg); }
+.av-editor.compact .av-tabs button.on { background: var(--accent-bg); color: #fff; }
+.av-editor.compact .av-opts { display: flex; flex-wrap: wrap; gap: 8px; max-height: 240px; overflow: auto; }
+.av-editor.compact .av-opt { min-width: 62px; min-height: 62px; padding: 4px; border-radius: 14px; border: 3px solid var(--line); background: var(--card); }
+.av-editor.compact .av-opt.on { border-color: var(--accent); }
+.av-editor.compact .swatch { width: 44px; height: 44px; border-radius: 50%; display: block; }
+@media (max-width: 600px) { .av-editor.compact { grid-template-columns: 1fr; } }

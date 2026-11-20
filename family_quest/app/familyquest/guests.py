@@ -8,6 +8,7 @@ Parents can switch guests off for all games (setting `games_guests`).
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import random
 import secrets
@@ -90,12 +91,21 @@ class Guests:
             title = st.get("title") or "Quiz"
         return {"game": game, "title": title}
 
-    def join(self, code: str, name: str) -> dict:
+    @staticmethod
+    def _avatar(avatar) -> dict:
+        """A guest's own avatar (guest page): checked like a child's (rewards/avatar.py) – only free parts and items."""
+        try:
+            return av.clean_guest(avatar)
+        except ValueError as e:
+            raise GuestError(str(e)) from None
+
+    def join(self, code: str, name: str, avatar: dict | None = None) -> dict:
         self.cleanup()
         info = self.info(code)
         name = " ".join(str(name or "").split())[:20]
         if not name:
             raise GuestError("Please type your name")
+        chosen = self._avatar(avatar) if avatar is not None else None
         if info["game"] == "quiz":
             from .facts import is_facts
             if is_facts((self.fq.community._game() or {}).get("quiz")):
@@ -105,8 +115,8 @@ class Guests:
         while name.lower() in taken:
             name = f"{base} {n}"
             n += 1
-        avatar = {**av.DEFAULT_AVATAR, "hair": random.choice(["short", "long", "curly", "bun", "ponytail"]),
-                  "outfitColor": random.choice(COLORS), "skin": random.choice(["#ffe0bd", "#f1c27d", "#e0ac69", "#c68642"])}
+        avatar = chosen or {**av.DEFAULT_AVATAR, "hair": random.choice(["short", "long", "curly", "bun", "ponytail"]),
+                            "outfitColor": random.choice(COLORS), "skin": random.choice(["#ffe0bd", "#f1c27d", "#e0ac69", "#c68642"])}
         pid = self.db.x("INSERT INTO profile(name, role, color, avatar, settings, archived) VALUES(?,?,?,?,?,?)",
                         name, "guest", random.choice(COLORS), json.dumps(avatar), json.dumps({"guest": True}), GUEST)
         if info["game"] == "schach":
@@ -119,6 +129,45 @@ class Guests:
             {"quiz": self.fq.community, "bingo": self.fq.bingo, "poker": self.fq.poker, "song": self.fq.songs}[info["game"]].join(pid)
         p = self.db.q1("SELECT * FROM profile WHERE id=?", pid)
         return {"token": self.fq.tokens.make(pid, "guest"), "profile": {**self.fq.profile_public(p), "guest": True}, **info}
+
+    def set_avatar(self, pid: int, avatar) -> dict:
+        """A guest changes the avatar during the visit (☰ › My avatar): the profile and the seat in the running game."""
+        a = self._avatar(avatar)
+        if not self.db.x("UPDATE profile SET avatar=? WHERE id=? AND archived=?", json.dumps(a), pid, GUEST):
+            raise GuestError("This guest visit is over")
+        self._reseat(pid, a)
+        return a
+
+    def _reseat(self, pid: int, avatar: dict) -> None:
+        """Most games copy name and avatar into their state at join (cardgames._person, poker): put the new avatar in
+        every seat of this guest at the running tables (quiz and bingo read the profile anyway)."""
+        ids = {pid, str(pid)}
+
+        def swap(x) -> bool:
+            hit = False
+            if isinstance(x, dict):
+                if x.get("id") in ids and "avatar" in x and not x.get("bot"):
+                    x["avatar"], hit = avatar, True
+                for v in x.values():
+                    hit = swap(v) or hit
+            elif isinstance(x, list):
+                for v in x:
+                    hit = swap(v) or hit
+            return hit
+
+        for table in ("card_game", "poker_game", "song_game"):
+            for row in self.db.q(f"SELECT * FROM {table} WHERE status != 'done'"):
+                kind = row["kind"] if table == "card_game" else None
+                owner = {"card_game": self.fq.cards if kind in ("tschau", "karussell") else getattr(self.fq, kind or "", None),
+                         "poker_game": self.fq.poker, "song_game": self.fq.songs}[table]
+                with getattr(owner, "lock", None) or contextlib.nullcontext():      # the game's own lock: no lost move
+                    cur = self.db.q1(f"SELECT state FROM {table} WHERE id=?", row["id"])
+                    try:
+                        st = json.loads(cur["state"] or "{}") if cur else None
+                    except ValueError:
+                        continue
+                    if st is not None and swap(st):
+                        self.db.x(f"UPDATE {table} SET state=? WHERE id=?", json.dumps(st), row["id"])
 
     def cleanup(self) -> int:
         """Delete guests older than GUEST_HOURS with everything they left behind."""
