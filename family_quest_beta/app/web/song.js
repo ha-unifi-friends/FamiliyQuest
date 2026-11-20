@@ -61,6 +61,8 @@ function songLive(box, me, back) {
     timer = setTimeout(poll, 800);
   }
   const name = id => (st.players.find(p => p.id === id) || {}).name || "?";
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !me.guest && st && st.status !== "done" ? "song" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
@@ -74,7 +76,7 @@ function songLive(box, me, back) {
     // ☰: rules, guests (everybody of the family), pause / «nobody knows it» / end for whoever leads, language
     const leads = isHost() && running;
     const menu = gameMenu({ rules: () => songRulesView(st.rules),
-      invite: !me.guest && running ? "song" : null,
+      invite: invite(),
       actions: [
         { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Go on") : T("Pause"), hidden: !leads || st.phase !== "playing", onclick: () => act("pause", { on: !st.paused }) },
         { ic: "⏭", label: T("Nobody knows it"), hidden: !leads || st.phase !== "playing", onclick: () => act("next") },
@@ -103,7 +105,7 @@ function songLive(box, me, back) {
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), scores, lead);
     if (st.phase === "lobby") return show(close, head, h("section.card.center", h("h2", T("Waiting for the start …")),
-      h("p.muted", I18N.tr(T("Who buzzes says: {0}")).replace("{0}", I18N.tr(SONG_ANSWERS[st.rules.answer])))), scores, lead);
+      h("p.muted", I18N.tr(T("Who buzzes says: {0}")).replace("{0}", I18N.tr(SONG_ANSWERS[st.rules.answer]))), inviteBtn(invite())), scores, lead);
     if (st.phase === "playing") return show(close, head,
       h("div.song-buzz-wrap", h("button.song-buzzer", { disabled: st.paused, onclick: () => { try { navigator.vibrate && navigator.vibrate(60); } catch {} act("buzz"); } },
         h("span", "🔔"), h("b", T("Buzz!")))),

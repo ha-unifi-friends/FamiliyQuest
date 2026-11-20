@@ -550,6 +550,13 @@ function gameMenu({ rules = null, invite = null, actions = [], onLeave = null } 
     onclick: () => openGameMenu({ rules, invite, actions, onLeave }) }, "☰");
 }
 
+// «👥 Invite guests» as a visible button in the lobby box of a live game («Waiting for the start …») – next to the entry in ☰.
+// `invite` is the same value the lobby passes to gameMenu (game key or [game, gid]); null (solo table, a guest, a finished
+// game) → no button. Below the players on a phone, top right in the box on a wide screen (base.css .lobby-invite).
+function inviteBtn(invite) {
+  return invite ? h("button.btn.small.ghost.lobby-invite", { type: "button", onclick: () => guestInvite(...[].concat(invite)) }, "👥 ", T("Invite guests")) : null;
+}
+
 function openGameMenu({ rules, invite, actions, onLeave }) {
   let release = null;
   const close = () => { back.remove(); release && release(); window.removeEventListener("hashchange", close); };
@@ -565,6 +572,7 @@ function openGameMenu({ rules, invite, actions, onLeave }) {
     h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", T("Game"))),
     rules ? item("📜", T("Rules"), showRules) : null,
     invite ? item("👥", T("Invite guests"), () => guestInvite(...[].concat(invite))) : null,
+    typeof window.FQ_GUEST_AVATAR === "function" ? item("🧑‍🎨", T("My avatar"), window.FQ_GUEST_AVATAR) : null,     // guest page (gast.js)
     ...acts.map(a => item(a.ic || "▶", a.label, async () => { if (a.confirm && !(await confirmDialog(I18N.tr(a.confirm)))) return; a.onclick(); }, a.danger ? ".danger" : "")),
     h("hr"),
     footLang(), footTheme(), soundItem,

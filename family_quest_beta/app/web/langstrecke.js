@@ -1160,6 +1160,8 @@ function langstreckeLive(box, me, back) {
   }
 
   // ---------- the screen
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !st.solo && !me.guest && st.status !== "done" ? "langstrecke" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     const tm = myTeam();
@@ -1173,7 +1175,7 @@ function langstreckeLive(box, me, back) {
     ui = { go: ui.go ?? true, roared: ui.roared, mode, intro: introOn, lanePos: mode === "drive" ? ui.lanePos : null };
     if (!st) return show(h("section.card.center", h("div.big-ic", LE_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     const menu = gameMenu({ rules: () => langstreckeRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: !st.solo && !me.guest && st.status !== "done" ? "langstrecke" : null,
+      invite: invite(),
       actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
         onclick: () => act("end").then(() => { if (!st || st.phase !== "done") { stop(); back(); } }) }],
       onLeave: running ? () => { stop(); back(); } : null });
@@ -1267,7 +1269,7 @@ function langstreckeLive(box, me, back) {
     const story = h("p.small.muted", I18N.tr(T("24 race hours in {0} minutes on the Circuit des Tannes. The most laps wins.")).replace("{0}", st.rules.minutes));
     const roles = h("p.small", "🔄 ", T("After every lap the car comes into the pits and the next person of the team drives – the others charge the spare battery and prepare the tyres."));
     return [h("section.card.center", st.joined ? h("h2", T("Waiting for the start …")) : h("p", T("Play along on this device?")), story, roles,
-      st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))),
+      st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")), inviteBtn(invite())),
       h("div.le-teams", ...cards), st.bots ? h("p.small.muted.center", "🤖 ", I18N.tr(T("+{0} bot teams")).replace("{0}", st.bots)) : null,
       st.coins_on ? h("p.small.center", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", leCoins(st.rewards))) : null, host];
   }

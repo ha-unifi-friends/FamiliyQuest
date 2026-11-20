@@ -403,6 +403,8 @@ function klatschLive(box, me, back) {
   }
 
   // ---------- the screen
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !st.solo && !me.guest && st.status !== "done" ? "klatsch" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     const sig = JSON.stringify(st && [st.game, st.phase, st.status, st.joined, st.scored, st.players.map(p => [p.id, p.place, p.total]), st.phase === "lobby" ? st.players.length : 0]);
@@ -414,7 +416,7 @@ function klatschLive(box, me, back) {
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     // ☰: rules, guests, calibrate, the beat's sound, End (whoever leads), language – only Start stays as a big button
     const menu = gameMenu({ rules: () => klatschRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: !st.solo && !me.guest && st.status !== "done" ? "klatsch" : null,
+      invite: invite(),
       actions: [
         { ic: "🎚️", label: T("Calibrate"), hidden: st.phase === "done", onclick: () => klatschCalibrate() },
         { get ic() { return KbAudio.muted ? "🔇" : "🔊"; }, get label() { return KbAudio.muted ? T("Beat sound off") : T("Beat sound on"); },
@@ -433,7 +435,7 @@ function klatschLive(box, me, back) {
       if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
         h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), lobbySeats(), host);
       return show(close, head, h("section.card.center", h("h2", T("Waiting for the start …")),
-        h("p.muted", T("Everybody joins on their own device – turn the sound on!")), lobbySeats(), calHint,
+        h("p.muted", T("Everybody joins on their own device – turn the sound on!")), lobbySeats(), inviteBtn(invite()), calHint,
         st.coins_on ? h("p.small", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", kbCoins(st.rewards))) : null), host);
     }
     // the game – the stage stays, only the ranking and the bar are made anew
