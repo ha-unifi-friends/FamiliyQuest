@@ -620,7 +620,8 @@ class FamilyQuest:
         from .rewards.engine import BADGES
         earned = {b["id"]: b["at"] for b in self.rewards.badges(pid)}
         lessons = int(self.db.val("SELECT SUM(lessons) FROM daily WHERE profile_id=?", pid, default=0))
-        chores = int(self.db.val("SELECT COUNT(DISTINCT ref) FROM ledger WHERE profile_id=? AND event='chore_done'", pid, default=0))
+        chores = int(self.db.val("SELECT COUNT(DISTINCT ref) + COALESCE((SELECT SUM(n) FROM ledger_folded WHERE profile_id=? AND event='chore_done'), 0) FROM ledger WHERE profile_id=? AND event='chore_done'",
+                                 pid, pid, default=0))   # + chores folded by a clean-up (privacy.py)
         streak, xp = self.rewards.streak(pid), self.rewards.total_xp(pid)
         best = {"any": 0, "times": 0, "french": 0, "geo": 0}
         for pack in self.packs.for_profile(pid):
