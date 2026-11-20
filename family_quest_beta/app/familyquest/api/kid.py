@@ -17,7 +17,8 @@ from ..packs import i18n as pack_i18n
 from ..rewards import avatar as av
 from ..rewards.shop import ShopError
 from ..pets import KINDS as PET_KINDS, REBUY_COST, PetError
-from .auth import KID_MAX_AGE, Learner, app_of, check_pin, ha_kid, ha_user, hash_pin, valid_pin, via_ingress
+from .auth import (KID_MAX_AGE, PARENT_APP_TTL, Learner, app_of, check_pin, end_sessions, ha_kid, ha_user, hash_pin, kid_token, parent_token,
+                   pin_target, valid_pin, via_ingress)
 
 router = APIRouter(prefix="/api")
 
@@ -150,15 +151,18 @@ def login(body: LoginIn, request: Request) -> dict:
             if p["role"] == "parent":
                 raise HTTPException(403, "Parent profile needs a PIN")
             raise HTTPException(403, "No PIN set yet – ask your parents")
+        fq.throttle.guard(pin_target(p))                # wrong PINs in a row for this profile, from any device
         if not check_pin(body.pin, p["pin_hash"]):
             fq.throttle.fail(key)
+            fq.throttle.bad(pin_target(p))
             loginlog.record(fq, request, "profile", p["id"], False)
             raise HTTPException(403, "Wrong PIN")
+        fq.throttle.good(pin_target(p))
     fq.throttle.ok(key)
     loginlog.record(fq, request, "profile", p["id"], True)
-    out = {"token": fq.tokens.make(p["id"], "kid"), "profile": fq.profile_public(p)}
+    out = {"token": kid_token(fq, p), "profile": fq.profile_public(p)}
     if p["role"] == "parent" and not fq.db.get_setting("parent_ha_only"):
-        out["parent_token"] = fq.tokens.make(p["id"], "parent")
+        out["parent_token"] = parent_token(fq, p["id"], request)
     return out
 
 
@@ -190,7 +194,7 @@ def setup(body: SetupIn, request: Request) -> dict:
     st["login"] = ("pin_ha" if body.pin else "ha") if u else "pin"
     pid = fq.db.x("INSERT INTO profile(name, role, color, pin_hash, settings) VALUES(?, 'parent', '#495057', ?, ?)",
                   body.name.strip()[:40], hash_pin(body.pin) if body.pin else None, json.dumps(st))
-    return {"parent_token": fq.tokens.make(pid, "parent"), "token": fq.tokens.make(pid, "kid"),
+    return {"parent_token": parent_token(fq, pid, request), "token": fq.tokens.make(pid, "kid", ttl=PARENT_APP_TTL),
             "profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid))}
 
 
@@ -392,9 +396,13 @@ def change_pin(body: PinChangeIn, request: Request, prof: dict = Learner) -> dic
         raise HTTPException(403, "Your parents chose: sign in only with Home Assistant")
     key = f"login:{p['id']}"
     fq.throttle.check(key)
-    if p["pin_hash"] and not check_pin(body.old_pin, p["pin_hash"]):
-        fq.throttle.fail(key)
-        raise HTTPException(403, "Wrong PIN")
+    if p["pin_hash"]:
+        fq.throttle.guard(pin_target(p))
+        if not check_pin(body.old_pin, p["pin_hash"]):
+            fq.throttle.fail(key)
+            fq.throttle.bad(pin_target(p))
+            raise HTTPException(403, "Wrong PIN")
+        fq.throttle.good(pin_target(p))
     fq.throttle.ok(key)
     st = profile_settings(p)
     raw = json.loads(p["settings"] or "{}")
@@ -416,8 +424,9 @@ def change_pin(body: PinChangeIn, request: Request, prof: dict = Learner) -> dic
     else:
         raise HTTPException(400, "Choose a new PIN")
     fq.db.x("UPDATE profile SET pin_hash=?, settings=? WHERE id=?", new, json.dumps(raw), p["id"])
+    end_sessions(fq, p["id"])
     # a new PIN ends every other login of this profile – this device gets a fresh one
-    return {"profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", p["id"])), "token": fq.tokens.make(p["id"], "kid")}
+    return {"profile": fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", p["id"])), "token": kid_token(fq, p)}
 
 
 @router.post("/me/avatar")

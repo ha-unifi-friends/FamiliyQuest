@@ -78,6 +78,7 @@ pre.example { background: var(--hover); padding: 12px; border-radius: 10px; over
 .icon-in { width: 64px !important; font-size: 1.5rem; text-align: center; }
 .tabs .btn { min-height: 34px; }
 .mob-bar, .side-back { display: none; }
+.side-close { display: none !important; }        /* ✕ of the ☰ menu: phones only */
 .main-wrap { min-width: 0; }
 @media (max-width: 820px) {
   /* phone: the side bar becomes a ☰ menu sliding in from the left */
@@ -85,6 +86,7 @@ pre.example { background: var(--hover); padding: 12px; border-radius: 10px; over
   .side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 960; width: min(290px, 86vw); height: 100vh; height: 100dvh; overflow-y: auto;
     flex-direction: column; flex-wrap: nowrap; transform: translateX(-102%); transition: transform .22s ease; box-shadow: var(--shadow); }
   .side.open { transform: none; }
+  .side-close { display: inline-flex !important; }
   .side-back { display: block; position: fixed; inset: 0; z-index: 950; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s; }
   .side-back.open { opacity: 1; pointer-events: auto; }
   .side-foot { margin-top: auto; width: 100%; grid-template-columns: 1fr !important; }
@@ -95,7 +97,7 @@ pre.example { background: var(--hover); padding: 12px; border-radius: 10px; over
   .mob-bar .mob-ic, .mob-bar .mob-title { opacity: 0; transition: opacity .15s; }
   .mob-bar.titled .mob-ic, .mob-bar.titled .mob-title { opacity: 1; }
   .main { padding: 12px; gap: 12px; }
-  .main > .page-head > h1, .main > h1:first-child { font-size: 1.25rem; flex: 1 1 100%; }
+  .main > .page-head > h1, .main > h1:first-child { font-size: 1.45rem; flex: 1 1 100%; }
   .page-head .head-actions { flex-wrap: wrap; justify-content: flex-start; width: 100%; }
   .sec-head .head-actions { flex-wrap: wrap; margin-left: auto; }
   .card, section.card { padding: 12px; min-width: 0; }
@@ -193,8 +195,11 @@ li.off { opacity: .55; }
 @media (max-width: 640px) { .net-row { grid-template-columns: auto minmax(0, 1fr); padding-bottom: 6px; border-bottom: 1px solid var(--line); } .net-row .net-info { grid-column: 1 / 2; } }
 
 /* packs: by pack / by child */
-.seg { display: inline-flex; border: 2px solid var(--line); border-radius: 999px; padding: 2px; gap: 2px; background: var(--card); }
-.seg button { border: 0; background: none; padding: 6px 14px; border-radius: 999px; font-weight: 700; cursor: pointer; }
+/* segmented control: may wrap onto a second row on phones (every choice stays visible) – so a rounded box, not a pill,
+   and no wrapping inside one button */
+.seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; border: 2px solid var(--line); border-radius: 14px; padding: 2px; gap: 2px; background: var(--card); }
+.seg button { border: 0; background: none; padding: 6px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+@media (pointer: coarse) { .seg button { min-height: 44px; } }
 .seg button.on { background: var(--accent-bg); color: var(--accent-fg); }
 .seg button:disabled { opacity: .4; cursor: default; }
 .pack-mini-list { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 4px; }
@@ -304,8 +309,7 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .cg-list { display: grid; gap: 8px; margin-bottom: 14px; }
 .cg-list .cg-sub { font-size: 1rem; margin: 8px 0 0; }
 .cg-sec:has(.game-status.off) > .cg-list, .cg-sec:has(.game-status.off) > .cg-actions { opacity: .55; }
-.games-general summary { cursor: pointer; }
-.games-general[open] summary { margin-bottom: 10px; }
+.games-general { display: grid; gap: 10px; }
 
 /* foot of the menu: one item per line */
 .side-foot { display: grid; gap: 2px; margin: 8px 0 0; padding: 8px; border-top: 1px solid var(--line);
@@ -356,6 +360,8 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
   .tbl.stack td input:not([type=checkbox]), .tbl.stack td select { width: 100%; min-width: 0; }
   .tbl.stack td.c { justify-items: start; }
   .tbl.stack .key-col { display: none; }
+  .shop-tbl.stack td:last-child { grid-column: 1 / -1; }      /* «Paid with»: the whole width, its text readable */
+  .shop-tbl.stack input[type=number] { width: 100%; }
 }
 
 /* 🏅 pack rewards: XP and coins side by side */
@@ -373,7 +379,7 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .switch-ui { width: 58px; height: 32px; border-radius: 16px; background: var(--line); position: relative; transition: background .2s; }
 .switch-ui::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s; }
-.switch-wrap input:checked + .switch-ui { background: #d6338c; }
+.switch-wrap input:checked + .switch-ui { background: var(--accent-bg); }   /* the same accent as every other switch */
 .switch-wrap input:checked + .switch-ui::after { transform: translateX(26px); }
 .switch-wrap input:focus-visible + .switch-ui { outline: 3px solid var(--accent); outline-offset: 2px; }
 .party-dialog h3 { margin-top: 6px; }
@@ -427,3 +433,13 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .brand-app { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; color: inherit; text-decoration: none; border-radius: 10px; font-weight: 700; }
 .brand-app:hover { background: var(--hover); }
 .brand-app .brand-go { opacity: .55; font-size: .85rem; }
+
+/* ⓘ stays on the line of the last word before it (parent-info.js glueInfo) */
+.ib-glue { white-space: nowrap; }
+.ib-glue.ib-gap { margin-left: .3em; }
+.weather-btns { align-items: center; }
+.weather-lbl { white-space: nowrap; margin-right: 2px; }
+/* own file picker (fileButton): the native input stays in the page, invisible */
+.file-hidden { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
+.file-pick { align-items: center; gap: 10px; position: relative; }
+.file-name { overflow-wrap: anywhere; }

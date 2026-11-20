@@ -14,7 +14,7 @@ const PARENT_INFO = {
     T("What the family decides and does together: family council, polls, bulletin boards, secret gift giving and the history. Children can take part and open topics too."),
     T("Family council, polls and secret gift giving – children can open topics and vote too. The games are on their own page «Games».")],
   [T("Games")]: T("Every game of the app: switch each one to active, active without bots (no «alone against bots», no bots at the table, no games against the app) or inactive – for everybody or only for chosen children; parents can always play. Start games here, set the coins and end running tables. The search finds a game by its name."),
-  [T("Rewards")]: T("Accounts and the shop: what children can buy with their points (vouchers, internet minutes, avatar items, Home Assistant scripts) and the rules how many points an activity gives."),
+  [T("Points & rules")]: T("The points of the family: the accounts (XP, coins and your own ones) and the rules how many points an activity gives. What children buy with their points is set in «Shop»."),
   [T("Goals")]: T("Weekly goals for a child (e.g. 3 learning days) and the family goal everybody works on together. Reached goals give a bonus."),
   [T("Dashboard")]: [
     T("The kiosk dashboard for a tablet on the wall: what it shows (chores, calendar, weather, points) and the link to open it."),
@@ -126,6 +126,11 @@ const PARENT_INFO = {
   [T("Calendars from Home Assistant")]: [
     T("Show calendars of Home Assistant (read only) in the family calendar, e.g. the school or work calendar."),
     T("Show calendars you already have in Home Assistant (e.g. Google, school, waste collection) in the family calendar – read only.")],
+  "chores.own": T("Family Quest's own chore list: chores with points, how often they come and who does them. Children tick them off in the app, you confirm. It is separate from the Planner below – the two do not share chores."),
+  "chores.planer": [
+    T("The built-in Family Planer has its own, bigger chore plan (days, rhythm, time to do it, special chores, to-dos). It is separate from the list above."),
+    T("«Move my chores to the Planner» copies your chores into the Planner and switches them off in the list above (their history stays). Then the Planner is your one chore plan.")],
+  [T("Old chore list")]: T("Family Quest's own chores that are switched off – most likely moved to the Planner. Switch one on again with ✏️ Edit."),
   [T("This week")]: T("The chores of this week per day and child – what is done and what is still open."),
   [T("All chores")]: T("Every chore with its frequency, who does it, the points and whether it is a duty or a bonus. Tap one to change it."),
   [T("Levels")]: T("How many XP are needed for each level. Children see their level in the header."),
@@ -364,8 +369,61 @@ function decorateInfo(root = document) {
   });
 }
 
+/** ⓘ never alone on a line: the last word before it and the ⓘ go into one `white-space: nowrap` span. Only once the
+ *  dictionaries are loaded (the text is translated as a whole first – the two parts are not translated on their own). */
+function glueInfo(root = document) {
+  root.querySelectorAll(".info-btn:not([data-glued])").forEach(btn => {
+    btn.dataset.glued = "1";
+    if (btn.parentElement && btn.parentElement.classList.contains("ib-glue")) return;
+    let prev = btn.previousSibling;
+    while (prev && prev.nodeType === 3 && !prev.nodeValue.trim()) prev = prev.previousSibling;
+    if (!prev) return;
+    const glue = h("span.ib-glue");
+    if (prev.nodeType === 3) {
+      const v = I18N.tr(prev.nodeValue).replace(/\s+$/, ""), i = v.search(/\S+$/);
+      if (i < 0) return;
+      prev.nodeValue = v.slice(0, i);
+      prev.after(glue);
+      glue.append(v.slice(i));
+    } else if (prev.nodeType === 1 && /^(SPAN|B|STRONG|EM|SMALL)$/.test(prev.tagName) && prev.textContent.length <= 24
+      && !prev.querySelector("button, input, select, textarea") && getComputedStyle(prev).display.startsWith("inline")) {
+      prev.before(glue);
+      glue.append(prev);
+    } else return;
+    glue.append(btn);
+    // in a flex or grid row the span is an item of its own: the space before it would be dropped – a margin instead
+    let before = glue.previousSibling;
+    while (before && before.nodeType === 3 && !before.nodeValue) before = before.previousSibling;
+    if (/flex|grid/.test(getComputedStyle(glue.parentElement).display) && before && /\s$/.test(before.textContent || "")) glue.classList.add("ib-gap");
+  });
+}
+
+/** Form fields whose caption is plain text next to them (table columns, grids, «Price [ ]») get that caption as their
+ *  name for screen readers – where a field has no <label>, aria-label or aria-labelledby of its own. */
+function labelFields(root = document) {
+  const own = el => [...el.childNodes].filter(n => n.nodeType === 3 || (n.nodeType === 1 && /^(SPAN|B|STRONG|SMALL|EM)$/.test(n.tagName)
+    && !n.querySelector("input, select, textarea, button"))).map(n => n.textContent).join(" ").replace(/ⓘ/g, "").replace(/\s+/g, " ").trim();
+  root.querySelectorAll("main input:not([type=hidden]):not([type=button]):not([type=submit]):not([data-al]), main select:not([data-al]), main textarea:not([data-al])").forEach(el => {
+    el.dataset.al = "1";
+    if (el.hasAttribute("aria-label") || el.hasAttribute("aria-labelledby") || el.closest("label") || (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`))) return;
+    let name = "";
+    const td = el.closest("td");
+    if (td) {
+      name = td.dataset.label || "";
+      const table = td.closest("table"), th = table && table.tHead && table.tHead.rows[0] && table.tHead.rows[0].cells[td.cellIndex];
+      if (!name && th) name = own(th) || th.textContent.replace(/ⓘ/g, "").trim();
+    }
+    for (let p = el.parentElement, i = 0; !name && p && i < 2 && !p.matches("main, section, details, form, .modal"); p = p.parentElement, i++) {
+      const t = own(p);
+      if (t && t.length <= 60) name = t;
+    }
+    // (a placeholder or title already names the field for screen readers – nothing to add then)
+    if (name) el.setAttribute("aria-label", name.replace(/^[^\p{L}\p{N}]+/u, "").replace(/:$/, "").trim() || name);
+  });
+}
+
 (() => {
   let pending = false;
-  const run = () => { pending = false; try { decorateInfo(); } catch (e) { /* never break the page */ } };
+  const run = () => { pending = false; try { decorateInfo(); I18N.ready.then(() => { try { glueInfo(); labelFields(); } catch (e) { /* never break the page */ } }); } catch (e) { /* never break the page */ } };
   new MutationObserver(() => { if (!pending) { pending = true; setTimeout(run, 60); } }).observe(document.documentElement, { childList: true, subtree: true });
 })();

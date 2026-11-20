@@ -329,7 +329,8 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([t
 function focusTrap(back, box, close) {
   const opener = document.activeElement;
   const items = () => [...box.querySelectorAll(FOCUSABLE)].filter(e => e.getClientRects().length && !e.closest("[hidden], [inert]"));
-  const top = () => [...document.querySelectorAll(".modal-back, .drawer-back")].pop() === back;
+  // the topmost layer: dialogs, drawers, the parent ☰ menu on phones (.side-back.open), the period picker of Analytics
+  const top = () => [...document.querySelectorAll(".modal-back, .drawer-back, .side-back.open, .an-pick-back")].pop() === back;
   const key = e => {
     if (!back.isConnected) return release();
     if (!top()) return;

@@ -50,6 +50,8 @@ async def run(request: Request, body: dict = Body(...), me: dict = Parent) -> di
         res = await asyncio.to_thread(privacy.run, fq, kinds, picks, {"id": me["id"], "name": me["name"]})
     except privacy.PrivacyOff:
         raise HTTPException(409, "Privacy is switched off – switch it on to run a clean-up") from None
+    except privacy.Busy:
+        raise HTTPException(409, "Home Assistant is making a backup right now – try again in a minute") from None
     except OSError:
         raise HTTPException(500, "The backup before the clean-up could not be written – nothing was deleted") from None
     return {**res, **privacy.preview(fq)}

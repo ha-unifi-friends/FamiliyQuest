@@ -80,7 +80,7 @@ async function analyticsView(main) {
   const tabs = tabbed([{ key: "dash", label: "📊 " + anTr(T("Dashboards")), content: [dash] }, { key: "rep", label: "📋 " + anTr(T("Reports")), content: [rep] }]);
   tabs.bar.addEventListener("click", e => { const b = e.target.closest(".tab"); if (b) anStore.set("tab", AN.tab = b.id === "tab-rep" ? "rep" : "dash"); });
   // the tabs stand right of the page title (they wrap below it on a narrow phone) – the panes follow
-  main.append(h("div.page-head.an-head", h("h1", "📈 ", T("Analytics")), tabs.bar), h("div.an-root", tabs.el));
+  main.append(h("div.page-head.an-head", h("h1", T("Analytics")), tabs.bar), h("div.an-root", tabs.el));
   AN.showTab = k => { tabs.show(k); anStore.set("tab", AN.tab = k); };
   tabs.show(AN.tab);
   anReportsPane(rep);
@@ -200,7 +200,7 @@ function anBuilder() {
         s.profiles = s.profiles.includes(p.id) ? s.profiles.filter(x => x !== p.id) : [...s.profiles, p.id];
         if (s.profiles.length === people.length) s.profiles = [];
         changed();
-      } }, h("span.an-dot", { style: { background: p.color } }), C(p.name))));
+      } }, h("span.an-dot", { style: { background: anPersonColor(people.indexOf(p)) } }), C(p.name))));
     body.replaceChildren(
       h("div.an-source", h("div.small.muted.an-pal-h", { id: "an-src-h" }, T("Data source")), source),
       h("div.an-palwrap", h("div.small.muted.an-pal-h", T("Dimensions")), pal("dim", ds.dims.map(d => d[0])),
@@ -370,6 +370,9 @@ function anLabel(dim, v) {
   } catch { return s; }
 }
 
+/** The colour of a person in the charts (and in the person filter): the chart palette by the person's place. */
+const anPersonColor = i => `var(--an-s${(Math.max(0, i) % 8) + 1})`;
+
 function anModel(res) {
   const sp = res.spec, g = sp.group.length, r = sp.rows.length, c = sp.columns.length;
   const key = t => JSON.stringify(t);
@@ -392,7 +395,7 @@ function anModel(res) {
     cats: uniq(g, r).map(t => ({ k: key(t), label: r ? label(t, g) : anTr(T("Sum")) })),
     series: uniq(g + r, c).map(t => ({ k: key(t), label: c ? label(t, g + r) : "" })),
     get: (gk, ck, sk, mi) => { const v = cells.get(gk + "|" + ck + "|" + sk); return v ? v[mi] : null; },
-    measures: res.measures, rCount: r, cCount: c, spec: sp,
+    measures: res.measures, rCount: r, cCount: c, spec: sp, colDim: c === 1 ? res.dims[g + r] : null,
   };
 }
 
@@ -481,6 +484,12 @@ function anChart(M, gr, m, mi, type, height) {
     series = [...series.filter(s => keep.has(s.k)), { k: "__other", label: anTr(T("Other")), other: series.filter(s => !keep.has(s.k)) }];
   }
   series.forEach((s, i) => { s.color = `var(--an-s${i + 1})`; });
+  // one colour per person everywhere: series by child take the colour of the person's place (as the filter dots do)
+  if (M.colDim && M.colDim.kind === "profile" && series.length <= 8) {
+    const people = (AN.meta.profiles || []).map(p => String(p.id)), used = new Set();
+    const at = s => { try { return people.indexOf(String(JSON.parse(s.k)[0])); } catch { return -1; } };
+    if (series.every(s => at(s) >= 0 && at(s) < 8)) series.forEach(s => { s.color = anPersonColor(at(s)); used.add(s.color); });
+  }
   const pie = type === "pie";
   if (pie) {
     // slices: the categories (rows), else the series; the rest added up
@@ -562,7 +571,8 @@ function anChart(M, gr, m, mi, type, height) {
       box.prepend(svg);
     };
   } else {
-    if (series.length > 1) legend.append(...series.map(s => h("span.an-li", type === "line" ? h("span.an-swl", { style: { background: s.color } }) : h("span.an-sw", { style: { background: s.color } }), h("span", { translate: "no" }, s.label))));
+    // a legend also for one named series (e.g. 100 % bars «done»): otherwise nobody knows what the bar is
+    if (series.length > 1 || M.cCount > 0) legend.append(...series.map(s => h("span.an-li", type === "line" ? h("span.an-swl", { style: { background: s.color } }) : h("span.an-sw", { style: { background: s.color } }), h("span", { translate: "no" }, s.label))));
     const stacked = type === "stacked" || type === "stacked100" || type === "area", pct = type === "stacked100";
     const vals = cats.map(c => series.map(s => val(c, s)));
     const plotV = vals.map(row => { if (pct) { const t = row.reduce((a, v) => a + Math.abs(v), 0) || 1; return row.map(v => Math.abs(v) / t * 100); } return type === "area" ? row.map(v => Math.max(0, v)) : row; });
@@ -714,7 +724,7 @@ function anPeriodTitle(p) {
   switch (p.type) {
     case "day": return [a.toLocaleDateString(loc, { weekday: "short", day: "numeric", month: "short" }), String(ya)];
     case "week": return [range({ day: "numeric", month: "short" }), sub];
-    case "month": return [a.toLocaleDateString(loc, { month: "long" }), String(ya)];
+    case "month": return [a.toLocaleDateString(loc, { month: innerWidth < 420 ? "short" : "long" }), String(ya)];   // phones: «nov.» – never cut
     case "quarter": return [range({ month: "short" }), String(ya)];
     case "year": return [String(ya), ""];
     case "r12": return [range({ month: "short" }), sub];
@@ -747,9 +757,9 @@ function anDashPane(root) {
         try { Object.assign(cur, await call(`parent/analytics/dashboards/${cur.id}`, { method: "PUT", body: { name: n } })); cur.standard = false; draw(); } catch {} }],
       cur.id !== "std" ? [T("Delete"), "🗑️", async () => { if (!await confirmDialog(I18N.tr(T("Delete the dashboard «{0}»?")).replace("{0}", cur.name))) return;
         try { await call(`parent/analytics/dashboards/${cur.id}`, { method: "DELETE" }); ds.splice(ds.indexOf(cur), 1); cur = ds[0]; anStore.set("dash", cur.id); AN.edit = false; draw(); } catch {} }] : null,
-    ].filter(Boolean)) }, "⋯");
+    ].filter(Boolean)) }, "⋮");
+    // no «Dashboards» heading: the tab above already names the page
     card.replaceChildren(
-      h("h2", T("Dashboards")),
       h("div.an-dbar", pick,
         h("button.btn.small" + (AN.edit ? "" : ".ghost"), { type: "button", "aria-pressed": String(AN.edit), onclick: () => { AN.edit = !AN.edit; draw(); } }, AN.edit ? "✓ " : "✏️ ", AN.edit ? T("Done") : T("Edit")), more),
       tl, AN.edit ? pal : null, grid);
@@ -897,18 +907,25 @@ function anPicker(anchor, p, onPick) {
   let view = new Date(b.getFullYear(), b.getMonth(), 1, 12), mode = "days", focusDay = new Date(b);
   const quick = [["today", T("Today")], ["yesterday", T("Yesterday")], ["week", T("This week")], ["month", T("This month")], ["quarter", T("This quarter")],
     ["year", T("This year")], ["l7", T("Last 7 days")], ["l30", T("Last 30 days")], ["l365", T("Last 365 days")], ["r12", T("Last 12 months")]];
+  // the range of a quick button: [from, to, type]
+  const quickRange = k => {
+    if (k === "today") return [today, today, "day"];
+    if (k === "yesterday") { const y = anAddDays(today, -1); return [y, y, "day"]; }
+    if (["week", "month", "quarter", "year", "r12"].includes(k)) return [...anPeriodAt(k, today), k];
+    const n = { l7: 7, l30: 30, l365: 365 }[k]; return [anAddDays(today, -(n - 1)), today, "custom"];
+  };
   const applyQuick = k => {
-    if (k === "today") { [a, b] = [today, today]; type = "day"; }
-    else if (k === "yesterday") { const y = anAddDays(today, -1); [a, b] = [y, y]; type = "day"; }
-    else if (["week", "month", "quarter", "year", "r12"].includes(k)) { [a, b] = anPeriodAt(k, today); type = k; }
-    else { const n = { l7: 7, l30: 30, l365: 365 }[k]; [a, b] = [anAddDays(today, -(n - 1)), today]; type = "custom"; }
+    [a, b, type] = quickRange(k);
     picking = false; view = new Date(b.getFullYear(), b.getMonth(), 1, 12); focusDay = new Date(b); draw();
   };
+  // the quick button that matches the range chosen now is marked (on, aria-pressed)
+  const quickOn = k => { if (picking) return false; const [x, y] = quickRange(k); return anISO(x) === anISO(a) && anISO(y) === anISO(b); };
   const back = h("div.an-pick-back", { onclick: e => { if (e.target === back) close(); } });
   const sheet = h("div.an-pick", { role: "dialog", "aria-modal": "true", "aria-label": T("Choose a period") });
   back.append(sheet);
   const prevFocus = document.activeElement;
-  const close = () => { back.remove(); document.removeEventListener("keydown", key, true); if (prevFocus && prevFocus.isConnected) prevFocus.focus(); };
+  let release = null;
+  const close = () => { back.remove(); document.removeEventListener("keydown", key, true); if (release) release(false); if (prevFocus && prevFocus.isConnected) prevFocus.focus(); };
   const select = () => {
     const same = type !== "custom" && type !== "day" && anISO(anPeriodAt(type, a)[0]) === anISO(a) && anISO(anPeriodAt(type, a)[1]) === anISO(b);
     const isToday = type === "day" && anISO(a) === anISO(today) && anISO(b) === anISO(today);
@@ -917,7 +934,7 @@ function anPicker(anchor, p, onPick) {
   };
   const loc = I18N.locale, fd = anFirstDay();
   const draw = () => {
-    const ql = h("div.an-pick-quick", { role: "group", "aria-label": T("Quick ranges") }, ...quick.map(([k, n]) => h("button", { type: "button", onclick: () => applyQuick(k) }, n)));
+    const ql = h("div.an-pick-quick", { role: "group", "aria-label": T("Quick ranges") }, ...quick.map(([k, n]) => { const on = quickOn(k); return h("button" + (on ? ".on" : ""), { type: "button", "aria-pressed": String(on), onclick: () => applyQuick(k) }, n); }));
     const title = mode === "days" ? view.toLocaleDateString(loc, { month: "long", year: "numeric" }) : String(view.getFullYear());
     const nav = d => { view = mode === "days" ? anAddMonths(view, d) : new Date(view.getFullYear() + d, view.getMonth(), 1, 12); draw(); };
     const head = h("div.an-cal-head",
@@ -967,4 +984,5 @@ function anPicker(anchor, p, onPick) {
   const r = anchor.getBoundingClientRect();
   if (innerWidth > 640) { sheet.style.left = Math.max(8, Math.min(innerWidth - sheet.offsetWidth - 8, r.left)) + "px"; sheet.style.top = Math.min(innerHeight - sheet.offsetHeight - 8, r.bottom + 6) + "px"; }
   (sheet.querySelector('.an-day[tabindex="0"]') || sheet.querySelector("button")).focus({ preventScroll: true });
+  release = focusTrap(back, sheet, close);          // Tab stays in the picker (shared/ui.js)
 }

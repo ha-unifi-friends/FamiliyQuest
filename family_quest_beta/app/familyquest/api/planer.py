@@ -22,7 +22,7 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile, WebSock
 from pydantic import BaseModel
 
 from ..planer import hacompat, importer
-from .auth import INGRESS_IP, KID_MAX_AGE, PARENT_MAX_AGE, Learner, Parent, app_of
+from .auth import INGRESS_IP, KID_MAX_AGE, PARENT_APP_TTL, PARENT_MAX_AGE, Learner, Parent, app_of, parent_network_ok
 
 log = logging.getLogger("familyquest.planer")
 router = APIRouter(prefix="/api/planer")
@@ -50,7 +50,7 @@ async def planer_ws(websocket: WebSocket, token: str = "", parent: str = "") -> 
         await websocket.close(code=4403)
         return
     kid = fq.tokens.read(token, "kid", KID_MAX_AGE)
-    par = fq.tokens.read(parent, "parent", PARENT_MAX_AGE)
+    par = fq.tokens.read(parent, "parent", PARENT_MAX_AGE, (websocket.client and websocket.client.host) == INGRESS_IP)
     if par is not None and (netfilter.check(fq, ip, "/api/parent/") or fq.db.get_setting("parent_ha_only")
                             and (websocket.client and websocket.client.host) != INGRESS_IP):
         par = None                                       # a parent login from outside the parent networks: no admin
@@ -171,7 +171,8 @@ def _parent_in_app(fq, kid_token: str, ip: str, via_ha: bool = False) -> bool:
     planner – no second PIN: the signed-in profile is the identity. Only from where the parent area is allowed: the
     parent networks, and only through Home Assistant when the parent area is set to «only in Home Assistant»."""
     from .. import netfilter
-    pid = fq.tokens.read(kid_token, "kid", KID_MAX_AGE)
+    # only a fresh one: a parent's app login left on a shared tablet must not stay a planner admin for long
+    pid = fq.tokens.read(kid_token, "kid", PARENT_APP_TTL)
     if pid is None or fq.db.val("SELECT role FROM profile WHERE id=? AND archived=0", pid) != "parent":
         return False
     return not netfilter.check(fq, ip, "/api/parent/") and (via_ha or not fq.db.get_setting("parent_ha_only"))
@@ -182,10 +183,10 @@ def _privileged(request: Request, prof: dict) -> bool:
     if prof["role"] != "parent":
         return False
     fq = app_of(request)
-    if fq.tokens.read(request.headers.get("x-fq-parent"), "parent", PARENT_MAX_AGE) == prof["id"]:
-        return True
-    from .. import loginlog
     from .auth import via_ingress
+    if fq.tokens.read(request.headers.get("x-fq-parent"), "parent", PARENT_MAX_AGE, via_ingress(request)) == prof["id"]:
+        return parent_network_ok(fq, request)           # the parent networks hold for a parent token everywhere
+    from .. import loginlog
     return _parent_in_app(fq, request.headers.get("x-fq-token") or "", loginlog.client_ip(request), via_ingress(request))
 
 
