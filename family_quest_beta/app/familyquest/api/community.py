@@ -343,7 +343,7 @@ def quiz_import(body: QuizImportIn, request: Request, prof: dict = Gamer) -> dic
         raise HTTPException(403, "Guests cannot add quizzes")
     if len(body.text) > 1_000_000:
         raise HTTPException(400, "The file is too large")
-    return {"ids": _run(app_of(request).community.import_quizzes, prof, body.text)}
+    return {"ids": _run(app_of(request).community.import_quizzes, prof, body.text.lstrip("\ufeff"))}     # a file saved with a BOM
 
 
 def _quiz_file(doc: dict, name: str) -> Response:

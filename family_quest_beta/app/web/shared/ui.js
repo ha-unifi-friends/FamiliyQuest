@@ -620,39 +620,46 @@ async function downloadApi(path, name) {
   } catch (e) { toast(e.message, "bad"); }
 }
 
-// «Made with your AI» (packs, quizzes, books, adventure games): one example prompt for an AI chat – a monospace block with
-// the parts to fill in [like this] highlighted, «📋 Copy prompt» (the prompt + the template in one go, the template is a
-// self-describing JSON: familyquest/ai_format.py, stories.py, picturebooks.py, adventuregame.py) and «⬇️ Template»
-function aiPromptBox(promptText, { template, name } = {}) {
-  const text = I18N.tr(promptText) + (template ? "\n" + I18N.tr(T("Use exactly the format of the attached Family Quest template and answer only with the JSON.")) : "");
+// «Made with your AI» (packs, quizzes, books, adventure games): the same box everywhere, in this order –
+// 1. «⬇️ Download template for the AI» (a self-describing JSON: familyquest/ai_format.py, stories.py, picturebooks.py,
+// adventuregame.py), 2. the example prompt (a monospace block, the parts to fill in [like this] highlighted),
+// 3. «📋 Copy prompt», 4. a short hint, 5. «📤 Import the AI's JSON file» – the AI hands back a file, nothing is pasted
+// (copying long answers broke them). `onFile(file, text)` gets the chosen file and its text (UTF-8, a BOM removed).
+function aiPromptBox(promptText, { template, name, onFile, accept = ".json,.txt,application/json,text/plain" } = {}) {
+  const text = I18N.tr(promptText) + (template ? "\n" + I18N.tr(T("Use exactly the format of the attached Family Quest template and give me the result as a downloadable .json file.")) : "");
   const pre = h("pre.ai-prompt-text", { translate: "no", tabindex: "0" },
     ...text.split(/(\[[^\]\n]+\])/).map((p, i) => i % 2 ? h("mark.ai-ph", p) : p));
-  let tplText = null, tplLoad = null;          // fetched ahead: the copy itself happens right in the tap (Safari, http)
-  const load = () => tplLoad || (tplLoad = !template ? Promise.resolve("") :
-    fetch(template).then(r => r.ok ? r.text() : "").catch(() => "").then(t => (tplText = t)));
-  load();
   const selectPrompt = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); pre.focus(); };
   const copy = async () => {
-    if (tplText == null) await load();
-    const all = text + (tplText ? "\n\n" + tplText : "");
     let ok = false;
-    try { await navigator.clipboard.writeText(all); ok = true; } catch {}
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {}
     if (!ok) {                                  // no clipboard API (plain http in the home network): the old way
       const ta = h("textarea", { readonly: true, style: { position: "fixed", top: "0", left: "0", opacity: "0", width: "1px", height: "1px" } });
-      ta.value = all; (pre.closest("dialog, .modal") || document.body).append(ta); ta.select();
+      ta.value = text; (pre.closest("dialog, .modal") || document.body).append(ta); ta.select();
       try { ok = document.execCommand("copy"); } catch {}
       ta.remove();
     }
-    if (ok) return toast(I18N.tr(tplText ? T("Copied – paste it into the chat of your AI") : T("Copied")), "good");
+    if (ok) return toast(I18N.tr(T("Copied – paste it into the chat of your AI")), "good");
     selectPrompt();
     toast(I18N.tr(T("Copying is blocked here – the prompt is selected: copy it yourself and attach the template file.")), "bad");
   };
+  const file = h("input.ai-file", { type: "file", accept, hidden: true, onchange: async () => {
+    const f = file.files[0]; file.value = "";
+    if (!f || !onFile) return;
+    if (f.size > 5e6) return toast(I18N.tr(T("The file is too large")), "bad");
+    let t = "";
+    try { t = (await f.text()).replace(/^\uFEFF/, ""); } catch {}
+    onFile(f, t);
+  } });
   return h("div.ai-prompt",
-    h("div.ai-prompt-head", h("b", "💬 ", T("Example prompt")),
-      h("button.btn.small.ai-copy", { type: "button", onclick: copy }, "📋 ", T("Copy prompt"))),
+    template ? h("div.row.wrap.ai-tpl-row", h("a.btn.ai-tpl", { style: { textDecoration: "none" }, href: template, download: name || "family-quest-template.json" },
+      "⬇️ ", T("Download template for the AI"))) : null,
+    h("div.ai-prompt-head", h("b", "💬 ", T("Example prompt"))),
     pre,
-    template ? h("p.small.muted", T("«Copy prompt» copies the prompt together with the template. Paste it into the chat of your AI (ChatGPT, Claude, Gemini …) and replace the highlighted [parts].")) : null,
-    template ? h("div.row.wrap", h("a.btn.small.ghost", { style: { textDecoration: "none" }, href: template, download: name || "family-quest-template.json" }, "⬇️ ", T("Template for the AI"))) : null);
+    h("div.row.wrap", h("button.btn.small.ghost.ai-copy", { type: "button", onclick: copy }, "📋 ", T("Copy prompt"))),
+    h("p.small.muted.ai-hint", template ? T("Download the template, copy the prompt, then attach the template in the chat of your AI (ChatGPT, Claude, Gemini …) and fill in the highlighted [parts]. Upload the JSON file you get back.")
+      : T("Copy the prompt into the chat of your AI and fill in the highlighted [parts].")),
+    onFile ? h("div.row.wrap.ai-upload", h("button.btn.ai-import", { type: "button", onclick: () => file.click() }, "📤 ", T("Import the AI's JSON file")), file) : null);
 }
 
 // link to the parent area: when it is only offered in Home Assistant, straight to the Family Quest panel there

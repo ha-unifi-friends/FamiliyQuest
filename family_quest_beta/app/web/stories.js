@@ -390,20 +390,19 @@ function storyNewDialog(done, creatable = ["picture", "adventure", "game"], fixe
     h("div.row", h("button.btn", { onclick: create }, "✏️ ", T("Start writing")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
 }
 
-// import: a file or the answer of an AI (paste) – becomes a private draft (picture books and adventure books)
+// import: the JSON file of an AI or an exported book file – becomes a private draft (picture books and adventure books)
 function storyImportDialog(done, fixedType = null, kinds = ["picture", "adventure", "game"]) {
   let type = "picture";
   try { type = ["adventure", "game"].includes(localStorage.getItem("fq.sb.newtype")) ? localStorage.getItem("fq.sb.newtype") : "picture"; } catch {}
   if (!kinds.includes(type)) type = kinds[0];
   if (fixedType) type = fixedType;                       // parent area: the box of a type – its template only
-  const text = h("textarea.sb-imptext", { rows: 8, placeholder: I18N.tr(T("Paste the answer of the AI here …")) });
-  const file = h("input", { type: "file", accept: ".json,.txt,application/json,text/plain" });
-  file.onchange = async () => { const f = file.files[0]; if (!f) return; if (f.size > 1e6) return toast(I18N.tr(T("The file is too large")), "bad"); text.value = await f.text(); };
   const tplUrl = () => "api/stories/ai-template" + (type === "adventure" ? "" : "?type=" + type);
   const tplName = () => type === "picture" ? "family-quest-picturebook-template.json" : type === "game" ? "family-quest-adventuregame-template.json" : "family-quest-story-template.json";
-  const go = async () => {
+  // the JSON file the AI gave back (or an exported book file): imported right away
+  const go = async (f, text) => {
+    if (f.size > 1e6) return toast(I18N.tr(T("The file is too large")), "bad");
     try {
-      const r = await api("stories/import", { method: "POST", body: { text: text.value } });
+      const r = await api("stories/import", { method: "POST", body: { text } });
       m.close(); toast(I18N.tr(T("Imported as a private draft")), "good");
       const e = await api("stories/" + r.ids[0]);
       if (fixedType && e.type !== fixedType) toast(sbFmt(T("This file is: {0} – it was added there."), SB_TYPES()[e.type][1]), "good");
@@ -417,14 +416,13 @@ function storyImportDialog(done, fixedType = null, kinds = ["picture", "adventur
     aiPromptBox({ picture: T("Write a picture book for a child aged [5].\nStory idea: [e.g. a little fox who is afraid of the dark]\nAbout [8] pages, language: [English]."),
       adventure: T("Write an interactive book for children aged [6 to 9].\nStory idea: [e.g. a little dragon who is afraid of the dark]\nAbout [12] pages that go on like a book, [2] pages where the reader chooses how it goes on, [3] happy endings, language: [English]."),
       game: T("Make an adventure game for children aged [8 to 12].\nStory idea: [e.g. the lost treasure in the old castle]\n[4] rooms with doors, objects and characters, a small puzzle in each room, language: [English].") }[type],
-      { template: tplUrl(), name: tplName() }));
+      { template: tplUrl(), name: tplName(), onFile: go }));
   drawTpl();
   const impHead = fixedType ? { picture: T("Import a book"), adventure: T("Import an interactive book"), game: T("Import an adventure game") }[type] : T("Import a book");
   const m = modal(h("div.form.sb-imp", h("h2", "📥 ", impHead),
-    h("p.small", T("1. Copy the prompt (the template comes with it) and paste it into any AI chat. 2. Fill in the highlighted parts with your story idea. 3. Paste the answer here – or choose a book file that was exported.")),
-    tpls, text, h("label.field", T("…or a file"), file),
+    tpls,
     h("p.small.muted", "🔒 ", T("The book comes in as a private draft – the checker shows what is still missing. Own drawings come along, photos are not part of the file.")),
-    h("div.row", h("button.btn", { onclick: go }, "📥 ", T("Import")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
+    h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))), { wide: true });
 }
 
 // ---------------------------------------------------------------- reading

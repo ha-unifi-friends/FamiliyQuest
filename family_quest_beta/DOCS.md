@@ -250,17 +250,18 @@ The menu item **📈 Analytics** in the parent area has two tabs.
 **📋 Reports**:
 - **Templates** – ready-made reports (coins per child and week, coins earned and spent, XP per week, correct answers
   and accuracy per subject, learning minutes, games played per game, games / wins / coins per child, chores done, rewards
-  redeemed, game time, internet minutes used, battery used per game, the weather of the day and its bonus/malus points,
+  redeemed, game time per day and by weekday and child, internet minutes used, battery used per game, the weather of the day and its bonus/malus points,
   books read). A tap fills the ad-hoc report.
 - **My reports** – reports you saved, with ✏️ rename and 🗑️ delete.
-- **Ad-hoc report** – choose a data source (points & coins, learning answers, learning days, games played, chores,
+- **Ad-hoc report** – choose a data source with its chips (points & coins, learning answers, learning days, games played, chores,
   rewards, game time, game battery, weather of the day, books read), then drag dimensions (person, day, week, month,
   year, weekday, and per source e.g. account, category, subject, game, chore, reward, status, weather) and measures
   (count, coins, XP, minutes, wins, …) into **Columns** (series / colours), **Rows** (categories, the x-axis), **Data**
   (the numbers) and **Group** (one table or chart per value) – or tap a chip and then a zone. At most 3 dimensions and
   4 measures. Filters: 7 days / 30 days / this year / all and the people. The icons below the report choose table,
-  pivot (with totals), bars, stacked bars, 100 % stacked bars, line, area or donut – our own SVG charts with legend
-  and tooltips (tap or hover), in light and dark mode. With several measures every chart shows one of them (one axis
+  pivot (with totals), bars, stacked bars, 100 % stacked bars, line, area, donut or bubbles (Rows on the x-axis,
+  Columns on the y-axis, the area of a bubble is the value – e.g. weekday × child by minutes played) – our own SVG
+  charts with legend and tooltips (tap or hover), in light and dark mode. With several measures every chart shows one of them (one axis
   per chart). **⭐ Save as my report** keeps it under «My reports».
 
 What it counts: the ledger (coins, XP, internet minutes used from earned minutes), the learning answers and learning
@@ -275,7 +276,8 @@ every backup.
 
 ## Kiosk dashboard
 
-Parent area → **🖥️ Dashboard**: a read-only page for a wall tablet, TV or old phone – any browser, no login.
+Parent area → **⚙️ Settings → App → 🖥️ Dashboard** (the kiosk link has its own fold below it; the old address
+`#dashboard` opens it): a read-only page for a wall tablet, TV or old phone – any browser, no login.
 Choose the children and what it shows: clock, crown, each child's weather, learning progress, streak, coins, open
 chores, the family goal, open Planer to-dos and today's events of Home Assistant calendars. Moods and messages to
 the parents are never shown. The link contains a secret key (🔄 «New link» makes a new one and the old screens stop);
