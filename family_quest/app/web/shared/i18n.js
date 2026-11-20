@@ -87,7 +87,9 @@ window.I18N = (() => {
   const ver = document.documentElement.dataset.version || "";
   // window.I18N_EXTRA = ["planer"] (set before this script) also loads i18n/planer/<lang>.json
   const get = u => fetch(u).then(r => r.ok ? r.json() : {}).catch(() => ({}));
-  const dicts = lang === "en" ? [] : ["i18n/" + lang + ".json", ...(window.I18N_EXTRA || []).map(d => "i18n/" + d + "/" + lang + ".json")].map(u => u + "?v=" + encodeURIComponent(ver));
+  // (not for German and Swiss German: the planer shows its own German texts there – planer/fq-pre.js – no dictionary to fetch)
+  const extra = /^de/.test(base) ? [] : (window.I18N_EXTRA || []);
+  const dicts = lang === "en" ? [] : ["i18n/" + lang + ".json", ...extra.map(d => "i18n/" + d + "/" + lang + ".json")].map(u => u + "?v=" + encodeURIComponent(ver));
   const languages = get("i18n/languages.json").then(ls => { if (Array.isArray(ls)) custom.push(...ls); return custom; });
   // the family's own texts come last, so they win over the built-in dictionaries
   const ready = Promise.all([...dicts.map(get), get("i18n/custom/" + lang + ".json")])
