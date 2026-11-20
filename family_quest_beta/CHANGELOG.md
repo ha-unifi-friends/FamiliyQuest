@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.29
+
+- Profile dialog: «Log out everywhere» ends every login of the profile on all devices
+- Sign in with Home Assistant: a warning in the parent area when Family Quest does not know the Home Assistant address yet
+
 ## 1.1.1-beta.28
 
 - Security: «Sign in with Home Assistant» in the app only talks to the internal Home Assistant or the address set by the parents – a fake Home Assistant can no longer hand out parent access
