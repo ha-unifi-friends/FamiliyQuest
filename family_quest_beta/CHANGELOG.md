@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.1-beta.20
+
+- Analytics (new main menu): dashboards with a timeline filter and period picker, reports from templates or an ad-hoc builder (drag dimensions and measures into columns, rows, data, group), 8 chart types, «My reports»
+- Privacy (new main menu): retention periods for every kind of data, clean-up runs with preview, automatic backup before each run, past runs, optional nightly clean-up, master switch and a red badge with the number of due entries; balances stay unchanged (balance brought forward)
+- Backup: full, data and customizing backups with one restore that detects the kind; environment values (ports, links, HA connection) are kept on restore; hint and button to include Family Quest in the Home Assistant backups; consistent hot backups by Home Assistant
+- Season designs show the live weather of a chosen weather sensor and follow day, night and dusk of the real sun
+- Parent area tidied up: explanations in ⓘ buttons, small fields side by side, settings in groups (App, Personalisation, Home Assistant, System), Family page with goals, crest, family view and FamilyTime games, History as its own menu item, everything collapsed by default, bigger expand arrow, games grouped like in the app, ⓘ on table headers
+- Overview: one collapsible row per child with weather quick-pick and «Edit profile»; failed logins at the bottom
+- Wichteln is translated («Secret gift giving»)
+
 ## 1.1.1-beta.19
 
 - The ⓘ info button is always right next to its label, also in dialogs

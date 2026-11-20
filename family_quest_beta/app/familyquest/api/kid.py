@@ -80,6 +80,13 @@ def info(request: Request) -> dict:
             "codelab": feature_visible("codelab")}           # 💡 Code Workshop: only in the dev channel (channel.DEV_FEATURES)
 
 
+@router.get("/season-live")
+def season_live(request: Request, prof: dict = Learner) -> dict | None:
+    """Live weather and daylight for the header scene (seasonlive.py) – None: the clock decides, no weather."""
+    from .. import seasonlive
+    return seasonlive.live(app_of(request))
+
+
 @router.get("/app-link")
 async def app_link(request: Request) -> dict:
     """Where the app is reached directly in the home network (port of the direct access, IPs of Home Assistant): links
@@ -94,7 +101,12 @@ async def app_link(request: Request) -> dict:
 async def ha_panel(request: Request) -> dict:
     """Link target for «open in Home Assistant» when the parent area is only offered there."""
     from ..netinfo import ha_panel as panel
-    return await panel(app_of(request).settings)
+    fq = app_of(request)
+    p = await panel(fq.settings)
+    if p.get("slug"):   # newer HA: /app/<slug>, older: /hassio/ingress/<slug> – the parent area tells which (parent/ha-panel-path)
+        learned = fq.db.get_setting("ha_panel_path")
+        p["path"] = learned if learned in (f"/app/{p['slug']}", f"/hassio/ingress/{p['slug']}") else f"/app/{p['slug']}"
+    return p
 
 
 @router.get("/profiles")

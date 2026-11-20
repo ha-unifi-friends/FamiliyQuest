@@ -275,7 +275,8 @@ class Rewards:
             want("streak_7", s >= 7)
             want("streak_30", s >= 30)
         want("xp_1000", self.total_xp(pid) >= 1000)
-        want("chores_50", int(self.db.val("SELECT COUNT(DISTINCT ref) FROM ledger WHERE profile_id=? AND event='chore_done'", pid, default=0)) >= 50)
+        want("chores_50", int(self.db.val("SELECT COUNT(DISTINCT ref) + COALESCE((SELECT SUM(n) FROM ledger_folded WHERE profile_id=? AND event='chore_done'), 0) FROM ledger WHERE profile_id=? AND event='chore_done'",
+                                          pid, pid, default=0)) >= 50)   # + chores folded by a clean-up (privacy.py)
         for u in unit_stars or []:
             if u["stars"] >= 5:
                 want("unit_master", True)
