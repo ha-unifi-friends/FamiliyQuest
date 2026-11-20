@@ -109,6 +109,14 @@ REPLACE += [
     ("const sel = persons.find((p) => p.id === this._person) || persons[0];",
      "const sel = persons.find((p) => p.id === (this._person || (window.FQ_ME && window.FQ_ME.person))) || persons[0];"),
 ]
+# week overview of the chore plan on phones: the name column as wide as the names (up to 96 px, no avatar), so «Mia» and
+# «Mama» stay apart instead of «M…» twice
+REPLACE += [
+    (".ov{grid-template-columns:minmax(56px,1fr) repeat(7,minmax(22px,1fr)) 34px;gap:3px;padding:8px;width:100%}",
+     ".ov{grid-template-columns:minmax(48px,max-content) repeat(7,minmax(20px,1fr)) 30px;gap:3px;padding:8px;width:100%}"),
+    (".ovp{gap:5px;font-size:12px}.ovp ha-icon,.ovp .av{display:none}",
+     ".ovp{gap:5px;font-size:12px;max-width:96px}.ovp>:not(span:last-child){display:none}"),
+]
 # trade marks: activity suggestion without a brand name
 REPLACE += [("lego: ['🧱', 'Lego-Challenge', 'Lego challenge']", "lego: ['🧱', 'Bauklotz-Challenge', 'Building block challenge']")]
 for old, new in REPLACE:

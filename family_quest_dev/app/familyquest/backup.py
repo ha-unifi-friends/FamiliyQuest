@@ -27,12 +27,15 @@ Media are only referenced (they belong to Home Assistant's own backup).
 """
 from __future__ import annotations
 
+import functools
 import io
 import json
 import shutil
 import sqlite3
 import tempfile
+import time
 import zipfile
+import zlib
 from datetime import datetime
 from pathlib import Path
 
@@ -104,7 +107,7 @@ TABLES: dict[str, tuple[str, tuple[str, ...], tuple[str, str] | None]] = {
     "prank_charge": (DATA, ("profile_id",), None),
     "deck": (DATA, ("profile_id",), None),            # a child's own flash cards – with its learning state
     "deck_card": (DATA, (), ("deck_id", "deck")),
-    "story_read": (DATA, ("profile_id",), None),      # reading progress of the books
+    "story_read": (DATA, ("profile_id",), ("story_id", "story")),   # reading progress of the books (of books here)
     "codelab_progress": (DATA, ("profile_id",), None),
     "kv": (DATA, (), None),                           # the Family Planer (lists, week, its points)
     "family_event": (DATA, (), None),                 # the family calendar
@@ -171,7 +174,7 @@ ENVIRONMENT_PARTS: dict[str, tuple[str, ...]] = {"dashboard": ("key",)}       # 
 
 # Number of migrations (db.MIGRATIONS) whose tables and settings are classified above – a new migration fails the
 # sync guard until somebody checked it and raised this number.
-CLASSIFIED_MIGRATIONS = 44
+CLASSIFIED_MIGRATIONS = 45
 
 # The file folders in the data folder that go into a backup: folder → kind; media/ with all sub-folders (pack pictures,
 # _memory = photo sets, _stories = pictures of the books) – all own content. Nothing else of the data folder is packed:
@@ -210,8 +213,9 @@ def _user_tables(c: sqlite3.Connection, schema: str = "main") -> list[str]:
 
 
 # ================================================================ create
-def create(fq, kind: str = FULL) -> tuple[bytes, str]:
-    """Returns (zip bytes, file name). Call after the planner has saved its state."""
+def create(fq, kind: str = FULL, files: bool = True) -> tuple[bytes, str]:
+    """Returns (zip bytes, file name). Call after the planner has saved its state. files=False: the database only (the
+    privacy snapshots – a clean-up deletes only database rows); a restore of it leaves the file folders as they are."""
     if kind not in KINDS:
         raise BackupError("unknown kind of backup")
     data_dir: Path = fq.settings.data_dir
@@ -232,7 +236,7 @@ def create(fq, kind: str = FULL) -> tuple[bytes, str]:
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
             z.write(copy, "family_quest.db")
             for d, dkind in FILE_DIRS.items():
-                if kind not in (FULL, dkind):
+                if kind not in (FULL, dkind) or not files:
                     continue
                 base = data_dir / d
                 if base.is_dir():
@@ -243,7 +247,7 @@ def create(fq, kind: str = FULL) -> tuple[bytes, str]:
             z.writestr("manifest.json", json.dumps({
                 "format": FORMAT, "version": 2, "kind": kind, "app_version": fq.settings.version,
                 "created": datetime.now().isoformat(timespec="seconds"), "counts": counts,
-                "profiles": profiles}, ensure_ascii=False, indent=1))
+                "profiles": profiles, **({} if files else {"files": False})}, ensure_ascii=False, indent=1))
     middle = "" if kind == FULL else f"{kind}-"
     name = f"family-quest-backup-{middle}{datetime.now():%Y-%m-%d-%H%M}.zip"
     return buf.getvalue(), name
@@ -286,8 +290,8 @@ def _counts(db_path: Path) -> dict:
 
 
 # ================================================================ check
-def inspect(raw: bytes) -> dict:
-    """Check a backup file and return its manifest (raises BackupError)."""
+def inspect(raw: bytes, deep: bool = True) -> dict:
+    """Check a backup file and return its manifest (raises BackupError). deep: also read every entry (CRC check)."""
     if len(raw) > MAX_RESTORE_BYTES:
         raise BackupError("backup file too large")
     try:
@@ -310,6 +314,13 @@ def inspect(raw: bytes) -> dict:
             raise BackupError("invalid path in backup")
     if sum(i.file_size for i in z.infolist()) > MAX_UNPACKED_BYTES:          # a «zip bomb»: refused before unpacking
         raise BackupError("backup file too large")
+    if deep:                                     # every entry readable (CRC): a broken one is found before anything changes
+        try:
+            bad = z.testzip()
+        except (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError, ValueError):
+            bad = "?"
+        if bad:
+            raise BackupError("the backup file is damaged")
     manifest["kind"] = kind_of(manifest)
     return manifest
 
@@ -335,6 +346,10 @@ def check(raw: bytes, current_version: str = "", fq=None) -> dict:
                 raise BackupError("the database in the backup is damaged")
             if not c.execute("SELECT name FROM sqlite_master WHERE name='profile'").fetchone():
                 raise BackupError("not a Family Quest backup")
+            # database code (triggers, views) is never part of Family Quest's schema: such a backup was made by hand
+            # (a trigger could later rewrite settings or PINs – past the protection of the environment values)
+            if c.execute("SELECT 1 FROM sqlite_master WHERE type IN ('trigger','view')").fetchone():
+                raise BackupError("the backup contains database code that is not part of Family Quest")
             ver = c.execute("PRAGMA user_version").fetchone()[0]
             if not manifest.get("profiles"):
                 manifest["profiles"] = [{"id": r[0], "name": r[1], "role": r[2], "archived": bool(r[3])}
@@ -424,13 +439,17 @@ def restore(fq, raw: bytes) -> dict:
     """Restore a backup of any kind. The caller stops and restarts the planner around this.
     First the backup is checked (an older one is updated on a copy), then the current data are saved as
     before-restore.zip in the data folder – only then the data are replaced. Returns the manifest with "report":
-    {"kind", "skipped": [{"id", "name", "rows"}], "kept": [profiles kept], "renamed": [...], "environment": [keys]}."""
+    {"kind", "skipped": [{"id", "name", "rows"}], "kept": [profiles kept], "renamed": [...], "environment": [keys],
+    "orphans": {table: rows deleted that pointed nowhere (data / customizing)}, "removed": [foreign schema objects (full)]}.
+    Refused while Home Assistant makes a backup (the writes are paused)."""
     from . import memo
     from .db import Database
+    if fq.db.paused():
+        raise BackupError("Home Assistant is making a backup right now – try again in a minute")
     manifest = check(raw, fq.settings.version, fq)
     kind = manifest["kind"]
     report = {"kind": kind, "skipped": [], "kept": manifest["plan"]["kept"], "renamed": manifest["plan"]["renamed"],
-              "environment": environment_keys()}
+              "environment": environment_keys(), "orphans": {}, "removed": []}
     try:
         safety, _name = create(fq)
         (fq.settings.data_dir / SAFETY_FILE).write_bytes(safety)
@@ -440,46 +459,55 @@ def restore(fq, raw: bytes) -> dict:
     snap = _env_snapshot(fq)
     z = zipfile.ZipFile(io.BytesIO(raw))
     data_dir: Path = fq.settings.data_dir
-    with tempfile.TemporaryDirectory() as tmp:
-        src_path = Path(tmp) / "restore.db"
-        src_path.write_bytes(z.read("family_quest.db"))
-        try:
-            src_db = Database(src_path)          # an older backup is updated here, on the copy
-            src_db.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-            src_db.conn.execute("PRAGMA journal_mode=DELETE")
-            src_db.conn.close()
-        except Exception:  # noqa: BLE001
-            raise BackupError("this older backup cannot be updated to the current version") from None
-        conn = fq.db.conn
-        with fq.db.lock:
-            if kind == FULL:
-                src = sqlite3.connect(src_path)
-                try:
-                    src.backup(conn)             # replaces the whole live database in one step
-                finally:
-                    src.close()
-                fq.db.migrate()
-                conn.execute("BEGIN IMMEDIATE")
-                try:
-                    _env_apply(conn, snap)
-                    conn.execute("COMMIT")
-                except BaseException:
-                    conn.execute("ROLLBACK")
-                    raise
-            else:
-                report["skipped"] = _merge(conn, src_path, kind, snap, manifest)
-        memo.clear()
+    dirs = [d for d, dkind in FILE_DIRS.items() if kind in (FULL, dkind) and manifest.get("files", True) is not False]
+    staging = Path(tempfile.mkdtemp(prefix=".restore-", dir=data_dir))     # the same disk: moved into place later
+    try:
+        try:                                     # the files first – a broken entry stops the restore before the DB changes
+            for n in z.namelist():
+                if any(n.startswith(d + "/") for d in dirs) and not n.endswith("/"):
+                    out = staging / n
+                    out.parent.mkdir(parents=True, exist_ok=True)
+                    out.write_bytes(z.read(n))
+        except (zipfile.BadZipFile, zlib.error, EOFError):
+            raise BackupError("the backup file is damaged") from None
+        with tempfile.TemporaryDirectory() as tmp:
+            src_path = Path(tmp) / "restore.db"
+            src_path.write_bytes(z.read("family_quest.db"))
+            try:
+                src_db = Database(src_path)          # an older backup is updated here, on the copy
+                src_db.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                src_db.conn.execute("PRAGMA journal_mode=DELETE")
+                src_db.conn.close()
+            except Exception:  # noqa: BLE001
+                raise BackupError("this older backup cannot be updated to the current version") from None
+            conn = fq.db.conn
+            with fq.db.lock:
+                if kind == FULL:
+                    src = sqlite3.connect(src_path)
+                    try:
+                        src.backup(conn)             # replaces the whole live database in one step
+                    finally:
+                        src.close()
+                    fq.db.migrate()
+                    conn.execute("BEGIN IMMEDIATE")
+                    try:
+                        report["removed"] = _drop_foreign(conn)
+                        _env_apply(conn, snap)
+                        conn.execute("COMMIT")
+                    except BaseException:
+                        conn.execute("ROLLBACK")
+                        raise
+                else:
+                    report["skipped"], report["orphans"] = _merge(conn, src_path, kind, snap, manifest)
+            memo.clear()
+        for d in dirs:                           # the file folders: swapped in (renamed on the same disk)
+            target = data_dir / d
+            shutil.rmtree(target, ignore_errors=True)
+            if (staging / d).exists():
+                (staging / d).rename(target)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
     fq.db.migrate_logins()                      # profiles from before the explicit sign-in get it
-    for d, dkind in FILE_DIRS.items():
-        if kind not in (FULL, dkind):
-            continue
-        target = data_dir / d
-        shutil.rmtree(target, ignore_errors=True)
-        for n in z.namelist():
-            if n.startswith(d + "/") and not n.endswith("/"):
-                out = data_dir / n
-                out.parent.mkdir(parents=True, exist_ok=True)
-                out.write_bytes(z.read(n))
     fq.packs.invalidate()
     if kind in (FULL, DATA) and fq.db.q1("SELECT 1 FROM setting WHERE key='xp_items_from'") is None:
         # a backup from before the XP items: old XP stay old
@@ -495,6 +523,51 @@ def restore(fq, raw: bytes) -> dict:
     return manifest
 
 
+@functools.lru_cache(maxsize=1)
+def _app_schema() -> frozenset:
+    """(type, name) of everything Family Quest's migrations create."""
+    from .db import Database
+    db = Database(":memory:")
+    try:
+        return frozenset((r["type"], r["name"]) for r in db.q("SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'"))
+    finally:
+        db.conn.close()
+
+
+def _drop_foreign(conn: sqlite3.Connection) -> list[str]:
+    """After a full restore: triggers, views, indexes and tables that are not Family Quest's own go (inside the
+    transaction of the caller). Returns «type name» of what was removed."""
+    app = _app_schema()
+    out = []
+    rows = _ex(conn, "SELECT type, name FROM main.sqlite_master WHERE name NOT LIKE 'sqlite_%'").fetchall()
+    for typ in ("trigger", "view", "index", "table"):             # dependants first
+        for t, name in rows:
+            if t == typ and (t, name) not in app:
+                conn.execute(f'DROP {typ.upper()} IF EXISTS main."{name.replace(chr(34), chr(34) * 2)}"')
+                out.append(f"{t} {name}")
+    return out
+
+
+def _drop_orphans(conn: sqlite3.Connection) -> dict[str, int]:
+    """Rows whose foreign key points nowhere after a partial restore (reading progress of a book that is not here, a
+    redemption of another reward …) are deleted. Returns {table: rows}."""
+    out: dict[str, int] = {}
+    for _ in range(10):                                           # a deletion can leave further orphans (cascades are off)
+        found: dict[str, set] = {}
+        for table, rowid, _parent, _fk in _ex(conn, "PRAGMA main.foreign_key_check").fetchall():
+            if rowid is not None:
+                found.setdefault(table, set()).add(rowid)
+        if not found:
+            break
+        for table, ids in found.items():
+            ids = sorted(ids)
+            for i in range(0, len(ids), 500):
+                chunk = ids[i:i + 500]
+                conn.execute(f'DELETE FROM main."{table}" WHERE rowid IN ({",".join("?" * len(chunk))})', chunk)
+            out[table] = out.get(table, 0) + len(ids)
+    return out
+
+
 def _ordered(tables: list[str]) -> list[str]:
     """Parents before the tables that hang on them."""
     done: list[str] = []
@@ -508,7 +581,7 @@ def _ordered(tables: list[str]) -> list[str]:
     return done
 
 
-def _merge(conn: sqlite3.Connection, src_path: Path, kind: str, snap: dict, manifest: dict) -> list[dict]:
+def _merge(conn: sqlite3.Connection, src_path: Path, kind: str, snap: dict, manifest: dict) -> tuple[list[dict], dict]:
     """Replace the tables and settings of `kind` with those of the backup, in one transaction. Data rows of profiles
     that do not exist here are skipped (returned per profile); profiles here that are not in a customizing backup stay."""
     names = {int(p["id"]): p.get("name") for p in manifest.get("profiles") or [] if str(p.get("id", "")).isdecimal()}
@@ -557,17 +630,20 @@ def _merge(conn: sqlite3.Connection, src_path: Path, kind: str, snap: dict, mani
             if kind == CUSTOM:
                 conn.execute("INSERT INTO main.profile SELECT * FROM temp.fq_keep")
                 conn.execute("INSERT OR IGNORE INTO main.pack_profile SELECT * FROM temp.fq_keep_pp WHERE pack_id IN (SELECT id FROM main.pack)")
+            orphans = _drop_orphans(conn)       # the foreign keys were off: nothing may point nowhere now
             _env_apply(conn, snap)
             conn.execute("COMMIT")
         except BaseException:
             conn.execute("ROLLBACK")
             raise
     finally:
-        conn.execute("DROP TABLE IF EXISTS temp.fq_keep")
-        conn.execute("DROP TABLE IF EXISTS temp.fq_keep_pp")
-        conn.execute("DETACH DATABASE src")
-        conn.execute("PRAGMA foreign_keys=ON")
-    return [{"id": pid, "name": names.get(pid) or "?", "rows": n} for pid, n in sorted(skipped.items())]
+        for sql in ("DROP TABLE IF EXISTS temp.fq_keep", "DROP TABLE IF EXISTS temp.fq_keep_pp", "DETACH DATABASE src",
+                    "PRAGMA foreign_keys=ON"):
+            try:                                 # never hide the error of the restore itself
+                conn.execute(sql)
+            except sqlite3.Error:
+                pass
+    return [{"id": pid, "name": names.get(pid) or "?", "rows": n} for pid, n in sorted(skipped.items())], orphans
 
 
 # ================================================================ sizes

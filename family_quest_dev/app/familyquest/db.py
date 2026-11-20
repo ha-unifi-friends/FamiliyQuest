@@ -5,7 +5,9 @@ One connection shared by all request threads, guarded by a re-entrant lock;
 """
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import os
 import sqlite3
 import threading
@@ -16,6 +18,13 @@ from typing import Any, Iterator
 
 from . import memo
 from .i18n import _t
+
+log = logging.getLogger("familyquest.db")
+
+# debug guard: a write on the thread of the asyncio event loop blocks every request (and the HA websocket) while it
+# waits for the lock – e.g. up to PAUSE_MAX during a hot backup. FQ_DEBUG_LOOP_WRITES=1 logs such writes with the call
+# stack, =raise raises (the tests run with it).
+LOOP_GUARD = os.environ.get("FQ_DEBUG_LOOP_WRITES", "")
 
 # a migration starting with this runs with the foreign keys switched off (a table rebuild: DROP TABLE must not cascade)
 FK_OFF = "-- foreign keys off\n"
@@ -828,6 +837,29 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(profile_id, event)
     );
     """,
+    # 45 – indexes for the polls and the analytics: the running tables of a game (every /api/me looks for them) and its
+    # finished ones, the ledger by time (analytics, privacy). The session counter of a profile: «log out everywhere»
+    # (api/auth.py Tokens) raises it, which ends every login of the profile. ledger_folded per account with the rows
+    # and the biggest amount folded (privacy.py folds per event: counts like «slot machine spins» stay the same).
+    """
+    CREATE INDEX IF NOT EXISTS card_game_open ON card_game(kind, solo, host_id) WHERE status!='done';
+    CREATE INDEX IF NOT EXISTS card_game_done ON card_game(kind, status, finished_at);
+    CREATE INDEX IF NOT EXISTS ledger_at ON ledger(at);
+    ALTER TABLE profile ADD COLUMN sessions INTEGER NOT NULL DEFAULT 0;
+    CREATE TABLE ledger_folded_new(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        account TEXT NOT NULL DEFAULT '',        -- '' for n (distinct refs over all accounts)
+        event TEXT NOT NULL,
+        n INTEGER NOT NULL DEFAULT 0,            -- distinct refs of the positive bookings folded (account '')
+        pos INTEGER NOT NULL DEFAULT 0,          -- rows folded with amount > 0 (per account)
+        neg INTEGER NOT NULL DEFAULT 0,          -- rows folded with amount < 0
+        top REAL,                                -- the biggest amount folded
+        PRIMARY KEY(profile_id, account, event)
+    );
+    INSERT INTO ledger_folded_new(profile_id, account, event, n) SELECT profile_id, '', event, n FROM ledger_folded;
+    DROP TABLE ledger_folded;
+    ALTER TABLE ledger_folded_new RENAME TO ledger_folded;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -923,6 +955,16 @@ DEFAULT_PROFILE_SETTINGS = {
 }
 
 
+def _loop_guard() -> None:
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return                                         # a worker thread: fine
+    if LOOP_GUARD == "raise":
+        raise RuntimeError("database write on the asyncio event loop thread – use asyncio.to_thread")
+    log.error("database write on the asyncio event loop thread – use asyncio.to_thread", stack_info=True)
+
+
 def dict_row(cur: sqlite3.Cursor, row: tuple) -> dict:
     return {d[0]: row[i] for i, d in enumerate(cur.description)}
 
@@ -998,6 +1040,8 @@ class Database:
         """Take the lock for a write – while a backup pauses the writes, wait first (at most until the pause ends,
         which is never more than PAUSE_MAX after it began: the app never hangs). Writes inside a running transaction
         of this thread never wait (the pause only starts between transactions)."""
+        if LOOP_GUARD:
+            _loop_guard()
         while True:
             left = self._pause_until - time.time()
             if left > 0:
@@ -1006,6 +1050,10 @@ class Database:
             if self._depth > 0 or self._pause_until <= time.time():
                 return
             self.lock.release()
+
+    def paused(self) -> bool:
+        """A hot backup by Home Assistant pauses the writes right now (long jobs do not start then)."""
+        return self._pause_until > time.time()
 
     def start_backup_watch(self, folder: Path | str, every: float = 0.25) -> None:
         """Watch for the pause flag of a hot backup in `folder` (the data folder) – a daemon thread."""
@@ -1034,9 +1082,11 @@ class Database:
                 req = hotbackup.read_flag(flag)
                 if req and req["until"] > time.time():
                     if req["token"] != token:          # a new pause: wait for the running write, then checkpoint
+                        # the pause first – no new transaction starts while this thread waits for the lock (the lock
+                        # is not fair: under load it could otherwise wait past the backup's patience)
+                        self._resume.clear()
+                        self._pause_until = req["until"]
                         with self.lock:
-                            self._resume.clear()
-                            self._pause_until = req["until"]
                             res = self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
                         token = req["token"]
                         hotbackup.write_json(ack, {"token": token, "checkpoint": list(res.values()) if isinstance(res, dict) else list(res)})

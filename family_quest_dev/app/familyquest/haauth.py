@@ -27,6 +27,8 @@ from urllib.parse import urlencode, urlsplit
 import httpx
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
+from .i18n import _t
+
 log = logging.getLogger("familyquest.haauth")
 
 STATE_MAX_AGE = 600                  # 10 minutes for Home Assistant's login page (two-factor included)
@@ -92,10 +94,12 @@ async def browser_base(fq, app: str) -> str:
     return f"{'https' if panel.get('ssl') else 'http'}://{host}:{int(panel.get('port') or 8123)}"
 
 
-async def server_bases(fq, browser: str) -> list[str]:
-    """Where the add-on itself reaches Home Assistant for the code exchange: inside Home Assistant directly on the
-    Supervisor network (http://homeassistant:<port>, not when Home Assistant itself does https – its certificate is not
-    for that name), then the browser's address."""
+async def server_bases(fq) -> list[str]:
+    """Where the add-on itself reaches Home Assistant for the code exchange and the user lookup – only addresses that
+    do NOT come from the request: inside Home Assistant directly on the Supervisor network (http://homeassistant:<port>,
+    not when Home Assistant itself does https – its certificate is not for that name), and the address the parents
+    entered. The browser's address (built from the Host header and the app address the browser sent) is never asked:
+    a child could point it at a fake Home Assistant that «signs in» anybody. Empty: the sign-in is refused."""
     out = []
     if (env := os.environ.get("FQ_HA_AUTH_INTERNAL")):
         out.append(env.rstrip("/"))
@@ -103,9 +107,12 @@ async def server_bases(fq, browser: str) -> list[str]:
         panel = await _panel(fq)
         if panel and not panel.get("ssl"):
             out.append(f"http://homeassistant:{int(panel.get('port') or 8123)}")
-    if browser not in out:
-        out.append(browser)
+    if (url := fq.db.get_setting("ha_app_login_url")) and url not in out:
+        out.append(url)
     return out
+
+
+NO_SERVER = _t("Family Quest does not know where Home Assistant is – the parents enter its address in the parent area")
 
 
 async def suggestions(fq) -> list[str]:

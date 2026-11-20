@@ -233,7 +233,7 @@ async function privacyView(main) {
     toast(e.target.checked ? T("Privacy switched on") : T("Privacy switched off"), "good"); pvBadgeRefresh(); render();
   } });
   if (!d.enabled) retention.classList.add("pv-off");
-  main.append(pageHead("🛡️ " + I18N.tr(T("Privacy"))),
+  main.append(pageHead(T("Privacy")),
     h("section.card.pv-master", h("label.switch-wrap", master, h("span.switch-ui")),
       h("div.grow", h("strong", T("Privacy clean-up")), h("div.small.muted", d.enabled
         ? T("On: entries past their retention period are counted, shown in the menu and can be cleaned up.")
