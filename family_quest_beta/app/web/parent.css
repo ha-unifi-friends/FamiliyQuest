@@ -145,16 +145,6 @@ li.off { opacity: .55; }
   #poster .poster-note { font-size: 11pt; color: #555; }
 }
 .grid2.top { align-items: start; }
-/* avatar editor in the profile dialog (shared/avatar.js avatarEditorBox) */
-.av-editor.compact { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: start; }
-.av-editor.compact .av-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.av-editor.compact .av-tabs button { border: 0; border-radius: 99px; padding: 6px 12px; background: var(--hover); font-weight: 700; color: var(--fg); }
-.av-editor.compact .av-tabs button.on { background: var(--accent-bg); color: #fff; }
-.av-editor.compact .av-opts { display: flex; flex-wrap: wrap; gap: 8px; max-height: 240px; overflow: auto; }
-.av-editor.compact .av-opt { min-width: 62px; min-height: 62px; padding: 4px; border-radius: 14px; border: 3px solid var(--line); background: var(--card); }
-.av-editor.compact .av-opt.on { border-color: var(--accent); }
-.av-editor.compact .swatch { width: 44px; height: 44px; border-radius: 50%; display: block; }
-@media (max-width: 600px) { .av-editor.compact { grid-template-columns: 1fr; } }
 .dev-pick { display: grid; gap: 4px; max-height: 260px; overflow: auto; margin-top: 8px; }
 .dev-pick .dev { display: flex; gap: 8px; align-items: center; }
 .mood-emoji { font-size: 1.6rem; vertical-align: middle; }

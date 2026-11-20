@@ -139,6 +139,8 @@ function jassLive(box, me, back) {
   }
 
   // ---------- the screen
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !st.solo && !me.guest && st.status !== "done" ? "jass" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
@@ -155,7 +157,7 @@ function jassLive(box, me, back) {
     // ☰: rules, guests, the actions of whoever leads (mix the seats, end), language
     const lead = isHost() && st.status !== "done";
     const menu = gameMenu({ rules: () => jassRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: !st.solo && !me.guest && st.status !== "done" ? "jass" : null,
+      invite: invite(),
       actions: [
         { ic: "🔀", label: T("Mix the seats"), hidden: !lead || st.phase !== "lobby" || st.players.length < 2, onclick: () => act("mix") },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game?"), onclick: () => act("end").then(() => { stop(); back(); }) }],
@@ -171,7 +173,7 @@ function jassLive(box, me, back) {
       if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
         h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), lobbySeats(), host);
       return show(close, head, h("section.card.center", h("h2", T("Waiting for the start …")),
-        h("p.muted", T("Everybody joins on their own device – bots take the free seats.")), lobbySeats(),
+        h("p.muted", T("Everybody joins on their own device – bots take the free seats.")), lobbySeats(), inviteBtn(invite()),
         st.coins_on && st.rewards[0] ? h("p.small", "🪙 ", I18N.tr(T("Coins for each person of the family in the winning team: {0}")).replace("{0}", jaCoins(st.rewards[0]))) : null), host);
     }
     news();

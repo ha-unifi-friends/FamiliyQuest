@@ -125,6 +125,8 @@ function werbinichLive(box, me, back) {
     setTimeout(() => el.remove(), 3200);
   }
 
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !me.guest && st.status !== "done" ? "werbinich" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
@@ -142,7 +144,7 @@ function werbinichLive(box, me, back) {
     // ☰: rules, guests (everybody of the family), close question / skip / end for whoever leads, language
     const lead = isHost() && st.status !== "done";
     const menu = gameMenu({ rules: () => werbinichRulesView(st.coins_on ? st.rewards : null),
-      invite: !me.guest && st.status !== "done" ? "werbinich" : null,
+      invite: invite(),
       actions: [
         { ic: "✔", label: T("Close question"), hidden: !lead || st.phase !== "play" || !q || q.asker === myId || (q.yes + q.no + q.unknown) === 0, onclick: () => act("close") },
         { ic: "⏭", label: T("Skip"), hidden: !lead || st.phase !== "play",
@@ -160,7 +162,7 @@ function werbinichLive(box, me, back) {
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), host);
     if (st.phase === "lobby") return show(close, head, h("section.card.center", h("h2", T("Waiting for the start …")),
-      h("p.muted", T("Everybody joins on their own device – at least two players.")), seats(),
+      h("p.muted", T("Everybody joins on their own device – at least two players.")), seats(), inviteBtn(invite()),
       st.coins_on ? h("p.small", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", wbCoins(st.rewards))) : null), host);
     show(close, head, cards(), panel(), myLog(), host);
   }

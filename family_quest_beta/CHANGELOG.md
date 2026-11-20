@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1-beta.2
+
+- Game lobbies: a visible «👥 Invite guests» button in the waiting box of every game (also still in the ☰ menu)
+- Guests pick their avatar when joining – 8 quick picks (women, men, grandparents, neutral), random or customize with the free avatar parts – and can change it later in the game via ☰ «My avatar»
+
 ## 1.2.1-beta.1
 
 - Invite guests: with a guest WiFi QR code from Home Assistant (e.g. UniFi image entity, chosen in Settings › Home Assistant) the dialog has a switch «🎲 Game | 📶 Guest WiFi» – guests join the WiFi first, then the game; the picture is only shown on signed-in family devices
