@@ -247,8 +247,10 @@ const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"),
 
 function render() {
   P.onChange = null;
-  const nav = h("nav.side", h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn()),
-    h("a.nav-app", appLinkAttrs({ dialog: true }), h("span", "⭐"), h("span", "Family Quest App")),   // the kids' app: very first entry
+  const nav = h("nav.side", h("div.brand",   // the header is the link to the kids' app (QR code dialog)
+      h("a.brand-app.grow", { ...appLinkAttrs({ dialog: true }), title: "Family Quest App" },
+        h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong", "Family Quest"), h("span.brand-go", { "aria-hidden": "true" }, "↗")),
+      refreshBtn()),
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { "data-tab": k, onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
       // written out one below the other: light / dark, language, log out, release notes
