@@ -5,6 +5,7 @@ A game is led by whoever started it; a parent may always lead.
 """
 from __future__ import annotations
 
+import asyncio
 import random
 from contextlib import contextmanager
 
@@ -37,18 +38,20 @@ class _PlayRoute(APIRoute):
     def get_route_handler(self):
         handler = super().get_route_handler()
 
+        # the writes in worker threads: never a database write on the event loop (it would wait for the lock – during
+        # a hot backup up to its pause – and stop every request meanwhile)
         async def run(request: Request):
             try:
                 response = await handler(request)
             except BaseException:
-                _give_back(request)
+                await asyncio.to_thread(_give_back, request)
                 raise
             if response.status_code >= 400:
-                _give_back(request)
+                await asyncio.to_thread(_give_back, request)
             pid = request.scope.get("fq_play")
             if pid and response.status_code < 400 and getattr(response, "body", b"null") not in (b"null", b""):
                 try:
-                    timelimits.touch(app_of(request).db, pid)
+                    await asyncio.to_thread(timelimits.touch, app_of(request).db, pid)
                 except Exception:  # noqa: BLE001
                     log.exception("counting game time failed")
             return response
@@ -2776,7 +2779,7 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         if not g or not fq.schach.may_lead("schach", prof, g["id"]):
             raise HTTPException(400, "No game is running")
         try:
-            inv = fq.guests.invite("schach", body.on, g["id"])
+            inv = await asyncio.to_thread(fq.guests.invite, "schach", body.on, g["id"])     # never a write on the loop
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
         return {"invite": inv, "access": await home_access(fq.settings)}
@@ -2793,7 +2796,7 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
     if not body.on and not lead:
         raise HTTPException(403, "Only who started the game (or a parent) leads it")
     try:
-        inv = fq.guests.invite(body.game, body.on)
+        inv = await asyncio.to_thread(fq.guests.invite, body.game, body.on)
     except GuestError as e:
         raise HTTPException(400, str(e)) from None
     return {"invite": inv, "access": await home_access(fq.settings)}

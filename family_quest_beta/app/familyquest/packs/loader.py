@@ -45,7 +45,8 @@ def parse_doc(doc: dict) -> Pack | Bundle:
 
 def parse_yaml(text: str) -> list[Pack | Bundle]:
     try:
-        docs = [d for d in yaml.safe_load_all(text) if d]
+        # the C loader of libyaml when there is one: the same result, ten times faster (every start syncs all packs)
+        docs = [d for d in yaml.load_all(text, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader)) if d]
     except yaml.YAMLError as e:
         raise PackError(f"YAML: {e}") from None
     if not docs:

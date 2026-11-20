@@ -631,7 +631,8 @@ nav.bottom button.on { color: var(--accent); background: var(--hover); }
 .to-deck { margin-top: 6px; }
 /* collapsed lists: council, polls, Wichteln */
 .inst-filter { margin: 6px 0 10px; }
-.inst-n { font-size: .78rem; opacity: .7; }
+.inst-n { font-size: .78rem; }   /* no opacity: the count keeps ≥ 4.5 : 1 */
+.inst-filter button:not(.on) .inst-n { color: var(--muted); }
 .inst-list { display: grid; gap: 6px; }
 .inst-item { border-radius: 12px; background: var(--hover, rgba(127,127,127,.08)); }
 .inst-item > summary { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; list-style: none; }

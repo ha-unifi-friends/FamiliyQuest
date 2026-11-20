@@ -4,7 +4,7 @@
 const P = { info: null, meta: null, tab: "overview", profiles: [], accounts: [] };
 const app = $("#app");
 const TABS = [["overview", "📊", T("Overview")], ["community", "👨‍👩‍👧", T("Family")], ["chores", "🧹", T("Chores")], ["packs", "📦", T("Learning packs")],
-  ["rewards", "🎁", T("Rewards")], ["games", "🎲", T("Games")], ["shop", "🛍️", T("Shop")], ["calendar", "📅", T("Calendar")], ["analytics", "📈", T("Analytics")], ["history", "📜", T("History")], ["privacy", "🛡️", T("Privacy")], ["settings", "⚙️", T("Settings")]];
+  ["rewards", "🪙", T("Points & rules")], ["games", "🎲", T("Games")], ["shop", "🛍️", T("Shop")], ["calendar", "📅", T("Calendar")], ["analytics", "📈", T("Analytics")], ["history", "📜", T("History")], ["privacy", "🛡️", T("Privacy")], ["settings", "⚙️", T("Settings")]];
 const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes: T("Internet minutes"), planer_points: T("Family Planer points"),
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
@@ -249,7 +249,9 @@ const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"),
 function render() {
   P.onChange = null;
   const nav = h("nav.side", h("div.brand-box",   // the header on its own background: name and ⟳, below it the link to the kids' app (QR code dialog)
-      h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn()),
+      h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn(),
+        // phones: the ☰ menu closes with ✕ (like the kids' menu), Esc or a tap beside it
+        h("button.icon-btn.side-close", { type: "button", "aria-label": T("Close"), title: T("Close"), onclick: () => closeNav() }, "✕")),
       h("a.brand-app", appLinkAttrs({ dialog: true }), h("span", "⭐"), h("span.grow", "Family Quest App"), h("span.brand-go", { "aria-hidden": "true" }, "↗"))),
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { "data-tab": k, onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
@@ -271,12 +273,15 @@ function render() {
   const narrow = matchMedia("(max-width: 820px)");
   const setInert = () => { nav.inert = narrow.matches && !nav.classList.contains("open"); };
   narrow.onchange = setInert;
-  let navOpener = null;
+  let navOpener = null, navRelease = null;
+  // open: focus stays inside the menu (Tab wraps around), Esc closes it wherever the focus is (shared/ui.js focusTrap)
   const closeNav = () => { const was = nav.classList.contains("open"); nav.classList.remove("open"); back.classList.remove("open"); setInert();
-    if (was && navOpener && navOpener.isConnected && nav.contains(document.activeElement)) navOpener.focus(); };
+    if (navRelease) { navRelease(false); navRelease = null; }
+    if (was && navOpener && navOpener.isConnected && (nav.contains(document.activeElement) || document.activeElement === document.body)) navOpener.focus(); };
   const openNav = () => { navOpener = document.activeElement; nav.classList.add("open"); back.classList.add("open"); setInert();
-    requestAnimationFrame(() => (nav.querySelector("button.on") || nav.querySelector("button")).focus({ preventScroll: true })); };
-  nav.addEventListener("keydown", e => { if (e.key === "Escape" && nav.classList.contains("open")) closeNav(); });
+    requestAnimationFrame(() => (nav.querySelector("button[data-tab].on") || nav.querySelector("button[data-tab]")).focus({ preventScroll: true }));
+    if (navRelease) navRelease(false);
+    navRelease = focusTrap(back, nav, closeNav); };
   nav.addEventListener("click", e => { if (e.target.closest(".side > button, .side-foot button, .side-foot a")) closeNav(); });
   const cur = TABS.find(t => t[0] === (P.tab === "import" ? "packs" : P.tab)) || TABS[0];
   const mob = h("header.mob-bar",
@@ -341,8 +346,10 @@ async function overviewView(main) {
     return h("details.card.sec.kid.kid-fold", { "data-kid": id, open: KID_OPEN.has(id), ontoggle: e => e.currentTarget.open ? KID_OPEN.add(id) : KID_OPEN.delete(id) },
       h("summary",
         h("div.row.kid-head", avatarSvg(k.profile.avatar, 48), h("div.grow", C(k.profile.name, "h2"),
-          h("span.muted", I18N.tr(T("Level {0}")).replace("{0}", k.level.level) + " · 🔥 " + k.streak), " ", loginChip(k.profile),
-          k.sad_since ? h("span.mood-flag", { title: I18N.tr(T("feels sad")) }, " 😢") : null), w ? w.now : null),
+          // folded: level, streak and what the child can spend (coins …) – the rest when opened
+          h("span.muted", I18N.tr(T("Level {0}")).replace("{0}", k.level.level) + " · 🔥 " + k.streak +
+            P.accounts.filter(a => a.active && a.spendable && a.key !== "internet").map(a => " · " + (a.icon || "") + " " + fmt(k.balances[a.key] || 0, 1)).join("")), " ", loginChip(k.profile),
+          k.sad_since ? h("span.mood-flag", { title: I18N.tr(T("feels sad")) }, " 😢") : null)),
         // a tap on these buttons does not open the row
         h("div.row.wrap.kid-quick", { onclick: e => { if (e.target.closest("button")) e.preventDefault(); } },
           h("button.btn.small.ghost", { onclick: () => profileDialog(full(id) || k.profile, persons) }, "✏️ ", T("Edit profile")),
@@ -1036,7 +1043,7 @@ async function packsView(main) {
       try { await call(`parent/packs/${encodeURIComponent(p.id)}/rewards`, { method: "POST", body: { xp: num(xp), coins: num(coins) } }); m.close(); toast(T("Saved"), "good"); render(); }
       catch (e) { toast(e.message, "bad"); }
     };
-    const m = modal(h("div.form", h("h2", "🏅 ", C(p.title), fieldInfo(T("What a finished lesson of this pack gives. Empty: the family rule (Rewards › Rules «Lesson finished»). The daily limit of the rule still applies."))),
+    const m = modal(h("div.form", h("h2", "🏅 ", C(p.title), fieldInfo(T("What a finished lesson of this pack gives. Empty: the family rule (Points & rules › Rules «Lesson finished»). The daily limit of the rule still applies."))),
       // both numbers side by side, the icon inline in the label; empty = the family rule, «Reset» empties both
       h("div.reward-nums", h("label.field", { title: T("XP per finished lesson") }, h("span", "⭐ XP"), xp),
         h("label.field", { title: T("Coins per finished lesson") }, h("span", "🪙 ", T("Coins")), coins)),
@@ -1476,14 +1483,15 @@ function kidWeather(k, cfg) {
     now.textContent = cur ? cur.icon : ""; now.title = cur ? wName(cur.name) : "";
     const counts = {};
     days.forEach(x => { if (x.icon) counts[x.icon] = (counts[x.icon] || 0) + 1; });
-    pick.replaceChildren(...cfg.levels.map(l => h("button.btn.small" + (cur && cur.key === l.key ? ".on" : ".ghost"), { type: "button", title: wName(l.name),
+    pick.replaceChildren(h("span.small.muted.weather-lbl", T("Today's weather:"), info), ...cfg.levels.map(l => h("button.btn.small" + (cur && cur.key === l.key ? ".on" : ".ghost"), { type: "button", title: wName(l.name),
       onclick: async () => {
         try {
           const r = await call(`parent/weather/${k.profile.id}`, { method: "POST", body: { level: l.key } });
           toast(l.icon + " " + k.profile.name + (l.points ? " · " + (l.points > 0 ? "+" : "") + fmt(l.points) : ""), l.points < 0 ? "" : "good");
           draw(r.current, r.days);
         } catch (e) { toast(e.message, "bad"); }
-      } }, h("span.big-ic", l.icon), l.points ? h("span.small", (l.points > 0 ? " +" : " ") + fmt(l.points)) : null)), info);
+      } }, h("span.big-ic", l.icon), l.points ? h("span.small", (l.points > 0 ? " +" : " ") + fmt(l.points)) : null)));
+    if (!days.some(x => x.icon)) return hist.replaceChildren(h("p.muted.small", T("No weather recorded yet – pick one above.")));
     hist.replaceChildren(weatherGraph(days, cfg.levels.length), h("div.small.muted.row", h("span.grow", T("Last 30 days")),
       ...cfg.levels.filter(l => counts[l.icon]).map(l => h("span", l.icon + " " + counts[l.icon]))));
   };
@@ -1540,22 +1548,22 @@ async function choresView(main) {
       h("div.plan-entry" + (e.weekly ? ".weekly" : ""), h("span", e.icon + " "), C(e.name, "strong"),
         h("div.small", ...e.profiles.map(pid => C(kidName(pid), "span.plan-kid")))))))))));
   const status = { open: "○", pending: "⏳", done: "✓" };
+  // Two chore systems: Family Quest's own chore list (this page, d.chores) and the built-in Family Planer (the frame).
+  // They do not share data – «Move my chores to the Planner» copies the own list over and switches it off. So the page
+  // shows the one in use first: the own list while it has active chores (the Planner below, folded, with the move
+  // button), otherwise the Planner (the switched-off own chores folded below as «Old chore list»).
   const own = d.chores.filter(c => c.active);
-  const planerBox = planerChoresSection(
-    h("div.row", own.some(c => c.frequency !== "once") ? h("button.btn.ghost", { onclick: async () => {
-        if (!(await confirmDialog(I18N.tr(T("Move the chores of this list into the Planner? They are switched off here (their history stays)."))))) return;
-        const r = await call("planer/chores/take-over", { method: "POST" });
-        toast(I18N.tr(T("{0} chores moved to the Planner")).replace("{0}", r.moved.length), "good");
-        if (r.kept.length) toast(I18N.tr(T("One-off chores stay here – create them as special chores in the Planner: {0}")).replace("{0}", r.kept.join(", ")));
-        render();
-      } }, "➡️ ", T("Move my chores to the Planner")) : null));
-  main.append(pageHead(T("Chores"), h("button.btn", { onclick: () => choreDialog(null, kids) }, "+ ", T("Add chore"))),
-    planerBox,
-    d.pending.length ? section("⏳ " + I18N.tr(T("Chores to confirm")), choreConfirmList(d.pending, render)) : null,
-    section("📅 " + I18N.tr(T("This week")), d.chores.some(c => c.active) ? plan : h("p.muted", T("No chores yet – add the first one."))),
-    d.today.length ? section("✅ " + I18N.tr(T("Today")), h("ul.list", ...d.today.map(t => h("li.row", h("span.status-ic." + t.status, status[t.status] || ""),
-      h("span", t.icon), C(t.name, "span.grow"), C(t.profile_name, "span.muted"))))) : null,
-    section("🧹 " + I18N.tr(T("All chores")), h("ul.list", ...d.chores.map(c => h("li.row" + (c.active ? "" : ".off"),
+  const useOwn = own.length > 0;
+  const moveBtn = own.some(c => c.frequency !== "once") ? h("button.btn.ghost", { onclick: async () => {
+      if (!(await confirmDialog(I18N.tr(T("Move the chores of this list into the Planner? They are switched off here (their history stays)."))))) return;
+      const r = await call("planer/chores/take-over", { method: "POST" });
+      toast(I18N.tr(T("{0} chores moved to the Planner")).replace("{0}", r.moved.length), "good");
+      if (r.kept.length) toast(I18N.tr(T("One-off chores stay here – create them as special chores in the Planner: {0}")).replace("{0}", r.kept.join(", ")));
+      render();
+    } }, "➡️ ", T("Move my chores to the Planner")) : null;
+  const addBtn = h("button.btn", { onclick: () => choreDialog(null, kids) }, "+ ", T("Add chore"));
+  const allTitle = "🧹 " + I18N.tr(useOwn ? T("All chores") : T("Old chore list"));
+  const allBox = section(allTitle, h("ul.list", ...d.chores.map(c => h("li.row" + (c.active ? "" : ".off"),
       h("span.big-ic", c.icon), h("div.grow", C(c.name, "strong"),
         h("div.small.muted", FREQ[c.frequency] || c.frequency,
           c.frequency === "weekdays" ? " (" + c.weekdays.map(i => I18N.tr(WEEKDAYS[i])).join(", ") + ")" : "",
@@ -1563,8 +1571,50 @@ async function choresView(main) {
           c.assign === "rotate" ? I18N.tr(T("rotating")) : I18N.tr(T("fixed")), ": ", C(c.profiles.map(kidName).join(", ")), " · ",
           c.kind === "duty" ? I18N.tr(T("duty")) : I18N.tr(T("bonus")), " · +" + fmt(c.points), c.energy ? " · 🔋+" + c.energy : "",
           c.confirm ? " · 👪 " + I18N.tr(T("parents confirm")) : "", c.active ? "" : " · " + I18N.tr(T("switched off")))),
-      h("button.btn.small.ghost", { onclick: () => choreDialog(c, kids) }, "✏️ ", T("Edit")))))),
-    planerSettingsSection());
+      h("button.btn.small.ghost", { onclick: () => choreDialog(c, kids) }, "✏️ ", T("Edit"))))));
+  allBox.dataset.fold = "all";
+  const nChores = n => n === 1 ? I18N.tr(T("1 chore")) : I18N.tr(T("{0} chores")).replace("{0}", n);
+  allBox.dataset.status = nChores(d.chores.length) +
+    (d.chores.length > own.length ? " · " + I18N.tr(T("switched off: {0}")).replace("{0}", d.chores.length - own.length) : "");
+  const planerBox = planerChoresSection();
+  const planerStatus = h("span.small.muted.planer-count", { "aria-live": "polite" });
+  planerBox.querySelector(".planer-frame").addEventListener("fq-planer-chores", e => {
+    const n = e.detail || 0;
+    planerStatus.textContent = n ? I18N.tr(T("Chores in the Planner: {0}")).replace("{0}", n)
+      : useOwn ? I18N.tr(T("No chores in the Planner yet – your chores are in the list above")) : "";
+    if (planerFold) planerFold.querySelector(".set-status").textContent = planerStatus.textContent;
+  });
+  let planerFold = null;
+  if (useOwn) {
+    const week = section("📅 " + I18N.tr(T("This week")), plan);
+    week.dataset.fold = "week";
+    week.dataset.status = nChores(own.length);
+    const todayBox = d.today.length ? section("✅ " + I18N.tr(T("Today")), h("ul.list", ...d.today.map(t => h("li.row", h("span.status-ic." + t.status, status[t.status] || ""),
+      h("span", t.icon), C(t.name, "span.grow"), C(t.profile_name, "span.muted"))))) : null;
+    if (todayBox) {
+      todayBox.dataset.fold = "today";
+      todayBox.dataset.status = I18N.tr(T("Done: {0} of {1}")).replace("{0}", d.today.filter(t => t.status === "done").length).replace("{1}", d.today.length);
+    }
+    if (!P.choresFolds) { P.choresFolds = true; SET_OPEN.add("chores.week"); SET_OPEN.add("chores.today"); }    // open at first
+    const ownList = h("div.chores-own", week, todayBox, allBox);
+    foldBoxes(ownList, "chores");
+    planerFold = setFold("chores.planer", "📅 " + I18N.tr(T("Chore plan")), planerBox);
+    planerFold.querySelector(".set-status").textContent = I18N.tr(T("Separate chore plan – empty until you move your chores there"));
+    planerBox.querySelector(".sec-head h2").classList.add("fold-title");
+    main.append(pageHead(T("Chores"), addBtn),
+      d.pending.length ? section("⏳ " + I18N.tr(T("Chores to confirm")), choreConfirmList(d.pending, render)) : null,
+      setGroup("chores.own", "🧹", T("Family Quest chores")), ...ownList.children,
+      setGroup("chores.planer", "📅", T("Planner"), moveBtn), planerFold,
+      planerSettingsSection());
+  } else {
+    planerBox.append(planerStatus);
+    const old = h("div.chores-own", d.chores.length ? allBox : null);
+    if (d.chores.length) { allBox.dataset.fold = "old"; foldBoxes(old, "chores"); }
+    main.append(pageHead(T("Chores")),
+      d.pending.length ? section("⏳ " + I18N.tr(T("Chores to confirm")), choreConfirmList(d.pending, render)) : null,
+      planerBox, ...old.children,
+      planerSettingsSection());
+  }
 }
 
 // 📅 The Family Planer's chore plan in the parent area (planer?mode=parent in a frame). The planer's own top bar
@@ -1673,8 +1723,11 @@ async function rewardsView(main, opts = {}) {
   const accOpts = sel => accounts.map(a => h("option", { value: a.key, selected: a.key === sel }, (a.icon || "") + " " + I18N.tr(a.name)));
 
   const accRows = accounts.map(a => {
-    const f = { name: h("input", { type: "text", value: I18N.tr(a.name) }), unit: h("input", { type: "text", value: a.unit }), icon: h("input", { type: "text", value: a.icon }),
-      spendable: h("input", { type: "checkbox", checked: !!a.spendable, disabled: a.key === "xp" }), active: h("input", { type: "checkbox", checked: !!a.active, disabled: a.key === "xp" }) };
+    // every field has its name for screen readers (the visible caption is the column head)
+    const f = { name: h("input", { type: "text", value: I18N.tr(a.name), "aria-label": T("Name") }), unit: h("input", { type: "text", value: a.unit, "aria-label": T("Unit") }),
+      icon: h("input", { type: "text", value: a.icon, "aria-label": T("Icon") }),
+      spendable: h("input", { type: "checkbox", checked: !!a.spendable, disabled: a.key === "xp", "aria-label": T("Spendable") }),
+      active: h("input", { type: "checkbox", checked: !!a.active, disabled: a.key === "xp", "aria-label": T("Active") }) };
     const save = () => call("parent/accounts", { method: "PUT", body: { key: a.key, name: f.name.value, unit: f.unit.value, icon: f.icon.value,
       spendable: f.spendable.checked, active: f.active.checked, sort: a.sort } }).then(() => toast(T("Saved"), "good"));
     Object.values(f).forEach(x => x.addEventListener("change", save));
@@ -1684,22 +1737,23 @@ async function rewardsView(main, opts = {}) {
 
   const ruleRows = rules.map(r => ruleRow(r));
   function ruleRow(r) {
-    const f = { event: h("select", ...Object.entries(P.meta.events).map(([k, n]) => h("option", { value: k, selected: k === r.event }, n))),
-      account: h("select", ...accOpts(r.account)), amount: h("input", { type: "number", value: r.amount, step: "1" }),
-      daily_limit: h("input", { type: "number", value: r.daily_limit ?? "", placeholder: "–" }), label: h("input", { type: "text", value: I18N.tr(r.label || "") }),
-      active: h("input", { type: "checkbox", checked: !!r.active }) };
+    const f = { event: h("select", { "aria-label": T("Event") }, ...Object.entries(P.meta.events).map(([k, n]) => h("option", { value: k, selected: k === r.event }, n))),
+      account: h("select", { "aria-label": T("Account") }, ...accOpts(r.account)), amount: h("input", { type: "number", value: r.amount, step: "1", "aria-label": T("Amount") }),
+      daily_limit: h("input", { type: "number", value: r.daily_limit ?? "", placeholder: "–", "aria-label": T("Daily limit") }),
+      label: h("input", { type: "text", value: I18N.tr(r.label || ""), "aria-label": T("Label") }),
+      active: h("input", { type: "checkbox", checked: !!r.active, "aria-label": T("Active") }) };
     const save = () => call(r.id ? `parent/rules/${r.id}` : "parent/rules", { method: r.id ? "PUT" : "POST", body: { event: f.event.value, account: f.account.value,
       amount: +f.amount.value, daily_limit: f.daily_limit.value === "" ? null : +f.daily_limit.value, condition: r.condition || {}, label: f.label.value, active: f.active.checked } })
       .then(x => { if (!r.id && x) r.id = x.id; toast(T("Saved"), "good"); });
     Object.values(f).forEach(x => x.addEventListener("change", save));
     return h("tr", h("td", f.event), h("td.num", f.amount), h("td", f.account), h("td.num", f.daily_limit), h("td", f.label), h("td.c", f.active),
-      h("td", h("button.icon-btn", { title: T("Delete"), onclick: async e => { if (r.id) await call(`parent/rules/${r.id}`, { method: "DELETE" }); e.target.closest("tr").remove(); } }, "✕")));
+      h("td", h("button.icon-btn", { title: T("Delete"), "aria-label": T("Delete"), onclick: async e => { if (r.id) await call(`parent/rules/${r.id}`, { method: "DELETE" }); e.target.closest("tr").remove(); } }, "✕")));
   }
   const rulesBody = h("tbody", ...ruleRows);
 
   const rewardCards = rewards.map(r => rewardCard(r));
   function rewardCard(r) {
-    const f = { icon: h("input.icon-in", { type: "text", value: r.icon }), name: h("input", { type: "text", value: I18N.tr(r.name) }),   // built-in names are English keys – show (and save) the translation the children see
+    const f = { icon: h("input.icon-in", { type: "text", value: r.icon, "aria-label": T("Icon") }), name: h("input", { type: "text", value: I18N.tr(r.name) }),   // built-in names are English keys – show (and save) the translation the children see
       kind: h("select", ...Object.entries(KIND_NAMES).map(([k, n]) => h("option", { value: k, selected: k === r.kind }, n))),
       account: h("select", ...accOpts(r.account)), cost: h("input", { type: "number", min: 0, value: r.cost }),
       approval: h("input", { type: "checkbox", checked: !!r.approval }), weekly_limit: h("input", { type: "number", min: 0, value: r.weekly_limit ?? "", placeholder: "–" }),
@@ -1724,8 +1778,8 @@ async function rewardsView(main, opts = {}) {
   }
   const rewardBox = h("div.reward-grid", ...rewardCards);
 
-  main.append(h("h1", T("Rewards")),
-    sectionAdd(T("Accounts"), h("button.btn.small", { onclick: () => {
+  // the page of the points: accounts and the rules what gives how much (the rewards themselves are in «Shop»)
+  const accBox = sectionAdd("🪙 " + I18N.tr(T("Accounts")), h("button.btn.small", { onclick: () => {
         const m = modal(h("div.form", h("h2", "+ ", T("Add account")), h("label.field", T("Key"), newAcc), h("p.small.muted", T("Short name without spaces, e.g. stars – the name and icon can be changed afterwards.")),
           h("div.row", h("button.btn", { onclick: async () => { const k = newAcc.value.trim().toLowerCase(); if (!k) return newAcc.focus();
             await call("parent/accounts", { method: "PUT", body: { key: k, name: k, unit: "", icon: "⭐", spendable: true, active: true, sort: 9 } }); m.close(); render(); } }, "💾 ", T("Save")),
@@ -1735,17 +1789,24 @@ async function rewardsView(main, opts = {}) {
       h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th.key-col", T("Key"), fieldInfo(T("The short internal name of the account, without spaces – rules and rewards use it."))), h("th", "Icon"), h("th", T("Name")),
         h("th", T("Unit"), fieldInfo(T("What the points of this account are called, e.g. «min» – shown next to the amounts."))),
         h("th", T("Spendable"), fieldInfo(T("XP shows progress and is never spent. Spendable accounts can be used in the shop."))),
-        h("th", T("Active"), fieldInfo(T("An inactive account is hidden in the app and nothing is booked on it any more – what it holds is kept."))))), h("tbody", ...accRows))))),
-    sectionAdd(T("Rules: which action gives how much on which account"),
+        h("th", T("Active"), fieldInfo(T("An inactive account is hidden in the app and nothing is booked on it any more – what it holds is kept."))))), h("tbody", ...accRows)))));
+  accBox.dataset.fold = "accounts";
+  accBox.dataset.status = accounts.filter(a => a.active).map(a => (a.icon || "") + " " + I18N.tr(a.name)).join(" · ");
+  const rulesBox = sectionAdd("📏 " + I18N.tr(T("Rules: which action gives how much on which account")),
       h("button.btn.small", { onclick: () => rulesBody.append(ruleRow({ event: "lesson_done", account: "coins", amount: 5, daily_limit: null, label: "", active: 1, condition: {} })) }, "+ ", T("Add rule")),
       h("div.scroll", stackTable(h("table.tbl.stack", h("thead", h("tr", h("th", T("Event"), fieldInfo(T("What gives the points: a right answer, a finished lesson, the daily goal, a chore …"))),
         h("th", T("Amount"), fieldInfo(T("How many points one such event gives; a negative amount takes points away."))), h("th", T("Account")),
         h("th", T("Daily limit"), fieldInfo(T("The most points this rule gives a child per day. Empty = no limit."))),
         h("th", T("Label"), fieldInfo(T("An own name for the rule, e.g. in the list of points – empty: the name of the event."))),
-        h("th", T("Active"), fieldInfo(T("An inactive rule gives no points until you switch it on again."))), h("th"))), rulesBody)))),
-    section("🛍️ " + I18N.tr(T("Shop")),
-      h("button.btn.small", { onclick: () => { P.tab = "shop"; location.hash = "shop"; render(); } }, "🛍️ ", T("Open the shop settings"))));
-  if (opts.onlyShop) { main.replaceChildren(); return { rewardBox, rewardCard }; }
+        h("th", T("Active"), fieldInfo(T("An inactive rule gives no points until you switch it on again."))), h("th"))), rulesBody))));
+  rulesBox.dataset.fold = "rules";
+  rulesBox.dataset.status = I18N.tr(T("Rules: {0} · active: {1}")).replace("{0}", rules.length).replace("{1}", rules.filter(r => r.active).length);
+  if (opts.onlyShop) return { rewardBox, rewardCard };
+  main.append(h("h1", T("Points & rules")),
+    h("p.muted.rew-shop-note", T("What children buy with their points – vouchers, internet minutes, avatar items – is set in the shop."), " ",
+      h("button.btn.small.ghost", { onclick: () => { P.tab = "shop"; location.hash = "shop"; render(); } }, "🛍️ ", T("Open the shop settings"))),
+    accBox, rulesBox);
+  foldBoxes(main, "rew");
 }
 
 // ---------------------------------------------------------------- shop: own rewards on top, then every avatar item
@@ -1760,9 +1821,9 @@ async function shopSettingsView(main) {
   const row = it => {
     const o = it.override || {};
     const base = it.base, baseCur = base.xp ? "xp" : "coins", basePrice = base.xp ?? base.cost ?? null;
-    const f = { on: h("input", { type: "checkbox", checked: !o.off }),
-      price: h("input", { type: "number", min: 0, max: 100000, value: o.price ?? "", placeholder: basePrice != null ? String(basePrice) : "–" }),
-      cur: h("select", h("option", { value: "" }, I18N.tr(T("as in the app")) + " (" + (baseCur === "xp" ? "✨ XP" : "🪙") + ")"),
+    const f = { on: h("input", { type: "checkbox", checked: !o.off, "aria-label": T("In the shop") }),
+      price: h("input", { type: "number", min: 0, max: 100000, value: o.price ?? "", placeholder: basePrice != null ? String(basePrice) : "–", "aria-label": T("Price") }),
+      cur: h("select", { "aria-label": T("Paid with") }, h("option", { value: "" }, I18N.tr(T("as in the app")) + " (" + (baseCur === "xp" ? "✨ XP" : "🪙") + ")"),
         h("option", { value: "coins", selected: o.currency === "coins" }, "🪙 " + I18N.tr(T("Coins"))),
         h("option", { value: "xp", selected: o.currency === "xp" }, "✨ " + I18N.tr(T("new XP")))) };
     const tr = h("tr" + (o.off ? ".off" : ""));
@@ -1807,8 +1868,9 @@ async function shopSettingsView(main) {
     ...bySlot.map(([sl, list]) => {
       const off = list.filter(i => i.override && i.override.off).length;
       const d = setFold("shop." + sl, SLOT_NAMES[sl] || sl, h("section.card.sec",
-        h("div.scroll", h("table.tbl.shop-tbl", h("thead", h("tr", h("th"), h("th", T("Item")), h("th", T("In the app")), h("th", T("In the shop")), h("th", T("Price")), h("th", T("Paid with")))),
-          h("tbody", ...list.map(row))))));
+        // phones: every item a small card (stack) – no table to scroll sideways, the «Paid with» choice readable
+        h("div.scroll", stackTable(h("table.tbl.stack.shop-tbl", h("thead", h("tr", h("th"), h("th", T("Item")), h("th", T("In the app")), h("th", T("In the shop")), h("th", T("Price")), h("th", T("Paid with")))),
+          h("tbody", ...list.map(row)))))));
       d.classList.add("shop-slot");
       d.querySelector(".set-status").textContent = I18N.tr(T("Items: {0}")).replace("{0}", list.length) + (off ? " · " + I18N.tr(T("switched off: {0}")).replace("{0}", off) : "");
       return d;
@@ -1850,7 +1912,8 @@ async function goalsSection() {
         account: fg.account.value, target: +fg.target.value } }); document.querySelector(".modal-back")?.remove(); render(); } }, "💾 ", T("Start family goal")));
   const sec = sectionAdd("🎯 " + I18N.tr(T("Current goals")), [h("button.btn.small.ghost", { onclick: () => goalDialog(true) }, "+ ", T("Start family goal")),
       h("button.btn.small", { onclick: () => goalDialog(false) }, "+ ", T("Add goal"))],
-    goals.length ? h("ul.list", ...list) : h("p.muted", T("No goals yet.")));
+    // empty: the row of the fold already says «No goals yet.» – here what to do
+    goals.length ? h("ul.list", ...list) : h("p.muted", T("Set a goal for one child or start a family goal with the buttons above.")));
   sec.dataset.fold = "goals";
   sec.dataset.status = goals.length ? I18N.tr(T("Current goals")) + ": " + goals.length : I18N.tr(T("No goals yet."));
   return sec;
@@ -1947,21 +2010,25 @@ function batteryForm(values, own, onSave, ...more) {
 
 /** Parent area › Games: the family default of the game battery, the daily goal, every child's charge now. */
 function batterySettingsCard() {
-  const box = h("details.card.sec.bat-settings", h("summary", h("b", { "data-ik": "Game battery" }, "🔋 ", T("Game battery"))));
+  const box = h("div.bat-settings");
+  const fold = setFold("games.battery", ["🔋 ", T("Game battery")], box);
+  fold.querySelector(".set-head > h2").dataset.ik = "Game battery";
   const draw = d => {
     const save = async v => { try { draw(await call("parent/battery", { method: "PUT", body: v })); toast(T("Saved"), "good"); } catch {} };
     const fam = d.family;
     const goal = h("select", { onchange: () => save({ goal: goal.value }) }, ...[["off", T("Nothing")], ["full", T("Battery full")], ["plus", T("Extra segments")]]
       .map(([v, n]) => h("option", { value: v, selected: fam.goal === v }, n)));
     const plus = h("input", { type: "number", min: 1, max: 20, step: 1, value: fam.goal_plus, inputmode: "numeric", onchange: () => save({ goal_plus: +plus.value }) });
-    box.replaceChildren(box.firstChild,
+    fold.querySelector(".set-status").textContent = fam.unlimited ? "∞ " + I18N.tr(T("Unlimited energy"))
+      : I18N.tr(T("Segments: {0}")).replace("{0}", fam.cap) + (fam.cost ? " · ⚡ " + fam.cost + " 🪙" : "");
+    box.replaceChildren(
       batteryForm(fam, null, save, h("label.field", h("span", "🎯 ", T("Daily goal reached")), goal), fam.goal === "plus" ? h("label.field", h("span", T("Extra segments")), plus) : null),
       h("ul.list.bat-kids", ...d.kids.map(k => h("li.row", k.state ? batteryIcon(k.state) : null, C(k.name, "strong.grow"),
         h("span.small.muted", k.state && k.state.free ? (k.state.party ? "🎉 " : "∞ ") + (k.state.until ? untilWhen(k.state.until) : "") : k.state ? k.state.charge + " / " + k.state.cap : ""),
         k.state && !k.state.free && k.state.charge < k.state.cap ? h("button.btn.small.ghost", { onclick: async () => { draw(await call(`parent/battery/${k.id}/recharge`, { method: "POST" })); toast(T("Battery recharged"), "good"); } }, "🎁 ", T("Recharge")) : null))));
   };
   call("parent/battery").then(draw).catch(() => {});
-  return box;
+  return fold;
 }
 
 /** Profile dialog of a child: its own battery values (empty = as the family). */
@@ -2547,7 +2614,16 @@ function planerFrame(src, title) {
       if (root && root.offsetHeight) f.style.height = Math.max(200, Math.ceil(root.getBoundingClientRect().height) + 4) + "px";
     } catch {}
   };
-  const timer = setInterval(fit, 700);
+  // how many chores the Planner has (the chores page says which plan is in use): «fq-planer-chores» when it changes
+  let count = null;
+  const tell = () => {
+    try {
+      const card = f.contentDocument && f.contentDocument.querySelector("family-planer-card");
+      const chores = card && card._store && card._store.snap && card._store.snap.chores;
+      if (Array.isArray(chores) && chores.length !== count) { count = chores.length; f.dispatchEvent(new CustomEvent("fq-planer-chores", { detail: count })); }
+    } catch {}
+  };
+  const timer = setInterval(() => { fit(); tell(); }, 700);
   f.addEventListener("load", fit);
   return f;
 }
@@ -2596,7 +2672,7 @@ async function communityView(main) {
     mark(await councilSection(me), "council"), mark(await pollsSection(me), "polls"),
     mark(await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }), "boards"),
     mark(await wichtelnSection(me), "wichteln"),
-    group("Deals", "🤝", T("Deals")), ...(await dealsFamilySections().catch(() => [])),
+    group("Deals", "💱", T("Deals")), ...(await dealsFamilySections().catch(() => [])),
     group("fam.ours", "🏡", T("Our family")),
     mark(await storiesSection(), "library"),
     mark(await crestSection(), "crest", !c ? t(T("No family crest")) : [t(c.image ? T("Own picture") : T("Drawn crest")), c.name || null].filter(Boolean).join(" · ")),
@@ -2664,7 +2740,7 @@ async function historyView(main) {
     page();
     box.replaceChildren(ul, more);
   }
-  main.append(pageHead("📜 " + I18N.tr(T("History"))), h("div.row.wrap.hist-filter", who, kinds), section("📜 " + I18N.tr(T("History")), box));
+  main.append(pageHead(T("History")), h("div.row.wrap.hist-filter", who, kinds), h("section.card.sec.hist-box", box));
   load();
 }
 
@@ -2672,7 +2748,7 @@ async function historyView(main) {
 function familyViewSection(s) {
   const vis = h("select", ...[["all", T("Everything")], ["percent", T("Only percentages")], ["goal", T("Only the family goal")]].map(([k, n]) => h("option", { value: k, selected: s.family_visibility === k }, n)));
   const sound = h("input", { type: "checkbox", checked: s.sound !== false });
-  return section(T("Family view"), h("label.field", T("What children see in the comparison"), vis), h("label.check", sound, T("Sound on by default")),
+  return section("👀 " + I18N.tr(T("Family view")), h("label.field", T("What children see in the comparison"), vis), h("label.check", sound, T("Sound on by default")),
     h("div.row", h("button.btn", { onclick: async () => {
       try { await call("parent/settings", { method: "PUT", body: { family_visibility: vis.value, sound: sound.checked } }); toast(T("Saved"), "good"); } catch {}
     } }, "💾 ", T("Save"))));
@@ -3067,11 +3143,14 @@ async function gamesView(main) {
       .map(([k, n]) => h("option", { value: k, selected: (s.game_starter || "dice") === k }, n)));
   const guests = h("input", { type: "checkbox", checked: s.games_guests !== false, onchange: async () => {
     await call("parent/settings", { method: "PUT", body: { games_guests: guests.checked } }); toast(T("Saved"), "good"); } });
-  const general = h("details.card.sec.games-general", h("summary", h("b", { "data-ik": "games.general" }, "🎛️ ", T("General"))),
+  const general = setFold("games.general", ["🎛️ ", T("General")], h("div.games-general",
     h("div.row", h("button.btn.small.ghost", { onclick: async () => { await access.allTo("all"); render(); } }, "✓ ", T("All on")),
       h("button.btn.small.ghost", { onclick: async () => { await access.allTo("off"); render(); } }, "✕ ", T("All off"))),
     h("label.field", T("Who begins a game (card and board games)"), starter),
-    h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)"))));
+    h("label.check", guests, h("span", T("Guests may join (whoever leads a game shows a QR code; guests type a name and play – nothing else of the app is open to them)")))));
+  general.querySelector(".set-head > h2").dataset.ik = "games.general";
+  general.querySelector(".set-status").textContent = starter.selectedOptions[0] ? starter.selectedOptions[0].textContent : "";
+  starter.addEventListener("change", () => { general.querySelector(".set-status").textContent = starter.selectedOptions[0].textContent; });
   main.append(h("h1", T("Games")), partyCard(),
     search, h("section.cg-group.games-all", setGroup("games.all", "⚙️", T("For all games")), general, batterySettingsCard()), runningGamesBox(), custom, none, ...groups);
   filter();
@@ -3162,7 +3241,17 @@ function planerSection(s) {
   }).catch(() => found.replaceChildren());
   return section("📥 " + I18N.tr(T("Take over an existing Family Planer")),
     found,
-    h("label.field", T("…or upload the file family_planer.<id> from /config/.storage"), file), box);
+    h("div.field", h("span", T("…or upload the file family_planer.<id> from /config/.storage")), fileButton(file, "📤 ", T("Choose file…"))), box);
+}
+
+/** A file picker in the language of the app: the browser's own «Choose File / No file chosen» stays in the browser's
+ *  language – so the input is hidden (still in the page, «change» works as before) and a translated button opens it. */
+function fileButton(input, ...label) {
+  input.classList.add("file-hidden");
+  input.tabIndex = -1;
+  const name = h("span.small.muted.file-name", T("No file chosen"));
+  input.addEventListener("change", () => { name.textContent = input.files[0] ? input.files[0].name : I18N.tr(T("No file chosen")); });
+  return h("div.row.file-pick", h("button.btn.ghost", { type: "button", onclick: () => input.click() }, ...label), name, input);
 }
 
 // ---------------------------------------------------------------- backup & restore
@@ -3211,13 +3300,14 @@ function backupSection() {
   } }, "⚙️ ", T("Open backup settings in Home Assistant"));
   haBackupHref().then(u => { haUrl = u; haBtn.hidden = !u; });
   return section("💾 " + I18N.tr(T("Backup & restore")),
-    sizes,
+    // the three kinds explained first, then the buttons
+    h("p.small.muted", T("Full: everything. Data: only what the family did (points, progress, games, chores done …). Customizing: settings, profiles and your own content – e.g. to set up a test installation without the data.")),
     h("div.row.backup-kinds",
       h("button.btn", { onclick: () => downloadBackup("full") }, "⬇️ ", T("Download full backup")),
       h("button.btn.ghost", { onclick: () => downloadBackup("data") }, "⬇️ ", T("Download data backup")),
       h("button.btn.ghost", { onclick: () => downloadBackup("customizing") }, "⬇️ ", T("Download customizing backup"))),
-    h("p.small.muted", T("Full: everything. Data: only what the family did (points, progress, games, chores done …). Customizing: settings, profiles and your own content – e.g. to set up a test installation without the data.")),
-    h("label.field", T("Restore from a backup file"), file), info,
+    sizes,
+    h("div.field", h("span", T("Restore from a backup file")), fileButton(file, "📤 ", T("Choose a backup file…"))), info,
     h("p.small.ha-backup-hint", { "data-ik": "Automatic backups" }, T("For automatic backups, include Family Quest in the Home Assistant backup settings (Apps).")),
     h("div.row", haBtn));
 }
@@ -3477,7 +3567,7 @@ async function calendarView(main) {
       !list.length ? h("li.muted", T("No events this month.")) : null);
   }
   main.append(
-    pageHead(["📅 ", T("Calendar")],
+    pageHead(T("Calendar"),
       h("button.btn.ghost", { onclick: () => eventDialog({ kind: "familytime", start: today + "T18:00", end: today + "T20:00", all_day: false }) }, "+ 👨‍👩‍👧 FamilyTime"),
       h("button.btn.ghost", { onclick: () => eventDialog({ kind: "offlinetime", start: today + "T14:00", end: today + "T17:00", all_day: false, options: { internet: true, games: true } }) }, "+ 📵 OfflineTime"),
       h("button.btn", { onclick: () => eventDialog({ start: today, end: today, all_day: true }) }, "+ ", T("New event"))),
@@ -3606,7 +3696,7 @@ function importSection(sources) {
     } catch { file.value = ""; }
   });
   return section("📥 " + I18N.tr(T("Import a calendar file")),
-    file, out,
+    fileButton(file, "📤 ", T("Choose file…")), out,
     sources.length ? h("div", h("h3", T("Imports")), h("ul.list", ...sources.map(src => h("li.row",
       h("span.grow", C(src.source.replace(/^holidays:/, "🏖️ ").replace(/^file:/, "📄 ")), h("span.small.muted", " · " + src.n + " · " + fmtDate(src.first.slice(0, 10)) + " – " + fmtDate(src.last.slice(0, 10)))),
       h("button.btn.small.ghost", { onclick: async () => {
@@ -3812,7 +3902,7 @@ async function settingsView(main) {
     fold("themes", "🎨 " + I18N.tr(T("Season, time of day & weather designs")), themesSection()),
     fold("dashboard", "🖥️ " + I18N.tr(T("Dashboard")), dash.settings),
     fold("kiosk", "🔗 " + I18N.tr(T("Link for the kiosk browser")), dash.link),
-    fold("levels", T("Levels"), section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels), saveBtn())),
+    fold("levels", "🏅 " + I18N.tr(T("Levels")), section(T("Levels"), h("label.field", T("XP needed per level (comma separated)"), f.levels), saveBtn())),
     fold("learning", "📚 " + I18N.tr(T("Learning")), section("📚 " + I18N.tr(T("Learning")), h("div.field-row",
       h("label.field", h("span", T("Coins for a perfect lesson"), fieldInfo(T("A lesson finished without a single mistake. Comes on top of the coins for a finished lesson; 0 = none."))), f.lesson_perfect_coins),
       h("label.field", h("span", "🐾 ", T("Pets: food costs (coins)"), fieldInfo(T("Feeding a pet once. Playing and washing are free; 0 = food is free."))), f.pet_food_cost),

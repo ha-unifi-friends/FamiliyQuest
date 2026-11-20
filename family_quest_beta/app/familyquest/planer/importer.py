@@ -10,6 +10,7 @@ by name (unknown persons become profiles) and adds up the points.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -92,8 +93,12 @@ async def run(fq, data: dict, photos: Path | None = None) -> dict:
     planner = host.planner
     await host.save_now()
     key = planner._store.key
-    kv.save(BEFORE_KEY, kv.load(key))
-    kv.save(key, data)
+
+    def swap() -> None:                     # a worker thread: never a database write on the event loop
+        with fq.db.tx():
+            kv.save(BEFORE_KEY, kv.load(key))
+            kv.save(key, data)
+    await asyncio.to_thread(swap)
     # photos of the persons
     if photos and photos.is_dir():
         target = Path(host.hass.config.path(FILES_DIR))
@@ -108,7 +113,7 @@ async def run(fq, data: dict, photos: Path | None = None) -> dict:
         st = bridge.state()
         st["links"], st["seen"] = {}, {}
         st.pop("account", None)
-        bridge.kv.save("fq.planer_bridge", st)
+        await asyncio.to_thread(bridge.kv.save, "fq.planer_bridge", st)
     await host.reload()
     if bridge:
         await bridge.sync()
