@@ -153,7 +153,7 @@ def test_field_explanations_are_info_buttons():
     for name in ["parent.js", "deals.js"]:
         src = _src(name)
         if name == "deals.js":
-            src = src[src.index("async function dealsParentView"):]          # the children's deal pages keep their texts
+            src = src[src.index("async function dealsFamilySections"):]       # the children's deal pages keep their texts
         # no explaining text under a field any more – only the PIN rule (needed while typing) and live values
         hints = re.findall(r'h\("span\.hint", ([^)]*\))', src)
         static = [x for x in hints if x.startswith(("T(", "kid ? T(")) and "4 digits" not in x]
@@ -226,7 +226,7 @@ def test_every_page_folds_its_boxes():
     src = _src("parent.js")
     for head, prefix in [("async function packsView(main)", "packs"), ("async function shopSettingsView(main)", "shop")]:
         assert f'foldBoxes(main, "{prefix}"' in _fn(src, head), prefix
-    assert 'foldBoxes(main, "deals"' in _src("deals.js")
+    assert "dealsFamilySections()" in _fn(src, "async function communityView(main)")      # deals: folds of the Family page
     shop = _fn(src, "async function shopSettingsView(main)")
     assert 'setFold("shop." + sl' in shop and 'h("details.shop-slot"' not in shop        # every kind of avatar item its own fold
     css = _src("parent-ha.css")

@@ -345,7 +345,9 @@ function dealNote(sum) {
 }
 
 // ---------------------------------------------------------------- parent area: tab «Deals»
-async function dealsParentView(main) {
+/** The deals of the parent area as folded boxes – part of the Family page (communityView): waiting for the OK,
+ *  the parents' own deals, all running and finished deals of the children, the settings. */
+async function dealsFamilySections() {
   const [ov, mine] = await Promise.all([call("parent/deals"), call("me/deals")]);
   const open = v => dealParentThread(v.id, v.a ? true : false);
   const appr = ov.deals.filter(v => v.status === "approval");
@@ -354,17 +356,17 @@ async function dealsParentView(main) {
   const row = v => h("li.row.deal-prow", avatarSvg(v.a.avatar, 30), C(v.a.name, "b"), h("span", "⇄"), avatarSvg(v.b.avatar, 30), C(v.b.name, "b"),
     dealStatusChip({ ...v, turn: false, with: v.b }), h("span.grow.small.muted", fmtDateTime(v.updated_at)),
     h("button.btn.small.ghost", { onclick: () => open(v) }, T("Open")));
-  main.append(pageHead("🤝 " + I18N.tr(T("Deals")), h("button.btn", { onclick: () => dealBuilder({ after: () => render() }) }, "+ ", T("New offer"))),
-    appr.length ? section("⏳ " + I18N.tr(T("Waiting for your OK")), h("ul.list", ...appr.map(row))) : null,
-    section("👤 " + I18N.tr(T("My deals")), mine.deals.length ? h("div.deal-list", ...mine.deals.map(v => dealCard(v, x => dealParentThread(x.id, false))))
-      : h("p.small.muted", T("No running deals."))),
-    section("📋 " + I18N.tr(T("All running deals")), running.length ? h("ul.list", ...running.map(row)) : h("p.small.muted", T("No running deals."))),
-    section("📜 " + I18N.tr(T("Finished deals")), ended.length ? h("ul.list", ...ended.slice(0, 40).map(row)) : h("p.small.muted", T("Nothing yet."))),
-    dealSettingsBox(ov.settings, ov.kids));
-  // every box folded like the settings: how many deals it holds (the settings: trading on / off) in its row
-  const set = main.querySelector(":scope > section.card:last-of-type");
-  if (set) set.dataset.status = I18N.tr(ov.settings.on ? T("Trading is on") : T("Off"));
-  foldBoxes(main, "deals", sec => I18N.tr(T("Deals: {0}")).replace("{0}", sec.querySelectorAll("li, .deal-card").length));
+  const n = k => I18N.tr(T("Deals: {0}")).replace("{0}", k);
+  const mark = (sec, id, status) => { sec.dataset.fold = id; sec.dataset.status = status; return sec; };
+  const newBtn = h("button.btn.small", { onclick: () => dealBuilder({ after: () => render() }) }, "+ ", T("New offer"));
+  const set = dealSettingsBox(ov.settings, ov.kids);
+  return [
+    appr.length ? mark(section("⏳ " + I18N.tr(T("Waiting for your OK")), h("ul.list", ...appr.map(row))), "deals-ok", n(appr.length)) : null,
+    mark(section("👤 " + I18N.tr(T("My deals")), h("div.row", newBtn), mine.deals.length ? h("div.deal-list", ...mine.deals.map(v => dealCard(v, x => dealParentThread(x.id, false))))
+      : h("p.small.muted", T("No running deals."))), "deals-mine", n(mine.deals.length)),
+    mark(section("📋 " + I18N.tr(T("All running deals")), running.length ? h("ul.list", ...running.map(row)) : h("p.small.muted", T("No running deals."))), "deals-running", n(running.length)),
+    mark(section("📜 " + I18N.tr(T("Finished deals")), ended.length ? h("ul.list", ...ended.slice(0, 40).map(row)) : h("p.small.muted", T("Nothing yet."))), "deals-ended", n(ended.length)),
+    set ? mark(set, "deals-settings", I18N.tr(ov.settings.on ? T("Trading is on") : T("Off"))) : null].filter(Boolean);
 }
 
 async function dealParentThread(id, overview) {
