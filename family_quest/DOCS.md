@@ -67,6 +67,9 @@ be replaced and what stays:
   last asked), the key of the kiosk dashboard link and «Last backup». The signing key (`secret.key`), the add-on
   options (`direct_access`, port) and the channel are not in the database at all.
 - Before every restore the current state is saved as `before-restore.zip` (a full backup) in the data folder.
+- Not in any backup: the privacy snapshots (`privacy_backups/`), `before-restore.zip` and unfinished uploads.
+  The privacy settings (retention periods, switches) are customizing; the clean-up run log and the folded bookings
+  are data.
 
 Which table and setting belongs to which kind is one table in `familyquest/backup.py` (`TABLES`, `SETTINGS`); a test
 fails when a new table, migration or setting is not classified.
@@ -97,6 +100,17 @@ events win over the seasons. In the parent area under **Settings › 🎨 Season
 move their dates and add **own designs** (name, icon, colour, scene, from – to; e.g. a birthday week) – own designs
 come first. Children can switch the scene off on their device in the ☰ menu. During a **🎉 party** the children's app
 shows the **🪩 Disco** design (see Party mode).
+
+**Live weather and daylight:** under **Settings › 🎨 Season designs › 🌦️ Weather for the designs** you pick a weather
+entity of Home Assistant (default «None»). Then the scene shows the weather outside – rain, snow, storm, fog, clouds or
+sun, with the wind – also on days without a design (the everyday scene with the weather, like the Family Planer card).
+It is the same setting as the weather of the Family Planer cards (planner «Seasons & weather»): one choice for both.
+**Day and night follow the sun** (on by default) turns the scene to night, dusk and dawn with `sun.sun`; off, or
+without Home Assistant, night is 20–6 by the clock. The app asks every 5 minutes (`GET /api/season-live`, signed-in
+profiles; the server reuses the answer for 3 minutes and sends only the weather kind, temperature, wind and the light –
+no entity ids) and only redraws the scene when it looks different, so the animations keep running. The children's
+☰ switch and «reduce motion» are respected; the party disco stays as it is. Parent API `GET/PUT /api/parent/season-live`
+(`{"weather": "weather.home" | null, "sun": true}`).
 
 ## Points and rewards
 
@@ -213,6 +227,51 @@ section **🎲 FamilyTime games** lists the FamilyTime events of the next 60 day
 - **Settings** (parent area › Family › FamilyTime games › ⚙️, and the same under Settings › FamilyTime games):
   switch the whole feature on/off (off: children see nothing of it), the coin price, the hours before the start when
   the wishes close.
+
+## 📈 Analytics (parent area)
+
+The menu item **📈 Analytics** in the parent area has two tabs.
+
+**📊 Dashboards** (opens first): several reports side by side on a grid of 4 columns (one column on phones).
+- The **standard dashboard** is there from the start (coins and XP per week, games per game, chores done or open, the
+  weather per child, game time per day). It can be changed and renamed, not removed. **⋯** makes new dashboards,
+  renames or deletes them; the list at the top switches between them.
+- The **timeline** at the top sets the period for every tile – it replaces the date filter of the reports. 📅 or the
+  title opens the period picker: quick ranges (today, yesterday, this week / month / quarter / year, the last 7, 30 or
+  365 days, the last 12 months) and a month calendar (tap the first and the last day; the calendar icon switches to the
+  months; arrow keys move between days, Esc closes). **◀ ▶** step back and forward by the length of the period,
+  **Now** goes back to the current period of the same kind, **⋮** chooses day, week, month, year or rolling 12 months.
+  The titles follow the language of the app («Dez.–Nov.» / «2025–2026»). Every dashboard remembers its period.
+- **✏️ Edit**: drag a report (a template or one of «My reports») onto the grid, or tap it / «+ Add report» to put it at
+  the end. Tiles are moved by dragging their head (⠿) or with ◀ ▶, resized by dragging the corner or with ↔ (1–4
+  columns) and ↕ (small / medium / tall); ✏️ gives a tile its own title, ✕ removes it. Dragging works with mouse,
+  pen and finger (pointer events).
+
+**📋 Reports**:
+- **Templates** – ready-made reports (coins per child and week, coins earned and spent, XP per week, correct answers
+  and accuracy per subject, learning minutes, games played per game, games / wins / coins per child, chores done, rewards
+  redeemed, game time, internet minutes used, battery used per game, the weather of the day and its bonus/malus points,
+  books read). A tap fills the ad-hoc report.
+- **My reports** – reports you saved, with ✏️ rename and 🗑️ delete.
+- **Ad-hoc report** – choose a data source (points & coins, learning answers, learning days, games played, chores,
+  rewards, game time, game battery, weather of the day, books read), then drag dimensions (person, day, week, month,
+  year, weekday, and per source e.g. account, category, subject, game, chore, reward, status, weather) and measures
+  (count, coins, XP, minutes, wins, …) into **Columns** (series / colours), **Rows** (categories, the x-axis), **Data**
+  (the numbers) and **Group** (one table or chart per value) – or tap a chip and then a zone. At most 3 dimensions and
+  4 measures. Filters: 7 days / 30 days / this year / all and the people. The icons below the report choose table,
+  pivot (with totals), bars, stacked bars, 100 % stacked bars, line, area or donut – our own SVG charts with legend
+  and tooltips (tap or hover), in light and dark mode. With several measures every chart shows one of them (one axis
+  per chart). **⭐ Save as my report** keeps it under «My reports».
+
+What it counts: the ledger (coins, XP, internet minutes used from earned minutes), the learning answers and learning
+days, the game history (places and coins of the family games), the chore plan, the shop (redeemed rewards), the
+minutes of family games (time limits), the game battery log, the behaviour weather and the books read. Private books
+(«Only me») are never counted and no titles of books or quizzes appear. Guests are never part of a report.
+
+Safety: the server only knows a fixed list of sources, dimensions and measures – a report names them by key, never
+with SQL or free text; anything else is refused. The query runs read-only with a time limit and at most 2000 rows.
+Parents only. Saved reports and dashboards are settings (`analytics_reports`, `analytics_dashboards`) and part of
+every backup.
 
 ## Kiosk dashboard
 
@@ -562,6 +621,63 @@ the children's app opens; *Parent area* there leads to the PIN login.
 - **Settings › Access from the network:** the networks (e.g. `192.168.35.0/24`) from which the app may be used, and –
   stricter – from which the parent area may be opened (e.g. only the parents' network). Empty = every network.
   A list that would lock out the device you are saving from is refused.
+
+## 🛡️ Privacy (parent area › Privacy / Datenschutz)
+
+**Master switch** (top of the page, **on by default**): off means nothing is counted, no clean-up runs (manual
+and automatic are refused) and no badge; the retention periods stay saved and editable. While it is on, the menu item
+**🛡️ Privacy shows a red badge** with the number of entries ready for a clean-up run (the total of the preview, «999+»
+above 999). The count is cached on the server for 5 minutes and refreshed after a run, after a settings change and every
+5 minutes; on phones the ☰ button shows a red dot.
+
+**Retention periods (Aufbewahrungsfristen):** every kind of stored personal or usage data has a lifetime – days,
+months, years or «keep forever» – with a default the parents can change (ⓘ next to each kind explains it):
+
+| Kind | Default | What |
+|---|---|---|
+| 🔐 Login log | 90 days | logins and failed logins with address and device |
+| 🌦️ Behaviour weather | 3 months | the weather given per child and day (the points stay in the balance) |
+| 🔋 Game battery log | 3 months | starts, recharges, charges |
+| 💣 Pranks received | 3 months | pranks a child has seen |
+| 📌 Removed board items | 1 month | notes kept for «undo» |
+| 📜 Personal history | 1 year | game results, quizzes, council votes |
+| 🎲 Finished games | 1 year | tables of finished games with moves and answers |
+| 📝 Learning answers | 1 year | every single answer, finished lessons |
+| 📅 Learning days | 2 years | XP, time and lessons per day – folded, totals stay |
+| 🪙 Point bookings | 2 years | the ledger – folded into «Balance brought forward» |
+| 🧹 Chores done | 1 year | who did which chore when |
+| 🤝 Deals | 1 year | ended deals with their messages |
+| 🛍️ Shop orders | 1 year | decided orders |
+| 🗳️ Council topics and polls | 1 year | closed ones with proposals and votes |
+| 🎁 Secret gift giving | 1 year | past draws |
+| 📆 Past calendar events | 2 years | with the FamilyTime wishes and votes (birthdays stay) |
+
+Not time-based («keep»): profiles, balances, badges, records and highscores, settings, learning progress and decks,
+books, quizzes, programs, photo sets and uploads, boards, pets, upcoming events, the chore plan.
+
+**Clean-up runs (Löschläufe):** the list of what is past due, per kind with the count and the oldest / newest date,
+is the preview – nothing is deleted while you look. Tick kinds (or «Select all»; for most kinds also single entries
+with 🔎) and confirm. Every run first writes a **backup snapshot** with the backup module into the data folder
+(`/data/privacy_backups/before-cleanup-….zip`, the last 3 are kept; a run whose snapshot fails deletes nothing), then
+deletes each kind in **one transaction**, then logs date, kinds, counts and who in **Past runs**.
+
+**Balances never change:** old ledger rows are folded into «Balance brought forward» rows (per profile, account and
+class) dated at the cut-off, in the same transaction – balances, XP, levels, new XP for the XP items, the Family Planer
+sync and counts like «50 chores» stay exactly the same. Old learning days are added up into one row per child; the
+days of a running streak stay.
+
+**Never deleted** because something still refers to it: anything of the current week, running games, open and
+pending chores, chores of running deals, open deals, orders waiting for approval, open topics and polls, upcoming
+events and draws, the newest row of every list (its id is never given out again), the last game of every quiz, the
+bookings since the active family goal started.
+
+**Automatic clean-up:** a switch, **off by default**. When on, Family Quest cleans the kinds that are past due once
+every night between 02:00 and 05:00 (snapshot and log entry as above, «automatic» in Past runs).
+
+**Good to know:** older copies can still be in your own backups and in the Home Assistant history – delete old
+backups too if data should be gone everywhere. To delete everything of one child, use *Delete all data of a child*:
+it opens the protected «Remove profile» dialog (type the name, «Delete for good»). The login log keeps at most 180
+days on its own (longer if you set a longer period).
 
 ## Family (parent area, formerly «Community»): family quiz and family council
 

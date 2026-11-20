@@ -23,6 +23,8 @@ from .packs import i18n as pack_i18n
 from .channel import feature_visible, hidden_games
 from .api import deals as deals_api
 from .api import haauth as haauth_api
+from .api import analytics as analytics_api
+from .api import privacy as privacy_api
 from .api.auth import INGRESS_IP
 from .services import FamilyQuest
 from .settings import WEB_DIR, Settings, load_settings
@@ -74,8 +76,11 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
             asyncio.create_task(lan_base())
         else:
             log.info("Home Assistant connection disabled")
+        from . import privacy
+        nightly = asyncio.create_task(privacy.auto_loop(core))     # the automatic clean-up at night (off by default)
         yield
         core.db.stop_backup_watch()
+        nightly.cancel()
         await core.planer_host.stop()
         if client:
             await client.close()
@@ -161,6 +166,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     app.include_router(deals_api.router)               # deals (deals.py)
     app.include_router(haauth_api.router)              # «Sign in with Home Assistant» on the direct port (haauth.py)
     app.include_router(deals_api.parent_router)
+    app.include_router(analytics_api.router)           # 📈 Analytics in the parent area (analytics.py)
+    app.include_router(privacy_api.router)             # privacy: retention periods and clean-up runs (privacy.py)
 
     def page(name: str) -> HTMLResponse:
         html = (WEB_DIR / name).read_text(encoding="utf-8").replace("__VERSION__", settings.version)

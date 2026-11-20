@@ -809,6 +809,25 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(profile_id, level)
     );
     """,
+    # 44 – privacy (privacy.py): the log of the clean-up runs, and how many bookings per event were folded into
+    # «Balance brought forward» rows (counts like «50 chores» stay the same). Self-contained: renumber freely on merge.
+    """
+    CREATE TABLE IF NOT EXISTS privacy_run(
+        id INTEGER PRIMARY KEY,
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        by_id INTEGER,                           -- the parent who ran it (NULL: the automatic run at night)
+        by_name TEXT NOT NULL DEFAULT '',
+        auto INTEGER NOT NULL DEFAULT 0,
+        counts TEXT NOT NULL DEFAULT '{}',       -- {kind: entries deleted or folded, -1 = failed (rolled back)}
+        backup TEXT                              -- the snapshot written before (data folder privacy_backups/)
+    );
+    CREATE TABLE IF NOT EXISTS ledger_folded(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        event TEXT NOT NULL,
+        n INTEGER NOT NULL DEFAULT 0,            -- distinct refs of the positive bookings folded
+        PRIMARY KEY(profile_id, event)
+    );
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [

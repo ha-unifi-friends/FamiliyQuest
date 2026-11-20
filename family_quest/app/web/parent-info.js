@@ -266,6 +266,8 @@ const PARENT_INFO = {
   [T("Edit profile")]: T("Everything of one profile in tabs: name, role, sign-in and avatar – for children also learning, time & battery, internet and devices. «Save» at the bottom."),
   [T("New child")]: T("Add a child: name, colour and how it signs in (nothing, PIN or Home Assistant). Everything else can be set later."),
   [T("New parent")]: T("Add a parent: name and how they sign in (PIN or Home Assistant)."),
+  "Weather for the designs": T("The scene in the header of the app shows the weather outside: pick a weather entity of Home Assistant and it rains, snows, storms or shines in the design like it does at home – also on the days without a season design. It is the same setting as the weather of the Family Planer cards. «None»: fair weather in the scene."),
+  "Day and night follow the sun": T("On: the scene turns to night, dusk and dawn with the real sun of Home Assistant (sun.sun). Off, or without Home Assistant: night from 8 pm to 6 am by the clock."),
   "prof.login": T("How this profile signs in: without anything, with a PIN (digits or symbols), with Home Assistant, or with a PIN or Home Assistant."),
   "prof.time": [
     T("How long the child may play games, learn and use the internet per day – also per weekday. ∞ = no limit."),

@@ -124,7 +124,14 @@ def test_every_setting_key_is_classified():
 # ---------------------------------------------------------------- contents of each kind
 def test_each_kind_holds_its_part(client):
     h, mia, leo = _family(client)
+    fq = client.app.state.fq
+    (fq.settings.data_dir / "privacy_backups").mkdir(exist_ok=True)               # privacy snapshots: never in a backup
+    (fq.settings.data_dir / "privacy_backups" / "before-cleanup-x.zip").write_bytes(b"PK")
+    (fq.settings.data_dir / "before-restore.zip").write_bytes(b"PK")
     full, data, custom = (_download(client, h, k) for k in ("full", "data", "customizing"))
+    for raw in (full, data, custom):
+        names = zipfile.ZipFile(io.BytesIO(raw)).namelist()
+        assert not any("privacy_backups" in n or "before-restore" in n or "secret" in n for n in names), names
     c, m, names = _db_of(full)
     assert m["kind"] == "full" and c.execute("SELECT COUNT(*) FROM profile").fetchone()[0] == 3
     assert c.execute("SELECT COUNT(*) FROM ledger").fetchone()[0] >= 2

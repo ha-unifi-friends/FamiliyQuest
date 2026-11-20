@@ -74,6 +74,12 @@ def designs(cfg) -> list[dict]:
     return ([{**b, **c["builtin"][b["id"]], "builtin": True} for b in BUILTIN] + [{**o, "kind": "own", "builtin": False} for o in c["own"]])
 
 
+def jz(today: date | None = None) -> str:
+    """The season of the year (scene name) by the default dates – the landscape of every design."""
+    md = (today or date.today()).strftime("%m-%d")
+    return next((JZ[b["id"]] for b in BUILTIN if b["kind"] == "season" and _inside(md, b["from"], b["to"])), "sommer")
+
+
 def active(cfg, today: date | None = None) -> dict | None:
     """The design of today: own designs before events (Halloween, Christmas) before seasons."""
     md = (today or date.today()).strftime("%m-%d")

@@ -56,8 +56,6 @@ class BackupError(ValueError):
 #   owners  (data tables) columns holding the profile the row belongs to – on a data restore rows of a profile that
 #           does not exist here are skipped (and reported). NULL is fine (e.g. a guest, «the family»).
 #   parent  (data tables) (column, table): the row belongs to a row of that table and is skipped with it.
-# Names reserved for branches not merged yet (analytics, privacy) are classified already; a table that does not exist
-# is simply not there.
 TABLES: dict[str, tuple[str, tuple[str, ...], tuple[str, str] | None]] = {
     # ---- customizing: profiles, configuration and the family's own content
     "profile": (CUSTOM, (), None),             # user accounts: PIN hashes, avatars, login modes, HA user links
@@ -73,11 +71,6 @@ TABLES: dict[str, tuple[str, tuple[str, ...], tuple[str, str] | None]] = {
     "story": (CUSTOM, (), None),               # books and adventure games (own games)
     "codelab_project": (CUSTOM, (), None),     # games made in the code workshop (own games)
     "bot": (CUSTOM, (), None),                 # own game bots (name, look, level)
-    "analytics_report": (CUSTOM, (), None),    # reserved: analytics «My reports»
-    "analytics_dashboard": (CUSTOM, (), None),  # reserved: analytics dashboards (layout, tiles, period)
-    "report": (CUSTOM, (), None),              # reserved (other possible name)
-    "saved_report": (CUSTOM, (), None),        # reserved (other possible name)
-    "dashboard": (CUSTOM, (), None),           # reserved (other possible name)
     # ---- data: what the family did
     "ledger": (DATA, ("profile_id",), None),   # points, coins, XP – balances are summed from it
     "daily": (DATA, ("profile_id",), None),    # XP / learning time per day (written with the ledger)
@@ -135,9 +128,8 @@ TABLES: dict[str, tuple[str, tuple[str, ...], tuple[str, str] | None]] = {
     "board_item": (DATA, (), ("board_id", "board")),
     "board_seen": (DATA, ("profile_id",), ("board_id", "board")),
     "wichtel": (DATA, (), None),                      # secret gift giving rounds
-    "cleanup_log": (DATA, (), None),                  # reserved: privacy clean-up run log
-    "privacy_cleanup_log": (DATA, (), None),          # reserved (other possible name)
-    "retention_log": (DATA, (), None),                # reserved (other possible name)
+    "privacy_run": (DATA, (), None),                  # log of the privacy clean-up runs
+    "ledger_folded": (DATA, ("profile_id",), None),   # bookings folded by a clean-up – goes with the ledger
 }
 INTERNAL_TABLES = ("sqlite_sequence", "sqlite_stat1", "sqlite_stat4")    # SQLite's own
 
@@ -158,16 +150,15 @@ SETTINGS: dict[str, str] = {
     "familytime_wishes": CUSTOM, "familytime_game_price": CUSTOM, "familytime_vote_hours": CUSTOM,
     "deals": CUSTOM, "stories": CUSTOM, "codelab": CUSTOM, "shop_items": CUSTOM, "pack_rewards": CUSTOM,
     "packs_optional_v1": CUSTOM, "packs_optional_unassign_v1": CUSTOM,
-    "analytics.": CUSTOM, "analytics_reports": CUSTOM, "analytics_dashboards": CUSTOM,   # analytics: «My reports», dashboards
+    "analytics_reports": CUSTOM, "analytics_dashboards": CUSTOM,   # analytics: «My reports», dashboards (layout, tiles, period)
     "season_live": CUSTOM,                             # live weather of the season designs (planer seasons.weather: kv)
-    "privacy": CUSTOM, "privacy.": CUSTOM, "retention": CUSTOM, "privacy_retention": CUSTOM,   # reserved: privacy branch
+    "privacy": CUSTOM,                                 # retention periods, master switch, automatic run
     # ---- data
     "jump_best": DATA, "sternlauf_best": DATA, "snack_best": DATA, "verkehr_best": DATA, "klatsch_best": DATA,
     "langstrecke_best": DATA, "langstrecke_pit": DATA, "escape_played": DATA,
     "xp_items_from": DATA,                             # ledger id from which XP count as «new» – goes with the ledger
     "guest_invites": DATA,                             # open guest invitations of running games
     "party": DATA,                                     # the party mode switched on just now (ends by itself)
-    "privacy_last_cleanup": DATA,                      # reserved: privacy branch
     # ---- environment: this installation's own values, never taken from a backup
     "ha_panel_path": ENV,                              # /app/<slug> or /hassio/ingress/<slug> of this HA
     "ha_app_login_url": ENV,                           # Home Assistant address for «Sign in with Home Assistant»
@@ -180,10 +171,11 @@ ENVIRONMENT_PARTS: dict[str, tuple[str, ...]] = {"dashboard": ("key",)}       # 
 
 # Number of migrations (db.MIGRATIONS) whose tables and settings are classified above – a new migration fails the
 # sync guard until somebody checked it and raised this number.
-CLASSIFIED_MIGRATIONS = 43
+CLASSIFIED_MIGRATIONS = 44
 
-# The file folders in the data folder: folder → kind; media/ per sub-folder (pack pictures, _memory = photo sets,
-# _stories = pictures of the books) – all own content.
+# The file folders in the data folder that go into a backup: folder → kind; media/ with all sub-folders (pack pictures,
+# _memory = photo sets, _stories = pictures of the books) – all own content. Nothing else of the data folder is packed:
+# not secret.key, options.json, before-restore.zip, restore_upload/ or the privacy snapshots (privacy_backups/).
 FILE_DIRS: dict[str, str] = {"media": CUSTOM, "family_planer": DATA}
 
 def table_kind(name: str) -> str | None:
