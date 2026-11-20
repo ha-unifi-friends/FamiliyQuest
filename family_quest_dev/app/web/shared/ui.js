@@ -733,7 +733,8 @@ function installAppDialog({ forOther = false, link = null } = {}) {
   const homeStep = () => step(T("Scroll down and tap «Add to Home Screen»."), pwaIcon("addhome", T("Add to Home Screen")));
   const ios = () => {
     const safari = block("Safari", dev.os === "ios" && dev.browser === "safari", [
-      step(T("Tap the Share button."), pwaIcon("share", T("Share")), T("At the bottom of the screen – on the iPad at the top right.")),
+      step(T("Tap the menu icon to the left of the address."), pwaIcon("burger", T("Menu")), T("At the bottom of the screen. Older iOS versions show the Share button directly – then skip this step.")),
+      step(T("Tap «Share»."), pwaIcon("share", T("Share")), T("On the iPad: the Share button at the top right.")),
       homeStep(), step(T("Tap «Add» at the top right."))]);
     const other = block(T("Chrome, Firefox, Edge …"), dev.os === "ios" && dev.browser === "other", [
       step(T("Tap the Share button in the address bar."), pwaIcon("share", T("Share")), T("At the top right next to the address. If it is missing: open the menu and choose «Share».")),
