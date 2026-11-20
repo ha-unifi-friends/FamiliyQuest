@@ -205,9 +205,27 @@ def _start(client, hm, hl, cat="tiere"):
     client.post("/api/community/werbinich/join", headers=hl)
 
 
-def _char(fq, pid):
+def _raw_char(fq, pid):
+    """The character key as stored (some carry a note, e.g. «Boxing (sport)»)."""
     row = fq.db.q1("SELECT * FROM card_game WHERE kind='werbinich' ORDER BY id DESC LIMIT 1")
     return wb.Table(json.loads(row["state"])).char_of(str(pid))["name"], row["id"]
+
+
+def _char(fq, pid):
+    """The name a player types: the character without its note («Boxing (sport)» → «Boxing») – what the game accepts."""
+    from familyquest.gamewords import english
+    name, gid = _raw_char(fq, pid)
+    return english(name), gid
+
+
+def test_every_character_is_found_with_its_own_name():
+    """Every character of every category is accepted with its plain name (the note in brackets is not typed)."""
+    from familyquest.gamewords import english
+    for key, cat in CATEGORIES.items():
+        for i, c in enumerate(cat["chars"]):
+            t = wb.Table({"rules": {"category": key}, "chars": {"1": i}, "players": [{"id": "1"}]})
+            assert wb.matches(english(c["name"]), t.accepted("1")), (key, c["name"])
+            assert wb.matches(english(c["name"]), t.accepted("1", "en")), (key, c["name"])
 
 
 def test_family_table_flow_coins_once_and_history(client):
@@ -254,7 +272,7 @@ def test_family_table_flow_coins_once_and_history(client):
     h = client.get("/api/community/history", headers=hm).json()
     e = next(x for x in h if x["kind"] == "werbinich")
     assert e["data"]["place"] == 1 and e["data"]["players"] == 2 and e["data"]["found"] and e["data"]["questions"] == 1
-    assert e["data"]["char"] == _char(fq, mia)[0] and e["data"]["found_count"] == 2
+    assert e["data"]["char"] == _raw_char(fq, mia)[0] and e["data"]["found_count"] == 2
     assert fq.db.val("SELECT COUNT(*) FROM history WHERE kind='werbinich'") == 2
 
 
@@ -297,15 +315,21 @@ def test_no_coins_with_one_family_person_and_guest(client):
     st = client.post("/api/community/werbinich/begin", headers=hm).json()
     assert [p["guest"] for p in st["players"]] == [False, True] and not st["coins_on"]
     assert client.get("/api/community/werbinich", headers=hg).json()["joined"]
-    client.post("/api/community/werbinich/guess", json={"text": "falsch"}, headers=hm)
-    st = client.post("/api/community/werbinich/ask", json={"text": "Mit Ball?"}, headers=hg).json()
-    assert st["question"]["asker"] == str(g["profile"]["id"])
-    client.post("/api/community/werbinich/answer", json={"vote": "yes"}, headers=hm)
+    r = client.post("/api/community/werbinich/guess", json={"text": "falsch"}, headers=hm)
+    assert r.status_code == 200, r.text
+    r = client.post("/api/community/werbinich/ask", json={"text": "Mit Ball?"}, headers=hg)
+    assert r.status_code == 200, r.text
+    assert r.json()["question"]["asker"] == str(g["profile"]["id"])
+    r = client.post("/api/community/werbinich/answer", json={"vote": "yes"}, headers=hm)
+    assert r.status_code == 200, r.text
     name, _ = _char(fq, g["profile"]["id"])
-    client.post("/api/community/werbinich/guess", json={"text": name}, headers=hg)
+    r = client.post("/api/community/werbinich/guess", json={"text": name}, headers=hg)
+    assert r.status_code == 200 and r.json()["last"]["ok"], (name, r.text)
     name, _ = _char(fq, mia)
-    v = client.post("/api/community/werbinich/guess", json={"text": name}, headers=hm).json()
-    assert v["phase"] == "done" and all(p["coins"] == 0 for p in v["players"])
+    r = client.post("/api/community/werbinich/guess", json={"text": name}, headers=hm)
+    assert r.status_code == 200, r.text
+    v = r.json()
+    assert v["phase"] == "done" and all(p["coins"] == 0 for p in v["players"]), (name, v.get("last"))
     assert not fq.db.q1("SELECT id FROM ledger WHERE ref LIKE 'werbinich:%'")
     st = {"solo": False, "phase": "done", "players": [{"id": "1"}, {"id": "2"}, {"id": "3", "guest": True}],
           "places": {"3": 1, "2": 2, "1": 3}}

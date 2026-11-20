@@ -18,6 +18,7 @@ async function boot() {
   // opened in Home Assistant with the child's own Home Assistant user: logged in without PIN (also instead of another
   // profile still logged in on this device) – not again in this tab after «Log out» (haKidOff)
   if (S.info.ha_kid && !haKidOff() && !/^#\/?as\//.test(location.hash)) await haKidLogin().catch(() => {});
+  if (/^#\/?ha-auth\?/.test(location.hash)) await haAppFinish();          // back from Home Assistant's login page
   window.addEventListener("hashchange", route);
   ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, idleReset, { passive: true }));
   if ("serviceWorker" in navigator) {
@@ -107,6 +108,7 @@ async function loadMe() {
   window.FQ_STORIES = S.me.stories !== false;           // adventure books switched off for this child: no menu entry
   if (S.me.prank) setTimeout(() => inkOverlay(S.me.prank), 400);     // somebody threw an ink bomb meanwhile
   idleReset();
+  if (S.live === undefined) setTimeout(refreshLive, 0);  // live weather and sun for the header scene (then every 5 min)
 }
 
 // login with the Home Assistant user of a child (api/kid.py ha-login): only the children's app, never the parent area
@@ -118,6 +120,30 @@ async function haKidLogin() {
   Auth.kid = r.token; Auth.parent = "";
   return true;
 }
+
+// «Sign in with Home Assistant» outside Home Assistant (tablets, phones – api/haauth.py): Home Assistant's own login
+// page, back to #/ha-auth with a code that the server exchanges. The nonce stays in this tab (sessionStorage).
+async function haAppLogin() {
+  try {
+    const r = await api("ha-auth/start", { method: "POST", body: { base: new URL(".", location.href).href } });
+    try { sessionStorage.setItem("fq.ha.nonce", r.nonce); } catch {}
+    location.href = r.url;
+  } catch (e) { toast(e.message, "bad"); }
+}
+async function haAppFinish() {
+  const q = new URLSearchParams(location.hash.replace(/^#\/?ha-auth\?/, ""));
+  let nonce = "";
+  try { nonce = sessionStorage.getItem("fq.ha.nonce") || ""; sessionStorage.removeItem("fq.ha.nonce"); } catch {}
+  history.replaceState(null, "", location.pathname + location.search + "#/");
+  // the reason stays on the login screen (a toast is gone before a child has read it)
+  if (!q.get("code")) { S.haError = I18N.tr(T("Sign-in with Home Assistant was cancelled")); return; }
+  try {
+    const r = await api("ha-auth/finish", { method: "POST", body: { code: q.get("code"), state: q.get("state") || "", nonce } });
+    Auth.kid = r.token; Auth.parent = r.parent_token || "";
+    Sound.play("tap");
+  } catch (e) { S.haError = e.message; }
+}
+const haAppButton = () => h("button.btn.big.ha-app-login", { onclick: haAppLogin }, "🏠 ", T("Sign in with Home Assistant"));
 
 function logout() {
   if (S.info && S.info.ha_kid) { try { sessionStorage.setItem("fq.ha.off", "1"); } catch {} }     // no automatic login right away
@@ -240,7 +266,7 @@ function partyBanner() {
   const what = [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean);
   return h("section.card.banner.party-banner", h("span.big-ic", "🎉"),
     h("div.grow", h("strong", T("Party mode"), p.until ? " " + untilWhen(p.until) : ""), what.length ? h("div.small", what.map(t => I18N.tr(t)).join(" · ")) : null),
-    h("span.big-ic.party-ball", "🪩"));
+    h("span.party-stage", { "aria-hidden": "true" }, h("i.party-rays"), h("i.party-spot"), h("span.big-ic.party-ball", "🪩")));
 }
 // the Disco design while the party runs for this child (or an own design of the parents with the disco look)
 const discoTheme = () => (S.me && S.me.party && S.me.party.theme) || (S.info && S.info.season && S.info.season.vis === "disco" && seasonOn() ? S.info.season : null);
@@ -334,19 +360,48 @@ let _seasonCss = false;
 function discoScene() {
   return h("div.scn.disco-scn", { "aria-hidden": "true" }, h("span.disco-ball", "🪩"), h("i.spot.s1"), h("i.spot.s2"), h("i.spot.s3"));
 }
+// the scene of the design of the day – with the live weather and daylight of Home Assistant (api season-live: the
+// weather entity and «Day and night follow the sun» in the parent area); without them the clock decides (night 20–6).
+// No design today but a weather entity: the everyday scene («alltag») with the weather, like the planner card.
+function sceneOpts() {
+  const se = S.info && S.info.season, lv = S.live || null;
+  if (!se && !(lv && lv.wx)) return null;
+  const now = new Date();
+  return { season: se ? { vis: se.vis, jz: se.jz, key: se.id, wild: 1 } : { vis: "alltag", jz: lv.jz || "sommer", key: "alltag", wild: 1 },
+    wx: lv ? lv.wx : null, hour: now.getHours(), night: lv ? lv.night : null, dusk: lv ? lv.dusk : null, storm: (lv && lv.storm) || 50,
+    lang: /^de/.test(I18N.base) ? "de" : "en", narrow: innerWidth < 700, intensity: "normal",
+    still: FPSEASON.reduce ? FPSEASON.reduce() : false };
+}
 function seasonScene() {
   if (discoTheme()) return discoScene();
-  const se = S.info && S.info.season;
-  if (!se || !seasonOn() || !window.FPSEASON) return null;
+  if (!seasonOn() || !window.FPSEASON) return null;
+  const o = sceneOpts();
+  if (!o) return null;
   if (!_seasonCss) { _seasonCss = true; document.head.append(h("style", FPSEASON.CSS)); }
-  const now = new Date();
   const el = h("div.scn");
   try {
-    el.innerHTML = FPSEASON.scene({ season: { vis: se.vis, jz: se.jz, key: se.id, wild: 1 }, wx: null, hour: now.getHours(),
-      lang: I18N.base === "de" ? "de" : "en", narrow: innerWidth < 700, intensity: "normal" }) + '<div class="shade"></div>';
+    el.innerHTML = FPSEASON.scene(o) + '<div class="shade"></div>';
+    el._key = FPSEASON.sceneKey(o);
   } catch (e) { return null; }
   return el;
 }
+// every 5 minutes: the weather and the sun anew – the scene is only drawn again when it looks different (sceneKey),
+// so the animations do not restart
+async function refreshLive() {
+  if (!Auth.kid || !S.me) return;
+  try { S.live = await api("season-live"); } catch { return; }
+  const head = document.querySelector("header.fq-head");
+  if (!head || discoTheme()) return;
+  const cur = head.querySelector(":scope > .scn");
+  const o = seasonOn() && window.FPSEASON ? sceneOpts() : null;
+  if (cur && o && cur._key === FPSEASON.sceneKey(o)) return;
+  const fresh = o ? seasonScene() : null;
+  if (cur && fresh) cur.replaceWith(fresh);
+  else if (fresh) head.prepend(fresh);
+  else if (cur) cur.remove();
+  head.classList.toggle("sc", !!fresh);
+}
+setInterval(() => { if (!document.hidden) refreshLive(); }, 5 * 60000);
 
 function seasonLabel() {
   const se = discoTheme() || (S.info && S.info.season);
@@ -369,8 +424,9 @@ function headClock() {
 function topBar(active, opts = {}) {
   const me = S.me;
   const se = discoTheme() || (S.info && S.info.season);
-  const head = h("header.top.fq-head" + (se && (seasonOn() || discoTheme()) ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
-    seasonScene(),
+  const scn = seasonScene();
+  const head = h("header.top.fq-head" + (scn || (se && seasonOn()) ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
+    scn,
     h("div.head-row" + (opts.back ? ".has-back" : ""),
       h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰",
         (window.FQ_NAV_BADGES || {}).deals ? h("span.deal-badge", String(window.FQ_NAV_BADGES.deals)) : null),
@@ -388,8 +444,10 @@ function topBar(active, opts = {}) {
 }
 
 function openDrawer(active) {
-  openAppMenu({ active, season: S.info.season, seasonOn: seasonOn(),
-    onGo: key => { if (key === "planer") location.href = "planer"; else go(key === "home" ? "" : key); },
+  // the switch also when only the weather scene shows (no design today)
+  const season = S.info.season || (S.live && S.live.wx ? { icon: S.live.wx.icon || "🌦️" } : null);
+  openAppMenu({ active, season, seasonOn: seasonOn(),
+    onGo: key => { if (key === "planer") location.href = "planner"; else go(key === "home" ? "" : key); },
     onSeason: () => { try { localStorage.setItem("fq.season", seasonOn() ? "0" : "1"); } catch {} route(); },
     onLogout: logout });
 }
@@ -432,24 +490,36 @@ async function profilesView() {
   try { profiles = await api("profiles"); } catch (e) { return fatal(e); }
   const kids = profiles.filter(p => p.role === "kid"), parents = profiles.filter(p => p.role === "parent");
   const tile = p => h("button.profile-tile", { onclick: () => login(p) }, avatarSvg(p.avatar, 120),
-    C(p.name, "strong"), p.has_pin ? h("span.lock", { title: T("With PIN") }, "🔒") : null);
-  const parentBtn = h("a.btn.ghost.parent-link", { href: "eltern" }, "🔐 ", T("Parent area"));
+    C(p.name, "strong"), loginIcon(p));
+  const parentBtn = h("a.btn.ghost.parent-link", { href: "parents" }, "🔐 ", T("Parent area"));
   const hk = S.info.ha_kid;
   const body = h("div.profiles-screen",
     h("div.row.profiles-head", h("h1.grow", T("Log in")), themeBtn(), langPicker()),
     hk ? h("div.center.ha-kid-login", h("button.btn.big", { onclick: async () => {
       try { if (await haKidLogin()) { Sound.play("tap"); location.hash = "#/"; route(); } } catch (e) { toast(e.message, "bad"); }
     } }, "🏠 ", I18N.tr(T("Log in as {0}")).replace("{0}", hk.name))) : null,
+    !hk && S.info.ha_app_login && !S.info.setup_needed ? h("div.center.ha-kid-login", haAppButton()) : null,
+    S.haError ? h("p.card.ha-auth-error", { role: "alert" }, "⚠️ ", S.haError) : null,
     S.info.setup_needed
       ? h("div.card.welcome", h("h2", T("Welcome to Family Quest!")), h("p", T("A parent sets up the profiles first.")),
-          h("a.btn.big", { href: "eltern" }, T("Set up now")))
+          h("a.btn.big", { href: "parents" }, T("Set up now")))
       : null,
     kids.length ? h("div.profile-grid", ...kids.map(tile)) : (!S.info.setup_needed ? h("p.muted.center", T("No child profile yet – add one in the parent area.")) : null),
     parents.length ? h("div.parents-row", h("span.muted", T("Learn along:")), ...parents.map(p =>
-      h("button.parent-chip", { onclick: () => login(p) }, avatarSvg(p.avatar, 36), C(p.name)))) : null,
+      h("button.parent-chip", { onclick: () => login(p) }, avatarSvg(p.avatar, 36), C(p.name), loginIcon(p)))) : null,
     parentBtn);
   app.replaceChildren(body);
+  S.haError = "";
   parentBtn.href = await parentAreaHref();
+}
+
+// how a profile signs in (chosen by the parents, enforced by the server): 🔢 PIN · 🏠 Home Assistant only ·
+// 🔢🏠 PIN or Home Assistant · nothing = tap and in
+const loginOf = p => p.login || (p.has_pin ? "pin" : "none");
+const LOGIN_ICON = { pin: ["🔢", T("Sign in with PIN")], ha: ["🏠", T("Sign in with Home Assistant")], pin_ha: ["🔢🏠", T("PIN or Home Assistant")] };
+function loginIcon(p) {
+  const c = LOGIN_ICON[loginOf(p)];
+  return c ? h("span.lock.login-ic", { title: I18N.tr(c[1]), "aria-label": I18N.tr(c[1]) }, c[0]) : null;
 }
 
 function login(p) {
@@ -460,21 +530,32 @@ function login(p) {
     location.hash = "#/";
     route();
   };
-  if (!p.has_pin) return api("login", { method: "POST", body: { profile_id: p.id } }).then(done).catch(e => toast(e.message, "bad"));
+  const mode = loginOf(p);
+  // «Home Assistant only»: in Home Assistant the own user logs in, on tablets straight to «Sign in with Home Assistant»
+  if (mode === "ha") {
+    if (S.info.ha_kid && S.info.ha_kid.id === p.id) {
+      return haKidLogin().then(ok => { if (ok) { Sound.play("tap"); location.hash = "#/"; route(); } }).catch(e => toast(e.message, "bad"));
+    }
+    if (p.ha_login) return haAppLogin();
+    return toast(S.info.via_ha ? T("Sign in with your own Home Assistant user") : T("Sign-in with Home Assistant is switched off – ask your parents"), "bad");
+  }
+  if (mode === "none") return api("login", { method: "POST", body: { profile_id: p.id } }).then(done).catch(e => toast(e.message, "bad"));
+  // PIN (and «PIN or Home Assistant»: the PIN pad with the Home Assistant button)
+  const haBtn = () => mode === "pin_ha" && p.ha_login ? h("div.center.ha-pin-alt", h("button.btn.ghost.small", { onclick: haAppLogin }, "🏠 ", T("Sign in with Home Assistant"))) : null;
   if (p.pin_kind === "symbols" && p.symbol_set) {
     // picture PIN: the 24 symbols come in a new order every time, so a watched pattern does not help
     const m = modal(h("div", h("div.center", avatarSvg(p.avatar, 80)),
       symbolPad({ title: C(p.name), symbols: p.symbol_set, onSubmit: async ids => {
         const res = await api("login", { method: "POST", body: { profile_id: p.id, pin: "sym:" + ids.join(",") } });
         m.close(); done(res);
-      } })));
+      } }), haBtn()));
     return;
   }
   const m = modal(h("div", h("div.center", avatarSvg(p.avatar, 90)),
     pinPad({ title: C(p.name), length: 4, maxLength: p.role === "kid" ? 4 : 8, onSubmit: async pin => {
       const res = await api("login", { method: "POST", body: { profile_id: p.id, pin } });
       m.close(); done(res);
-    } })));
+    } }), haBtn()));
 }
 
 // the subjects (packs) of a profile as tiles: tap = the pack with its path, ▶ = go on with the next unit right away.
@@ -1425,7 +1506,7 @@ async function avatarView() {
   draw(); drawTabs(); drawPanel();
   screen("avatar", h("h1", "🧑‍🎨 ", T("Me")), ...meSummary(), moods, petsSection(), h("div.av-editor", preview, h("div.av-side", tabs, panel)),
     h("div.row.center", h("button.btn.big", { onclick: save }, "💾 ", T("Save"))),
-    h("div.row.center", h("button.btn.ghost", { onclick: changePin }, "🔑 ", T("Change my PIN"))),
+    S.me.profile.login !== "ha" ? h("div.row.center", h("button.btn.ghost", { onclick: changePin }, "🔑 ", T("Change my PIN"))) : null,
     S.me.games ? botsSection() : null);
   async function save() {
     try { await api("me/avatar", { method: "POST", body: { avatar: a, mood_text: feel.value, mood } }); Sound.play("right"); toast(T("Saved"), "good"); go(""); }

@@ -14,7 +14,7 @@ html.ha[data-theme="dark"] { --accent: #8b8bf5; --accent-bg: #6363de; --good-tex
   --good-bg: #173b22; --bad-bg: #4a1c1c; --ring-bg: #2b3043; }
 
 html.ha body { font-size: 14px; line-height: 1.45; letter-spacing: .01em; }
-html.ha h1 { font-size: 1.6rem; font-weight: 400; }
+html.ha h1 { font-size: 1.6rem; font-weight: 600; }      /* the page title: as bold as the group headings below it, bigger */
 html.ha h2 { font-size: 1.15rem; font-weight: 500; }
 html.ha h3 { font-size: 1rem; font-weight: 500; }
 html.ha b, html.ha strong { font-weight: 500; }
@@ -35,7 +35,8 @@ html.ha .icon-btn { border-radius: 50%; width: 40px; height: 40px; font-size: 1.
 @media (pointer: coarse) {
   html.ha .btn, html.ha .btn.small, html.ha .btn.big { min-height: 44px; }
   html.ha .icon-btn { width: 44px; height: 44px; }
-  html.ha select, html.ha input[type=text], html.ha input[type=number], html.ha input[type=search], html.ha input[type=time], html.ha input[type=date] { min-height: 44px; }
+  html.ha select, html.ha input[type=text], html.ha input[type=number], html.ha input[type=search], html.ha input[type=time], html.ha input[type=date],
+  html.ha input[type=url], html.ha input[type=email], html.ha input[type=datetime-local], html.ha input[type=password] { min-height: 44px; }
 }
 html.ha .link { font-weight: 500; }
 html.ha :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -111,12 +112,66 @@ button.cal-n:hover { background: var(--hover); }
 .cal-yd.today { outline: 2px solid var(--accent); }
 @media (max-width: 700px) { .cal-week { grid-template-columns: 1fr; } .cal-wcol { min-height: 0; } }
 .theme-row.off { opacity: .55; } .theme-row { gap: 10px; align-items: center; }
-/* ⓘ info buttons: right of a title, top right in a pop-up */
+/* ⓘ info buttons: always right next to the title */
 .info-btn { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: 8px; padding: 0; border: 1.5px solid currentColor;
   border-radius: 50%; background: none; color: var(--muted); font: 700 .8rem/1 var(--font); cursor: pointer; vertical-align: middle; position: relative; }
 .info-btn::after { content: ""; position: absolute; inset: -10px; }          /* a 44 px finger target, the circle stays small */
 .info-btn:hover { color: var(--accent); }
 .modal { position: relative; }
-.info-btn.info-corner { position: absolute; top: 14px; right: 14px; margin: 0; }
-.modal h2:first-child { padding-right: 34px; }
+/* the ⓘ follows the label text: a heading that grows in a flex row only as wide as its text */
+h2.grow:has(> .info-btn, > .ib-glue > .info-btn), h3.grow:has(> .info-btn, > .ib-glue > .info-btn) { flex: 0 1 auto; margin-right: auto; }
 .info-text { line-height: 1.5; white-space: pre-line; }
+/* ⓘ of a field: the same circle right of the label text (fieldInfo in parent-info.js); the label line keeps its height */
+.field-info { margin-left: 6px; width: 24px; height: 24px; font-size: .75rem; vertical-align: -4px; }
+label.field > span:has(> .field-info, > .ib-glue > .field-info), .field > span:has(> .field-info, > .ib-glue > .field-info) { line-height: 24px; }
+/* small fields side by side: as many as fit (two on a phone), labels on top, the inputs on one line */
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; align-items: end; }
+.field-row > .field { margin: 0; min-width: 0; }
+.field-row > .span2 { grid-column: span 2; }
+@media (max-width: 340px) { .field-row > .span2 { grid-column: auto; } }
+.field-row > div.field { display: grid; gap: 4px; font-weight: 700; font-size: .92rem; }        /* like label.field */
+html.ha .field-row > div.field { font-weight: 400; color: var(--muted); font-size: .85rem; }
+.field-row input[type=number], .field-row input[type=time], .field-row select { max-width: none; }
+/* game price: the rent and its period in one line */
+.gp-rent { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.gp-rent > input { flex: 0 1 100px; min-width: 72px; }
+.gp-rent .gp-periods { gap: 4px; }
+.gp-rent .gp-periods .btn { padding-inline: 10px; }
+/* settings: the four groups (App, Personalisation, Home Assistant, System) – a heading above their folds */
+html h2.set-group { margin: 22px 4px 0; font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; }
+@media (max-width: 820px) { html h2.set-group { font-size: 1.15rem; } }     /* below the page title (1.45rem) */
+html h1 + h2.set-group { margin-top: 4px; }
+html .page-head + h2.set-group, html .page-head + .party-card + h2.set-group { margin-top: 4px; }
+/* a fold opened by an old address (#goals, #dashboard …) scrolls to the top – below the sticky bar of phones */
+details.set-fold { scroll-margin-top: 72px; }
+/* a group heading with buttons on its right (e.g. «Running games» › End all) */
+.set-group-row { display: flex; align-items: flex-end; gap: 8px 12px; flex-wrap: wrap; }
+.set-group-row > h2.set-group { flex: 1 1 auto; margin-bottom: 0; }
+.set-group-row > .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* the expand chevron of every fold in the parent area (details > summary): one component – on the right, big, bold,
+   with contrast in light and dark; ▸ folded, ▾ open */
+:root { --chev: #2b3142; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --chev: #dde2ee; } }
+:root[data-theme="dark"] { --chev: #dde2ee; }
+html details:not(.more-menu) > summary { position: relative; padding-right: 44px; list-style: none; cursor: pointer; }
+html details:not(.more-menu) > summary::-webkit-details-marker { display: none; }
+html details:not(.more-menu) > summary::after { content: ""; position: absolute; right: 16px; top: 50%; width: 11px; height: 11px; margin: -7px 0 0;
+  border: solid var(--chev); border-width: 0 3px 3px 0; border-radius: 1px; transform: rotate(-45deg); transition: transform .15s; }
+html details:not(.more-menu)[open] > summary::after { transform: rotate(45deg); margin-top: -9px; }
+html details.game-sec > summary h2::before, html details.inst-item > summary::before { content: none; }
+/* a fold shows the title of its box in its row: the box itself starts without it (also after the box redrew itself) */
+.set-fold .set-body .fold-title, .set-fold .set-body > .sec-head:first-child > h2 { display: none; }
+.set-fold .set-body > .sec-head:first-child { justify-content: flex-end; margin-top: 0; }
+/* overview: a child is a folded row – folded it shows the weather to pick and «Edit profile» */
+details.kid-fold > summary { display: grid; gap: 8px; }
+details.kid-fold > summary h2 { margin: 0; }
+.kid-head { align-items: center; gap: 12px; }
+.kid-quick { gap: 6px; align-items: center; }
+.kid-quick .weather-btns { gap: 4px; }
+.kid-fold .kid-actions { display: flex; justify-content: flex-start; gap: 6px; }
+.kid-weather h3 { margin: 0 0 4px; }
+.kid-quick .weather-btns .btn { min-height: 40px; padding: 4px 8px; }
+.kid-quick .weather-btns .big-ic { font-size: 1.25rem; }
+details.kid-fold > summary .weather-now { font-size: 2rem; }
+/* a folded box: no gap below its row (the hidden content still takes a grid slot) */
+html details.card:not([open]) { row-gap: 0; }

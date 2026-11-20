@@ -2273,8 +2273,8 @@ customElements.whenDefined('fp-week-inner').then(() => {
       
         @media (max-width:560px){
           .card{padding:14px 12px}
-          .ov{grid-template-columns:minmax(56px,1fr) repeat(7,minmax(22px,1fr)) 34px;gap:3px;padding:8px;width:100%}
-          .ovp{gap:5px;font-size:12px}.ovp ha-icon,.ovp .av{display:none}
+          .ov{grid-template-columns:minmax(48px,max-content) repeat(7,minmax(20px,1fr)) 30px;gap:3px;padding:8px;width:100%}
+          .ovp{gap:5px;font-size:12px;max-width:96px}.ovp>:not(span:last-child){display:none}
           .ovc{height:26px;font-size:11px}.ovt{font-size:12px}.ovh{font-size:10px;letter-spacing:0}
           .row{grid-template-columns:1fr;gap:10px}
           .asg{width:100%}.asg .sel,.asg select{max-width:100%}
@@ -2282,7 +2282,7 @@ customElements.whenDefined('fp-week-inner').then(() => {
           .head{gap:10px}.hadd{height:38px;padding:0 10px}
         }
 .card,.pnl{-webkit-backdrop-filter:var(--fp-blur,none);backdrop-filter:var(--fp-blur,none);box-shadow:var(--fp-glow,none)}.card{position:relative}.card::before{content:"";position:absolute;left:18px;right:18px;top:-1px;height:3px;border-radius:3px;background:var(--fp-band,none);pointer-events:none}</style>
-      <div class="card">
+      <div class="card${window.FQ_PARENT_AREA ? ' fqe' : ''}">
         <div class="head"><div class="badge"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon></div>
           <div><div class="title">${esc(this._cfg.titel)}</div><div class="subt">Tag antippen = zuteilen · nochmals antippen = Zeit zum Erledigen (z. B. Mi bis Sa) und Rhythmus (alle 2–4 Wochen). Änderungen gelten ab sofort.</div></div><span class="hsp"></span>
           <button class="hadd" data-hadd="special"><ha-icon icon="mdi:plus"></ha-icon>Besonderes Ämtli</button><button class="hadd" data-hadd="todo"><ha-icon icon="mdi:plus"></ha-icon>To-do</button></div>
@@ -3589,8 +3589,8 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
       
         @media (max-width:560px){
           .card{padding:14px 12px}
-          .ov{grid-template-columns:minmax(56px,1fr) repeat(7,minmax(22px,1fr)) 34px;gap:3px;padding:8px;width:100%}
-          .ovp{gap:5px;font-size:12px}.ovp ha-icon,.ovp .av{display:none}
+          .ov{grid-template-columns:minmax(48px,max-content) repeat(7,minmax(20px,1fr)) 30px;gap:3px;padding:8px;width:100%}
+          .ovp{gap:5px;font-size:12px;max-width:96px}.ovp>:not(span:last-child){display:none}
           .ovc{height:26px;font-size:11px}.ovt{font-size:12px}.ovh{font-size:10px;letter-spacing:0}
           .row{grid-template-columns:1fr;gap:10px}
           .asg{width:100%}.asg .sel,.asg select{max-width:100%}
@@ -3598,7 +3598,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
           .head{gap:10px}.hadd{height:38px;padding:0 10px}
         }
 .card,.pnl{-webkit-backdrop-filter:var(--fp-blur,none);backdrop-filter:var(--fp-blur,none);box-shadow:var(--fp-glow,none)}.card{position:relative}.card::before{content:"";position:absolute;left:18px;right:18px;top:-1px;height:3px;border-radius:3px;background:var(--fp-band,none);pointer-events:none}</style>
-      <div class="card">
+      <div class="card${window.FQ_PARENT_AREA ? ' fqe' : ''}">
         <div class="head"><div class="badge"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon></div>
           <div><div class="title">${esc(this._cfg.titel)}</div><div class="subt">Tap a day = assign · tap again = time to do it (e.g. Wed to Sat) and rhythm (every 2–4 weeks). Changes apply right away.</div></div><span class="hsp"></span>
           <button class="hadd" data-hadd="special"><ha-icon icon="mdi:plus"></ha-icon>Special chore</button><button class="hadd" data-hadd="todo"><ha-icon icon="mdi:plus"></ha-icon>To-do</button></div>
@@ -4338,7 +4338,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
     _flash(m) { this._msg = m; this._render(); clearTimeout(this._mt); this._mt = setTimeout(() => { this._msg = ''; this._render(); }, 3500); }
     async _add() {
       const s = this._snap(); const title = String(this._text || '').trim(); if (!title || !s) return;
-      const pid = this._person || (s.persons[0] && s.persons[0].id);
+      const pid = this._person || (window.FQ_ME && window.FQ_ME.person) || (s.persons[0] && s.persons[0].id);
       const def = this._defSize(s); const size = this._size || def;
       try {
         await window.FPPIN.call(this._store, 'family_planer/todo/save', { person_id: pid, title, ...(size !== def ? { size } : {}) }, { lang: this._cfg.lang, host: this });
@@ -4374,7 +4374,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
       if (!this.shadowRoot || !this._cfg) return;
       const s = this._snap(); const T = this.T; if (!s) { this.shadowRoot.innerHTML = ''; return; }
       const persons = s.persons || []; const todos = s.todos || [];
-      const sel = persons.find((p) => p.id === this._person) || persons[0];
+      const sel = persons.find((p) => p.id === (this._person || (window.FQ_ME && window.FQ_ME.person))) || persons[0];
       const groups = persons.map((p) => ({ p, list: todos.filter((x) => x.person_id === p.id) })).filter((g) => g.list.length);
       const d = this._dlg;
       const dlg = !d ? '' : `<div class="ov"><div class="dlg"><div class="dh">${esc(fmt(d.kind === 'del' ? T.delAsk : d.it.done ? T.reopen : T.ask, { t: d.it.title }))}</div>
@@ -5048,7 +5048,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
       const d = this._dlg;
       const dlg = d ? `<div class="ov"><div class="dlg"><div class="dh">${esc(T.delAsk.replace('{t}', d.title || ''))}</div><div class="acts"><span class="sp"></span><button class="sg" data-close>${esc(T.cancel)}</button><button class="sg del" data-yes>${esc(T.del)}</button></div></div></div>` : '';
       const mods = this._data.general.modules;
-      const tabs = ORDER.map((id) => TABS.find((x) => x.id === id)).filter((x) => x && !((x.id === 'lists' && !mods.lists) || (['persons', 'chores', 'vacation', 'points', 'todos', 'announce', 'seasons', 'sonder'].includes(x.id) && !mods.week)));
+      const tabs = ORDER.map((id) => TABS.find((x) => x.id === id)).filter((x) => x && !(window.FQ_PARENT_AREA && x.id === 'chores') && !((x.id === 'lists' && !mods.lists) || (['persons', 'chores', 'vacation', 'points', 'todos', 'announce', 'seasons', 'sonder'].includes(x.id) && !mods.week)));
       this.shadowRoot.innerHTML = `${style}<div class="card">
         <div class="top"><h2>${esc(T.title)}</h2><button class="tb" data-chpin><ha-icon icon="mdi:form-textbox-password"></ha-icon>${esc(T.pin)}</button><button class="tb" data-lock><ha-icon icon="mdi:lock-outline"></ha-icon>${esc(T.lock)}</button></div>
         <div class="tabs">${tabs.map((x) => `<button class="tab${x.id === tab.id ? ' on' : ''}" data-tabsel="${x.id}"><ha-icon icon="${x.icon}"></ha-icon>${esc(L(x.label, lang))}</button>`).join('')}</div>
@@ -5097,7 +5097,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
       if (!p || !A) return '';
       const pic = (q, size) => { const loc = (this._avLocal || {})[q.id]; const img = loc || q.image || '';
         return FX.avatarHtml ? FX.avatarHtml({ name: q.name, farbe: COLOR(q.color), ...(/^(av2?:|svg:|img:)/.test(img) ? { bild: img } : {}) }, size) : ''; };
-      return `<div class="hint3">${esc(lbl('Jede und jeder darf hier ein Bild zusammenstellen – ohne PIN. Alles andere öffnet die Eltern-PIN oben rechts.', 'Anyone may build a picture here – no PIN needed. Everything else opens with the parent PIN at the top right.'))}</div>
+      return `<div class="hint3"${window.FQ_NO_PIN ? ' hidden' : ''}>${esc(lbl('Jede und jeder darf hier ein Bild zusammenstellen – ohne PIN. Alles andere öffnet die Eltern-PIN oben rechts.', 'Anyone may build a picture here – no PIN needed. Everything else opens with the parent PIN at the top right.'))}</div>
         <div class="avps">${ps.map((q) => `<button class="avpb${q.id === p.id ? ' on' : ''}" style="--c:${COLOR(q.color)}" data-avp="${esc(q.id)}">${pic(q, 40)}<span>${esc(q.name)}</span></button>`).join('')}</div>
         <div class="avwrap">${A.builder(this._avCode(p), COLOR(p.color), lang, this._avtab, ((s.points || {})[p.id] || {}).unlocked || [], { name: p.name, vis: this._avsv })}</div>
         <div class="upl"><label class="sg">${esc(lbl('Eigenes Foto hochladen', 'Upload own photo'))}<input type="file" accept="image/*" data-avup hidden></label><small>${esc(lbl('Wird quadratisch zugeschnitten und nur in Family Quest gespeichert.', 'Cropped to a square and stored only in Family Quest.'))}</small></div>`;
@@ -5225,6 +5225,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
   }
 
   async function ensure(store, ctx) {
+    if (window.FQ_NO_PIN) return '';
     const t = cached(store); if (t) return t;
     if (store.snap && store.snap.pin_default) return change(store, ctx);
     let note = '';
@@ -5239,6 +5240,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
   }
 
   async function call(store, type, data, ctx) {
+    if (window.FQ_NO_PIN) return window.FQ_NO_PIN(store, type, data, CANCEL);
     for (let i = 0; i < 3; i += 1) {
       const token = await ensure(store, ctx);
       try { return await store.ws(type, { ...(data || {}), token }); } catch (e) {
@@ -5253,8 +5255,8 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
 
   window.FPPIN = {
     call, ensure, CANCEL,
-    change: (store, ctx) => change(store, ctx, ' '),
-    unlocked: (store) => !!cached(store),
+    change: (store, ctx) => (window.FQ_NO_PIN ? window.FQ_NO_PIN.change(CANCEL) : change(store, ctx, ' ')),
+    unlocked: (store) => !!window.FQ_NO_PIN || !!cached(store),
     lock: (store) => tokens.delete(store),
     token: (store) => cached(store),
   };
@@ -5952,7 +5954,7 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
         this._layer.shadowRoot.addEventListener('click', (e) => this._onClick(e));
         document.body.appendChild(this._layer);
       }
-      const bar = this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: 60, right: window.innerWidth - 8 };
+      const bar = window.FQ_PARENT_AREA ? null : this.shadowRoot.querySelector('.bar'); const r = bar ? bar.getBoundingClientRect() : { bottom: window.FQ_PARENT_AREA ? window.FQ_VIS().top + 2 : 60, right: window.innerWidth - 8 };
       this._layer.style.cssText = `display:block;position:fixed;z-index:9999;top:${Math.round(r.bottom + 6)}px;right:${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
       const s = this._store && this._store.snap; if (s) applyTheme(this._layer, this._cfg.theme || s.theme, this._cfg.style || s.style);
       this._layer.shadowRoot.innerHTML = `<style>${css}</style>${html}`;

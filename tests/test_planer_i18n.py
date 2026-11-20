@@ -31,7 +31,8 @@ def test_planer_dictionary_complete(lang):
 
 def test_planer_page_loads_the_translation():
     html = (WEB / "planer.html").read_text(encoding="utf-8")
-    assert 'window.I18N_EXTRA = ["planer"]' in html
+    assert 'window.I18N_EXTRA = ["planer"]' in (WEB / "planer" / "page-pre.js").read_text(encoding="utf-8")
+    assert html.index("planer/page-pre.js") < html.index("shared/i18n.js")
     assert html.index("planer/fq-pre.js") < html.index("planer/family-planer-cards.js")
     bundle = (WEB / "planer" / "family-planer-cards.js").read_text(encoding="utf-8")
     assert "window.FQ_PLANER_LANG" in bundle and "FQN('mon'" in bundle

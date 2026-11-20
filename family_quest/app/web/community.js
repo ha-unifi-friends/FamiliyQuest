@@ -6,6 +6,8 @@ const QUIZ_COLORS = ["var(--ans-1)", "var(--ans-2)", "var(--ans-3)", "var(--ans-
 const QUIZ_SHAPES = ["♠\uFE0E", "♥\uFE0E", "♦\uFE0E", "♣\uFE0E"];   // \uFE0E: as text, not as emoji
 // parent area › Games: «active without bots» – the app hides every bot option for these games (S.me.games_nobots; parents
 // are not bound, the server checks too). withoutBots() in a start dialog: the bot fields go away, the table gets 0 bots.
+// a line that explains a box: in the parent area it lives in the ⓘ of the box title (parent-info.js PARENT_INFO)
+const comIntro = text => window.FQ_PARENT_AREA ? null : h("p.small.muted", text);
 const botsOn = game => typeof S === "undefined" || !S.me || !(S.me.games_nobots || []).includes(game);
 function withoutBots(game, bots, ...more) {
   if (botsOn(game)) return false;
@@ -216,7 +218,7 @@ async function guestInvite(game, gid) {
   try { r = await api("community/guests", { method: "POST", body: { game, on: true, gid } }); } catch (e) { return toast(e.message, "bad"); }
   const a = r.access || {};
   const host = (a.ips && a.ips[0]) || location.hostname;
-  const url = `http://${host}:${a.port || a.default_port || 8099}/gast?c=${encodeURIComponent(r.invite.code)}`;
+  const url = `http://${host}:${a.port || a.default_port || 8099}/guest?c=${encodeURIComponent(r.invite.code)}`;
   const field = h("input", { type: "url", readonly: true, value: url, onfocus: e => e.target.select() });
   const m = modal(h("div.form.center",
     h("h2", "👥 ", T("Invite guests")),
@@ -294,18 +296,20 @@ function quizLive(box, me, back) {
     if (!st) return show(h("section.card.center", h("div.big-ic", "🎯"), h("h2", T("No family quiz right now")),
       h("p.muted", T("Start one from the list of quizzes – everybody can join on their own device.")), h("button.btn", { onclick: back }, T("Back"))));
     // ☰: guests (everybody of the family), stop for whoever leads, language
+    // a multilingual quiz: everybody picks the language of the questions on their own device – in ☰ like the app language
+    const pickQLang = () => {
+      const m = modal(h("div.form", h("h2", "🌐 ", T("Language of the questions")),
+        ...langs.map(l => h("button.btn" + (l === lang ? "" : ".ghost"), { onclick: () => {
+          qlang = l; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} m.close(); last = ""; draw(raw); } },
+          C((QUIZ_LANG_NAMES[l] || l) + " (" + l.toUpperCase() + ")"))),
+        h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+    };
     const menu = gameMenu({ invite: !me.guest && st.status !== "done" ? "quiz" : null,
-      actions: [{ ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
+      actions: [{ ic: "🌐", label: I18N.tr(T("Language of the questions")) + ": " + lang.toUpperCase(), hidden: langs.length < 2, onclick: pickQLang },
+        { ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
       onLeave: () => { full(false); stop(); back(); } });
-    // a multilingual quiz: everybody picks the language of the questions on their own device
-    // the language of the questions (not the app language in ☰): a small caption says what the select is for
-    const langSel = langs.length > 1 ? h("label.quiz-lang-box", { title: T("Language of the questions") },
-      h("span.quiz-lang-cap", T("Questions")),
-      h("select.quiz-lang", { "aria-label": T("Language of the questions"),
-        onchange: e => { qlang = e.target.value; try { localStorage.setItem("fq.quiz.lang", qlang); } catch {} last = ""; draw(raw); } },
-        ...langs.map(l => h("option", { value: l, selected: l === lang, title: QUIZ_LANG_NAMES[l] || l }, "🌐 " + l.toUpperCase() + " ▾")))) : null;
     const head = h("div.quiz-head.ql-head", h("div.row.head-title", menu, h("h1", h("span.ql-ic", "🎯 "), C(st.title))),
-      h("div.row", langSel, st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null));
+      h("div.row", st.total ? h("span.chip", (st.idx + 1 > 0 ? st.idx + 1 : 0) + " / " + st.total) : null));
     // only the main action stays as a big button – everything else is in ☰
     const hostBar = isHost(st) && st.status !== "done" ? h("div.row.center.host-bar",
       h("button.btn", { onclick: () => act("next") }, st.status === "lobby" ? "▶ " + I18N.tr(T("Start")) : st.status === "question" ? I18N.tr(T("Show answer")) :
@@ -421,7 +425,7 @@ async function pollsSection(me = S.profile) {
     let polls = [];
     try { polls = await api("community/polls"); } catch (e) { return sec.append(h("p.bad", e.message)); }
     sec.replaceChildren(h("div.sec-head", h("h2", "📊 ", T("Polls")), h("div.head-actions", h("button.btn", { onclick: () => pollDialog(draw) }, "+ ", T("New poll")))),
-      h("p.small.muted", T("Ask the family something – everybody answers on their own device and sees the result afterwards.")),
+      comIntro(T("Ask the family something – everybody answers on their own device and sees the result afterwards.")),
       instList("polls", polls, { closed: p => p.status === "closed",
         summary: p => [C(p.question, "strong.grow"), !p.my_votes.length && p.status !== "closed" ? h("span.chip.vote", T("answer")) : null,
           h("span.chip." + (p.status === "closed" ? "closed" : "vote"), p.status === "closed" ? T("closed") : T("open"))],
@@ -502,7 +506,7 @@ async function familyTimeSection(me = S.profile, { settings = null } = {}) {
     if (!parent && (!d.enabled || !d.events.length)) { sec.hidden = true; return; }     // switched off or nothing planned: children see nothing
     sec.hidden = false;
     sec.replaceChildren(...[h("h2", "🎲 ", T("FamilyTime games")),
-      h("p.small.muted", T("Wish a game for the next FamilyTime – if there are several wishes, the family votes.")),
+      comIntro(T("Wish a game for the next FamilyTime – if there are several wishes, the family votes.")),
       parent && !d.enabled ? h("p.warn-text", T("Game wishes are switched off – children see nothing of it.")) : null,
       d.events.length ? h("div.ftg-list", ...d.events.map(e => card(e, d))) : h("p.small.muted", T("No FamilyTime planned in the calendar yet.")),
       settings ? settings(draw) : null].filter(Boolean));
@@ -641,8 +645,8 @@ async function wichtelnSection(me = S.profile) {
   const draw = async () => {
     let d = { items: [], members: [] };
     try { d = await api("community/wichteln"); } catch (e) { return sec.replaceChildren(h("p.bad", e.message)); }
-    sec.replaceChildren(h("div.sec-head", h("h2", "🎁 ", T("Wichteln")), h("div.head-actions", h("button.btn", { onclick: () => wichtelDialog(d.members, draw) }, "+ ", T("New Wichteln")))),
-      h("p.small.muted", T("Who gives a present to whom is drawn at random – everybody sees only their own.")),
+    sec.replaceChildren(h("div.sec-head", h("h2", "🎁 ", T("Secret gift giving")), h("div.head-actions", h("button.btn", { onclick: () => wichtelDialog(d.members, draw) }, "+ ", T("New secret gift giving")))),
+      comIntro(T("Who gives a present to whom is drawn at random – everybody sees only their own.")),
       instList("wichteln", d.items, { closed: w => !!w.due && w.due < new Date().toISOString().slice(0, 10),
         summary: w => [C(w.title, "strong.grow"), w.due ? h("span.small.muted", "📅 " + fmtDate(w.due)) : null, w.done ? h("span.chip.closed", "✓") : null],
         body: w => {
@@ -677,7 +681,7 @@ function wichtelDialog(members, done) {
     onchange: e => { e.target.checked ? chosen.add(m.id) : chosen.delete(m.id); } }), C(m.name), m.role === "parent" ? h("span.small.muted", " 👪") : null)));
   drawPeople();
   const noParents = h("input", { type: "checkbox" }), noKids = h("input", { type: "checkbox" });
-  const m = modal(h("div.form", h("h2", "🎁 ", T("New Wichteln")),
+  const m = modal(h("div.form", h("h2", "🎁 ", T("New secret gift giving")),
     h("label.field", T("Occasion"), title),
     h("label.field", T("Date (optional)"), due, h("span.hint", T("Everybody gets a to-do in the planner – without the name of whom they give to."))),
     h("div.wichtel-field", h("div.row", h("b.grow", T("Who takes part?")),
@@ -702,7 +706,7 @@ async function councilSection(me = S.profile) {
     let topics = [];
     try { topics = await api("community/council"); } catch (e) { return sec.append(h("p.bad", e.message)); }
     sec.replaceChildren(h("div.sec-head", h("h2", "🗳️ ", T("Family council")), h("div.head-actions", h("button.btn", { onclick: () => topicDialog(draw) }, "+ ", T("New topic")))),
-      h("p.small.muted", T("Everybody can ask the family something, collect ideas and then vote – secretly, one vote each.")),
+      comIntro(T("Everybody can ask the family something, collect ideas and then vote – secretly, one vote each.")),
       instList("council", topics, { closed: t => t.status === "closed",
         summary: t => { const und = t.status === "closed" && t.result && t.result.decided === false;
           return [C(t.title, "strong.grow"), t.status === "vote" && !t.my_vote ? h("span.chip.vote", T("vote")) : null,
@@ -873,7 +877,7 @@ async function quizzesView() {
 // list of quizzes with start / edit / delete, templates, editor – for profile `me`
 // `actions`: the head row of the section the «+ New quiz» button goes into – `withImport`: also «📥 Import» (a quiz file)
 // next to it, «+ New» (parent area › Games › Custom games); `onCount(n)`: the number of quizzes
-async function quizzesPanel(box, me, onStarted, { actions, withImport = false, onCount = null } = {}) {
+async function quizzesPanel(box, me, onStarted, { actions, withImport = false, onCount = null, play = null } = {}) {
   let quizzes = [], templates = [], live = null, facts = null;
   try { [quizzes, templates, live, facts] = await Promise.all([api("community/quizzes"), api("community/templates"), api("community/quiz").catch(() => null),
     api("community/quizzes/facts").catch(() => null)]); }
@@ -888,7 +892,15 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
         catch (e) { toast(e.message, "bad"); }
       } }, "▶ ", T("Start")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   };
-  const reload = () => quizzesPanel(box, me, onStarted, { actions, withImport, onCount });
+  const reload = () => quizzesPanel(box, me, onStarted, { actions, withImport, onCount, play });
+  // parent area › Custom games: «Open a family table» – pick the quiz (or Family Quest Facts), then start it
+  if (play) play.replaceChildren(h("button.btn", { onclick: () => {
+    const m = modal(h("div.form", h("h2", "👨‍👩‍👧 ", T("Open a family table")), h("p.small.muted", T("Which quiz shall we play?")),
+      facts && facts.enabled ? h("button.btn.ghost", { onclick: () => { m.close(); factsStart(); } }, "📊 ", T("Family Quest Facts")) : null,
+      ...quizzes.map(q => h("button.btn.ghost", { onclick: () => { m.close(); start(q); } }, "🎯 ", C(quizTitle(q.title, q.langs)))),
+      quizzes.length ? null : h("p.muted", T("No quiz yet – make one with «+ New».")),
+      h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
+  } }, "👨‍👩‍👧 ", T("Open a family table")));
   if (onCount) onCount(quizzes.length);
   // «Family Quest Facts»: a special quiz – the server makes new questions from the family's own data at every start
   const factsStart = () => {
@@ -920,24 +932,20 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
     const regionSel = h("select", { style: { width: "auto", minWidth: "160px" }, onchange: e => { region = e.target.value; try { localStorage.setItem("fq.tplRegion", region); } catch {} drawTemplates(); } },
       ...Object.entries(TPL_REGIONS).filter(([k]) => k === "all" || templates.some(t => t.region === k))
         .map(([k, n]) => h("option", { value: k, selected: k === region }, I18N.tr(n))));
-    // … or made by an AI: the template for the AI, then upload its answer (a JSON file)
-    const file = h("input", { type: "file", accept: ".json,.txt,.md,application/json,text/plain", hidden: true, onchange: async () => {
-      const f = file.files[0]; if (!f) return;
+    // a quiz file (the answer of an AI or an export): imported, the dialog closes
+    const importText = async text => {
       try {
-        const r = await api("community/quizzes/import", { method: "POST", body: { text: await f.text() } });
+        const r = await api("community/quizzes/import", { method: "POST", body: { text } });
         toast(I18N.tr(T("{0} quizzes imported")).replace("{0}", r.ids.length), "good"); m.close(); reload();
       } catch (e) { toast(e.message, "bad"); }
-      file.value = "";
-    } });
-    // … or made by an AI: download the template for the AI, then import its answer (a JSON file)
+    };
+    // … or made by an AI: the shared box (template, prompt, copy, hint, upload of the JSON file the AI gives back –
+    // an exported quiz file goes the same way)
     const aiBox = h("div.ai-box",
-      h("div.row.wrap",
-        h("button.btn.small", { onclick: () => file.click() }, "⬆️ ", T("Import")),
-        quizzes.length ? h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all")) : null,
-        file),
-      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")),
       aiPromptBox(T("Make me a family quiz about [topic, e.g. animals of Switzerland].\n[10] questions for players aged [8] to [45], language: [English].\nMix the question types: multiple choice, pictures, estimates and map questions."),
-        { template: "api/ai-template/quiz", name: "family-quest-quiz-template.json" }));
+        { template: "api/ai-template/quiz", name: "family-quest-quiz-template.json", accept: ".json,.txt,.md,application/json,text/plain", onFile: (f, text) => importText(text) }),
+      h("p.small.muted", T("Made with your AI: the template and every export are JSON files that explain themselves to an AI. Give one to ChatGPT, Claude, Gemini … and say what the quiz should be about (or what to change) – all question types work: answers with text or flags, pictures (flags, emoji, own SVG drawings, cantons), estimation and map questions, mixed. Import its answer.")),
+      quizzes.length ? h("div.row.wrap", h("button.btn.small.ghost", { onclick: () => downloadApi("community/quizzes/export", "family-quest-quizzes.json") }, "⬇️ ", T("Export all"))) : null);
     // templates first (one tap), the own quiz next to it; AI and import folded away – rarely needed
     m = modal(h("div.form", h("div.row.wrap", h("h2.grow", "🎯 ", T("New quiz")),
         h("button.btn", { onclick: () => { m.close(); quizEditor(null, reload); } }, "✏️ ", T("Make an own quiz"))),
@@ -953,7 +961,7 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
   const impFile = h("input.new-quiz", { type: "file", accept: ".json,.txt,.md,application/json,text/plain", hidden: true, onchange: async () => {
     const f = impFile.files[0]; if (!f) return;
     try {
-      const r = await api("community/quizzes/import", { method: "POST", body: { text: await f.text() } });
+      const r = await api("community/quizzes/import", { method: "POST", body: { text: (await f.text()).replace(/^\uFEFF/, "") } });
       toast(I18N.tr(T("{0} quizzes imported")).replace("{0}", r.ids.length), "good"); reload();
     } catch (e) { toast(e.message, "bad"); }
     impFile.value = "";
@@ -980,7 +988,7 @@ async function quizzesPanel(box, me, onStarted, { actions, withImport = false, o
   box.replaceChildren(...[
     actions ? null : h("div.sec-head", h("span.grow"), h("div.head-actions", newBtn)),
     runningCard,
-    h("p.small.muted", T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
+    comIntro(T("Play a quiz together – everybody on their own device. Make your own quiz or take one of the templates.")),
     instList("quizzes", quizzes, { closed: q => q.games > 0,
       labels: [T("Not played yet"), T("Played")], empty: [T("All quizzes have been played – make a new one!"), T("No quiz played yet.")],
       summary: q => [C(quizTitle(q.title, q.langs), "strong.grow"), q.langs ? h("span.chip", { title: [q.langs.base, ...q.langs.more].join(" ").toUpperCase() }, "🌐 " + (1 + q.langs.more.length)) : null,

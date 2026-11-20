@@ -47,7 +47,7 @@ def test_restoring_an_old_backup_keeps_old_xp_old(client):
     assert fq.rewards.new_xp(mia) == 0
 
 
-def test_a_parent_profile_in_the_app_is_privileged_only_with_a_fresh_token(client):
+def test_a_parent_profile_in_the_app_is_privileged_like_in_the_parent_area(client):
     from familyquest.api import planer
     ph, mia, _ = setup_family(client)
     fq = client.app.state.fq
@@ -58,7 +58,8 @@ def test_a_parent_profile_in_the_app_is_privileged_only_with_a_fresh_token(clien
     if tok:
         assert planer._parent_in_app(fq, tok, "127.0.0.1")
         fq.db.set_setting("parent_ha_only", True)
-        assert not planer._parent_in_app(fq, tok, "127.0.0.1")                  # parent area only through HA: PIN
+        assert not planer._parent_in_app(fq, tok, "127.0.0.1")                  # parent area only through HA …
+        assert planer._parent_in_app(fq, tok, "127.0.0.1", via_ha=True)         # … and in HA the parent may
 
 
 def test_werwolf_bot_wait_is_secret_and_varies():

@@ -5,15 +5,26 @@ One connection shared by all request threads, guarded by a re-entrant lock;
 """
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
+import os
 import sqlite3
 import threading
+import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
 from . import memo
 from .i18n import _t
+
+log = logging.getLogger("familyquest.db")
+
+# debug guard: a write on the thread of the asyncio event loop blocks every request (and the HA websocket) while it
+# waits for the lock – e.g. up to PAUSE_MAX during a hot backup. FQ_DEBUG_LOOP_WRITES=1 logs such writes with the call
+# stack, =raise raises (the tests run with it).
+LOOP_GUARD = os.environ.get("FQ_DEBUG_LOOP_WRITES", "")
 
 # a migration starting with this runs with the foreign keys switched off (a table rebuild: DROP TABLE must not cascade)
 FK_OFF = "-- foreign keys off\n"
@@ -807,6 +818,48 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(profile_id, level)
     );
     """,
+    # 44 – privacy (privacy.py): the log of the clean-up runs, and how many bookings per event were folded into
+    # «Balance brought forward» rows (counts like «50 chores» stay the same). Self-contained: renumber freely on merge.
+    """
+    CREATE TABLE IF NOT EXISTS privacy_run(
+        id INTEGER PRIMARY KEY,
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        by_id INTEGER,                           -- the parent who ran it (NULL: the automatic run at night)
+        by_name TEXT NOT NULL DEFAULT '',
+        auto INTEGER NOT NULL DEFAULT 0,
+        counts TEXT NOT NULL DEFAULT '{}',       -- {kind: entries deleted or folded, -1 = failed (rolled back)}
+        backup TEXT                              -- the snapshot written before (data folder privacy_backups/)
+    );
+    CREATE TABLE IF NOT EXISTS ledger_folded(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        event TEXT NOT NULL,
+        n INTEGER NOT NULL DEFAULT 0,            -- distinct refs of the positive bookings folded
+        PRIMARY KEY(profile_id, event)
+    );
+    """,
+    # 45 – indexes for the polls and the analytics: the running tables of a game (every /api/me looks for them) and its
+    # finished ones, the ledger by time (analytics, privacy). The session counter of a profile: «log out everywhere»
+    # (api/auth.py Tokens) raises it, which ends every login of the profile. ledger_folded per account with the rows
+    # and the biggest amount folded (privacy.py folds per event: counts like «slot machine spins» stay the same).
+    """
+    CREATE INDEX IF NOT EXISTS card_game_open ON card_game(kind, solo, host_id) WHERE status!='done';
+    CREATE INDEX IF NOT EXISTS card_game_done ON card_game(kind, status, finished_at);
+    CREATE INDEX IF NOT EXISTS ledger_at ON ledger(at);
+    ALTER TABLE profile ADD COLUMN sessions INTEGER NOT NULL DEFAULT 0;
+    CREATE TABLE ledger_folded_new(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        account TEXT NOT NULL DEFAULT '',        -- '' for n (distinct refs over all accounts)
+        event TEXT NOT NULL,
+        n INTEGER NOT NULL DEFAULT 0,            -- distinct refs of the positive bookings folded (account '')
+        pos INTEGER NOT NULL DEFAULT 0,          -- rows folded with amount > 0 (per account)
+        neg INTEGER NOT NULL DEFAULT 0,          -- rows folded with amount < 0
+        top REAL,                                -- the biggest amount folded
+        PRIMARY KEY(profile_id, account, event)
+    );
+    INSERT INTO ledger_folded_new(profile_id, account, event, n) SELECT profile_id, '', event, n FROM ledger_folded;
+    DROP TABLE ledger_folded;
+    ALTER TABLE ledger_folded_new RENAME TO ledger_folded;
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -854,7 +907,8 @@ DEFAULT_SETTINGS = {
     "games_profiles": [],                # with "some": the children who may play
     "games_access": None,                # per game {"mode", "profiles"} (services.games_access) – replaces the two above
     "parent_ha_only": False,             # parent area only through Home Assistant (linked HA user), no PIN login
-    "kid_ha_login": False,               # children with a linked Home Assistant user open their app in HA without PIN
+    "ha_app_login": True,                # «Sign in with Home Assistant» in the app on the direct port (haauth.py)
+    "ha_app_login_url": "",              # … the address of Home Assistant for the browsers – "" = automatic
     "allowed_networks": [],              # mini firewall: networks (CIDR) that may use the app – empty = all
     "guest_networks": [],                # guest Wi-Fi: only games with a QR code invitation (no family login)
     "parent_networks": [],               # … that may open the parent area – empty = all
@@ -901,6 +955,16 @@ DEFAULT_PROFILE_SETTINGS = {
 }
 
 
+def _loop_guard() -> None:
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return                                         # a worker thread: fine
+    if LOOP_GUARD == "raise":
+        raise RuntimeError("database write on the asyncio event loop thread – use asyncio.to_thread")
+    log.error("database write on the asyncio event loop thread – use asyncio.to_thread", stack_info=True)
+
+
 def dict_row(cur: sqlite3.Cursor, row: tuple) -> dict:
     return {d[0]: row[i] for i, d in enumerate(cur.description)}
 
@@ -915,12 +979,17 @@ class Database:
             self.conn.execute("PRAGMA journal_mode=WAL")
         self.lock = threading.RLock()
         self._depth = 0
+        self._pause_until = 0.0                   # writes wait until then (hot backup by Home Assistant: hotbackup.py)
+        self._resume = threading.Event()
+        self._watch_stop: threading.Event | None = None
         self.migrate()
+        self.migrate_logins()
 
     # ---------- transactions ----------
     @contextmanager
     def tx(self) -> Iterator["Database"]:
-        with self.lock:
+        self._write_lock()
+        try:
             outer = self._depth == 0
             if outer:
                 self.conn.execute("BEGIN IMMEDIATE")
@@ -935,6 +1004,8 @@ class Database:
             self._depth -= 1
             if outer:
                 self.conn.execute("COMMIT")
+        finally:
+            self.lock.release()
 
     # ---------- helpers ----------
     def q(self, sql: str, *args: Any) -> list[dict]:
@@ -955,11 +1026,81 @@ class Database:
     def x(self, sql: str, *args: Any) -> int:
         """Run a write. INSERT → new rowid (0 when OR IGNORE skipped the row), else the number of changed rows."""
         memo.clear()                                   # the request reads what it writes (memo.py)
-        with self.lock:
+        self._write_lock()
+        try:
             cur = self.conn.execute(sql, args)
             if sql.lstrip()[:6].upper() == "INSERT":
                 return cur.lastrowid if cur.rowcount > 0 else 0
             return cur.rowcount
+        finally:
+            self.lock.release()
+
+    # ---------- writes paused for a hot backup (hotbackup.py: Home Assistant's backup_pre / backup_post) ----------
+    def _write_lock(self) -> None:
+        """Take the lock for a write – while a backup pauses the writes, wait first (at most until the pause ends,
+        which is never more than PAUSE_MAX after it began: the app never hangs). Writes inside a running transaction
+        of this thread never wait (the pause only starts between transactions)."""
+        if LOOP_GUARD:
+            _loop_guard()
+        while True:
+            left = self._pause_until - time.time()
+            if left > 0:
+                self._resume.wait(min(left, 1.0))
+            self.lock.acquire()
+            if self._depth > 0 or self._pause_until <= time.time():
+                return
+            self.lock.release()
+
+    def paused(self) -> bool:
+        """A hot backup by Home Assistant pauses the writes right now (long jobs do not start then)."""
+        return self._pause_until > time.time()
+
+    def start_backup_watch(self, folder: Path | str, every: float = 0.25) -> None:
+        """Watch for the pause flag of a hot backup in `folder` (the data folder) – a daemon thread."""
+        if self._watch_stop is not None:
+            return
+        self._watch_stop = threading.Event()
+        threading.Thread(target=self._backup_watch, args=(Path(folder), every, self._watch_stop), name="fq-backup-watch",
+                         daemon=True).start()
+
+    def stop_backup_watch(self) -> None:
+        if self._watch_stop is not None:
+            self._watch_stop.set()
+            self._watch_stop = None
+        self._release_pause()
+
+    def _release_pause(self) -> None:
+        self._pause_until = 0.0
+        self._resume.set()
+
+    def _backup_watch(self, folder: Path, every: float, stop: threading.Event) -> None:
+        from . import hotbackup
+        flag, ack = folder / hotbackup.FLAG, folder / hotbackup.ACK
+        token = None
+        while not stop.wait(every):
+            try:
+                req = hotbackup.read_flag(flag)
+                if req and req["until"] > time.time():
+                    if req["token"] != token:          # a new pause: wait for the running write, then checkpoint
+                        # the pause first – no new transaction starts while this thread waits for the lock (the lock
+                        # is not fair: under load it could otherwise wait past the backup's patience)
+                        self._resume.clear()
+                        self._pause_until = req["until"]
+                        with self.lock:
+                            res = self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+                        token = req["token"]
+                        hotbackup.write_json(ack, {"token": token, "checkpoint": list(res.values()) if isinstance(res, dict) else list(res)})
+                    elif self._pause_until != req["until"]:
+                        self._pause_until = req["until"]
+                elif token is not None or self._pause_until:   # flag gone or too old: writes go on
+                    token = None
+                    self._release_pause()
+                    ack.unlink(missing_ok=True)
+                    if req:                                  # a stale flag (e.g. restored from a backup)
+                        flag.unlink(missing_ok=True)
+            except Exception:  # noqa: BLE001 – the watch must never stop the app
+                self._release_pause()
+                token = None
 
     # ---------- settings ----------
     def get_setting(self, key: str, default: Any = None) -> Any:
@@ -999,6 +1140,21 @@ class Database:
                 if i == 1:
                     self._seed()
 
+    def migrate_logins(self) -> None:
+        """Profiles without the explicit sign-in (profile setting «login», from before it existed) get it once from what
+        they have: PIN + Home Assistant user → pin_ha, PIN → pin, Home Assistant user → ha, nothing → none (children) or
+        pin (a parent – the PIN is asked for at the next edit). Nothing else changes."""
+        with self.tx():
+            for p in self.q("SELECT id, role, pin_hash, settings FROM profile"):
+                try:
+                    raw = json.loads(p["settings"] or "{}")
+                except ValueError:
+                    raw = {}
+                if not isinstance(raw, dict) or raw.get("login") in LOGIN_MODES:
+                    continue
+                raw["login"] = derive_login(p, profile_settings(p))
+                self.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(raw), p["id"])
+
     def _seed(self) -> None:
         with self.tx():
             for a in DEFAULT_ACCOUNTS:
@@ -1017,3 +1173,52 @@ def profile_settings(profile: dict) -> dict:
     except ValueError:
         pass
     return s
+
+
+# ---------------------------------------------------------------- how a profile signs in (profile setting «login»)
+# none   = tap the profile (children only)
+# pin    = PIN (children: picture or digit PIN, parents: digits) – never with a Home Assistant user
+# ha     = only with the linked Home Assistant user (sidebar, «Sign in with Home Assistant» in the app) – never with a PIN
+# pin_ha = PIN or the linked Home Assistant user
+# Chosen explicitly in the profile dialog and enforced on every login path (api/kid.py, api/parent.py, api/auth.py,
+# haauth.py). Profiles from before get it once from what they had (Database.migrate_logins).
+LOGIN_MODES = ("none", "pin", "ha", "pin_ha")
+
+
+def derive_login(profile: dict, st: dict | None = None) -> str:
+    """The sign-in a profile has from its PIN and its Home Assistant user (old profiles, saves without a choice)."""
+    st = profile_settings(profile) if st is None else st
+    pin, ha = bool(profile.get("pin_hash")), bool(st.get("ha_user_id"))
+    if pin and ha:
+        return "pin_ha"
+    if pin:
+        return "pin"
+    if ha:
+        return "ha"
+    return "pin" if profile.get("role") == "parent" else "none"      # a parent without both: a PIN is needed
+
+
+def login_mode(profile: dict, st: dict | None = None) -> str:
+    st = profile_settings(profile) if st is None else st
+    m = st.get("login")
+    if m not in LOGIN_MODES:
+        m = derive_login(profile, st)
+    if m == "none" and profile.get("role") == "parent":
+        m = "pin"                                                    # parents never sign in with a tap
+    return m
+
+
+def login_pin_ok(profile: dict) -> bool:
+    """May this profile sign in with its PIN?"""
+    return bool(profile.get("pin_hash")) and login_mode(profile) in ("pin", "pin_ha")
+
+
+def login_ha_ok(profile: dict) -> bool:
+    """May this profile sign in with its linked Home Assistant user?"""
+    st = profile_settings(profile)
+    return bool(st.get("ha_user_id")) and login_mode(profile, st) in ("ha", "pin_ha")
+
+
+def login_tap_ok(profile: dict) -> bool:
+    """May this profile sign in with a tap (no PIN, no Home Assistant)? Children only."""
+    return profile.get("role") != "parent" and login_mode(profile) == "none"

@@ -103,9 +103,9 @@ def test_planer_mirrors_balance_minus_reserved(fq):
     from familyquest.planer.host import PlanerHost
 
     async def run():
-        mia = fq.db.x("INSERT INTO profile(name) VALUES('Mia')")
-        leo = fq.db.x("INSERT INTO profile(name) VALUES('Leo')")
-        fq.rewards.book(mia, "coins", 40, "start", "Start")
+        mia = await asyncio.to_thread(fq.db.x, "INSERT INTO profile(name) VALUES('Mia')")
+        leo = await asyncio.to_thread(fq.db.x, "INSERT INTO profile(name) VALUES('Leo')")
+        await asyncio.to_thread(fq.rewards.book, mia, "coins", 40, "start", "Start")
         host = PlanerHost(fq)
         fq.planer_host = host
         await host.start(ha_expected=False)
@@ -113,13 +113,13 @@ def test_planer_mirrors_balance_minus_reserved(fq):
         await b.sync()
         person = b.state()["links"][str(mia)]
         assert prew.balance(p.data["ledger"], person) == 40
-        did = fq.db.x("INSERT INTO deal(a_id, b_id, terms) VALUES(?,?, '{}')", mia, leo)
-        hid = fq.db.x("INSERT INTO deal_hold(deal_id, profile_id, kind, amount) VALUES(?,?, 'coins', 15)", did, mia)
+        did = await asyncio.to_thread(fq.db.x, "INSERT INTO deal(a_id, b_id, terms) VALUES(?,?, '{}')", mia, leo)
+        hid = await asyncio.to_thread(fq.db.x, "INSERT INTO deal_hold(deal_id, profile_id, kind, amount) VALUES(?,?, 'coins', 15)", did, mia)
         await b.sync()
         assert prew.balance(p.data["ledger"], person) == 25            # 15 coins promised in a deal
         assert fq.rewards.balance(mia, "coins") == 40                  # nothing booked back into Family Quest
-        fq.rewards.book(mia, "coins", -15, "deal", "Deal", f"deal:{did}:coins:a:all")       # the deal pays …
-        fq.db.x("UPDATE deal_hold SET paid=15, active=0 WHERE id=?", hid)                   # … the reservation ends
+        await asyncio.to_thread(fq.rewards.book, mia, "coins", -15, "deal", "Deal", f"deal:{did}:coins:a:all")       # the deal pays …
+        await asyncio.to_thread(fq.db.x, "UPDATE deal_hold SET paid=15, active=0 WHERE id=?", hid)                   # … the reservation ends
         await b.sync()
         assert prew.balance(p.data["ledger"], person) == 25 == fq.rewards.balance(mia, "coins")
         assert not await b.sync()

@@ -24,14 +24,15 @@ from ..calendar import CalendarError
 from ..translations import BUILTIN, TranslationError, source_keys
 from .. import generators
 from ..chores import ChoreError
-from ..db import DEFAULT_PROFILE_SETTINGS, DEFAULT_SETTINGS, profile_settings
+from ..db import DEFAULT_PROFILE_SETTINGS, DEFAULT_SETTINGS, LOGIN_MODES, derive_login, login_ha_ok, login_pin_ok, profile_settings
 from ..importers import ai_draft, table, yaml_zip
 from ..packs.loader import PackError, media_refs, parse_doc
 from ..packs.registry import SUBJECTS, subject_meta
 from .. import loginlog, netfilter, symbols
 from ..rewards.engine import BADGES, EVENTS
 from ..rewards.shop import KINDS, ShopError
-from .auth import INGRESS_IP, Parent, PARENT_MAX_AGE, app_of, check_pin, ha_user, hash_pin, profile_of_ha_user, valid_pin
+from .auth import (INGRESS_IP, PARENT_APP_TTL, Parent, PARENT_MAX_AGE, app_of, check_pin, end_sessions, ha_user, hash_pin,
+                   parent_token, pin_target, profile_of_ha_user, valid_pin)
 from ..i18n import _t
 
 router = APIRouter(prefix="/api/parent")
@@ -53,6 +54,7 @@ class ProfileIn(BaseModel):
     planer_person_id: str | None = None
     ha_user_id: str | None = None          # parents: the Home Assistant user that opens the parent area ("" = none, None = keep)
     ha_user_name: str = ""
+    login: str | None = None               # sign-in: none | pin | ha | pin_ha (db.LOGIN_MODES) – None = from PIN and HA user
 
 
 class ActivateIn(BaseModel):
@@ -147,6 +149,14 @@ def _parent_of_ha_user(fq, uid: str) -> dict | None:
     return profile_of_ha_user(fq, uid, "parent")
 
 
+def _keep_parent_ha_only(fq) -> None:
+    """«Parent area only in Home Assistant» stays only while a parent can sign in with Home Assistant – otherwise
+    nobody could open the parent area any more."""
+    if fq.db.get_setting("parent_ha_only") and not any(login_ha_ok(p) for p in
+                                                       fq.db.q("SELECT * FROM profile WHERE role='parent' AND archived=0")):
+        fq.db.set_setting("parent_ha_only", False)
+
+
 def _ha_user_taken(fq, uid: str, pid: int | None) -> None:
     """One Home Assistant user belongs to at most one profile (parent or child): another active profile with it is
     refused, an archived one gives it up."""
@@ -172,7 +182,7 @@ def ha_login(request: Request) -> dict:
         # a child's Home Assistant user: never the parent area without PIN – and no offer to link it with a parent
         return {"ha_user": u, "linked": False, "kid": bool(profile_of_ha_user(fq, u["id"], "kid"))}
     loginlog.record(fq, request, "parent", p["id"], True)
-    return {"parent_token": fq.tokens.make(p["id"], "parent"), "profile": fq.profile_public(p), "max_age": PARENT_MAX_AGE,
+    return {"parent_token": parent_token(fq, p["id"], request), "profile": fq.profile_public(p), "max_age": PARENT_MAX_AGE,
             "ha_user": u, "linked": True}
 
 
@@ -189,15 +199,17 @@ def ha_link(body: HaLinkIn, request: Request, me: dict = Parent) -> dict:
         if not u:
             raise HTTPException(400, "Open the parent area through Home Assistant to link your user")
         _ha_user_taken(fq, u["id"], me["id"])
+    elif not me["pin_hash"]:
+        raise HTTPException(400, "Set a PIN first – without PIN and Home Assistant user you could not log in any more")
     st = profile_settings(me)
     if body.on:
         st.update(ha_user_id=u["id"], ha_user_name=u["name"] or u["user"])
+        st["login"] = "pin_ha" if me["pin_hash"] else "ha"      # linking adds Home Assistant to the sign-in
     else:
         st.pop("ha_user_id", None); st.pop("ha_user_name", None)
-        if fq.db.get_setting("parent_ha_only") and not any(profile_settings(p).get("ha_user_id")
-                for p in fq.db.q("SELECT * FROM profile WHERE role='parent' AND archived=0 AND id<>?", me["id"])):
-            fq.db.set_setting("parent_ha_only", False)       # nobody could log in any more
+        st["login"] = "pin"
     fq.db.x("UPDATE profile SET settings=? WHERE id=?", json.dumps(st), me["id"])
+    _keep_parent_ha_only(fq)
     return {"ha_user_name": st.get("ha_user_name", ""), "linked": body.on}
 
 
@@ -208,22 +220,43 @@ def login(body: PinIn, request: Request) -> dict:
         raise HTTPException(403, "The parent area opens only through Home Assistant")
     key = "parent:" + loginlog.client_ip(request)        # per device: a child cannot lock all parents out
     fq.throttle.check(key)
+    fq.throttle.guard(pin_target(None))                 # wrong parent PINs in a row, from any device: a growing wait
     parents = fq.db.q("SELECT * FROM profile WHERE role='parent' AND archived=0" + (" AND id=?" if body.profile_id else ""),
                       *([body.profile_id] if body.profile_id else []))
     for p in parents:
-        if check_pin(body.pin, p["pin_hash"]):
+        if login_pin_ok(p) and check_pin(body.pin, p["pin_hash"]):       # «Home Assistant only»: never with a PIN
             fq.throttle.ok(key)
+            fq.throttle.good(pin_target(None))
             loginlog.record(fq, request, "parent", p["id"], True)
-            return {"parent_token": fq.tokens.make(p["id"], "parent"), "profile": fq.profile_public(p),
+            return {"parent_token": parent_token(fq, p["id"], request), "profile": fq.profile_public(p),
                     "max_age": PARENT_MAX_AGE}
     fq.throttle.fail(key)
+    fq.throttle.bad(pin_target(None))
     loginlog.record(fq, request, "parent", None, False)
     raise HTTPException(403, "Wrong PIN")
 
 
 @router.post("/refresh")
 def refresh(request: Request, me: dict = Parent) -> dict:
-    return {"parent_token": app_of(request).tokens.make(me["id"], "parent")}
+    """The next token of the running session – it keeps the session's start: after PARENT_SESSION_MAX (through Home
+    Assistant ingress PARENT_SESSION_MAX_HA) the PIN is asked again (api/auth.py)."""
+    return {"parent_token": parent_token(app_of(request), me["id"], request, keep=True)}
+
+
+class EndSessionsIn(BaseModel):
+    profile_id: int | None = None          # default: my own profile
+
+
+@router.post("/sessions/end")
+def end_all_sessions(body: EndSessionsIn, request: Request, me: dict = Parent) -> dict:
+    """«Log out everywhere»: every login of the profile ends – the app, the parent area and the planner, on every
+    device. For the own profile this device gets a fresh parent token (it stays in, like after a new PIN)."""
+    fq = app_of(request)
+    pid = body.profile_id or me["id"]
+    if not fq.db.q1("SELECT 1 FROM profile WHERE id=?", pid):
+        raise HTTPException(404, "Unknown profile")
+    end_sessions(fq, pid)
+    return {"ok": True, **({"parent_token": parent_token(fq, pid, request)} if pid == me["id"] else {})}
 
 
 # ---------------------------------------------------------------- meta
@@ -245,6 +278,25 @@ def themes_get(request: Request, me: dict = Parent) -> dict:
     from .. import themes
     cfg = app_of(request).db.get_setting("themes")
     return {"designs": themes.designs(cfg), "active": themes.active(cfg), "visuals": list(themes.VISUALS)}
+
+
+@router.get("/season-live")
+def season_live_get(request: Request, me: dict = Parent) -> dict:
+    """Weather and daylight of the season designs: the weather entity (shared with the planner) and the sun switch."""
+    from .. import seasonlive
+    fq = app_of(request)
+    return {**seasonlive.config(fq), "ha": bool(fq.ha and fq.ha.connected), "live": seasonlive.live(fq)}
+
+
+@router.put("/season-live")
+def season_live_put(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    from .. import seasonlive
+    fq = app_of(request)
+    try:
+        cfg = seasonlive.save(fq, body)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {**cfg, "ha": bool(fq.ha and fq.ha.connected), "live": seasonlive.live(fq)}
 
 
 @router.put("/themes")
@@ -285,7 +337,7 @@ def meta(request: Request, me: dict = Parent) -> dict:
             "ha_status": _ha_status(fq),
             "ai": ai_draft.available(fq), "version": fq.settings.version, "me": fq.profile_public(me),
             "ha_user": ha_user(request), "my_ha_user": profile_settings(me).get("ha_user_name") if profile_settings(me).get("ha_user_id") else None,
-            "parent_ha_only": bool(fq.db.get_setting("parent_ha_only")), "kid_ha_login": bool(fq.db.get_setting("kid_ha_login"))}
+            "parent_ha_only": bool(fq.db.get_setting("parent_ha_only"))}
 
 
 @router.get("/overview")
@@ -383,6 +435,38 @@ def _set_ha_user(fq, body: ProfileIn, settings: dict, pid: int | None) -> None:
     settings.update(ha_user_id=body.ha_user_id, ha_user_name=(body.ha_user_name or "")[:60])
 
 
+def _apply_login(fq, body: ProfileIn, settings: dict, current: str | None, pid: int | None) -> str | None:
+    """PIN, Home Assistant user and the sign-in together (settings updated in place, returns the PIN hash).
+
+    The sign-in chosen in the dialog (body.login) decides: «Home Assistant» options need a linked user, «PIN» options a
+    PIN (a new one or the one the profile has), parents never «No sign-in». What the choice does not use is removed –
+    «No sign-in» / «Home Assistant only» drop the PIN, «No sign-in» / «PIN» unlink the Home Assistant user – so nothing
+    hidden stays a way in. Without a choice (older clients) the sign-in follows from PIN and Home Assistant user."""
+    pin_hash = _pin_hash(body, settings, current)
+    mode = body.login
+    if mode in ("none", "pin"):
+        body.ha_user_id = ""                              # no Home Assistant in this sign-in: unlinked
+    _set_ha_user(fq, body, settings, pid)
+    if mode is None:
+        if body.role == "parent" and not pin_hash and not settings.get("ha_user_id"):
+            raise HTTPException(400, "Parents need a Home Assistant user or a PIN")
+        settings["login"] = derive_login({"pin_hash": pin_hash, "role": body.role}, settings)
+        return pin_hash
+    if mode not in LOGIN_MODES:
+        raise HTTPException(400, "Unknown sign-in")
+    if mode == "none" and body.role == "parent":
+        raise HTTPException(400, "Parents always sign in – with a PIN or Home Assistant")
+    if mode in ("ha", "pin_ha") and not settings.get("ha_user_id"):
+        raise HTTPException(400, "Choose the Home Assistant user for this sign-in")
+    if mode in ("pin", "pin_ha") and not pin_hash:
+        raise HTTPException(400, "Set a PIN for this sign-in")
+    if mode in ("none", "ha"):
+        pin_hash = None
+        settings.update(pin_kind="", symbol_set=[])
+    settings["login"] = mode
+    return pin_hash
+
+
 def _planer_sync(fq) -> None:
     """Profiles are Planer persons: tell the Planer bridge (name, colour, role, new or removed profile)."""
     bridge = getattr(fq.planer_host, "bridge", None)
@@ -394,11 +478,8 @@ def _planer_sync(fq) -> None:
 def create_profile(body: ProfileIn, request: Request, me: dict = Parent) -> dict:
     fq = app_of(request)
     _check_profile(body)
-    if body.role == "parent" and not body.pin and body.pin_symbols is None and not body.ha_user_id:
-        raise HTTPException(400, "Parents need a Home Assistant user or a PIN")
     settings = {k: v for k, v in body.settings.items() if k in DEFAULT_PROFILE_SETTINGS and k not in ("pin_kind", "symbol_set")}
-    pin_hash = _pin_hash(body, settings, None)
-    _set_ha_user(fq, body, settings, None)
+    pin_hash = _apply_login(fq, body, settings, None, None)
     pid = fq.db.x("INSERT INTO profile(name,role,color,pin_hash,settings,planer_person_id) VALUES(?,?,?,?,?,?)",
                   body.name.strip()[:40], body.role, body.color, pin_hash,
                   json.dumps(settings), body.planer_person_id)
@@ -423,12 +504,12 @@ def update_profile(pid: int, body: ProfileIn, request: Request, me: dict = Paren
         raise HTTPException(400, "At least one parent profile is needed")
     settings = profile_settings(p)
     settings.update({k: v for k, v in body.settings.items() if k in DEFAULT_PROFILE_SETTINGS and k not in ("pin_kind", "symbol_set")})
-    pin_hash = _pin_hash(body, settings, p["pin_hash"])
-    _set_ha_user(fq, body, settings, pid)
-    if body.role == "parent" and not pin_hash and not settings.get("ha_user_id"):
-        raise HTTPException(400, "Parents need a Home Assistant user or a PIN")
+    pin_hash = _apply_login(fq, body, settings, p["pin_hash"], pid)
     fq.db.x("UPDATE profile SET name=?, role=?, color=?, pin_hash=?, settings=?, planer_person_id=? WHERE id=?",
             body.name.strip()[:40], body.role, body.color, pin_hash, json.dumps(settings), body.planer_person_id, pid)
+    if pin_hash != p["pin_hash"]:
+        end_sessions(fq, pid)                            # a new PIN ends every login of the profile
+    _keep_parent_ha_only(fq)
     if settings.get("internet_rule"):
         fq.internet.ensure_account()
     if fq.ha:
@@ -436,7 +517,7 @@ def update_profile(pid: int, body: ProfileIn, request: Request, me: dict = Paren
     _planer_sync(fq)
     out = fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid))
     if pid == me["id"]:                                  # an own new PIN ends the logins – this parent stays in
-        out["parent_token"] = fq.tokens.make(pid, "parent")
+        out["parent_token"] = parent_token(fq, pid, request, keep=True)
     return out
 
 
@@ -943,8 +1024,9 @@ def delete_reward(rid: int, request: Request, me: dict = Parent) -> dict:
 
 
 @router.get("/redemptions")
-def redemptions(request: Request, status: str | None = None, me: dict = Parent) -> list[dict]:
-    return app_of(request).shop.list(status)
+def redemptions(request: Request, status: str | None = None, profile_id: int | None = None, me: dict = Parent) -> list[dict]:
+    """The shop rewards children asked for – all, or one profile's (parent area › History)."""
+    return app_of(request).shop.list(status, profile_id, limit=100) if profile_id else app_of(request).shop.list(status)
 
 
 @router.post("/redemptions/{rid}")
@@ -1067,6 +1149,7 @@ def _public_settings(fq) -> dict:
     s = fq.db.all_settings()
     s.pop("ha_integration", None)        # token hash: only through /api/parent/integration
     s.pop("ha_integration_poll", None)
+    s.pop("kid_ha_login", None)          # former switch – a linked child always may sign in with Home Assistant
     return s
 
 
@@ -1103,8 +1186,14 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
         if isinstance(v, list):
             return all(finite(x) for x in v)
         return True
-    if "kid_ha_login" in body and not isinstance(body["kid_ha_login"], bool):
+    if "ha_app_login" in body and not isinstance(body["ha_app_login"], bool):
         raise HTTPException(400, "Unknown setting")
+    if "ha_app_login_url" in body:
+        from ..haauth import clean_url
+        try:
+            body = {**body, "ha_app_login_url": clean_url(body["ha_app_login_url"]) if str(body["ha_app_login_url"] or "").strip() else ""}
+        except (ValueError, TypeError):
+            raise HTTPException(400, "Address: e.g. http://192.168.1.10:8123") from None
     if "game_starter" in body and body["game_starter"] not in ("dice", "leader", "choose"):
         raise HTTPException(400, "Unknown setting")
     for k, v in body.items():
@@ -1352,6 +1441,21 @@ class GamesIn(BaseModel):
 def games_get(request: Request, me: dict = Parent) -> dict:
     fq = app_of(request)
     return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
+
+
+@router.post("/ha-panel-path")
+async def ha_panel_path(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    """The parent area opened in Home Assistant reports the panel path of this HA version (/app/<slug> or
+    /hassio/ingress/<slug>) – links from the app to the parent area use it."""
+    from ..netinfo import ha_panel as panel
+    fq = app_of(request)
+    slug = (await panel(fq.settings)).get("slug")
+    path = str(body.get("path") or "")
+    if not slug or path not in (f"/app/{slug}", f"/hassio/ingress/{slug}"):
+        raise HTTPException(400, "Unknown panel path")
+    if fq.db.get_setting("ha_panel_path") != path:
+        await asyncio.to_thread(fq.db.set_setting, "ha_panel_path", path)       # never a write on the event loop
+    return {"path": path}
 
 
 # ---------------------------------------------------------------- game battery and party mode (battery.py)
@@ -1615,13 +1719,17 @@ def internet_stop(pid: int, request: Request, me: dict = Parent) -> dict:
 
 # ---------------------------------------------------------------- backup & restore
 @router.get("/backup")
-async def backup_download(request: Request, me: dict = Parent) -> Response:
-    """Everything in one ZIP file."""
+async def backup_download(request: Request, kind: str = "full", me: dict = Parent) -> Response:
+    """One ZIP file: kind full (everything), data (usage data only) or customizing (settings, profiles, own content)."""
     from .. import backup
     fq = app_of(request)
+    if kind not in backup.KINDS:
+        raise HTTPException(400, "Unknown kind of backup")
     if fq.planer_host:
         await fq.planer_host.save_now()
-    data, name = await asyncio.to_thread(backup.create, fq)
+    data, name = await asyncio.to_thread(backup.create, fq, kind)
+    if kind == backup.FULL:                       # the status «Last backup» in the settings
+        await asyncio.to_thread(fq.db.set_setting, "last_backup", time.strftime("%Y-%m-%dT%H:%M:%S"))
     return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
@@ -1629,14 +1737,19 @@ async def backup_download(request: Request, me: dict = Parent) -> Response:
 def backup_sizes(request: Request, me: dict = Parent) -> dict:
     """What takes how much room in a backup."""
     from .. import backup
-    return backup.sizes(app_of(request))
+    fq = app_of(request)
+    return {**backup.sizes(fq), "last_backup": fq.db.get_setting("last_backup")}
 
 
 @router.post("/backup/inspect")
 async def backup_inspect(request: Request, file: UploadFile = File(...), me: dict = Parent) -> dict:
     from .. import backup
     try:
-        return {"manifest": backup.check(await file.read(), app_of(request).settings.version)}
+        fq = app_of(request)
+        raw = await file.read(BACKUP_MAX + 1)
+        if len(raw) > BACKUP_MAX:
+            raise HTTPException(400, "The backup is too large (max. 500 MB)")
+        return {"manifest": await asyncio.to_thread(backup.check, raw, fq.settings.version, fq)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -1691,7 +1804,8 @@ async def backup_inspect_upload(request: Request, body: dict = Body(...), me: di
     from .. import backup
     _path, raw = _uploaded(request, body)
     try:
-        return {"manifest": backup.check(raw, app_of(request).settings.version)}
+        fq = app_of(request)
+        return {"manifest": await asyncio.to_thread(backup.check, raw, fq.settings.version, fq)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -1703,7 +1817,7 @@ async def backup_restore_upload(request: Request, body: dict = Body(...), me: di
     fq = app_of(request)
     path, raw = _uploaded(request, body)
     try:
-        backup.inspect(raw)
+        backup.inspect(raw, deep=False)        # quick: restore() checks every entry
         if fq.planer_host:
             fq.planer_host.freeze()              # the old planner must not save into the restored database
         manifest = await asyncio.to_thread(backup.restore, fq, raw)
@@ -1727,7 +1841,7 @@ async def backup_restore(request: Request, file: UploadFile = File(...), me: dic
     if len(raw) > BACKUP_MAX:
         raise HTTPException(400, "The backup is too large (max. 500 MB)")
     try:
-        backup.inspect(raw)
+        backup.inspect(raw, deep=False)        # quick: restore() checks every entry
         if fq.planer_host:
             fq.planer_host.freeze()              # the old planner must not save into the restored database
         manifest = await asyncio.to_thread(backup.restore, fq, raw)
@@ -1862,4 +1976,4 @@ def ha_users(request: Request, me: dict = Parent) -> list[dict]:
 def app_token(request: Request, me: dict = Parent) -> dict:
     """«Open in the app»: the parent plays in the app (new tab) without logging in again – a learning-app login of
     this parent, handed over in the address fragment (it never reaches a server log)."""
-    return {"token": app_of(request).tokens.make(me["id"], "kid", ttl=12 * 3600)}      # «open in the app»: half a day
+    return {"token": app_of(request).tokens.make(me["id"], "kid", ttl=PARENT_APP_TTL)}      # «open in the app»: half a day

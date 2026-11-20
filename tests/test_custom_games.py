@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 from test_stories import BOOK, _logins
+from websrc import parent_js
 
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
 PNG = b"\x89PNG\r\n\x1a\n" + b"\0" * 40
@@ -111,7 +112,7 @@ def test_photo_set_zip_import_and_export(client):
 
 
 def test_frontend_structure():
-    parent, kid, stories = (WEB / "parent.js").read_text("utf-8"), (WEB / "kid.js").read_text("utf-8"), (WEB / "stories.js").read_text("utf-8")
+    parent, kid, stories = parent_js(), (WEB / "kid.js").read_text("utf-8"), (WEB / "stories.js").read_text("utf-8")
     assert '["adventuregame", "🗝️", T("Adventure games")]' in parent
     assert 'const CUSTOM_GAMES = ["quiz", "paarjagd", "adventuregame"]' in parent and 'h("section.cg-group"' in parent
     assert "P.openGames" not in parent                                   # every game folded, nothing remembered open
@@ -120,7 +121,7 @@ def test_frontend_structure():
     assert "runningGamesBox(), custom, none" in parent
     assert 'canPlay("adventuregame") && S.me.stories !== false ? adventureGamesCard() : null' in kid and 'view === "advgames"' in kid
     assert 'const LIBRARY_TYPES = ["picture", "adventure"]' in stories and "storyShelf(box, { types: LIBRARY_TYPES })" in stories
-    names = {"de-DE": "Eigene Spiele", "de-CH": "Eigeni Spiil", "fr-FR": "Jeux personnalisés", "it-IT": "Giochi personalizzati",
+    names = {"de-DE": "Eigene Spiele", "de-CH": "Eigeni Spiel", "fr-FR": "Jeux personnalisés", "it-IT": "Giochi personalizzati",
              "es-ES": "Juegos personalizados", "nl-NL": "Eigen spellen", "pl-PL": "Własne gry", "pt-BR": "Jogos personalizados",
              "sv-SE": "Egna spel"}
     for lang, n in names.items():

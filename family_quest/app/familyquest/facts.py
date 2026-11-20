@@ -26,7 +26,7 @@ from datetime import date, datetime, timedelta
 from .channel import hidden_games, visible
 from .community import CommunityError, QUIZ_LANGS, shuffle_answers
 from .i18n import _t
-from .rewards.engine import SPEND_EVENTS, today
+from .rewards.engine import NOT_CARRY, SPEND_EVENTS, today
 
 TITLE = _t("Family Quest Facts")
 SETTING = "quiz_facts"
@@ -232,7 +232,16 @@ class Facts:
 
     def ledger_count(self, where: str, *args, distinct: str = "id") -> dict:
         return {r["profile_id"]: r["n"] for r in self.db.q(
-            f"SELECT profile_id, COUNT(DISTINCT {distinct}) AS n FROM ledger WHERE {where} GROUP BY profile_id", *args)}
+            f"SELECT profile_id, COUNT(DISTINCT {distinct}) AS n FROM ledger WHERE ({where}) AND {NOT_CARRY} GROUP BY profile_id", *args)}
+
+    def folded(self, what: str, events, account: str | None = None) -> dict:
+        """{profile id: n} folded into «Balance brought forward» rows by a clean-up (privacy.py, ledger_folded):
+        what = "n" (distinct refs of positive bookings), "pos" / "neg" (rows by sign)."""
+        ev = (events,) if isinstance(events, str) else tuple(events)
+        acc = " AND account=?" if account else ""
+        return {r["profile_id"]: int(r["s"] or 0) for r in self.db.q(
+            f"SELECT profile_id, SUM({what}) s FROM ledger_folded WHERE event IN ({','.join('?' * len(ev))}){acc} GROUP BY profile_id",
+            *ev, *([account] if account else []))}
 
     # ================================================================ generators
     # chores (own chore plan and Family Planer chores: ledger event chore_done)
@@ -250,6 +259,8 @@ class Facts:
         if week:
             out += self.number("chores_week_total", "week", (_t("How many chores has the family done this week?"),), week)
         allc = self.ledger_count("event='chore_done' AND amount>0", distinct="ref")
+        for pid, n in self.folded("n", "chore_done").items():                 # folded by a clean-up (privacy.py)
+            allc[pid] = allc.get(pid, 0) + n
         if sum(allc.values()) >= 5:
             out += self.number("chores_total", "all", (_t("How many chores have been done in Family Quest so far?"),),
                                sum(allc.values()), estimate=True, unit=(_t("chores"),))
@@ -417,10 +428,13 @@ class Facts:
         out += self.pit_records()
         if not self.open:                               # the slot machine: coins
             return out
-        spins = int(self.db.val("SELECT COUNT(*) FROM ledger WHERE event='slots_bet'", default=0) or 0)
+        spins = int(self.db.val(f"SELECT COUNT(*) FROM ledger WHERE event='slots_bet' AND {NOT_CARRY}", default=0) or 0)
+        spins += sum(self.folded("pos + neg", "slots_bet").values())                # folded by a clean-up
         if spins >= 3:
             out += self.number("slots_spins", "all", (_t("How often has the slot machine been played?"),), spins)
-        wins = {r["profile_id"]: r["m"] for r in self.db.q("SELECT profile_id, MAX(amount) m FROM ledger WHERE event='slots_win' GROUP BY profile_id")}
+        wins = {r["profile_id"]: r["m"] for r in self.db.q(f"SELECT profile_id, MAX(amount) m FROM ledger WHERE event='slots_win' AND {NOT_CARRY} GROUP BY profile_id")}
+        for r in self.db.q("SELECT profile_id, MAX(top) m FROM ledger_folded WHERE event='slots_win' AND top IS NOT NULL GROUP BY profile_id"):
+            wins[r["profile_id"]] = max(wins.get(r["profile_id"]) or r["m"], r["m"])
         out += self.who("slots_jackpot", "all", (_t("Who has won the biggest prize at the slot machine?"),), wins)
         return out
 
@@ -449,9 +463,13 @@ class Facts:
         out = []
         ev = ",".join("?" * len(SHOP_EVENTS))
         bought = {r["profile_id"]: r["n"] for r in self.db.q(
-            f"SELECT profile_id, COUNT(*) n FROM ledger WHERE account='coins' AND amount<0 AND event IN ({ev}) GROUP BY profile_id", *SHOP_EVENTS)}
-        for r in self.db.q("SELECT profile_id, COUNT(*) n FROM ledger WHERE account='coins' AND event='refund' AND amount>0 GROUP BY profile_id"):
+            f"SELECT profile_id, COUNT(*) n FROM ledger WHERE account='coins' AND amount<0 AND event IN ({ev}) AND {NOT_CARRY} GROUP BY profile_id", *SHOP_EVENTS)}
+        for pid, n in self.folded("neg", SHOP_EVENTS, "coins").items():            # folded by a clean-up
+            bought[pid] = bought.get(pid, 0) + n
+        for r in self.db.q(f"SELECT profile_id, COUNT(*) n FROM ledger WHERE account='coins' AND event='refund' AND amount>0 AND {NOT_CARRY} GROUP BY profile_id"):
             bought[r["profile_id"]] = bought.get(r["profile_id"], 0) - r["n"]
+        for pid, n in self.folded("pos", "refund", "coins").items():
+            bought[pid] = bought.get(pid, 0) - n
         family = {k: v for k, v in bought.items() if k in self.name and v > 0}
         n = sum(family.values())
         if n:
@@ -564,7 +582,7 @@ class Facts:
             out += self.number("quizzes", "all", (_t("How many family quizzes do we have?"),), quizzes)
         wichtel = int(self.db.val("SELECT COUNT(*) FROM wichtel", default=0) or 0)
         if wichtel:
-            out += self.number("wichteln", "all", (_t("How many times has the family drawn lots for Wichteln?"),), wichtel)
+            out += self.number("wichteln", "all", (_t("How many times has the family drawn lots for secret gift giving?"),), wichtel)
         ft = int(self.db.val("SELECT COUNT(*) FROM family_event WHERE kind='familytime'", default=0) or 0)
         if ft:
             out += self.number("familytime", "all", (_t("How many FamilyTimes are in the family calendar?"),), ft)

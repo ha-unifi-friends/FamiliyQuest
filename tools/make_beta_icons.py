@@ -64,6 +64,20 @@ def main(chan: str = "beta") -> None:
     d.rounded_rectangle((x1 - tw - 16, y0, x1, h - 2), radius=int(h * 0.15), fill=COLOR)
     d.text((x1 - tw / 2 - 8, (y0 + h - 2) / 2), LABEL, font=f, fill="white", anchor="mm")
     canvas.save(OUT / "logo.png", optimize=True)
+    # the icons of the web app itself (browser tab, home screen, installed app) – the same band
+    web = OUT / "web"
+    web.mkdir(exist_ok=True)
+    for size in (512, 192):
+        src = Image.open(ROOT / "family_quest" / "app" / "web" / "img" / f"icon-{size}.png")
+        band(src, 0.70, 0.22, int(86 * size / 512)).save(web / f"icon-{size}.png", optimize=True)
+    svg = (ROOT / "family_quest" / "app" / "web" / "img" / "icon.svg").read_text(encoding="utf-8")
+    col = "#%02x%02x%02x" % COLOR[:3]
+    extra = (f'<rect x="31" y="358" width="450" height="113" rx="56" fill="{col}"/>'
+             f'<text x="256" y="438" text-anchor="middle" font-family="Inter,DejaVu Sans,Arial,sans-serif" '
+             f'font-weight="800" font-size="86" fill="#fff">{LABEL}</text>')
+    if TINT:
+        extra = f'<rect width="512" height="512" rx="112" fill="rgb{TINT}" fill-opacity=".3"/>' + extra
+    (web / "icon.svg").write_text(svg.replace("</svg>", extra + "</svg>", 1), encoding="utf-8")
     print(chan, "icons written to", OUT)
 
 

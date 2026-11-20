@@ -12,6 +12,7 @@ import pytest
 from familyquest import codelab as CL
 from familyquest.community import CommunityError
 from test_api import setup_family
+from websrc import parent_js
 
 pytestmark = pytest.mark.dev_channel
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
@@ -292,7 +293,7 @@ def test_the_app_shows_it_only_where_it_exists():
     kid = (WEB / "kid.js").read_text(encoding="utf-8")
     assert 'if (view === "codelab") return S.me.codelab ? codelabView() : go("courses");' in kid
     assert "me.codelab ? codelabTile() : null" in kid
-    assert "P.info && P.info.codelab ? await codelabSection()" in (WEB / "parent.js").read_text(encoding="utf-8")
+    assert "P.info && P.info.codelab ? await codelabSection()" in parent_js()
     assert '<script src="codelab.js?v=__VERSION__"></script>' in (WEB / "index.html").read_text(encoding="utf-8")
     js = (WEB / "codelab.js").read_text(encoding="utf-8")
     for op in CL.OPS:                                                # the same blocks in the app and on the server

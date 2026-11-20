@@ -49,7 +49,10 @@ def record(fq, request, kind: str, profile_id: int | None, ok: bool) -> None:
     name, mac = device(fq, ip)
     fq.db.x("INSERT INTO login_log(kind, profile_id, ok, ip, device, mac) VALUES(?,?,?,?,?,?)",
             kind, profile_id, int(bool(ok)), ip or None, name, mac)
-    fq.db.x("DELETE FROM login_log WHERE at < datetime('now','localtime',?)", f"-{KEEP_DAYS} days")
+    from .privacy import login_cap_days                 # kept longer when the parents keep the login log longer (Privacy)
+    keep = login_cap_days(fq.db, KEEP_DAYS)
+    if keep is not None:
+        fq.db.x("DELETE FROM login_log WHERE at < datetime('now','localtime',?)", f"-{keep} days")
 
 
 def failures(fq, days: int = 30, limit: int = 100) -> list[dict]:

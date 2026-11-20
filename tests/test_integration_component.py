@@ -172,11 +172,11 @@ class FakeApi:
     async def state(self):
         if self.fail:
             raise self.fail
-        return integration.state(self.fq)
+        return await asyncio.to_thread(integration.state, self.fq)       # the app's side: a worker thread there too
 
     async def action(self, action, **data):
         self.actions.append((action, data))
-        return integration.action(self.fq, {"action": action, **data})
+        return await asyncio.to_thread(integration.action, self.fq, {"action": action, **data})
 
 
 class Entry:

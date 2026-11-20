@@ -78,14 +78,39 @@ def test_avatar(client):
 def test_web_and_i18n(client):
     r = client.get("/")
     assert r.status_code == 200 and "Family Quest" in r.text
-    assert client.get("/eltern").status_code == 200
+    assert client.get("/parents").status_code == 200 and "parent.js" in client.get("/parents").text
+    assert "gast.js" in client.get("/guest").text and "host.js" in client.get("/planner").text
     assert client.get("/i18n/de-CH.json").status_code == 200
     assert client.get("/i18n/../secret.json").status_code == 404
     assert client.get("/shared/i18n.js").status_code == 200
     assert client.get("/../familyquest/main.py").status_code == 404
     # the planer page and the files next to its bundle (a rebuild once deleted them)
-    for f in ("planer", "planer/host.js", "planer/mdi-icons.js", "planer/family-planer-cards.js"):
+    for f in ("planner", "planer/host.js", "planer/mdi-icons.js", "planer/family-planer-cards.js"):
         assert client.get("/" + f).status_code == 200, f
+
+
+def test_old_german_addresses_redirect(client):
+    """/eltern, /gast and /planer (printed guest QR codes, bookmarks, home screen icons) lead to the English
+    addresses: a relative redirect (it stays below the Home Assistant ingress prefix) that keeps the query."""
+    for old, new in (("eltern", "parents"), ("gast", "guest"), ("planer", "planner")):
+        r = client.get("/" + old, follow_redirects=False)
+        assert r.status_code == 307 and r.headers["location"] == new, old
+        r = client.get(f"/{old}?c=AB12&mode=parent", follow_redirects=False)
+        assert r.headers["location"] == f"{new}?c=AB12&mode=parent"
+        assert client.head("/" + old, follow_redirects=False).status_code == 307
+        r = client.get(f"/{old}?x=1")
+        assert r.status_code == 200 and str(r.url).endswith(f"/{new}?x=1")
+    # below the ingress prefix of Home Assistant the relative address resolves to the same prefix
+    from urllib.parse import urljoin
+    assert urljoin("http://ha:8123/api/hassio_ingress/TOKEN/gast?c=AB12", "guest?c=AB12") == "http://ha:8123/api/hassio_ingress/TOKEN/guest?c=AB12"
+    # the pages link the English addresses only
+    from pathlib import Path
+    web = Path(__file__).resolve().parent.parent / "family_quest/app/web"
+    from websrc import PARENT_JS
+    for f in ("kid.js", *PARENT_JS, "community.js", "shared/ui.js", "planer/host.js", "gast.js", "index.html", "eltern.html", "gast.html", "planer.html"):
+        t = (web / f).read_text(encoding="utf-8")
+        for old in ('"eltern"', "'eltern'", "/gast?", '"gast"', '"planer?', 'href = "planer"', '? "planer" :'):
+            assert old not in t, (f, old)
 
 
 def test_translations_complete():
@@ -275,7 +300,7 @@ def test_network_filter(client):
     fq.db.set_setting("parent_networks", ["192.168.35.0/24"])
     assert client.get("/api/profiles").status_code == 200                     # the learning app is still open
     assert client.get("/api/parent/overview", headers=ph).status_code == 403
-    assert client.get("/eltern").status_code == 403
+    assert client.get("/parents").status_code == 403 and client.get("/eltern", follow_redirects=False).status_code == 403
     fq.db.set_setting("allowed_networks", ["192.168.35.0/24"])
     assert client.get("/api/profiles").status_code == 403
     assert fq.db.val("SELECT COUNT(*) FROM login_log WHERE kind='blocked'") >= 1
@@ -359,3 +384,17 @@ def test_start_page_asks_for_new_games(client):
     client.post("/api/community/cards/tschau/start", json={}, headers=hl)        # Leo opens a family table
     after = client.get("/api/me/community", headers=h).json()
     assert before != after and after["tschau"]["status"] == "lobby"
+
+
+def test_install_app_entry():
+    """«📲 Install app»: in the app's ☰ menu above «Log out» (hidden when started from the home screen) and in the
+    parent area's «⭐ Family Quest App» dialog."""
+    from pathlib import Path
+    web = Path(__file__).resolve().parent.parent / "family_quest/app/web"
+    ui = (web / "shared/ui.js").read_text(encoding="utf-8")
+    menu = ui[ui.index("function openAppMenu"):]
+    assert menu.index('pwaStandalone() ? null') < menu.index('T("Log out")')
+    for s in ("beforeinstallprompt", "display-mode: standalone", "navigator.standalone", "SamsungBrowser", "maxTouchPoints"):
+        assert s in ui, s
+    from websrc import parent_js
+    assert "installAppDialog({ forOther: true, link })" in parent_js()

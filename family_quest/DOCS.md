@@ -4,8 +4,11 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 
 ## First start
 
-1. Open **Family Quest** in the sidebar and choose **Parent area** (or open `…/eltern`).
-2. Create the parent profile. It is always protected by a PIN (4–8 digits).
+1. Open **Family Quest** in the sidebar and choose **Parent area** (or open `…/parents`).
+2. Create the parent profile. Opened from the Home Assistant sidebar, the name of your Home Assistant user is filled
+   in and the profile is linked with that user – a PIN is optional (add one later in the profile; on tablets you can
+   use *Sign in with Home Assistant*, see below). Opened on the app port (no Home Assistant user), a PIN (4–8 digits)
+   is required.
 3. **Profiles › Add child** – name, colour, PIN, daily goal (XP), exercises per lesson,
    new cards per lesson, learning hours (e.g. `07:00-20:00`), automatic logout. With the Family Planer installed,
    **Take over from Family Planer** creates a profile for every person and links it.
@@ -14,8 +17,9 @@ Learning in any subject with points, rewards and avatars – for the whole famil
    The last parent profile cannot be removed.
    **PIN for children:** a *picture PIN* comes first – the child picks 4 of 12 symbols in its own order (tap them or
    draw a line; 🔀 brings other symbols). At login the same 12 symbols appear in a new order every time, so a
-   watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN or
-   no PIN can be chosen instead.
+   watched pattern does not help. 12 × 11 × 10 × 9 = 11 880 combinations – more than a 4-digit PIN. A 4-digit PIN can
+   be chosen instead – or another sign-in (🔐 *Sign-in*: no sign-in, PIN, Home Assistant only, PIN or Home Assistant,
+   see *Sign-in per profile* below).
 5. **Packs** – every child starts with the built-in packs that work in every language (maths, the English and French
    units of year 5 – no course of the child's own language); switch packs or whole level packs on and off per child.
    Packs whose content exists in German only (German grammar, Thurgau geography, the level pack «5. Klasse Thurgau»,
@@ -33,6 +37,48 @@ Learning in any subject with points, rewards and avatars – for the whole famil
 Everything lives in `/data/family_quest.db` (SQLite) and `/data/media/` – both part of Home Assistant backups.
 Additional packs can be placed in `/share/family_quest/packs` (YAML files, folders with YAML + pictures, or ZIP files);
 they are read at start. Packs changed in the parent area are not overwritten by the folder copy.
+
+### Backup & restore (parent area › Settings)
+
+Three downloads, one restore:
+
+- **⬇️ Download full backup** – everything (database, own pack pictures, photo sets, book pictures, planner photos).
+- **⬇️ Download data backup** – only the family's usage data: ledger (points, coins, XP), learning progress, games
+  played and their history, chores done, deals, reward redemptions, behaviour weather, calendar and planner, logs and
+  statistics, best scores. No settings, no profiles (their numbers and names are in the backup to match them).
+- **⬇️ Download customizing backup** – all settings and configuration, the profiles (PIN hashes, avatars, login
+  modes, linked Home Assistant users) and the family's own content: packs, own quizzes, books and adventure games,
+  code workshop games, photo sets and the crest, shop and rewards, point rules, chore and goal definitions, deal
+  settings, game settings, designs, own texts and languages, saved analytics reports and dashboards. No usage data –
+  e.g. to set up a dev or beta installation like the real one, without the data.
+
+The restore has one file field and recognises the kind (backups from older versions are full backups). It shows what will
+be replaced and what stays:
+
+- A **full** backup replaces everything.
+- A **data** backup replaces the usage data only. Profiles are matched by their number: entries of a profile that does
+  not exist here are skipped and listed; a profile with the same number but another name is pointed out first.
+- A **customizing** backup replaces settings, profiles and own content; the usage data stay. Profiles that are here
+  but not in the backup are **kept** (with their data) – nothing is left without its profile; they are listed.
+- Balances are always summed from the ledger, and everything stored next to it (XP per day, spent XP, «new XP from»,
+  the planner's booking mark) belongs to the same kind – nothing is left out of date.
+- Values that belong to this installation are **never** taken from a backup, of any kind: the Home Assistant panel
+  path, the Home Assistant address for «Sign in with Home Assistant», the token of the HA integration (and when it
+  last asked), the key of the kiosk dashboard link and «Last backup». The signing key (`secret.key`), the add-on
+  options (`direct_access`, port) and the channel are not in the database at all.
+- Before every restore the current state is saved as `before-restore.zip` (a full backup) in the data folder.
+- Not in any backup: the privacy snapshots (`privacy_backups/`), `before-restore.zip` and unfinished uploads.
+  The privacy settings (retention periods, switches) are customizing; the clean-up run log and the folded bookings
+  are data.
+
+Which table and setting belongs to which kind is one table in `familyquest/backup.py` (`TABLES`, `SETTINGS`); a test
+fails when a new table, migration or setting is not classified.
+
+**Automatic backups:** include Family Quest in Home Assistant's backup settings (Settings › System › Backups, the
+button «⚙️ Open backup settings in Home Assistant» goes there). The app is backed up *hot*: before Home Assistant copies
+`/data`, it runs `hotbackup.py pre` in the app – the app pauses its writes (reading goes on), checkpoints its SQLite
+database (`PRAGMA wal_checkpoint(TRUNCATE)`), and after the copy `hotbackup.py post` lets the writes go on. The pause
+never lasts longer than 2 minutes, even if Home Assistant never says it is done.
 
 ## Channels: Family Quest, Beta and Dev
 
@@ -54,6 +100,17 @@ events win over the seasons. In the parent area under **Settings › 🎨 Season
 move their dates and add **own designs** (name, icon, colour, scene, from – to; e.g. a birthday week) – own designs
 come first. Children can switch the scene off on their device in the ☰ menu. During a **🎉 party** the children's app
 shows the **🪩 Disco** design (see Party mode).
+
+**Live weather and daylight:** under **Settings › 🎨 Season designs › 🌦️ Weather for the designs** you pick a weather
+entity of Home Assistant (default «None»). Then the scene shows the weather outside – rain, snow, storm, fog, clouds or
+sun, with the wind – also on days without a design (the everyday scene with the weather, like the Family Planer card).
+It is the same setting as the weather of the Family Planer cards (planner «Seasons & weather»): one choice for both.
+**Day and night follow the sun** (on by default) turns the scene to night, dusk and dawn with `sun.sun`; off, or
+without Home Assistant, night is 20–6 by the clock. The app asks every 5 minutes (`GET /api/season-live`, signed-in
+profiles; the server reuses the answer for 3 minutes and sends only the weather kind, temperature, wind and the light –
+no entity ids) and only redraws the scene when it looks different, so the animations keep running. The children's
+☰ switch and «reduce motion» are respected; the party disco stays as it is. Parent API `GET/PUT /api/parent/season-live`
+(`{"weather": "weather.home" | null, "sun": true}`).
 
 ## Points and rewards
 
@@ -171,9 +228,56 @@ section **🎲 FamilyTime games** lists the FamilyTime events of the next 60 day
   switch the whole feature on/off (off: children see nothing of it), the coin price, the hours before the start when
   the wishes close.
 
+## 📈 Analytics (parent area)
+
+The menu item **📈 Analytics** in the parent area has two tabs.
+
+**📊 Dashboards** (opens first): several reports side by side on a grid of 4 columns (one column on phones).
+- The **standard dashboard** is there from the start (coins and XP per week, games per game, chores done or open, the
+  weather per child, game time per day). It can be changed and renamed, not removed. **⋯** makes new dashboards,
+  renames or deletes them; the list at the top switches between them.
+- The **timeline** at the top sets the period for every tile – it replaces the date filter of the reports. 📅 or the
+  title opens the period picker: quick ranges (today, yesterday, this week / month / quarter / year, the last 7, 30 or
+  365 days, the last 12 months) and a month calendar (tap the first and the last day; the calendar icon switches to the
+  months; arrow keys move between days, Esc closes). **◀ ▶** step back and forward by the length of the period,
+  **Now** goes back to the current period of the same kind, **⋮** chooses day, week, month, year or rolling 12 months.
+  The titles follow the language of the app («Dez.–Nov.» / «2025–2026»). Every dashboard remembers its period.
+- **✏️ Edit**: drag a report (a template or one of «My reports») onto the grid, or tap it / «+ Add report» to put it at
+  the end. Tiles are moved by dragging their head (⠿) or with ◀ ▶, resized by dragging the corner or with ↔ (1–4
+  columns) and ↕ (small / medium / tall); ✏️ gives a tile its own title, ✕ removes it. Dragging works with mouse,
+  pen and finger (pointer events).
+
+**📋 Reports**:
+- **Templates** – ready-made reports (coins per child and week, coins earned and spent, XP per week, correct answers
+  and accuracy per subject, learning minutes, games played per game, games / wins / coins per child, chores done, rewards
+  redeemed, game time per day and by weekday and child, internet minutes used, battery used per game, the weather of the day and its bonus/malus points,
+  books read). A tap fills the ad-hoc report.
+- **My reports** – reports you saved, with ✏️ rename and 🗑️ delete.
+- **Ad-hoc report** – choose a data source with its chips (points & coins, learning answers, learning days, games played, chores,
+  rewards, game time, game battery, weather of the day, books read), then drag dimensions (person, day, week, month,
+  year, weekday, and per source e.g. account, category, subject, game, chore, reward, status, weather) and measures
+  (count, coins, XP, minutes, wins, …) into **Columns** (series / colours), **Rows** (categories, the x-axis), **Data**
+  (the numbers) and **Group** (one table or chart per value) – or tap a chip and then a zone. At most 3 dimensions and
+  4 measures. Filters: 7 days / 30 days / this year / all and the people. The icons below the report choose table,
+  pivot (with totals), bars, stacked bars, 100 % stacked bars, line, area, donut or bubbles (Rows on the x-axis,
+  Columns on the y-axis, the area of a bubble is the value – e.g. weekday × child by minutes played) – our own SVG
+  charts with legend and tooltips (tap or hover), in light and dark mode. With several measures every chart shows one of them (one axis
+  per chart). **⭐ Save as my report** keeps it under «My reports».
+
+What it counts: the ledger (coins, XP, internet minutes used from earned minutes), the learning answers and learning
+days, the game history (places and coins of the family games), the chore plan, the shop (redeemed rewards), the
+minutes of family games (time limits), the game battery log, the behaviour weather and the books read. Private books
+(«Only me») are never counted and no titles of books or quizzes appear. Guests are never part of a report.
+
+Safety: the server only knows a fixed list of sources, dimensions and measures – a report names them by key, never
+with SQL or free text; anything else is refused. The query runs read-only with a time limit and at most 2000 rows.
+Parents only. Saved reports and dashboards are settings (`analytics_reports`, `analytics_dashboards`) and part of
+every backup.
+
 ## Kiosk dashboard
 
-Parent area → **🖥️ Dashboard**: a read-only page for a wall tablet, TV or old phone – any browser, no login.
+Parent area → **⚙️ Settings → App → 🖥️ Dashboard** (the kiosk link has its own fold below it; the old address
+`#dashboard` opens it): a read-only page for a wall tablet, TV or old phone – any browser, no login.
 Choose the children and what it shows: clock, crown, each child's weather, learning progress, streak, coins, open
 chores, the family goal, open Planer to-dos and today's events of Home Assistant calendars. Moods and messages to
 the parents are never shown. The link contains a secret key (🔄 «New link» makes a new one and the old screens stop);
@@ -389,6 +493,13 @@ empty translation goes back to the standard. Learning content is not translated 
 - **The app** for children: `…/app` – inside Home Assistant as well as on the direct port (`http://<IP>:<port>/app`;
   on the direct port `/` still opens the app too). «Family Quest App» in the parent menu, «Open in the app» and the
   planner link there.
+- **Parent area**: `…/parents`, **guest page** (invitations by QR code): `…/guest?c=<code>`, **planner**: `…/planner`.
+  The former German addresses `/eltern`, `/gast` and `/planer` still work: they redirect to the new ones (query and
+  `#…` are kept), so printed guest QR codes, bookmarks and home screen icons keep working.
+- **Install the app** on a phone or tablet: ☰ → «📲 Install app» in the app (or «⭐ Family Quest App» → «📲 Install
+  app» in the parent area) shows the steps for iPhone/iPad (Safari: share button → «Add to Home Screen» → «Add») and
+  Android (Chrome: ⋮ → «Install app» / «Add to home screen»; Samsung Internet: ≡ → «Add page to» → «Home screen»).
+  Where the browser offers it, an «Install» button does it in one tap. The entry is hidden in the installed app.
 
 ## Security in the parent area
 
@@ -396,16 +507,93 @@ The add-on runs with its own **AppArmor profile** (`apparmor.txt`): it reads its
 `/data`, `/share` and temporary folders, and may not mount or debug other processes. Together with Ingress this
 gives the security rating 8 in Home Assistant.
 
-**Log in with Home Assistant:** when a parent opens Family Quest from the Home Assistant sidebar, the app knows the
-Home Assistant user (the Supervisor tells it – only trusted for requests that really come through Home Assistant).
-After the first PIN login the app offers to link this user with the parent profile; from then on the parent area
-opens without PIN there. Settings → *Log in with Home Assistant* can also close the parent area for PIN logins
-completely (then it opens only through Home Assistant; the PIN still works in the app for learning along).
+**Logins that end:** a parent-area login lasts 30 minutes and renews itself while the page is open, but a session
+never lasts longer than 12 hours on the app port (30 days through Home Assistant, whose own login stands behind it) –
+then the PIN is asked again. The app login of a parent profile (learning along, planner admin) lasts 12 hours. A new
+PIN ends every login of the profile on every device; `POST /api/parent/sessions/end` (optionally with a
+`profile_id`) does the same without a new PIN («log out everywhere»). After 5 wrong PINs in a row for a profile –
+from any device – the next try waits 1 minute, doubling with every further wrong PIN (at most an hour); the add-on
+log notes it. The *parent networks* hold for every request with a parent login, also the planner's and the books'
+settings.
+
+**Log in with Home Assistant:** link a Home Assistant user with a profile (Profiles › edit › *Home Assistant user*,
+for parents and children – one user per profile). When Family Quest is opened from the Home Assistant sidebar, the
+app knows the Home Assistant user (the Supervisor tells it – only trusted for requests that really come through Home
+Assistant): a linked parent comes into the parent area without PIN, a linked child into its app without PIN – never
+into the parent area. There is no extra switch for children: the link is the permission; a child without a link logs
+in with its PIN. After the first PIN login in the sidebar the app also offers a parent to link the own user.
+Settings → *Log in with Home Assistant* can also close the parent area for PIN logins completely (then it opens only
+through Home Assistant; the PIN still works in the app for learning along).
+
+**Sign in with Home Assistant in the app (tablets, phones):** Settings → *Log in with Home Assistant* → *Allow
+sign-in with Home Assistant in the app* (off by default). The login screen of the app on the app port then shows
+**🏠 Sign in with Home Assistant** – only when at least one profile is linked with a Home Assistant user. How it
+works:
+
+1. The app sends the browser to the login page of Home Assistant (`<HA>/auth/authorize`, Home Assistant's normal
+   OAuth2 / IndieAuth login – the same as the companion app uses). The *client_id* is the address of the app
+   (e.g. `http://192.168.1.10:8099/`), the return address `…/ha-auth/callback` is on the same host, as Home Assistant
+   requires. Home Assistant asks for user name and password – and the two-factor code when the user has one.
+2. Home Assistant sends the browser back with a one-time code. Family Quest exchanges it **itself** (server side,
+   inside Home Assistant on the Supervisor network: `http://homeassistant:8123`; with https in Home Assistant, or
+   outside Home Assistant, only at the address the parents entered below), asks Home Assistant who the user is
+   (websocket `auth/current_user`) and **revokes the Home Assistant tokens right away** – Family Quest stores no Home
+   Assistant token and no password, only the profile login as with a PIN. The code is never checked at an address
+   that comes from the browser (that could be a fake Home Assistant): without the internal address and without an
+   entered address the sign-in is refused with «Family Quest does not know where Home Assistant is».
+3. The Home Assistant user is mapped to the profile linked with it (Profiles › edit › *Home Assistant user*):
+   a child gets its app, a parent gets the same as a parent PIN login in the app.
+   The parent area on the app port stays as before – with *Parent area only through Home Assistant* it stays closed.
+   A Home Assistant user that is not linked gets «Your Home Assistant user is not linked with a profile – ask your
+   parents». Every attempt is in the login log; the login stays on the device like a PIN login, *Log out* as usual.
+
+**🔐 Sign-in per profile:** every profile has exactly one sign-in, chosen in Profiles › edit (top of the *Profile*
+tab) and shown as a chip on the profile cards:
+
+| Sign-in | Who | How | Needs |
+|---|---|---|---|
+| 🪄 **No sign-in – tap the profile** | children only | tap the picture and in | – |
+| 🔢 **PIN** | all | picture or digit PIN (children), 4–8 digits (parents) | a PIN |
+| 🏠 **Home Assistant only** | all | Home Assistant sidebar, *Sign in with Home Assistant* on tablets | a Home Assistant user |
+| 🔢🏠 **PIN or Home Assistant** | all | both ways | a PIN and a Home Assistant user |
+
+The Home Assistant user picker shows only for the two Home Assistant options (picking a user fills in the name), the
+PIN entry only for the two PIN options (an existing PIN stays; *Change PIN* sets a new one). Saving checks it (also
+on the server): Home Assistant options without a user, PIN options without a PIN, and *No sign-in* for a parent are
+refused. What a choice does not use is removed when it is saved – *No sign-in* and *Home Assistant only* delete the
+PIN, *No sign-in* and *PIN* unlink the Home Assistant user – so nothing hidden stays a way in.
+
+The server enforces the choice on every way in: the app's PIN login and tap login, the picture PIN, the parent-area
+PIN, the automatic login in the Home Assistant sidebar (children and parents) and *Sign in with Home Assistant* in the
+app. *Home Assistant only* refuses every PIN (also a PIN left over in an old database), *PIN* refuses every Home
+Assistant login, *No sign-in* exists only for children. A child with *No sign-in* that sets a PIN itself (Me › *Change
+my PIN*) switches to *PIN*; a child with *Home Assistant only* cannot set a PIN itself. Linking or unlinking the own
+Home Assistant user in the parent area (*Link my user* / *Unlink*) switches a parent between *PIN or Home Assistant*
+and *PIN*.
+
+The app's profile list shows a small icon per profile (🔢 / 🏠 / 🔢🏠, nothing for *No sign-in*) and routes the tap:
+*No sign-in* straight in, *PIN* the PIN pad, *Home Assistant only* straight to *Sign in with Home Assistant* (in the
+Home Assistant sidebar: the own Home Assistant user), *PIN or Home Assistant* the PIN pad with the Home Assistant
+button. Parents appear there only when they can sign in on that device.
+
+**Profiles from before** get their sign-in once at the first start of the update, from what they had: PIN and Home
+Assistant user → *PIN or Home Assistant*, PIN → *PIN*, Home Assistant user → *Home Assistant only*, nothing → *No
+sign-in* (children). Nothing else changes. A parent without both (should not exist) gets *PIN* and needs a PIN at
+the next edit.
+
+**Home Assistant address for the sign-in:** the browser of the tablet must reach Home Assistant. Empty = automatic:
+the host of the app with the port of Home Assistant (the add-on runs on the Home Assistant machine, e.g.
+`http://192.168.1.10:8123`; https when Home Assistant does https). Enter another address when Home Assistant is
+reached differently (a name with a certificate, a reverse proxy); the addresses Home Assistant knows itself
+(internal / external URL) are offered. *Test* checks both ways: this device → Home Assistant and Family Quest →
+Home Assistant. Limits: the device needs to reach Home Assistant (not from a guest network that cannot); Home
+Assistant's login page is shown in Home Assistant's look and language; the state of a sign-in is valid for 10
+minutes and once; IP bans and login attempts of Home Assistant apply as usual.
 
 **One port for the children, the parent area only in Home Assistant:** no second port is needed. Home Assistant
 reaches the app through its own way (ingress, from the Supervisor), the app port (e.g. `http://192.168.x.y:8099`)
 is for tablets and phones. With *Parent area only through Home Assistant* switched on, the app port offers no parent
-area at all: the link is gone, `/eltern` only shows a hint, and every request of the parent area that does not come
+area at all: the link is gone, `/parents` only shows a hint, and every request of the parent area that does not come
 through Home Assistant is refused – even with an old session.
 
 **Look:** the parent area uses the shapes of Home Assistant (Roboto, flat cards, the HA sidebar) with the colours of
@@ -413,16 +601,19 @@ Family Quest (as in the chore planner); opened in Home Assistant it follows the 
 Buttons that add something («+ Add child», «+ New topic», «+ Add account» …) are always top right.
 
 **Parents and their Home Assistant user:** in the profile of a parent you choose the Home Assistant user (all persons of
-Home Assistant with a login). With it the parent area opens in the HA sidebar without PIN. The PIN is optional – it is
-only the login in the app, e.g. to join a game or learn along on another device; a parent without PIN does not
-appear in the app's profile list. Without Home Assistant parents need a PIN as before.
+Home Assistant with a login) – sign-in *Home Assistant only* or *PIN or Home Assistant*. With it the parent area
+opens in the HA sidebar without PIN. The PIN (*PIN or Home Assistant*) is the login in the app, e.g. to join a game or
+learn along on another device. A parent with *Home Assistant only* appears in the app's profile list only while *Sign
+in with Home Assistant in the app* is on (tapping it opens the Home Assistant login). Without Home Assistant parents
+need a PIN as before.
 
-**Children and their Home Assistant user (option):** children who have their own Home Assistant user can open their
-app in the Home Assistant sidebar without PIN. Switch on Settings › *Log in with Home Assistant* › *Children may sign
-in with their Home Assistant user* (off by default) and choose the child's Home Assistant user in its profile
-(Profiles › edit › *Home Assistant user*). One Home Assistant user belongs to at most one profile – parent or child.
-- It only works through Home Assistant (ingress): the user is only trusted on requests from the Supervisor proxy; on
-  the app port (tablets) the child logs in with its PIN as before.
+**Children and their Home Assistant user:** children who have their own Home Assistant user open their app in the
+Home Assistant sidebar without PIN as soon as the user is chosen in the child's profile (Profiles › edit › *Home
+Assistant user*) – there is no extra switch (the former option *Children may sign in with their Home Assistant user*
+is gone; existing links stay and now simply work). One Home Assistant user belongs to at most one profile – parent or
+child. A child without a link logs in with its PIN.
+- In the sidebar it works through Home Assistant (ingress): the user is only trusted on requests from the Supervisor
+  proxy. On the app port (tablets) the child uses its PIN – or *Sign in with Home Assistant* when that is switched on.
 - The child only gets the children's app – never the parent area. *Parent area* from there asks for the parent PIN.
 - *Log out* (or the automatic log-out after a break) ends the login in that tab without logging in again right away;
   the profile screen then offers *Log in as …* for the child's Home Assistant user. Reloading keeps the tab logged
@@ -444,6 +635,65 @@ the children's app opens; *Parent area* there leads to the PIN login.
   stricter – from which the parent area may be opened (e.g. only the parents' network). Empty = every network.
   A list that would lock out the device you are saving from is refused.
 
+## 🛡️ Privacy (parent area › Privacy / Datenschutz)
+
+**Master switch** (top of the page, **on by default**): off means nothing is counted, no clean-up runs (manual
+and automatic are refused) and no badge; the retention periods stay saved and editable. While it is on, the menu item
+**🛡️ Privacy shows a red badge** with the number of entries ready for a clean-up run (the total of the preview, «999+»
+above 999). The count is cached on the server for 5 minutes and refreshed after a run, after a settings change and every
+5 minutes; on phones the ☰ button shows a red dot.
+
+**Retention periods (Aufbewahrungsfristen):** every kind of stored personal or usage data has a lifetime – days,
+months, years or «keep forever» – with a default the parents can change (ⓘ next to each kind explains it):
+
+| Kind | Default | What |
+|---|---|---|
+| 🔐 Login log | 90 days | logins and failed logins with address and device |
+| 🌦️ Behaviour weather | 3 months | the weather given per child and day (the points stay in the balance) |
+| 🔋 Game battery log | 3 months | starts, recharges, charges |
+| 💣 Pranks received | 3 months | pranks a child has seen |
+| 📌 Removed board items | 1 month | notes kept for «undo» |
+| 📜 Personal history | 1 year | game results, quizzes, council votes |
+| 🎲 Finished games | 1 year | tables of finished games with moves and answers |
+| 📝 Learning answers | 1 year | every single answer, finished lessons |
+| 📅 Learning days | 2 years | XP, time and lessons per day – folded, totals stay |
+| 🪙 Point bookings | 2 years | the ledger – folded into «Balance brought forward» |
+| 🧹 Chores done | 1 year | who did which chore when |
+| 🤝 Deals | 1 year | ended deals with their messages |
+| 🛍️ Shop orders | 1 year | decided orders |
+| 🗳️ Council topics and polls | 1 year | closed ones with proposals and votes |
+| 🎁 Secret gift giving | 1 year | past draws |
+| 📆 Past calendar events | 2 years | with the FamilyTime wishes and votes (birthdays stay) |
+
+Not time-based («keep»): profiles, balances, badges, records and highscores, settings, learning progress and decks,
+books, quizzes, programs, photo sets and uploads, boards, pets, upcoming events, the chore plan.
+
+**Clean-up runs (Löschläufe):** the list of what is past due, per kind with the count and the oldest / newest date,
+is the preview – nothing is deleted while you look. Tick kinds (or «Select all»; for most kinds also single entries
+with 🔎) and confirm. Every run first writes a **backup snapshot** with the backup module into the data folder
+(`/data/privacy_backups/before-cleanup-….zip`, the database only – no photos; the last 3 are kept and none longer
+than 30 days, as it still holds what was deleted; a run whose snapshot fails deletes nothing), then
+deletes each kind in **one transaction**, then logs date, kinds, counts and who in **Past runs**.
+
+**Balances never change:** old ledger rows are folded into «Balance brought forward» rows (per profile, account,
+event and sign) dated at the cut-off, in the same transaction – balances, XP, levels, new XP for the XP items, the
+Family Planer sync, sums per event and counts like «50 chores», slot machine spins or shop purchases (kept beside,
+for the family quiz) stay exactly the same. Old learning days are added up into one row per child; the
+days of a running streak stay.
+
+**Never deleted** because something still refers to it: anything of the current week, running games, open and
+pending chores, chores of running deals, open deals, orders waiting for approval, open topics and polls, upcoming
+events and draws, the newest row of every list (its id is never given out again), the last game of every quiz, the
+bookings since the active family goal started.
+
+**Automatic clean-up:** a switch, **off by default**. When on, Family Quest cleans the kinds that are past due once
+every night between 02:00 and 05:00 (snapshot and log entry as above, «automatic» in Past runs).
+
+**Good to know:** older copies can still be in your own backups and in the Home Assistant history – delete old
+backups too if data should be gone everywhere. To delete everything of one child, use *Delete all data of a child*:
+it opens the protected «Remove profile» dialog (type the name, «Delete for good»). The login log keeps at most 180
+days on its own (longer if you set a longer period).
+
 ## Family (parent area, formerly «Community»): family quiz and family council
 
 - **Family quiz** (learning app › Family › Quizzes, or parent area › Games): everybody – children too – makes
@@ -451,7 +701,7 @@ the children's app opens; *Parent area* there leads to the PIN login.
   capitals of Europe and the world, flags, food of the world, Swiss specialities, cantons, animals, space,
   inventions, Switzerland). Whoever starts a game leads it (a parent may always step in); everybody joins on their
   own device. Quick right answers give more points (1000 down to 500). Places go into everybody's history; the
-  reward events *Played the family quiz* and *Won the family quiz* can give coins (Rewards › Rules).
+  reward events *Played the family quiz* and *Won the family quiz* can give coins (Points & rules › Rules).
 - **Family Quest Facts** (special quiz – «New quiz» › 📊 at the top, for children and parents): the questions come
   from the family's own Family Quest data and are made new at every start – a random choice in a random order, at most
   one question per kind. Before the start: the number of questions (5 / 10 / 15 / 20) and the focus (this week, all

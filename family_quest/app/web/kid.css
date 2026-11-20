@@ -228,7 +228,8 @@
 /* shop */
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
 .offer { display: grid; justify-items: center; gap: 6px; text-align: center; }
-.offer.cant { opacity: .8; }
+/* not enough yet: the picture is muted, the text keeps its full contrast */
+.offer.cant .offer-ic, .offer.cant > svg, .offer.cant .av-svg { opacity: .6; }
 .offer-ic { font-size: 3rem; }
 .price { font-size: 1.3rem; font-weight: 900; }
 .offer .bar { width: 100%; }
@@ -509,3 +510,8 @@
   font: inherit; font-weight: 700; white-space: nowrap; cursor: pointer; }
 .chip-btn:hover { border-color: var(--accent); }
 .shop-part { scroll-margin-top: calc(var(--head-h, 64px) + 70px); }
+
+/* «Sign in with Home Assistant» (direct port): on the login screen and below a PIN pad */
+.ha-kid-login { margin: 8px 0 16px; }
+.ha-pin-alt { margin-top: 12px; }
+.ha-auth-error { color: var(--bad-text); text-align: center; padding: 12px 16px; margin: 0 0 16px; }

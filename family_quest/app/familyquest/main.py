@@ -18,10 +18,13 @@ from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
 from .api import stories as stories_api
 from .api import codelab as codelab_api
-from . import loginlog, memo, netfilter
+from . import csp, loginlog, memo, netfilter
 from .packs import i18n as pack_i18n
 from .channel import feature_visible, hidden_games
 from .api import deals as deals_api
+from .api import haauth as haauth_api
+from .api import analytics as analytics_api
+from .api import privacy as privacy_api
 from .api.auth import INGRESS_IP
 from .services import FamilyQuest
 from .settings import WEB_DIR, Settings, load_settings
@@ -37,7 +40,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         core = app.state.fq
-        core.packs.sync_folders(settings.packs_dirs)
+        await asyncio.to_thread(core.packs.sync_folders, settings.packs_dirs)   # never a write on the event loop
+        core.db.start_backup_watch(settings.data_dir)     # hot backups by Home Assistant pause the writes (hotbackup.py)
         from . import integration
         asyncio.get_running_loop().run_in_executor(None, integration.install_on_start, core)   # HA integration: update /config copy
         async def relink():
@@ -72,7 +76,11 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
             asyncio.create_task(lan_base())
         else:
             log.info("Home Assistant connection disabled")
+        from . import privacy
+        nightly = asyncio.create_task(privacy.auto_loop(core))     # the automatic clean-up at night (off by default)
         yield
+        core.db.stop_backup_watch()
+        nightly.cancel()
         await core.planer_host.stop()
         if client:
             await client.close()
@@ -119,7 +127,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         ip = loginlog.client_ip(request)
         reason = netfilter.check(app.state.fq, ip, request.url.path)
         if reason:
-            netfilter.log_blocked(app.state.fq, ip, loginlog.device(app.state.fq, ip))
+            await asyncio.to_thread(netfilter.log_blocked, app.state.fq, ip, loginlog.device(app.state.fq, ip))
             msg = {"app": _t("Access from this network is not allowed"), "parent": _t("The parent area cannot be opened from this network"),
                    "guest": "Guest network: only games with an invitation (QR code) are open"}[reason]
             if request.url.path.startswith("/api/"):
@@ -130,8 +138,13 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         resp = await call_next(request)
         if request.url.path.startswith("/api/"):
             resp.headers["Cache-Control"] = "no-store"
-        resp.headers["X-Content-Type-Options"] = "nosniff"
-        resp.headers["Referrer-Policy"] = "same-origin"
+        return resp
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        """Around access(): CSP, nosniff and Referrer-Policy on every answer, the refusals included (csp.py)."""
+        resp = await call_next(request)
+        csp.apply(request.url.path, resp.headers)
         return resp
 
     @app.middleware("http")
@@ -156,11 +169,15 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     app.include_router(integration_api.router)
     app.include_router(integration_api.parent_router)
     app.include_router(deals_api.router)               # deals (deals.py)
+    app.include_router(haauth_api.router)              # «Sign in with Home Assistant» on the direct port (haauth.py)
     app.include_router(deals_api.parent_router)
+    app.include_router(analytics_api.router)           # 📈 Analytics in the parent area (analytics.py)
+    app.include_router(privacy_api.router)             # privacy: retention periods and clean-up runs (privacy.py)
 
     def page(name: str) -> HTMLResponse:
         html = (WEB_DIR / name).read_text(encoding="utf-8").replace("__VERSION__", settings.version)
-        return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
+        return HTMLResponse(html, headers={"Cache-Control": "no-cache",
+                                           "Content-Security-Policy": csp.PAGE_CSP_OF.get(name, csp.PAGE_CSP)})
 
     @app.get("/", include_in_schema=False)
     def index(request: Request):
@@ -193,19 +210,30 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     def kid_app_slash():
         return Response(status_code=307, headers={"Location": "../app"})        # relative links need /app without slash
 
-    @app.get("/eltern", include_in_schema=False)
+    @app.get("/parents", include_in_schema=False)
     def parents():
         return page("eltern.html")
 
-    @app.get("/gast", include_in_schema=False)
+    @app.get("/guest", include_in_schema=False)
     def guest_page():
         return page("gast.html")
+
+    # the former German addresses (printed guest QR codes, bookmarks, home screen icons): a relative redirect – it
+    # stays below the Home Assistant ingress prefix; the query is kept, the #hash the browser keeps by itself
+    def _moved(to: str):
+        def redirect(request: Request):
+            q = request.url.query
+            return Response(status_code=307, headers={"Location": to + ("?" + q if q else ""), "Cache-Control": "no-cache"})
+        return redirect
+
+    for _old, _new in netfilter.OLD_PAGES.items():
+        app.add_api_route(_old, _moved(_new.lstrip("/")), methods=["GET", "HEAD"], include_in_schema=False)
 
     @app.get("/dashboard", include_in_schema=False)
     def dashboard_page():
         return page("dashboard.html")
 
-    @app.get("/planer", include_in_schema=False)
+    @app.get("/planner", include_in_schema=False)
     def planer_page():
         return page("planer.html")
 
@@ -251,7 +279,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         f = (settings.media_dir / pack_id / name).resolve()
         if settings.media_dir.resolve() not in f.parents or not f.is_file():
             raise HTTPException(404)
-        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"})
+        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"}, **csp.media_kwargs(f.name))
 
     @app.get("/hamedia/{path:path}", include_in_schema=False)
     def ha_media_photo(path: str):
@@ -261,7 +289,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         if not memorygame.referenced(app.state.fq, name) or not memorygame.ha_ref_ok(app.state.fq, name):
             raise HTTPException(404)
         f = memorygame.ha_media_path(settings.ha_media_dir, path)
-        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"})
+        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"}, **csp.media_kwargs(f.name))
 
     @app.get("/family_planer_files/{path:path}", include_in_schema=False)
     def planer_files(path: str):
@@ -270,7 +298,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         f = (base / path).resolve()
         if base not in f.parents or not f.is_file() or f.suffix.lower() not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
             raise HTTPException(404)
-        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"})
+        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"}, **csp.media_kwargs(f.name))
 
     static_types = {".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png",
                     ".webmanifest": "application/manifest+json", ".json": "application/json", ".ico": "image/x-icon",

@@ -345,7 +345,9 @@ function dealNote(sum) {
 }
 
 // ---------------------------------------------------------------- parent area: tab «Deals»
-async function dealsParentView(main) {
+/** The deals of the parent area as folded boxes – part of the Family page (communityView): waiting for the OK,
+ *  the parents' own deals, all running and finished deals of the children, the settings. */
+async function dealsFamilySections() {
   const [ov, mine] = await Promise.all([call("parent/deals"), call("me/deals")]);
   const open = v => dealParentThread(v.id, v.a ? true : false);
   const appr = ov.deals.filter(v => v.status === "approval");
@@ -354,14 +356,17 @@ async function dealsParentView(main) {
   const row = v => h("li.row.deal-prow", avatarSvg(v.a.avatar, 30), C(v.a.name, "b"), h("span", "⇄"), avatarSvg(v.b.avatar, 30), C(v.b.name, "b"),
     dealStatusChip({ ...v, turn: false, with: v.b }), h("span.grow.small.muted", fmtDateTime(v.updated_at)),
     h("button.btn.small.ghost", { onclick: () => open(v) }, T("Open")));
-  main.append(pageHead("🤝 " + I18N.tr(T("Deals")), h("button.btn", { onclick: () => dealBuilder({ after: () => render() }) }, "+ ", T("New offer"))),
-    h("p.muted", T("Children trade coins, chores, pets, avatar items, bought games and favours – with each other and with you. XP can never be traded. Reserved coins cannot be spent until the deal is done or fails.")),
-    appr.length ? section("⏳ " + I18N.tr(T("Waiting for your OK")), h("ul.list", ...appr.map(row))) : null,
-    section("👤 " + I18N.tr(T("My deals")), mine.deals.length ? h("div.deal-list", ...mine.deals.map(v => dealCard(v, x => dealParentThread(x.id, false))))
-      : h("p.small.muted", T("No running deals."))),
-    section("📋 " + I18N.tr(T("All running deals")), running.length ? h("ul.list", ...running.map(row)) : h("p.small.muted", T("No running deals."))),
-    section("📜 " + I18N.tr(T("Finished deals")), ended.length ? h("ul.list", ...ended.slice(0, 40).map(row)) : h("p.small.muted", T("Nothing yet."))),
-    dealSettingsBox(ov.settings, ov.kids));
+  const n = k => I18N.tr(T("Deals: {0}")).replace("{0}", k);
+  const mark = (sec, id, status) => { sec.dataset.fold = id; sec.dataset.status = status; return sec; };
+  const newBtn = h("button.btn.small", { onclick: () => dealBuilder({ after: () => render() }) }, "+ ", T("New offer"));
+  const set = dealSettingsBox(ov.settings, ov.kids);
+  return [
+    appr.length ? mark(section("⏳ " + I18N.tr(T("Waiting for your OK")), h("ul.list", ...appr.map(row))), "deals-ok", n(appr.length)) : null,
+    mark(section("👤 " + I18N.tr(T("My deals")), h("div.row", newBtn), mine.deals.length ? h("div.deal-list", ...mine.deals.map(v => dealCard(v, x => dealParentThread(x.id, false))))
+      : h("p.small.muted", T("No running deals."))), "deals-mine", n(mine.deals.length)),
+    mark(section("📋 " + I18N.tr(T("All running deals")), running.length ? h("ul.list", ...running.map(row)) : h("p.small.muted", T("No running deals."))), "deals-running", n(running.length)),
+    mark(section("📜 " + I18N.tr(T("Finished deals")), ended.length ? h("ul.list", ...ended.slice(0, 40).map(row)) : h("p.small.muted", T("Nothing yet."))), "deals-ended", n(ended.length)),
+    set ? mark(set, "deals-settings", I18N.tr(ov.settings.on ? T("Trading is on") : T("Off"))) : null].filter(Boolean);
 }
 
 async function dealParentThread(id, overview) {
@@ -394,11 +399,10 @@ function dealSettingsBox(s, kids) {
   return section("⚙️ " + I18N.tr(T("Deal settings")),
     h("label.check", on, T("Trading is on")),
     h("div", h("strong", T("Children who may trade")), h("div.row", ...kidBoxes)),
-    h("div", h("strong", T("What can be traded")), h("div.row", ...kinds), h("p.small.muted", T("XP can never be traded. Rented games neither – only games bought for good."))),
-    h("div.grid2", h("label.field", h("span", "🪙 ", T("Max coins per deal")), max, h("span.hint", T("Coins children give in one deal, together."))),
-      h("label.field", h("span", "⚖️ ", T("Approval from (coins)")), thr, h("span.hint", T("Deals between children with this many coins or more wait for a parent's OK.")))),
-    h("label.check", appr, T("Big deals need a parent's approval")),
+    h("div", h("strong", T("What can be traded"), fieldInfo(T("XP can never be traded. Rented games neither – only games bought for good."))), h("div.row", ...kinds)),
+    h("div.field-row", h("label.field", h("span", "🪙 ", T("Max coins per deal"), fieldInfo(T("Coins children give in one deal, together."))), max),
+      h("label.field", h("span", "⚖️ ", T("Approval from (coins)"), fieldInfo(T("Deals between children with this many coins or more wait for a parent's OK."))), thr)),
+    h("label.check", appr, h("span", T("Big deals need a parent's approval"), fieldInfo(T("A deal with a parent never needs approval.")))),
     h("label.check", pets, T("Deals with pets always need a parent's approval")),
-    h("p.small.muted", T("A deal with a parent never needs approval.")),
     h("button.btn.small", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
 }

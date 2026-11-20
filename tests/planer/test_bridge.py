@@ -7,9 +7,9 @@ from familyquest.planer.host import PlanerHost
 
 
 async def _bridge(fq):
-    mia = fq.db.x("INSERT INTO profile(name, color) VALUES('Mia', '#ff6b6b')")
-    papa = fq.db.x("INSERT INTO profile(name, role, pin_hash) VALUES('Papa', 'parent', 'x')")
-    fq.rewards.book(mia, "coins", 40, "start", "Start")
+    mia = await asyncio.to_thread(fq.db.x, "INSERT INTO profile(name, color) VALUES('Mia', '#ff6b6b')")
+    papa = await asyncio.to_thread(fq.db.x, "INSERT INTO profile(name, role, pin_hash) VALUES('Papa', 'parent', 'x')")
+    await asyncio.to_thread(fq.rewards.book, mia, "coins", 40, "start", "Start")
     host = PlanerHost(fq)
     fq.planer_host = host
     await host.start(ha_expected=False)
@@ -41,7 +41,7 @@ async def _bridge(fq):
     assert fq.rewards.balance(mia, "coins") == 40 == prew.balance(p.data["ledger"], lea)
 
     # coins earned while learning → Planer points
-    fq.rewards.book(mia, "coins", 15, "lesson_done", "Lektion")
+    await asyncio.to_thread(fq.rewards.book, mia, "coins", 15, "lesson_done", "Lektion")
     await b.sync()
     assert prew.balance(p.data["ledger"], lea) == 55 == fq.rewards.balance(mia, "coins")
     # a second sync changes nothing
@@ -49,14 +49,14 @@ async def _bridge(fq):
     assert fq.rewards.balance(mia, "coins") == 55
 
     # renamed profile → renamed person; person added in the Planer → new profile
-    fq.db.x("UPDATE profile SET name='Mia Sofia' WHERE id=?", mia)
+    await asyncio.to_thread(fq.db.x, "UPDATE profile SET name='Mia Sofia' WHERE id=?", mia)
     await p.async_add_person("Leo")
     await b.sync()
     assert persons[lea]["name"] == "Mia Sofia"
     leo = fq.db.q1("SELECT * FROM profile WHERE name='Leo'")
     assert leo and leo["role"] == "kid" and b.state()["links"][str(leo["id"])] in persons
     # removed profile → removed person
-    fq.db.x("UPDATE profile SET archived=1 WHERE id=?", leo["id"])
+    await asyncio.to_thread(fq.db.x, "UPDATE profile SET archived=1 WHERE id=?", leo["id"])
     await b.sync()
     assert "Leo" not in [v["name"] for v in persons.values()]
     await host.stop()
@@ -68,8 +68,8 @@ def test_bridge_profiles_and_points(fq):
 
 async def _import(fq, tmp_path, monkeypatch):
     from familyquest.planer import importer
-    lea = fq.db.x("INSERT INTO profile(name) VALUES('Lea')")
-    fq.rewards.book(lea, "coins", 10, "start", "Start")
+    lea = await asyncio.to_thread(fq.db.x, "INSERT INTO profile(name) VALUES('Lea')")
+    await asyncio.to_thread(fq.rewards.book, lea, "coins", 10, "start", "Start")
     host = PlanerHost(fq)
     fq.planer_host = host
     await host.start(ha_expected=False)
@@ -143,3 +143,35 @@ def test_own_chores_move_to_the_planer(client):
     # Leo cannot tick off Mia's chore
     leo_h = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
     assert client.post(f"/api/me/chores/{bed_uid}/done", headers=leo_h).status_code == 400
+
+
+async def _no_double_booking(fq):
+    """M5 (review 2): the bookings and the bridge state are written in one transaction, and a Planer entry is booked
+    once by its ref – also when the state was lost (a crash between the two before)."""
+    mia = await asyncio.to_thread(fq.db.x, "INSERT INTO profile(name) VALUES('Mia')")
+    host = PlanerHost(fq)
+    fq.planer_host = host
+    await host.start(ha_expected=False)
+    b, p = host.bridge, host.planner
+    await b.sync()
+    lea = b.state()["links"][str(mia)]
+    wd = str(p.today().isoweekday())
+    cid = await p.async_save_chore(None, {"title": "Tisch decken", "points": 10,
+                                          "assign": {lea: {wd: {"every": 1, "offset": 0, "window": 1}}}})
+    await p.async_rollover()
+    item = next(k for k, v in p.data["items"].items() if v["chore_id"] == cid)
+    await p.async_set_item(item, True)
+    await b.sync()
+    coins = fq.rewards.balance(mia, "coins")
+    assert coins > 0
+    st = b.state()
+    st["seen"] = {}                                      # as if the state had not been saved after the booking
+    await asyncio.to_thread(b.kv.save, "fq.planer_bridge", st)
+    await b.sync()
+    assert fq.rewards.balance(mia, "coins") == coins
+    assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE 'fp:%' AND ref NOT LIKE 'fp:init:%'") == 1
+    await host.stop()
+
+
+def test_a_planer_entry_is_booked_once(fq):
+    asyncio.run(_no_double_booking(fq))

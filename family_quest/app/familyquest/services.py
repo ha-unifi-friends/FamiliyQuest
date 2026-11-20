@@ -15,7 +15,7 @@ from .community import Community
 from .chores import Chores
 from .internet import InternetTime
 from . import memo
-from .db import Database, profile_settings
+from .db import Database, login_mode, profile_settings
 from . import timelimits
 from .learning.lesson import Learning
 from .packs.registry import PackStore, subject_meta
@@ -191,7 +191,8 @@ class FamilyQuest:
         out = {"id": p["id"], "name": p["name"], "role": p["role"], "color": p["color"],
                "avatar": self.avatar_public(p, json.loads(p["avatar"] or "{}") or av.DEFAULT_AVATAR), "has_pin": bool(p["pin_hash"]),
                "crown": bool(crown and crown >= date.today().isoformat()),
-               "auto_logout_min": st["auto_logout_min"], "pin_kind": "digits" if p["pin_hash"] else ""}
+               "auto_logout_min": st["auto_logout_min"], "pin_kind": "digits" if p["pin_hash"] else "",
+               "login": login_mode(p, st)}               # how it signs in: none | pin | ha | pin_ha (db.login_mode)
         if p["pin_hash"] and st.get("pin_kind") == "symbols" and st.get("symbol_set"):
             # picture PIN: the login shows exactly these 12 symbols, shuffled every time (not secret)
             out.update(pin_kind="symbols", symbol_set=random.sample(st["symbol_set"], len(st["symbol_set"])))
@@ -210,11 +211,12 @@ class FamilyQuest:
     FREE_GAMES = frozenset({"adventuregame"})
 
     def _login_fingerprint(self, pid: int) -> str | None:
-        p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
+        p = self.db.q1("SELECT created_at, pin_hash, archived, sessions FROM profile WHERE id=?", pid)
         if not p:
             return None
         import hashlib
-        return hashlib.sha256(f"{p['created_at']}|{p['pin_hash'] or ''}|{p['archived']}".encode()).hexdigest()[:12]
+        extra = f"|{p['sessions']}" if p["sessions"] else ""         # 0: the same as before the counter (logins stay)
+        return hashlib.sha256(f"{p['created_at']}|{p['pin_hash'] or ''}|{p['archived']}{extra}".encode()).hexdigest()[:12]
 
     def games_access(self) -> dict:
         """_games_access once per request (memo.py) – a copy per call (the parent area changes and saves it)."""
@@ -619,7 +621,8 @@ class FamilyQuest:
         from .rewards.engine import BADGES
         earned = {b["id"]: b["at"] for b in self.rewards.badges(pid)}
         lessons = int(self.db.val("SELECT SUM(lessons) FROM daily WHERE profile_id=?", pid, default=0))
-        chores = int(self.db.val("SELECT COUNT(DISTINCT ref) FROM ledger WHERE profile_id=? AND event='chore_done'", pid, default=0))
+        chores = int(self.db.val("SELECT COUNT(DISTINCT ref) + COALESCE((SELECT SUM(n) FROM ledger_folded WHERE profile_id=? AND event='chore_done'), 0) FROM ledger WHERE profile_id=? AND event='chore_done' AND COALESCE(ref,'') NOT LIKE 'carry:%'",
+                                 pid, pid, default=0))   # + chores folded by a clean-up (privacy.py)
         streak, xp = self.rewards.streak(pid), self.rewards.total_xp(pid)
         best = {"any": 0, "times": 0, "french": 0, "geo": 0}
         for pack in self.packs.for_profile(pid):
