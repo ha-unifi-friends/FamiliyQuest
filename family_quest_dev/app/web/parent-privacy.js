@@ -16,6 +16,8 @@ Object.assign(PARENT_INFO, {
     T("Choose kinds (or single entries) and delete them. Before every run a backup snapshot is written to the data folder (privacy_backups, the last 3 are kept). Each kind is deleted in one transaction."),
     T("Never deleted because it is still in use: anything of the current week, running games, open and pending chores, open deals, orders waiting for approval, open topics and polls, upcoming events and gift draws, the days of a running streak, the bookings since the active family goal started, the newest entry of every list.")],
   [T("Past runs")]: T("The clean-up runs so far: when, who (or the automatic run at night), what and how many entries, and the snapshot written before."),
+  "pv.keep": T("How long each kind of data is kept before it is due for a clean-up."),
+  "pv.clean": T("Deleting what is past its retention period – by hand or automatically at night – and the log of the runs so far."),
   [T("Delete all data of a child")]: T("To remove everything of one child at once, delete its profile for good: profile, points, progress, history, books and programs. Archive keeps the data and only hides the profile."),
 });
 
@@ -237,5 +239,18 @@ async function privacyView(main) {
         ? T("On: entries past their retention period are counted, shown in the menu and can be cleaned up.")
         : T("Off: nothing is counted, no clean-up runs and no badge. The retention periods stay saved.")))),
     h("div.pv-hint", h("span", "ℹ️"), h("p.small", T("Older copies can still be in your backups and in the history of Home Assistant. Delete old backups too if the data should be gone everywhere."))),
-    retention, cleanup, past, child);
+    // groups on the page background with their folds, like «Family» and «Settings» (the master switch stays on top)
+    setGroup("pv.keep", "🗓️", T("Retention")), retention,
+    setGroup("pv.clean", "🗑️", T("Clean-up")), cleanup, past, child);
+  const tr = k => I18N.tr(k), same = (a, b) => a.unit === b.unit && (a.unit === "forever" || a.n === b.n);
+  const changedN = d.kinds.filter(k => !same(k.retention, k.default)).length, due = kindsDue.reduce((a, k) => a + k.count, 0);
+  retention.dataset.fold = "retention";
+  retention.dataset.status = changedN ? tr(T("{0} changed from the default")).replace("{0}", fmt(changedN)) : tr(T("All defaults"));
+  cleanup.dataset.fold = "cleanup";
+  cleanup.dataset.status = !d.enabled ? tr(T("Switched off")) : [due ? tr(T("{0} entries ready for a clean-up run")).replace("{0}", fmt(due)) : tr(T("Nothing to clean up")),
+    tr(d.auto ? T("Automatic clean-up switched on") : T("Automatic clean-up switched off"))].join(" · ");
+  past.dataset.fold = "runs";
+  past.dataset.status = d.runs.length ? tr(T("Last run: {0}")).replace("{0}", fmtDateTime(d.runs[0].at)) : tr(T("No clean-up so far."));
+  if (child) { child.dataset.fold = "child"; child.dataset.status = kids.map(p => p.name).join(", "); }
+  foldBoxes(main, "pv");
 }

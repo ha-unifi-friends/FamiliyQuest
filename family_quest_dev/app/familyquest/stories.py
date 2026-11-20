@@ -684,7 +684,7 @@ def import_books(text) -> list[dict]:
     from .ai_format import strip_meta
     from .jsonish import loads
     if not isinstance(text, str) or not text.strip():
-        raise CommunityError("Paste the answer of the AI or choose a file")
+        raise CommunityError("The file is empty – choose the JSON file of the AI")
     if len(text) > IMPORT_MAX:
         raise CommunityError("The file is too large")
     try:

@@ -40,7 +40,7 @@ HEIGHTS = ("s", "m", "l")
 STANDARD_TILES = [("coins_week", 2, "m"), ("xp_week", 2, "m"), ("games_game", 2, "m"), ("chores_status", 2, "s"),
                   ("weather_mix", 2, "s"), ("gametime_day", 2, "m")]
 RANGES = ("7d", "30d", "year", "all")
-CHARTS = ("table", "pivot", "bar", "stacked", "stacked100", "line", "area", "pie")
+CHARTS = ("table", "pivot", "bar", "stacked", "stacked100", "line", "area", "pie", "bubble")
 
 
 class AnalyticsError(ValueError):
@@ -200,6 +200,8 @@ TEMPLATES = [
      "spec": {"dataset": "rewards", "rows": ["reward"], "columns": [], "group": [], "data": ["count"], "range": "year", "chart": "pie"}},
     {"key": "gametime_day", "icon": "🎮", "title": _t("Game time per day"),
      "spec": {"dataset": "gametime", "rows": ["day"], "columns": ["child"], "group": [], "data": ["minutes"], "range": "7d", "chart": "bar"}},
+    {"key": "gametime_matrix", "icon": "🫧", "title": _t("Game time by weekday and child"),
+     "spec": {"dataset": "gametime", "rows": ["weekday"], "columns": ["child"], "group": [], "data": ["minutes"], "range": "30d", "chart": "bubble"}},
     {"key": "internet_week", "icon": "🌐", "title": _t("Internet minutes used per week"),
      "spec": {"dataset": "ledger", "rows": ["week"], "columns": ["child"], "group": [], "data": ["internet_used"], "range": "30d", "chart": "bar"}},
     {"key": "battery_game", "icon": "🔋", "title": _t("Battery used per game"),

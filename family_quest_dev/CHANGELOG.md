@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1-dev.24
+
+- Parent area: group headings on the page background with folded tiles on Overview (Children, Parents …), Games, Privacy and Calendar – like Family and Settings
+- Dashboard is no longer its own menu item – it is in Settings → App (old links lead there)
+- Analytics: tabs next to the title, data source as chips, new Bubble chart (rows × columns, size = value) with the template «Game time by weekday and child»
+- AI imports (packs, quizzes, books, adventure games): «Download template for the AI» on top, the prompt asks for a downloadable JSON file, «Copy prompt» below it, import only as a file (no more paste field)
+
 ## 1.1.1-dev.23
 
 - Parent area: the menu header has the same tinted background as the personal part – «Family Quest» with ⟳, and below it «⭐ Family Quest App ↗»

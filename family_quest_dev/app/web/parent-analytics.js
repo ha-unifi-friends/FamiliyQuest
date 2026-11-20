@@ -56,6 +56,7 @@ const AN_CHARTS = [
   ["line", T("Line"), "M3 17l5-6 4 3 4-7 5 4M3 20h18"],
   ["area", T("Area"), "M3 20V15l5-6 4 3 4-7 5 4v11z"],
   ["pie", T("Donut"), "M12 3a9 9 0 1 0 9 9h-9zM14 3.3A9 9 0 0 1 20.7 10H14z"],
+  ["bubble", T("Bubbles"), "M3 16a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M9 9a5 5 0 1 0 10 0a5 5 0 1 0 -10 0M15 18.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0"],
 ];
 const AN_RANGES = [["7d", T("7 days")], ["30d", T("30 days")], ["year", T("This year")], ["all", T("All")]];
 const AN_HEIGHTS = { s: 170, m: 250, l: 360 };
@@ -78,7 +79,8 @@ async function analyticsView(main) {
   const dash = h("div.an-dashpane"), rep = h("div.an-reppane");
   const tabs = tabbed([{ key: "dash", label: "📊 " + anTr(T("Dashboards")), content: [dash] }, { key: "rep", label: "📋 " + anTr(T("Reports")), content: [rep] }]);
   tabs.bar.addEventListener("click", e => { const b = e.target.closest(".tab"); if (b) anStore.set("tab", AN.tab = b.id === "tab-rep" ? "rep" : "dash"); });
-  main.append(h("h1", "📈 ", T("Analytics")), h("div.an-root", tabs.el));
+  // the tabs stand right of the page title (they wrap below it on a narrow phone) – the panes follow
+  main.append(h("div.page-head.an-head", h("h1", "📈 ", T("Analytics")), tabs.bar), h("div.an-root", tabs.el));
   AN.showTab = k => { tabs.show(k); anStore.set("tab", AN.tab = k); };
   tabs.show(AN.tab);
   anReportsPane(rep);
@@ -154,14 +156,29 @@ function anBuilder() {
   const draw = () => {
     const s = AN.spec, ds = AN.meta.datasets[s.dataset];
     head.replaceChildren(AN.loaded ? h("div.small.muted", "▶ ", AN.loaded.kind === "r" ? C(AN.loaded.name) : h("span", AN.loaded.name)) : "");
-    const source = h("select", { "aria-label": T("Data source"), onchange: e => {
-      const nd = AN.meta.datasets[e.target.value], dims = new Set(nd.dims.map(d => d[0])), ms = new Set(nd.measures.map(m => m[0]));
-      s.dataset = e.target.value;
+    // the data source: chips like the dimensions and measures, one chosen (a radio group: ← → ↑ ↓ move and choose)
+    const pickSource = k => {
+      if (k === s.dataset) return;
+      const nd = AN.meta.datasets[k], dims = new Set(nd.dims.map(d => d[0])), ms = new Set(nd.measures.map(m => m[0]));
+      s.dataset = k;
       for (const z of ["columns", "rows", "group"]) s[z] = s[z].filter(d => dims.has(d));
       s.data = s.data.filter(m => ms.has(m));
       if (!s.data.length) s.data = [nd.measures[0][0]];
       AN.sel = null; changed();
-    } }, ...Object.entries(AN_DATASETS).map(([k, [ic, n]]) => h("option", { value: k, selected: k === s.dataset }, ic + " " + anTr(n))));
+      body.querySelector(`.an-src [data-key="${k}"]`)?.focus();
+    };
+    const srcKeys = Object.keys(AN_DATASETS).filter(k => AN.meta.datasets[k]);
+    const source = h("div.an-pal.an-src", { role: "radiogroup", "aria-labelledby": "an-src-h" }, ...srcKeys.map(k => {
+      const [ic, n] = AN_DATASETS[k], on = k === s.dataset;
+      return h("span.an-chip.an-srcchip" + (on ? ".sel" : ""), { role: "radio", "aria-checked": String(on), tabindex: on ? 0 : -1, "data-key": k,
+        onclick: () => pickSource(k),
+        onkeydown: e => {
+          const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+          if (d) { e.preventDefault(); pickSource(srcKeys[(srcKeys.indexOf(k) + d + srcKeys.length) % srcKeys.length]); }
+          else if (e.key === " " || e.key === "Enter") { e.preventDefault(); pickSource(k); }
+          else if (e.key === "Home" || e.key === "End") { e.preventDefault(); pickSource(srcKeys[e.key === "Home" ? 0 : srcKeys.length - 1]); }
+        } }, h("span.an-chip-ic", ic), h("span", anTr(n)));
+    }));
     const used = new Set([...s.columns, ...s.rows, ...s.group, ...s.data]);
     const pal = (kind, items) => h("div.an-pal", { "aria-label": kind === "dim" ? T("Dimensions") : T("Measures") },
       ...items.map(k => anChip({ kind, key: k }, null, used.has(k))));
@@ -185,7 +202,7 @@ function anBuilder() {
         changed();
       } }, h("span.an-dot", { style: { background: p.color } }), C(p.name))));
     body.replaceChildren(
-      h("label.field.an-source", h("span", T("Data source")), source),
+      h("div.an-source", h("div.small.muted.an-pal-h", { id: "an-src-h" }, T("Data source")), source),
       h("div.an-palwrap", h("div.small.muted.an-pal-h", T("Dimensions")), pal("dim", ds.dims.map(d => d[0])),
         h("div.small.muted.an-pal-h", T("Measures")), pal("measure", ds.measures.map(m => m[0]))),
       h("div.an-zones", zone("columns", T("Columns"), T("Series / colours")), zone("rows", T("Rows"), T("Categories / x-axis")),
@@ -448,7 +465,7 @@ function anNice(lo, hi, n = 4) {
   return { lo: a, hi: b, ticks };
 }
 
-/** One chart (bar / stacked / 100 % / line / area / donut) of one measure, drawn as SVG at the width of its box. */
+/** One chart (bar / stacked / 100 % / line / area / donut / bubbles) of one measure, drawn as SVG at the width of its box. */
 function anChart(M, gr, m, mi, type, height) {
   const box = h("div.an-chart", { style: { height: height + "px" } });
   const tip = h("div.an-tip", { role: "status", hidden: true });
@@ -494,6 +511,54 @@ function anChart(M, gr, m, mi, type, height) {
       const t1 = anSvg("text", { x: cx, y: cy - 2, "text-anchor": "middle", class: "an-center" }); t1.textContent = anVal(m, total);
       const t2 = anSvg("text", { x: cx, y: cy + 16, "text-anchor": "middle", class: "an-axis" }); t2.textContent = anTr(T("Sum"));
       if (!AN_NOT_ADDITIVE.has(m.key)) svg.append(t1, t2);
+      box.prepend(svg);
+    };
+  } else if (type === "bubble") {
+    // a matrix of bubbles: Rows = the categories on the x-axis, Columns = the categories on the y-axis (none: one row),
+    // the measure = the area of the bubble; the value in the tooltip and inside the bubble where it fits
+    const yLabels = M.cCount > 0;
+    if (series.length > 1) legend.append(...series.map(s => h("span.an-li", h("span.an-sw.an-swc", { style: { background: s.color } }), h("span", { translate: "no" }, s.label))));
+    const vals = cats.map(c => series.map(s => val(c, s)));
+    const maxV = Math.max(0, ...vals.flat().map(Math.abs)) || 1;
+    box._draw = W => {
+      box.querySelector("svg")?.remove();
+      const H = height, nX = Math.max(1, cats.length), nY = Math.max(1, series.length);
+      const L = yLabels ? Math.min(Math.max(48, W * .3), 12 + Math.max(...series.map(s => s.label.length), 1) * 6.6) : 8;
+      const Rm = 8, Tm = 6, B = 26, pw = Math.max(20, W - L - Rm), ph = Math.max(20, H - Tm - B);
+      const bx = pw / nX, by = ph / nY, rMax = Math.max(3, Math.min(bx, by) / 2 - 2);
+      const cx = i => L + bx * i + bx / 2, cy = j => Tm + by * j + by / 2;
+      const svg = anSvg("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": anTr(anMeasureName(m.key)), translate: "no" });
+      series.forEach((s, j) => {
+        svg.append(anSvg("line", { x1: L, x2: W - Rm, y1: cy(j), y2: cy(j), class: "an-gl" }));
+        if (!yLabels) return;
+        const tx = anSvg("text", { x: L - 6, y: cy(j) + 4, "text-anchor": "end", class: "an-axis" });
+        const room = Math.floor((L - 10) / 6.4);
+        tx.textContent = s.label.length > room && room > 3 ? s.label.slice(0, room - 1) + "…" : s.label;
+        svg.append(tx);
+      });
+      const maxChars = Math.max(...cats.map(c => c.label.length), 1), each = Math.max(1, Math.ceil((maxChars * 6.4 + 8) / bx));
+      cats.forEach((c, i) => {
+        if (!(i % each)) {
+          const tx = anSvg("text", { x: cx(i), y: H - 8, "text-anchor": "middle", class: "an-axis" });
+          const room = Math.floor(bx * each / 6.4);
+          tx.textContent = c.label.length > room && room > 3 ? c.label.slice(0, room - 1) + "…" : c.label;
+          svg.append(tx);
+        }
+        series.forEach((s, j) => {
+          const v = vals[i][j]; if (!v) return;
+          const r = Math.max(2.5, Math.sqrt(Math.abs(v) / maxV) * rMax);        // the area grows with the value
+          const g = anSvg("g", { class: "an-bub", tabindex: 0, "aria-label": `${c.label} · ${s.label}: ${anVal(m, v)}` });
+          g.append(anSvg("circle", { cx: cx(i), cy: cy(j), r, fill: s.color, "fill-opacity": v < 0 ? .35 : .85, stroke: s.color, "stroke-width": 1.5, class: "an-mark" }));
+          const label = anVal(m, v);
+          if (r * 2 >= label.length * 6.6 + 6 && r >= 10) {
+            const tx = anSvg("text", { x: cx(i), y: cy(j) + 4, "text-anchor": "middle", class: "an-bubtxt" }); tx.textContent = label; g.append(tx);
+          }
+          const show = e => anTip(box, tip, e, yLabels ? c.label + " · " + s.label : c.label, [[s.color, anVal(m, v), anTr(anMeasureName(m.key))]]);
+          g.addEventListener("pointermove", show); g.addEventListener("pointerdown", show); g.addEventListener("focus", show);
+          g.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; }); g.addEventListener("blur", () => { tip.hidden = true; });
+          svg.append(g);
+        });
+      });
       box.prepend(svg);
     };
   } else {

@@ -124,7 +124,7 @@ class ImportIn(BaseModel):
 
 @router.post("/import")
 def import_(body: ImportIn, request: Request, prof: dict = Learner) -> dict:
-    return {"ids": _run(app_of(request).stories.import_, prof, body.text)}
+    return {"ids": _run(app_of(request).stories.import_, prof, body.text.lstrip("\ufeff"))}     # a file saved with a BOM
 
 
 @router.get("/settings")
