@@ -108,7 +108,7 @@ async def settings(request: Request, me: dict = Parent) -> dict:
 @router.post("/api/parent/ha-app-login/test")
 async def test(body: TestIn, request: Request, me: dict = Parent) -> dict:
     """Can Family Quest itself reach Home Assistant at this address (and inside Home Assistant)? The browser checks its
-    own way there (parent.js)."""
+    own way there (parent-settings.js haAppLoginBox)."""
     fq = app_of(request)
     try:
         url = haauth.clean_url(body.url) if body.url.strip() else \
