@@ -333,7 +333,8 @@ function quizLive(box, me, back) {
           C((QUIZ_LANG_NAMES[l] || l) + " (" + l.toUpperCase() + ")"))),
         h("div.row", h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
     };
-    const menu = gameMenu({ invite: !me.guest && st.status !== "done" ? "quiz" : null,
+    const invite = !me.guest && st.status !== "done" ? "quiz" : null;      // ☰ and the button in the lobby box
+    const menu = gameMenu({ invite,
       actions: [{ ic: "🌐", label: I18N.tr(T("Language of the questions")) + ": " + lang.toUpperCase(), hidden: langs.length < 2, onclick: pickQLang },
         { ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
       onLeave: () => { full(false); stop(); back(); } });
@@ -346,7 +347,7 @@ function quizLive(box, me, back) {
     if (!st.joined && st.status !== "done") return show(head, h("section.card.center",
       h("p", T("Play along on this device?")), h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), playersRow(st));
     if (st.status === "lobby") return show(head, h("section.card.center", h("h2", T("Waiting for the start …")),
-      h("p.muted", T("Everybody joins on their own device.")), playersRow(st)), hostBar);
+      h("p.muted", T("Everybody joins on their own device.")), playersRow(st), inviteBtn(invite)), hostBar);
     if (st.status === "question") {
       const q = st.question, bar = h("div.quiz-time", h("i"));
       const end = Date.now() + q.remaining_ms;
@@ -1206,8 +1207,8 @@ function bingoLive(box, me, back) {
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     // ☰: rules, guests (everybody of the family), pause / end for whoever leads, language
     const lead = isHost() && st.status !== "done";
-    const menu = gameMenu({ rules: () => bingoRules(st.rules),
-      invite: !me.guest && st.status !== "done" ? "bingo" : null,
+    const invite = !me.guest && st.status !== "done" ? "bingo" : null;      // ☰ and the button in the lobby box
+    const menu = gameMenu({ rules: () => bingoRules(st.rules), invite,
       actions: [
         { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Go on") : T("Pause"), hidden: !lead || st.status === "lobby", onclick: () => act("pause", { on: !st.paused }) },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game?"), onclick: () => act("end").then(() => { stop(); back(); }) }],
@@ -1230,7 +1231,7 @@ function bingoLive(box, me, back) {
     if (!st.card) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), players);
     if (st.status === "lobby") return show(close, head, h("section.card.center", h("h2", T("Waiting for the start …")),
-      h("p.muted", T("Everybody joins on their own device.")), players), cardView(), host);
+      h("p.muted", T("Everybody joins on their own device.")), players, inviteBtn(invite)), cardView(), host);
     shown = null;
     show(close, head,
       h("div.bingo-top", carousel, h("div.bingo-recent", h("span.small.muted", T("Before:")), ...st.recent.map(n => bingoBall(n)))),

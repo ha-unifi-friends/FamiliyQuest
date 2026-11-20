@@ -148,6 +148,8 @@ function stadtlandLive(box, me, back) {
     }
   }
 
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !me.guest && st.status !== "done" ? "stadtland" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
@@ -172,7 +174,7 @@ function stadtlandLive(box, me, back) {
       h("p", st.phase === "lobby" ? T("Play along on this device?") : T("The game is running – you watch.")),
       st.phase === "lobby" ? h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")) : null), seats(), hostBar());
     if (st.phase === "lobby") return show(close, head(), h("section.card.center", h("h2", T("Waiting for the start …")),
-      h("p.muted", T("Everybody joins on their own device – at least two players.")), seats(), catChips(),
+      h("p.muted", T("Everybody joins on their own device – at least two players.")), seats(), inviteBtn(invite()), catChips(),
       st.coins_on ? h("p.small", "🪙 ", fill(T("Coins for places 1 / 2 / 3: {0}"), slCoins(st.rewards))) : null), hostBar());
     if (st.phase === "review") return show(close, head(), review(), hostBar());
     if (st.phase === "scores") return show(close, head(), scores(), hostBar());
@@ -183,7 +185,7 @@ function stadtlandLive(box, me, back) {
   function menu() {
     const lead = isHost() && st.status !== "done";
     return gameMenu({ rules: () => stadtlandRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: !me.guest && st.status !== "done" ? "stadtland" : null,
+      invite: invite(),
       actions: [
         { ic: "⏭", label: T("Close the round"), hidden: !lead || st.phase !== "write", confirm: T("Close the writing for everybody now?"),
           onclick: () => { if (st.phase === "write") { flush(); act("next"); } } },
