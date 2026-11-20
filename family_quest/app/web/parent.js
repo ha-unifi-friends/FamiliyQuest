@@ -1222,7 +1222,6 @@ async function packEditor(id, { afterSave } = {}) {
 // ---------------------------------------------------------------- import
 async function importView(main) {
   const file = h("input", { type: "file", accept: ".yaml,.yml,.json,.zip,.csv,.tsv,.xlsx" + (P.meta.ai ? ",.pdf,.png,.jpg,.jpeg,.webp" : "") });
-  const paste = h("textarea.ai-paste", { rows: 6, placeholder: "{ … }", spellcheck: false });
   const out = h("div");
   const drop = h("label.drop", file, h("span.big-ic", "📄"), h("strong", T("Choose or drop a file")),
     h("span.small.muted", P.meta.ai ? T("YAML, JSON, ZIP, CSV, Excel, PDF or photo") : T("YAML, JSON, ZIP, CSV or Excel")));
@@ -1236,15 +1235,8 @@ async function importView(main) {
       P.meta.ai ? null : h("p.small.muted", "📸 ", T("Photo/PDF import: set up an AI in Home Assistant (Settings › Devices & services › AI Task, e.g. OpenAI, Google, Anthropic or a local Ollama)."))),
     section("🤖 " + I18N.tr(T("Made with your AI")),
       aiPromptBox(T("Make me a learning pack for Family Quest.\nSubject: [e.g. French vocabulary]\nSchool year: [e.g. 5th grade]\nTopic or textbook unit: [e.g. unit 3 – at school]\nAbout [20] cards, my child speaks [English]."),
-        { template: "api/ai-template/pack", name: "family-quest-pack-template.json" }),
-      // the answer of the AI pasted right here – no file needed (like the import of the library)
-      h("label.field", T("Paste the answer of the AI here …"), paste),
-      h("div.row", h("button.btn", { onclick: importPaste }, "📥 ", T("Import")))));
-  async function importPaste() {
-    const t = paste.value.trim();                 // text or ``` fences around the JSON: the import reads past them
-    if (!t) { paste.focus(); return toast(T("Paste the answer of the AI first"), "bad"); }
-    await upload(new File([t], "ai-answer.json", { type: "application/json" }));
-  }
+        // the AI hands back a JSON file: the same upload as «From a file» (its checks and messages)
+        { template: "api/ai-template/pack", name: "family-quest-pack-template.json", accept: ".json,.yaml,.yml,.txt,application/json,text/plain", onFile: f => upload(f) })));
   async function upload(f) {
     const fd = new FormData(); fd.append("file", f);
     out.replaceChildren(h("p", "⏳ ", T("Reading…")));
