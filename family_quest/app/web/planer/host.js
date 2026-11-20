@@ -44,7 +44,7 @@ window.FQ_NAV_HOOK = root => {
 
 // ---------------------------------------------------------------- parent area (planer?mode=parent, in a frame)
 // The planer's own top bar (clock, season, its buttons) is hidden there (planer.html): the parent area shows its
-// functions as buttons in its own section head (parent.js planerChoresSection). The frame tells the parent page
+// functions as buttons in its own section head (parent-chores.js planerChoresSection). The frame tells the parent page
 // whether holidays are on and how many wait for a decision; the buttons there call FQ_PLANER_DO.
 function fqParentState(root) {
   const vac = root.querySelector("[data-vac]"), dot = vac && vac.querySelector(".dot");
@@ -55,7 +55,7 @@ function fqParentState(root) {
   fqParentState.last = key;
   try { if (window.frameElement) window.frameElement.dispatchEvent(new CustomEvent("fq-planer-state", { detail: state })); } catch {}
 }
-// The frame is as high as its content (parent.js planerFrame), so «position:fixed» windows of the planer (parent PIN,
+// The frame is as high as its content (parent-chores.js planerFrame), so «position:fixed» windows of the planer (parent PIN,
 // «+ Special chore», holidays …) would sit in the middle of the whole frame – maybe far outside the screen. They are
 // moved into the part of the frame that is visible on the screen just now.
 window.FQ_VIS = () => {

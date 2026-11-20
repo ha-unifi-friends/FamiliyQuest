@@ -14,6 +14,7 @@ import pytest
 
 from familyquest import langstrecke as ls
 from familyquest.community import CommunityError
+from websrc import parent_js
 
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
 
@@ -941,7 +942,7 @@ def test_the_app_knows_the_game():
         assert 'src="langstrecke.js' in (WEB / f).read_text(encoding="utf-8"), f
     kid = (WEB / "kid.js").read_text(encoding="utf-8")
     assert 'view === "langstrecke"' in kid and 'canPlay("langstrecke"), langstreckeFamilyCard' in kid
-    parent = (WEB / "parent.js").read_text(encoding="utf-8")
+    parent = parent_js()
     assert '["langstrecke", "🏎️", T("24h Endurance")]' in parent and 'gameRewardsRow("langstrecke")' in parent
     assert 'e.kind === "langstrecke"' in (WEB / "community.js").read_text(encoding="utf-8")
     assert 'game === "langstrecke"' in (WEB / "gast.js").read_text(encoding="utf-8")

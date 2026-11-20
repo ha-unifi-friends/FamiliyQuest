@@ -3,12 +3,14 @@ import json
 import re
 from pathlib import Path
 
+from websrc import web_src
+
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
 LANGS = ["de-CH", "de-DE", "es-ES", "fr-FR", "it-IT", "nl-NL", "pl-PL", "pt-BR", "sv-SE"]
 
 
 def src(name):
-    return (WEB / name).read_text(encoding="utf-8")
+    return web_src(name)                      # "parent.js": the whole parent area (parent.js and its parts)
 
 
 def prompts():
