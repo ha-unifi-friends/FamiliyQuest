@@ -311,7 +311,10 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .games-general[open] summary { margin-bottom: 10px; }
 
 /* foot of the menu: one item per line */
-.side-foot { display: grid; gap: 2px; }
+.side-foot { display: grid; gap: 2px; margin: 8px 0 0; padding: 8px; border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 7%, var(--card)); border-radius: 12px 12px 0 0; }
+.ver-link { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; }
+.ver-link:hover { color: var(--accent); }
 /* .foot-item: shared/base.css (also the menu of the app) */
 
 .foot-ver { padding: 8px 10px 2px; }
