@@ -102,7 +102,7 @@ def test_whitelist_and_sql_shape():
             clean_spec(bad)
     spec = clean_spec({"dataset": "ledger", "rows": ["week"], "data": ["coins"], "profiles": [3, 2]})
     sql, args = build_sql(spec, TODAY)
-    assert args == ["2026-10-21", "2026-11-19", 2, 3] and f"LIMIT {MAX_ROWS + 1}" in sql
+    assert args == ["2026-10-21", "2026-11-20", 2, 3] and f"LIMIT {MAX_ROWS + 1}" in sql      # the day after: «<»
 
 
 def test_read_only_and_row_cap(fam, monkeypatch):
