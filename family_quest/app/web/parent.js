@@ -297,6 +297,21 @@ function render() {
 }
 
 function section(title, ...content) { return h("section.card.sec", h("h2", title), ...content); }
+/** A group heading on the page background (Family, Settings, Overview, Games, Calendar, Privacy): its ⓘ by `ik`
+ *  (a key of PARENT_INFO), the boxes or folds of the group follow it. Actions (buttons) stand on its right. */
+function setGroup(ik, icon, title, ...actions) {
+  const head = h("h2.set-group", { "data-ik": ik }, icon + " ", title);
+  const act = actions.flat().filter(Boolean);
+  return act.length ? h("div.set-group-row", head, h("div.head-actions", ...act)) : head;
+}
+/** An old address (TAB_ALIAS) named a fold of a page that draws its folds itself (setFold): open it and show it. */
+function foldToShow(root) {
+  if (!P.foldTo) return;
+  const d = root.querySelector(`details.set-fold[data-set="${P.foldTo}"]`);
+  if (!d) return;
+  P.foldTo = null; d.open = true;
+  setTimeout(() => d.scrollIntoView({ block: "start" }), 50);
+}
 // the standard: «add» buttons sit top right – of the page (pageHead) or of a box (sectionAdd)
 function pageHead(title, ...actions) { return h("div.page-head", h("h1", title), h("div.head-actions", ...actions)); }
 function sectionAdd(title, actions, ...content) {
@@ -310,12 +325,12 @@ async function overviewView(main) {
     P.meta.planer ? call("parent/ha/persons").catch(() => []) : []]);
   P.accounts = accounts; P.profiles = profiles;
   const full = id => profiles.find(x => x.id === id);
-  const pend = d.pending.length ? section("⏳ " + I18N.tr(T("Waiting for your approval")), h("ul.list", ...d.pending.map(r => h("li.row",
+  const pend = d.pending.length ? h("section.card.sec", h("ul.list", ...d.pending.map(r => h("li.row",
     h("span.big-ic", r.icon), h("span.grow", C(r.profile_name, "strong"), " – ", r.name, h("span.small.muted", " · " + fmt(r.cost))),
     h("button.btn.small.good", { onclick: () => decide(r.id, true) }, "✓ ", T("Approve")),
     h("button.btn.small.bad", { onclick: () => decide(r.id, false) }, "✗ ", T("Decline")))))) : null;
   async function decide(id, approve) { await call(`parent/redemptions/${id}`, { method: "POST", body: { approve } }); toast(approve ? T("Approved") : T("Declined"), "good"); render(); }
-  const chorePend = d.chores_pending.length ? section("🧹 " + I18N.tr(T("Chores to confirm")), choreConfirmList(d.chores_pending, render)) : null;
+  const chorePend = d.chores_pending.length ? h("section.card.sec", choreConfirmList(d.chores_pending, render)) : null;
   // every child a folded row: folded it shows the weather of the day to pick and «Edit profile»; open: everything else
   const wd = await call("parent/weather").catch(() => null);
   const kids = d.kids.map(k => {
@@ -374,14 +389,19 @@ async function overviewView(main) {
   main.append(pageHead(T("Overview"),
       P.meta.planer ? h("button.btn.ghost", { onclick: importPersons }, "📅 ", T("Take over from Family Planer")) : null,
       h("button.btn.ghost", { onclick: () => profileDialog(null, persons, "parent") }, "+ ", T("Add parent")),
-      h("button.btn", { onclick: () => profileDialog(null, persons, "kid") }, "+ ", T("Add child"))), d.kids.length ? partyCard() : null, pend || (chorePend ? null : h("p.muted", "✓ ", T("No open approvals."))), chorePend,
-    d.family_goal ? section("🤝 " + I18N.tr(T("Family goal")), h("div.row", C(d.family_goal.title, "strong.grow"), h("b", fmt(d.family_goal.value) + " / " + fmt(d.family_goal.target))),
-      bar(d.family_goal.value, d.family_goal.target, "var(--good)")) : null,
+      h("button.btn", { onclick: () => profileDialog(null, persons, "kid") }, "+ ", T("Add child"))), d.kids.length ? partyCard() : null,
+    // groups on the page background like «Family» and «Settings»: their heading with the ⓘ, the rows below
+    ...(pend ? [setGroup("Waiting for your approval", "⏳", T("Waiting for your approval")), pend] : []),
+    ...(chorePend ? [setGroup("Chores to confirm", "🧹", T("Chores to confirm")), chorePend] : []),
+    pend || chorePend ? null : h("p.muted.ov-none", "✓ ", T("No open approvals.")),
+    ...(d.family_goal ? [setGroup("Family goal", "🤝", T("Family goal")), h("section.card.sec.ov-goal", h("div.row", C(d.family_goal.title, "strong.grow"), h("b", fmt(d.family_goal.value) + " / " + fmt(d.family_goal.target))),
+      bar(d.family_goal.value, d.family_goal.target, "var(--good)"))] : []),
+    setGroup("ov.kids", "🧒", T("Children")),
     ...(kids.length ? kids : [h("div.card", h("p", T("No child profile yet.")))]),
-    section("👪 " + I18N.tr(T("Parents")),
-      profileCards(profiles.filter(p => p.role === "parent"), persons)),
-    await archivedSection(),
-    failBox);                                    // the failed logins: at the very bottom
+    setGroup("Parents", "👪", T("Parents")),
+    profileCards(profiles.filter(p => p.role === "parent"), persons),
+    ...(await archivedSection()),
+    failBox ? setGroup("ov.security", "🔐", T("Security")) : null, failBox);                                    // the failed logins: at the very bottom
   async function importPersons() {
     const r = await call("parent/ha/import_persons", { method: "POST" });
     toast(r.created.length ? I18N.tr(T("Created: {0}")).replace("{0}", r.created.join(", ")) : T("All persons are already linked"), "good");
@@ -409,11 +429,11 @@ function petsBox(k, render) {
 // archived (inactive) profiles: restore or delete for good
 async function archivedSection() {
   let list = []; try { list = await call("parent/profiles/archived"); } catch {}
-  if (!list.length) return null;
-  return section("🗄️ " + I18N.tr(T("Archived profiles")),
+  if (!list.length) return [];
+  return [setGroup("Archived profiles", "🗄️", T("Archived profiles")), h("section.card.sec.ov-archived",
     h("ul.list", ...list.map(p => h("li.row", avatarSvg(p.avatar, 36), C(p.name, "strong.grow"),
       h("button.btn.small.ghost", { onclick: async () => { await call(`parent/profiles/${p.id}/restore`, { method: "POST" }); toast(T("Restored"), "good"); render(); } }, "↩️ ", T("Restore")),
-      h("button.btn.small.bad", { onclick: () => removeDialog(p, true) }, "🗑 ", T("Delete"))))));
+      h("button.btn.small.bad", { onclick: () => removeDialog(p, true) }, "🗑 ", T("Delete")))))];
 }
 
 // removing a profile: type the name again, choose archive (inactive) or delete (gone), confirm
@@ -2572,7 +2592,7 @@ async function communityView(main) {
   const t = k => I18N.tr(k), f = (k, ...v) => v.reduce((a, x, i) => a.split("{" + i + "}").join(String(x)), I18N.tr(k));
   const mark = (sec, id, status) => { if (sec) { sec.dataset.fold = id; if (status != null) sec.dataset.status = status; } return sec; };
   // the same folds as the settings: groups with their ⓘ, every box folded with a short status in its row
-  const group = (ik, icon, title) => h("h2.set-group", { "data-ik": ik }, icon + " ", title);
+  const group = setGroup;
   const price = s.familytime_game_price ?? 150, c = mem && mem.crest;
   const vis = { percent: T("Only percentages"), goal: T("Only the family goal") }[s.family_visibility] || T("Everything");
   main.append(h("h1", T("Family")),
@@ -3777,7 +3797,8 @@ async function settingsView(main) {
   const saveBtn = () => h("div.row", h("button.btn", { onclick: () => save().catch(() => {}) }, "💾 ", T("Save")));
   const fold = (id, title, sec) => setFold(id, title, sec);
   // four groups, each a heading with its ⓘ and its folds; the fold ids (data-set) stay as they were
-  const group = (ik, icon, title) => h("h2.set-group", { "data-ik": ik }, icon + " ", title);
+  const group = setGroup;
+  const dash = await dashboardSections();
   main.append(h("h1", T("Settings")),
     group("set.app", "📱", T("App")),
     fold("link", "📱 " + I18N.tr(T("Link for tablets and phones")), linkSection()),
