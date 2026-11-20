@@ -146,6 +146,7 @@ SETTINGS: dict[str, str] = {
     "games_access": CUSTOM, "game_rewards": CUSTOM, "game_rules.": CUSTOM, "lesson_perfect_coins": CUSTOM,
     "parent_ha_only": CUSTOM, "ha_app_login": CUSTOM, "kid_ha_login": CUSTOM,
     "allowed_networks": CUSTOM, "guest_networks": CUSTOM, "parent_networks": CUSTOM,
+    "guest_wifi_qr": CUSTOM,                           # the image entity of the guest Wi-Fi QR code (Invite guests)
     "calendar": CUSTOM, "dashboard": CUSTOM,           # dashboard.key: ENVIRONMENT_PARTS
     "translations": CUSTOM, "weather": CUSTOM, "themes": CUSTOM, "battery": CUSTOM,
     "pet_food_cost": CUSTOM, "pet_hotel_cost": CUSTOM, "hamster_coins_per_day": CUSTOM, "pet_shop_currency": CUSTOM,
