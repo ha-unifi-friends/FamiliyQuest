@@ -3,8 +3,8 @@
 
 const P = { info: null, meta: null, tab: "overview", profiles: [], accounts: [] };
 const app = $("#app");
-const TABS = [["overview", "📊", T("Overview")], ["community", "👨‍👩‍👧", T("Family")], ["packs", "📦", T("Learning packs")],
-  ["games", "🎲", T("Games")], ["chores", "🧹", T("Chores")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["deals", "🤝", T("Deals")], ["calendar", "📅", T("Calendar")], ["dashboard", "🖥️", T("Dashboard")], ["analytics", "📈", T("Analytics")], ["history", "📜", T("History")], ["privacy", "🛡️", T("Privacy")], ["settings", "⚙️", T("Settings")]];
+const TABS = [["overview", "📊", T("Overview")], ["community", "👨‍👩‍👧", T("Family")], ["chores", "🧹", T("Chores")], ["packs", "📦", T("Learning packs")],
+  ["rewards", "🎁", T("Rewards")], ["games", "🎲", T("Games")], ["shop", "🛍️", T("Shop")], ["calendar", "📅", T("Calendar")], ["dashboard", "🖥️", T("Dashboard")], ["analytics", "📈", T("Analytics")], ["history", "📜", T("History")], ["privacy", "🛡️", T("Privacy")], ["settings", "⚙️", T("Settings")]];
 const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes: T("Internet minutes"), planer_points: T("Family Planer points"),
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
@@ -47,7 +47,7 @@ async function boot() {
 }
 
 // old addresses: #goals is a part of «Family» now (its fold opens), #weather the overview (the weather of each child)
-const TAB_ALIAS = { goals: ["community", "fam.goals"], weather: ["overview"], ledger: ["history"] };
+const TAB_ALIAS = { goals: ["community", "fam.goals"], deals: ["community", "fam.deals-mine"], weather: ["overview"], ledger: ["history"] };
 function tabFromHash() {
   let t = location.hash.replace("#", "") || "overview";
   const a = TAB_ALIAS[t];
@@ -286,7 +286,7 @@ function render() {
   setInert();
   const titled = () => { const t = main.querySelector("h1"); mob.classList.toggle("titled", !t || t.getBoundingClientRect().bottom < mob.getBoundingClientRect().bottom); };
   window.onscroll = titled; setTimeout(titled, 600);
-  const views = { deals: dealsParentView, dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, settings: settingsView, history: historyView, privacy: m => privacyView(m) };   // privacy: parent-privacy.js
+  const views = { dashboard: dashboardView, community: communityView, games: gamesView, chores: choresView, overview: overviewView, weather: weatherView, calendar: calendarView, packs: packsView, import: importView, rewards: rewardsView, shop: shopSettingsView, settings: settingsView, history: historyView, privacy: m => privacyView(m) };   // privacy: parent-privacy.js
   views.analytics = m => analyticsView(m);          // 📈 Analytics (parent-analytics.js)
   // a page that cannot load shows why and offers to try again – instead of an empty or broken page
   views[P.tab](main).catch(e => {
@@ -2584,6 +2584,7 @@ async function communityView(main) {
     mark(await councilSection(me), "council"), mark(await pollsSection(me), "polls"),
     mark(await boardsSection(me, (id, refresh) => { const b = h("div"); document.body.append(b); boardLive(b, me, id, () => { b.remove(); refresh(); }); }), "boards"),
     mark(await wichtelnSection(me), "wichteln"),
+    group("Deals", "🤝", T("Deals")), ...(await dealsFamilySections().catch(() => [])),
     group("fam.ours", "🏡", T("Our family")),
     mark(await storiesSection(), "library"),
     mark(await crestSection(), "crest", !c ? t(T("No family crest")) : [t(c.image ? T("Own picture") : T("Drawn crest")), c.name || null].filter(Boolean).join(" · ")),

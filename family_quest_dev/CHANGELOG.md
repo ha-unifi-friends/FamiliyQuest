@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-dev.21
+
+- Parent area: Deals is no longer its own menu item – it is a group on the Family page (old links lead there)
+- Main menu: Overview, Family, Chores, Learning packs, Rewards, Games, Shop, Calendar, Dashboard, Analytics, History, Privacy, Settings
+
 ## 1.1.1-dev.20
 
 - Install guide for iPhone: new first step in Safari – tap the menu icon left of the address, then «Share»
