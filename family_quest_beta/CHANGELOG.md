@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.22
+
+- Parent area: the Family Quest header of the menu is the link to the kids' app (QR code); the menu starts with Overview
+- Refresh icon centred and a bit larger
+
 ## 1.1.1-beta.21
 
 - Parent area: new main menu order – Family Quest App, Overview, Family, Learning packs, Games, Chores, Rewards, Shop, Deals, Calendar, Dashboard, Analytics, History, Privacy, Settings
