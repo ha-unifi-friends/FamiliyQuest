@@ -2273,8 +2273,8 @@ customElements.whenDefined('fp-week-inner').then(() => {
       
         @media (max-width:560px){
           .card{padding:14px 12px}
-          .ov{grid-template-columns:minmax(56px,1fr) repeat(7,minmax(22px,1fr)) 34px;gap:3px;padding:8px;width:100%}
-          .ovp{gap:5px;font-size:12px}.ovp ha-icon,.ovp .av{display:none}
+          .ov{grid-template-columns:minmax(48px,max-content) repeat(7,minmax(20px,1fr)) 30px;gap:3px;padding:8px;width:100%}
+          .ovp{gap:5px;font-size:12px;max-width:96px}.ovp>:not(span:last-child){display:none}
           .ovc{height:26px;font-size:11px}.ovt{font-size:12px}.ovh{font-size:10px;letter-spacing:0}
           .row{grid-template-columns:1fr;gap:10px}
           .asg{width:100%}.asg .sel,.asg select{max-width:100%}
@@ -3589,8 +3589,8 @@ customElements.whenDefined('fp-week-inner-en').then(() => {
       
         @media (max-width:560px){
           .card{padding:14px 12px}
-          .ov{grid-template-columns:minmax(56px,1fr) repeat(7,minmax(22px,1fr)) 34px;gap:3px;padding:8px;width:100%}
-          .ovp{gap:5px;font-size:12px}.ovp ha-icon,.ovp .av{display:none}
+          .ov{grid-template-columns:minmax(48px,max-content) repeat(7,minmax(20px,1fr)) 30px;gap:3px;padding:8px;width:100%}
+          .ovp{gap:5px;font-size:12px;max-width:96px}.ovp>:not(span:last-child){display:none}
           .ovc{height:26px;font-size:11px}.ovt{font-size:12px}.ovh{font-size:10px;letter-spacing:0}
           .row{grid-template-columns:1fr;gap:10px}
           .asg{width:100%}.asg .sel,.asg select{max-width:100%}

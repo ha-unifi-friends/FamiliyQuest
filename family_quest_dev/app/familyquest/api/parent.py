@@ -31,7 +31,8 @@ from ..packs.registry import SUBJECTS, subject_meta
 from .. import loginlog, netfilter, symbols
 from ..rewards.engine import BADGES, EVENTS
 from ..rewards.shop import KINDS, ShopError
-from .auth import INGRESS_IP, Parent, PARENT_MAX_AGE, app_of, check_pin, ha_user, hash_pin, profile_of_ha_user, valid_pin
+from .auth import (INGRESS_IP, PARENT_APP_TTL, Parent, PARENT_MAX_AGE, app_of, check_pin, end_sessions, ha_user, hash_pin,
+                   parent_token, pin_target, profile_of_ha_user, valid_pin)
 from ..i18n import _t
 
 router = APIRouter(prefix="/api/parent")
@@ -181,7 +182,7 @@ def ha_login(request: Request) -> dict:
         # a child's Home Assistant user: never the parent area without PIN – and no offer to link it with a parent
         return {"ha_user": u, "linked": False, "kid": bool(profile_of_ha_user(fq, u["id"], "kid"))}
     loginlog.record(fq, request, "parent", p["id"], True)
-    return {"parent_token": fq.tokens.make(p["id"], "parent"), "profile": fq.profile_public(p), "max_age": PARENT_MAX_AGE,
+    return {"parent_token": parent_token(fq, p["id"], request), "profile": fq.profile_public(p), "max_age": PARENT_MAX_AGE,
             "ha_user": u, "linked": True}
 
 
@@ -219,22 +220,43 @@ def login(body: PinIn, request: Request) -> dict:
         raise HTTPException(403, "The parent area opens only through Home Assistant")
     key = "parent:" + loginlog.client_ip(request)        # per device: a child cannot lock all parents out
     fq.throttle.check(key)
+    fq.throttle.guard(pin_target(None))                 # wrong parent PINs in a row, from any device: a growing wait
     parents = fq.db.q("SELECT * FROM profile WHERE role='parent' AND archived=0" + (" AND id=?" if body.profile_id else ""),
                       *([body.profile_id] if body.profile_id else []))
     for p in parents:
         if login_pin_ok(p) and check_pin(body.pin, p["pin_hash"]):       # «Home Assistant only»: never with a PIN
             fq.throttle.ok(key)
+            fq.throttle.good(pin_target(None))
             loginlog.record(fq, request, "parent", p["id"], True)
-            return {"parent_token": fq.tokens.make(p["id"], "parent"), "profile": fq.profile_public(p),
+            return {"parent_token": parent_token(fq, p["id"], request), "profile": fq.profile_public(p),
                     "max_age": PARENT_MAX_AGE}
     fq.throttle.fail(key)
+    fq.throttle.bad(pin_target(None))
     loginlog.record(fq, request, "parent", None, False)
     raise HTTPException(403, "Wrong PIN")
 
 
 @router.post("/refresh")
 def refresh(request: Request, me: dict = Parent) -> dict:
-    return {"parent_token": app_of(request).tokens.make(me["id"], "parent")}
+    """The next token of the running session – it keeps the session's start: after PARENT_SESSION_MAX (through Home
+    Assistant ingress PARENT_SESSION_MAX_HA) the PIN is asked again (api/auth.py)."""
+    return {"parent_token": parent_token(app_of(request), me["id"], request, keep=True)}
+
+
+class EndSessionsIn(BaseModel):
+    profile_id: int | None = None          # default: my own profile
+
+
+@router.post("/sessions/end")
+def end_all_sessions(body: EndSessionsIn, request: Request, me: dict = Parent) -> dict:
+    """«Log out everywhere»: every login of the profile ends – the app, the parent area and the planner, on every
+    device. For the own profile this device gets a fresh parent token (it stays in, like after a new PIN)."""
+    fq = app_of(request)
+    pid = body.profile_id or me["id"]
+    if not fq.db.q1("SELECT 1 FROM profile WHERE id=?", pid):
+        raise HTTPException(404, "Unknown profile")
+    end_sessions(fq, pid)
+    return {"ok": True, **({"parent_token": parent_token(fq, pid, request)} if pid == me["id"] else {})}
 
 
 # ---------------------------------------------------------------- meta
@@ -485,6 +507,8 @@ def update_profile(pid: int, body: ProfileIn, request: Request, me: dict = Paren
     pin_hash = _apply_login(fq, body, settings, p["pin_hash"], pid)
     fq.db.x("UPDATE profile SET name=?, role=?, color=?, pin_hash=?, settings=?, planer_person_id=? WHERE id=?",
             body.name.strip()[:40], body.role, body.color, pin_hash, json.dumps(settings), body.planer_person_id, pid)
+    if pin_hash != p["pin_hash"]:
+        end_sessions(fq, pid)                            # a new PIN ends every login of the profile
     _keep_parent_ha_only(fq)
     if settings.get("internet_rule"):
         fq.internet.ensure_account()
@@ -493,7 +517,7 @@ def update_profile(pid: int, body: ProfileIn, request: Request, me: dict = Paren
     _planer_sync(fq)
     out = fq.profile_public(fq.db.q1("SELECT * FROM profile WHERE id=?", pid))
     if pid == me["id"]:                                  # an own new PIN ends the logins – this parent stays in
-        out["parent_token"] = fq.tokens.make(pid, "parent")
+        out["parent_token"] = parent_token(fq, pid, request, keep=True)
     return out
 
 
@@ -1430,7 +1454,7 @@ async def ha_panel_path(request: Request, body: dict = Body(...), me: dict = Par
     if not slug or path not in (f"/app/{slug}", f"/hassio/ingress/{slug}"):
         raise HTTPException(400, "Unknown panel path")
     if fq.db.get_setting("ha_panel_path") != path:
-        fq.db.set_setting("ha_panel_path", path)
+        await asyncio.to_thread(fq.db.set_setting, "ha_panel_path", path)       # never a write on the event loop
     return {"path": path}
 
 
@@ -1704,8 +1728,8 @@ async def backup_download(request: Request, kind: str = "full", me: dict = Paren
     if fq.planer_host:
         await fq.planer_host.save_now()
     data, name = await asyncio.to_thread(backup.create, fq, kind)
-    if kind == backup.FULL:
-        fq.db.set_setting("last_backup", time.strftime("%Y-%m-%dT%H:%M:%S"))   # the status «Last backup» in the settings
+    if kind == backup.FULL:                       # the status «Last backup» in the settings
+        await asyncio.to_thread(fq.db.set_setting, "last_backup", time.strftime("%Y-%m-%dT%H:%M:%S"))
     return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
@@ -1722,7 +1746,10 @@ async def backup_inspect(request: Request, file: UploadFile = File(...), me: dic
     from .. import backup
     try:
         fq = app_of(request)
-        return {"manifest": backup.check(await file.read(), fq.settings.version, fq)}
+        raw = await file.read(BACKUP_MAX + 1)
+        if len(raw) > BACKUP_MAX:
+            raise HTTPException(400, "The backup is too large (max. 500 MB)")
+        return {"manifest": await asyncio.to_thread(backup.check, raw, fq.settings.version, fq)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -1778,7 +1805,7 @@ async def backup_inspect_upload(request: Request, body: dict = Body(...), me: di
     _path, raw = _uploaded(request, body)
     try:
         fq = app_of(request)
-        return {"manifest": backup.check(raw, fq.settings.version, fq)}
+        return {"manifest": await asyncio.to_thread(backup.check, raw, fq.settings.version, fq)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -1790,7 +1817,7 @@ async def backup_restore_upload(request: Request, body: dict = Body(...), me: di
     fq = app_of(request)
     path, raw = _uploaded(request, body)
     try:
-        backup.inspect(raw)
+        backup.inspect(raw, deep=False)        # quick: restore() checks every entry
         if fq.planer_host:
             fq.planer_host.freeze()              # the old planner must not save into the restored database
         manifest = await asyncio.to_thread(backup.restore, fq, raw)
@@ -1814,7 +1841,7 @@ async def backup_restore(request: Request, file: UploadFile = File(...), me: dic
     if len(raw) > BACKUP_MAX:
         raise HTTPException(400, "The backup is too large (max. 500 MB)")
     try:
-        backup.inspect(raw)
+        backup.inspect(raw, deep=False)        # quick: restore() checks every entry
         if fq.planer_host:
             fq.planer_host.freeze()              # the old planner must not save into the restored database
         manifest = await asyncio.to_thread(backup.restore, fq, raw)
@@ -1949,4 +1976,4 @@ def ha_users(request: Request, me: dict = Parent) -> list[dict]:
 def app_token(request: Request, me: dict = Parent) -> dict:
     """«Open in the app»: the parent plays in the app (new tab) without logging in again – a learning-app login of
     this parent, handed over in the address fragment (it never reaches a server log)."""
-    return {"token": app_of(request).tokens.make(me["id"], "kid", ttl=12 * 3600)}      # «open in the app»: half a day
+    return {"token": app_of(request).tokens.make(me["id"], "kid", ttl=PARENT_APP_TTL)}      # «open in the app»: half a day

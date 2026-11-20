@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1-dev.25
+
+- Security: «Sign in with Home Assistant» in the app only talks to the internal Home Assistant or the address set by the parents – a fake Home Assistant can no longer hand out parent access
+- Security: parent networks apply to every parent function; parent sessions end after 12 h on the app port (30 days via Home Assistant); a new PIN signs out all devices; per-profile PIN lockout after 5 wrong tries
+- Backups with planted database triggers are refused; a damaged backup changes nothing; orphaned entries after a partial restore are removed; privacy snapshots hold the database only (max. 3, max. 30 days)
+- Faster and more robust: database writes off the main thread (no hang during Home Assistant backups), new indexes for running games and dates, privacy clean-ups keep the facts statistics, the Family Planer cannot book twice
+- Parent area: chores page shows the system in use first, «Points & rules» instead of «Rewards», keyboard-friendly phone menu and period picker, coins in the collapsed child rows, avatar items as cards on phones, translated backup file picker, better contrast, ⓘ never alone on a line
+
 ## 1.1.1-dev.24
 
 - Parent area: group headings on the page background with folded tiles on Overview (Children, Parents …), Games, Privacy and Calendar – like Family and Settings

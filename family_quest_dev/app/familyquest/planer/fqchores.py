@@ -12,6 +12,8 @@ Moved chores are switched off in the own plan (their history stays).
 """
 from __future__ import annotations
 
+import asyncio
+
 from datetime import date
 
 from . import engine
@@ -68,6 +70,6 @@ async def migrate(fq) -> dict:
             kept.append(ch["name"])
             continue
         await host.planner.async_save_chore(None, spec)
-        fq.chores.delete(ch["id"])                        # switched off, history stays
+        await asyncio.to_thread(fq.chores.delete, ch["id"])     # switched off, history stays (never a write on the loop)
         moved.append(ch["name"])
     return {"moved": moved, "kept": kept}

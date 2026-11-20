@@ -43,7 +43,7 @@ from datetime import date, datetime, timedelta
 from typing import Callable
 
 from .i18n import _t
-from .rewards.engine import SPEND_EVENTS, today
+from .rewards.engine import today
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ UNITS = ("days", "months", "years", "forever")
 LIMITS = {"days": 3650, "months": 120, "years": 20}
 BACKUP_DIR = "privacy_backups"
 KEEP_BACKUPS = 3
+SNAPSHOT_DAYS = 30                       # a snapshot before a clean-up is deleted after this many days
 AUTO_HOURS = (2, 5)                      # the automatic clean-up runs at night between 02:00 and 05:00
 CARRY_DAY = "0001-01-01"                 # learning days folded into one row per profile
 CARRY_REF = "carry:"                     # ledger rows «Balance brought forward»
@@ -378,20 +379,23 @@ def _purge_parts(fq, kind: Kind, c: str, only: set | None) -> int:
 
 
 def _fold_ledger(fq, c: str) -> int:
-    """Old ledger rows → «Balance brought forward» rows. Sums per profile, account and class stay exactly the same."""
+    """Old ledger rows → «Balance brought forward» rows, one per profile, account, event, sign (and before / after the
+    XP items): every SUM by event stays exactly the same. What a row count or a maximum needs goes to ledger_folded
+    (rows per sign, the biggest amount; distinct refs of the positive bookings like «50 chores»), and the readers skip
+    the carry rows when they count (NOT_CARRY)."""
     db = fq.db
     c = _ledger_cutoff(db, c)
     start = int(db.get_setting("xp_items_from", 0) or 0)
     rows = db.q("SELECT id, profile_id, account, amount, event, ref FROM ledger WHERE at < ?", c)
     groups: dict[tuple, list] = {}
     for r in rows:
-        spent = (r["event"] or "") in SPEND_EVENTS
-        key = (r["profile_id"], r["account"], r["event"] if spent else "", r["amount"] > 0, r["id"] > start)
+        key = (r["profile_id"], r["account"], r["event"] or "", r["amount"] > 0, r["id"] > start)
         groups.setdefault(key, []).append(r)
     at = (date.fromisoformat(c) - timedelta(days=1)).isoformat() + " 23:59:59"
     folded = 0
     counts: dict[tuple, set] = {}
-    for (pid, account, spent_event, _pos, _new), rs in groups.items():
+    stats: dict[tuple, list] = {}                            # (pid, account, event) → [pos rows, neg rows, top]
+    for (pid, account, event, _pos, _new), rs in groups.items():
         real = [r for r in rs if not str(r["ref"] or "").startswith(CARRY_REF)]
         if not real:
             continue                                         # only an earlier carry-forward row: nothing to do
@@ -403,14 +407,26 @@ def _fold_ledger(fq, c: str) -> int:
             db.x(f"DELETE FROM ledger WHERE id IN ({','.join('?' * len(chunk))})", *chunk)
         if total:
             db.x("INSERT INTO ledger(id, profile_id, account, amount, event, reason, ref, at) VALUES(?,?,?,?,?,?,?,?)",
-                 keep_id, pid, account, total, spent_event or "carry_forward", CARRY_REASON, f"{CARRY_REF}{c}", at)
+                 keep_id, pid, account, total, event or "carry_forward", CARRY_REASON, f"{CARRY_REF}{c}", at)
         folded += len(real)
+        if not event:
+            continue
+        st = stats.setdefault((pid, account, event), [0, 0, None])
         for r in real:
-            if r["amount"] > 0 and r["event"]:
-                counts.setdefault((pid, r["event"]), set()).add(r["ref"] or f"#{r['id']}")
+            amt = float(r["amount"])
+            if amt > 0:
+                st[0] += 1
+                counts.setdefault((pid, event), set()).add(r["ref"] or f"#{r['id']}")
+            elif amt < 0:
+                st[1] += 1
+            st[2] = amt if st[2] is None else max(st[2], amt)
     for (pid, event), refs in counts.items():
-        db.x("""INSERT INTO ledger_folded(profile_id, event, n) VALUES(?,?,?)
-                ON CONFLICT(profile_id, event) DO UPDATE SET n=n+excluded.n""", pid, event, len(refs))
+        db.x("""INSERT INTO ledger_folded(profile_id, account, event, n) VALUES(?,'',?,?)
+                ON CONFLICT(profile_id, account, event) DO UPDATE SET n=n+excluded.n""", pid, event, len(refs))
+    for (pid, account, event), (pos, neg, top) in stats.items():
+        db.x("""INSERT INTO ledger_folded(profile_id, account, event, pos, neg, top) VALUES(?,?,?,?,?,?)
+                ON CONFLICT(profile_id, account, event) DO UPDATE SET pos=pos+excluded.pos, neg=neg+excluded.neg,
+                top=MAX(COALESCE(top, excluded.top), COALESCE(excluded.top, top))""", pid, account, event, pos, neg, top)
     return folded
 
 
@@ -445,9 +461,10 @@ def purge(fq, key: str, only: set | None = None, now: date | None = None) -> int
 
 
 def snapshot(fq) -> str:
-    """A backup before the run (backup.py) in the data folder; only the newest KEEP_BACKUPS stay."""
+    """A backup of the database before the run (backup.py; no photos – a clean-up deletes only database rows) in the data
+    folder; only the newest KEEP_BACKUPS stay, none older than SNAPSHOT_DAYS."""
     from . import backup
-    raw, name = backup.create(fq)
+    raw, name = backup.create(fq, files=False)
     folder = fq.settings.data_dir / BACKUP_DIR
     folder.mkdir(parents=True, exist_ok=True)
     name = name.replace("family-quest-backup-", "before-cleanup-")
@@ -457,9 +474,25 @@ def snapshot(fq) -> str:
         k += 1
         path = folder / name.replace(".zip", f"-{k}.zip")
     path.write_bytes(raw)
-    for old in sorted(folder.glob("before-cleanup-*.zip"), key=lambda p: p.stat().st_mtime)[:-KEEP_BACKUPS]:
-        old.unlink(missing_ok=True)
+    prune_snapshots(fq)
     return path.name
+
+
+def prune_snapshots(fq, now: float | None = None) -> list[str]:
+    """The snapshots keep deleted data: at most KEEP_BACKUPS, none older than SNAPSHOT_DAYS (also checked every night)."""
+    folder = fq.settings.data_dir / BACKUP_DIR
+    if not folder.is_dir():
+        return []
+    now = time.time() if now is None else now
+    files = sorted(folder.glob("before-cleanup-*.zip"), key=lambda p: p.stat().st_mtime)
+    gone = files[:-KEEP_BACKUPS] + [p for p in files[-KEEP_BACKUPS:] if now - p.stat().st_mtime > SNAPSHOT_DAYS * 86400]
+    for old in gone:
+        old.unlink(missing_ok=True)
+    return [p.name for p in gone]
+
+
+class Busy(Exception):
+    """A backup by Home Assistant pauses the writes right now (hotbackup.py)."""
 
 
 def run(fq, keys: list[str], picks: dict | None = None, by: dict | None = None, auto: bool = False) -> dict:
@@ -469,6 +502,8 @@ def run(fq, keys: list[str], picks: dict | None = None, by: dict | None = None, 
     st = settings(fq.db)
     if not st["enabled"]:
         raise PrivacyOff()
+    if fq.db.paused():
+        raise Busy()
     now = today()
     todo = []
     for k in keys:
@@ -531,6 +566,8 @@ def maybe_auto(fq, now: datetime | None = None) -> dict | None:
     st = settings(fq.db)
     if not st["enabled"] or not st["auto"] or not (AUTO_HOURS[0] <= now.hour < AUTO_HOURS[1]) or st["last_auto"] == now.date().isoformat():
         return None
+    if fq.db.paused():
+        return None                                          # a backup by Home Assistant: tried again in 10 minutes
     fq.db.set_setting(SETTING, {**st, "last_auto": now.date().isoformat()})
     return run(fq, [k.key for k in KINDS], by={"id": None, "name": ""}, auto=True)
 
@@ -539,6 +576,9 @@ async def auto_loop(fq, every: float = 600) -> None:
     while True:
         await asyncio.sleep(every)
         try:
+            await asyncio.to_thread(prune_snapshots, fq)
             await asyncio.to_thread(maybe_auto, fq)
+        except Busy:
+            pass                                             # a backup by Home Assistant: the next try in 10 minutes
         except Exception:  # noqa: BLE001
             log.exception("automatic clean-up failed")

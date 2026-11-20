@@ -228,7 +228,8 @@
 /* shop */
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
 .offer { display: grid; justify-items: center; gap: 6px; text-align: center; }
-.offer.cant { opacity: .8; }
+/* not enough yet: the picture is muted, the text keeps its full contrast */
+.offer.cant .offer-ic, .offer.cant > svg, .offer.cant .av-svg { opacity: .6; }
 .offer-ic { font-size: 3rem; }
 .price { font-size: 1.3rem; font-weight: 900; }
 .offer .bar { width: 100%; }

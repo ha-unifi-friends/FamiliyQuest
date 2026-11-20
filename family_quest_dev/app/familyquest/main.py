@@ -40,7 +40,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         core = app.state.fq
-        core.packs.sync_folders(settings.packs_dirs)
+        await asyncio.to_thread(core.packs.sync_folders, settings.packs_dirs)   # never a write on the event loop
         core.db.start_backup_watch(settings.data_dir)     # hot backups by Home Assistant pause the writes (hotbackup.py)
         from . import integration
         asyncio.get_running_loop().run_in_executor(None, integration.install_on_start, core)   # HA integration: update /config copy
@@ -127,7 +127,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         ip = loginlog.client_ip(request)
         reason = netfilter.check(app.state.fq, ip, request.url.path)
         if reason:
-            netfilter.log_blocked(app.state.fq, ip, loginlog.device(app.state.fq, ip))
+            await asyncio.to_thread(netfilter.log_blocked, app.state.fq, ip, loginlog.device(app.state.fq, ip))
             msg = {"app": _t("Access from this network is not allowed"), "parent": _t("The parent area cannot be opened from this network"),
                    "guest": "Guest network: only games with an invitation (QR code) are open"}[reason]
             if request.url.path.startswith("/api/"):

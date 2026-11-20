@@ -218,6 +218,11 @@ class HAService:
         self._soon(self.client.fire(f"{self.px}_aemtli_erledigt",
                                     {"profile": prof.get("name"), "profile_id": profile_id, "chore": summary, "uid": uid}))
 
+    def _seen(self, profile_id: int, uids: list[str]) -> None:
+        with self.fq.db.tx():
+            for uid in uids:
+                self.fq.db.x("INSERT OR IGNORE INTO chore_seen(profile_id, uid, day) VALUES(?,?,?)", profile_id, uid, today().isoformat())
+
     async def _seed_chores(self) -> None:
         """Chores already done at start are remembered without points (no double booking after a restart)."""
         for prof in self.fq.kids():
@@ -225,10 +230,9 @@ class HAService:
             if not p or not p.get("chores"):
                 continue
             try:
-                for it in await self._items(p["chores"]):
-                    if it["done"] and it["uid"]:
-                        self.fq.db.x("INSERT OR IGNORE INTO chore_seen(profile_id, uid, day) VALUES(?,?,?)",
-                                     prof["id"], it["uid"], today().isoformat())
+                done = [it["uid"] for it in await self._items(p["chores"]) if it["done"] and it["uid"]]
+                if done:                                     # a worker thread: never a database write on the loop
+                    await asyncio.to_thread(self._seen, prof["id"], done)
             except Exception:  # noqa: BLE001
                 pass
 
