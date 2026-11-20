@@ -255,6 +255,9 @@ const PARENT_INFO = {
     T("A warning on the dashboard when rain is likely: the weather entity of Home Assistant, how many hours ahead and from which chance of rain."),
     T("From a weather entity of Home Assistant: rain, thunderstorm, snow, wind, cold or heat in the next hours → a hint what to take along.")],
   [T("Learning")]: T("The coins for a perfect lesson and the prices around the pets: food, the pet hotel, the coins of the hamster and how the pet shop is paid."),
+  [T("Guest WiFi QR code")]: [
+    T("The QR code of your guest WiFi from Home Assistant (UniFi has an image entity for each WiFi network). When somebody invites guests to a game, the dialog gets a switch «🎲 Game | 📶 Guest WiFi»: guests first join the WiFi, then scan the game."),
+    T("Only signed-in family members (children and parents) can see the code – it contains the WiFi password. Guests never get it from the app.")],
   [T("Family Quest HA integration")]: [
     T("Sensors and actions in Home Assistant (XP, coins, chores, time left …). Switch it on, copy the token, restart Home Assistant and add the integration «Family Quest»."),
     T("Shows the most important numbers of every child (XP, coins, chores, time left, internet …) as sensors in Home Assistant – with a switch for the internet time and actions to book points and to approve chores and rewards.")],

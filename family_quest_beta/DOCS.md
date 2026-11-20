@@ -2148,6 +2148,14 @@ switch guests off under Settings → Games.
 **Guest networks** (Settings → Access from the network): devices in these address ranges – e.g. your guest
 Wi-Fi – can only open the guest page and play with an invitation; no family login, no app, no parent area.
 
+**Guest Wi-Fi QR code** (Settings → Home Assistant → «📶 Guest WiFi QR code»): UniFi in Home Assistant has an image
+entity with the QR code of each Wi-Fi network (e.g. `image.guest_wifi_qr_code`). Pick it there (entities with WiFi or
+QR in the name are listed first; «None» = off) – the fold shows a preview. The **👥 Invite guests** dialog then gets a
+switch **🎲 Game | 📶 Guest WiFi**: guests first scan the Wi-Fi code to join the guest network, then switch to «Game»
+and scan the game. The picture comes through Family Quest (`GET /api/guest-wifi-qr`, kept 5 minutes; also a `camera.*`
+entity works) and only for a signed-in child or parent – it contains the Wi-Fi password, so guests and devices without
+a login never get it. Without the setting the dialog stays as it was.
+
 ### Pet sitting, pet hotel and the hamster
 
 Away for some days (camp, holidays at the grandparents)? On the pet card, **🧳 Pet sitting**: hand the pet to a family

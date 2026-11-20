@@ -66,6 +66,7 @@ class HAService:
         self._publish_task: asyncio.Task | None = None
         self._chore_cache: dict[str, tuple[float, list[dict]]] = {}
         self._reminded: set[tuple[int, str]] = set()
+        self._image_cache: dict[str, tuple[float, tuple[bytes, str]]] = {}   # entity → (when, (picture, type))
         client.subscribe("state_changed", self._on_state)
         client.subscribe("mobile_app_notification_action", self._on_action)
         client.on_connect.append(self._on_connect)
@@ -594,9 +595,29 @@ class HAService:
         domain, service, data = service_call(entity_id, action, value)
         self._sync(self.client.call(domain, service, data))
 
+    IMAGE_TTL = 300                                  # seconds a picture of an image entity is kept (guest Wi-Fi QR code)
+
+    def image(self, entity_id: str) -> tuple[bytes, str] | None:
+        """The picture of an image / camera entity, kept for IMAGE_TTL (the guest Wi-Fi QR code changes rarely) –
+        None when Home Assistant is not connected, has no picture or sends something that is not a picture."""
+        cache = self._image_cache
+        hit = cache.get(entity_id)
+        if hit and time.monotonic() - hit[0] < self.IMAGE_TTL:
+            return hit[1]
+        try:
+            got = self._sync(self.client.image(entity_id), 12)
+        except Exception as e:  # noqa: BLE001 – offline, timeout, not a picture, too big
+            log.info("picture of %s: %s", entity_id, e)
+            got = None
+        if got:
+            cache[entity_id] = (time.monotonic(), got)
+        else:
+            cache.pop(entity_id, None)
+        return got
+
     def entities(self, domain: str) -> list[dict]:
         if domain not in ("input_number", "number", "script", "notify", "switch", "input_boolean", "light", "fan", "cover", "scene",
-                          "calendar", "weather"):
+                          "calendar", "weather", "image", "camera"):
             return []
         if domain == "notify":
             try:

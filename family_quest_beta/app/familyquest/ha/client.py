@@ -69,6 +69,28 @@ class HAClient:
         r = await self.http.post(f"/api/events/{event}", json=data)
         r.raise_for_status()
 
+    # pictures an image / camera entity shows (e.g. the guest Wi-Fi QR code of UniFi): only these types, never SVG
+    IMAGE_TYPES = ("image/png", "image/jpeg", "image/gif", "image/webp")
+
+    async def image(self, entity_id: str, max_bytes: int = 2 * 1024 * 1024) -> tuple[bytes, str] | None:
+        """The current picture of an image.* entity (/api/image_proxy) or a camera.* snapshot (/api/camera_proxy):
+        (bytes, content type), None when Home Assistant has none. HAError: not a picture or bigger than max_bytes."""
+        kind = "camera_proxy" if entity_id.startswith("camera.") else "image_proxy"
+        async with self.http.stream("GET", f"/api/{kind}/{entity_id}", timeout=10) as r:
+            if r.status_code != 200:
+                return None
+            ctype = r.headers.get("content-type", "").split(";")[0].strip().lower()
+            if ctype not in self.IMAGE_TYPES:
+                raise HAError(f"{entity_id}: not a picture ({ctype or 'no type'})")
+            if int(r.headers.get("content-length") or 0) > max_bytes:
+                raise HAError(f"{entity_id}: picture too big")
+            buf = bytearray()
+            async for chunk in r.aiter_bytes():
+                buf += chunk
+                if len(buf) > max_bytes:
+                    raise HAError(f"{entity_id}: picture too big")
+            return bytes(buf), ctype
+
     async def config(self) -> dict:
         r = await self.http.get("/api/config")
         r.raise_for_status()

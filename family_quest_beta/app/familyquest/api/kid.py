@@ -228,6 +228,20 @@ def _devices(prof: dict, fq=None) -> list[str]:
     return list(dict.fromkeys(out))
 
 
+@router.get("/guest-wifi-qr")
+def guest_wifi_qr(request: Request, prof: dict = Learner) -> Response:
+    """The QR code of the guest Wi-Fi (an image entity of Home Assistant, e.g. UniFi) for «Invite guests» – only for a
+    signed-in child or parent: the code holds the Wi-Fi password, guests never fetch it. 404 when it is not set up or
+    Home Assistant has no picture."""
+    fq = app_of(request)
+    ent = fq.db.get_setting("guest_wifi_qr")
+    got = fq.ha.image(ent) if ent and fq.ha else None
+    if not got:
+        raise HTTPException(404, "No guest Wi-Fi QR code")
+    data, ctype = got
+    return Response(data, media_type=ctype, headers={"Cache-Control": "private, no-store"})
+
+
 @router.get("/me/devices")
 def my_devices(request: Request, prof: dict = Learner) -> list[dict]:
     fq = app_of(request)
