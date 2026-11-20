@@ -6,7 +6,7 @@
 // Loaded after parent.js and parent-info.js: adds the menu item, its ⓘ texts and analyticsView.
 "use strict";
 
-TABS.splice(1, 0, ["analytics", "📈", T("Analytics")]);
+// the menu entry «📈 Analytics» is in TABS (parent.js)
 
 Object.assign(PARENT_INFO, {
   [T("Analytics")]: [
