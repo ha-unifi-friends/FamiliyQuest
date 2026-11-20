@@ -282,6 +282,8 @@ function schachLive(box, me, back, gid) {
       mine && !coin && st.coins_on && r.reason !== "ended" ? h("p.small.muted", I18N.tr(T("No coins: a win brings coins only after at least {0} own moves.")).replace("{0}", st.min_moves)) : null,
       h("div.row.center", h("button.btn", { onclick: () => { stop(); back(); } }, T("Back"))));
   }
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return st.status === "lobby" && !st.invite && !me.guest && st.host === me.id ? ["schach", st.game] : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     turnCue("schach", st && st.mode !== "local" && st.status === "running" && st.my_turn);
@@ -296,7 +298,7 @@ function schachLive(box, me, back, gid) {
     // ☰: rules, guests (an open seat), pause / delete, language – works in a paused game too
     const isLead = st.host === me.id || me.role === "parent";
     const menu = gameMenu({ rules: () => schachRulesView(st.rewards),
-      invite: st.status === "lobby" && !st.invite && !me.guest && st.host === me.id ? ["schach", st.game] : null,
+      invite: invite(),
       actions: [
         { ic: "⏸", label: T("Pause"), hidden: !st.joined || st.status !== "running", onclick: () => act("pause") },
         { ic: "▶", label: T("Continue"), hidden: !st.joined || st.status !== "paused", onclick: () => act("resume") },
@@ -315,7 +317,7 @@ function schachLive(box, me, back, gid) {
     const top = flip() ? "w" : "b", bot = flip() ? "b" : "w";
     const board = h("div.ch-board", { html: boardSvg(), onclick: tapBoard });
     show(close, head, h("div.ch-area", strip(top), h("div.ch-mid", board), strip(bot)),
-      st.status === "done" ? result() : statusLine(), controls(), moveList());
+      st.status === "done" ? result() : statusLine(), invite() ? h("div.row.center", inviteBtn(invite())) : null, controls(), moveList());
   }
   // the clocks tick in the app between two looks at the server
   tick = setInterval(() => {

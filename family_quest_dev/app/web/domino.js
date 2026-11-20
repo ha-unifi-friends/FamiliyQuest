@@ -146,6 +146,8 @@ function dominoLive(box, me, back) {
   }
   const openModal = view => { const m = modal(h("div", view, h("button.btn", { onclick: () => m.close() }, T("Close")))); };
 
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !st.solo && !me.guest && st.status !== "done" ? "domino" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
@@ -161,7 +163,7 @@ function dominoLive(box, me, back) {
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     // ☰: rules, guests (everybody of the family at a family table), end for whoever leads, language
     const menu = gameMenu({ rules: () => dominoRulesView(st.rules),
-      invite: !st.solo && !me.guest && st.status !== "done" ? "domino" : null,
+      invite: invite(),
       actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
         onclick: () => act("end").then(() => { stop(); back(); }) }],
       onLeave: running ? () => { stop(); back(); } : null });
@@ -175,7 +177,7 @@ function dominoLive(box, me, back) {
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), host);
     if (st.phase === "lobby") return show(close, head, h("section.card.center", h("h2", T("Waiting for the start …")),
-      h("p.muted", T("Everybody joins on their own device.")), st.rules.teams ? h("p.small.muted", T("Teams of two (with 4, 6 or 8 players)")) : null, seats()), host);
+      h("p.muted", T("Everybody joins on their own device.")), st.rules.teams ? h("p.small.muted", T("Teams of two (with 4, 6 or 8 players)")) : null, seats(), inviteBtn(invite())), host);
     show(close, head, seats(), scoreBar(), table(), hand(), host);
   }
 
