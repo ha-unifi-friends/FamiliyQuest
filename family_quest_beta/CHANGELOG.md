@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-beta.26
+
+- Parent area: the menu header has the same tinted background as the personal part – «Family Quest» with ⟳, and below it «⭐ Family Quest App ↗»
+
 ## 1.1.1-beta.25
 
 - Parent area: the release notes open from the version at the bottom left and from Settings → About; the personal part of the menu (light/dark, language, log out) has its own background
