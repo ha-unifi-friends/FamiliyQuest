@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.2.0
+
+Version 1.2.0 – everything that was tested in the betas 1.1.1-beta.17 … 30.
+
+**Before updating:** download a backup in the parent area (Settings › System › Backup & restore).
+
+**Changes you will notice:** the parent area menu is reorganised – Goals, Deals, Family crest, Family view and the
+FamilyTime games are on the Family page, the Dashboard is in Settings › App, the release notes open from the version
+at the bottom left, «Rewards» is now «Points & rules» and History has its own menu item. Parent sessions on the app
+port end after 12 hours (30 days in Home Assistant); a new PIN signs out every device. «Sign in with Home Assistant»
+in the app only works with the internal Home Assistant or an address set in the parent area. AI imports take the JSON
+file of the AI (no more paste field). For automatic backups include Family Quest in the Home Assistant backup settings.
+
+- **Analytics (new):** dashboards with a timeline filter and period picker, reports from templates or an ad-hoc
+  builder (dimensions and measures into columns, rows, data, group), 9 chart types incl. bubbles, «My reports».
+- **Privacy (new):** retention periods for every kind of data, clean-up runs with preview, a snapshot before each
+  run, past runs, optional nightly clean-up, master switch and a badge with the number of due entries – balances,
+  levels and statistics stay unchanged.
+- **Backup:** full, data and customizing backups with one restore that detects the kind; the values of this
+  installation (ports, links, Home Assistant connection) are kept; consistent hot backups by Home Assistant.
+- **Season designs** show the live weather of a chosen weather sensor and follow day, dusk and night of the real sun;
+  party mode with a spotlight on the disco ball.
+- **Parent area tidied up:** group headings with folded tiles on every page, explanations in ⓘ buttons, small fields
+  side by side, child rows with weather quick-pick and coins, games grouped like in the app, bolder refresh icon,
+  Family Quest App link in the menu header.
+- **Install guide** for iPhone with Safari's new menu step; AI import forms with template download, example prompt
+  and «Copy prompt».
+- **Security:** Home Assistant sign-in in the app can no longer be faked, parent networks apply to every parent
+  function, limited parent sessions and «Log out everywhere», PIN lockout per profile, hardened restore (no planted
+  triggers, damaged files change nothing), Content-Security-Policy and sandboxed media files.
+- **Faster and more robust:** new indexes, no database writes on the main thread (no hang during Home Assistant
+  backups), Family Planer bookings never twice, the link to the parent area works with newer Home Assistant.
+
 ## 1.1.1
 
 Version 1.1.1 – everything that was tested in the betas 1.1.1-beta.1 … 16.
