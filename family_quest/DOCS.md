@@ -507,6 +507,15 @@ The add-on runs with its own **AppArmor profile** (`apparmor.txt`): it reads its
 `/data`, `/share` and temporary folders, and may not mount or debug other processes. Together with Ingress this
 gives the security rating 8 in Home Assistant.
 
+**Logins that end:** a parent-area login lasts 30 minutes and renews itself while the page is open, but a session
+never lasts longer than 12 hours on the app port (30 days through Home Assistant, whose own login stands behind it) –
+then the PIN is asked again. The app login of a parent profile (learning along, planner admin) lasts 12 hours. A new
+PIN ends every login of the profile on every device; `POST /api/parent/sessions/end` (optionally with a
+`profile_id`) does the same without a new PIN («log out everywhere»). After 5 wrong PINs in a row for a profile –
+from any device – the next try waits 1 minute, doubling with every further wrong PIN (at most an hour); the add-on
+log notes it. The *parent networks* hold for every request with a parent login, also the planner's and the books'
+settings.
+
 **Log in with Home Assistant:** link a Home Assistant user with a profile (Profiles › edit › *Home Assistant user*,
 for parents and children – one user per profile). When Family Quest is opened from the Home Assistant sidebar, the
 app knows the Home Assistant user (the Supervisor tells it – only trusted for requests that really come through Home
@@ -526,10 +535,12 @@ works:
    (e.g. `http://192.168.1.10:8099/`), the return address `…/ha-auth/callback` is on the same host, as Home Assistant
    requires. Home Assistant asks for user name and password – and the two-factor code when the user has one.
 2. Home Assistant sends the browser back with a one-time code. Family Quest exchanges it **itself** (server side,
-   inside Home Assistant on the Supervisor network: `http://homeassistant:8123`; with https in Home Assistant at the
-   address below), asks Home Assistant who the user is (websocket `auth/current_user`) and **revokes the Home
-   Assistant tokens right away** – Family Quest stores no Home Assistant token and no password, only the profile login
-   as with a PIN.
+   inside Home Assistant on the Supervisor network: `http://homeassistant:8123`; with https in Home Assistant, or
+   outside Home Assistant, only at the address the parents entered below), asks Home Assistant who the user is
+   (websocket `auth/current_user`) and **revokes the Home Assistant tokens right away** – Family Quest stores no Home
+   Assistant token and no password, only the profile login as with a PIN. The code is never checked at an address
+   that comes from the browser (that could be a fake Home Assistant): without the internal address and without an
+   entered address the sign-in is refused with «Family Quest does not know where Home Assistant is».
 3. The Home Assistant user is mapped to the profile linked with it (Profiles › edit › *Home Assistant user*):
    a child gets its app, a parent gets the same as a parent PIN login in the app.
    The parent area on the app port stays as before – with *Parent area only through Home Assistant* it stays closed.
@@ -660,12 +671,14 @@ books, quizzes, programs, photo sets and uploads, boards, pets, upcoming events,
 **Clean-up runs (Löschläufe):** the list of what is past due, per kind with the count and the oldest / newest date,
 is the preview – nothing is deleted while you look. Tick kinds (or «Select all»; for most kinds also single entries
 with 🔎) and confirm. Every run first writes a **backup snapshot** with the backup module into the data folder
-(`/data/privacy_backups/before-cleanup-….zip`, the last 3 are kept; a run whose snapshot fails deletes nothing), then
+(`/data/privacy_backups/before-cleanup-….zip`, the database only – no photos; the last 3 are kept and none longer
+than 30 days, as it still holds what was deleted; a run whose snapshot fails deletes nothing), then
 deletes each kind in **one transaction**, then logs date, kinds, counts and who in **Past runs**.
 
-**Balances never change:** old ledger rows are folded into «Balance brought forward» rows (per profile, account and
-class) dated at the cut-off, in the same transaction – balances, XP, levels, new XP for the XP items, the Family Planer
-sync and counts like «50 chores» stay exactly the same. Old learning days are added up into one row per child; the
+**Balances never change:** old ledger rows are folded into «Balance brought forward» rows (per profile, account,
+event and sign) dated at the cut-off, in the same transaction – balances, XP, levels, new XP for the XP items, the
+Family Planer sync, sums per event and counts like «50 chores», slot machine spins or shop purchases (kept beside,
+for the family quiz) stay exactly the same. Old learning days are added up into one row per child; the
 days of a running streak stay.
 
 **Never deleted** because something still refers to it: anything of the current week, running games, open and

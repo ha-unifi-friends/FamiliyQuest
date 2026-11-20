@@ -1,6 +1,7 @@
 """«Sign in with Home Assistant» in the app on the direct port (haauth.py): start, finish, and the parent settings."""
 from __future__ import annotations
 
+import asyncio
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, HTTPException, Request
@@ -8,7 +9,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from .. import haauth, loginlog
-from .auth import Parent, app_of, profile_of_ha_user, via_ingress
+from .auth import Parent, app_of, kid_token, parent_token, profile_of_ha_user, via_ingress
 
 router = APIRouter()
 
@@ -42,6 +43,8 @@ async def start(body: StartIn, request: Request) -> dict:
         client_id = haauth.app_base(body.base, request.headers.get("host"))
     except ValueError:
         raise HTTPException(400, "Unknown address") from None
+    if not await haauth.server_bases(fq):              # no trusted address to check the code at: refused right away
+        raise HTTPException(409, haauth.NO_SERVER)
     ha = await haauth.browser_base(fq, client_id)
     state, nonce = haauth.make_state(fq, client_id, ha)
     return {"url": haauth.authorize_url(ha, client_id, state), "nonce": nonce}
@@ -63,21 +66,29 @@ async def finish(body: FinishIn, request: Request) -> dict:
     fq.throttle.check(key)
     try:
         st = haauth.read_state(fq, body.state, body.nonce)
-        user = await haauth.identify(await haauth.server_bases(fq, st["h"]), body.code, st["c"])
+        # never at the address in the state (st["h"]: built from the request – only the browser goes there)
+        if not (bases := await haauth.server_bases(fq)):
+            raise haauth.HAAuthError(haauth.NO_SERVER)
+        user = await haauth.identify(bases, body.code, st["c"])
     except haauth.HAAuthError as e:
-        loginlog.record(fq, request, "profile", None, False)
+        await asyncio.to_thread(loginlog.record, fq, request, "profile", None, False)
         raise HTTPException(403, str(e)) from None
+    return await asyncio.to_thread(_signed_in, fq, request, key, user)
+
+
+def _signed_in(fq, request: Request, key: str, user: dict) -> dict:
+    """The database part of the sign-in – in a worker thread (never a write on the event loop)."""
     p = profile_of_ha_user(fq, user["id"])
     if not p:
         loginlog.record(fq, request, "profile", None, False)
         raise HTTPException(403, "Your Home Assistant user is not linked with a profile – ask your parents")
     fq.throttle.ok(key)
     loginlog.record(fq, request, "profile", p["id"], True)
-    out = {"token": fq.tokens.make(p["id"], "kid"), "profile": fq.profile_public(p), "ha_user": user["name"]}
+    out = {"token": kid_token(fq, p), "profile": fq.profile_public(p), "ha_user": user["name"]}
     # a parent: the same as a parent PIN login in the app – also the parent token unless the parent area is only
     # offered in Home Assistant (then the parent area stays closed on this port, as with the PIN)
     if p["role"] == "parent" and not fq.db.get_setting("parent_ha_only"):
-        out["parent_token"] = fq.tokens.make(p["id"], "parent")
+        out["parent_token"] = parent_token(fq, p["id"], request)
     return out
 
 
@@ -90,6 +101,7 @@ async def settings(request: Request, me: dict = Parent) -> dict:
             "auto": await haauth.browser_base(fq, f"{request.url.scheme}://{host}/") if not fq.db.get_setting("ha_app_login_url")
             else None,
             "suggestions": await haauth.suggestions(fq),
+            "server_known": bool(await haauth.server_bases(fq)),     # False: the address must be entered first
             "linked": [{"id": p["id"], "name": p["name"], "role": p["role"]} for p in haauth.linked_profiles(fq)]}
 
 
@@ -103,5 +115,5 @@ async def test(body: TestIn, request: Request, me: dict = Parent) -> dict:
             await haauth.browser_base(fq, f"{request.url.scheme}://{request.headers.get('host') or 'homeassistant.local'}/")
     except ValueError as e:
         raise HTTPException(400, str(e)) from None
-    bases = await haauth.server_bases(fq, url)
+    bases = list(dict.fromkeys([*await haauth.server_bases(fq), url]))
     return {"url": url, "server": any([await haauth.probe(b) for b in bases])}

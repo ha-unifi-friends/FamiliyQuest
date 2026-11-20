@@ -359,10 +359,17 @@ def test_hot_backup_script_without_the_app(tmp_path):
     db.x("INSERT INTO login_log(kind, ok) VALUES('profile', 1)")
     db.conn.close()
     script = APP / "familyquest" / "hotbackup.py"
-    env = {"FQ_DATA_DIR": str(tmp_path), "PATH": "/usr/bin:/bin"}
+    env = {"FQ_DATA_DIR": str(tmp_path), "PATH": "/usr/bin:/bin", "FQ_BACKUP_WAIT": "0.2"}   # no app answers: quick
+    t0 = time.monotonic()
     r = subprocess.run([sys.executable, str(script), "pre"], env=env, capture_output=True, text=True, timeout=60,
                        cwd=tmp_path, input="")
     assert r.returncode == 0 and '"by": "script"' in r.stdout, r.stdout + r.stderr
+    r = subprocess.run([sys.executable, str(script), "pre", "--wait", "0.1"], env={**env, "FQ_BACKUP_WAIT": ""},
+                       capture_output=True, text=True, timeout=60, cwd=tmp_path)
+    assert r.returncode == 0 and '"by": "script"' in r.stdout, r.stdout + r.stderr
+    assert time.monotonic() - t0 < 10
+    assert subprocess.run([sys.executable, str(script), "pre", "--wait", "x"], env=env, capture_output=True,
+                          timeout=30).returncode == 2
     r = subprocess.run([sys.executable, str(script), "post"], env=env, capture_output=True, text=True, timeout=30, cwd=tmp_path)
     assert r.returncode == 0 and not (tmp_path / hotbackup.FLAG).exists()
 

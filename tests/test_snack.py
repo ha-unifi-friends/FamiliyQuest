@@ -283,6 +283,16 @@ def login(client, pid, pin=None):
     return {"X-FQ-Token": client.post("/api/login", json={"profile_id": pid, **({"pin": pin} if pin else {})}).json()["token"]}
 
 
+def _serve_time(a, pat, order):
+    """The first moment (game time) a fresh stand can hand this order over (sn.book) – the customers come from a random
+    seed: a 3-drink order needs both drink places twice."""
+    ts = a
+    while not sn.book({}, order, ts):
+        ts += 0.1
+    assert ts <= a + pat, (a, pat, order)
+    return round(ts, 2)
+
+
 def _clock(fq):
     c = Clock(2_000_000_000.0)
     fq.snack.now = c
@@ -310,8 +320,9 @@ def test_family_table_same_customers_coins_once_history_and_hat(client):
     assert "seed" not in lv and client.get("/api/me", headers=hl).json()["community"]["snack"]["joined"]
     # Mia serves the first customer – only her stand changes; Leo sees it
     i, a, p, o = st["customers"][0]
-    clock.t = st["t0"] + a + max(sn.chain(f) for f in o) + 0.5
-    v = client.post("/api/community/snack/sync", json={"t": a + 5, "serves": [[i, a + max(sn.chain(f) for f in o) + 0.4]], "spent": 2}, headers=hm).json()
+    ts = _serve_time(a, p, o)
+    clock.t = st["t0"] + ts + 0.5
+    v = client.post("/api/community/snack/sync", json={"t": ts + 0.5, "serves": [[i, ts]], "spent": 2}, headers=hm).json()
     assert v["refused"] == [] and str(i) in v["mine"]["served"]
     me = next(p_ for p_ in v["players"] if p_["id"] == str(mia))
     assert me["served"] == 1 and me["till"] > 0 and me["stars"] == 3
@@ -348,8 +359,10 @@ def test_solo_high_score_and_personal_best(client):
     st = client.post("/api/community/snack/start", json={"solo": True, "bots": 0, "mode": "t3", "foods": "drink"}, headers=hm).json()
     assert st["solo"] and st["phase"] == "play" and len(st["players"]) == 1 and not st["coins_on"] and st["best"] == 0
     i, a, p, o = st["customers"][0]
-    clock.t = st["t0"] + a + 4
-    client.post("/api/community/snack/sync", json={"t": a + 4, "serves": [[i, a + 3.5]]}, headers=hm)
+    ts = _serve_time(a, p, o)
+    clock.t = st["t0"] + ts + 0.5
+    r = client.post("/api/community/snack/sync", json={"t": ts + 0.5, "serves": [[i, ts]]}, headers=hm)
+    assert r.status_code == 200 and r.json()["refused"] == [], r.text
     clock.t = st["t0"] + 181
     v = client.get("/api/community/snack", headers=hm).json()
     assert v["phase"] == "done" and v["players"][0]["record"] and v["best"] == v["players"][0]["till"] > 0
@@ -448,3 +461,11 @@ def test_running_list_and_end(client):
     assert not any(x["game"] == "snack" for x in r["running"])
     v = client.get("/api/community/snack", headers=hm).json()
     assert v["phase"] == "done" and not v["complete"]
+
+
+@pytest.mark.parametrize("seed", [308, 1, 7, 99991])
+def test_the_first_customer_can_always_be_served(seed):
+    """Whatever the seed: the first order of a fresh stand can be served in time (e.g. three drinks at two places)."""
+    for foods in (["drink"], ["drink", "icecream"], ["icecream"]):
+        a, p, o = sn.customers(seed, "t3", foods, 30)[0]
+        assert _serve_time(a, p, o) <= a + p

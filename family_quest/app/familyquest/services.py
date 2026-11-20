@@ -211,11 +211,12 @@ class FamilyQuest:
     FREE_GAMES = frozenset({"adventuregame"})
 
     def _login_fingerprint(self, pid: int) -> str | None:
-        p = self.db.q1("SELECT created_at, pin_hash, archived FROM profile WHERE id=?", pid)
+        p = self.db.q1("SELECT created_at, pin_hash, archived, sessions FROM profile WHERE id=?", pid)
         if not p:
             return None
         import hashlib
-        return hashlib.sha256(f"{p['created_at']}|{p['pin_hash'] or ''}|{p['archived']}".encode()).hexdigest()[:12]
+        extra = f"|{p['sessions']}" if p["sessions"] else ""         # 0: the same as before the counter (logins stay)
+        return hashlib.sha256(f"{p['created_at']}|{p['pin_hash'] or ''}|{p['archived']}{extra}".encode()).hexdigest()[:12]
 
     def games_access(self) -> dict:
         """_games_access once per request (memo.py) – a copy per call (the parent area changes and saves it)."""
@@ -620,7 +621,7 @@ class FamilyQuest:
         from .rewards.engine import BADGES
         earned = {b["id"]: b["at"] for b in self.rewards.badges(pid)}
         lessons = int(self.db.val("SELECT SUM(lessons) FROM daily WHERE profile_id=?", pid, default=0))
-        chores = int(self.db.val("SELECT COUNT(DISTINCT ref) + COALESCE((SELECT SUM(n) FROM ledger_folded WHERE profile_id=? AND event='chore_done'), 0) FROM ledger WHERE profile_id=? AND event='chore_done'",
+        chores = int(self.db.val("SELECT COUNT(DISTINCT ref) + COALESCE((SELECT SUM(n) FROM ledger_folded WHERE profile_id=? AND event='chore_done'), 0) FROM ledger WHERE profile_id=? AND event='chore_done' AND COALESCE(ref,'') NOT LIKE 'carry:%'",
                                  pid, pid, default=0))   # + chores folded by a clean-up (privacy.py)
         streak, xp = self.rewards.streak(pid), self.rewards.total_xp(pid)
         best = {"any": 0, "times": 0, "french": 0, "geo": 0}

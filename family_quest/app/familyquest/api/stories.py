@@ -5,6 +5,7 @@ Who may change a book (author or a parent) is decided in stories.py.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
@@ -155,7 +156,7 @@ async def image(request: Request, file: UploadFile = File(...), prof: dict = Lea
     from ..memorygame import picture_kind
     from ..stories import IMAGE_MAX
     raw = await file.read(IMAGE_MAX + 1)
-    return _run(app_of(request).stories.save_image, prof, raw, picture_kind(raw))
+    return await asyncio.to_thread(_run, app_of(request).stories.save_image, prof, raw, picture_kind(raw))
 
 
 @router.post("")

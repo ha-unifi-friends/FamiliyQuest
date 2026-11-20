@@ -136,9 +136,19 @@ class Bridge:
             st["fq_last"] = int(self.fq.db.val("SELECT MAX(id) FROM ledger", default=0) or 0)
             new_links = []
         st["account"] = acc
-        if acc:
-            changed |= self._points(planner, st, acc, new_links)
-        self.kv.save(KEY, st)
+        # the bookings and the bridge state in ONE transaction (a crash in between cannot book a Planer entry twice),
+        # in a worker thread (never a database write on the event loop); the Planer's own entries are added here on
+        # the loop afterwards
+        ledger, adds = list(planner.data["ledger"]), []
+
+        def write() -> bool:
+            with self.fq.db.tx():
+                ch = self._points(ledger, st, acc, new_links, adds) if acc else False
+                self.kv.save(KEY, st)
+            return ch
+        changed |= await asyncio.to_thread(write)
+        for a in adds:
+            prew._add(planner.data["ledger"], *a)
         if changed:
             planner._changed()
         return changed
@@ -174,10 +184,7 @@ class Bridge:
             if person in linked:
                 continue
             role = "parent" if v.get("role") == "adult" else "kid"
-            prof_id = self.fq.db.x("INSERT INTO profile(name, role, color) VALUES(?,?,?)",
-                                   (v.get("name") or person)[:40], role, v.get("color") or "#4f8cff")
-            if role == "kid":
-                self.fq.packs.activate_defaults(prof_id)
+            prof_id = await asyncio.to_thread(self._new_profile, (v.get("name") or person)[:40], role, v.get("color") or "#4f8cff")
             links[str(prof_id)] = person
             linked.add(person)
             new_links.append(str(prof_id))
@@ -195,8 +202,16 @@ class Bridge:
                     changed = True
         return changed, new_links
 
-    def _points(self, planner, st: dict, acc: str, new_links: list[str]) -> bool:
-        ledger: list = planner.data["ledger"]
+    def _new_profile(self, name: str, role: str, color: str) -> int:
+        with self.fq.db.tx():
+            prof_id = self.fq.db.x("INSERT INTO profile(name, role, color) VALUES(?,?,?)", name, role, color)
+            if role == "kid":
+                self.fq.packs.activate_defaults(prof_id)
+        return prof_id
+
+    def _points(self, ledger: list, st: dict, acc: str, new_links: list[str], adds: list) -> bool:
+        """Planer ⇄ Family Quest bookings (a worker thread, inside a transaction): `ledger` is a copy of the Planer's
+        entries; the corrections for the Planer are collected in `adds` (prew._add arguments)."""
         links: dict = st["links"]
         owner = {person: int(prof) for prof, person in links.items()}
         seen: dict = st["seen"]
@@ -217,7 +232,7 @@ class Bridge:
             if fp_before:
                 self.fq.rewards.book(pid, acc, fp_before, "planer", "Family Planer", f"fp:init:{person}")
             if round(fq_before):
-                prew._add(ledger, person, round(fq_before), "adjust", f"fq:init:{pid}", "Family Quest", ts)
+                adds.append((person, round(fq_before), "adjust", f"fq:init:{pid}", "Family Quest", ts))
                 changed = True
         # Planer → Family Quest
         present = set()
@@ -231,8 +246,8 @@ class Bridge:
             if pts:
                 # chores count like chores of the own plan (badge «Helping hand»)
                 event = "chore_done" if e.get("kind") == "chore" else "planer"
-                self.fq.rewards.book(pid, acc, pts, event, _reason(e), f"fp:{e['id']}")
-                if event == "chore_done":
+                booked = self.fq.rewards.book_once(pid, acc, pts, event, _reason(e), f"fp:{e['id']}")
+                if booked and event == "chore_done":
                     self.fq.rewards.check_badges(pid)
             seen[e["id"]] = [pid, pts, e["ts"]]
         limit = (now - timedelta(days=TRIM_DAYS)).isoformat()
@@ -241,7 +256,7 @@ class Bridge:
                 continue
             del seen[eid]
             if pts and ets >= limit and str(pid) in links:
-                self.fq.rewards.book(pid, acc, -pts, "planer", "Family Planer ↩", f"fp-undo:{eid}")
+                self.fq.rewards.book_once(pid, acc, -pts, "planer", "Family Planer ↩", f"fp-undo:{eid}")
         # Family Quest → Planer
         rows = self.fq.db.q("SELECT id, profile_id, amount, reason, event, ref FROM ledger WHERE id>? AND account=? ORDER BY id",
                             st["fq_last"], acc)
@@ -253,7 +268,7 @@ class Bridge:
             pts = round(r["amount"] or 0)
             if not person or not pts:
                 continue
-            prew._add(ledger, person, pts, "adjust", f"fq:{r['id']}", (r["reason"] or r["event"] or "Family Quest")[:60], ts)
+            adds.append((person, pts, "adjust", f"fq:{r['id']}", (r["reason"] or r["event"] or "Family Quest")[:60], ts))
             changed = True
         if rows:
             st["fq_last"] = max(st["fq_last"], rows[-1]["id"])
@@ -265,7 +280,7 @@ class Bridge:
             have = int(held.get(prof_id, 0))
             if want != have:
                 st["held_n"] = int(st.get("held_n", 0)) + 1
-                prew._add(ledger, person, have - want, "adjust", f"fq:held:{st['held_n']}", "Family Quest: deal 🔒", ts)
+                adds.append((person, have - want, "adjust", f"fq:held:{st['held_n']}", "Family Quest: deal 🔒", ts))
                 held[prof_id] = want
                 changed = True
         return changed

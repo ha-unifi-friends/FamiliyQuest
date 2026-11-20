@@ -55,6 +55,7 @@ EVENTS = {
 # XP spent in a shop (pet shop) is booked with one of these events: it lowers the XP balance, but not the level, the
 # daily goal or the weekly XP – those count the XP earned
 SPEND_EVENTS = ("pet_shop",)
+NOT_CARRY = "COALESCE(ref,'') NOT LIKE 'carry:%'"     # a real booking, not a «Balance brought forward» row (privacy.py)
 _NOT_SPENT = "COALESCE(event, '') NOT IN (" + ",".join("?" * len(SPEND_EVENTS)) + ")"
 
 
@@ -275,7 +276,7 @@ class Rewards:
             want("streak_7", s >= 7)
             want("streak_30", s >= 30)
         want("xp_1000", self.total_xp(pid) >= 1000)
-        want("chores_50", int(self.db.val("SELECT COUNT(DISTINCT ref) + COALESCE((SELECT SUM(n) FROM ledger_folded WHERE profile_id=? AND event='chore_done'), 0) FROM ledger WHERE profile_id=? AND event='chore_done'",
+        want("chores_50", int(self.db.val("SELECT COUNT(DISTINCT ref) + COALESCE((SELECT SUM(n) FROM ledger_folded WHERE profile_id=? AND event='chore_done'), 0) FROM ledger WHERE profile_id=? AND event='chore_done' AND " + NOT_CARRY,
                                           pid, pid, default=0)) >= 50)   # + chores folded by a clean-up (privacy.py)
         for u in unit_stars or []:
             if u["stars"] >= 5:

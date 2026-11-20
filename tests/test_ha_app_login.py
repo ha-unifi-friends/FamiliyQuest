@@ -15,10 +15,11 @@ NAMES = {"u-mia": "Mia", "u-papa": "Papa", "u-anna": "Anna", "u-nobody": "Fremd"
 @pytest.fixture
 def fake_ha(monkeypatch):
     """Home Assistant's /auth/token, /auth/revoke and the websocket «auth/current_user» – records what happens."""
-    seen = {"token": [], "revoked": [], "access": []}
+    seen = {"token": [], "revoked": [], "access": [], "hosts": []}
     issued = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        seen["hosts"].append(f"{request.url.scheme}://{request.url.netloc.decode()}")
         form = parse_qs(request.content.decode())
         if request.url.path == "/auth/token":
             seen["token"].append({k: v[0] for k, v in form.items()})
@@ -39,6 +40,8 @@ def fake_ha(monkeypatch):
         uid = issued[access_token]
         return {"id": uid, "name": NAMES[uid], "is_admin": uid == "u-papa"}
 
+    # the add-on reaches Home Assistant on the Supervisor network (never at an address taken from the request)
+    monkeypatch.setenv("FQ_HA_AUTH_INTERNAL", "http://ha-internal:8123")
     monkeypatch.setattr(haauth, "_TRANSPORT", httpx.MockTransport(handler))
     monkeypatch.setattr(haauth, "current_user", current_user)
     haauth._used.clear()
@@ -245,3 +248,37 @@ def test_linked_kid_without_pin_never_logs_in_pinless_on_the_app_port(client):
     for on in (True, False):
         fq.db.set_setting("ha_app_login", on)
         assert client.post("/api/login", json={"profile_id": mia, "pin": ""}).status_code == 403
+
+
+def test_never_exchanges_at_an_address_from_the_request(client, fake_ha, monkeypatch):
+    """C1: a child points Host / base at its own fake Home Assistant – the code is still only exchanged (and the user
+    only read) at the internal address or the address the parents entered; without either the sign-in is refused."""
+    ph, mia, leo, papa = _family(client)
+    fq = client.app.state.fq
+    evil = TestClient(client.app, base_url="http://192.168.1.66:8151")
+    r = evil.post("/api/ha-auth/start", json={"base": "http://192.168.1.66:8151/"})
+    assert r.status_code == 200, r.text
+    url, nonce = r.json()["url"], r.json()["nonce"]
+    assert url.startswith("http://192.168.1.66:8123/auth/authorize?")           # only the browser goes there
+    state = parse_qs(urlsplit(url).query)["state"][0]
+    r = evil.post("/api/ha-auth/finish", json={"code": "code-papa", "state": state, "nonce": nonce})
+    assert r.status_code == 200, r.text
+    assert fake_ha["hosts"] and set(fake_ha["hosts"]) == {"http://ha-internal:8123"}
+    assert {b for b, _ in fake_ha["access"]} == {"http://ha-internal:8123"}
+    # no internal address (standalone, or Home Assistant does https) and no address entered: refused, nothing asked
+    monkeypatch.delenv("FQ_HA_AUTH_INTERNAL")
+    fake_ha["hosts"].clear()
+    r = evil.post("/api/ha-auth/start", json={"base": "http://192.168.1.66:8151/"})
+    assert r.status_code == 409 and r.json()["detail"] == haauth.NO_SERVER
+    state, nonce = haauth.make_state(fq, "http://192.168.1.66:8151/", "http://192.168.1.66:8123")   # a state from before
+    r = evil.post("/api/ha-auth/finish", json={"code": "code-papa", "state": state, "nonce": nonce})
+    assert r.status_code == 403 and r.json()["detail"] == haauth.NO_SERVER and "parent_token" not in r.json()
+    assert fake_ha["hosts"] == []
+    assert client.get("/api/parent/ha-app-login", headers=ph).json()["server_known"] is False
+    # the parents enter the address: only that one is asked
+    client.put("/api/parent/settings", json={"ha_app_login_url": "https://ha.example.org:8443"}, headers=ph)
+    assert client.get("/api/parent/ha-app-login", headers=ph).json()["server_known"] is True
+    r = evil.post("/api/ha-auth/start", json={"base": "http://192.168.1.66:8151/"})
+    state = parse_qs(urlsplit(r.json()["url"]).query)["state"][0]
+    assert evil.post("/api/ha-auth/finish", json={"code": "code-mia", "state": state, "nonce": r.json()["nonce"]}).status_code == 200
+    assert set(fake_ha["hosts"]) == {"https://ha.example.org:8443"}

@@ -255,7 +255,7 @@ def clean_spec(spec) -> dict:
     if not isinstance(spec, dict):
         raise AnalyticsError(_t("Invalid report"))
     ds = spec.get("dataset")
-    if ds not in DATASETS:
+    if not isinstance(ds, str) or ds not in DATASETS:          # a list / object: refused, not a 500
         raise AnalyticsError(f"Unknown dataset: {str(ds)[:40]}")
     dims = dims_of(ds)
     out = {"dataset": ds}
@@ -270,7 +270,7 @@ def clean_spec(spec) -> dict:
     if len(out["data"]) != len(set(out["data"])) or len(out["data"]) > MAX_MEASURES:
         raise AnalyticsError(_t("At most 4 different measures"))
     rng = spec.get("range", "30d")
-    if rng not in RANGES:
+    if not isinstance(rng, str) or rng not in RANGES:
         raise AnalyticsError(f"Unknown range: {str(rng)[:20]}")
     out["range"] = rng
     # a fixed period (the timeline filter of a dashboard) – overrides the range
@@ -284,7 +284,7 @@ def clean_spec(spec) -> dict:
         raise AnalyticsError(_t("Invalid report"))
     out["profiles"] = sorted(set(prof))
     chart = spec.get("chart", "table")
-    if chart not in CHARTS:
+    if not isinstance(chart, str) or chart not in CHARTS:
         raise AnalyticsError(f"Unknown chart: {str(chart)[:20]}")
     out["chart"] = chart
     return out
@@ -320,11 +320,13 @@ def build_sql(spec: dict, today: date) -> tuple[str, list]:
     if ds["where"]:
         where.append(ds["where"])
     start, end = period_of(spec, today)
+    # the date column itself (ISO text) – the same as comparing its first 10 characters, but an index on (profile, at)
+    # can be used: a range scan instead of the whole history
     if start:
-        where.append(f"substr({ds['date']},1,10) >= ?")
+        where.append(f"{ds['date']} >= ?")
         args.append(start)
-    where.append(f"substr({ds['date']},1,10) <= ?")
-    args.append(end)
+    where.append(f"{ds['date']} < ?")
+    args.append((date.fromisoformat(end) + timedelta(days=1)).isoformat())
     if spec["profiles"]:
         where.append(f"{ds['profile']} IN ({','.join('?' * len(spec['profiles']))})")
         args += spec["profiles"]
@@ -511,16 +513,16 @@ class Dashboards:
         refs = {"t:" + t["key"] for t in TEMPLATES} | {"r:" + r["id"] for r in self.an.reports()}
         out, seen = [], set()
         for t in tiles:
-            if not isinstance(t, dict) or t.get("ref") not in refs:
+            if not isinstance(t, dict) or not isinstance(t.get("ref"), str) or t["ref"] not in refs:
                 raise AnalyticsError(_t("Unknown report"))
             w, hh = t.get("w", 2), t.get("h", "m")
-            if not isinstance(w, int) or isinstance(w, bool) or not 1 <= w <= 4 or hh not in HEIGHTS:
+            if not isinstance(w, int) or isinstance(w, bool) or not 1 <= w <= 4 or not isinstance(hh, str) or hh not in HEIGHTS:
                 raise AnalyticsError(_t("Invalid tile size"))
             tid = t.get("id") if isinstance(t.get("id"), str) and re.fullmatch(r"[a-z0-9]{1,12}", t["id"]) and t["id"] not in seen else _tile_id()
             seen.add(tid)
             tile = {"id": tid, "ref": t["ref"], "w": w, "h": hh, "title": re.sub(r"\s+", " ", str(t.get("title") or "")).strip()[:60]}
             if t.get("chart") is not None:
-                if t["chart"] not in CHARTS:
+                if not isinstance(t["chart"], str) or t["chart"] not in CHARTS:
                     raise AnalyticsError(f"Unknown chart: {str(t['chart'])[:20]}")
                 tile["chart"] = t["chart"]
             out.append(tile)

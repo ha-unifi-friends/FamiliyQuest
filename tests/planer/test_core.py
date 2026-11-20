@@ -15,11 +15,14 @@ def make(tmp_path, db=None):
     return db, hass, FamilyPlanner(hass, entry)
 
 
-async def _run(tmp_path):
-    db, hass, p = make(tmp_path)
+async def _run(tmp_path, db):
+    db, hass, p = make(tmp_path, db)
     await p.async_load()
     hass.set_started()
-    await asyncio.sleep(0.05)
+    for _ in range(200):                                 # the start runs as a task – under load it takes longer
+        if (p.data or {}).get("persons"):
+            break
+        await asyncio.sleep(0.01)
     assert set(p.data["persons"]) == {"lea", "mia"}
     wd = str(p.today().isoweekday())
     cid = await p.async_save_chore(None, {"title": "Tisch decken", "assign": {"lea": {wd: {"every": 1, "offset": 0, "window": 1}}}})
@@ -48,11 +51,11 @@ async def _run(tmp_path):
 
 
 def test_planner_core_runs_without_home_assistant(tmp_path):
-    asyncio.run(_run(tmp_path))
+    asyncio.run(_run(tmp_path, Database(":memory:")))       # made outside the event loop (its migrations write)
 
 
-async def _services(tmp_path):
-    _, hass, p = make(tmp_path)
+async def _services(tmp_path, db):
+    _, hass, p = make(tmp_path, db)
     calls = []
 
     async def caller(domain, service, data, ret):
@@ -70,4 +73,4 @@ async def _services(tmp_path):
 
 
 def test_service_calls_go_through_family_quest(tmp_path):
-    asyncio.run(_services(tmp_path))
+    asyncio.run(_services(tmp_path, Database(":memory:")))

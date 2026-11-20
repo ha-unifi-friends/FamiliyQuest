@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -8,6 +9,11 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "family_quest" / "app"))
 
 from familyquest.settings import BUILTIN_PACKS, Settings  # noqa: E402
+from familyquest import db as _db  # noqa: E402
+
+# a database write on the thread of the asyncio event loop fails the test (db.LOOP_GUARD) – FQ_DEBUG_LOOP_WRITES=log
+# only logs it
+_db.LOOP_GUARD = os.environ.get("FQ_DEBUG_LOOP_WRITES") or "raise"
 
 
 def pytest_configure(config):
@@ -52,9 +58,31 @@ def settings(tmp_path):
                     secret=b"x" * 32, version="test")
 
 
-@pytest.fixture
-def fq(settings):
+@pytest.fixture(scope="session")
+def _template_db(tmp_path_factory):
+    """One database with every migration and the built-in packs synced, made once per test run – every test gets
+    its own copy (the per-test sync then only finds «unchanged» packs)."""
     from familyquest.services import FamilyQuest
+    d = tmp_path_factory.mktemp("template")
+    s = Settings(data_dir=d, packs_dirs=[BUILTIN_PACKS], ha_enabled=False, ha_url="", ha_token=None, secret=b"x" * 32,
+                 version="test")
+    core = FamilyQuest(s)
+    core.packs.sync_folders(s.packs_dirs)
+    core.db.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    core.db.conn.close()
+    return d
+
+
+def _from_template(template, settings) -> None:
+    """A fresh copy of the template data folder for this test (nothing is shared between tests)."""
+    if not settings.db_path.exists():
+        shutil.copytree(template, settings.data_dir, dirs_exist_ok=True)
+
+
+@pytest.fixture
+def fq(settings, _template_db):
+    from familyquest.services import FamilyQuest
+    _from_template(_template_db, settings)
     core = FamilyQuest(settings)
     core.packs.sync_folders(settings.packs_dirs)
     core.db.set_setting("game_starter", "leader")     # the tests know who begins; the dice is tested on its own
@@ -62,9 +90,10 @@ def fq(settings):
 
 
 @pytest.fixture
-def client(settings):
+def client(settings, _template_db):
     from fastapi.testclient import TestClient
     from familyquest.main import create_app
+    _from_template(_template_db, settings)
     app = create_app(settings)
     app.state.fq.db.set_setting("game_starter", "leader")   # the tests know who begins; the dice is tested on its own
     with TestClient(app) as c:

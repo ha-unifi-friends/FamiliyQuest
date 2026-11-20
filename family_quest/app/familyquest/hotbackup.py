@@ -27,7 +27,7 @@ from pathlib import Path
 FLAG = ".backup-pause"
 ACK = ".backup-paused"
 PAUSE_MAX = 120.0          # seconds: the longest pause of the writes
-WAIT_ACK = 20.0            # seconds pre waits for the app's answer
+WAIT_ACK = 60.0            # seconds pre waits for the app's answer (FQ_BACKUP_WAIT or «pre --wait <s>» changes it)
 
 
 def data_dir() -> Path:
@@ -66,8 +66,10 @@ def _checkpoint(db: Path) -> list:
         c.close()
 
 
-def pre(folder: Path | None = None, wait: float = WAIT_ACK, pause: float = PAUSE_MAX) -> dict:
+def pre(folder: Path | None = None, wait: float | None = None, pause: float = PAUSE_MAX) -> dict:
     folder = folder or data_dir()
+    if wait is None:
+        wait = float(os.environ.get("FQ_BACKUP_WAIT") or WAIT_ACK)
     token = secrets.token_hex(8)
     (folder / ACK).unlink(missing_ok=True)
     write_json(folder / FLAG, {"token": token, "until": time.time() + min(pause, PAUSE_MAX)})
@@ -96,11 +98,18 @@ def post(folder: Path | None = None) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 2 or argv[1] not in ("pre", "post"):
-        print("usage: hotbackup.py pre|post", file=sys.stderr)
+    wait = None
+    if len(argv) == 4 and argv[1] == "pre" and argv[2] == "--wait":
+        try:
+            wait = max(0.0, float(argv[3]))
+        except ValueError:
+            wait = -1.0
+        argv = argv[:2]
+    if len(argv) != 2 or argv[1] not in ("pre", "post") or (wait is not None and wait < 0):
+        print("usage: hotbackup.py pre [--wait <seconds>] | post", file=sys.stderr)
         return 2
     try:
-        res = pre() if argv[1] == "pre" else post()
+        res = pre(wait=wait) if argv[1] == "pre" else post()
         print(f"Family Quest backup {argv[1]}: {json.dumps(res)}")
     except Exception as e:  # noqa: BLE001 – never fail Home Assistant's backup because of this
         print(f"Family Quest backup {argv[1]}: {e}", file=sys.stderr)
