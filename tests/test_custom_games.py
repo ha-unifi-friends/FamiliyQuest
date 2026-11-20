@@ -120,7 +120,7 @@ def test_frontend_structure():
     assert "runningGamesBox(), custom, none" in parent
     assert 'canPlay("adventuregame") && S.me.stories !== false ? adventureGamesCard() : null' in kid and 'view === "advgames"' in kid
     assert 'const LIBRARY_TYPES = ["picture", "adventure"]' in stories and "storyShelf(box, { types: LIBRARY_TYPES })" in stories
-    names = {"de-DE": "Eigene Spiele", "de-CH": "Eigeni Spiil", "fr-FR": "Jeux personnalisés", "it-IT": "Giochi personalizzati",
+    names = {"de-DE": "Eigene Spiele", "de-CH": "Eigeni Spiel", "fr-FR": "Jeux personnalisés", "it-IT": "Giochi personalizzati",
              "es-ES": "Juegos personalizados", "nl-NL": "Eigen spellen", "pl-PL": "Własne gry", "pt-BR": "Jogos personalizados",
              "sv-SE": "Egna spel"}
     for lang, n in names.items():

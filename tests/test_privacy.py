@@ -263,6 +263,7 @@ def test_ui_sections_have_info_and_translations():
     info = src[src.index("Object.assign(PARENT_INFO, {"):src.index("\n});\n")]
     keys = set(re.findall(r'^  \[T\("([^"]+)"\)\]:', info, re.M))
     titles = set(re.findall(r'(?:section|pageHead)\("[^"]*" \+ I18N\.tr\(T\("([^"]+)"\)\)', src))
+    titles |= set(re.findall(r'pageHead\(T\("([^"]+)"\)', src))          # the page title: no emoji (like every page)
     assert titles == {"Privacy", "Retention periods", "Clean-up runs", "Past runs", "Delete all data of a child"}
     assert titles <= keys
     texts = set(re.findall(r'\bT\("((?:[^"\\]|\\.)*)"\)', src)) | {k.info for k in privacy.KINDS + privacy.KEEP} | {k.title for k in privacy.KINDS + privacy.KEEP}

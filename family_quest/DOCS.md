@@ -688,7 +688,7 @@ days on its own (longer if you set a longer period).
   capitals of Europe and the world, flags, food of the world, Swiss specialities, cantons, animals, space,
   inventions, Switzerland). Whoever starts a game leads it (a parent may always step in); everybody joins on their
   own device. Quick right answers give more points (1000 down to 500). Places go into everybody's history; the
-  reward events *Played the family quiz* and *Won the family quiz* can give coins (Rewards › Rules).
+  reward events *Played the family quiz* and *Won the family quiz* can give coins (Points & rules › Rules).
 - **Family Quest Facts** (special quiz – «New quiz» › 📊 at the top, for children and parents): the questions come
   from the family's own Family Quest data and are made new at every start – a random choice in a random order, at most
   one question per kind. Before the start: the number of questions (5 / 10 / 15 / 20) and the focus (this week, all
