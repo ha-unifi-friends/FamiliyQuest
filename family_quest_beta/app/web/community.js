@@ -220,13 +220,42 @@ async function guestInvite(game, gid) {
   const host = (a.ips && a.ips[0]) || location.hostname;
   const url = `http://${host}:${a.port || a.default_port || 8099}/guest?c=${encodeURIComponent(r.invite.code)}`;
   const field = h("input", { type: "url", readonly: true, value: url, onfocus: e => e.target.select() });
-  const m = modal(h("div.form.center",
-    h("h2", "👥 ", T("Invite guests")),
+  const gamePane = h("div.gi-pane",
     h("p", T("Guests scan the code with their phone in our home network, type their name and play along.")),
     !a.enabled && a.port == null ? h("p.warn-text", T("Direct access is still off: in Home Assistant open the app → Configuration, switch on direct_access and restart the app.")) : null,
-    h("div.qr-box.guest-qr", qrSvg(url)), field,
+    h("div.qr-box.guest-qr", qrSvg(url)), field);
+  // with a guest Wi-Fi QR code (parent area › Settings › Home Assistant): a switch «Game | Guest WiFi» – guests join the
+  // Wi-Fi first, then scan the game. The picture comes through the app with the login of this device (api/guest-wifi-qr).
+  let wifi = null, wifiPane = null, blob = null;
+  if (r.wifi) {
+    const img = h("img.gi-wifi-img", { alt: T("Guest WiFi QR code"), width: 260, height: 260 });
+    const pane = wifiPane = h("div.gi-pane", { hidden: true },
+      h("p", T("First scan this to join our guest WiFi – then switch to «Game».")), h("div.qr-box.guest-qr", img));
+    const tabs = [["game", "🎲 ", T("Game"), gamePane], ["wifi", "📶 ", T("Guest WiFi"), pane]].map(([k, ic, label, el]) =>
+      ({ k, el, b: h("button" + (k === "game" ? ".on" : ""), { type: "button", role: "tab", "aria-selected": String(k === "game"), onclick: () => show(k) }, ic, label) }));
+    const show = k => {
+      for (const t of tabs) { t.b.classList.toggle("on", t.k === k); t.b.setAttribute("aria-selected", String(t.k === k)); t.el.hidden = t.k !== k; }
+    };
+    const load = async () => {
+      const headers = {};
+      if (Auth.kid && !window.FQ_PARENT_AREA) headers["X-FQ-Token"] = Auth.kid;
+      if (Auth.parent) headers["X-FQ-Parent"] = Auth.parent;
+      try {
+        const res = await fetch("api/guest-wifi-qr", { headers });
+        if (!res.ok) throw 0;
+        blob = URL.createObjectURL(await res.blob());           // the page's CSP allows blob: pictures
+        img.src = blob;
+      } catch { img.replaceWith(h("p.warn-text", T("The guest WiFi QR code is not available right now (Home Assistant)."))); }
+    };
+    wifi = h("div.seg.gi-seg", { role: "tablist", "aria-label": T("Invite guests") }, ...tabs.map(t => t.b));
+    load();                                                      // fetched now: ready when the switch is tapped
+  }
+  const m = modal(h("div.form.center",
+    h("h2", "👥 ", T("Invite guests")),
+    wifi, gamePane, wifiPane,
     h("div.row.center", h("button.btn", { onclick: () => m.close() }, T("Close")),
-      h("button.btn.ghost", { onclick: async () => { await api("community/guests", { method: "POST", body: { game, on: false, gid } }); toast(T("Invitation closed"), "good"); m.close(); } }, "🚪 ", T("Close the invitation")))));
+      h("button.btn.ghost", { onclick: async () => { await api("community/guests", { method: "POST", body: { game, on: false, gid } }); toast(T("Invitation closed"), "good"); m.close(); } }, "🚪 ", T("Close the invitation")))),
+    { onClose: () => { if (blob) URL.revokeObjectURL(blob); } });
 }
 
 // the live game in `box` for profile `me` (learning app and parent area); `back` leaves it
