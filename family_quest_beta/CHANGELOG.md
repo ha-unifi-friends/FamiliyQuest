@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1-beta.3
+
+- Parent area: the box with light/dark mode, language, log out and version always sits at the bottom of the screen
+
 ## 1.2.1-beta.2
 
 - Game lobbies: a visible «👥 Invite guests» button in the waiting box of every game (also still in the ☰ menu)
