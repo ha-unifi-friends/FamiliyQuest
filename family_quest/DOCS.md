@@ -2145,8 +2145,28 @@ grandparents scan it with their phone in the home network (direct access must be
 – nothing else of the app is open to them. Guests are deleted with everything they did after 12 hours. Parents can
 switch guests off under Settings → Games.
 
+**👥 Invite guests** is in the ☰ menu of every family game and, while the game waits for its start, also as a button
+in the lobby box («Waiting for the start …») – below the players on a phone, top right in the box on a wide screen. It
+is shown to everybody of the family at a family table (not alone against bots, not to guests, not in a finished game).
+
+**The guest's avatar**: on the guest page, below the name, guests pick one of eight quick looks (women, men, grandma,
+grandpa and two more – different skin and hair), **🎲 Random** (the default: a random avatar as before) or
+**✏️ Customize** – the avatar builder of the parent area with the free parts and the free items only (glasses, braces,
+hair clips); shop, level, badge and season items cannot be chosen. The server checks the avatar like a child's
+(unknown parts fall back to the default, unknown items are dropped, a shop item is refused). During the game the guest
+changes it under ☰ → **🧑‍🎨 My avatar** (`PUT /api/guest/avatar`, guest token only): the seat at the table shows the new
+avatar (on the other devices with the next change at the table).
+
 **Guest networks** (Settings → Access from the network): devices in these address ranges – e.g. your guest
 Wi-Fi – can only open the guest page and play with an invitation; no family login, no app, no parent area.
+
+**Guest Wi-Fi QR code** (Settings → Home Assistant → «📶 Guest WiFi QR code»): UniFi in Home Assistant has an image
+entity with the QR code of each Wi-Fi network (e.g. `image.guest_wifi_qr_code`). Pick it there (entities with WiFi or
+QR in the name are listed first; «None» = off) – the fold shows a preview. The **👥 Invite guests** dialog then gets a
+switch **🎲 Game | 📶 Guest WiFi**: guests first scan the Wi-Fi code to join the guest network, then switch to «Game»
+and scan the game. The picture comes through Family Quest (`GET /api/guest-wifi-qr`, kept 5 minutes; also a `camera.*`
+entity works) and only for a signed-in child or parent – it contains the Wi-Fi password, so guests and devices without
+a login never get it. Without the setting the dialog stays as it was.
 
 ### Pet sitting, pet hotel and the hamster
 

@@ -187,6 +187,8 @@ function zeichnenLive(box, me, back) {
       .finally(() => { sending = false; });
   }
 
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !me.guest && st.status !== "done" ? "zeichnen" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
@@ -210,7 +212,7 @@ function zeichnenLive(box, me, back) {
     if (!st.joined && st.phase === "lobby") return show(close, head(), h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), hostBar());
     if (st.phase === "lobby") return show(close, head(), h("section.card.center", h("h2", T("Waiting for the start …")),
-      h("p.muted", T("Everybody joins on their own device – at least two players.")), seats(), ruleChips(),
+      h("p.muted", T("Everybody joins on their own device – at least two players.")), seats(), inviteBtn(invite()), ruleChips(),
       st.coins_on ? h("p.small", "🪙 ", fill(T("Coins for places 1 / 2 / 3: {0}"), zrCoins(st.rewards))) : null), hostBar());
     if (st.phase === "choose") return show(close, head(), choosing(), strip(), hostBar());
     show(close, head(), hostBar());
@@ -234,7 +236,7 @@ function zeichnenLive(box, me, back) {
     const lead = isHost() && st.status !== "done";
     const playing = ["choose", "draw", "reveal"].includes(st.phase);
     return gameMenu({ rules: () => zeichnenRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: !me.guest && st.status !== "done" ? "zeichnen" : null,
+      invite: invite(),
       actions: [
         { ic: "⏭", label: T("Skip"), hidden: !lead || !playing, confirm: I18N.tr(T("Skip the turn of {0}?")).replace("{0}", who(st.drawer)), onclick: () => act("skip") },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game? The points so far count."), onclick: () => act("end") }],

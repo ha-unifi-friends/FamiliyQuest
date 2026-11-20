@@ -136,8 +136,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
                                 f"<title>Family Quest</title><body style='font-family:system-ui;text-align:center;padding:40px'>"
                                 f"<h1>🔒</h1><p>{msg}.</p><p style='color:#888'>{html_escape(ip)}</p>", status_code=403)
         resp = await call_next(request)
-        if request.url.path.startswith("/api/"):
-            resp.headers["Cache-Control"] = "no-store"
+        if request.url.path.startswith("/api/") and "no-store" not in resp.headers.get("Cache-Control", ""):
+            resp.headers["Cache-Control"] = "no-store"       # (an answer may say more, e.g. «private, no-store»)
         return resp
 
     @app.middleware("http")
@@ -163,6 +163,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     app.include_router(parent.router)
     app.include_router(planer.router)
     app.include_router(community.router)
+    app.include_router(community.guest_router)          # PUT /api/guest/avatar (guests.py)
     app.include_router(decks.router)
     app.include_router(stories_api.router)
     app.include_router(codelab_api.router)              # 💡 Code Workshop (codelab.py)

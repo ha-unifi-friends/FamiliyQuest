@@ -74,6 +74,8 @@ function pokerLive(box, me, back) {
     timer = setTimeout(poll, 1000);
   }
   const fmtC = n => fmt(n);
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !st.solo && !me.guest && st.status !== "done" ? "poker" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;                            // the game was left meanwhile: a late answer
     if (st && !Array.isArray(st.players)) st = null;                 // not a game state (e.g. after «end»): no game
@@ -90,7 +92,7 @@ function pokerLive(box, me, back) {
     // ☰: rules, guests (everybody of the family at a family table), pause / end for whoever leads, language
     const lead = isHost() && st.status !== "done";
     const menu = gameMenu({ rules: () => pokerRules(st.rules),
-      invite: !st.solo && !me.guest && st.status !== "done" ? "poker" : null,
+      invite: invite(),
       actions: [
         { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Go on") : T("Pause"), hidden: !lead || st.phase === "lobby", onclick: () => act("pause", { on: !st.paused }) },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !lead, confirm: T("End the game?"), onclick: () => act("end") }],
@@ -114,7 +116,7 @@ function pokerLive(box, me, back) {
     if (!st.joined) return show(close, head, h("section.card.center", h("p", T("Play along on this device?")),
       h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join"))), seats(), host);
     if (st.phase === "lobby") return show(close, head, h("section.card.center", h("h2", T("Waiting for the start …")),
-      h("p.muted", T("Everybody joins on their own device.")), h("p.small", I18N.tr(T("Start chips: {0}")).replace("{0}", fmtC(st.rules.start_chips)))), seats(), host);
+      h("p.muted", T("Everybody joins on their own device.")), h("p.small", I18N.tr(T("Start chips: {0}")).replace("{0}", fmtC(st.rules.start_chips))), inviteBtn(invite())), seats(), host);
     show(close, head, tableView(), st.paused ? h("p.center.warn-text", "⏸ ", T("Paused")) : null, seats(), mine(), bank(), host);
     // on a small screen: when it is my turn, my cards and buttons come into view
     if (st.to_act === me.id) { const m = box.querySelector(".pk-mine"); if (m && m.getBoundingClientRect().bottom > innerHeight - 70) m.scrollIntoView({ block: "end", behavior: "smooth" }); }

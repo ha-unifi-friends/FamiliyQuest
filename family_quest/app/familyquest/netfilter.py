@@ -81,7 +81,7 @@ def is_parent_path(path: str) -> bool:
 
 
 # guest networks (e.g. the guest Wi-Fi): only the guest page and playing a game with an invitation
-GUEST_API = ("/api/community/guest/", "/api/community/quiz", "/api/community/bingo", "/api/community/poker", "/api/community/song",
+GUEST_API = ("/api/community/guest/", "/api/guest/", "/api/community/quiz", "/api/community/bingo", "/api/community/poker", "/api/community/song",
              "/api/community/cards/", "/api/community/domino", "/api/community/paarjagd",
              "/api/community/werbinich", "/api/community/kartenlauf", "/api/community/stadtland",
              "/api/community/zeichnen", "/api/community/wuerfel", "/api/community/heimwaerts", "/api/community/jump", "/api/community/sternlauf", "/api/community/snack", "/api/community/verkehr", "/api/community/langstrecke", "/api/community/klatsch", "/api/community/verboten",

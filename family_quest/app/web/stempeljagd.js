@@ -228,6 +228,8 @@ function stempeljagdLive(box, me, back) {
   }
 
   // ---------- the screen
+  // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
+  function invite() { return !st.solo && !me.guest && st.status !== "done" ? "stempeljagd" : null; }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     if (st && !Array.isArray(st.players)) st = null;
@@ -241,7 +243,7 @@ function stempeljagdLive(box, me, back) {
     if (!st) return show(h("section.card.center", h("div.big-ic", SJ_ICON), h("h2", T("No game right now")), noTableActions("stempeljagd", back)));
     const close = running ? h("button.icon-btn.quiz-close", { title: T("Close"), onclick: () => { stop(); back(); } }, "✕") : null;
     const menu = gameMenu({ rules: () => stempeljagdRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: !st.solo && !me.guest && st.status !== "done" ? "stempeljagd" : null,
+      invite: invite(),
       actions: [{ ic: "⏭", label: T("Help the team on turn"), hidden: !isHost() || !(st.phase === "play" || st.phase === "projects") || st.my_turn, onclick: () => post("nudge") },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"), onclick: () => post("end").then(() => { stop(); back(); }) }],
       onLeave: running ? () => { stop(); back(); } : null });
@@ -271,7 +273,7 @@ function stempeljagdLive(box, me, back) {
         ...st.players.filter(p => !p.bot).map(p => h("button.btn.small" + (r.mode === "admin" && r.admin === p.id ? "" : ".ghost"), { onclick: () => setAdmin(p.id) }, C(p.name))))) : null;
     return [h("section.card.center", st.joined ? h("h2", T("Waiting for the start …")) : h("p", T("Play along on this device?")),
       st.joined ? h("p.muted.small", T("One device per team – everybody joins on their own device.")) : h("button.btn.big", { onclick: () => act0("join") }, "🙋 ", T("Join")),
-      h("div.dm-seats", ...st.players.map(p => h("div.dm-seat" + (p.id === myId ? ".dm-me" : ""), seatIcon(p, 30), C(p.name, "strong.small.dm-name"))), ...free),
+      h("div.dm-seats", ...st.players.map(p => h("div.dm-seat" + (p.id === myId ? ".dm-me" : ""), seatIcon(p, 30), C(p.name, "strong.small.dm-name"))), ...free), inviteBtn(invite()),
       h("p.small", "🏁 ", sjFill(T("Permit with {0} stamps"), st.target), adm ? [" · 🏛️ ", sjFill(T("Administration: {0}"), adm)] : null),
       st.coins_on ? h("p.small", "🪙 ", sjFill(T("Coins for places 1 / 2 / 3: {0}"), sjCoins(st.rewards))) : null, chooser),
       host ? h("div.row.center.host-bar", h("button.btn", { onclick: begin }, "▶ ", T("Start"))) : null];

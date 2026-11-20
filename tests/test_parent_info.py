@@ -197,7 +197,7 @@ def test_settings_in_four_groups():
     order = [g or f for g, f in order]
     assert order == ["set.app", "link", "themes", "dashboard", "kiosk", "levels", "learning",
                      "set.personal", "texts", "weather",
-                     "set.ha", "halogin", "integration", "ha", "shopping",
+                     "set.ha", "halogin", "integration", "ha", "guestwifi", "shopping",
                      "set.system", "backup", "network", "planer", "about"], order
     keys, _ = info_keys()
     assert {"set.app", "set.personal", "set.ha", "set.system"} <= keys

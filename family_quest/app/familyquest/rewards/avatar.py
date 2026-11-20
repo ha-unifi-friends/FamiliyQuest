@@ -193,3 +193,24 @@ def with_crown(avatar: dict, crown_until: str | None, today: date | None = None,
     if champion:
         return {**avatar, "items": {**(avatar.get("items") or {}), "hat": CHAMPION}}
     return avatar
+
+
+# ---------------------------------------------------------------- guests (guests.py): an avatar without a profile
+def guest_catalog() -> dict:
+    """What a guest may choose: the free parts and only the items that are free for everybody – no shop, level,
+    badge or season items (the guest page uses shared/avatar.js avatarEditorBox with it)."""
+    items = [{"id": i, "name": n, "slot": s, "unlocked": True} for i, (n, s, r) in ITEMS.items() if r.get("free")]
+    return {"parts": FREE_PARTS, "slots": [s for s in SLOTS if any(i["slot"] == s for i in items)], "items": items}
+
+
+def clean_guest(avatar) -> dict:
+    """A guest's avatar with the rules of clean(): unknown parts fall back to the default, unknown items are dropped.
+    Raises ValueError for anything that is not an avatar and for items that are not free for everybody (shop items)."""
+    if not isinstance(avatar, dict) or not isinstance(avatar.get("items") or {}, dict):
+        raise ValueError(_t("This is not an avatar"))    # noqa: TRY004 – guests.py turns ValueError into a 400
+    for iid in (avatar.get("items") or {}).values():
+        if isinstance(iid, str) and iid in ITEMS and not ITEMS[iid][2].get("free"):
+            raise ValueError(_t("Guests can only choose the free avatar items"))
+    out = clean(avatar, 0, set(), set())
+    out["items"] = {s: i for s, i in out["items"].items() if ITEMS[i][2].get("free")}      # no season items either
+    return out

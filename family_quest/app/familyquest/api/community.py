@@ -2766,6 +2766,11 @@ class InviteIn(BaseModel):
 class GuestJoinIn(BaseModel):
     code: str
     name: str
+    avatar: Any = None              # the guest's own choice (guest page) – checked by guests.py; none: a random one
+
+
+class GuestAvatarIn(BaseModel):
+    avatar: Any
 
 
 @router.post("/guests")
@@ -2782,7 +2787,7 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
             inv = await asyncio.to_thread(fq.guests.invite, "schach", body.on, g["id"])     # never a write on the loop
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
-        return {"invite": inv, "access": await home_access(fq.settings)}
+        return _with_wifi(fq, {"invite": inv, "access": await home_access(fq.settings)})
     if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape", "stempeljagd"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
                  "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "langstrecke": fq.langstrecke, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
@@ -2799,13 +2804,21 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         inv = await asyncio.to_thread(fq.guests.invite, body.game, body.on)
     except GuestError as e:
         raise HTTPException(400, str(e)) from None
-    return {"invite": inv, "access": await home_access(fq.settings)}
+    return _with_wifi(fq, {"invite": inv, "access": await home_access(fq.settings)})
+
+
+def _with_wifi(fq, out: dict) -> dict:
+    """The dialog «Invite guests» also shows the guest Wi-Fi QR code (api/kid.py guest-wifi-qr) when it is set up."""
+    if fq.db.get_setting("guest_wifi_qr"):
+        out["wifi"] = True
+    return out
 
 
 @router.get("/guest/info")
 def guest_info(code: str, request: Request) -> dict:
+    from ..rewards import avatar as av
     try:
-        return app_of(request).guests.info(code)
+        return {**app_of(request).guests.info(code), "avatar_catalog": av.guest_catalog()}     # the free avatar parts
     except GuestError as e:
         raise HTTPException(404, str(e)) from None
 
@@ -2817,11 +2830,27 @@ def guest_join(body: GuestJoinIn, request: Request) -> dict:
     key = "guest:" + loginlog.client_ip(request)
     fq.throttle.check(key)
     try:
-        out = fq.guests.join(body.code, body.name)
+        out = fq.guests.join(body.code, body.name, body.avatar)
         fq.throttle.ok(key)
         return out
     except GuestError as e:
         fq.throttle.fail(key)
+        raise HTTPException(400, str(e)) from None
+
+
+# a guest changes the avatar during the visit (gast.js: ☰ › My avatar) – only with the guest token of the invitation
+guest_router = APIRouter(prefix="/api/guest")
+
+
+@guest_router.put("/avatar")
+def guest_avatar(body: GuestAvatarIn, request: Request, x_fq_token: str | None = Header(default=None)) -> dict:
+    fq = app_of(request)
+    gid = fq.tokens.read(x_fq_token, "guest", GUEST_HOURS * 3600)
+    if gid is None:
+        raise HTTPException(403, "Only for guests")
+    try:
+        return {"avatar": fq.guests.set_avatar(gid, body.avatar)}
+    except GuestError as e:
         raise HTTPException(400, str(e)) from None
 
 
