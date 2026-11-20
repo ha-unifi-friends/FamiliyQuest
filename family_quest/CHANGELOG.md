@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.1
+
+Version 1.2.1 – everything that was tested in the betas 1.2.1-beta.1 … 3.
+
+- **Guest WiFi:** with a guest WiFi QR code from Home Assistant (e.g. the UniFi image entity, chosen in Settings ›
+  Home Assistant) the «Invite guests» dialog has a switch «🎲 Game | 📶 Guest WiFi» – guests join the WiFi first,
+  then the game. The picture (it holds the WiFi password) is only shown on signed-in family devices.
+- **Invite guests** is now a visible button in the waiting box of every game (still also in the ☰ menu).
+- **Guest avatars:** guests pick their avatar when joining – 8 quick picks, random or customize with the free avatar
+  parts – and can change it later in the game via ☰ «My avatar».
+- **Parent area:** the box with light/dark mode, language, log out and version always sits at the bottom of the screen.
+
 ## 1.2.0
 
 Version 1.2.0 – everything that was tested in the betas 1.1.1-beta.17 … 30.
