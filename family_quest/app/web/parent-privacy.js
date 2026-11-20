@@ -13,7 +13,7 @@ Object.assign(PARENT_INFO, {
     T("What the family made itself (books, quizzes, decks, photo sets, profiles, balances, settings) is not time-based: it is kept until you delete it where it lives.")],
   [T("Clean-up runs")]: [
     T("What is past its retention period, by kind, with the number of entries and the oldest and newest date. This list is the preview – nothing is deleted yet."),
-    T("Choose kinds (or single entries) and delete them. Before every run a backup snapshot is written to the data folder (privacy_backups, the last 3 are kept). Each kind is deleted in one transaction."),
+    T("Choose kinds (or single entries) and delete them. Before every run a backup snapshot is written to the data folder (privacy_backups: the database only, at most 3 and at most 30 days old). Each kind is deleted in one transaction."),
     T("Never deleted because it is still in use: anything of the current week, running games, open and pending chores, open deals, orders waiting for approval, open topics and polls, upcoming events and gift draws, the days of a running streak, the bookings since the active family goal started, the newest entry of every list.")],
   [T("Past runs")]: T("The clean-up runs so far: when, who (or the automatic run at night), what and how many entries, and the snapshot written before."),
   "pv.keep": T("How long each kind of data is kept before it is due for a clean-up."),

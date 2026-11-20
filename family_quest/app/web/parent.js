@@ -779,7 +779,8 @@ async function profileDialog(p, persons, role = "kid") {
       kindBtns.replaceChildren();
       pinArea.replaceChildren(h("div.row",
         h("span.small.muted", "✓ " + I18N.tr(symbolKind && kid ? T("Picture PIN is set.") : T("Digit PIN is set."))),
-        h("button.btn.small.ghost", { type: "button", onclick: () => { changing = true; drawPin(); } }, "🔑 ", T("Change PIN"))));
+        h("button.btn.small.ghost", { type: "button", onclick: () => { changing = true; drawPin(); } }, "🔑 ", T("Change PIN")),
+        p.id ? logoutEverywhereBtn(p) : null));
       return;
     }
     kindBtns.replaceChildren(...(kid ? [["symbols", "🐱 " + I18N.tr(T("Symbols"))], ["digits", "🔢 " + I18N.tr(T("Digits"))]] : [])
@@ -2431,6 +2432,18 @@ function haLoginSection(s) {
 }
 
 // «Sign in with Home Assistant» in the app on tablets and phones (direct port, api/haauth.py)
+/** «Log out everywhere»: every login of this profile ends on every device (app, parent area, planner). */
+function logoutEverywhereBtn(p) {
+  return h("button.btn.small.ghost", { type: "button", onclick: async () => {
+    if (!(await confirmDialog(I18N.tr(T("Log {0} out on all devices?")).replace("{0}", p.name)))) return;
+    try {
+      const r = await call("parent/sessions/end", { method: "POST", body: { profile_id: p.id } });
+      if (r.parent_token) Auth.parent = r.parent_token;          // the own profile: this device stays signed in
+      toast(T("Signed out on all devices"), "good");
+    } catch (e) { /* call() shows the error */ }
+  } }, "🚪 ", T("Log out everywhere"));
+}
+
 function haAppLoginBox() {
   const box = h("div.ha-app-box");
   (async () => {
@@ -2443,6 +2456,7 @@ function haAppLoginBox() {
     box.replaceChildren(
       h("h3", { "data-ik": "ha.app" }, "📱 ", T("Sign in with Home Assistant in the app")),
       h("label.check", on, h("span", T("Allow sign-in with Home Assistant in the app (tablets, phones)"))),
+      st.server_known === false && !st.url ? h("p.small.bad", "⚠️ ", T("Family Quest does not know where Home Assistant is – enter its address below and save, otherwise the sign-in in the app is refused.")) : null,
       h("p.small", names ? [T("Can sign in:"), " ", C(names)] : h("span.muted", T("Nobody can sign in yet – link a Home Assistant user with a profile (Profiles › edit)."))),
       h("label.field", h("span", T("Home Assistant address for the sign-in"), fieldInfo(T("The tablets must reach Home Assistant at this address."))), url,
         h("span.hint", st.auto ? I18N.tr(T("Empty = automatic: {0}")).replace("{0}", st.auto) : T("Empty = automatic (this host with the port of Home Assistant)."))),
