@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-dev.22
+
+- Parent area: the release notes open from the version at the bottom left and from Settings → About; the personal part of the menu (light/dark, language, log out) has its own background
+
 ## 1.1.1-dev.21
 
 - Parent area: Deals is no longer its own menu item – it is a group on the Family page (old links lead there)
