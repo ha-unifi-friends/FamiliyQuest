@@ -8,10 +8,7 @@
 <link rel="icon" href="img/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="shared/base.css?v=__VERSION__">
 <link rel="stylesheet" href="dashboard.css?v=__VERSION__">
-<script>
-  // kiosk: ?lang=fr-FR fixes the language of this screen (no language picker on a wall display)
-  (() => { const l = new URLSearchParams(location.search).get("lang"); if (l) try { localStorage.setItem("familyquest.lang", JSON.stringify(l)); } catch {} })();
-</script>
+<script src="dashboard-pre.js?v=__VERSION__"></script>
 <script src="shared/i18n.js?v=__VERSION__"></script>
 </head>
 <body class="kiosk">
