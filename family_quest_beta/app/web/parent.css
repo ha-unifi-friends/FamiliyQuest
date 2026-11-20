@@ -218,7 +218,7 @@ li.off { opacity: .55; }
 .dash-widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 4px 16px; }
 
 .planer-frame { width: 100%; height: 520px; border: 0; border-radius: 14px; background: var(--card); display: block; margin-bottom: 8px; }
-/* Chores › the planer's chore plan: its top-bar functions are buttons in the section head (parent.js planerChoresSection) */
+/* Chores › the planer's chore plan: its top-bar functions are buttons in the section head (parent-chores.js planerChoresSection) */
 .planer-dot { margin: 0 0 0 2px; padding: 0 7px; min-width: 22px; justify-content: center; }
 .head-actions .btn.ghost.on { border-color: var(--accent); color: var(--accent); }
 details.planer-settings > summary { min-height: 44px; }
@@ -283,7 +283,7 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 .game-play { display: grid; gap: 8px; margin-bottom: 14px; }
 .game-settings { display: grid; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .game-settings-h { font-weight: 700; }
-/* game price for children (parent.js gamePriceBox) */
+/* game price for children (parent-games.js gamePriceBox) */
 .gp-box { display: grid; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
 .gp-box .field { margin: 0; }
 .gp-box input[type=number] { max-width: 140px; }
@@ -338,7 +338,7 @@ details.game-sec[open] > summary h2::before { content: "▾"; }
 @keyframes fq-spin { to { transform: rotate(360deg); } }
 .page-error { text-align: center; }
 
-/* Shop: avatar items per slot (parent.js shopSettingsView) */
+/* Shop: avatar items per slot (parent-shop.js shopSettingsView) */
 .shop-slot { margin: 6px 0; }
 .shop-slot > summary { cursor: pointer; padding: 10px 0; }
 .shop-tbl tr.off td { opacity: .5; }
