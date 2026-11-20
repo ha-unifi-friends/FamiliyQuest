@@ -3,8 +3,8 @@
 
 const P = { info: null, meta: null, tab: "overview", profiles: [], accounts: [] };
 const app = $("#app");
-const TABS = [["overview", "📊", T("Overview")], ["calendar", "📅", T("Calendar")], ["packs", "📦", T("Learning packs")],
-  ["chores", "🧹", T("Chores")], ["community", "👨‍👩‍👧", T("Family")], ["history", "📜", T("History")], ["deals", "🤝", T("Deals")], ["games", "🎲", T("Games")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["dashboard", "🖥️", T("Dashboard")], ["privacy", "🛡️", T("Privacy")], ["settings", "⚙️", T("Settings")]];
+const TABS = [["overview", "📊", T("Overview")], ["community", "👨‍👩‍👧", T("Family")], ["packs", "📦", T("Learning packs")],
+  ["games", "🎲", T("Games")], ["chores", "🧹", T("Chores")], ["rewards", "🎁", T("Rewards")], ["shop", "🛍️", T("Shop")], ["deals", "🤝", T("Deals")], ["calendar", "📅", T("Calendar")], ["dashboard", "🖥️", T("Dashboard")], ["analytics", "📈", T("Analytics")], ["history", "📜", T("History")], ["privacy", "🛡️", T("Privacy")], ["settings", "⚙️", T("Settings")]];
 const KIND_NAMES = { voucher: T("Voucher (parents fulfil it)"), internet_minutes: T("Internet minutes"), planer_points: T("Family Planer points"),
   ha_script: T("Home Assistant script"), avatar_item: T("Avatar item") };
 const EXERCISES = { auswahl: T("Multiple choice"), eintippen: T("Typing"), paare: T("Pairs"), lueckentext: T("Gap text"),
@@ -248,10 +248,10 @@ const refreshBtn = () => h("button.icon-btn.refresh-btn", { title: T("Refresh"),
 function render() {
   P.onChange = null;
   const nav = h("nav.side", h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn()),
+    h("a.nav-app", appLinkAttrs({ dialog: true }), h("span", "⭐"), h("span", "Family Quest App")),   // the kids' app: very first entry
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { "data-tab": k, onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
-      // four items one below the other, written out: app, light / dark, language, log out
-      h("a.foot-item", appLinkAttrs({ dialog: true }), h("span.foot-ic", "⭐"), h("span", "Family Quest App")),
+      // written out one below the other: light / dark, language, log out, release notes
       footTheme(), footLang(),
       h("button.foot-item", { onclick: () => { Auth.parent = ""; loginView(false); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),
       h("button.foot-item", { onclick: releaseNotes }, h("span.foot-ic", "📝"), h("span", T("Release notes"))),

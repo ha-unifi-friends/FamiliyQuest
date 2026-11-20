@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-dev.18
+
+- Parent area: new main menu order – Family Quest App, Overview, Family, Learning packs, Games, Chores, Rewards, Shop, Deals, Calendar, Dashboard, Analytics, History, Privacy, Settings
+- Refresh button in the parent area no longer shows the old ⟳ character next to the new icon
+
 ## 1.1.1-dev.17
 
 - Analytics (new main menu): dashboards with a timeline filter and period picker, reports from templates or an ad-hoc builder (drag dimensions and measures into columns, rows, data, group), 8 chart types, «My reports»
