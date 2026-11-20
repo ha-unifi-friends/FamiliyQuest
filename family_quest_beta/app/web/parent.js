@@ -253,12 +253,12 @@ function render() {
       refreshBtn()),
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { "data-tab": k, onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
-      // written out one below the other: light / dark, language, log out, release notes
+      // the personal part, on its own background: light / dark, language, log out – and the version (release notes)
       footTheme(), footLang(),
       h("button.foot-item", { onclick: () => { Auth.parent = ""; loginView(false); } }, h("span.foot-ic", "🔒"), h("span", T("Log out"))),
-      h("button.foot-item", { onclick: releaseNotes }, h("span.foot-ic", "📝"), h("span", T("Release notes"))),
-      h("div.small.muted.foot-ver", P.haSlug ? h("a.muted", { href: `/config/app/${P.haSlug}/info`, target: "_top", title: T("Open in Home Assistant") }, "v" + P.meta.version)
-        : "v" + P.meta.version, " · ", P.meta.ha ? "🟢 Home Assistant" : "⚪ " + I18N.tr(T("without Home Assistant")))));
+      // the version opens the release notes
+      h("div.small.muted.foot-ver", h("button.link.muted.ver-link", { type: "button", title: T("Release notes"), onclick: releaseNotes }, "v" + P.meta.version),
+        " · ", P.meta.ha ? "🟢 Home Assistant" : "⚪ " + I18N.tr(T("without Home Assistant")))));
   const main = h("main.main");
   // views pass optional sections as null – DOM append would print them as the text "null"
   // until the page has its data: a loading spinner (the first content the view adds replaces it)
@@ -3808,7 +3808,8 @@ async function settingsView(main) {
     fold("backup", "💾 " + I18N.tr(T("Backup & restore")), backupSection()),
     fold("network", "🛡️ " + I18N.tr(T("Access from the network")), await firewallSection(s)),
     fold("planer", "📥 " + I18N.tr(T("Take over an existing Family Planer")), planerSection(s)),
-    fold("about", T("About"), section(T("About"), h("p.small", "Family Quest v" + P.meta.version), h("ul.small",
+    fold("about", T("About"), section(T("About"), h("div.row", h("p.small.grow", "Family Quest v" + P.meta.version),
+      h("button.btn.small.ghost", { type: "button", onclick: releaseNotes }, "📝 ", T("Release notes"))), h("ul.small",
       h("li", "Home Assistant: ", P.meta.ha ? "✓" : h("span", { translate: "no" }, "– ", P.meta.ha_status || "")), h("li", I18N.tr(T("Planner")) + ": ✓ ", h("span.small.muted", T("(built in)"))),
       P.meta.planer ? h("li", T("Family Planer integration in Home Assistant: found – take it over under «Family Planer» above.")) : null,
       h("li", I18N.tr(T("Photo/PDF import")) + ": ", P.meta.ai ? "✓" : h("span.small.muted", "– ", T("needs an AI Task in Home Assistant")))))));
