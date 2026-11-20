@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1-dev.20
+
+- Install guide for iPhone: new first step in Safari – tap the menu icon left of the address, then «Share»
+
 ## 1.1.1-dev.19
 
 - Parent area: the Family Quest header of the menu is the link to the kids' app (QR code); the menu starts with Overview
