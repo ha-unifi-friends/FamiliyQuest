@@ -258,6 +258,25 @@ def themes_get(request: Request, me: dict = Parent) -> dict:
     return {"designs": themes.designs(cfg), "active": themes.active(cfg), "visuals": list(themes.VISUALS)}
 
 
+@router.get("/season-live")
+def season_live_get(request: Request, me: dict = Parent) -> dict:
+    """Weather and daylight of the season designs: the weather entity (shared with the planner) and the sun switch."""
+    from .. import seasonlive
+    fq = app_of(request)
+    return {**seasonlive.config(fq), "ha": bool(fq.ha and fq.ha.connected), "live": seasonlive.live(fq)}
+
+
+@router.put("/season-live")
+def season_live_put(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    from .. import seasonlive
+    fq = app_of(request)
+    try:
+        cfg = seasonlive.save(fq, body)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {**cfg, "ha": bool(fq.ha and fq.ha.connected), "live": seasonlive.live(fq)}
+
+
 @router.put("/themes")
 def themes_put(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
     from .. import themes
@@ -981,8 +1000,9 @@ def delete_reward(rid: int, request: Request, me: dict = Parent) -> dict:
 
 
 @router.get("/redemptions")
-def redemptions(request: Request, status: str | None = None, me: dict = Parent) -> list[dict]:
-    return app_of(request).shop.list(status)
+def redemptions(request: Request, status: str | None = None, profile_id: int | None = None, me: dict = Parent) -> list[dict]:
+    """The shop rewards children asked for – all, or one profile's (parent area › History)."""
+    return app_of(request).shop.list(status, profile_id, limit=100) if profile_id else app_of(request).shop.list(status)
 
 
 @router.post("/redemptions/{rid}")
@@ -1399,6 +1419,21 @@ def games_get(request: Request, me: dict = Parent) -> dict:
     return {"access": fq.games_access(), "bot_games": list(fq.BOT_GAMES), "slots_returns": _slots_returns()}
 
 
+@router.post("/ha-panel-path")
+async def ha_panel_path(request: Request, body: dict = Body(...), me: dict = Parent) -> dict:
+    """The parent area opened in Home Assistant reports the panel path of this HA version (/app/<slug> or
+    /hassio/ingress/<slug>) – links from the app to the parent area use it."""
+    from ..netinfo import ha_panel as panel
+    fq = app_of(request)
+    slug = (await panel(fq.settings)).get("slug")
+    path = str(body.get("path") or "")
+    if not slug or path not in (f"/app/{slug}", f"/hassio/ingress/{slug}"):
+        raise HTTPException(400, "Unknown panel path")
+    if fq.db.get_setting("ha_panel_path") != path:
+        fq.db.set_setting("ha_panel_path", path)
+    return {"path": path}
+
+
 # ---------------------------------------------------------------- game battery and party mode (battery.py)
 class BatteryIn(BaseModel):
     on: bool | None = None
@@ -1660,14 +1695,17 @@ def internet_stop(pid: int, request: Request, me: dict = Parent) -> dict:
 
 # ---------------------------------------------------------------- backup & restore
 @router.get("/backup")
-async def backup_download(request: Request, me: dict = Parent) -> Response:
-    """Everything in one ZIP file."""
+async def backup_download(request: Request, kind: str = "full", me: dict = Parent) -> Response:
+    """One ZIP file: kind full (everything), data (usage data only) or customizing (settings, profiles, own content)."""
     from .. import backup
     fq = app_of(request)
+    if kind not in backup.KINDS:
+        raise HTTPException(400, "Unknown kind of backup")
     if fq.planer_host:
         await fq.planer_host.save_now()
-    data, name = await asyncio.to_thread(backup.create, fq)
-    fq.db.set_setting("last_backup", time.strftime("%Y-%m-%dT%H:%M:%S"))   # the status «Last backup» in the settings
+    data, name = await asyncio.to_thread(backup.create, fq, kind)
+    if kind == backup.FULL:
+        fq.db.set_setting("last_backup", time.strftime("%Y-%m-%dT%H:%M:%S"))   # the status «Last backup» in the settings
     return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
@@ -1683,7 +1721,8 @@ def backup_sizes(request: Request, me: dict = Parent) -> dict:
 async def backup_inspect(request: Request, file: UploadFile = File(...), me: dict = Parent) -> dict:
     from .. import backup
     try:
-        return {"manifest": backup.check(await file.read(), app_of(request).settings.version)}
+        fq = app_of(request)
+        return {"manifest": backup.check(await file.read(), fq.settings.version, fq)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -1738,7 +1777,8 @@ async def backup_inspect_upload(request: Request, body: dict = Body(...), me: di
     from .. import backup
     _path, raw = _uploaded(request, body)
     try:
-        return {"manifest": backup.check(raw, app_of(request).settings.version)}
+        fq = app_of(request)
+        return {"manifest": backup.check(raw, fq.settings.version, fq)}
     except backup.BackupError as e:
         raise HTTPException(400, str(e)) from None
 

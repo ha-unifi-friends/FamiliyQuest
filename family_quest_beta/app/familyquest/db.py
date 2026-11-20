@@ -6,8 +6,10 @@ One connection shared by all request threads, guarded by a re-entrant lock;
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import threading
+import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
@@ -807,6 +809,25 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY(profile_id, level)
     );
     """,
+    # 44 – privacy (privacy.py): the log of the clean-up runs, and how many bookings per event were folded into
+    # «Balance brought forward» rows (counts like «50 chores» stay the same). Self-contained: renumber freely on merge.
+    """
+    CREATE TABLE IF NOT EXISTS privacy_run(
+        id INTEGER PRIMARY KEY,
+        at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        by_id INTEGER,                           -- the parent who ran it (NULL: the automatic run at night)
+        by_name TEXT NOT NULL DEFAULT '',
+        auto INTEGER NOT NULL DEFAULT 0,
+        counts TEXT NOT NULL DEFAULT '{}',       -- {kind: entries deleted or folded, -1 = failed (rolled back)}
+        backup TEXT                              -- the snapshot written before (data folder privacy_backups/)
+    );
+    CREATE TABLE IF NOT EXISTS ledger_folded(
+        profile_id INTEGER NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+        event TEXT NOT NULL,
+        n INTEGER NOT NULL DEFAULT 0,            -- distinct refs of the positive bookings folded
+        PRIMARY KEY(profile_id, event)
+    );
+    """,
 ]
 
 DEFAULT_ACCOUNTS = [
@@ -916,13 +937,17 @@ class Database:
             self.conn.execute("PRAGMA journal_mode=WAL")
         self.lock = threading.RLock()
         self._depth = 0
+        self._pause_until = 0.0                   # writes wait until then (hot backup by Home Assistant: hotbackup.py)
+        self._resume = threading.Event()
+        self._watch_stop: threading.Event | None = None
         self.migrate()
         self.migrate_logins()
 
     # ---------- transactions ----------
     @contextmanager
     def tx(self) -> Iterator["Database"]:
-        with self.lock:
+        self._write_lock()
+        try:
             outer = self._depth == 0
             if outer:
                 self.conn.execute("BEGIN IMMEDIATE")
@@ -937,6 +962,8 @@ class Database:
             self._depth -= 1
             if outer:
                 self.conn.execute("COMMIT")
+        finally:
+            self.lock.release()
 
     # ---------- helpers ----------
     def q(self, sql: str, *args: Any) -> list[dict]:
@@ -957,11 +984,73 @@ class Database:
     def x(self, sql: str, *args: Any) -> int:
         """Run a write. INSERT → new rowid (0 when OR IGNORE skipped the row), else the number of changed rows."""
         memo.clear()                                   # the request reads what it writes (memo.py)
-        with self.lock:
+        self._write_lock()
+        try:
             cur = self.conn.execute(sql, args)
             if sql.lstrip()[:6].upper() == "INSERT":
                 return cur.lastrowid if cur.rowcount > 0 else 0
             return cur.rowcount
+        finally:
+            self.lock.release()
+
+    # ---------- writes paused for a hot backup (hotbackup.py: Home Assistant's backup_pre / backup_post) ----------
+    def _write_lock(self) -> None:
+        """Take the lock for a write – while a backup pauses the writes, wait first (at most until the pause ends,
+        which is never more than PAUSE_MAX after it began: the app never hangs). Writes inside a running transaction
+        of this thread never wait (the pause only starts between transactions)."""
+        while True:
+            left = self._pause_until - time.time()
+            if left > 0:
+                self._resume.wait(min(left, 1.0))
+            self.lock.acquire()
+            if self._depth > 0 or self._pause_until <= time.time():
+                return
+            self.lock.release()
+
+    def start_backup_watch(self, folder: Path | str, every: float = 0.25) -> None:
+        """Watch for the pause flag of a hot backup in `folder` (the data folder) – a daemon thread."""
+        if self._watch_stop is not None:
+            return
+        self._watch_stop = threading.Event()
+        threading.Thread(target=self._backup_watch, args=(Path(folder), every, self._watch_stop), name="fq-backup-watch",
+                         daemon=True).start()
+
+    def stop_backup_watch(self) -> None:
+        if self._watch_stop is not None:
+            self._watch_stop.set()
+            self._watch_stop = None
+        self._release_pause()
+
+    def _release_pause(self) -> None:
+        self._pause_until = 0.0
+        self._resume.set()
+
+    def _backup_watch(self, folder: Path, every: float, stop: threading.Event) -> None:
+        from . import hotbackup
+        flag, ack = folder / hotbackup.FLAG, folder / hotbackup.ACK
+        token = None
+        while not stop.wait(every):
+            try:
+                req = hotbackup.read_flag(flag)
+                if req and req["until"] > time.time():
+                    if req["token"] != token:          # a new pause: wait for the running write, then checkpoint
+                        with self.lock:
+                            self._resume.clear()
+                            self._pause_until = req["until"]
+                            res = self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+                        token = req["token"]
+                        hotbackup.write_json(ack, {"token": token, "checkpoint": list(res.values()) if isinstance(res, dict) else list(res)})
+                    elif self._pause_until != req["until"]:
+                        self._pause_until = req["until"]
+                elif token is not None or self._pause_until:   # flag gone or too old: writes go on
+                    token = None
+                    self._release_pause()
+                    ack.unlink(missing_ok=True)
+                    if req:                                  # a stale flag (e.g. restored from a backup)
+                        flag.unlink(missing_ok=True)
+            except Exception:  # noqa: BLE001 – the watch must never stop the app
+                self._release_pause()
+                token = None
 
     # ---------- settings ----------
     def get_setting(self, key: str, default: Any = None) -> Any:

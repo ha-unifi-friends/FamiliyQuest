@@ -108,6 +108,7 @@ async function loadMe() {
   window.FQ_STORIES = S.me.stories !== false;           // adventure books switched off for this child: no menu entry
   if (S.me.prank) setTimeout(() => inkOverlay(S.me.prank), 400);     // somebody threw an ink bomb meanwhile
   idleReset();
+  if (S.live === undefined) setTimeout(refreshLive, 0);  // live weather and sun for the header scene (then every 5 min)
 }
 
 // login with the Home Assistant user of a child (api/kid.py ha-login): only the children's app, never the parent area
@@ -265,7 +266,7 @@ function partyBanner() {
   const what = [p.unlock ? T("all games open") : null, p.battery ? T("starting is free") : null, p.limits ? T("no game time limit") : null].filter(Boolean);
   return h("section.card.banner.party-banner", h("span.big-ic", "🎉"),
     h("div.grow", h("strong", T("Party mode"), p.until ? " " + untilWhen(p.until) : ""), what.length ? h("div.small", what.map(t => I18N.tr(t)).join(" · ")) : null),
-    h("span.big-ic.party-ball", "🪩"));
+    h("span.party-stage", { "aria-hidden": "true" }, h("i.party-rays"), h("i.party-spot"), h("span.big-ic.party-ball", "🪩")));
 }
 // the Disco design while the party runs for this child (or an own design of the parents with the disco look)
 const discoTheme = () => (S.me && S.me.party && S.me.party.theme) || (S.info && S.info.season && S.info.season.vis === "disco" && seasonOn() ? S.info.season : null);
@@ -359,19 +360,48 @@ let _seasonCss = false;
 function discoScene() {
   return h("div.scn.disco-scn", { "aria-hidden": "true" }, h("span.disco-ball", "🪩"), h("i.spot.s1"), h("i.spot.s2"), h("i.spot.s3"));
 }
+// the scene of the design of the day – with the live weather and daylight of Home Assistant (api season-live: the
+// weather entity and «Day and night follow the sun» in the parent area); without them the clock decides (night 20–6).
+// No design today but a weather entity: the everyday scene («alltag») with the weather, like the planner card.
+function sceneOpts() {
+  const se = S.info && S.info.season, lv = S.live || null;
+  if (!se && !(lv && lv.wx)) return null;
+  const now = new Date();
+  return { season: se ? { vis: se.vis, jz: se.jz, key: se.id, wild: 1 } : { vis: "alltag", jz: lv.jz || "sommer", key: "alltag", wild: 1 },
+    wx: lv ? lv.wx : null, hour: now.getHours(), night: lv ? lv.night : null, dusk: lv ? lv.dusk : null, storm: (lv && lv.storm) || 50,
+    lang: /^de/.test(I18N.base) ? "de" : "en", narrow: innerWidth < 700, intensity: "normal",
+    still: FPSEASON.reduce ? FPSEASON.reduce() : false };
+}
 function seasonScene() {
   if (discoTheme()) return discoScene();
-  const se = S.info && S.info.season;
-  if (!se || !seasonOn() || !window.FPSEASON) return null;
+  if (!seasonOn() || !window.FPSEASON) return null;
+  const o = sceneOpts();
+  if (!o) return null;
   if (!_seasonCss) { _seasonCss = true; document.head.append(h("style", FPSEASON.CSS)); }
-  const now = new Date();
   const el = h("div.scn");
   try {
-    el.innerHTML = FPSEASON.scene({ season: { vis: se.vis, jz: se.jz, key: se.id, wild: 1 }, wx: null, hour: now.getHours(),
-      lang: I18N.base === "de" ? "de" : "en", narrow: innerWidth < 700, intensity: "normal" }) + '<div class="shade"></div>';
+    el.innerHTML = FPSEASON.scene(o) + '<div class="shade"></div>';
+    el._key = FPSEASON.sceneKey(o);
   } catch (e) { return null; }
   return el;
 }
+// every 5 minutes: the weather and the sun anew – the scene is only drawn again when it looks different (sceneKey),
+// so the animations do not restart
+async function refreshLive() {
+  if (!Auth.kid || !S.me) return;
+  try { S.live = await api("season-live"); } catch { return; }
+  const head = document.querySelector("header.fq-head");
+  if (!head || discoTheme()) return;
+  const cur = head.querySelector(":scope > .scn");
+  const o = seasonOn() && window.FPSEASON ? sceneOpts() : null;
+  if (cur && o && cur._key === FPSEASON.sceneKey(o)) return;
+  const fresh = o ? seasonScene() : null;
+  if (cur && fresh) cur.replaceWith(fresh);
+  else if (fresh) head.prepend(fresh);
+  else if (cur) cur.remove();
+  head.classList.toggle("sc", !!fresh);
+}
+setInterval(() => { if (!document.hidden) refreshLive(); }, 5 * 60000);
 
 function seasonLabel() {
   const se = discoTheme() || (S.info && S.info.season);
@@ -394,8 +424,9 @@ function headClock() {
 function topBar(active, opts = {}) {
   const me = S.me;
   const se = discoTheme() || (S.info && S.info.season);
-  const head = h("header.top.fq-head" + (se && (seasonOn() || discoTheme()) ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
-    seasonScene(),
+  const scn = seasonScene();
+  const head = h("header.top.fq-head" + (scn || (se && seasonOn()) ? ".sc" : ""), { style: se && se.accent ? { "--season": se.accent } : null },
+    scn,
     h("div.head-row" + (opts.back ? ".has-back" : ""),
       h("button.icon-btn.menu-btn", { title: T("Menu"), "aria-label": T("Menu"), onclick: () => openDrawer(active) }, "☰",
         (window.FQ_NAV_BADGES || {}).deals ? h("span.deal-badge", String(window.FQ_NAV_BADGES.deals)) : null),
@@ -413,7 +444,9 @@ function topBar(active, opts = {}) {
 }
 
 function openDrawer(active) {
-  openAppMenu({ active, season: S.info.season, seasonOn: seasonOn(),
+  // the switch also when only the weather scene shows (no design today)
+  const season = S.info.season || (S.live && S.live.wx ? { icon: S.live.wx.icon || "🌦️" } : null);
+  openAppMenu({ active, season, seasonOn: seasonOn(),
     onGo: key => { if (key === "planer") location.href = "planner"; else go(key === "home" ? "" : key); },
     onSeason: () => { try { localStorage.setItem("fq.season", seasonOn() ? "0" : "1"); } catch {} route(); },
     onLogout: logout });

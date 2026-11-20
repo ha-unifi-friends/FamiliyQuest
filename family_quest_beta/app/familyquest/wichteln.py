@@ -58,7 +58,7 @@ class Wichteln:
                 raise CommunityError("Unknown date") from None
         people = [m for m in self.members() if m["id"] in {int(x) for x in participants}]
         if len(people) < 2:
-            raise CommunityError("Wichteln needs at least two people")
+            raise CommunityError("Secret gift giving needs at least two people")
         pairs = draw(people, no_parent_pairs, no_kid_pairs)
         todos = {}
         host = self.planer()
@@ -91,7 +91,7 @@ class Wichteln:
     def set_done(self, prof: dict, wid: int, done: bool) -> None:
         r = self.db.q1("SELECT * FROM wichtel WHERE id=?", wid)
         if not r or str(prof["id"]) not in json.loads(r["pairs"]):
-            raise CommunityError("Unknown Wichteln")
+            raise CommunityError("Unknown secret gift giving")
         d = json.loads(r["done"] or "{}")
         d[str(prof["id"])] = bool(done)
         self.db.x("UPDATE wichtel SET done=? WHERE id=?", json.dumps(d), wid)
@@ -118,7 +118,7 @@ class Wichteln:
     def delete(self, prof: dict, wid: int) -> None:
         r = self.db.q1("SELECT * FROM wichtel WHERE id=?", wid)
         if not r:
-            raise CommunityError("Unknown Wichteln")
+            raise CommunityError("Unknown secret gift giving")
         if r["created_by"] != prof["id"] and prof["role"] != "parent":
             raise CommunityError("Only who made it or a parent")
         host = self.planer()
