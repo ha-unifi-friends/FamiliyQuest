@@ -18,7 +18,7 @@ from .i18n import _t
 from .api import community, decks, integration as integration_api, kid, parent, planer
 from .api import stories as stories_api
 from .api import codelab as codelab_api
-from . import loginlog, memo, netfilter
+from . import csp, loginlog, memo, netfilter
 from .packs import i18n as pack_i18n
 from .channel import feature_visible, hidden_games
 from .api import deals as deals_api
@@ -138,8 +138,13 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         resp = await call_next(request)
         if request.url.path.startswith("/api/"):
             resp.headers["Cache-Control"] = "no-store"
-        resp.headers["X-Content-Type-Options"] = "nosniff"
-        resp.headers["Referrer-Policy"] = "same-origin"
+        return resp
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        """Around access(): CSP, nosniff and Referrer-Policy on every answer, the refusals included (csp.py)."""
+        resp = await call_next(request)
+        csp.apply(request.url.path, resp.headers)
         return resp
 
     @app.middleware("http")
@@ -171,7 +176,8 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
 
     def page(name: str) -> HTMLResponse:
         html = (WEB_DIR / name).read_text(encoding="utf-8").replace("__VERSION__", settings.version)
-        return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
+        return HTMLResponse(html, headers={"Cache-Control": "no-cache",
+                                           "Content-Security-Policy": csp.PAGE_CSP_OF.get(name, csp.PAGE_CSP)})
 
     @app.get("/", include_in_schema=False)
     def index(request: Request):
@@ -273,7 +279,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         f = (settings.media_dir / pack_id / name).resolve()
         if settings.media_dir.resolve() not in f.parents or not f.is_file():
             raise HTTPException(404)
-        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"})
+        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"}, **csp.media_kwargs(f.name))
 
     @app.get("/hamedia/{path:path}", include_in_schema=False)
     def ha_media_photo(path: str):
@@ -283,7 +289,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         if not memorygame.referenced(app.state.fq, name) or not memorygame.ha_ref_ok(app.state.fq, name):
             raise HTTPException(404)
         f = memorygame.ha_media_path(settings.ha_media_dir, path)
-        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"})
+        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"}, **csp.media_kwargs(f.name))
 
     @app.get("/family_planer_files/{path:path}", include_in_schema=False)
     def planer_files(path: str):
@@ -292,7 +298,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         f = (base / path).resolve()
         if base not in f.parents or not f.is_file() or f.suffix.lower() not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
             raise HTTPException(404)
-        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"})
+        return FileResponse(f, headers={"Cache-Control": "private, max-age=86400"}, **csp.media_kwargs(f.name))
 
     static_types = {".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png",
                     ".webmanifest": "application/manifest+json", ".json": "application/json", ".ico": "image/x-icon",

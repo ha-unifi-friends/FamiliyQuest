@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1-beta.30
+
+- Security: Content-Security-Policy on every page – only Family Quest's own scripts run; pictures and files under /media are served sandboxed, unknown file types only as download
+- Parent area code split into thematic files (no change in behaviour)
+
 ## 1.1.1-beta.29
 
 - Profile dialog: «Log out everywhere» ends every login of the profile on all devices

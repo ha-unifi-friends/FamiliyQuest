@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="parent.css?v=__VERSION__">
 <link rel="stylesheet" href="parent-ha.css?v=__VERSION__">
 <link rel="stylesheet" href="parent-analytics.css?v=__VERSION__">
-<script>window.FQ_PARENT_AREA = true;</script>
+<script src="shared/parent-area.js?v=__VERSION__"></script>
 <script src="shared/i18n.js?v=__VERSION__"></script>
 </head>
 <body>
@@ -52,14 +52,20 @@
 <script src="song.js?v=__VERSION__"></script>
 <script src="deals.js?v=__VERSION__"></script>
 <script src="parent.js?v=__VERSION__"></script>
+<script src="parent-photos.js?v=__VERSION__"></script>
+<script src="parent-overview.js?v=__VERSION__"></script>
+<script src="parent-family.js?v=__VERSION__"></script>
+<script src="parent-packs.js?v=__VERSION__"></script>
+<script src="parent-games.js?v=__VERSION__"></script>
+<script src="parent-chores.js?v=__VERSION__"></script>
+<script src="parent-rewards.js?v=__VERSION__"></script>
+<script src="parent-shop.js?v=__VERSION__"></script>
+<script src="parent-calendar.js?v=__VERSION__"></script>
+<script src="parent-history.js?v=__VERSION__"></script>
+<script src="parent-settings.js?v=__VERSION__"></script>
 <script src="parent-info.js?v=__VERSION__"></script>
 <script src="parent-analytics.js?v=__VERSION__"></script>
 <script src="parent-privacy.js?v=__VERSION__"></script>
-<script>
-  // if the page does not start (e.g. an old cache or a lost connection), offer a reload instead of a black screen
-  setTimeout(() => { const a = document.getElementById("app"); if (a && !a.children.length) a.innerHTML =
-    '<div style="min-height:80vh;display:grid;place-items:center;font:16px system-ui;color:#888;text-align:center"><div><p>Family Quest</p>' +
-    '<button onclick="location.reload()" style="font:inherit;padding:10px 18px;border-radius:10px;border:0;background:#5b5bd6;color:#fff">⟳ Reload</button></div></div>'; }, 10000);
-</script>
+<script src="shared/boot-check.js?v=__VERSION__"></script>
 </body>
 </html>
