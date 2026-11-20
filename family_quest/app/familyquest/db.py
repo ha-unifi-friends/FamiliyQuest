@@ -911,6 +911,7 @@ DEFAULT_SETTINGS = {
     "ha_app_login_url": "",              # … the address of Home Assistant for the browsers – "" = automatic
     "allowed_networks": [],              # mini firewall: networks (CIDR) that may use the app – empty = all
     "guest_networks": [],                # guest Wi-Fi: only games with a QR code invitation (no family login)
+    "guest_wifi_qr": None,               # image.* / camera.* entity with the guest Wi-Fi QR code (e.g. UniFi) – shown in «Invite guests»
     "parent_networks": [],               # … that may open the parent area – empty = all
     "calendar": None,                    # family calendar (calendar.py): Home Assistant calendars shown read-only
     "dashboard": None,                   # kiosk dashboard (dashboard.py)

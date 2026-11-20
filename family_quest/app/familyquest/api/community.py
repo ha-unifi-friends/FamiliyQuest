@@ -2782,7 +2782,7 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
             inv = await asyncio.to_thread(fq.guests.invite, "schach", body.on, g["id"])     # never a write on the loop
         except GuestError as e:
             raise HTTPException(400, str(e)) from None
-        return {"invite": inv, "access": await home_access(fq.settings)}
+        return _with_wifi(fq, {"invite": inv, "access": await home_access(fq.settings)})
     if body.game in ("tschau", "karussell", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "dorfmarkt", "escape", "stempeljagd"):
         games = {"domino": fq.domino, "paarjagd": fq.paarjagd, "werbinich": fq.werbinich, "kartenlauf": fq.kartenlauf,
                  "stadtland": fq.stadtland, "zeichnen": fq.zeichnen, "wuerfel": fq.wuerfel, "heimwaerts": fq.heimwaerts, "jump": fq.jump, "verkehr": fq.verkehr, "langstrecke": fq.langstrecke, "sternlauf": fq.sternlauf, "snack": fq.snack, "klatsch": fq.klatsch, "verboten": fq.verboten,
@@ -2799,7 +2799,14 @@ async def guests_invite(body: InviteIn, request: Request, prof: dict = Gamer) ->
         inv = await asyncio.to_thread(fq.guests.invite, body.game, body.on)
     except GuestError as e:
         raise HTTPException(400, str(e)) from None
-    return {"invite": inv, "access": await home_access(fq.settings)}
+    return _with_wifi(fq, {"invite": inv, "access": await home_access(fq.settings)})
+
+
+def _with_wifi(fq, out: dict) -> dict:
+    """The dialog «Invite guests» also shows the guest Wi-Fi QR code (api/kid.py guest-wifi-qr) when it is set up."""
+    if fq.db.get_setting("guest_wifi_qr"):
+        out["wifi"] = True
+    return out
 
 
 @router.get("/guest/info")

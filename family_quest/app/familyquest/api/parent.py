@@ -1194,6 +1194,14 @@ def save_settings(body: dict[str, Any], request: Request, me: dict = Parent) -> 
             body = {**body, "ha_app_login_url": clean_url(body["ha_app_login_url"]) if str(body["ha_app_login_url"] or "").strip() else ""}
         except (ValueError, TypeError):
             raise HTTPException(400, "Address: e.g. http://192.168.1.10:8123") from None
+    if "guest_wifi_qr" in body:                  # the guest Wi-Fi QR code: an image (or camera) entity, or none
+        v = body["guest_wifi_qr"]
+        v = v.strip() if isinstance(v, str) else v
+        if v in (None, ""):
+            v = None
+        elif not (isinstance(v, str) and re.fullmatch(r"(image|camera)\.[a-z0-9_]{1,200}", v)):
+            raise HTTPException(400, "Choose an image entity of Home Assistant")
+        body = {**body, "guest_wifi_qr": v}
     if "game_starter" in body and body["game_starter"] not in ("dice", "leader", "choose"):
         raise HTTPException(400, "Unknown setting")
     for k, v in body.items():
