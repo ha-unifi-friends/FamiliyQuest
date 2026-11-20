@@ -39,6 +39,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
     async def lifespan(app: FastAPI):
         core = app.state.fq
         core.packs.sync_folders(settings.packs_dirs)
+        core.db.start_backup_watch(settings.data_dir)     # hot backups by Home Assistant pause the writes (hotbackup.py)
         from . import integration
         asyncio.get_running_loop().run_in_executor(None, integration.install_on_start, core)   # HA integration: update /config copy
         async def relink():
@@ -74,6 +75,7 @@ def create_app(settings: Settings | None = None, fq: FamilyQuest | None = None) 
         else:
             log.info("Home Assistant connection disabled")
         yield
+        core.db.stop_backup_watch()
         await core.planer_host.stop()
         if client:
             await client.close()

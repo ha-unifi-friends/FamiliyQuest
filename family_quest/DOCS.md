@@ -38,6 +38,45 @@ Everything lives in `/data/family_quest.db` (SQLite) and `/data/media/` – both
 Additional packs can be placed in `/share/family_quest/packs` (YAML files, folders with YAML + pictures, or ZIP files);
 they are read at start. Packs changed in the parent area are not overwritten by the folder copy.
 
+### Backup & restore (parent area › Settings)
+
+Three downloads, one restore:
+
+- **⬇️ Download full backup** – everything (database, own pack pictures, photo sets, book pictures, planner photos).
+- **⬇️ Download data backup** – only the family's usage data: ledger (points, coins, XP), learning progress, games
+  played and their history, chores done, deals, reward redemptions, behaviour weather, calendar and planner, logs and
+  statistics, best scores. No settings, no profiles (their numbers and names are in the backup to match them).
+- **⬇️ Download customizing backup** – all settings and configuration, the profiles (PIN hashes, avatars, login
+  modes, linked Home Assistant users) and the family's own content: packs, own quizzes, books and adventure games,
+  code workshop games, photo sets and the crest, shop and rewards, point rules, chore and goal definitions, deal
+  settings, game settings, designs, own texts and languages, saved analytics reports and dashboards. No usage data –
+  e.g. to set up a dev or beta installation like the real one, without the data.
+
+The restore has one file field and recognises the kind (backups from older versions are full backups). It shows what will
+be replaced and what stays:
+
+- A **full** backup replaces everything.
+- A **data** backup replaces the usage data only. Profiles are matched by their number: entries of a profile that does
+  not exist here are skipped and listed; a profile with the same number but another name is pointed out first.
+- A **customizing** backup replaces settings, profiles and own content; the usage data stay. Profiles that are here
+  but not in the backup are **kept** (with their data) – nothing is left without its profile; they are listed.
+- Balances are always summed from the ledger, and everything stored next to it (XP per day, spent XP, «new XP from»,
+  the planner's booking mark) belongs to the same kind – nothing is left out of date.
+- Values that belong to this installation are **never** taken from a backup, of any kind: the Home Assistant panel
+  path, the Home Assistant address for «Sign in with Home Assistant», the token of the HA integration (and when it
+  last asked), the key of the kiosk dashboard link and «Last backup». The signing key (`secret.key`), the add-on
+  options (`direct_access`, port) and the channel are not in the database at all.
+- Before every restore the current state is saved as `before-restore.zip` (a full backup) in the data folder.
+
+Which table and setting belongs to which kind is one table in `familyquest/backup.py` (`TABLES`, `SETTINGS`); a test
+fails when a new table, migration or setting is not classified.
+
+**Automatic backups:** include Family Quest in Home Assistant's backup settings (Settings › System › Backups, the
+button «⚙️ Open backup settings in Home Assistant» goes there). The app is backed up *hot*: before Home Assistant copies
+`/data`, it runs `hotbackup.py pre` in the app – the app pauses its writes (reading goes on), checkpoints its SQLite
+database (`PRAGMA wal_checkpoint(TRUNCATE)`), and after the copy `hotbackup.py post` lets the writes go on. The pause
+never lasts longer than 2 minutes, even if Home Assistant never says it is done.
+
 ## Channels: Family Quest, Beta and Dev
 
 Three apps of this repository can run side by side, each with its own data and entities: **Family Quest** (stable,

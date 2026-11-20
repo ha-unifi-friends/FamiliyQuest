@@ -103,8 +103,11 @@ const PARENT_INFO = {
     T("Which networks may open the app directly (without Home Assistant): e.g. the home network yes, the guest network only for game guests."),
     T("Only devices with an address in these ranges may use Family Quest. A range can also be a single address (leave «to» empty). No range = every network.")],
   [T("Backup & restore")]: [
-    T("Download everything (database, Planer data, pack pictures) as one file, or restore such a file. Make a backup before big changes."),
+    T("Download a full backup (everything), a data backup (usage data only) or a customizing backup (settings, profiles and own content), or restore one of them – the restore recognises the kind by itself. Make a backup before big changes."),
     T("Saves your own data in one file: profiles, learning progress, points, chores, planner, own packs, own pictures and settings. Pictures from Home Assistant Media and the app's own content are not copied – only the reference.")],
+  [T("Automatic backups")]: [
+    T("Home Assistant then saves the app with all its data on its own schedule. The app pauses its writes for a moment while Home Assistant copies it, so the copy of the database is complete."),
+    T("The three downloads here are for your own copies: the full backup holds everything, the data backup only the usage data, the customizing backup the settings, profiles and own content (e.g. for a test installation).")],
   [T("Shopping list (Bring!)")]: [
     T("Connects the Family Quest shopping list with a todo list of Home Assistant, e.g. Bring!: items are synchronised both ways."),
     T("A list of Home Assistant becomes a smart list of the planner (sorted by shop sections). It stays one list: what you add or tick in the planner shows up in the Bring! app, and the other way round.")],

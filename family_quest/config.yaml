@@ -16,6 +16,11 @@ ingress_port: 8099
 panel_icon: mdi:school
 panel_title: "Family Quest"
 panel_admin: false
+# Home Assistant backups while the app runs: before the copy the app pauses its writes and checkpoints its database
+# (app/familyquest/hotbackup.py, at most 2 minutes), afterwards the writes go on
+backup: hot
+backup_pre: python3 /app/familyquest/hotbackup.py pre
+backup_post: python3 /app/familyquest/hotbackup.py post
 ports:
   8099/tcp: 8099
 ports_description:

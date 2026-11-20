@@ -3145,41 +3145,91 @@ function backupSection() {
       upload = await sendInPieces(f);
       m = (await call("parent/backup/inspect-upload", { method: "POST", body: { upload } })).manifest;
     } catch (e) { toast(e.message, "bad"); info.replaceChildren(); file.value = ""; return; }
-    const when = new Date(m.created).toLocaleString(I18N.locale);
-    info.replaceChildren(h("div.card.restore-box",
-      h("p", h("strong", T("Backup from {0}").replace("{0}", when)), " · Family Quest " + (m.app_version || "?")),
-      m.counts ? h("p.small.muted", T("Profiles"), ": ", String(m.counts.profile ?? "–"), " · ", T("Packs"), ": ", String(m.counts.pack ?? "–")) : null,
-      m.compat && m.compat.status === "older" ? h("div.card.warn-box",
-        h("p", h("strong", "⚠️ ", T("This backup comes from an older version")), " ",
-          I18N.tr(T("(Family Quest {0} – now {1})")).replace("{0}", m.compat.from).replace("{1}", m.compat.to)),
-        h("p.small", "✓ ", T("Checked: the backup is not damaged, and the update of its data to the current version worked on a test copy.")),
-        h("p.small", T("Things that are new since then start with their standard settings. Please check the profiles, points and packs after restoring.")))
-        : h("p.small.muted", "✓ ", T("Checked: the backup is not damaged and fits this version.")),
-      h("p.warn-text", T("Restoring replaces ALL current data (profiles, learning progress, points, chores, planner, packs).")),
-      h("p.small.muted", "🛟 ", T("Before restoring, the current data are saved once more as before-restore.zip in the data folder of the app.")),
-      h("div.row", h("button.btn.bad", { onclick: async e => {
-        if (!(await confirmDialog(I18N.tr(T("Really replace all data with this backup?"))))) return;
-        const btn = e.currentTarget; btn.disabled = true;
-        try { await call("parent/restore-upload", { method: "POST", body: { upload } }); }
-        catch { btn.disabled = false; return; }
-        toast(T("Restored"), "good"); setTimeout(() => location.reload(), 800);
-      } }, "♻️ ", T("Restore now")), h("button.btn.ghost", { onclick: () => { info.replaceChildren(); file.value = ""; } }, T("Cancel")))));
+    info.replaceChildren(restoreBox(m, upload, () => { info.replaceChildren(); file.value = ""; }));
   });
   // what takes how much room – pictures of Home Assistant Media and the app's own packs are not in the backup
   const sizes = h("p.small.muted");
   const mb = n => (n / 1048576).toLocaleString(I18N.locale, { maximumFractionDigits: n < 10485760 ? 1 : 0 }) + " MB";
   call("parent/backup/sizes").then(s => sizes.replaceChildren(
-    T("Size of the backup: about {0}").replace("{0}", mb(s.backup)), " (",
+    T("Size of the full backup: about {0}").replace("{0}", mb(s.backup)), " (",
     T("Data"), " ", mb(s.database), " · ", T("Photo sets"), " ", mb(s.photo_sets), " · ",
     T("Pack pictures"), " ", mb(s.pack_pictures), " · ", T("Planner photos"), " ", mb(s.planner_photos), ")")).catch(() => {});
+  // Home Assistant's own (automatic) backups: a hint and a way to their settings
+  let haUrl = null;
+  const haBtn = h("button.btn.ghost", { type: "button", hidden: true, onclick: () => {
+    if (!haUrl) return;
+    if (P.info && P.info.via_ha) window.top.location.href = haUrl;     // the Home Assistant window around the app
+    else window.open(haUrl, "_blank", "noopener");
+  } }, "⚙️ ", T("Open backup settings in Home Assistant"));
+  haBackupHref().then(u => { haUrl = u; haBtn.hidden = !u; });
   return section("💾 " + I18N.tr(T("Backup & restore")),
     sizes,
-    h("div.row", h("button.btn", { onclick: () => downloadBackup() }, "⬇️ ", T("Download backup"))),
-    h("label.field", T("Restore from a backup file"), file), info);
+    h("div.row.backup-kinds",
+      h("button.btn", { onclick: () => downloadBackup("full") }, "⬇️ ", T("Download full backup")),
+      h("button.btn.ghost", { onclick: () => downloadBackup("data") }, "⬇️ ", T("Download data backup")),
+      h("button.btn.ghost", { onclick: () => downloadBackup("customizing") }, "⬇️ ", T("Download customizing backup"))),
+    h("p.small.muted", T("Full: everything. Data: only what the family did (points, progress, games, chores done …). Customizing: settings, profiles and your own content – e.g. to set up a test installation without the data.")),
+    h("label.field", T("Restore from a backup file"), file), info,
+    h("p.small.ha-backup-hint", { "data-ik": "Automatic backups" }, T("For automatic backups, include Family Quest in the Home Assistant backup settings (Apps).")),
+    h("div.row", haBtn));
 }
 
-async function downloadBackup() {
-  const r = await fetch("api/parent/backup", { headers: { "X-FQ-Parent": Auth.parent } });
+// Home Assistant's backup settings: inside Home Assistant the top window goes there (same origin), from the app's own
+// port the address of Home Assistant on this host; without Home Assistant null (no button)
+async function haBackupHref() {
+  if (P.info && P.info.via_ha) return "/config/backup/settings";
+  try { const p = await api("ha-panel"); if (p.port) return `${p.ssl ? "https" : "http"}://${location.hostname}:${p.port}/config/backup/settings`; } catch {}
+  return null;
+}
+
+// the restore dialog: what kind of backup it is, what it replaces and what stays, how the profiles match
+function restoreBox(m, upload, cancel) {
+  const kind = m.kind || "full", plan = m.plan || {};
+  const when = new Date(m.created).toLocaleString(I18N.locale);
+  const KIND = { full: T("Full backup"), data: T("Data backup"), customizing: T("Customizing backup") };
+  const USAGE = T("usage data (points, coins, XP, learning progress, games and history, chores done, deals, redemptions, weather, planner, logs)");
+  const SETUP = T("profiles and settings");
+  const OWN = T("own content (packs, quizzes, books and adventure games, photo sets, shop, rewards, chores, designs, texts, crest, reports and dashboards)");
+  const replaces = { full: [SETUP, OWN, USAGE], data: [USAGE], customizing: [SETUP, OWN] }[kind] || [];
+  const keeps = { full: [], data: [SETUP, OWN], customizing: [USAGE] }[kind] || [];
+  const names = list => list.map(p => p.name).join(", ");
+  const li = t => h("li", t);
+  const question = { full: T("Really replace all data with this backup?"),
+    data: T("Really replace the usage data with this data backup? Profiles, settings and own content stay."),
+    customizing: T("Really replace settings, profiles and own content with this customizing backup? The usage data stay.") }[kind];
+  return h("div.card.restore-box", { "data-kind": kind },
+    h("p", h("strong", "📦 ", KIND[kind] || KIND.full), " · ", T("Backup from {0}").replace("{0}", when), " · Family Quest " + (m.app_version || "?")),
+    m.counts ? h("p.small.muted", T("Profiles"), ": ", String((m.profiles || []).length || m.counts.profile || "–"),
+      kind === "data" ? null : [" · ", T("Packs"), ": ", String(m.counts.pack ?? "–")]) : null,
+    m.compat && m.compat.status === "older" ? h("div.card.warn-box",
+      h("p", h("strong", "⚠️ ", T("This backup comes from an older version")), " ",
+        I18N.tr(T("(Family Quest {0} – now {1})")).replace("{0}", m.compat.from).replace("{1}", m.compat.to)),
+      h("p.small", "✓ ", T("Checked: the backup is not damaged, and the update of its data to the current version worked on a test copy.")),
+      h("p.small", T("Things that are new since then start with their standard settings. Please check the profiles, points and packs after restoring.")))
+      : h("p.small.muted", "✓ ", T("Checked: the backup is not damaged and fits this version.")),
+    h("p.warn-text", T("Replaced:")), h("ul.small.restore-list", ...replaces.map(li)),
+    keeps.length ? [h("p", h("strong", T("Stays as it is:"))), h("ul.small.restore-list", ...keeps.map(li))] : null,
+    plan.missing && plan.missing.length ? h("div.card.warn-box", h("p.small", "⚠️ ",
+      T("These profiles are not here – their entries are skipped: {0}").replace("{0}", names(plan.missing)))) : null,
+    plan.renamed && plan.renamed.length ? h("div.card.warn-box", h("p.small", "⚠️ ", T("Profiles are matched by their number. Different names:"), " ",
+      plan.renamed.map(r => `${r.backup} → ${r.here}`).join(", "))) : null,
+    plan.kept && plan.kept.length ? h("p.small", "👤 ", T("Not in the backup, they stay with their data: {0}").replace("{0}", names(plan.kept))) : null,
+    h("p.small.muted", "🏠 ", T("Values of this installation stay (Home Assistant panel path and address, integration token, dashboard link, last backup).")),
+    h("p.small.muted", "🛟 ", T("Before restoring, the current data are saved once more as before-restore.zip in the data folder of the app.")),
+    h("div.row", h("button.btn.bad", { onclick: async e => {
+      if (!(await confirmDialog(question, { danger: true }))) return;
+      const btn = e.currentTarget; btn.disabled = true;
+      let r;
+      try { r = await call("parent/restore-upload", { method: "POST", body: { upload } }); }
+      catch { btn.disabled = false; return; }
+      const skipped = ((r.manifest || {}).report || {}).skipped || [];
+      toast(T("Restored") + (skipped.length ? " · " + T("Skipped (profile not here): {0}").replace("{0}", skipped.map(x => `${x.name} (${x.rows})`).join(", ")) : ""), "good");
+      setTimeout(() => location.reload(), skipped.length ? 3000 : 800);
+    } }, "♻️ ", T("Restore now")), h("button.btn.ghost", { onclick: cancel }, T("Cancel"))));
+}
+
+async function downloadBackup(kind = "full") {
+  const r = await fetch("api/parent/backup?kind=" + encodeURIComponent(kind), { headers: { "X-FQ-Parent": Auth.parent } });
   if (!r.ok) return toast(T("Backup failed"), "bad");
   const name = (r.headers.get("content-disposition") || "").match(/filename="([^"]+)"/)?.[1] || "family-quest-backup.zip";
   const url = URL.createObjectURL(await r.blob());
