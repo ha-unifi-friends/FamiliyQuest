@@ -10,6 +10,7 @@ import pytest
 
 from familyquest import verkehr as vk
 from familyquest.community import CommunityError
+from websrc import parent_js
 
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
 
@@ -578,7 +579,7 @@ def test_the_app_knows_the_game():
         assert 'src="verkehr.js' in (WEB / f).read_text(encoding="utf-8"), f
     kid = (WEB / "kid.js").read_text(encoding="utf-8")
     assert 'view === "verkehr"' in kid and 'canPlay("verkehr")' in kid
-    parent = (WEB / "parent.js").read_text(encoding="utf-8")
+    parent = parent_js()
     assert '["verkehr", "🚦", T("Traffic Cadet")]' in parent and 'gameRewardsRow("verkehr")' in parent
     assert 'e.kind === "verkehr"' in (WEB / "community.js").read_text(encoding="utf-8")
     assert 'game === "verkehr"' in (WEB / "gast.js").read_text(encoding="utf-8")

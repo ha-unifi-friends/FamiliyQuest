@@ -9,6 +9,8 @@ import json
 import re
 from pathlib import Path
 
+from websrc import web_src
+
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
 LANGS = ["de-DE", "de-CH", "fr-FR", "it-IT", "es-ES", "nl-NL", "pl-PL", "pt-BR", "sv-SE"]
 S = r'"((?:[^"\\]|\\.)*)"'
@@ -17,7 +19,7 @@ TITLE = r'(?:"[^"\w]*"\s*(?:\+|,)\s*)?(?:I18N\.tr\()?(?:T\()?' + S
 
 
 def _src(name: str) -> str:
-    return (WEB / name).read_text(encoding="utf-8")
+    return web_src(name)                      # "parent.js": the whole parent area (parent.js and its parts)
 
 
 def info_keys() -> tuple[set[str], dict[str, list[str]]]:
@@ -177,7 +179,7 @@ def test_small_fields_side_by_side():
     assert re.search(r"\.field-row \{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(150px, 1fr\)\)", css)
     assert ".field-info" in css and ".gp-rent" in css
     src = _src("parent.js")
-    price = src[src.index("function gamePriceBox("):src.index("// ---------------------------------------------------------------- pairs game")]
+    price = _fn(src, "function gamePriceBox(")
     assert 'h("div.field-row"' in price and 'h("div.gp-rent", rent, periods)' in price and price.count("fieldInfo(") == 4
     battery = src[src.index("function batteryForm("):src.index("/** Parent area › Games: the family default")]
     assert 'h("div.field-row"' in battery and "...more" in battery

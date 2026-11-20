@@ -106,7 +106,8 @@ def test_old_german_addresses_redirect(client):
     # the pages link the English addresses only
     from pathlib import Path
     web = Path(__file__).resolve().parent.parent / "family_quest/app/web"
-    for f in ("kid.js", "parent.js", "community.js", "shared/ui.js", "planer/host.js", "gast.js", "index.html", "eltern.html", "gast.html", "planer.html"):
+    from websrc import PARENT_JS
+    for f in ("kid.js", *PARENT_JS, "community.js", "shared/ui.js", "planer/host.js", "gast.js", "index.html", "eltern.html", "gast.html", "planer.html"):
         t = (web / f).read_text(encoding="utf-8")
         for old in ('"eltern"', "'eltern'", "/gast?", '"gast"', '"planer?', 'href = "planer"', '? "planer" :'):
             assert old not in t, (f, old)
@@ -395,4 +396,5 @@ def test_install_app_entry():
     assert menu.index('pwaStandalone() ? null') < menu.index('T("Log out")')
     for s in ("beforeinstallprompt", "display-mode: standalone", "navigator.standalone", "SamsungBrowser", "maxTouchPoints"):
         assert s in ui, s
-    assert "installAppDialog({ forOther: true, link })" in (web / "parent.js").read_text(encoding="utf-8")
+    from websrc import parent_js
+    assert "installAppDialog({ forOther: true, link })" in parent_js()

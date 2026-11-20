@@ -9,6 +9,7 @@ import pytest
 from familyquest import privacy
 from familyquest.rewards.engine import today
 from test_api import setup_family
+from websrc import parent_js
 
 
 def ago(days: int) -> str:
@@ -270,7 +271,7 @@ def test_ui_sections_have_info_and_translations():
     for lang in ["de-DE", "de-CH", "fr-FR", "it-IT", "es-ES", "nl-NL", "pl-PL", "pt-BR", "sv-SE"]:
         d = json.loads((web / "i18n" / f"{lang}.json").read_text(encoding="utf-8"))
         assert not [t for t in texts if t not in d], lang
-    assert '"privacy", "🛡️", T("Privacy")' in (web / "parent.js").read_text(encoding="utf-8")
+    assert '"privacy", "🛡️", T("Privacy")' in parent_js()
     assert "parent-privacy.js" in (web / "eltern.html").read_text(encoding="utf-8")
 
 

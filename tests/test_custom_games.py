@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 from test_stories import BOOK, _logins
+from websrc import parent_js
 
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
 PNG = b"\x89PNG\r\n\x1a\n" + b"\0" * 40
@@ -111,7 +112,7 @@ def test_photo_set_zip_import_and_export(client):
 
 
 def test_frontend_structure():
-    parent, kid, stories = (WEB / "parent.js").read_text("utf-8"), (WEB / "kid.js").read_text("utf-8"), (WEB / "stories.js").read_text("utf-8")
+    parent, kid, stories = parent_js(), (WEB / "kid.js").read_text("utf-8"), (WEB / "stories.js").read_text("utf-8")
     assert '["adventuregame", "🗝️", T("Adventure games")]' in parent
     assert 'const CUSTOM_GAMES = ["quiz", "paarjagd", "adventuregame"]' in parent and 'h("section.cg-group"' in parent
     assert "P.openGames" not in parent                                   # every game folded, nothing remembered open

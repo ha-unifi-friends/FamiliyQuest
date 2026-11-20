@@ -3,12 +3,14 @@ parent area, focus handling of dialogs, the shared start row of the game cards, 
 import re
 from pathlib import Path
 
+from websrc import PARENT_JS, parent_js, web_src
+
 WEB = Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web"
 JS = sorted(WEB.glob("*.js")) + sorted((WEB / "shared").glob("*.js"))
 
 
 def src(name):
-    return (WEB / name).read_text(encoding="utf-8")
+    return web_src(name)                      # "parent.js": the whole parent area (parent.js and its parts)
 
 
 def test_no_native_confirm_prompt_alert():
@@ -59,6 +61,23 @@ def test_css_tokens_safe_areas_and_targets():
 def _fn(text, head):
     body = text[text.index(head):]
     return body[:body.index("\n}\n")]
+
+
+def test_parent_area_parts_load_before_boot():
+    """parent.js is split into parts (parent-overview.js …): eltern.html loads all of them, in order, and boot() runs
+    only once every script of the page is loaded – the views map of render() names functions of every part."""
+    html = src("eltern.html")
+    loaded = re.findall(r'<script src="(parent[^"?]*\.js)\?v=__VERSION__"></script>', html)
+    assert loaded == [*PARENT_JS, "parent-info.js", "parent-analytics.js", "parent-privacy.js"]
+    assert sorted(f.name for f in WEB.glob("parent*.js")) == sorted(loaded)
+    core = (WEB / "parent.js").read_text(encoding="utf-8")
+    assert core.rstrip().endswith('if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => boot()); else boot();')
+    assert not re.search(r"^boot\(\);", parent_js(), re.M)
+    for f in PARENT_JS:
+        assert '\n"use strict";\n' in "\n" + "\n".join((WEB / f).read_text(encoding="utf-8").split("\n")[:4]) + "\n", f
+    names = re.findall(r"^(?:async )?function (\w+)|^(?:const|let) (\w+)", parent_js(), re.M)
+    names = [a or b for a, b in names]
+    assert len(names) > 120 and len(names) == len(set(names)), sorted({n for n in names if names.count(n) > 1})
 
 
 def test_parent_menu_and_period_picker_trap_the_focus():

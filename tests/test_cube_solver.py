@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from websrc import parent_js
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "family_quest" / "app" / "web"
@@ -34,7 +35,7 @@ def test_registered_in_the_game_corner_and_switchable(client):
     from familyquest.services import FamilyQuest
     from test_api import setup_family
     assert "cube" in FamilyQuest.GAMES
-    assert '["cube", "🧊", T("Cube solver")]' in (WEB / "parent.js").read_text(encoding="utf-8")
+    assert '["cube", "🧊", T("Cube solver")]' in parent_js()
     assert "cube: cubeGame" in (WEB / "minigames.js").read_text(encoding="utf-8")
     html = (WEB / "index.html").read_text(encoding="utf-8")
     assert "cubesolver.js" in html and "cube.js" in html
