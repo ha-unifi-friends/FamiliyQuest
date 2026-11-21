@@ -1,6 +1,7 @@
 # Third-party notices
 
-Family Quest itself is MIT licensed (see the README). It contains the following works of others:
+Family Quest itself is published under the Business Source License 1.1 from version 1.2.2 on (versions up to 1.2.1:
+MIT) – see LICENSE and the README. It contains the following works of others, which keep their own licenses:
 
 | Part | Where | License |
 |---|---|---|
@@ -15,7 +16,7 @@ Family Quest itself is MIT licensed (see the README). It contains the following 
 The Material Design Icons are used unchanged (only the SVG paths of the icons the planer needs are bundled).
 «QR Code» is a registered trademark of DENSO WAVE INCORPORATED.
 
-Family Quest is a non-commercial hobby project for private use in families.
+Family Quest is a hobby project for private use in families; commercial use needs a separate license (see LICENSE).
 
 Names of other products that appear in descriptions (e.g. Home Assistant, UniFi, Spotify) are trademarks of their
 owners; Family Quest is not affiliated with them.
