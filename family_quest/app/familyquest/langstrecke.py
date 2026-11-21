@@ -121,20 +121,20 @@ PIT_Z = 25.0                 # no contact on the track this close to the line (t
 # keeps counting along the lap; the line crosses the track and the pit lane, a lap still ends at d = n·L). Phases `pl`:
 # 0 racing, 1 the entry and the lane up to the line, 2 after the line to the box, 3 out of the box to the pit exit and
 # back onto the track (the end of the merge: racing again). `pz`: metres from the line of this stop (− before it).
-PIT_IN = 590.0               # lap metres: the pit entry line – from here every car is on its way into the pits (every lap)
-PIT_ENTRY = 25.0             # the entry bends off to the right over this many metres, then the pit wall
-PIT_OUT = 70.0               # metres after the line: the pit exit (the end of the speed limit) …
+PIT_IN = 595.0               # lap metres: the pit entry line – from here every car is on its way into the pits (every lap)
+PIT_ENTRY = 22.0             # the entry bends off to the right over this many metres, then the pit wall
+PIT_OUT = 60.0               # metres after the line: the pit exit (the end of the speed limit) …
 PIT_MERGE = 15.0             # … and the exit lane joins the track on its right side over this many metres
 PL_X, PL_HW = 9.5, 2.0       # the pit lane: its middle (metres right of the track's middle) and half its width
 SIDE_X = 3.5                 # where the entry leaves / the exit joins the track (its right side)
-PIT_V = 80.0 / 7.0           # the pit speed limit (80 km/h on the display): the limiter holds it by itself, no penalty
+PIT_V = 100.0 / 7.0          # the pit speed limit (100 km/h on the display): the limiter holds it by itself, no penalty
 KEEP_R, KEEP_ST = 1.5, 20    # at the entry line right of this, or steering right: the driver steers in himself …
 AP_LATE = 12.0               # … not in the lane this many metres before the pit wall: the autopilot takes over
 AP_K = 0.7                   # the autopilot's steering: full lock per 1.4 m off the lane
 FUNNEL = 0.6                 # the entry's inner white line closes in this much per metre (nobody misses the pits)
-BOX0, BOX_GAP = 10.0, 7.0    # the boxes along the pit lane: the first this far after the line, then one per team
+BOX0, BOX_GAP = 10.0, 6.0    # the boxes along the pit lane: the first this far after the line, then one per team
 BOX_DEC = 6.0                # m/s²: rolling into the box
-PZ_IN = PIT_IN - L           # the entry line, from the line (−50 m)
+PZ_IN = PIT_IN - L           # the entry line, from the line (−45 m)
 LINE_D, LINE_OUT, LINE_APEX, LMAX = 40.0, 3.5, 3.5, 4.0  # the racing line: outside before the corner, the apex inside
 ASSIST_K = 0.5               # the steering assist: full lock per 2 m off the line
 AK_ASSIST = 0.92             # the assist brakes down to this share of the safe speed
@@ -354,7 +354,7 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     elif pl == 3 and PIT_OUT + PIT_MERGE <= xl < PIT_IN:
         pl = car["pl"] = 0
     pz = pit_z(d0, pl) if pl else 0.0
-    if pl == 1 and not car["ap"] and pz >= PZ_IN + PIT_ENTRY - AP_LATE and x0 < pit_x(pz) - PL_HW:
+    if pl == 1 and not car.get("ap", 0) and pz >= PZ_IN + PIT_ENTRY - AP_LATE and x0 < pit_x(pz) - PL_HW:
         car["ap"] = 1                                  # not steering in: the autopilot (nobody misses the pits)
         ev.append("autopilot")
     ap = pl > 0 and car.get("ap", 0) == 1
@@ -421,7 +421,7 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         if v0 > PIT_V:
             dec = max(dec, BRAKE)
     if pl == 2:                                        # rolling into the box and stopping there
-        vt = min(vt, max(2.0, math.sqrt(2.0 * BOX_DEC * max(0.0, car["box"] - pz))))
+        vt = min(vt, max(2.0, math.sqrt(2.0 * BOX_DEC * max(0.0, car.get("box", BOX0) - pz))))
         dec = max(dec, BOX_DEC)
     # the other cars: the slipstream behind one on a straight, a gentle bump when too close (never with the pit lane)
     tow, bump, nudge = 0.0, None, 0.0
@@ -513,8 +513,8 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         ev.append("lap")
     elif n1 > n0:
         car["ls"] = _r2(tc)                             # the start: the first lap begins
-    if pl == 2 and d1 >= n1 * L + car["box"]:          # at the box: the car stops – the pit stop begins
-        d1 = n1 * L + car["box"]
+    if pl == 2 and d1 >= n1 * L + car.get("box", BOX0):          # at the box: the car stops – the pit stop begins
+        d1 = n1 * L + car.get("box", BOX0)
         v = 0.0
         car.update(pit=1, sw=0.0, sf=0, tow=0.0, ap=0)
         ev.append("pit")
@@ -631,6 +631,8 @@ class Table:
             t.update(car=new_car(-2.5 if pos % 2 == 0 else 2.5, -5.0 - 8.0 * pos), driver=t["members"][0], drives={t["members"][0]: 1},
                      stop=None, pits=[], best_pit=None, ev=[], auto=False, bk="", hot=0, grid=pos + 1, prep=new_prep(),
                      spare=new_spare(100.0, 0.0), laps=[])
+        for i, t in enumerate(teams):                    # the boxes along the pit lane: one per team
+            t["car"]["box"] = box_of(i)
         for p in players:
             p["team"] = next(i for i, t in enumerate(teams) if p["id"] in t["members"])
         junior = self.jr()
@@ -838,7 +840,7 @@ class Table:
 
     def _release(self, t: dict) -> None:
         car, stop = t["car"], t["stop"]
-        car.update(pit=0, v=0.0, eng=0, slow=0.0, temp=min(car["temp"], 70.0), tyre=stop["tyre"], bat=stop["bat_in"])
+        car.update(pit=0, v=0.0, eng=0, slow=0.0, temp=min(car["temp"], 70.0), tyre=stop["tyre"], bat=stop["bat_in"], pl=3, ap=0, sw=0.0)
         # the used battery comes out and waits in the pits for the charger: a bot plugs it in right away (or late, like
         # a missed job), the garage after GARAGE_PLUG seconds when nobody of the crew is there
         if t["bot"]:
@@ -882,7 +884,8 @@ class Table:
             s = self.st["k"] / 10
             rain = in_window(self.st.get("rain"), s)
             # every car sees the others as they were at the start of the step (the order of the teams does not matter)
-            snap = [None if t["car"]["pit"] else [t["car"]["d"], t["car"]["x"], t["car"]["v"]] for t in teams]
+            # (the pit lane apart: no contact between the track and the pit lane)
+            snap = [None if t["car"]["pit"] or t["car"].get("pl") else [t["car"]["d"], t["car"]["x"], t["car"]["v"]] for t in teams]
             for i, t in enumerate(teams):
                 car = t["car"]
                 if car["pit"] and t["stop"] and s + 1e-9 >= t["stop"]["end"]:
@@ -943,6 +946,8 @@ class Table:
         elif not car["lo"]:
             ox = ahead[1]
             car["lo"] = clamp(ox + (3.2 if ox <= line else -3.2), -LMAX, LMAX) - line
+        if not car.get("pl") and car["d"] >= 0 and PIT_IN - 40.0 <= xl < PIT_IN:
+            car["lo"] = LMAX - line                      # the pit lane ahead: keep right, steer in at the entry
         if car["temp"] >= hot_hi:
             t["hot"] = 1
         elif car["temp"] <= hot_lo:
@@ -1383,7 +1388,7 @@ class Langstrecke(CardGames):
                   "driver": t["driver"], "laps": laps_of(car["d"]), "d": round(car["d"], 2), "v": round(car["v"], 2), "x": round(car["x"], 2),
                   "pit": car["pit"], "eng": car["eng"], "emg": car["bat"] <= 0, "stops": len(t["pits"]), "best_pit": t["best_pit"], "best_lap": car["best"],
                   "gap": round(lead - car["d"], 1), "auto": t["auto"], "place": t.get("place"), "grid": t["grid"], "sf": car["sf"],
-                  "last_lap": car.get("last", 0.0)}
+                  "last_lap": car.get("last", 0.0), "pl": car.get("pl", 0), "ap": car.get("ap", 0), "box": car.get("box", BOX0)}
             if t is mine or ph == "done":
                 pr, sp = t["prep"], t["spare"]
                 tv.update(car=car, drives=t["drives"], pits=t["pits"], ev=t["ev"] if t is mine else [], stop=t["stop"], laptimes=(t.get("laps") or [])[-12:],

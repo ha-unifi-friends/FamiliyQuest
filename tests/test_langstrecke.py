@@ -6,6 +6,7 @@ ONE spare charging on the server's clock, the garage, bots), the driver change f
 (colour, country, number), the lap times, the end and the winner, coins once, history, records, guests, the game
 battery, settings, the app."""
 import json
+import math
 import random
 import re
 import subprocess
@@ -71,11 +72,11 @@ def mine(t, pid="1"):
     return t.team_of(pid)
 
 
-def to_line(t, team, metres=3.0):
-    """Put the team's car just before the line (it arrives within a step or two)."""
+def to_line(t, team, metres=1.0):
+    """Put the team's car in the pit lane just before the line (it crosses it in a step, then rolls to its box)."""
     car_ = team["car"]
     laps = ls.laps_of(car_["d"])
-    car_.update(d=(laps + 1) * ls.L - metres, v=ls.VLIFT, x=0.0, sf=0)
+    car_.update(d=(laps + 1) * ls.L - metres, v=ls.PIT_V, x=ls.PL_X, sf=0, pl=1, ap=0)
 
 
 def lap(c, s0=0.0, rain=False, limit=200.0):
@@ -118,10 +119,10 @@ def _parity_cases():
             ev.append([t, c, rng.randint(-100, 100) if c == "s" else rng.choice((-1, 0, 1, 1)) if c == "u"
                        else rng.choice((-1, 0, 1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, -2)) if c == "g" else rng.choice((0, 1, 1))])
         # recorded other cars: a column at 26 m/s, and (case 4) a slow car to catch up with
-        others = [[[-30 + 8 * k + 26 * s / 10, (k - 1) * 1.5, 26.0] for k in range(3)] + ([[15 + 6 * s / 10, -2.0, 6.0]] if n == 4 else [])
+        others = [[[-30 + 8 * k + 26 * s / 10, (k - 1) * 1.5, 26.0] for k in range(3)] + ([[15 + 6 * s / 10, xo, 6.0] for xo in (-3.5, 0.0, 3.5)] if n == 4 else [])
                   for s in range(1300)] if n in (2, 3, 4, 7) else None
         cases.append({"ev": ev, "rain": [[30, 60]] if n % 2 else [], "tyre": "r" if n in (1, 6) else "s", "bat": (100.0, 55.0, 30.0, 70.0, 100.0, 100.0, 80.0, 100.0)[n],
-                      "jr": n == 3, "others": others})
+                      "jr": n == 3, "others": others, "keep": n in (0, 5)})    # 0, 5: the driver keeps right and steers into the pit lane
     return cases
 
 
@@ -133,33 +134,36 @@ def test_the_app_runs_exactly_the_same_step_on_recorded_inputs():
     cases = _parity_cases()
     keys = list(ls.new_car(0.0, 0.0))
     code = "const T = s => s;\n" + src + "\nconst {cases, keys} = JSON.parse(require('fs').readFileSync(0, 'utf8')), out = [];\n" + """
-for (const c of cases) { const car = {d: -5, x: -2.5, v: 0, thr: 0, st: 0, sw: 0, ast: 0, ak: LE.AK_ASSIST, lo: 0, temp: 60, eng: 0, ls: 0, best: 0,
-    last: 0, pit: 0, bumps: 0, bc: 0, blows: 0, tyre: c.tyre, kerb: 0, sf: 0, offs: 0, tow: 0, bat: c.bat, flat: 0, man: 0, gear: 1, sg: 0};
+for (const c of cases) { const car = {...c.car};
   const trace = [], evs = [];
   let i = 0;
   for (let k = 0; k < 1300; k++) { const s = k / 10;
     while (i < c.ev.length && c.ev[i][0] <= s + 1e-9) { leApply(car, c.ev[i][1], c.ev[i][2]); i++; }
+    if (c.keep && car.pl === 0 && car.d > 0 && leLapPos(car.d) >= 560) leApply(car, "s", 60);
     for (const e of leStep(car, s, c.jr, leInWin(c.rain, s), c.others ? c.others[k] : [])) evs.push([k, e]);
-    if (car.pit) { car.pit = 0; car.eng = 0; car.bat = c.bat; }
+    if (car.pit) { car.pit = 0; car.eng = 0; car.bat = c.bat; car.pl = 3; car.ap = 0; }
     if (k % 10 === 0) trace.push(keys.map(x => car[x])); }
   out.push([trace, evs]); }
 console.log(JSON.stringify(out));"""
+    for n, c in enumerate(cases):                                       # the same car to begin with (its box: team n)
+        c["car"] = {**ls.new_car(-2.5, -5.0), "tyre": c["tyre"], "bat": c["bat"], "box": ls.box_of(n % 8)}
     js = json.loads(subprocess.run(["node", "-e", code], input=json.dumps({"cases": cases, "keys": keys}), capture_output=True, text=True,
                                    timeout=120, check=True).stdout)
     seen = set()
     for c, (jtrace, jevs) in zip(cases, js):
-        cr = ls.new_car(-2.5, -5.0)
-        cr.update(tyre=c["tyre"], bat=c["bat"])
+        cr = dict(c["car"])
         trace, evs, i = [], [], 0
         for k in range(1300):
             s = k / 10
             while i < len(c["ev"]) and c["ev"][i][0] <= s + 1e-9:
                 ls.apply_input(cr, c["ev"][i][1], c["ev"][i][2])
                 i += 1
+            if c["keep"] and cr["pl"] == 0 and cr["d"] > 0 and ls.lap_pos(cr["d"]) >= 560:
+                ls.apply_input(cr, "s", 60)
             for e in ls.step(cr, s, c["jr"], ls.in_window(c["rain"], s), c["others"][k] if c["others"] else ()):
                 evs.append([k, e])
             if cr["pit"]:
-                cr.update(pit=0, eng=0, bat=c["bat"])
+                cr.update(pit=0, eng=0, bat=c["bat"], pl=3, ap=0)
             if k % 10 == 0:
                 trace.append([cr[x] for x in keys])
         assert evs == jevs, c["bat"]
@@ -170,7 +174,7 @@ console.log(JSON.stringify(out));"""
                     assert abs(float(x) - float(y)) < 1e-9, (key, x, y)
                 else:
                     assert x == y, (key, x, y)
-    assert {"lap", "pit", "kerb", "off", "empty", "bump", "grind", "blow"} <= seen
+    assert {"lap", "pit", "kerb", "off", "empty", "bump", "grind", "blow", "pitlane", "autopilot"} <= seen
 
 
 def test_steering_is_smooth_and_moves_the_car_across_the_track(monkeypatch):
@@ -361,8 +365,179 @@ def test_every_lap_ends_in_the_pits_with_its_lap_time(monkeypatch):
     evs = drive(c, 3)
     assert "pit" not in evs and c["ls"] > 0                               # crossing the line at the start: the first lap begins
     evs = drive(c, 40, s0=3.0)
-    assert evs.count("lap") == 1 and "pit" in evs and c["pit"] and c["d"] == ls.L and c["v"] == 0 and c["x"] == 0
+    assert evs.count("lap") == 1 and "pit" in evs and c["pit"] and c["d"] == ls.L + c["box"] and c["v"] == 0     # stopped at its box
+    assert c["pl"] == 2 and abs(c["x"] - ls.PL_X) <= ls.PL_HW and evs.index("pitlane") < evs.index("lap") < evs.index("pit")
     assert 18 < c["best"] < 45 and c["last"] == c["best"]
+
+
+# ---------------------------------------------------------------- the pit lane: in on the right, the limiter, the box, out again
+def to_entry(c, laps=1):
+    """Before the pit entry on the main straight (the lap's last metres), a little left of the middle."""
+    c.update(d=laps * ls.L + 560.0, x=-2.0, v=22.0, sf=0, pl=0, ap=0, ls=float(laps * 30))
+
+
+def run_in(c, s0=0.0, each=None, limit=30.0):
+    """Steps until the car stands at its box: the events and a trace (pl, ap, d, x, v)."""
+    evs, trace, k = [], [], 0
+    while not c["pit"] and k * ls.DT < limit:
+        if each:
+            each(c)
+        evs += ls.step(c, s0 + k * ls.DT, False)
+        trace.append((c["pl"], c["ap"], c["d"], c["x"], c["v"]))
+        k += 1
+    return evs, trace
+
+
+def test_without_steering_in_the_autopilot_takes_the_car_into_the_pits():
+    """Nobody can miss the pits: no steering (and no assist) at the entry line – the autopilot steers right into the pit
+    lane smoothly, slows to the pit speed and the car stops at its box; the driver's own inputs do not count meanwhile."""
+    c = car(thr=1, box=ls.box_of(2))
+    to_entry(c)
+    evs, tr = run_in(c, each=lambda c_: c_.update(thr=1, st=-100 if c_["pl"] else 0))   # in the lane it even steers left
+    assert evs[:2] == ["pitlane", "autopilot"] and evs.count("lap") == 1 and evs[-1] == "pit" and "off" not in evs
+    assert c["pit"] and c["d"] == ls.L * 2 + ls.box_of(2) and c["v"] == 0 and c["ap"] == 0     # its own box, the stop begins
+    lane = [x for pl, ap, d, x, v in tr if pl and ls.pit_z(d, pl) >= ls.PZ_IN + ls.PIT_ENTRY]
+    assert lane and all(ls.PL_X - ls.PL_HW - 1e-9 <= x <= ls.PL_X + ls.PL_HW + 1e-9 for x in lane)   # between the pit wall and the boxes
+    xs = [x for *_, x, _ in tr]
+    assert max(abs(a - b) for a, b in zip(xs, xs[1:])) < 1.0                               # smooth – no jump into the lane
+    assert all(v <= ls.PIT_V + 1e-9 for pl, ap, d, x, v in tr if pl and ls.pit_z(d, pl) >= ls.PZ_IN + ls.PIT_ENTRY)
+    assert all(ap == 1 for pl, ap, *_ in tr[:-1] if pl)                                    # the autopilot until the box
+
+
+def test_the_driver_steers_into_the_pit_lane_by_hand():
+    """Keeping right (the hint «Pit lane – keep right») and steering right at the entry: no autopilot – the driver steers
+    in, the joystick keeps working in the lane (between the pit wall and the boxes), the car rolls into its box."""
+    c = car(thr=1, box=ls.box_of(0))
+    to_entry(c)
+    c["x"] = 3.0
+    evs, tr = run_in(c, each=lambda c_: c_.update(st=70 if c_["pl"] < 2 else -40))
+    assert "pitlane" in evs and "autopilot" not in evs and evs[-1] == "pit" and c["d"] == 2 * ls.L + ls.box_of(0)
+    assert all(ap == 0 for _, ap, *_ in tr)
+    after = [(d, x) for pl, ap, d, x, v in tr if pl == 2]
+    assert after and min(x for _, x in after) >= ls.PL_X - ls.PL_HW - 1e-9            # steering left: the pit wall stops it
+    # steering in late: the autopilot still takes over before the pit wall
+    late = car(thr=1)
+    to_entry(late)
+    late["x"] = 2.0
+    evs, tr = run_in(late, each=lambda c_: c_.update(st=0))
+    assert evs[:1] == ["pitlane"] and "autopilot" in evs and late["pit"]
+
+
+def test_the_pit_limiter_holds_the_speed_automatic_and_manual_without_a_penalty():
+    for man, gear in ((0, 1), (1, 4), (1, 6)):
+        c = car(thr=1, man=man, gear=gear)
+        to_entry(c)
+        c["x"] = 3.0
+        temps = []
+        evs, tr = run_in(c, each=lambda c_: (c_.update(thr=1, st=60 if c_["pl"] < 2 else 0), temps.append(c_["temp"])))
+        lane = [v for pl, ap, d, x, v in tr if pl and ls.pit_z(d, pl) >= ls.PZ_IN + 15]
+        assert lane and max(lane) <= ls.PIT_V + 1e-9, man                 # braked down to the limit, held there (full throttle)
+        assert "off" not in evs and "blow" not in evs and c["pit"]
+        assert c["man"] == man and c["gear"] == gear or man == 0            # manual stays manual (no penalty, no shifting)
+    # out of the box: limited to the pit exit, then full speed again – and racing (pl 0) after the merge
+    c = car(thr=1, pl=3, d=ls.L + ls.box_of(1), x=ls.PL_X, v=0.0)
+    vs = []
+    for k in range(80):
+        ls.step(c, k * ls.DT, False)
+        vs.append((ls.lap_pos(c["d"]), c["v"], c["pl"], c["x"]))
+    assert all(v <= ls.PIT_V + 1e-9 for xl, v, pl, x in vs if xl < ls.PIT_OUT)
+    assert c["pl"] == 0 and c["v"] > ls.PIT_V + 3 and 0 < c["x"] <= ls.HW                   # back on the track, its right side
+    assert all(x >= ls.pit_bounds(xl)[0] - 1.0 for xl, v, pl, x in vs if pl)             # merging along the exit lane
+
+
+def test_no_contact_between_the_pit_lane_and_the_track():
+    t, clock = table(humans=(("1", 0),), bots=1)
+    at(t, clock, 3)
+    me, bot = mine(t), next(x for x in t.st["teams"] if x["bot"])
+    # my car leaves the pits slowly on the exit lane, the bot comes along the track behind it at full speed, same line
+    me["car"].update(d=ls.L + 66.0, x=5.0, v=4.0, pl=3, thr=0, st=0)
+    bot["car"].update(d=ls.L + 50.0, x=5.0, v=ls.VFULL, pl=0, ast=0)
+    s = t.sim_t()
+    t.report("1", [[t.gt(), "u", 0]])
+    at(t, clock, s + 1.2)
+    assert me["car"]["bumps"] == 0 and bot["car"]["bumps"] == 0
+    # a car on the pit entry is never in the others' view – and it sees nobody
+    c = car(d=ls.L + 600.0, x=4.0, v=20.0, pl=1)
+    assert "bump" not in drive(c, 0.5, others=lambda s: [[ls.L + 603.0 + 5 * s, 4.0, 5.0]]) and c["tow"] == 0
+
+
+def test_the_lap_time_and_the_line_are_unchanged_by_the_pit_lane():
+    """The line crosses the track and the pit lane: the lap ends where it always did (d = n·L), its time is taken at the
+    moment of the crossing (within the step) – the pit lane's metres are the lap's metres beside it, d never jumps."""
+    c = ls.new_car(0.0, -5.0)
+    c.update(thr=1, ast=1)
+    s, prev, crossings = 0.0, None, []
+    for k in range(2000):
+        d0, v_before = c["d"], c["v"]
+        evs = ls.step(c, s, False)
+        if c["d"] < d0 - 1e-9:
+            raise AssertionError("d jumped back")
+        assert c["d"] - d0 <= ls.VFULL * ls.DT + 1e-9                     # no jump forward either (into the pits)
+        if math.floor(c["d"] / ls.L) > math.floor(d0 / ls.L) and d0 >= 0:
+            assert "lap" in evs and c["pl"] == 2
+            tc = s + (math.floor(c["d"] / ls.L) * ls.L - d0) / ((c["d"] - d0) / ls.DT)
+            assert c["ls"] == ls._r2(tc)
+            if prev is not None:
+                assert c["last"] == ls._r2(tc - prev)
+            prev = c["ls"]
+            crossings.append(c["d"])
+        else:
+            assert "lap" not in evs
+        if c["pit"]:
+            c.update(pit=0, pl=3, bat=100.0, temp=60.0)
+        s += ls.DT
+    assert len(crossings) >= 3 and ls.laps_of(c["d"]) == len(crossings)
+
+
+def test_the_app_runs_the_same_pit_lane():
+    """leStep in node and step() on the pit entry (autopilot and by hand), the limiter, the box and the exit."""
+    cases = []
+    for k, (x, st, man, gear) in enumerate(((-3.0, 0, 0, 1), (3.0, 60, 0, 1), (2.0, 0, 1, 3), (-6.0, 100, 1, 5))):
+        c = car(thr=1, man=man, gear=gear, box=ls.box_of(k), ast=k % 2)
+        to_entry(c)
+        c.update(x=x, st=st)
+        cases.append(c)
+    out = _app_js("""const res = data.map(c => { const tr = [], evs = [];
+      for (let k = 0; k < 400; k++) { for (const e of leStep(c, k / 10, false, false, [])) evs.push([k, e]);
+        if (c.pit) { c.pit = 0; c.pl = 3; } tr.push([c.d, c.x, c.v, c.pl, c.ap, c.sw, c.temp, c.bat]); }
+      return [tr, evs]; });
+      console.log(JSON.stringify(res));""", cases)
+    for c, (jtr, jevs) in zip(cases, out):
+        evs, tr = [], []
+        for k in range(400):
+            evs += [[k, e] for e in ls.step(c, k / 10, False, False, ())]
+            if c["pit"]:
+                c.update(pit=0, pl=3)
+            tr.append([c["d"], c["x"], c["v"], c["pl"], c["ap"], c["sw"], c["temp"], c["bat"]])
+        assert evs == jevs and {"pitlane", "lap", "pit"} <= {e for _, e in evs}
+        for a, b in zip(tr, jtr):
+            assert all(abs(p - q) < 1e-9 for p, q in zip(a, b)), (a, b)
+
+
+def test_bots_take_the_same_pit_lane_into_their_own_boxes():
+    seen = []
+    orig = ls.step
+
+    def spy(car_, s, jr, rain=False, others=()):
+        evs = orig(car_, s, jr, rain, others)
+        if "pit" in evs:
+            seen.append((car_["box"], ls.lap_pos(car_["d"]), car_["x"]))
+        if "autopilot" in evs:
+            seen.append(("ap", car_["box"]))
+        return evs
+    t, clock = table(humans=(("1", 0),), bots=3, level="hard", minutes=5)
+    boxes = [x["car"]["box"] for x in t.st["teams"]]
+    assert sorted(boxes) == [ls.box_of(i) for i in range(4)]             # one box per team
+    ls.step = spy
+    try:
+        for s in range(2, 120, 2):
+            at(t, clock, s, seen=False)
+    finally:
+        ls.step = orig
+    stops = [x for x in seen if x[0] != "ap"]
+    bot_boxes = {x["car"]["box"] for x in t.st["teams"] if x["bot"]}
+    assert len(stops) >= 6 and all(abs(xl - box) < 1e-6 and abs(x - ls.PL_X) <= ls.PL_HW for box, xl, x in stops)
+    assert not any(x[1] in bot_boxes for x in seen if x[0] == "ap")       # bots keep right and steer in themselves
 
 
 def test_race_clock_day_and_night_and_frequent_showers():
@@ -389,7 +564,7 @@ def test_bots_drive_the_racing_line_their_laps_in_a_time_range_by_skill():
         assert all(24.0 <= x <= 60.0 for x in laps), level                   # every bot lap within a sensible time
         times[level] = sorted(laps)[len(laps) // 2]
         offs[level] = sum(b["car"]["offs"] for b in bots)
-    assert 28.0 <= times["hard"] <= 36.0 and times["hard"] < times["easy"]
+    assert 28.0 <= times["hard"] <= 40.0 and times["hard"] < times["easy"]       # the lap includes the pit lane (100 km/h) and the stop
     assert offs["hard"] <= offs["easy"]
 
 
@@ -507,9 +682,11 @@ def test_good_manual_shifting_is_a_little_faster_automatic_is_never_bad():
             if man:
                 gr = ls.grip(c["tyre"], rain)
                 c["gear"] = 6 if wrong else next((i + 1 for i, t in enumerate(ls.GEAR_TOP) if c["v"] < t * gr - 0.4), 6)
-            if "lap" in ls.step(c, s, False, rain):
+            evs = ls.step(c, s, False, rain)
+            if "lap" in evs:
                 laps.append(c["last"])
-                c.update(pit=0, temp=60.0, bat=100.0, eng=0, gear=1)
+            if "pit" in evs:                                            # at the box: out again at once (pit lane, exit)
+                c.update(pit=0, pl=3, temp=60.0, bat=100.0, eng=0, gear=1)
             s += ls.DT
         return laps[-1], c["blows"]
     for rain in (False, True):
@@ -656,11 +833,14 @@ def test_the_crews_jobs_are_checked_and_timed_on_the_server(monkeypatch):
 
 
 def stop_now(t, clock, team, s):
-    """The car arrives at game time ≈ s + 0.2; answers the stop."""
+    """The car crosses the line at game time ≈ s and stops at its box a second or two later; answers the stop."""
     at(t, clock, s)
     to_line(t, team)
-    at(t, clock, s + 0.5)
-    assert team["car"]["pit"] and team["stop"]
+    k = 0
+    while not team["stop"] and k < 60:
+        k += 1
+        at(t, clock, s + 0.1 * k)
+    assert team["car"]["pit"] and team["stop"] and team["stop"]["t"] < s + 3
     return team["stop"]
 
 
@@ -675,7 +855,7 @@ def test_stop_time_from_what_the_crew_had_ready_and_the_tyres_they_chose(monkeyp
         t.prep("2", "tyre", 0)                                           # the car is in: too late
     with pytest.raises(CommunityError):
         t.prep("2", "plug")
-    at(t, clock, 3.2 + 7 + 0.3)
+    at(t, clock, stp["end"] + 0.3)
     assert not tm["car"]["pit"] and tm["driver"] == "2" and tm["pits"][-1]["time"] == 7.0 and tm["prep"]["tyres"] == [None] * 4
     # everything ready (crew: player 1 now – plugged in first), rain tyres chosen: 3 s, rain tyres on
     at(t, clock, 11)
@@ -687,7 +867,7 @@ def test_stop_time_from_what_the_crew_had_ready_and_the_tyres_they_chose(monkeyp
     t.prep("1", "rain")
     stp = stop_now(t, clock, tm, 28)
     assert stp["time"] == 3.0 and stp["tyre"] == "r" and all(p[2] for p in stp["parts"])
-    at(t, clock, 32)
+    at(t, clock, stp["end"] + 0.3)
     assert tm["car"]["tyre"] == "r" and tm["best_pit"] == 3.0 and tm["driver"] == "1"
 
 
@@ -699,8 +879,8 @@ def test_jobs_done_after_the_car_arrived_do_not_count(monkeypatch):
     for k in range(4):
         t.prep("2", "tyre", k)
         clock.t += 0.3
-    to_line(t, tm)                                                        # arrives at ≈ 5.2 – the tyres were laid out at ≈ 5.8 … 6.7
-    at(t, clock, 7.5, seen=True)
+    to_line(t, tm)                                                        # at its box at ≈ 6.2 – the tyres were laid out at ≈ 5.8 … 6.7
+    at(t, clock, 8.0, seen=True)
     assert tm["stop"]["parts"][2] == ["tyres", ls.PEN_PREP, False]
 
 
@@ -712,7 +892,7 @@ def test_an_overheated_engine_is_swapped_prepared_or_not(monkeypatch):
     tm["car"]["eng"] = 1
     stp = stop_now(t, clock, tm, 3)
     assert stp["parts"][-1] == ["engine", ls.ENG_SWAP, False] and stp["time"] == 2 + 1 + 4 + 6 and stp["eng"]
-    at(t, clock, 3.2 + 13 + 0.3)
+    at(t, clock, stp["end"] + 0.3)
     assert not tm["car"]["eng"] and not tm["car"]["pit"]
     tm["car"]["eng"] = 1                                                  # again – now the crew (player 1) prepares the engine
     at(t, clock, 25)
@@ -888,7 +1068,7 @@ def test_a_crew_that_is_offline_gets_the_garage(monkeypatch):
     tm = mine(t)
     at(t, clock, 3)
     to_line(t, tm)
-    clock.t += 0.5
+    clock.t += 2.0
     t.st["seen"]["2"] = clock.t - 60
     t.tick()
     assert tm["stop"]["garage"] and not tm["stop"]["change"]

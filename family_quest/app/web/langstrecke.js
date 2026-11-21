@@ -25,7 +25,12 @@ const LE = { L: 640, DT: 0.1, VLIFT: 20, VFULL: 30, ACC: 8.5, BRAKE: 14, COAST: 
   HW: 5.5, KERB: 1.5, XMAX: 11, STEER_V: 7, VSTEER: 10, WHEEL: 6, PUSH: 0.75, VGRASS: 9, GRASS_DEC: 16, KERB_F: 0.9,
   SLIP_D: 30, SLIP_W: 2.2, SLIP_V: 3.5, BUMP_D: 4.5, CAR_W: 1.9, NUDGE: 1.5, PIT_Z: 25,
   LINE_D: 40, LINE_OUT: 3.5, LINE_APEX: 3.5, LMAX: 4, ASSIST_K: 0.5, AK_ASSIST: 0.92,
-  LUG: 0.35, EBRAKE: 7, LIM_HEAT: 1.5, NEUTRAL_DEC: 3, VREV_ON: 0.75, VREV: 2.5, VCREEP: 1, REV_ACC: 3, GRIND_DEC: 22, GRIND_HEAT: 30, AUTO_UP: 0.9, AUTO_DOWN: 0.75, AUTO_GAP: 0.2 };
+  LUG: 0.35, EBRAKE: 7, LIM_HEAT: 1.5, NEUTRAL_DEC: 3, VREV_ON: 0.75, VREV: 2.5, VCREEP: 1, REV_ACC: 3, GRIND_DEC: 22, GRIND_HEAT: 30, AUTO_UP: 0.9, AUTO_DOWN: 0.75, AUTO_GAP: 0.2,
+  // the pit lane on the right of the main straight (its metres = the lap's metres beside it; pl 0 racing, 1 entry up to
+  // the line, 2 to the box, 3 out to the pit exit and back onto the track) – as in langstrecke.py
+  PIT_IN: 595, PIT_ENTRY: 22, PIT_OUT: 60, PIT_MERGE: 15, PL_X: 9.5, PL_HW: 2, SIDE_X: 3.5, PIT_V: 100 / 7, KEEP_R: 1.5, KEEP_ST: 20,
+  AP_LATE: 12, AP_K: 0.7, FUNNEL: 0.6, BOX0: 10, BOX_GAP: 6, BOX_DEC: 6 };
+LE.PZ_IN = LE.PIT_IN - LE.L;
 // the gearbox (manual): the limiter, the low end (below: the gear lugs) and the pull of gears 1–6 – as in langstrecke.py
 const LE_GEAR_TOP = [9, 13.5, 18, 22.5, 27, 30], LE_GEAR_LOW = [0, 5, 8.5, 12.5, 16.5, 21], LE_GEAR_ACC = [1.15, 1.1, 1.05, 1, 0.95, 0.9];
 // the gear the automatic gearbox would be in at speed v
@@ -53,6 +58,20 @@ function leNextCorner(xl) {
 }
 const leSafe = (c, tyre, rain) => c[3] * leGrip(tyre, rain) * (rain ? LE.RAIN_C : 1);
 const leEase = u => { u = leClamp(u, 0, 1); return u * u * (3 - 2 * u); };
+// the pit lane (as pit_z(), pit_x(), pit_bounds() in langstrecke.py): metres from the line of this stop (− before it),
+// the lane's middle there and where a car in it can be across
+const lePitZ = (d, pl) => { const xl = leLapPos(d); return pl === 1 ? xl - LE.L : xl; };
+function lePitX(pz) {
+  if (pz < LE.PZ_IN + LE.PIT_ENTRY) return LE.SIDE_X + (LE.PL_X - LE.SIDE_X) * leEase((pz - LE.PZ_IN) / LE.PIT_ENTRY);
+  if (pz < LE.PIT_OUT) return LE.PL_X;
+  return LE.PL_X + (LE.SIDE_X - LE.PL_X) * leEase((pz - LE.PIT_OUT) / LE.PIT_MERGE);
+}
+function lePitBounds(pz) {
+  if (pz < LE.PZ_IN + LE.PIT_ENTRY) return [Math.max(-LE.XMAX, LE.PL_X - LE.PL_HW - (LE.PZ_IN + LE.PIT_ENTRY - pz) * LE.FUNNEL), LE.PL_X + LE.PL_HW];
+  const c = lePitX(pz);
+  return [c - LE.PL_HW, c + LE.PL_HW];
+}
+const leBoxOf = i => LE.BOX0 + LE.BOX_GAP * i;
 // the racing line across the track: outside before a corner, the apex inside, outside at the exit (as race_line())
 function leLine(xl) {
   let y = 0;
@@ -131,14 +150,25 @@ function leRev(car, rain) {
 function leStep(car, s, jr, rain = false, others = []) {
   const ev = [], DT = LE.DT;
   if (car.pit) { car.temp = Math.max(LE.TMIN, car.temp - LE.COOL * DT); return ev; }
-  const d0 = car.d, x0 = car.x, v0 = car.v, xl = leLapPos(d0), cn = leCornerAt(xl);
-  let th = car.thr, stc = car.st / 100;
+  const d0 = car.d, x0 = car.x, v0 = car.v, xl = leLapPos(d0);
+  // the pit lane: from the entry line every car is on its way into the pits – the driver steers in (keeping right or
+  // steering right at the line), else the autopilot takes over; out of the pit exit it races again
+  let pl = car.pl || 0;
+  if (pl === 0 && d0 >= 0 && xl >= LE.PIT_IN) {
+    pl = car.pl = 1; car.ap = x0 >= LE.KEEP_R || car.st >= LE.KEEP_ST ? 0 : 1;
+    ev.push("pitlane"); if (car.ap) ev.push("autopilot");
+  } else if (pl === 3 && LE.PIT_OUT + LE.PIT_MERGE <= xl && xl < LE.PIT_IN) pl = car.pl = 0;
+  const pz = pl ? lePitZ(d0, pl) : 0;
+  if (pl === 1 && !car.ap && pz >= LE.PZ_IN + LE.PIT_ENTRY - LE.AP_LATE && x0 < lePitX(pz) - LE.PL_HW) { car.ap = 1; ev.push("autopilot"); }
+  const ap = pl > 0 && car.ap === 1, cn = leCornerAt(xl);
+  let th = ap ? 0 : car.thr, stc = ap ? 0 : car.st / 100;   // the autopilot: lifted off – the limiter brings it to the pit speed
   const emg = car.bat <= 0;                          // the battery is empty: the emergency drive mode
   const bite = Math.min(1, 0.2 + Math.abs(v0) / LE.VSTEER);   // how much the steering bites at this speed
   let push = 0;                                      // a corner pushes outward, ∝ speed²
   if (cn !== null) { const q = v0 / leSafe(cn, car.tyre, rain); push = (cn[2] > 0 ? -1 : 1) * LE.STEER_V * LE.PUSH * q * q; }
-  if (car.ast) {                                     // the assist: towards the racing line, brake before a corner
-    const aim = leClamp(leLine(xl) + car.lo, -LE.LMAX, LE.LMAX);
+  if (ap) stc = leClamp((lePitX(pz) - x0) * LE.AP_K, -1, 1);   // the autopilot steers smoothly along the pit lane
+  else if (car.ast) {                                // the assist: towards the racing line (the pit lane), brake before a corner
+    const aim = pl ? lePitX(pz) : leClamp(leLine(xl) + car.lo, -LE.LMAX, LE.LMAX);
     const help = leClamp((aim - x0) * LE.ASSIST_K - push / (LE.STEER_V * bite), -1, 1);
     stc = leClamp(stc + (1 - Math.abs(stc)) * help, -1, 1);
     const [nc, dz] = leNextCorner(xl);
@@ -146,7 +176,9 @@ function leStep(car, s, jr, rain = false, others = []) {
   }
   car.sw += leClamp(stc - car.sw, -LE.WHEEL * DT, LE.WHEEL * DT);
   let full = th > 0 && !car.eng && !emg;
-  const gr = leGrip(car.tyre, rain), man = car.man || 0, g = car.gear ?? 1;
+  const pitlim = pl > 0 && pz < LE.PIT_OUT;         // the pit limiter: on by itself from the entry line to the exit
+  if (pitlim && v0 >= LE.PIT_V - 0.3) full = false; // holding the limit: no full throttle (no heat, lifted drain)
+  const gr = leGrip(car.tyre, rain), man = ap ? 0 : car.man || 0, g = car.gear ?? 1;   // the autopilot: automatic gears
   let acc = LE.ACC, dec = LE.COAST, lim = false, grind = false, rev = false, top = 0, vt;
   let gap = false;
   if (!man) {                                        // automatic: the plain car – with a torque gap at every shift
@@ -171,8 +203,10 @@ function leStep(car, s, jr, rain = false, others = []) {
   }
   if (emg) vt = Math.min(vt, LE.VEMERG);
   if (th < 0) { vt = Math.min(vt, LE.VBRAKE); dec = Math.max(dec, LE.BRAKE); }
-  let tow = 0, bump = null, nudge = 0;               // the other cars: the slipstream on a straight, a gentle bump
-  if (LE.PIT_Z <= xl && xl <= LE.L - LE.PIT_Z) {
+  if (pitlim) { vt = Math.min(vt, LE.PIT_V); if (v0 > LE.PIT_V) dec = Math.max(dec, LE.BRAKE); }   // the limiter (manual gears too)
+  if (pl === 2) { vt = Math.min(vt, Math.max(2, Math.sqrt(2 * LE.BOX_DEC * Math.max(0, (car.box ?? LE.BOX0) - pz)))); dec = Math.max(dec, LE.BOX_DEC); }   // into the box
+  let tow = 0, bump = null, nudge = 0;               // the other cars: the slipstream on a straight, a gentle bump (never with the pit lane)
+  if (!pl && LE.PIT_Z <= xl && xl <= LE.L - LE.PIT_Z) {
     for (const [od, ox, ov] of others) {
       const ol = leLapPos(od);
       if (ol < LE.PIT_Z || ol > LE.L - LE.PIT_Z) continue;
@@ -196,8 +230,9 @@ function leStep(car, s, jr, rain = false, others = []) {
     v = Math.max(0, bump);
     if (car.bc <= 0) { car.bc = 1; car.bumps += 1; ev.push("bump"); }
   } else nudge = 0;
-  let x = leClamp(x0 + (car.sw * LE.STEER_V * bite + push + nudge) * DT, -LE.XMAX, LE.XMAX);   // across the track
-  const ax = Math.abs(x), sf = ax <= LE.HW ? 0 : ax <= LE.HW + LE.KERB ? 1 : 2;
+  const [lo, hi] = pl ? lePitBounds(pz) : [-LE.XMAX, LE.XMAX];   // in the pit lane: its white line, the pit wall, the boxes
+  let x = leClamp(x0 + (car.sw * LE.STEER_V * bite + push + nudge) * DT, lo, hi);   // across the track
+  const ax = Math.abs(x), sf = ax <= LE.HW || (pl && x > 0) ? 0 : ax <= LE.HW + LE.KERB ? 1 : 2;
   if (sf === 2 && car.sf !== 2) { car.offs += 1; ev.push("off"); }
   else if (sf === 1 && car.sf === 0) { car.kerb += 1; ev.push("kerb"); }
   car.sf = sf;
@@ -216,15 +251,19 @@ function leStep(car, s, jr, rain = false, others = []) {
   if ((full || lim || grind) && car.temp >= LE.RED - 1e-9) { car.eng = 1; car.blows += 1; car.temp = 80; ev.push("blow"); }
   const n0 = Math.floor(d0 / LE.L), n1 = Math.floor(d1 / LE.L);
   const tc = n1 > n0 ? s + (n1 * LE.L - d0) / v : 0;  // the moment the car crossed the line (within the step)
-  if (n1 > n0 && n0 >= 0) {
+  if (n1 > n0 && n0 >= 0) {                          // the line (across the track and the pit lane): a lap – on to the box
     const lt = Math.floor((tc - car.ls) * 100 + 0.5) / 100;
     car.last = lt;
     car.best = !car.best || lt < car.best ? lt : car.best;
     car.ls = Math.floor(tc * 100 + 0.5) / 100;
-    d1 = n1 * LE.L; v = 0; x = 0;
-    car.pit = 1; car.sw = 0; car.sf = 0; car.tow = 0;
-    ev.push("lap", "pit");
+    pl = car.pl = 2;
+    ev.push("lap");
   } else if (n1 > n0) car.ls = Math.floor(tc * 100 + 0.5) / 100;
+  if (pl === 2 && d1 >= n1 * LE.L + (car.box ?? LE.BOX0)) {       // at the box: the car stops – the pit stop begins
+    d1 = n1 * LE.L + (car.box ?? LE.BOX0); v = 0;
+    car.pit = 1; car.sw = 0; car.sf = 0; car.tow = 0; car.ap = 0;
+    ev.push("pit");
+  }
   car.d = d1; car.x = x; car.v = v;
   return ev;
 }
