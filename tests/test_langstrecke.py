@@ -110,29 +110,31 @@ def test_the_circuit_has_real_corners_a_racing_line_and_closes():
 def _parity_cases():
     rng = random.Random(4)
     cases = []
-    for n in range(5):
-        ev, t = [], 0.0
+    for n in range(8):
+        ev, t = ([[0.0, "m", 1]] if n >= 5 else []), 0.0     # 5–7: manual gears – every gear, R at speed (grinding), N, junk
         while t < 120:
             t = round(t + rng.uniform(0.1, 1.5), 3)
-            c = rng.choice("sssuuua")
-            ev.append([t, c, rng.randint(-100, 100) if c == "s" else rng.choice((-1, 0, 1, 1)) if c == "u" else rng.choice((0, 1, 1))])
+            c = rng.choice("sssuuua" if n < 5 else "ssuuuggggm")
+            ev.append([t, c, rng.randint(-100, 100) if c == "s" else rng.choice((-1, 0, 1, 1)) if c == "u"
+                       else rng.choice((-1, 0, 1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, -2)) if c == "g" else rng.choice((0, 1, 1))])
         # recorded other cars: a column at 26 m/s, and (case 4) a slow car to catch up with
-        others = [[[-30 + 8 * k + 26 * s / 10, (k - 1) * 1.5, 26.0] for k in range(3)] + ([[15 + 14 * s / 10, 0.0, 14.0]] if n == 4 else [])
-                  for s in range(1300)] if n >= 2 else None
-        cases.append({"ev": ev, "rain": [[30, 60]] if n % 2 else [], "tyre": "r" if n == 1 else "s", "bat": (100.0, 55.0, 30.0, 70.0, 100.0)[n],
+        others = [[[-30 + 8 * k + 26 * s / 10, (k - 1) * 1.5, 26.0] for k in range(3)] + ([[15 + 6 * s / 10, -2.0, 6.0]] if n == 4 else [])
+                  for s in range(1300)] if n in (2, 3, 4, 7) else None
+        cases.append({"ev": ev, "rain": [[30, 60]] if n % 2 else [], "tyre": "r" if n in (1, 6) else "s", "bat": (100.0, 55.0, 30.0, 70.0, 100.0, 100.0, 80.0, 100.0)[n],
                       "jr": n == 3, "others": others})
     return cases
 
 
 def test_the_app_runs_exactly_the_same_step_on_recorded_inputs():
-    """Python and the app's leStep() on the same recorded inputs (steering, pedals, the assist on / off) and the same
-    recorded other cars: the same events and the same numbers, step by step."""
+    """Python and the app's leStep() on the same recorded inputs (steering, pedals, the assist on / off, manual gears with
+    every gear, N, R at speed and from a standstill, invalid gears) and the same recorded other cars: the same events and
+    the same numbers, step by step."""
     src = (WEB / "langstrecke.js").read_text(encoding="utf-8").split("// ---------------------------------------------------------------- the rules, the start")[0]
     cases = _parity_cases()
     keys = list(ls.new_car(0.0, 0.0))
     code = "const T = s => s;\n" + src + "\nconst {cases, keys} = JSON.parse(require('fs').readFileSync(0, 'utf8')), out = [];\n" + """
 for (const c of cases) { const car = {d: -5, x: -2.5, v: 0, thr: 0, st: 0, sw: 0, ast: 0, ak: LE.AK_ASSIST, lo: 0, temp: 60, eng: 0, ls: 0, best: 0,
-    last: 0, pit: 0, bumps: 0, bc: 0, blows: 0, tyre: c.tyre, kerb: 0, sf: 0, offs: 0, tow: 0, bat: c.bat, flat: 0};
+    last: 0, pit: 0, bumps: 0, bc: 0, blows: 0, tyre: c.tyre, kerb: 0, sf: 0, offs: 0, tow: 0, bat: c.bat, flat: 0, man: 0, gear: 1, sg: 0};
   const trace = [], evs = [];
   let i = 0;
   for (let k = 0; k < 1300; k++) { const s = k / 10;
@@ -168,7 +170,7 @@ console.log(JSON.stringify(out));"""
                     assert abs(float(x) - float(y)) < 1e-9, (key, x, y)
                 else:
                     assert x == y, (key, x, y)
-    assert {"lap", "pit", "kerb", "off", "empty", "bump"} <= seen
+    assert {"lap", "pit", "kerb", "off", "empty", "bump", "grind", "blow"} <= seen
 
 
 def test_steering_is_smooth_and_moves_the_car_across_the_track(monkeypatch):
@@ -398,7 +400,7 @@ def test_bots_overtake_a_slower_car():
     me["car"].update(d=560.0, x=0.0, v=8.0, thr=-1, st=0, ast=0)        # I crawl on the straight
     bot["car"].update(d=520.0, x=0.0, v=ls.VFULL)
     t.report("1", [[t.gt(), "u", -1]])
-    at(t, clock, 8.0)
+    at(t, clock, 8.5)                                                   # (the automatic's shift gaps: half a second more)
     assert ls.lap_pos(bot["car"]["d"]) > ls.lap_pos(me["car"]["d"]) or bot["car"]["pit"]
     assert bot["car"]["lo"] != 0.0 or bot["car"]["bumps"] <= 1
 
@@ -431,6 +433,172 @@ def test_only_the_driver_steers_and_late_inputs_never_go_into_the_past():
     assert tm["ev"][0][0] >= t.sim_t() and tm["ev"][0][1:] == ["u", 1] and tm["ev"][1][1:] == ["s", -40]
     with pytest.raises(CommunityError):
         t.report("bot1", [])
+
+
+# ---------------------------------------------------------------- the gearbox (manual: H shifter, 6 gears, N, R)
+def test_gear_bands_too_high_lugs_and_the_limiter_caps_and_heats(monkeypatch):
+    straight(monkeypatch)
+    assert len(ls.GEAR_TOP) == 6 and list(ls.GEAR_TOP) == sorted(ls.GEAR_TOP) and ls.GEAR_TOP[-1] == ls.VFULL
+    for g in range(1, 7):                                               # flat out in a gear: up to its limiter, not beyond
+        c = car(thr=1, d=10.0, v=ls.GEAR_LOW[g - 1], man=1, gear=g)
+        drive(c, 8)
+        assert c["v"] == pytest.approx(ls.GEAR_TOP[g - 1]), g
+    lug, good = car(thr=1, d=10.0, v=4.0, man=1, gear=5), car(thr=1, d=10.0, v=4.0, man=1, gear=1)
+    drive(lug, 0.5)
+    drive(good, 0.5)
+    assert lug["v"] - 4 == pytest.approx(ls.ACC * ls.GEAR_ACC[4] * ls.LUG * 0.5) and good["v"] - 4 > 2.5 * (lug["v"] - 4)
+    on, off = car(thr=1, d=10.0, v=ls.GEAR_TOP[2], man=1, gear=3), car(thr=1, d=10.0, v=ls.VFULL)   # the limiter heats faster
+    drive(on, 2)
+    drive(off, 2)
+    assert on["temp"] - ls.TMIN == pytest.approx((off["temp"] - ls.TMIN) * ls.LIM_HEAT) and on["v"] == pytest.approx(ls.GEAR_TOP[2])
+    hot = car(thr=1, d=10.0, v=ls.GEAR_TOP[1], man=1, gear=2, temp=99.0)
+    assert "blow" in drive(hot, 1) and hot["eng"] == 1                  # on the limiter into the red: the engine is gone
+    down = car(thr=0, d=10.0, v=27.0, man=1, gear=3)                    # a downshift: engine braking, harder than lifting
+    lift = car(thr=0, d=10.0, v=27.0)
+    drive(down, 0.5)
+    drive(lift, 0.5)
+    assert down["v"] == pytest.approx(27.0 - ls.EBRAKE * 0.5) and lift["v"] == pytest.approx(27.0 - ls.COAST * 0.5)
+    rain = car(thr=1, d=10.0, v=10.0, man=1, gear=3)                    # slicks in the rain: the limiter × grip
+    drive(rain, 6, rain=True)
+    assert rain["v"] == pytest.approx(ls.GEAR_TOP[2] * ls.WET_SLICK)
+
+
+def test_neutral_has_no_drive_and_r_at_speed_grinds_then_drives_backwards(monkeypatch):
+    straight(monkeypatch)
+    n = car(thr=1, d=10.0, v=20.0, man=1, gear=0, bat=50.0)
+    drive(n, 1)
+    assert n["v"] == pytest.approx(20.0 - ls.NEUTRAL_DEC) and n["temp"] == ls.TMIN and n["bat"] == pytest.approx(50 - ls.E_LIFT * (19.85 * 1), abs=0.2)
+    drive(n, 10)
+    assert n["v"] == 0.0                                                # neutral: no gas helps, it rolls out
+    # R while rolling at 25 m/s: a much harder stop than the brake, the engine heats fast – from warm it is gone
+    r, b = car(thr=0, d=10.0, v=25.0, man=1, gear=-1, temp=70.0), car(thr=-1, d=10.0, v=25.0)
+    evs = drive(r, 0.5)
+    drive(b, 0.5)
+    assert r["v"] == pytest.approx(25.0 - ls.GRIND_DEC * 0.5) and 25.0 - r["v"] > 1.5 * (25.0 - b["v"]) and "grind" in evs
+    assert r["temp"] == pytest.approx(70.0 + ls.GRIND_HEAT * 0.5)
+    evs = drive(r, 1.0)
+    assert "blow" in evs and r["eng"] == 1 and r["blows"] == 1          # counted like an overheat: the spare engine
+    assert r["v"] <= 0.0
+    # from a standstill R drives slowly backwards (gas faster, lifted creeps, the brake stops) – never over the line
+    rv = car(thr=1, d=10.0, v=0.0, man=1, gear=-1)
+    assert "grind" not in drive(rv, 2)
+    assert rv["v"] == pytest.approx(-ls.VREV) and rv["d"] < 10.0 and rv["temp"] < 61
+    rv["thr"] = 0
+    drive(rv, 1)
+    assert rv["v"] == pytest.approx(-ls.VCREEP)
+    rv["thr"] = -1
+    drive(rv, 1)
+    assert rv["v"] == 0.0
+    line = car(thr=1, d=ls.L + 0.5, v=0.0, man=1, gear=-1, ls=10.0)
+    drive(line, 3)
+    assert line["d"] == ls.L and line["v"] == 0.0                       # no lap twice by backing over the line
+    ls.apply_input(line, "g", 1)
+    assert "lap" not in drive(line, 2) and line["d"] > ls.L
+    auto = car(thr=1, d=10.0, v=20.0, gear=-1)                          # automatic: the gear input does nothing
+    drive(auto, 1)
+    assert auto["v"] > 20.0
+
+
+def test_good_manual_shifting_is_a_little_faster_automatic_is_never_bad():
+    def run(man, rain=False, wrong=False):
+        c = car(ast=1, thr=1, man=man, gear=1)
+        laps, s = [], 0.0
+        while len(laps) < 2:
+            if man:
+                gr = ls.grip(c["tyre"], rain)
+                c["gear"] = 6 if wrong else next((i + 1 for i, t in enumerate(ls.GEAR_TOP) if c["v"] < t * gr - 0.4), 6)
+            if "lap" in ls.step(c, s, False, rain):
+                laps.append(c["last"])
+                c.update(pit=0, temp=60.0, bat=100.0, eng=0, gear=1)
+            s += ls.DT
+        return laps[-1], c["blows"]
+    for rain in (False, True):
+        (auto, b0), (man, b1) = run(0, rain), run(1, rain)
+        assert b0 == b1 == 0 and 0.01 <= (auto - man) / auto <= 0.03, (rain, auto, man)
+    slow, _ = run(1, wrong=True)
+    assert slow > run(0)[0] * 1.15                                      # sixth gear all lap: much slower than automatic
+    assert [ls.auto_gear(v) for v in (0.0, 8.0, 12.0, 30.0)] == [1, 1, 2, 6]
+
+
+def test_the_automatic_shifts_up_at_90_percent_with_a_torque_gap_never_into_the_red(monkeypatch):
+    straight(monkeypatch)
+    c = car(thr=1, d=10.0, v=0.0)
+    gears, trace = [], []
+    for k in range(120):
+        before = c["gear"]
+        ls.step(c, k * ls.DT, False)
+        trace.append((before, c["gear"], c["v"]))
+    ups = [(i, v) for i, (a, b, v) in enumerate(trace) if b == a + 1]
+    assert [b for _, (a, b, _) in [(i, trace[i]) for i, _ in ups]] == [2, 3, 4, 5, 6]
+    for i, _ in ups:                                                   # shifted at 90 % of the old gear's top – never in the red
+        a, b, v = trace[i]
+        v0 = trace[i - 1][2]
+        assert ls.GEAR_TOP[a - 1] * ls.AUTO_UP <= v0 < ls.GEAR_TOP[a - 1] * 0.97
+        gap = [trace[j][2] for j in range(i, i + round(ls.AUTO_GAP / ls.DT))]
+        assert all(abs(x - v0) < 1e-9 for x in gap) and trace[i + round(ls.AUTO_GAP / ls.DT)][2] > v0   # no drive in the gap, then on
+    assert c["v"] == pytest.approx(ls.VFULL) and c["gear"] == 6
+    m = car(thr=1, d=10.0, v=0.0, man=1, gear=1)                        # a hand: up at the limiter, no gap – sooner at full speed
+    t_auto = next(i for i, x in enumerate(trace) if x[2] >= 25.0)
+    for k in range(120):
+        m["gear"] = next((i + 1 for i, t in enumerate(ls.GEAR_TOP) if m["v"] < t - 0.4), 6)
+        ls.step(m, k * ls.DT, False)
+        if m["v"] >= 25.0:
+            break
+    assert k < t_auto - 3
+    hunt = car(thr=0, d=10.0, v=ls.GEAR_TOP[2] * ls.AUTO_UP - 0.05, gear=3)   # no hunting: a little slower stays in the gear
+    hunt["thr"] = -1
+    ls.step(hunt, 0.0, False)
+    assert hunt["gear"] == 3
+
+
+def test_switching_a_m_mid_stint_engages_the_fitting_gear_without_a_jolt_remembered_per_driver():
+    t, clock = table(humans=(("1", 0), ("2", 0)), bots=1)
+    at(t, clock, 3)
+    tm = mine(t)
+    t.report("1", [[t.gt(), "u", 1]])
+    at(t, clock, 8)
+    c = tm["car"]
+    v0, x0 = c["v"], c["x"]
+    assert c["man"] == 0 and v0 > 5
+    t.report("1", [[t.gt(), "m", 1]])                                   # to manual, flat out: the gear that fits the speed
+    at(t, clock, 8.1)
+    assert c["man"] == 1 and c["gear"] == ls.auto_gear(v0) or c["gear"] == ls.auto_gear(c["v"])
+    assert abs(c["v"] - v0) < 2.5 and t.st["manual"] == {"1": True}     # no jolt
+    t.report("1", [[t.gt(), "m", 0]])                                   # and back, mid-stint
+    at(t, clock, 8.2)
+    assert c["man"] == 0 and t.st["manual"] == {"1": False}
+    t.report("1", [[t.gt(), "m", 1]])
+    at(t, clock, 8.3)
+    # the next stint: the next driver (no choice yet) automatic, then driver 1 again with manual from 1st
+    for nxt, man in (("2", 0), ("1", 1)):
+        tm["stop"] = {"end": 0, "tyre": "s", "bat_in": 90.0, "bat_out": 10.0, "n": 1, "time": 3.0, "change": True, "garage": False,
+                      "eng": False, "t": 0, "prev": tm["driver"], "next": nxt}
+        tm["car"].update(pit=1, gear=4)
+        t._release(tm)
+        assert tm["driver"] == nxt and tm["car"]["man"] == man and tm["car"]["gear"] == 1
+
+
+def test_gear_inputs_are_validated_and_the_choice_is_remembered_bots_never_shift():
+    t, clock = table(humans=(("1", 0), ("2", 0)), bots=1)
+    at(t, clock, 5)
+    tm = mine(t)
+    now = t.gt()
+    assert tm["car"]["man"] == 0 and tm["car"]["gear"] >= 1            # automatic: it picks the gear itself
+    assert t.report("1", [[now, "g", 7], [now, "g", -2], [now, "g", 2.5], [now, "g", "x"], [now, "m", 5], [now, "g", 3], [now, "g", -1], [now, "g", 0]]) == 5
+    assert [e[1:] for e in tm["ev"][-5:]] == [["g", 2], ["m", 1], ["g", 3], ["g", -1], ["g", 0]]
+    assert t.st["manual"] == {"1": True}
+    at(t, clock, 6)
+    assert tm["car"]["man"] == 1 and tm["car"]["gear"] == 0
+    bot = next(x for x in t.st["teams"] if x["bot"])
+    for s in range(7, 40):
+        at(t, clock, s)
+        assert bot["car"]["man"] == 0 and "grind" not in str(t.st["log"])
+    # the next stint of a manual driver starts in 1st; the autopilot drives automatic
+    tm["stop"] = {"end": 0, "tyre": "s", "bat_in": 90.0, "bat_out": 10.0, "n": 1, "time": 3.0, "change": True, "garage": False,
+                  "eng": False, "t": 0, "prev": "1", "next": "1"}
+    tm["car"].update(pit=1, gear=4)
+    t._release(tm)
+    assert tm["car"]["man"] == 1 and tm["car"]["gear"] == 1
 
 
 def test_the_drivers_inputs_are_validated_and_bounded():
@@ -862,6 +1030,45 @@ def _app_js(code: str, data) -> object:
     return json.loads(subprocess.run(["node", "-e", prog], input=json.dumps(data), capture_output=True, text=True, timeout=120, check=True).stdout)
 
 
+def test_the_joystick_maps_the_thumb_to_steering_and_pedals():
+    """leJoy (pure, in node): a dead zone in the middle, full lock before the edge, gas / brake beyond 30 % up / down,
+    lifted in between, the knob clamped to the ring."""
+    pts = [[0, 0], [5, 0], [-5, 3], [8, 0], [-50, 0], [50, 0], [42.5, 0], [100, 0], [0, -14], [0, -16], [0, 14], [0, 16],
+           [-35, -35], [0, 200], [300, 400], [20, -10], ["x", None]]
+    out = _app_js("console.log(JSON.stringify(data.map(([x, y]) => leJoy(x, y, 50))));", pts)
+    s = [o["s"] for o in out]
+    u = [o["u"] for o in out]
+    assert s[:3] == [0, 0, 0] and s[3] > 0 and s[4] == -100 and s[5] == 100 and s[6] == 100 and s[7] == 100
+    assert all(v % 5 == 0 and -100 <= v <= 100 for v in s)
+    assert u[:8] == [0] * 8 and u[8] == 0 and u[9] == 1 and u[10] == 0 and u[11] == -1
+    assert s[12] < -70 and u[12] == 1                                   # pushed up-left: gas and a lot of steering
+    assert out[13] == {"kx": 0, "ky": 50, "s": 0, "u": -1}               # clamped to the ring
+    assert abs(out[14]["kx"] - 30) < 1e-9 and abs(out[14]["ky"] - 40) < 1e-9 and out[14]["u"] == -1
+    assert 0 < s[15] < 100 and u[15] == 0                               # a little up: lifted off
+    assert out[16] == {"kx": 0, "ky": 0, "s": 0, "u": 0}                # junk: at rest
+
+
+def test_the_h_shifter_gate_maps_drag_positions_to_gears():
+    """leGate (pure, in node): R | 1 2 | 3 4 | 5 6 over the neutral rail – the lever stays in the gate, a gear only deep
+    in its slot, else N; leGatePos the other way round; leRev the shift light."""
+    pts = [[-0.75, -1], [-0.25, -1], [-0.25, 1], [0.25, -1], [0.25, 1], [0.75, -1], [0.75, 1], [-0.8, 0.4], [0, 0], [0.25, -0.4],
+           [0.3, -0.9], [-2, -3], [2, 3], [0.5, 0.05], [0.1, 0.9], [None, "y"]]
+    out = _app_js("console.log(JSON.stringify({g: data.map(([x, y]) => leGate(x, y)), p: [-1, 0, 1, 2, 3, 4, 5, 6, 9].map(leGatePos),"
+                  " r: [leRev({man: 1, gear: 3, v: 18, tyre: 's'}, false), leRev({man: 1, gear: 3, v: 9, tyre: 's'}, false),"
+                  " leRev({man: 0, v: 20, tyre: 's'}, false), leRev({man: 1, gear: -1, v: 0, tyre: 's'}, false), leRev({man: 1, gear: 6, v: 25.2, tyre: 's'}, true)]}));", pts)
+    gears = [o["gear"] for o in out["g"]]
+    assert gears == [-1, 1, 2, 3, 4, 5, 6, 0, 0, 0, 3, -1, 6, 0, 4, 0]
+    assert out["g"][7]["x"] == -0.75 and out["g"][7]["y"] == 0           # below R there is no slot: the lever stays on the rail
+    assert out["g"][13] == {"x": 0.5, "y": 0, "gear": 0} and out["g"][14]["x"] == 0.25                  # near a slot: into it
+    for o in out["g"]:                                                  # always on the gate
+        assert o["y"] == 0 or o["x"] in (-0.75, -0.25, 0.25, 0.75)
+        assert -1 <= o["y"] <= 1 and -0.75 <= o["x"] <= 0.75
+    assert out["p"] == [[-0.75, -1], [0, 0], [-0.25, -1], [-0.25, 1], [0.25, -1], [0.25, 1], [0.75, -1], [0.75, 1], [0, 0]]
+    r = out["r"]
+    assert r[0]["lim"] and not r[1]["lim"] and r[2]["g"] == 4 and not r[2]["lim"] and r[3] == {"g": -1, "r": 0, "lim": False}
+    assert r[4]["lim"]                                                  # in the rain the limiter comes earlier (× grip)
+
+
 def test_two_players_of_a_team_see_the_right_screen_in_every_phase(client):
     """The bug from a 2-player race: the crew got stuck on the start screen (the intro with the lights) with the jobs
     below it, also in later laps. Every phase from the server's view of BOTH apps through the app's own leScreen():
@@ -937,11 +1144,13 @@ def test_lobby_looks_colour_country_and_number_are_validated(client):
     assert look({"country": "XX"}, hm).status_code == 400 and look({"country": "ZZ"}, hl).status_code == 400
     assert look({"num": 0}, hm).status_code == 400 and look({"num": 100}, hm).status_code == 400
     assert look({"num": 42}, hl).status_code == 400                                   # taken by Mia's team
+    assert "manual" not in look({"assist": True}, hm).json()            # the gears are no lobby choice: A / M in the picture
     st = look({"num": 5, "country": ""}, hl).json()
     assert st["looks"][0] == {"color": ls.TEAM_STYLES[6][1], "country": "DK", "num": 42} and st["looks"][1]["country"] is None
     st = client.post("/api/community/langstrecke/begin", headers=hm).json()
     a, b = st["teams"]
     assert (a["color"], a["country"], a["num"]) == (ls.TEAM_STYLES[6][1], "DK", 42) and (b["num"], b["country"]) == (5, None)
+    assert a["car"]["man"] == 0 and a["car"]["gear"] == 1                # nobody chose yet: automatic
     assert look({"num": 9}, hm).status_code == 400                                    # started: no more changes
 
 

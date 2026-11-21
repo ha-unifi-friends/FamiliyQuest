@@ -10,8 +10,13 @@ team chooses its colour (from the palette, unique), its country (a flag on the c
 
 The driving – real racing on a circuit (the general mechanics of the classic racing simulations, own track and look):
 - the car has a position along the lap (d) and ACROSS the track (x, metres from the middle, + = right). The driver
-  steers smoothly (an analog steering value −100…100: drag, the ◀ ▶ buttons, the arrow keys; the wheel follows it at
-  WHEEL per second) and uses gas / lifted / brake (two pedals: 🛑 brake left, 🚀 gas right).
+  steers smoothly (an analog steering value −100…100: the virtual joystick, the arrow keys; the wheel follows it at
+  WHEEL per second) and uses gas / lifted / brake (the joystick up / middle / down).
+- gears: automatic (default; bots and the autopilot always – shifts up at AUTO_UP with a torque gap AUTO_GAP) or manual
+  per driver («A / M» on the picture, any time, remembered per person) – an H shifter with
+  R | 1 2 | 3 4 | 5 6: every gear a speed band (its top the rev limiter, heating faster; too high a gear pulls weakly;
+  a downshift brakes with the engine), N no drive, R slowly backwards from a standstill only – R while rolling grinds
+  the gearbox (a very hard stop that heats the engine fast, an overheat counts as usual).
 - the lap has CORNERS (start, end, angle, safe speed). In a corner the car is pushed outward, growing with the square
   of the speed: at the corner's safe speed it takes PUSH of full lock to hold the line – a bit faster and the steering
   is not enough: the car runs wide onto the kerb (a little slower) and then the grass (heavy slowdown, VGRASS), never a
@@ -117,6 +122,23 @@ ASSIST_K = 0.5               # the steering assist: full lock per 2 m off the li
 AK_ASSIST = 0.92             # the assist brakes down to this share of the safe speed
 E_FULL, E_LIFT, REGEN = 0.16, 0.07, 0.3   # the battery: % per metre at full throttle / lifted, % back per m/s braked off
 VEMERG = 7.0                 # m/s with an empty battery: the emergency drive mode
+# the gearbox («Manual» per driver; «Automatic» = the plain VFULL / VLIFT car above, bots and the autopilot always):
+# gears 1–6 each with a speed band – its top is the rev limiter (× the tyres' grip), below its low end the gear is too
+# high for the speed (weak pull, LUG) – and a pull factor; N (0) no drive; R (−1) slowly backwards, but only from a
+# standstill: R while rolling forward grinds the gearbox – a very hard stop (GRIND_DEC) that heats the engine fast
+GEAR_TOP = (9.0, 13.5, 18.0, 22.5, 27.0, 30.0)   # m/s: the limiter of gears 1–6
+GEAR_LOW = (0.0, 5.0, 8.5, 12.5, 16.5, 21.0)     # m/s: below this the gear lugs
+GEAR_ACC = (1.15, 1.1, 1.05, 1.0, 0.95, 0.9)     # × ACC in the right band
+LUG = 0.35                   # the pull of a gear too high for the speed
+EBRAKE = 7.0                 # m/s²: engine braking above the gear's limiter (after a downshift)
+LIM_HEAT = 1.5               # on the limiter the engine heats this much faster
+NEUTRAL_DEC = 3.0            # m/s²: rolling in neutral
+VREV_ON = 0.75               # m/s (about 5 km/h): R engages only below this
+VREV, VCREEP, REV_ACC = 2.5, 1.0, 3.0      # backwards: with gas / lifted (m/s), speeding up (m/s²)
+GRIND_DEC, GRIND_HEAT = 22.0, 30.0         # R while rolling: m/s² (much harder than the brake), °/s
+AUTO_UP = 0.9                # the automatic gearbox shifts up at this share of a gear's top (never into the red) …
+AUTO_DOWN = 0.75             # … down below this share of the next lower gear's top (no hunting between two gears) …
+AUTO_GAP = 0.2               # … and slower than a hand: no drive for this many seconds per upshift (the torque gap)
 COUNTDOWN = 6.0              # seconds from the start to game time 0 (the intro: run to the cars, engines, lights)
 SETTLE = 0.8                 # the server simulates this far behind the clock
 AHEAD = 0.5                  # inputs may be this much ahead of the server's clock
@@ -221,7 +243,7 @@ def default_looks(country: str | None = None) -> list[dict]:
 def new_car(x: float, d: float) -> dict:
     return {"d": d, "x": x, "v": 0.0, "thr": 0, "st": 0, "sw": 0.0, "ast": 0, "ak": AK_ASSIST, "lo": 0.0, "temp": TMIN,
             "eng": 0, "ls": 0.0, "best": 0.0, "last": 0.0, "pit": 0, "bumps": 0, "bc": 0.0, "blows": 0, "tyre": "s",
-            "kerb": 0, "sf": 0, "offs": 0, "tow": 0.0, "bat": 100.0, "flat": 0}
+            "kerb": 0, "sf": 0, "offs": 0, "tow": 0.0, "bat": 100.0, "flat": 0, "man": 0, "gear": 1, "sg": 0.0}
 
 
 def new_spare(charge: float, t: float, auto: float | None = None) -> dict:
@@ -237,9 +259,18 @@ def spare_charge(sp: dict, at: float) -> float:
     return min(100.0, sp["c0"] + CHARGE_RATE * (at - sp["plug"]))
 
 
+def auto_gear(v: float) -> int:
+    """The gear the automatic gearbox would be in at speed v (the same in the app)."""
+    for i, top in enumerate(GEAR_TOP):
+        if v < top * AUTO_UP:
+            return i + 1
+    return len(GEAR_TOP)
+
+
 def apply_input(car: dict, c: str, v) -> None:
     """One input of the driver – the same rules as in the app: "s" steering −100 … 100, "u" 1 gas / 0 lifted / −1
-    brake, "a" the assist on / off."""
+    brake, "a" the assist on / off, "m" manual gears on / off (on: the gear that fits the speed), "g" the gear
+    −1 R / 0 N / 1–6 (anything else is ignored)."""
     if c == "s":
         car["st"] = max(-100, min(100, int(v)))
     elif c == "u":
@@ -247,6 +278,11 @@ def apply_input(car: dict, c: str, v) -> None:
     elif c == "a":
         car["ast"] = 1 if int(v) else 0
         car["ak"] = AK_ASSIST
+    elif c == "m":
+        car["man"] = 1 if int(v) else 0
+        car["gear"] = auto_gear(car["v"])
+    elif c == "g" and -1 <= int(v) <= len(GEAR_TOP):
+        car["gear"] = int(v)
 
 
 def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[str]:
@@ -262,7 +298,7 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     th = car["thr"]
     stc = car["st"] / 100.0
     emg = car["bat"] <= 0                              # the battery is empty: the emergency drive mode
-    bite = min(1.0, 0.2 + v0 / VSTEER)                 # how much the steering bites at this speed
+    bite = min(1.0, 0.2 + abs(v0) / VSTEER)            # how much the steering bites at this speed
     push = 0.0                                         # a corner pushes outward, ∝ speed²
     if cn is not None:
         q = v0 / safe_speed(cn, car["tyre"], rain)
@@ -278,13 +314,39 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
                 th = -1
     car["sw"] += clamp(stc - car["sw"], -WHEEL * DT, WHEEL * DT)
     full = th > 0 and not car["eng"] and not emg
-    vt = VLIMP if car["eng"] else (VFULL if full else VLIFT) * grip(car["tyre"], rain)
+    gr = grip(car["tyre"], rain)
+    man, g = car.get("man", 0), car.get("gear", 1)
+    acc, dec, lim, grind, rev, top = ACC, COAST, False, False, False, 0.0
+    gap = False
+    if not man:                                        # automatic: the plain car – with a torque gap at every shift
+        vt = VLIMP if car["eng"] else (VFULL if full else VLIFT) * gr
+        if not 1 <= g <= len(GEAR_TOP):                # from N / R: the gear that fits, no gap
+            g = car["gear"] = auto_gear(v0)
+        if g < len(GEAR_TOP) and v0 >= GEAR_TOP[g - 1] * AUTO_UP:
+            car["gear"] = max(g + 1, auto_gear(v0))     # one shift (one gap), however far up it goes
+            car["sg"] = AUTO_GAP
+        elif g > 1 and v0 < GEAR_TOP[g - 2] * AUTO_DOWN:
+            car["gear"] = g - 1
+        gap = car.get("sg", 0.0) > 1e-9
+        car["sg"] = max(0.0, car.get("sg", 0.0) - DT)
+    elif g >= 1:                                       # a gear: its band, its limiter, too high = weak pull
+        top = GEAR_TOP[g - 1] * gr
+        vt = min(VLIMP, top) if car["eng"] else top if full else min(VLIFT * gr, top)
+        acc = ACC * GEAR_ACC[g - 1] * (LUG if v0 < GEAR_LOW[g - 1] else 1.0)
+        lim = v0 >= top - 0.3 and (full or v0 > top + 0.3)
+        if v0 > top + 0.3:                             # over the limiter after a downshift: engine braking
+            dec = EBRAKE
+    else:                                              # N: no drive – R: grinding while rolling, else backwards
+        full = False
+        vt = 0.0
+        grind = g < 0 and v0 > VREV_ON
+        rev = g < 0 and not grind
+        dec = GRIND_DEC if grind else NEUTRAL_DEC
     if emg:
         vt = min(vt, VEMERG)
-    dec = COAST
     if th < 0:
         vt = min(vt, VBRAKE)
-        dec = BRAKE
+        dec = max(dec, BRAKE)
     # the other cars: the slipstream behind one on a straight, a gentle bump when too close
     tow, bump, nudge = 0.0, None, 0.0
     if PIT_Z <= xl <= L - PIT_Z:
@@ -302,14 +364,17 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
                 bump = ov
                 nudge = -NUDGE if dx > 0 else NUDGE
     car["tow"] = tow
-    if tow > 0 and th >= 0:
+    if tow > 0 and th >= 0 and (not man or g >= 1):
         vt += SLIP_V * tow
     if car["sf"] == 2:                                 # on the grass: heavy slowdown
         vt = min(vt, VGRASS)
         dec = max(dec, GRASS_DEC)
     elif car["sf"] == 1:
         vt *= KERB_F
-    v = min(vt, v0 + ACC * DT) if v0 < vt else max(vt, v0 - dec * DT)
+    v = (v0 if gap else min(vt, v0 + acc * DT)) if v0 < vt else max(vt, v0 - dec * DT)
+    if rev:                                            # backwards, slowly: gas / lifted creeps / the brake stops
+        tg = 0.0 if th < 0 else -VREV if th > 0 else -VCREEP
+        v = max(tg, v0 - REV_ACC * DT) if v0 > tg else min(tg, v0 + (BRAKE if th < 0 else REV_ACC) * DT)
     car["bc"] = max(0.0, car["bc"] - DT)
     if bump is not None and v > bump:
         v = max(0.0, bump)
@@ -332,7 +397,7 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     car["sf"] = sf
     # the battery: by the metre – full throttle much more than lifted; braking gives a little back
     if not emg:
-        use = (E_FULL if full else E_LIFT) * v * DT
+        use = (E_FULL if full else E_LIFT) * abs(v) * DT
         if th < 0 and v < v0:
             use -= REGEN * (v0 - v)
         car["bat"] = max(0.0, min(100.0, car["bat"] - use))
@@ -340,12 +405,21 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
             car["flat"] += 1
             ev.append("empty")
     d1 = d0 + v * DT
-    # the engine: full throttle heats it, lifting cools it; at RED it overheats (limp to the pits, swap it there)
-    if full:
+    if v < 0 and d1 < math.floor(d0 / L) * L:          # backwards never over the line (no lap twice)
+        d1 = math.floor(d0 / L) * L
+        v = 0.0
+    # the engine: full throttle heats it (on the limiter faster, a grinding gearbox much faster), lifting cools it;
+    # at RED it overheats (limp to the pits, swap it there)
+    if grind:
+        car["temp"] = min(RED, car["temp"] + GRIND_HEAT * DT)
+        ev.append("grind")
+    elif lim:
+        car["temp"] = min(RED, car["temp"] + (HEAT_JR if jr else HEAT) * LIM_HEAT * DT)
+    elif full:
         car["temp"] = min(RED, car["temp"] + (HEAT_JR if jr else HEAT) * DT)
     else:
         car["temp"] = max(TMIN, car["temp"] - COOL * DT)
-    if full and car["temp"] >= RED - 1e-9:
+    if (full or lim or grind) and car["temp"] >= RED - 1e-9:
         car["eng"] = 1
         car["blows"] += 1
         car["temp"] = 80.0
@@ -484,16 +558,19 @@ class Table:
         assist = self.st.setdefault("assist", {})
         for p in humans:                                 # the driving assist per person: junior → on unless switched off
             assist.setdefault(p["id"], junior)
+        manual = self.st.setdefault("manual", {})
         for t in teams:
             if not t["bot"]:
                 t["car"]["ast"] = 1 if assist.get(t["driver"]) else 0
+                t["car"]["man"] = 1 if manual.get(t["driver"]) else 0
         self.st.update(phase="play", seed=seed if seed is not None else self.rng.randrange(1, 2 ** 31), t0=self.now() + COUNTDOWN,
                        k=0, teams=teams, rain=rain_plan(self.rng, self.limit()) if self.st["rules"].get("weather", 1) else [], seen={p["id"]: self.now() for p in humans}, ranking=None, places=None, complete=False,
                        end_t=None, log=[])
 
     # ---------- what the apps send
     def report(self, pid: str, inputs=()) -> int:
-        """The driver's inputs ([game time, "s"|"u"|"a", value]: steering −100 … 100, the pedals, the assist) – only
+        """The driver's inputs ([game time, "s"|"u"|"a"|"m"|"g", value]: steering −100 … 100, the pedals, the assist,
+        manual gears on / off, the gear −1 R / 0 N / 1–6 – another gear is dropped) – only
         the current driver's count; a late one is applied at the next step (never in the past). Answers how many were
         taken."""
         if self.st.get("phase") != "play":
@@ -513,12 +590,20 @@ class Table:
                 v = int(item[2]) if len(item) > 2 and item[2] is not None else 0
             except (TypeError, ValueError, OverflowError, IndexError, KeyError):     # int(inf): OverflowError
                 continue
-            if c not in ("s", "u", "a") or not math.isfinite(te) or te > now_t + AHEAD:
+            if c not in ("s", "u", "a", "m", "g") or not math.isfinite(te) or te > now_t + AHEAD:
                 continue
-            v = max(-100, min(100, v)) if c == "s" else (1 if v > 0 else -1 if v < 0 else 0)
+            if c == "g" and not -1 <= v <= len(GEAR_TOP):
+                continue
+            if c == "s":
+                v = max(-100, min(100, v))
+            elif c != "g":
+                v = 1 if v > 0 else -1 if v < 0 else 0
             if c == "a":
                 v = 1 if v else 0
                 self.st.setdefault("assist", {})[pid] = bool(v)     # remembered for this person's next stints
+            elif c == "m":
+                v = 1 if v else 0
+                self.st.setdefault("manual", {})[pid] = bool(v)     # manual gears: remembered like the assist
             last = t["ev"][-1][0] if t["ev"] else -COUNTDOWN
             te = max(te, sim, last)
             t["ev"].append([round(te, 3), c, v])
@@ -691,8 +776,9 @@ class Table:
             t["best_pit"] = stop["time"]
         t["driver"] = stop["next"]
         t["drives"][t["driver"]] = t["drives"].get(t["driver"], 0) + 1
-        if not t["bot"]:                                 # the new driver's own choice of the assist
-            car.update(ast=1 if (self.st.get("assist") or {}).get(t["driver"]) else 0, ak=AK_ASSIST, lo=0.0)
+        if not t["bot"]:                                 # the new driver's own choice of the assist and the gears (from 1st)
+            car.update(ast=1 if (self.st.get("assist") or {}).get(t["driver"]) else 0, ak=AK_ASSIST, lo=0.0,
+                       man=1 if (self.st.get("manual") or {}).get(t["driver"]) else 0, gear=1)
         t["ev"] = []
         t["stop"] = None
         t["prep"] = new_prep()
@@ -709,7 +795,8 @@ class Table:
             was = t["auto"]
             t["auto"] = not t["bot"] and not self.seen_ok(t["driver"], AUTO_AFTER) and now_t > 0
             if was and not t["auto"]:                    # back in the app: the pedal released, the driver's own assist
-                t["car"].update(thr=0, st=0, lo=0.0, ak=AK_ASSIST, ast=1 if (self.st.get("assist") or {}).get(t["driver"]) else 0)
+                t["car"].update(thr=0, st=0, lo=0.0, ak=AK_ASSIST, ast=1 if (self.st.get("assist") or {}).get(t["driver"]) else 0,
+                                man=1 if (self.st.get("manual") or {}).get(t["driver"]) else 0, gear=auto_gear(t["car"]["v"]))
         steps = 0
         teams = self.st["teams"]
         while (self.st["k"] + 1) / 10 <= horizon + 1e-9 and steps < 30000:
@@ -762,7 +849,7 @@ class Table:
         if key != t.get("bk"):                           # a new corner ahead: this time carefully – or too greedy
             t["bk"] = key
             car["ak"] = BOT_GREEDY if self.rng.random() < miss else dare
-        car.update(ast=1, st=0)
+        car.update(ast=1, st=0, man=0)                   # bots and the autopilot: automatic gears, never R
         # overtaking: a car close ahead – drive alongside it (the slipstream helps on the straight)
         line = race_line(xl)
         ahead = None
