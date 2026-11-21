@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.2-dev.2
+
+- Guess the song: «🏳️ Pass» for everybody who doesn't know – when all players at the table passed, the song is solved without points; buzzing stays possible
+- 24h Endurance: real circuit racing – free steering, five corners with braking boards and speed signs, running wide onto the grass when too fast, slipstream and overtaking, bots on the racing line, minimap, lap times and gaps; driving assist (brakes and steers) for younger drivers
+
 ## 1.2.2-dev.1
 
 - Guests stay 24 hours and get their own lobby with the open family tables – new tables appear by themselves, one tap to join, no new QR code; after a game they are back in the lobby; «Leave» deletes the guest

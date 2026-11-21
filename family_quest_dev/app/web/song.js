@@ -18,6 +18,10 @@ function songRulesView(r) {
 // condition for the button in the game screen and the entry in ☰
 const songCanSkip = (st, leads) => !!(leads && st && st.status !== "done" && st.phase === "playing");
 
+// «🏳️ Pass» (give up on this song, tap again to take it back): for every player while a song plays and nobody has
+// buzzed – when every active player has passed, the server resolves the song like «Nobody knows it»
+const songCanPass = st => !!(st && st.joined && st.status !== "done" && st.phase === "playing");
+
 async function songStartDialog(onStarted) {
   let d = { ha: false, players: [], rules: {} };
   try { d = await api("community/song/players"); } catch {}
@@ -88,8 +92,9 @@ function songLive(box, me, back) {
       onLeave: () => { stop(); back(); } });
     const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎵 ", T("Guess the song"))),
       st.song ? h("span.chip", I18N.tr(T("Song {0} of {1}")).replace("{0}", st.song).replace("{1}", st.rules.max_songs)) : null);
-    const scores = h("section.card", h("ol.scores", ...st.players.map((p, i) => h("li" + (p.id === me.id ? ".me" : ""),
-      h("b", (i + 1) + "."), avatarSvg(p.avatar || {}, 28), C(p.name, "span.grow"), h("span", String(p.points))))),
+    const scores = h("section.card", h("ol.scores", ...st.players.map((p, i) => h("li" + (p.id === me.id ? ".me" : "") + (p.passed ? ".song-passed" : ""),
+      h("b", (i + 1) + "."), avatarSvg(p.avatar || {}, 28), C(p.name, "span.grow"),
+      p.passed ? h("span.song-pass-tag", { title: T("Passed") }, "🏳️ ", T("Passed")) : null, h("span", String(p.points))))),
       h("p.small.muted", I18N.tr(T("First to {0} points wins.")).replace("{0}", st.rules.target)));
     // the main flow stays as buttons (start, volume, «go on» while paused, «nobody knows it», close the vote, next song) – the rest is in ☰
     const lead = leads ? h("div.row.center.host-bar",
@@ -115,6 +120,10 @@ function songLive(box, me, back) {
       h("div.song-buzz-wrap", h("button.song-buzzer", { disabled: st.paused, onclick: () => { try { navigator.vibrate && navigator.vibrate(60); } catch {} act("buzz"); } },
         h("span", "🔔"), h("b", T("Buzz!")))),
       h("p.center.muted", st.paused ? "⏸ " + I18N.tr(T("Paused")) : I18N.tr(T("Listen … and buzz when you know it: {0}")).replace("{0}", I18N.tr(SONG_ANSWERS[st.rules.answer]))),
+      songCanPass(st) ? h("div.row.center.song-pass",
+        h("button.btn.small" + (st.my_pass ? ".on" : ".ghost"), { "aria-pressed": st.my_pass ? "true" : "false", onclick: () => act("pass", { on: !st.my_pass }) },
+          st.my_pass ? ["↩ ", T("Take the pass back")] : ["🏳️ ", T("Pass")]),
+        st.passes ? h("span.small.muted", I18N.tr(T("{0} of {1} have passed")).replace("{0}", st.passes).replace("{1}", st.active || st.players.length)) : null) : null,
       scores, lead);
     if (st.phase === "buzzed") {
       const mine = st.buzzer === me.id;
