@@ -252,7 +252,8 @@ function render() {
       h("div.brand", h("img", { src: "img/icon.svg", alt: "", width: 34, height: 34 }), h("strong.grow", "Family Quest"), refreshBtn(),
         // phones: the ☰ menu closes with ✕ (like the kids' menu), Esc or a tap beside it
         h("button.icon-btn.side-close", { type: "button", "aria-label": T("Close"), title: T("Close"), onclick: () => closeNav() }, "✕")),
-      h("a.brand-app", appLinkAttrs({ dialog: true }), h("span", "⭐"), h("span.grow", "Family Quest App"), h("span.brand-go", { "aria-hidden": "true" }, "↗"))),
+      h("a.brand-app", (a => ({ ...a, onclick: e => { closeNav(); a.onclick(e); } }))(appLinkAttrs({ dialog: true })),   // phone: the ☰ menu closes first, the QR dialog then lies on top
+        h("span", "⭐"), h("span.grow", "Family Quest App"), h("span.brand-go", { "aria-hidden": "true" }, "↗"))),
     ...TABS.map(([k, ic, n]) => h("button" + (P.tab === k || (k === "packs" && P.tab === "import") ? ".on" : ""), { "data-tab": k, onclick: () => { P.tab = k; location.hash = k; render(); } }, h("span", ic), h("span", n))),
     h("div.side-foot",
       // the personal part, on its own background: light / dark, language, log out – and the version (release notes)

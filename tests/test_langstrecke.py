@@ -396,7 +396,7 @@ def test_without_steering_in_the_autopilot_takes_the_car_into_the_pits():
     evs, tr = run_in(c, each=lambda c_: c_.update(thr=1, st=-100 if c_["pl"] else 0))   # in the lane it even steers left
     assert evs[:2] == ["pitlane", "autopilot"] and evs.count("lap") == 1 and evs[-1] == "pit" and "off" not in evs
     assert c["pit"] and c["d"] == ls.L * 2 + ls.box_of(2) and c["v"] == 0 and c["ap"] == 0     # its own box, the stop begins
-    lane = [x for pl, ap, d, x, v in tr if pl and ls.pit_z(d, pl) >= ls.PZ_IN + ls.PIT_ENTRY]
+    lane = [x for pl, ap, d, x, v in tr if pl and ls.pit_z(d, pl) >= ls.PZ_IN + ls.PIT_ENTRY + 2]
     assert lane and all(ls.PL_X - ls.PL_HW - 1e-9 <= x <= ls.PL_X + ls.PL_HW + 1e-9 for x in lane)   # between the pit wall and the boxes
     xs = [x for *_, x, _ in tr]
     assert max(abs(a - b) for a, b in zip(xs, xs[1:])) < 1.0                               # smooth – no jump into the lane
@@ -410,7 +410,7 @@ def test_the_driver_steers_into_the_pit_lane_by_hand():
     c = car(thr=1, box=ls.box_of(0))
     to_entry(c)
     c["x"] = 3.0
-    evs, tr = run_in(c, each=lambda c_: c_.update(st=70 if c_["pl"] < 2 else -40))
+    evs, tr = run_in(c, each=lambda c_: c_.update(st=70 if c_["pl"] == 1 or ls.lap_pos(c_["d"]) > ls.PIT_IN - 3 else 0 if not c_["pl"] else -40))
     assert "pitlane" in evs and "autopilot" not in evs and evs[-1] == "pit" and c["d"] == 2 * ls.L + ls.box_of(0)
     assert all(ap == 0 for _, ap, *_ in tr)
     after = [(d, x) for pl, ap, d, x, v in tr if pl == 2]
@@ -429,15 +429,16 @@ def test_the_pit_limiter_holds_the_speed_automatic_and_manual_without_a_penalty(
         to_entry(c)
         c["x"] = 3.0
         temps = []
-        evs, tr = run_in(c, each=lambda c_: (c_.update(thr=1, st=60 if c_["pl"] < 2 else 0), temps.append(c_["temp"])))
-        lane = [v for pl, ap, d, x, v in tr if pl and ls.pit_z(d, pl) >= ls.PZ_IN + 15]
+        evs, tr = run_in(c, each=lambda c_: (c_.update(thr=1, st=60 if c_["pl"] == 1 or ls.lap_pos(c_["d"]) > ls.PIT_IN - 3 else 0),
+                                             temps.append(c_["temp"])))
+        lane = [v for pl, ap, d, x, v in tr if pl and ls.pit_z(d, pl) >= ls.PZ_IN + ls.PIT_ENTRY]
         assert lane and max(lane) <= ls.PIT_V + 1e-9, man                 # braked down to the limit, held there (full throttle)
         assert "off" not in evs and "blow" not in evs and c["pit"]
         assert c["man"] == man and c["gear"] == gear or man == 0            # manual stays manual (no penalty, no shifting)
     # out of the box: limited to the pit exit, then full speed again – and racing (pl 0) after the merge
-    c = car(thr=1, pl=3, d=ls.L + ls.box_of(1), x=ls.PL_X, v=0.0)
+    c = car(thr=1, ast=1, pl=3, d=ls.L + ls.box_of(1), x=ls.PL_X, v=0.0)
     vs = []
-    for k in range(80):
+    for k in range(int(5.5 / ls.DT)):
         ls.step(c, k * ls.DT, False)
         vs.append((ls.lap_pos(c["d"]), c["v"], c["pl"], c["x"]))
     assert all(v <= ls.PIT_V + 1e-9 for xl, v, pl, x in vs if xl < ls.PIT_OUT)
@@ -538,6 +539,75 @@ def test_bots_take_the_same_pit_lane_into_their_own_boxes():
     bot_boxes = {x["car"]["box"] for x in t.st["teams"] if x["bot"]}
     assert len(stops) >= 6 and all(abs(xl - box) < 1e-6 and abs(x - ls.PL_X) <= ls.PL_HW for box, xl, x in stops)
     assert not any(x[1] in bot_boxes for x in seen if x[0] == "ap")       # bots keep right and steer in themselves
+
+
+def test_night_and_rain_shorten_the_view_bots_slow_down_the_assist_still_makes_it(monkeypatch):
+    """At night in the rain the view is short (the app shows the track, the corner sign and the boards only that far –
+    the same numbers as leView()), the bots slow down about with it; the assist still brakes in time for every corner."""
+    assert ls.view_dist(0, False) == 150 and ls.view_dist(1, False) == 70 and ls.view_dist(0, True) == 125 and ls.view_dist(1, True) == 40
+    js = _app_js("console.log(JSON.stringify(data.map(([dk, r]) => leView(dk, r))));", [[0, False], [1, False], [0, True], [1, True], [0.4, True]])
+    assert js == [ls.view_dist(dk, r) for dk, r in ((0, False), (1, False), (0, True), (1, True), (0.4, True))]
+    # careful driving works: at a sensible slower speed (≈ 105 km/h) the sign comes early enough to brake for the hairpin
+    v, vs = 15.0, ls.CORNERS[2][3] * ls.RAIN_C
+    assert (v * v - vs * vs) / (2 * ls.BRAKE) + v * 1.2 < ls.view_dist(1, True) * 1.45 < (ls.VFULL ** 2 - vs ** 2) / (2 * ls.BRAKE) + ls.VFULL * 1.2   # reaction 1.2 s
+    caution = [ls.bot_caution(dk, r) for dk, r in ((0, False), (1, False), (1, True))]
+    assert caution[0] == (1.0, False) and caution[0][0] > caution[1][0] > caution[2][0] and caution[2][1] and not caution[1][1]
+
+    def bot_laps(dark, rain):
+        monkeypatch.setattr(ls, "darkness", lambda s, limit: dark)
+        t, clock = table(humans=(("1", 0),), bots=2, level="hard", minutes=5, rng_seed=3)
+        t.st["rain"] = [[0.0, 999.0]] if rain else []
+        for s in range(2, 160, 2):
+            at(t, clock, s, seen=False)
+        laps = [lp["time"] for b in t.st["teams"] if b["bot"] for lp in b["laps"][1:]]
+        return sorted(laps)[len(laps) // 2], sum(b["car"]["offs"] for b in t.st["teams"] if b["bot"])
+    (day, _), (wet_night, offs) = bot_laps(0.0, False), bot_laps(1.0, True)
+    assert wet_night > day * 1.12, (day, wet_night)
+    # the assist (a junior holding full throttle) completes a lap in the rain without leaving the track – on any tyres
+    for tyre in ("r", "s"):
+        c = ls.new_car(0.0, -5.0)
+        c.update(ast=1, thr=1, tyre=tyre)
+        k = 0
+        while not c["pit"] and k < 1500:
+            ls.step(c, k / 10, True, True)
+            k += 1
+        assert c["pit"] and c["offs"] == 0
+
+
+def test_the_bot_crew_prepares_every_stop_for_the_teams_of_people(monkeypatch):
+    """«Pit crew: bots»: an automatic crew does every team's stop – plugged in 1 s after the stop, the tyres by the
+    forecast, the spare engine after an overheat: a normal, well-prepared stop (3.5 s), not perfect; the people only
+    drive and watch (no jobs, no pit records). «Players» stays as before."""
+    straight(monkeypatch)
+    t, clock = table(humans=(("1", 0), ("2", 0)), bots=1, crew="bots", weather=1)
+    tm = mine(t)
+    t.st["rain"] = [[15.0, 80.0]]
+    at(t, clock, 2)
+    with pytest.raises(CommunityError):
+        t.prep("2", "tyre", 0)                                           # the bot crew does it
+    with pytest.raises(CommunityError):
+        t.prep("2", "plug")
+    tm["car"]["bat"] = 20.0
+    stp = stop_now(t, clock, tm, 3)
+    assert stp["time"] == ls.STOP_BASE + ls.BAT_SWAP + ls.CREW_TYRES == 3.5 and not stp["garage"] and stp["change"]
+    assert stp["tyre"] == "r"                                            # rain at the next lap's middle: rain tyres
+    at(t, clock, stp["end"] + 2.0)
+    assert tm["spare"]["plug"] == pytest.approx(stp["end"] + ls.CREW_PLUG) and tm["driver"] == "2" and tm["best_pit"] is None
+    tm["car"]["eng"] = 1                                                  # an overheat: the spare engine is prepared
+    stp = stop_now(t, clock, tm, stp["end"] + 30)
+    assert stp["parts"][-1] == ["engine", ls.ENG_READY, True] and stp["time"] == 5.5
+    assert stp["bat_in"] == 100.0                                         # plugged in right away: full again
+    # a whole race: every stop of the people's team within the expected range
+    t, clock = table(humans=(("1", 0), ("2", 0)), bots=2, crew="bots", minutes=5)
+    s = 0.0
+    while t.st["phase"] == "play":
+        s += 2.0
+        at(t, clock, s, seen=False)
+    pits = mine(t)["pits"]
+    assert len(pits) >= 5 and all(3.5 <= p["time"] <= 5.5 for p in pits)
+    # the rules: stored, cleaned, «players» by default
+    assert ls.DEFAULTS["crew"] == "players" and t.st["rules"]["crew"] == "bots"
+    assert ls.Langstrecke.clean_rules(None, "langstrecke", {"crew": "robots"})["crew"] == "players"
 
 
 def test_race_clock_day_and_night_and_frequent_showers():
@@ -1249,6 +1319,18 @@ def test_the_h_shifter_gate_maps_drag_positions_to_gears():
     assert r[4]["lim"]                                                  # in the rain the limiter comes earlier (× grip)
 
 
+def test_the_shift_paddles_go_up_and_down_but_never_into_r():
+    """lePaddle (pure, in node): up N → 1 … 6 (6 stays), down 6 … 1 → N (N stays) – never R; from R up to N. The paddles
+    send the same gear input as the shifter (validated by the server as before)."""
+    out = _app_js("""const up = [], down = []; let g = 0; for (let k = 0; k < 8; k++) { g = lePaddle(g, 1); up.push(g); }
+      for (let k = 0; k < 8; k++) { g = lePaddle(g, -1); down.push(g); }
+      console.log(JSON.stringify({ up, down, r: [lePaddle(-1, 1), lePaddle(-1, -1)], n: lePaddle(0, -1) }));""", None)
+    assert out["up"] == [1, 2, 3, 4, 5, 6, 6, 6] and out["down"] == [5, 4, 3, 2, 1, 0, 0, 0]
+    assert out["r"] == [0, -1] and out["n"] == 0 and -1 not in out["up"] + out["down"]
+    src = (WEB / "langstrecke.js").read_text(encoding="utf-8")
+    assert 'paddleShift(e.code === "KeyE" ? 1 : -1)' in src and "shiftTo(g)" in src      # E / Q on a keyboard, the shifter's own input
+
+
 def test_two_players_of_a_team_see_the_right_screen_in_every_phase(client):
     """The bug from a 2-player race: the crew got stuck on the start screen (the intro with the lights) with the jobs
     below it, also in later laps. Every phase from the server's view of BOTH apps through the app's own leScreen():
@@ -1397,7 +1479,7 @@ def test_rules_cleaned_remembered_and_parent_defaults(client):
     phd, mia, leo = setup_family(client)
     fq = client.app.state.fq
     assert fq.langstrecke.clean_rules("langstrecke", {"bots": 9, "level": "x", "minutes": 7, "weather": 0, "difficulty": "pro", "team_size": 9, "teams": 0}) == \
-        {"bots": 5, "level": "normal", "minutes": 8, "weather": 0, "difficulty": "normal", "team_size": 5, "teams": 1}
+        {"bots": 5, "level": "normal", "minutes": 8, "weather": 0, "difficulty": "normal", "team_size": 5, "teams": 1, "crew": "players"}
     hm = login(client, mia, "1111")
     assert client.put("/api/community/langstrecke/rules", json={"minutes": 12}, headers=hm).status_code == 403
     r = client.put("/api/community/langstrecke/rules", json={"minutes": 12, "weather": 0, "difficulty": "junior", "team_size": 2}, headers=phd).json()

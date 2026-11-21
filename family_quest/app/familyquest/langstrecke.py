@@ -23,14 +23,20 @@ The driving – real racing on a circuit (the general mechanics of the classic r
   crash (a tyre wall at XMAX). Braking boards (150 / 100 / 50 m) and a corner sign with the suggested speed come first.
 - rain: less grip – the safe speeds drop (RAIN_C), slicks in the rain / rain tyres in the dry even more (and are
   slower on the straights, WET_SLICK / DRY_RAIN); the crew picks the tyres for the next lap. Night: a shorter view and
-  headlights (the app only).
+  headlights (the app), at night in the rain only 40 m – the bots slow down with the view (view_dist, bot_caution).
 - other cars: following closely on a straight gives a SLIPSTREAM (a higher top speed); running into one from behind
   is a gentle bump: the car behind slows to the speed of the one ahead and slides aside – no crashes.
 - the driving ASSIST (junior: on for everybody by default; every driver can switch it for themselves): the car brakes
   by itself before a corner and the steering helps towards the racing line (the driver's own steering wins). Bots and
   the autopilot drive with the same assist – their skill is how close to the safe speed they dare (BOT_SKILL).
 
-The loop – one short lap (about 30 s), then the car drives into the pits by itself, every time:
+The loop – one short lap (about 30 s), then the car drives into the pits, every time:
+- the pit lane branches off the main straight to the RIGHT (PIT_IN): the driver keeps right and steers in, else a smooth
+  autopilot takes the car in (nobody misses the pits); the pit limiter (PIT_V) holds the speed from the entry line to
+  the pit exit (no penalty); the car crosses the line in the pit lane (the lap, timed at the crossing as always – the
+  lane's metres are the lap's metres beside it), rolls into its team's box and stops there (the stop begins); after the
+  stop it drives out to the pit exit and merges onto the track's right side. No contact between the pit lane and the
+  track; bots take the same entry.
 - full throttle heats the engine; at RED it overheats: the car limps on to the pits and the engine has to be swapped.
 - the car is electric: its battery (0–100 %) drains by the metre, much faster at full throttle (E_FULL) than lifted
   (E_LIFT); braking gives a little back (REGEN). Empty: the emergency drive mode – the car crawls (VEMERG) to the pits.
@@ -83,7 +89,8 @@ MAX_PLAYERS = 12
 LEVELS = ("easy", "normal", "hard")
 DIFFS = ("junior", "normal")
 MINUTES = (5, 8, 12)
-DEFAULTS = {"bots": 2, "level": "normal", "minutes": 8, "weather": 1, "difficulty": "normal", "team_size": 3, "teams": 2}
+DEFAULTS = {"bots": 2, "level": "normal", "minutes": 8, "weather": 1, "difficulty": "normal", "team_size": 3, "teams": 2, "crew": "players"}
+CREWS = ("players", "bots")   # the pit crew: the team's other people – or an automatic crew for every team (rule `crew`)
 # the countries a team can race for (ISO codes; names and groups in web/langstrecke.js) – or none
 COUNTRIES = ("BE", "BG", "DK", "DE", "FI", "FR", "GR", "GB", "IE", "IT", "LV", "LI", "LU", "MC", "NL", "NO", "AT", "PL", "PT", "RO",
              "RU", "SM", "SE", "CH", "SK", "SI", "ES", "CZ", "TR", "HU", "BY",
@@ -121,20 +128,20 @@ PIT_Z = 25.0                 # no contact on the track this close to the line (t
 # keeps counting along the lap; the line crosses the track and the pit lane, a lap still ends at d = n·L). Phases `pl`:
 # 0 racing, 1 the entry and the lane up to the line, 2 after the line to the box, 3 out of the box to the pit exit and
 # back onto the track (the end of the merge: racing again). `pz`: metres from the line of this stop (− before it).
-PIT_IN = 595.0               # lap metres: the pit entry line – from here every car is on its way into the pits (every lap)
-PIT_ENTRY = 22.0             # the entry bends off to the right over this many metres, then the pit wall
+PIT_IN = 580.0               # lap metres: the pit entry line – from here every car is on its way into the pits (every lap)
+PIT_ENTRY = 30.0             # the entry bends off to the right over this many metres, then the pit wall
 PIT_OUT = 60.0               # metres after the line: the pit exit (the end of the speed limit) …
 PIT_MERGE = 15.0             # … and the exit lane joins the track on its right side over this many metres
 PL_X, PL_HW = 9.5, 2.0       # the pit lane: its middle (metres right of the track's middle) and half its width
 SIDE_X = 3.5                 # where the entry leaves / the exit joins the track (its right side)
 PIT_V = 100.0 / 7.0          # the pit speed limit (100 km/h on the display): the limiter holds it by itself, no penalty
 KEEP_R, KEEP_ST = 1.5, 20    # at the entry line right of this, or steering right: the driver steers in himself …
-AP_LATE = 12.0               # … not in the lane this many metres before the pit wall: the autopilot takes over
+AP_LATE = 12.0               # … still on the track (left of SIDE_X) this many metres before the pit wall: the autopilot
 AP_K = 0.7                   # the autopilot's steering: full lock per 1.4 m off the lane
-FUNNEL = 0.6                 # the entry's inner white line closes in this much per metre (nobody misses the pits)
+FUNNEL = 0.45                # the entry's inner white line closes in this much per metre (nobody misses the pits)
 BOX0, BOX_GAP = 10.0, 6.0    # the boxes along the pit lane: the first this far after the line, then one per team
 BOX_DEC = 6.0                # m/s²: rolling into the box
-PZ_IN = PIT_IN - L           # the entry line, from the line (−45 m)
+PZ_IN = PIT_IN - L           # the entry line, from the line (−60 m)
 LINE_D, LINE_OUT, LINE_APEX, LMAX = 40.0, 3.5, 3.5, 4.0  # the racing line: outside before the corner, the apex inside
 ASSIST_K = 0.5               # the steering assist: full lock per 2 m off the line
 AK_ASSIST = 0.92             # the assist brakes down to this share of the safe speed
@@ -174,6 +181,8 @@ CHARGE_RATE = 4.0            # % per second while the spare battery is plugged i
 GARAGE_PLUG = 8.0            # no crew: the garage plugs the spare in this many seconds after the stop
 BOT_PLUG, BOT_PLUG_LATE = 0.5, 8.0   # bots plug in right away – or late (the chance of a missed job)
 ENGINE_HOLD = 2.0            # seconds of holding to prepare the spare engine
+CREW_TYRES = 0.5             # the automatic crew («Pit crew: bots»): everything prepared, the tyres take this much longer
+CREW_PLUG = 1.0              # … and it plugs the used battery in this many seconds after the stop
 TEAM_STYLES = (("Comet Racing", "#e03131"), ("Blue Falcon Works", "#1c7ed6"), ("Pine Cone Motors", "#2f9e44"),
                ("Sunrise Speedsters", "#f08c00"), ("Silver Owl Garage", "#7048e8"), ("Night Fox Racing", "#0c8599"),
                ("Thunder Bee Team", "#e8590c"), ("Snow Hare Racing", "#495057"))
@@ -354,7 +363,7 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     elif pl == 3 and PIT_OUT + PIT_MERGE <= xl < PIT_IN:
         pl = car["pl"] = 0
     pz = pit_z(d0, pl) if pl else 0.0
-    if pl == 1 and not car.get("ap", 0) and pz >= PZ_IN + PIT_ENTRY - AP_LATE and x0 < pit_x(pz) - PL_HW:
+    if pl == 1 and not car.get("ap", 0) and pz >= PZ_IN + PIT_ENTRY - AP_LATE and x0 < SIDE_X:
         car["ap"] = 1                                  # not steering in: the autopilot (nobody misses the pits)
         ev.append("autopilot")
     ap = pl > 0 and car.get("ap", 0) == 1
@@ -545,6 +554,19 @@ def darkness(s: float, limit: float) -> float:
     return 0.0
 
 
+def view_dist(dk: float, rain: bool) -> float:
+    """How far a driver sees (metres; leView() in the app): 150 by day, 70 at night, 125 in the rain by day, 40 at night
+    in the rain – the app shows the track, the corner sign and the boards only that far ahead."""
+    return 125.0 - 85.0 * dk if rain else 150.0 - 80.0 * dk
+
+
+def bot_caution(dk: float, rain: bool) -> tuple[float, bool]:
+    """Bots drive by what they can see: the share of their usual corner speed (about proportional to the view) and
+    whether they lift off on the straights (night in the rain)."""
+    vis = view_dist(dk, rain) / 150.0
+    return 0.72 + 0.28 * vis, vis < 0.35
+
+
 def in_window(wins, s: float) -> bool:
     return any(a <= s < b for a, b in wins or ())
 
@@ -695,9 +717,13 @@ class Table:
     def crew(self, t: dict) -> list[str]:
         return [m for m in t["members"] if m != t["driver"]]
 
+    def bot_crew(self) -> bool:
+        """«Pit crew: bots» – an automatic crew prepares every team's stops (the people only drive and watch)."""
+        return self.st["rules"].get("crew") == "bots"
+
     def active_crew(self, t: dict) -> list[str]:
-        """The crew whose apps are alive (bots have none: their team prepares by itself)."""
-        return [p for p in self.crew(t) if self.seen_ok(p, STALE)] if not t["bot"] else []
+        """The crew whose apps are alive (bots and the automatic crew have none: the team prepares by itself)."""
+        return [p for p in self.crew(t) if self.seen_ok(p, STALE)] if not t["bot"] and not self.bot_crew() else []
 
     def prep(self, pid: str, action: str, spot=None) -> dict:
         """A job of the pit crew during the lap – the server's clock decides (plug the spare battery in, a tyre on a
@@ -710,6 +736,8 @@ class Table:
         self.st["seen"][pid] = self.now()
         if t["driver"] == pid:
             raise CommunityError("The driver keeps the hands on the wheel")
+        if self.bot_crew():
+            raise CommunityError("The bot crew prepares the stops")
         if t["car"]["pit"]:
             raise CommunityError("The car is in the pits")
         now_t = math.floor(self.gt() * 1000) / 1000       # stored to the millisecond, never later than now
@@ -808,6 +836,10 @@ class Table:
             if eng:
                 ok = self.rng.random() >= miss
                 parts.append(["engine", ENG_READY if ok else ENG_SWAP, ok])
+        elif self.bot_crew():                            # the automatic crew: everything prepared – a normal stop, not perfect
+            parts += [["base", STOP_BASE, True], swap, ["tyres", CREW_TYRES, True]]
+            if eng:
+                parts.append(["engine", ENG_READY, True])
         elif not crew:                                   # alone (or the crew is offline): the garage, a fixed time
             garage = True
             parts += [["garage", GARAGE, True], swap]
@@ -825,7 +857,7 @@ class Table:
         wet_soon = self.wet_soon(at + took)
         if t["bot"]:
             tyre = ("r" if wet_soon else "s") if self.rng.random() >= miss else ("s" if wet_soon else "r")
-        elif garage:
+        elif garage or self.bot_crew():
             tyre = "r" if wet_soon else "s"
         else:
             tyre = t["prep"]["compound"] or car["tyre"]
@@ -846,6 +878,8 @@ class Table:
         if t["bot"]:
             miss = BOT_SKILL.get(self.person(t["driver"]).get("level", "normal"), BOT_SKILL["normal"])[3]
             auto = stop["end"] + (BOT_PLUG if self.rng.random() >= miss else BOT_PLUG_LATE)
+        elif self.bot_crew():
+            auto = stop["end"] + CREW_PLUG
         else:
             auto = stop["end"] + GARAGE_PLUG
         t["spare"] = new_spare(stop["bat_out"], stop["end"], round(auto, 2))
@@ -853,7 +887,7 @@ class Table:
             car.update(thr=0, st=0)                      # the new driver presses the pedal again
         t["pits"].append({"n": stop["n"], "time": stop["time"], "change": stop["change"], "garage": stop["garage"],
                           "eng": stop["eng"], "at": stop["t"], "driver": stop["prev"]})
-        if not stop["garage"] and (t["best_pit"] is None or stop["time"] < t["best_pit"]):
+        if not stop["garage"] and not self.bot_crew() and (t["best_pit"] is None or stop["time"] < t["best_pit"]):   # records: real crews only
             t["best_pit"] = stop["time"]
         t["driver"] = stop["next"]
         t["drives"][t["driver"]] = t["drives"].get(t["driver"], 0) + 1
@@ -928,9 +962,10 @@ class Table:
         xl = lap_pos(car["d"])
         nc, _ = next_corner(xl)
         key = f"{math.floor(car['d'] / L)}:{CORNERS.index(nc) if nc in CORNERS else -1}"
+        caution, lift = bot_caution(darkness(s, self.limit()), in_window(self.st.get("rain"), s))
         if key != t.get("bk"):                           # a new corner ahead: this time carefully – or too greedy
             t["bk"] = key
-            car["ak"] = BOT_GREEDY if self.rng.random() < miss else dare
+            car["ak"] = (BOT_GREEDY if self.rng.random() < miss else dare) * caution    # (in the dark and the rain: slower)
         car.update(ast=1, st=0, man=0)                   # bots and the autopilot: automatic gears, never R
         # overtaking: a car close ahead – drive alongside it (the slipstream helps on the straight)
         line = race_line(xl)
@@ -952,7 +987,7 @@ class Table:
             t["hot"] = 1
         elif car["temp"] <= hot_lo:
             t["hot"] = 0
-        car["thr"] = 0 if t["hot"] else 1
+        car["thr"] = 0 if t["hot"] or lift else 1         # night and rain: hardly any view – lifted on the straights too
         # the battery: flat out only while it lasts to the pits, else lift off (economical)
         left = (math.floor(car["d"] / L) + 1) * L - car["d"]
         if car["bat"] < left * E_FULL + 2.0:
@@ -1035,6 +1070,7 @@ class Langstrecke(CardGames):
         out["difficulty"] = out["difficulty"] if out["difficulty"] in DIFFS else "normal"
         out["team_size"] = max(1, min(5, out["team_size"]))
         out["teams"] = max(1, min(4, out["teams"]))
+        out["crew"] = out["crew"] if out["crew"] in CREWS else "players"
         return out
 
     def _person(self, pid: int) -> dict:
