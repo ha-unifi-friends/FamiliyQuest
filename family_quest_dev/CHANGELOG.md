@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-dev.4
+
+- License: from this version on Family Quest is published under the Business Source License 1.1 – free for families and other non-commercial use, commercial use and hosting for others only with a separate license; every version becomes open source (MPL 2.0) after four years. Versions up to 1.2.1 stay MIT.
+
 ## 1.2.2-dev.3
 
 - 24h Endurance: a virtual joystick in the race picture (up gas, down brake, left/right steer) instead of the four buttons – the picture is full height
