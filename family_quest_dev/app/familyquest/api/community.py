@@ -197,6 +197,10 @@ def PlayerOrGuest(request: Request, x_fq_token: str | None = Header(default=None
         prof = fq.db.q1("SELECT * FROM profile WHERE id=? AND archived=?", gid, GUEST)
         if not prof:
             raise HTTPException(401, "This guest visit is over")
+        # only the games guests may play; «join» only at a table of the guest lobby (guests.py) – nothing else
+        action = request.url.path.rstrip("/").rsplit("/", 1)[-1]
+        if not fq.guests.may_play(gid, game_of(request.url.path), action):
+            raise HTTPException(403, "Guests cannot join this table")
         return prof
     from .. import loginlog, netfilter
     if netfilter.guest_only(fq, loginlog.client_ip(request)):
@@ -2838,8 +2842,40 @@ def guest_join(body: GuestJoinIn, request: Request) -> dict:
         raise HTTPException(400, str(e)) from None
 
 
-# a guest changes the avatar during the visit (gast.js: ☰ › My avatar) – only with the guest token of the invitation
+# the guest's own requests (gast.js): the lobby, «Leave», ☰ › My avatar – only with the guest token
 guest_router = APIRouter(prefix="/api/guest")
+
+
+def _guest(fq, token: str | None) -> int:
+    """The guest of a valid guest token (a guest profile that still exists)."""
+    gid = fq.tokens.read(token, "guest", GUEST_HOURS * 3600)
+    if gid is None:
+        raise HTTPException(403, "Only for guests")
+    if not fq.db.q1("SELECT 1 FROM profile WHERE id=? AND archived=?", gid, GUEST):
+        raise HTTPException(401, "This guest visit is over")
+    return gid
+
+
+@guest_router.get("/lobby")
+def guest_lobby(request: Request, catalog: bool = False, x_fq_token: str | None = Header(default=None)) -> dict:
+    """The guest page's lobby: the family tables open to this guest just now (polled) – «join» needs no new invitation.
+    catalog: also the free avatar parts (the guest page asks once, for ☰ › My avatar)."""
+    fq = app_of(request)
+    gid = _guest(fq, x_fq_token)
+    p = fq.db.q1("SELECT * FROM profile WHERE id=?", gid)
+    out = {"on": fq.guests.enabled(), "tables": fq.guests.lobby(gid), "profile": {**fq.profile_public(p), "guest": True}}
+    if catalog:
+        from ..rewards import avatar as av
+        out["avatar_catalog"] = av.guest_catalog()
+    return out
+
+
+@guest_router.delete("/me")
+def guest_leave(request: Request, x_fq_token: str | None = Header(default=None)) -> dict:
+    """«Leave»: the guest profile and everything it did are deleted at once."""
+    fq = app_of(request)
+    fq.guests.leave(_guest(fq, x_fq_token))
+    return {"ok": True}
 
 
 @guest_router.put("/avatar")
