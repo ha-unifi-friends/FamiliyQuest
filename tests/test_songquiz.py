@@ -1,4 +1,5 @@
 """«Errate den Song»: a speaker of Home Assistant plays, buzzer, the others judge."""
+import pytest
 from test_api import setup_family
 
 SONGS = [("Bohemian Rhapsody", "Queen"), ("Alperose", "Polo Hofer"), ("Thriller", "Michael Jackson")]
@@ -161,3 +162,107 @@ def test_ping_and_brrr_on_the_speaker(client):
         time.sleep(0.02)
     assert "announce:wrong.mp3" in spk.calls
     fq.ha, fq.lan_base = None, None
+
+
+# ---------------------------------------------------------------- the vote decides as soon as the verdict is certain
+def _vote_game(fq, judges: int, vote: str = "majority"):
+    """A song game in the reveal phase: the host buzzed, `judges` others judge. → (song service, judge ids, host)."""
+    import json as _j
+    fq.ha = FakeSpeaker()
+    fq.songs._ding = lambda *a: None                     # no speaker sound thread in these tests
+    ids = [fq.db.x("INSERT INTO profile(name, role) VALUES(?, 'kid')", f"P{i}") for i in range(judges + 1)]
+    host, others = ids[0], ids[1:]
+    fq.songs.start(host, {"player": "media_player.x", "vote": vote, "reveal_delay": 0, "reveal_by": "leader"})
+    for pid in others:
+        fq.songs.join(pid)
+    fq.songs.begin()
+    assert fq.songs.buzz(host)
+    row = fq.songs._row(); s = _j.loads(row["state"]); s["buzz_at"] -= 10
+    fq.db.x("UPDATE song_game SET state=? WHERE id=?", _j.dumps(s), row["id"])
+    fq.songs.reveal({"id": host, "role": "parent"})
+    return fq.songs, others, host
+
+
+def _after(fq, votes: list[bool], judges: int, vote: str = "majority"):
+    """Vote one after the other – (phase after each vote, the final verdict)."""
+    songs, others, host = _vote_game(fq, judges, vote)
+    phases = []
+    for pid, v in zip(others, votes):
+        if songs.state(host)["phase"] == "result":
+            break
+        songs.vote(pid, v)
+        phases.append(songs.state(host)["phase"])
+    st = songs.state(host)
+    songs.end()
+    fq.ha = None
+    return phases, st["verdict"], st["players"][0]["points"] if st["players"] else None
+
+
+@pytest.mark.parametrize("judges,votes,decided_after,right", [
+    # 2 voters: right needs both (more than half of 2); one «wrong» is already half → wrong
+    (2, [True, True], 2, True), (2, [False], 1, False), (2, [True, False], 2, False),
+    # 3 voters: two «right» are more than half; two «wrong» – right cannot reach 2 any more
+    (3, [True, True], 2, True), (3, [False, False], 2, False), (3, [True, False, True], 3, True), (3, [True, False, False], 3, False),
+    # 4 voters: three «right» needed; two «wrong» are half → wrong at once
+    (4, [True, True, True], 3, True), (4, [False, False], 2, False), (4, [True, False, False], 3, False), (4, [True, True, False, True], 4, True),
+    # 5 voters: three «right» or three «wrong»
+    (5, [True, True, True], 3, True), (5, [False, False, False], 3, False), (5, [True, False, True, False, True], 5, True),
+    (5, [True, True, False, False, False], 5, False),
+])
+def test_majority_decides_as_soon_as_it_is_certain(fq, judges, votes, decided_after, right):
+    phases, verdict, _ = _after(fq, votes, judges)
+    assert phases[-1] == "result" and len(phases) == decided_after, phases
+    assert all(p == "reveal" for p in phases[:-1])
+    assert verdict["right"] is right
+
+
+@pytest.mark.parametrize("judges", [2, 3, 4, 5])
+def test_majority_waits_while_it_is_open(fq, judges):
+    """One «right» and nothing else: not decided yet (for 2 voters too – one right is not more than half)."""
+    songs, others, host = _vote_game(fq, judges)
+    songs.vote(others[0], True)
+    assert songs.state(host)["phase"] == "reveal"
+    fq.ha = None
+
+
+@pytest.mark.parametrize("judges", [2, 3, 4, 5])
+def test_unanimous_one_wrong_decides_right_needs_all(fq, judges):
+    phases, verdict, points = _after(fq, [True] * (judges - 1) + [True], judges, "unanimous")
+    assert phases == ["reveal"] * (judges - 1) + ["result"] and verdict["right"] is True
+    phases, verdict, points = _after(fq, [True, False, True, True, True][:judges], judges, "unanimous")
+    assert phases == ["reveal", "result"] and verdict["right"] is False        # one «wrong»: unanimity is impossible
+
+
+def test_the_leader_closes_the_vote_with_the_votes_there_are(fq):
+    songs, others, host = _vote_game(fq, 5)
+    songs.vote(others[0], True)
+    songs.vote(others[1], True)
+    songs.vote(others[2], False)
+    assert songs.state(host)["phase"] == "reveal"
+    songs.decide()                                     # 2 of 3 votes cast said right: right (as before)
+    assert songs.state(host)["verdict"] == {"right": True, "yes": 2, "of": 3}
+    fq.ha = None
+
+
+def test_nobody_knows_button_for_the_leader_while_a_song_plays():
+    """«⏭ Nobody knows it» is a button in the game screen of whoever leads – under the same condition as the ☰ entry."""
+    import shutil
+    import subprocess
+    from pathlib import Path
+    js = (Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web" / "song.js").read_text(encoding="utf-8")
+    assert 'hidden: !songCanSkip(st, leads)' in js                                  # the ☰ entry stays
+    assert 'songCanSkip(st, leads) ? h("button.btn.small.ghost.song-skip", { onclick: () => act("next") }, "⏭ ", T("Nobody knows it"))' in js
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    start = js.index("const songCanSkip")
+    fn = js[start:js.index("\n", start)]
+    cases = [({"phase": "playing", "status": "running"}, True, True), ({"phase": "playing", "status": "running", "paused": True}, True, True),
+             ({"phase": "playing", "status": "running"}, False, False), ({"phase": "lobby", "status": "lobby"}, True, False),
+             ({"phase": "buzzed", "status": "running"}, True, False), ({"phase": "reveal", "status": "running"}, True, False),
+             ({"phase": "result", "status": "running"}, True, False), ({"phase": "done", "status": "done"}, True, False)]
+    import json as _j
+    src = fn + "\nconst cases = " + _j.dumps(cases) + ";\nconsole.log(JSON.stringify(cases.map(([st, leads]) => songCanSkip(st, leads))));"
+    out = subprocess.run([node, "-e", src], capture_output=True, text=True, timeout=30)
+    assert out.returncode == 0, out.stderr
+    assert _j.loads(out.stdout) == [c[2] for c in cases]

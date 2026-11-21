@@ -26,7 +26,7 @@ def test_guests_join_a_game(client, fq=None):
 
 def test_guests_are_cleaned_up(fq):
     import json
-    pid = fq.db.x("INSERT INTO profile(name, settings, archived, created_at) VALUES('Gast', ?, 2, datetime('now','-13 hours'))", json.dumps({"guest": True}))
+    pid = fq.db.x("INSERT INTO profile(name, settings, archived, created_at) VALUES('Gast', ?, 2, datetime('now','-25 hours'))", json.dumps({"guest": True}))
     fq.db.x("INSERT INTO history(profile_id, kind) VALUES(?, 'quiz')", pid)
     assert fq.guests.cleanup() == 1
     assert not fq.db.q1("SELECT 1 FROM history WHERE profile_id=?", pid)

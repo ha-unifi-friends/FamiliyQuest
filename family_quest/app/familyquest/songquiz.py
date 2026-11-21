@@ -3,7 +3,8 @@
 The game leader chooses a speaker (media player of Home Assistant) that already has a playlist; the app switches
 shuffle on and only steers it: play, pause, next song. Who buzzes first stops the song and says artist and/or title
 (the rule); then the app shows cover, artist and title from the speaker and the others vote whether it was right
-(majority or unanimous). Right +1, wrong −1. The game ends at the target points or after the most songs.
+(absolute majority or unanimous – decided as soon as the verdict is certain). Right +1, wrong −1. The game ends at the
+target points or after the most songs.
 
 Phases: lobby → playing → buzzed → reveal → result → playing … → done. Like the other family games the state is one
 JSON document; every request moves it on (no background task).
@@ -248,10 +249,24 @@ class SongQuiz:
             if not any(p["id"] == str(pid) for p in st["players"]):
                 raise CommunityError("Join the game first")
             st["votes"][str(pid)] = bool(right)
-            judges = [p["id"] for p in st["players"] if p["id"] != st["buzzer"]]
-            if all(j in st["votes"] for j in judges):
+            if self._settled(st):
                 self._judge(st)
             self._save(row, st)
+
+    @staticmethod
+    def _settled(st: dict) -> bool:
+        """The verdict is certain – no vote still missing can change it. Majority (absolute, of everybody who may
+        judge): «right» from more than half of them, «wrong» once at least half said wrong (right cannot reach more
+        than half any more). Unanimous: one «wrong» decides; «right» only when all said right. Else when all voted."""
+        judges = [p["id"] for p in st["players"] if p["id"] != st["buzzer"]]
+        votes = {j: st["votes"][j] for j in judges if j in st["votes"]}
+        yes = sum(1 for v in votes.values() if v)
+        no = len(votes) - yes
+        if len(votes) == len(judges):
+            return True
+        if st["rules"]["vote"] == "unanimous":
+            return no > 0
+        return yes * 2 > len(judges) or no * 2 >= len(judges)
 
     def decide(self) -> None:
         """The leader closes the vote with the votes there are."""
@@ -270,7 +285,12 @@ class SongQuiz:
             st["verdict"] = {"right": None, "yes": 0, "of": 0}
             st["phase"] = "result"
             return
-        right = yes == n if st["rules"]["vote"] == "unanimous" else yes * 2 > n
+        if st["rules"]["vote"] == "unanimous":
+            right = yes == n
+        elif self._settled(st):                       # absolute majority of everybody who may judge
+            right = yes * 2 > sum(1 for p in st["players"] if p["id"] != st["buzzer"])
+        else:                                         # the leader closed the vote early: the majority of the votes there are
+            right = yes * 2 > n
         p = next(p for p in st["players"] if p["id"] == st["buzzer"])
         p["points"] += 1 if right else -1
         st["verdict"] = {"right": right, "yes": yes, "of": n}
