@@ -1,7 +1,10 @@
 # Changelog
 
-## 1.2.2-dev.5
+## 1.2.2-dev.6
 
+- 24h Endurance: a visible pit lane on the right before the finish – steer in yourself or the autopilot does it, 100 km/h limiter, team boxes with the crew, pit exit
+- 24h Endurance: small notices at the top instead of big texts in the middle; a really dark night with headlight cones and bright brake lights; very short sight at night in the rain (bots slow down too)
+- 24h Endurance: «Pit crew: players / bots» in the settings, a clear standings strip at the top, a yellow dashed racing line (switchable) and shift paddles in manual mode
 - Parent area on phones: «Family Quest App» closes the menu first, so the QR code dialog is no longer hidden behind it
 
 ## 1.2.2-dev.4
