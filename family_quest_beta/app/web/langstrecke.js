@@ -1,7 +1,7 @@
 // «24h Endurance» (24-Stunden-Rennen) – a short, fast live team race on the fictional «Circuit des Tannes»
 // (familyquest/langstrecke.py). Teams are racing stables with one car each. One short lap, then the car drives into
-// the pits by itself and the next person of the team drives. The driver dodges on three lanes (swipe / arrow keys)
-// and holds the pedal for full speed (it heats the engine and drains the battery much faster – empty: the emergency
+// the pits by itself and the next person of the team drives. The driver steers freely across the track with the virtual
+// joystick bottom left on the picture (up gas, down brake – or the arrow keys) and gives full gas (it heats the engine and drains the battery much faster – empty: the emergency
 // drive mode); the pit crew – everybody else of the team – prepares the stop on their phones during the lap: plug the
 // spare battery in (it charges over time – the next driver gets it with whatever charge it has), lay out the 4 tyres,
 // after an overheat the spare engine. The stop takes longer when the tyres were not ready – a stopwatch for the whole team. Sudden rain showers
@@ -24,7 +24,12 @@ const LE = { L: 640, DT: 0.1, VLIFT: 20, VFULL: 30, ACC: 8.5, BRAKE: 14, COAST: 
   WET_SLICK: 0.8, DRY_RAIN: 0.9, RAIN_C: 0.85,
   HW: 5.5, KERB: 1.5, XMAX: 11, STEER_V: 7, VSTEER: 10, WHEEL: 6, PUSH: 0.75, VGRASS: 9, GRASS_DEC: 16, KERB_F: 0.9,
   SLIP_D: 30, SLIP_W: 2.2, SLIP_V: 3.5, BUMP_D: 4.5, CAR_W: 1.9, NUDGE: 1.5, PIT_Z: 25,
-  LINE_D: 40, LINE_OUT: 3.5, LINE_APEX: 3.5, LMAX: 4, ASSIST_K: 0.5, AK_ASSIST: 0.92 };
+  LINE_D: 40, LINE_OUT: 3.5, LINE_APEX: 3.5, LMAX: 4, ASSIST_K: 0.5, AK_ASSIST: 0.92,
+  LUG: 0.35, EBRAKE: 7, LIM_HEAT: 1.5, NEUTRAL_DEC: 3, VREV_ON: 0.75, VREV: 2.5, VCREEP: 1, REV_ACC: 3, GRIND_DEC: 22, GRIND_HEAT: 30, AUTO_UP: 0.9, AUTO_DOWN: 0.75, AUTO_GAP: 0.2 };
+// the gearbox (manual): the limiter, the low end (below: the gear lugs) and the pull of gears 1–6 – as in langstrecke.py
+const LE_GEAR_TOP = [9, 13.5, 18, 22.5, 27, 30], LE_GEAR_LOW = [0, 5, 8.5, 12.5, 16.5, 21], LE_GEAR_ACC = [1.15, 1.1, 1.05, 1, 0.95, 0.9];
+// the gear the automatic gearbox would be in at speed v
+const leAutoGear = v => { for (let i = 0; i < LE_GEAR_TOP.length; i++) if (v < LE_GEAR_TOP[i] * LE.AUTO_UP) return i + 1; return LE_GEAR_TOP.length; };
 // the corners: start, end (metres in the lap), angle (degrees, + = right), safe speed (m/s, dry, the right tyres)
 const LE_CORNERS = [[90, 130, 90, 20], [210, 240, -45, 25], [300, 350, 150, 13], [420, 450, 75, 21], [500, 550, 90, 17]];
 // the spare battery's charge at game time `at` (the server's timestamps; the server decides at the stop)
@@ -78,11 +83,48 @@ function leDark(s, limit) {
   if (hr >= 5.5 && hr < 6.5) return 6.5 - hr;
   return 0;
 }
-// one input of the driver: "s" steering −100 … 100, "u" 1 gas / 0 lifted / −1 brake, "a" the assist on / off
+// one input of the driver: "s" steering −100 … 100, "u" 1 gas / 0 lifted / −1 brake, "a" the assist on / off,
+// "m" manual gears on / off (on: the gear that fits the speed), "g" the gear −1 R / 0 N / 1–6 (anything else: ignored)
 function leApply(car, c, v) {
   if (c === "s") car.st = Math.max(-100, Math.min(100, Math.trunc(v)));
   else if (c === "u") car.thr = Math.trunc(v) > 0 ? 1 : Math.trunc(v) < 0 ? -1 : 0;
   else if (c === "a") { car.ast = Math.trunc(v) ? 1 : 0; car.ak = LE.AK_ASSIST; }
+  else if (c === "m") { car.man = Math.trunc(v) ? 1 : 0; car.gear = leAutoGear(car.v); }
+  else if (c === "g" && Math.trunc(v) >= -1 && Math.trunc(v) <= LE_GEAR_TOP.length) car.gear = Math.trunc(v);
+}
+// the virtual joystick: the thumb's way (dx, dy in px from the centre, y down) on a ring of radius r → the knob clamped
+// to the ring (kx, ky), the steering s −100 … 100 in steps of 5 (a small dead zone in the middle, full lock a little
+// before the edge so a diagonal still steers hard) and the pedal u: up beyond 30 % gas 1, down beyond 30 % brake −1,
+// in between lifted off 0 – the same inputs as the arrow keys, the server's protocol does not change
+const LE_JOY = { DEAD: 0.12, LOCK: 0.85, PEDAL: 0.3 };
+function leJoy(dx, dy, r) {
+  dx = +dx || 0; dy = +dy || 0; r = Math.max(1, +r || 1);
+  const d = Math.hypot(dx, dy), k = d > r ? r / d : 1, kx = dx * k, ky = dy * k, nx = kx / r, ny = ky / r, ax = Math.abs(nx);
+  const s = ax <= LE_JOY.DEAD ? 0 : Math.sign(nx) * Math.round(Math.min(1, (ax - LE_JOY.DEAD) / (LE_JOY.LOCK - LE_JOY.DEAD)) * 20) * 5;
+  return { kx, ky, s: s || 0, u: ny <= -LE_JOY.PEDAL ? 1 : ny >= LE_JOY.PEDAL ? -1 : 0 };
+}
+// the H shifter's open gate (x −1 … 1 left → right, y −1 top … 1 bottom; the neutral rail at y = 0) – four columns:
+// R (top only) | 1 top, 2 bottom | 3 top, 4 bottom | 5 top, 6 bottom. leGate: where the thumb is → the lever on the
+// nearest point of the gate (the rail or a slot – it never leaves the gate) and the gear it is in: deeper than IN into
+// a slot = that gear, else N (0). leGatePos: where the lever sits in a gear (R = −1).
+const LE_GATE = { COLS: [-0.75, -0.25, 0.25, 0.75], IN: 0.6, SLOTS: [[0, -1, -1], [1, -1, 1], [1, 1, 2], [2, -1, 3], [2, 1, 4], [3, -1, 5], [3, 1, 6]] };
+function leGate(nx, ny) {
+  nx = +nx || 0; ny = +ny || 0;
+  let x = leClamp(nx, LE_GATE.COLS[0], LE_GATE.COLS[3]), y = 0, slot = null, bd = Math.hypot(nx - x, ny);
+  for (const sl of LE_GATE.SLOTS) {
+    const sx = LE_GATE.COLS[sl[0]], sy = sl[1] < 0 ? leClamp(ny, -1, 0) : leClamp(ny, 0, 1), dd = Math.hypot(nx - sx, ny - sy);
+    if (dd <= bd) { bd = dd; x = sx; y = sy; slot = sl; }
+  }
+  return { x, y: y || 0, gear: slot && Math.abs(y) >= LE_GATE.IN ? slot[2] : 0 };
+}
+const leGatePos = g => { const sl = LE_GATE.SLOTS.find(z => z[2] === g); return sl ? [LE_GATE.COLS[sl[0]], sl[1]] : [0, 0]; };
+// the rev / shift light: the gear (manual: the lever's, automatic: the one it would be in), how high it revs (0 … 1+)
+// and the limiter (≥ 97 % of the gear's top)
+function leRev(car, rain) {
+  const g = car.man ? (car.gear ?? 1) : leAutoGear(car.v);
+  if (g < 1) return { g, r: 0, lim: false };
+  const r = Math.abs(car.v) / (LE_GEAR_TOP[g - 1] * leGrip(car.tyre, rain));
+  return { g, r, lim: r >= 0.97 };
 }
 // one step of DT seconds from game time s – the same as step() in langstrecke.py; `others`: [[d, x, v], …] of the
 // other cars on the track at the start of the step
@@ -92,7 +134,7 @@ function leStep(car, s, jr, rain = false, others = []) {
   const d0 = car.d, x0 = car.x, v0 = car.v, xl = leLapPos(d0), cn = leCornerAt(xl);
   let th = car.thr, stc = car.st / 100;
   const emg = car.bat <= 0;                          // the battery is empty: the emergency drive mode
-  const bite = Math.min(1, 0.2 + v0 / LE.VSTEER);    // how much the steering bites at this speed
+  const bite = Math.min(1, 0.2 + Math.abs(v0) / LE.VSTEER);   // how much the steering bites at this speed
   let push = 0;                                      // a corner pushes outward, ∝ speed²
   if (cn !== null) { const q = v0 / leSafe(cn, car.tyre, rain); push = (cn[2] > 0 ? -1 : 1) * LE.STEER_V * LE.PUSH * q * q; }
   if (car.ast) {                                     // the assist: towards the racing line, brake before a corner
@@ -103,11 +145,32 @@ function leStep(car, s, jr, rain = false, others = []) {
     if (nc !== null) { const tv = leSafe(nc, car.tyre, rain) * car.ak; if (v0 > tv && dz <= (v0 * v0 - tv * tv) / (2 * LE.BRAKE) + v0 * 0.3 + 2) th = -1; }
   }
   car.sw += leClamp(stc - car.sw, -LE.WHEEL * DT, LE.WHEEL * DT);
-  const full = th > 0 && !car.eng && !emg;
-  let vt = car.eng ? LE.VLIMP : (full ? LE.VFULL : LE.VLIFT) * leGrip(car.tyre, rain);
+  let full = th > 0 && !car.eng && !emg;
+  const gr = leGrip(car.tyre, rain), man = car.man || 0, g = car.gear ?? 1;
+  let acc = LE.ACC, dec = LE.COAST, lim = false, grind = false, rev = false, top = 0, vt;
+  let gap = false;
+  if (!man) {                                        // automatic: the plain car – with a torque gap at every shift
+    vt = car.eng ? LE.VLIMP : (full ? LE.VFULL : LE.VLIFT) * gr;
+    let ga = g;
+    if (!(ga >= 1 && ga <= LE_GEAR_TOP.length)) ga = car.gear = leAutoGear(v0);   // from N / R: the gear that fits, no gap
+    if (ga < LE_GEAR_TOP.length && v0 >= LE_GEAR_TOP[ga - 1] * LE.AUTO_UP) { car.gear = Math.max(ga + 1, leAutoGear(v0)); car.sg = LE.AUTO_GAP; }
+    else if (ga > 1 && v0 < LE_GEAR_TOP[ga - 2] * LE.AUTO_DOWN) car.gear = ga - 1;
+    gap = (car.sg || 0) > 1e-9;
+    car.sg = Math.max(0, (car.sg || 0) - DT);
+  }
+  else if (g >= 1) {                                 // a gear: its band, its limiter, too high = weak pull
+    top = LE_GEAR_TOP[g - 1] * gr;
+    vt = car.eng ? Math.min(LE.VLIMP, top) : full ? top : Math.min(LE.VLIFT * gr, top);
+    acc = LE.ACC * LE_GEAR_ACC[g - 1] * (v0 < LE_GEAR_LOW[g - 1] ? LE.LUG : 1);
+    lim = v0 >= top - 0.3 && (full || v0 > top + 0.3);
+    if (v0 > top + 0.3) dec = LE.EBRAKE;             // over the limiter after a downshift: engine braking
+  } else {                                           // N: no drive – R: grinding while rolling, else backwards
+    full = false; vt = 0;
+    grind = g < 0 && v0 > LE.VREV_ON; rev = g < 0 && !grind;
+    dec = grind ? LE.GRIND_DEC : LE.NEUTRAL_DEC;
+  }
   if (emg) vt = Math.min(vt, LE.VEMERG);
-  let dec = LE.COAST;
-  if (th < 0) { vt = Math.min(vt, LE.VBRAKE); dec = LE.BRAKE; }
+  if (th < 0) { vt = Math.min(vt, LE.VBRAKE); dec = Math.max(dec, LE.BRAKE); }
   let tow = 0, bump = null, nudge = 0;               // the other cars: the slipstream on a straight, a gentle bump
   if (LE.PIT_Z <= xl && xl <= LE.L - LE.PIT_Z) {
     for (const [od, ox, ov] of others) {
@@ -120,10 +183,14 @@ function leStep(car, s, jr, rain = false, others = []) {
     }
   }
   car.tow = tow;
-  if (tow > 0 && th >= 0) vt += LE.SLIP_V * tow;
+  if (tow > 0 && th >= 0 && (!man || g >= 1)) vt += LE.SLIP_V * tow;
   if (car.sf === 2) { vt = Math.min(vt, LE.VGRASS); dec = Math.max(dec, LE.GRASS_DEC); }   // on the grass: heavy slowdown
   else if (car.sf === 1) vt *= LE.KERB_F;
-  let v = v0 < vt ? Math.min(vt, v0 + LE.ACC * DT) : Math.max(vt, v0 - dec * DT);
+  let v = v0 < vt ? (gap ? v0 : Math.min(vt, v0 + acc * DT)) : Math.max(vt, v0 - dec * DT);
+  if (rev) {                                         // backwards, slowly: gas / lifted creeps / the brake stops
+    const tg = th < 0 ? 0 : th > 0 ? -LE.VREV : -LE.VCREEP;
+    v = v0 > tg ? Math.max(tg, v0 - LE.REV_ACC * DT) : Math.min(tg, v0 + (th < 0 ? LE.BRAKE : LE.REV_ACC) * DT);
+  }
   car.bc = Math.max(0, car.bc - DT);
   if (bump !== null && v > bump) {
     v = Math.max(0, bump);
@@ -135,15 +202,18 @@ function leStep(car, s, jr, rain = false, others = []) {
   else if (sf === 1 && car.sf === 0) { car.kerb += 1; ev.push("kerb"); }
   car.sf = sf;
   if (!emg) {                                        // the battery: by the metre – full throttle much more; braking gives a little back
-    let use = (full ? LE.E_FULL : LE.E_LIFT) * v * DT;
+    let use = (full ? LE.E_FULL : LE.E_LIFT) * Math.abs(v) * DT;
     if (th < 0 && v < v0) use -= LE.REGEN * (v0 - v);
     car.bat = Math.max(0, Math.min(100, car.bat - use));
     if (car.bat <= 0) { car.flat += 1; ev.push("empty"); }
   }
   let d1 = d0 + v * DT;
-  if (full) car.temp = Math.min(LE.RED, car.temp + (jr ? LE.HEAT_JR : LE.HEAT) * DT);
+  if (v < 0 && d1 < Math.floor(d0 / LE.L) * LE.L) { d1 = Math.floor(d0 / LE.L) * LE.L; v = 0; }   // backwards never over the line
+  if (grind) { car.temp = Math.min(LE.RED, car.temp + LE.GRIND_HEAT * DT); ev.push("grind"); }
+  else if (lim) car.temp = Math.min(LE.RED, car.temp + (jr ? LE.HEAT_JR : LE.HEAT) * LE.LIM_HEAT * DT);
+  else if (full) car.temp = Math.min(LE.RED, car.temp + (jr ? LE.HEAT_JR : LE.HEAT) * DT);
   else car.temp = Math.max(LE.TMIN, car.temp - LE.COOL * DT);
-  if (full && car.temp >= LE.RED - 1e-9) { car.eng = 1; car.blows += 1; car.temp = 80; ev.push("blow"); }
+  if ((full || lim || grind) && car.temp >= LE.RED - 1e-9) { car.eng = 1; car.blows += 1; car.temp = 80; ev.push("blow"); }
   const n0 = Math.floor(d0 / LE.L), n1 = Math.floor(d1 / LE.L);
   const tc = n1 > n0 ? s + (n1 * LE.L - d0) / v : 0;  // the moment the car crossed the line (within the step)
   if (n1 > n0 && n0 >= 0) {
@@ -258,7 +328,8 @@ function langstreckeRulesView(r, rewards) {
   const items = [
     I18N.tr(T("24 race hours in {0} minutes on the Circuit des Tannes. The most laps wins.")).replace("{0}", r.minutes || 8),
     T("A short lap, then the car drives into the pits by itself – and the next person of the team drives."),
-    T("Driver: steer with ◀ ▶, a drag on the picture or the arrow keys; 🛑 brake and 🚀 gas with the other thumb (↓ ↑). In the red the engine overheats – it has to be swapped at the stop."),
+    T("Driver: the joystick bottom left on the picture – up gas, down brake, sideways steering (or the arrow keys). In the red the engine overheats – it has to be swapped at the stop."),
+    T("Gears: «A / M» on the picture switches at any time – automatic, or manual with the H shifter bottom right (R | 1 2 | 3 4 | 5 6, keys 1–6, R, N). Every gear has its speed band – shift up when the light turns red, a gear too high pulls weakly. Shifted well, manual is a little faster. R only when stopped: at speed it grinds the gearbox and overheats the engine."),
     T("Five corners per lap: the sign shows the direction and the suggested speed, the boards 150 / 100 / 50 m. Brake before the corner and steer through it – too fast and the car runs wide onto the kerb and the grass."),
     T("Racing line: come in from the outside, touch the inside in the middle of the corner, let the car run out again."),
     T("Close behind another car on a straight you get the slipstream – more speed to overtake. Running into a car only slows you down."),
@@ -537,7 +608,7 @@ function langstreckeLive(box, me, back) {
     const t = myTeam();
     if (!t) return;
     const drv = t.driver === myId;
-    if (drv && !wasDriver) { thrLocal = 0; held.gas = false; held.brake = false; pend = []; inflight = []; steer.sent = 0; ui.xs = null; }      // my turn: the pedals start released
+    if (drv && !wasDriver) { thrLocal = 0; held.gas = held.brake = held.jgas = held.jbrake = false; pend = []; inflight = []; steer.sent = 0; ui.xs = null; }      // my turn: the pedals start released
     if (!drv) { pend = []; inflight = []; }
     wasDriver = drv;
     if (t.stop && stopSeen !== t.stop.t) {                                     // the car is in: the stopwatch starts
@@ -578,40 +649,52 @@ function langstreckeLive(box, me, back) {
     predCache = null;
     sync();
   }
-  // the pedals: gas (hold = full throttle) and the brake (wins while held); neither = lifted off
-  const held = { gas: false, brake: false };
+  // the pedals: gas (held = full throttle) and the brake (wins while held); neither = lifted off – from the keys
+  // (↑ / W / Space, ↓ / S) and from the joystick's upper / lower zone
+  const held = { gas: false, brake: false, jgas: false, jbrake: false };
   const pedals = () => {
-    const v = held.brake ? -1 : held.gas ? 1 : 0;
+    const v = held.brake || held.jbrake ? -1 : held.gas || held.jgas ? 1 : 0;
     if (v !== thrLocal) input("u", v);
-    if (ui.pedal) ui.pedal.classList.toggle("on", held.gas && !held.brake);
-    if (ui.brake) ui.brake.classList.toggle("on", held.brake);
+    if (ui.joy) { ui.joy.classList.toggle("le-jgas", v > 0); ui.joy.classList.toggle("le-jbrake", v < 0); }
   };
   const pedal = on => { held.gas = !!on; pedals(); };
   const brake = on => { held.brake = !!on; pedals(); };
-  // the steering: −100 … 100 – the ◀ ▶ buttons and the arrow keys give full lock while held, a drag on the picture
-  // steers by the finger's way from where it touched (STEER_PX = full lock); sent in steps of 5, at most every 60 ms
-  const STEER_PX = 70;
-  const steer = { bl: false, br: false, kl: false, kr: false, drag: 0, sent: 0, at: 0, timer: 0 };
+  // the steering: −100 … 100 – the arrow keys give full lock while held, the joystick steers by how far the knob is
+  // pushed sideways (leJoy); sent in steps of 5, at most every 60 ms
+  const steer = { kl: false, kr: false, joy: 0, sent: 0, at: 0, timer: 0 };
   function steerNow() {
     clearTimeout(steer.timer); steer.timer = 0;
-    const b = (steer.bl || steer.kl ? -1 : 0) + (steer.br || steer.kr ? 1 : 0);
-    const v = b ? b * 100 : Math.round(leClamp(steer.drag, -100, 100) / 5) * 5;
+    const b = (steer.kl ? -1 : 0) + (steer.kr ? 1 : 0);
+    const v = b ? b * 100 : Math.round(leClamp(steer.joy, -100, 100) / 5) * 5;
     if (v === steer.sent) return;
     const wait = 0.06 - (nowS() - steer.at);
     if (wait > 0 && v !== 0 && Math.abs(v) !== 100) { steer.timer = setTimeout(steerNow, wait * 1000 + 1); return; }
     steer.sent = v; steer.at = nowS();
     input("s", v);
-    if (ui.left) ui.left.classList.toggle("on", v < 0);
-    if (ui.right) ui.right.classList.toggle("on", v > 0);
+    if (ui.joy) { ui.joy.classList.toggle("le-jl", v < 0); ui.joy.classList.toggle("le-jr", v > 0); }
   }
   const KEYS = { ArrowLeft: "kl", KeyA: "kl", ArrowRight: "kr", KeyD: "kr" };
   const GAS = ["ArrowUp", "KeyW", "Space"], BRAKE = ["ArrowDown", "KeyS"];
+  // manual gears on the keyboard: 1–6, R, N / 0
+  const GEARKEYS = { KeyR: -1, KeyN: 0, Digit0: 0, Numpad0: 0 };
+  for (let g = 1; g <= 6; g++) { GEARKEYS["Digit" + g] = g; GEARKEYS["Numpad" + g] = g; }
+  // a gear in: to the server (validated there), a short click and a tick in the hand (not with reduced motion)
+  function shiftTo(g, lever) {
+    if (!amDriver()) return;
+    const c = predicted();
+    if (c && c.gear === g) return;
+    input("g", g);
+    if (ui.shift) ui.shift.set(g, lever);
+    if (g !== 0) { LeAudio.tone([g < 0 ? 300 : 1500], "square", 0.03, 0.05); if (!leReduced()) leBuzz(15); }
+    if (g < 0 && c && c.v > LE.VREV_ON) ui.grind = nowS();
+  }
   function onKey(e) {
     if (!alive || !box.isConnected || !amDriver()) return;
     if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "")) return;
     if (KEYS[e.code]) { e.preventDefault(); if (!e.repeat) { steer[KEYS[e.code]] = true; steerNow(); } }
     else if (GAS.includes(e.code)) { e.preventDefault(); if (!e.repeat) pedal(1); }
     else if (BRAKE.includes(e.code)) { e.preventDefault(); if (!e.repeat) brake(1); }
+    else if (GEARKEYS[e.code] != null) { const c = predicted(); if (c && c.man) { e.preventDefault(); if (!e.repeat) shiftTo(GEARKEYS[e.code]); } }
   }
   function onKeyUp(e) {
     if (KEYS[e.code]) { steer[KEYS[e.code]] = false; if (amDriver()) { e.preventDefault(); steerNow(); } return; }
@@ -621,27 +704,106 @@ function langstreckeLive(box, me, back) {
   window.addEventListener("keydown", onKey);
   window.addEventListener("keyup", onKeyUp);
   window.addEventListener("blur", () => { steer.kl = steer.kr = false; held.gas = held.brake = false; if (amDriver()) { steerNow(); pedals(); } });
-  function swipes(el) {
-    let sx = 0, on = null;
+  // the first-drive hint under the joystick: until the gas was given with it once (remembered on this device)
+  const JOY_SEEN = "fq-le-joy";
+  const joySeen = () => { try { return localStorage.getItem(JOY_SEEN) === "1"; } catch { return false; } };
+  // the virtual joystick (bottom left on the picture): up gas, down brake, sideways steering. It follows only its own
+  // finger (pointerId + pointer capture) – a second thumb elsewhere never moves it; the knob stays on the ring and
+  // springs back to the middle on release (= straight ahead, lifted off)
+  function joystick() {
+    const NS = "http://www.w3.org/2000/svg";
+    const S_ = (tag, attrs, ...kids) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); e.append(...kids); return e; };
+    const pt = a => { const r = a * Math.PI / 180; return (50 + 44 * Math.sin(r)).toFixed(2) + " " + (50 - 44 * Math.cos(r)).toFixed(2); };
+    const arc = (a0, a1, cls) => S_("path", { d: "M " + pt(a0) + " A 44 44 0 0 1 " + pt(a1), class: cls });
+    const ring = S_("svg", { viewBox: "0 0 100 100", class: "le-joyring", "aria-hidden": "true" },
+      S_("circle", { cx: 50, cy: 50, r: 44, class: "le-jbase" }),
+      arc(-52, 52, "le-jarc le-jagas"), arc(128, 232, "le-jarc le-jabrake"),
+      S_("path", { d: "M 4 50 L 13 43 L 13 57 Z", class: "le-jarrow le-jal" }), S_("path", { d: "M 96 50 L 87 43 L 87 57 Z", class: "le-jarrow le-jar" }),
+      S_("text", { x: 50, y: 21, class: "le-jtxt" }, I18N.tr(T("Gas"))), S_("text", { x: 50, y: 85, class: "le-jtxt" }, I18N.tr(T("Brake"))));
+    const knob = h("div.le-knob");
+    const el = h("div.le-joy", { role: "application", "aria-label": I18N.tr(T("Joystick: up gas, down brake, sideways steering")) }, ring, knob);
+    const hint = joySeen() ? null : h("div.le-joyhint", "🕹️ ", T("Joystick: up gas, down brake"));
+    let pid = null, cx = 0, cy = 0, zone = 0;
+    steer.joy = 0; held.jgas = held.jbrake = false;                  // a new screen: an older joystick's thumb is gone
+    const move = e => {
+      const j = leJoy(e.clientX - cx, e.clientY - cy, el.clientWidth * 0.3);
+      knob.style.transform = "translate(" + j.kx.toFixed(1) + "px, " + j.ky.toFixed(1) + "px)";
+      steer.joy = j.s; steerNow();
+      held.jgas = j.u > 0; held.jbrake = j.u < 0; pedals();
+      if (j.u && j.u !== zone && !leReduced()) leBuzz(12);           // a small tick into the gas / brake zone
+      if (j.u > 0 && hint && hint.isConnected && amDriver()) { hint.remove(); try { localStorage.setItem(JOY_SEEN, "1"); } catch {} }
+      zone = j.u;
+    };
     el.addEventListener("pointerdown", e => {
-      if (gameT() < 0 && !introSkip) { introSkip = true; return; }       // a tap skips the intro
-      if (on != null) return;
-      on = e.pointerId; sx = e.clientX; try { el.setPointerCapture(e.pointerId); } catch {} e.preventDefault();
+      e.preventDefault(); e.stopPropagation();
+      if (gameT() < 0 && !introSkip) introSkip = true;
+      if (pid != null) return;
+      pid = e.pointerId; try { el.setPointerCapture(pid); } catch {}
+      const b = el.getBoundingClientRect(); cx = b.left + b.width / 2; cy = b.top + b.height / 2;
+      el.classList.add("le-jon"); move(e);
     });
-    el.addEventListener("pointermove", e => {
-      if (on !== e.pointerId) return;
-      steer.drag = (e.clientX - sx) / STEER_PX * 100;
-      steerNow();
-    });
-    const up = e => { if (on !== e.pointerId) return; on = null; steer.drag = 0; steerNow(); };
-    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("lostpointercapture", up);
+    el.addEventListener("pointermove", e => { if (e.pointerId === pid) { e.preventDefault(); move(e); } });
+    const up = e => {
+      if (e.pointerId !== pid) return;
+      pid = null; zone = 0; knob.style.transform = ""; el.classList.remove("le-jon");
+      steer.joy = 0; held.jgas = held.jbrake = false; steerNow(); pedals();
+    };
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) el.addEventListener(ev, up);
+    el.addEventListener("contextmenu", e => e.preventDefault());
+    return [el, hint];
   }
-  // a button held down (◀ ▶): on while the finger is on it
-  function holdKey(cls, ic, label, key) {
-    const b = h("button.le-btn" + cls, { type: "button", "aria-label": label, title: label }, ic);
-    b.addEventListener("pointerdown", e => { e.preventDefault(); if (gameT() < 0 && !introSkip) introSkip = true; try { b.setPointerCapture(e.pointerId); } catch {} steer[key] = true; steerNow(); });
-    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => { if (steer[key]) { steer[key] = false; steerNow(); } });
-    return b;
+  // the H shifter (bottom right on the picture, manual gears only): a polished metal plate with the open gate, a short
+  // chrome shaft and a chrome ball. The right thumb drags the ball along the gate (leGate) – its own pointerId, so it
+  // works together with the joystick under the left thumb; it snaps into a gear, N on the rail.
+  function shifter() {
+    const NS = "http://www.w3.org/2000/svg";
+    const S_ = (tag, attrs, ...kids) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); e.append(...kids); return e; };
+    const X = nx => 60 + nx * 42, Y = ny => 52 + ny * 30;
+    const grad = (id, kind, stops, at) => S_(kind, { id, ...at }, ...stops.map(([o, c]) => S_("stop", { offset: o, "stop-color": c })));
+    const defs = S_("defs", {},
+      grad("le-plate-g", "linearGradient", [["0", "#f8f9fa"], ["0.45", "#adb5bd"], ["0.55", "#ced4da"], ["1", "#6c757d"]], { x1: 0, y1: 0, x2: 1, y2: 1 }),
+      grad("le-ball-g", "radialGradient", [["0", "#ffffff"], ["0.35", "#e9ecef"], ["0.7", "#868e96"], ["1", "#343a40"]], { cx: "0.38", cy: "0.32", r: "0.7" }));
+    const gate = "M " + X(-0.75) + " " + Y(0) + " L " + X(0.75) + " " + Y(0) + " M " + X(-0.75) + " " + Y(-1) + " L " + X(-0.75) + " " + Y(0)
+      + [-0.25, 0.25, 0.75].map(c => " M " + X(c) + " " + Y(-1) + " L " + X(c) + " " + Y(1)).join("");
+    const labels = LE_GATE.SLOTS.map(([c, d, g]) => S_("text", { x: X(LE_GATE.COLS[c]), y: d < 0 ? 9 : 97, class: "le-gl" + (g < 0 ? " le-glr" : ""), "data-g": g }, g < 0 ? "R" : String(g)));
+    const shaft = S_("line", { class: "le-shaft" }), ball = S_("circle", { r: 11.5, class: "le-ball", fill: "url(#le-ball-g)" }), shine = S_("circle", { r: 3.2, class: "le-shine" });
+    const lever = S_("g", { class: "le-lever" }, shaft, ball, shine);
+    const svg = S_("svg", { viewBox: "0 0 120 104", class: "le-plate", "aria-hidden": "true" }, defs,
+      S_("rect", { x: 2, y: 2, width: 116, height: 100, rx: 14, fill: "url(#le-plate-g)", class: "le-platebg" }),
+      ...[[10, 10], [110, 10], [10, 94], [110, 94]].map(([cx, cy]) => S_("circle", { cx, cy, r: 2.6, class: "le-screw" })),
+      S_("path", { d: gate, class: "le-gate" }), S_("path", { d: gate, class: "le-gatein" }), ...labels, lever);
+    const big = h("b.le-gearbig", "1");
+    const el = h("div.le-shift", { role: "application", "aria-label": I18N.tr(T("Gear shifter: R, 1–6, N – keys 1–6, R, N")), title: I18N.tr(T("R only when stopped")) }, big, svg);
+    let pid = null, pos = leGatePos(1), shown = null, nX = 0;
+    const place = (x, y) => {
+      pos = [x, y];
+      const bx = X(x), by = Y(y);
+      shaft.setAttribute("x1", bx); shaft.setAttribute("y1", by + 10); shaft.setAttribute("x2", bx); shaft.setAttribute("y2", by);
+      for (const c of [ball, shine]) { c.setAttribute("cx", c === shine ? bx - 3.5 : bx); c.setAttribute("cy", c === shine ? by - 4 : by); }
+    };
+    const label = g => { const txt = g < 0 ? "R" : g === 0 ? "N" : String(g); if (big.textContent !== txt) big.textContent = txt; el.dataset.g = String(g);
+      for (const l of labels) l.classList.toggle("on", +l.dataset.g === g); };
+    const at = e => { const b = svg.getBoundingClientRect(); return leGate((e.clientX - b.left) / b.width * 120 / 42 - 60 / 42, ((e.clientY - b.top) / b.height * 104 - 52) / 30); };
+    let live = 0;
+    const move = e => { const r = at(e); place(r.x, r.y); if (r.gear !== live) { live = r.gear; label(live); shiftTo(live, true); } };
+    el.addEventListener("pointerdown", e => {
+      e.preventDefault(); e.stopPropagation();
+      if (pid != null) return;
+      pid = e.pointerId; try { el.setPointerCapture(pid); } catch {}
+      const c = predicted(); live = c ? (c.gear ?? 1) : 1;
+      el.classList.add("le-son"); move(e);
+    });
+    el.addEventListener("pointermove", e => { if (e.pointerId === pid) { e.preventDefault(); move(e); } });
+    const up = e => {
+      if (e.pointerId !== pid) return;
+      pid = null; el.classList.remove("le-son");
+      if (live) { const [x, y] = leGatePos(live); place(x, y); } else { nX = pos[0]; place(pos[0], 0); }   // snaps into the gear / onto the rail
+    };
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) el.addEventListener(ev, up);
+    el.addEventListener("contextmenu", e => e.preventDefault());
+    place(...pos); label(1);
+    return { el, set(g, lever) { shown = g; label(g); if (!lever && pid == null) { const p = g === 0 ? [nX, 0] : leGatePos(g); place(...p); } },
+      sync(g) { if (pid == null && g !== shown) this.set(g); } };
   }
 
   // ---------- my car as the server will see it (the snapshot + my inputs up to now; the other cars moved on)
@@ -679,6 +841,7 @@ function langstreckeLive(box, me, back) {
     else if (e === "blow") { LeAudio.tone([200, 120, 80], "sawtooth", 0.3, 0.12, 0.2); leBuzz([200, 80, 200]); ui.flash = nowS(); }
     else if (e === "empty") { LeAudio.tone([660, 440, 330, 220], "square", 0.18, 0.08, 0.16); leBuzz([150, 80, 150, 80, 150]); ui.flash = nowS(); }
     else if (e === "lap") { try { Sound.play("tap"); } catch {} }
+    else if (e === "grind") { ui.grind = nowS(); LeAudio.tone([140, 95, 140, 90], "sawtooth", 0.09, 0.1, 0.06); leBuzz([90, 30, 90, 30, 90]); }
   }
 
   // ---------- drawing the race (pseudo-3D from behind the car, the road bends with the corners)
@@ -848,7 +1011,8 @@ function langstreckeLive(box, me, back) {
     // my car (or the team's car on the TV): rumble on the kerb, dust on the grass, wind lines in the slipstream
     const cx0 = X(CAMZ, opts.xs ?? car.x), cy0 = Y(CAMZ), cwid = unit * sc(CAMZ) * 2.8;
     const rumble = !red && (car.sf === 1 || (ui.rumble && nowS() - ui.rumble < 0.25)) ? Math.sin(t * 90) * 1.5 : 0;
-    const shake = car.v > 0 && !red ? Math.sin(t * 40) * 0.5 + rumble : 0;
+    const grinding = !opts.tv && ui.grind && nowS() - ui.grind < 0.9;     // R at speed: the gearbox grinds – sparks, a hard shake
+    const shake = (car.v > 0 && !red ? Math.sin(t * 40) * 0.5 + rumble : 0) + (grinding && !red ? Math.sin(t * 110) * 4 : 0);
     if (car.sf === 2 && car.v > 2 && !red) {
       ctx.fillStyle = "rgba(160,130,90,.45)";
       for (let k = 0; k < 6; k++) { const a = leRand(Math.floor(t * 20) + k)(); ctx.beginPath(); ctx.arc(cx0 + (a - 0.5) * cwid, cy0 - cwid * 0.05 + a * 8, cwid * (0.08 + a * 0.08), 0, 7); ctx.fill(); }
@@ -857,6 +1021,15 @@ function langstreckeLive(box, me, back) {
       ctx.strokeStyle = `rgba(255,255,255,${0.25 + 0.4 * car.tow})`; ctx.lineWidth = 2;
       const r = leRand(Math.floor(t * 15));
       ctx.beginPath(); for (let k = 0; k < 8; k++) { const sx = cx0 + (r() - 0.5) * cwid * 1.6, sy = cy0 - cwid * (0.2 + r() * 0.6); ctx.moveTo(sx, sy); ctx.lineTo(sx + (sx - cw / 2) * 0.08, sy + cwid * 0.35); } ctx.stroke();
+    }
+    if (grinding) {
+      const r = leRand(red ? 3 : Math.floor(t * 30));
+      ctx.lineWidth = 2;
+      for (let k = 0; k < 14; k++) {
+        const sx = cx0 + (r() - 0.5) * cwid * 0.9, sy = cy0 + cwid * 0.08, a = -Math.PI / 2 + (r() - 0.5) * 2.4, len = cwid * (0.15 + r() * 0.35);
+        ctx.strokeStyle = r() < 0.5 ? "#ffd43b" : "#ff922b";
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(a) * len, sy + Math.sin(a) * len); ctx.stroke();
+      }
     }
     const emg = car.bat != null && car.bat <= 0 && !car.pit, haz = emg && Math.floor(t * 2.5) % 2 === 0;
     leCarRear(ctx, cx0, cy0 + shake, cwid, team.color, team.num, { brake: car.thr < 0 || (car.v > LE.VLIFT + 1 && !car.thr), night: dk > 0.4, smoke: !!car.eng, flag: leFlag(team.country),
@@ -1054,6 +1227,7 @@ function langstreckeLive(box, me, back) {
           if (t < 1 && ui.mode === "drive") big(I18N.tr(T("GO!")), null, "#69db7c");
           else if (t >= limit()) big("🏁 " + I18N.tr(T("Finish!")));
           else if (car.bat != null && car.bat <= 0 && !car.pit) big("⚠️ " + I18N.tr(T("Emergency drive mode")), I18N.tr(T("Battery empty – crawling to the pits.")), "#ffa94d");
+          else if (ui.mode === "drive" && ui.grind && nowS() - ui.grind < 1.6) big("💥 " + I18N.tr(T("Gearbox!")), I18N.tr(T("R only when stopped")), "#ff922b");
           else if (car.eng) big("💥 " + I18N.tr(T("Engine overheated!")), I18N.tr(T("Limp to the pits – it gets swapped.")), "#ff8787");
           else if (ui.mode === "drive" && (car.sf === 2 || (ui.offAt && nowS() - ui.offAt < 1.5))) big("🟫 " + I18N.tr(T("Off the track!")), I18N.tr(T("Too fast for the corner – brake earlier and steer back onto the track.")), "#ffd8a8");
           else if (ui.mode === "drive" && brakeHint(car, t)) big("🛑 " + I18N.tr(T("Brake!")), I18N.tr(T("Corner ahead")), "#ff8787");
@@ -1111,6 +1285,17 @@ function langstreckeLive(box, me, back) {
       setTxt(hd.speed, leKmh(car.v) + " km/h");
       setTxt(hd.tyre, car.tyre === "r" ? "🌧️" : "☀️");
       hd.tyre.classList.toggle("le-wrong", leGrip(car.tyre, leInWin(st.rain, tt)) < 1);
+    }
+    if (hd.gears) {                                            // the gears: the toggle, the shifter, the gear and the rev light
+      const man = !!car.man, rain = leInWin(st.rain, tt), rv = leRev(car, rain);
+      if (hd.gears.dataset.on !== String(man)) {
+        hd.gears.dataset.on = String(man); hd.gears.classList.toggle("on", man); hd.gears.setAttribute("aria-pressed", String(man));
+        if (ui.shift) ui.shift.el.hidden = !man;
+      }
+      if (ui.shift && man) ui.shift.sync(car.gear ?? 1);
+      setTxt(hd.gear, rv.g < 0 ? "R" : rv.g === 0 ? "N" : man ? String(rv.g) : "A" + rv.g);
+      const n = rv.g < 1 ? 0 : Math.max(1, Math.min(6, Math.round((rv.r - 0.4) / 0.57 * 6))), lvl = rv.lim ? "lim" : String(n);
+      if (hd.rev.dataset.lvl !== lvl) { hd.rev.dataset.lvl = lvl; [...hd.rev.children].forEach((d, i) => { d.className = rv.lim ? "r" : i < n ? (i < 3 ? "g" : i < 5 ? "y" : "r") : ""; }); }
     }
     if (hd.assist) { const on = !!car.ast; if (hd.assist.dataset.on !== String(on)) { hd.assist.dataset.on = String(on); hd.assist.classList.toggle("on", on); hd.assist.setAttribute("aria-pressed", String(on)); } }
     if (hd.bat) {                                              // the battery: green, orange (it won't last the lap flat out), red
@@ -1297,7 +1482,7 @@ function langstreckeLive(box, me, back) {
     if (st.phase === "lobby") return show(head, lobby());
     const cv = h("canvas.le-canvas"), wrap = h("div.le-wrap" + (mode === "drive" || introOn ? ".le-big" : mode === "pit" ? ".le-gar" : ".le-tv"), cv);
     ui.cv = { el: cv, ctx: cv.getContext("2d"), wrap, w: 0, h: 0, dpr: 0 };
-    swipes(wrap);
+    wrap.addEventListener("pointerdown", () => { if (gameT() < 0 && !introSkip) introSkip = true; });       // a tap skips the intro
     ui.hud = { pos: h("b.le-pos"), lap: h("span.le-lap"), clock: h("span.le-clock"), left: h("span.le-left") };
     const top = h("div.le-top", ui.hud.pos, ui.hud.lap, ui.hud.clock, ui.hud.left);
     ui.board = h("div.le-board");
@@ -1309,24 +1494,27 @@ function langstreckeLive(box, me, back) {
     };
     if (mode === "drive") {
       Object.assign(ui.hud, { speed: h("b.le-speed"), temp: h("div.le-gauge.le-temp"), crew: h("div.le-crewstrip"), tyre: h("span.le-tyre"), cast: h("span.le-cast"),
-        bat: h("div.le-gauge.le-batg"), batTxt: h("b.le-battxt"), save: h("span.le-save", { hidden: true }) });
-      const gauges = h("div.le-gauges", ui.hud.speed, ui.hud.tyre, h("span.le-g", "🌡️", ui.hud.temp), h("span.le-g.le-gb", "🔋", ui.hud.bat, ui.hud.batTxt));
+        bat: h("div.le-gauge.le-batg"), batTxt: h("b.le-battxt"), save: h("span.le-save", { hidden: true }),
+        gear: h("b.le-gear"), rev: h("span.le-rev", { "aria-hidden": "true" }, ...Array.from({ length: 6 }, () => h("i"))) });
+      const gauges = h("div.le-gauges", ui.hud.speed, h("span.le-gearbox", ui.hud.gear, ui.hud.rev), ui.hud.tyre, h("span.le-g", "🌡️", ui.hud.temp), h("span.le-g.le-gb", "🔋", ui.hud.bat, ui.hud.batTxt));
       wrap.append(ui.hud.crew, ui.hud.save);
       // the driving assist (auto-brake, steering help) – my own choice, remembered for my next stints
       ui.hud.assist = h("button.le-assist", { type: "button", "aria-pressed": "false", title: I18N.tr(T("Driving assist: the car brakes before the corners and helps to steer")),
         onclick: () => { const c = predicted(); if (c) input("a", c.ast ? 0 : 1); } }, "🧒 ", T("Assist"));
-      ui.left = holdKey(".le-steer", "◀", I18N.tr(T("Steer left")), "bl");
-      ui.right = holdKey(".le-steer", "▶", I18N.tr(T("Steer right")), "br");
-      ui.pedal = h("button.le-btn.le-pedal", { type: "button", "aria-label": I18N.tr(T("Full throttle")) }, "🚀 ", T("Gas"));
-      ui.pedal.addEventListener("pointerdown", e => { e.preventDefault(); if (gameT() < 0 && !introSkip) introSkip = true; try { ui.pedal.setPointerCapture(e.pointerId); } catch {} pedal(1); });
-      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) ui.pedal.addEventListener(ev, () => pedal(0));
-      ui.pedal.classList.toggle("on", thrLocal > 0);
-      ui.brake = h("button.le-btn.le-brake", { type: "button", "aria-label": I18N.tr(T("Brake")) }, "🛑");
-      ui.brake.addEventListener("pointerdown", e => { e.preventDefault(); try { ui.brake.setPointerCapture(e.pointerId); } catch {} brake(1); });
-      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) ui.brake.addEventListener(ev, () => brake(0));
-      // two thumbs: the left one steers (◀ ▶ or a drag on the picture), the right one rocks between brake and gas
-      const pad = h("div.le-pad", h("div.le-steers", ui.left, ui.right), h("div.le-pedals", ui.brake, ui.pedal));
-      show(head, top, ui.board, h("div.le-role", "🏎️ ", T("You drive!"), ui.hud.cast, ui.hud.assist, teamTag), gauges, times(), wrap, pad);
+      // the gears «A / M» in the picture, above the shifter: switches at any time, mid-stint too (an adult and a child
+      // can share a car) – the server remembers it per person for their next stints; manual engages the gear that fits
+      ui.hud.gears = h("button.le-am", { type: "button", "aria-pressed": "false", "aria-label": I18N.tr(T("Gears: automatic or manual (H shifter)")),
+        title: I18N.tr(T("Gears: automatic or manual (H shifter)")), onclick: e => { e.stopPropagation(); const c = predicted(); if (c) input("m", c.man ? 0 : 1); } },
+        h("span.le-ama", "A"), h("span.le-amm", "M"));
+      // the joystick bottom left on the picture – the picture gets the full height, no button bar below it
+      const [joy, hint] = joystick();
+      ui.joy = joy;
+      wrap.classList.add("le-joywrap");
+      ui.shift = shifter();
+      ui.shift.el.hidden = !(tm && tm.car && tm.car.man);
+      wrap.append(joy, hint, h("div.le-gearzone", ui.hud.gears, ui.shift.el));
+      joy.classList.toggle("le-jgas", thrLocal > 0); joy.classList.toggle("le-jbrake", thrLocal < 0);
+      show(head, top, ui.board, h("div.le-role", "🏎️ ", T("You drive!"), ui.hud.cast, ui.hud.assist, teamTag), gauges, times(), wrap);
     } else if (mode === "pit") {
       const stp = tm.stop;
       ui.watch = h("div.le-watch", "⏱ 0.0 s");
