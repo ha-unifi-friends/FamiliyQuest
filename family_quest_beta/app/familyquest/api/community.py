@@ -1752,6 +1752,7 @@ class LangstreckeStartIn(BaseModel):
     difficulty: str | None = None        # junior | normal
     team_size: int | None = None         # 1–5 people per team
     teams: int | None = None             # 1–4 teams of people at a family table
+    crew: str | None = Field(default=None, max_length=8)       # the pit crew: players | bots (an automatic crew for every team)
     country: str | None = Field(default=None, max_length=2)    # the family's own country (from the app's language) as the suggestion
     bot_ids: list[int | str] = []
 
@@ -1782,6 +1783,7 @@ class LangstreckeRulesIn(BaseModel):
     difficulty: str | None = None
     team_size: int | None = None
     teams: int | None = None
+    crew: str | None = Field(default=None, max_length=8)
 
 
 def _lead_langstrecke(fq, prof: dict) -> None:
