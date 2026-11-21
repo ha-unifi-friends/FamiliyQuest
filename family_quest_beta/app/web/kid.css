@@ -368,6 +368,20 @@
 .guest-av.on { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
 .guest-av-btn { min-height: 44px; }
 .guest-av-btn.on { border-color: var(--accent); color: var(--accent); }
+/* the guest lobby (gast.js lobby): the family tables open to join */
+.guest-lobby { display: grid; gap: 12px; }
+.guest-lobby h1 { margin: 0; font-size: 1.4rem; overflow-wrap: anywhere; }
+.guest-lobby h2 { margin: 4px 0 0; font-size: 1.1rem; }
+.guest-me { align-items: center; gap: 12px; flex-wrap: nowrap; }
+.guest-me .grow { min-width: 0; }
+.guest-tables { display: grid; gap: 8px; }
+.guest-table { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid var(--line); border-radius: 14px; background: var(--card); }
+.guest-table.mine { border-color: var(--accent); }
+.guest-table .grow { min-width: 0; overflow-wrap: anywhere; }
+.guest-table .btn { flex: none; min-height: 44px; }
+.guest-table-ic { font-size: 1.8rem; line-height: 1; flex: none; }
+.guest-empty { padding: 12px 4px; } .guest-empty p { margin: 4px 0; }
+.guest-foot { margin-top: 12px; gap: 8px; }
 .alarm-banner { display: flex; align-items: center; gap: 14px; border-left: 6px solid #f59f00; }
 .net-inline > .grow { flex: 1 1 170px; min-width: 0; } .net-inline .net-clock { white-space: nowrap; }
 @media (max-width: 520px) { .net-inline .btn.big { flex: 1 1 100%; } }

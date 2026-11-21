@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.2-beta.1
+
+- Guests stay 24 hours and get their own lobby with the open family tables – new tables appear by themselves, one tap to join, no new QR code; after a game they are back in the lobby; «Leave» deletes the guest
+- Guess the song: with «Majority» the result comes as soon as it is certain (more than half right, or at least half wrong); «Nobody knows it» is a visible button for the game leader
+
 ## 1.2.1-beta.3
 
 - Parent area: the box with light/dark mode, language, log out and version always sits at the bottom of the screen

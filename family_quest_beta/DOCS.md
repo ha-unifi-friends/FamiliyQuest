@@ -1018,7 +1018,14 @@ title, only one of them), the others judge by majority or unanimous, points to w
 40). The app switches shuffle on and only steers the speaker: play, pause, next song.
 Everybody has a big **buzzer** on their device; the first one stops the song and says the answer out loud, then
 «Show the solution» shows cover, artist and title from the speaker and the others vote 👍 / 👎. Right +1, wrong −1.
-«Nobody knows it» shows the solution without points. Guests can join with the QR code.
+The vote is decided **as soon as the verdict is certain** – nobody waits for the last voter. **Majority** is the
+absolute majority of everybody who may judge (all players but who buzzed): «right» once more than half said right,
+«wrong» once at least half said wrong (right can no longer get more than half). With 2 judges: right needs both, one
+«wrong» decides; 3 judges: two equal votes decide; 4 judges: three «right» or two «wrong»; 5 judges: three of a kind.
+**Unanimous**: right only when all said right – one «wrong» decides at once. «⚖️ Close the vote» (the leader) still
+closes it early with the votes there are (majority of those).
+**⏭ Nobody knows it** shows the solution without points: a button in the leader's game screen while a song plays
+(also while paused), and still in ☰. Guests can join with the QR code.
 The game leader turns the speaker up or down (🔉 − / 🔊 +, 5 % each). After a buzz a **countdown** (setting, default
 5 s) runs before «Show the solution» can be tapped – first the answer, then the solution.
 
@@ -2142,8 +2149,21 @@ pattern (plain, split, quartered, diagonal band, chevron). Photos no set uses an
 
 Whoever leads a family quiz or a bingo game can tap **👥 Invite guests**: a QR code appears. Friends or
 grandparents scan it with their phone in the home network (direct access must be on), type a name and play along
-– nothing else of the app is open to them. Guests are deleted with everything they did after 12 hours. Parents can
-switch guests off under Settings → Games.
+– nothing else of the app is open to them. Parents can switch guests off under Settings → Games.
+
+**Guests stay for the evening:** the guest profile is valid for **24 hours** (the guest token too); after that the guest
+and everything they did are deleted. The token stays on the guest's phone (browser storage), so reopening the guest
+page goes straight to the guest's **lobby**: name and avatar, and the **open tables** of the family – the same tables
+the family sees in the «somebody opened a table» note. A new table appears by itself (the lobby asks every 3 s); **▶
+Join** seats the guest with one tap, no new QR code (the guest token is the permission). After a game, «Back» leads
+to the lobby again. Listed are only family tables guests may play: guests switched on, not alone against bots, no
+dev games, not the Family Quest Facts quiz (its questions are about the family), with a free seat and – for games
+that take nobody late (all card-table games) – still waiting for the start; poker while a seat is free; quiz, bingo
+and guess the song any time. A table the guest already sits at is listed as «Back to the game» (also when guests were
+switched off meanwhile). **🚪 Leave** deletes the guest profile at once (and the seat at tables still waiting).
+Scanning another invitation with a valid guest profile seats the guest at that table without asking for the name again.
+The guest token opens nothing else: only the play requests of these games (joining only at a lobby table), the lobby
+(`GET /api/guest/lobby`), «Leave» (`DELETE /api/guest/me`) and the avatar – no app, no lists, no starting or leading.
 
 **👥 Invite guests** is in the ☰ menu of every family game and, while the game waits for its start, also as a button
 in the lobby box («Waiting for the start …») – below the players on a phone, top right in the box on a wide screen. It

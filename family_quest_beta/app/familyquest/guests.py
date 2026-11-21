@@ -1,9 +1,11 @@
 """Guests in the family games: friends or grandparents play along without a profile.
 
-Whoever leads a quiz or a bingo game opens an invitation (a short code, shown as a QR code). A guest scans it with
-their own phone in the home network, types a name and plays – nothing else of the app is open to them.
+Whoever plays a family game opens an invitation (a short code, shown as a QR code). A guest scans it with their own
+phone in the home network, types a name and plays – nothing else of the app is open to them.
 Guests are profiles with archived = 2: every list of the app (archived = 0) leaves them out, the play endpoints
-accept their token (kind "guest"). They and everything they did are deleted after GUEST_HOURS.
+accept their token (kind "guest"). The guest profile stays valid for GUEST_HOURS: the guest page shows a lobby with the
+family tables open to join (`lobby`) – one tap seats the guest, no new invitation (`may_play` lets a guest join only
+those tables). Then the guest and everything they did are deleted (or earlier: «Leave», `leave`).
 Parents can switch guests off for all games (setting `games_guests`).
 """
 from __future__ import annotations
@@ -18,7 +20,7 @@ from .channel import hidden_games
 from .rewards import avatar as av
 
 GUEST = 2
-GUEST_HOURS = 12
+GUEST_HOURS = 24                # the guest profile and its token: one long game night
 GAMES = ("quiz", "bingo", "poker", "tschau", "karussell", "song", "domino", "paarjagd", "werbinich", "kartenlauf", "stadtland", "zeichnen", "wuerfel", "heimwaerts", "jump", "sternlauf", "snack", "verkehr", "langstrecke", "klatsch", "verboten", "jass", "werwolf", "schach", "dorfmarkt", "escape", "stempeljagd")
 KEY = "guest_invites"
 COLORS = ["#ff6b6b", "#4f8cff", "#51cf66", "#fcc419", "#845ef7", "#20c997", "#ff922b"]
@@ -169,16 +171,73 @@ class Guests:
                     if st is not None and swap(st):
                         self.db.x(f"UPDATE {table} SET state=? WHERE id=?", json.dumps(st), row["id"])
 
+    # ---------- the lobby: the family tables a guest may join (guest page) – without a new invitation
+    def lobby(self, pid: int) -> list[dict]:
+        """The family tables open to this guest just now, as the app shows them to the family (running.open_tables):
+        guests switched on, games guests may play (GAMES, no dev games, not the Facts quiz), family tables only (not
+        alone against bots), a seat free and – where the game takes nobody late – still in the lobby. The tables the
+        guest already sits at come too («joined»: back to the game)."""
+        from .facts import is_facts
+        from .running import ROUTES, _joinable, join_path, running
+        hidden = hidden_games()
+        on = self.enabled()
+        out = []
+        for t in running(self.fq):
+            g = t["game"]
+            if g not in GAMES or g not in ROUTES or g in hidden or t["solo"] or t["status"] in ("done", "paused"):
+                continue
+            if g == "quiz" and is_facts((self.fq.community._game() or {}).get("quiz")):
+                continue                       # its questions are about the family
+            joined = str(pid) in t.get("members", [])
+            if not joined and (not on or not _joinable(self.fq, t)):
+                continue
+            out.append({"key": f"{t['key']}:{t.get('id') or ''}", "game": g, "icon": t["icon"], "title": t["title"],
+                        "host": t["host"], "players": t["players"], "status": t["status"], "joined": joined,
+                        "join": join_path(g)})
+        return out
+
+    def may_play(self, pid: int, game: str | None, action: str) -> bool:
+        """A request of a guest (api/community.py PlayerOrGuest): only the games guests may play – and «join» only at
+        a table of the lobby (or the own seat again)."""
+        if not game or game not in GAMES or game in hidden_games():
+            return False
+        if action == "join":
+            return any(t["game"] == game for t in self.lobby(pid))
+        return True
+
+    def leave(self, pid: int) -> None:
+        """The guest leaves for good (guest page «Leave»): out of the tables still waiting for their start, the guest
+        profile and everything it did deleted – the guest token is worthless from now on."""
+        if not self.db.q1("SELECT 1 FROM profile WHERE id=? AND archived=?", pid, GUEST):
+            return
+        with contextlib.suppress(Exception):
+            self.fq.community.leave(pid)
+        for row in self.db.q("SELECT id, kind FROM card_game WHERE status='lobby'"):
+            owner = self.fq.cards if row["kind"] in ("tschau", "karussell") else getattr(self.fq, row["kind"], None)
+            with getattr(owner, "lock", None) or contextlib.nullcontext():
+                cur = self.db.q1("SELECT state, status FROM card_game WHERE id=?", row["id"])
+                try:
+                    st = json.loads(cur["state"] or "{}") if cur and cur["status"] == "lobby" else None
+                except ValueError:
+                    continue
+                if st and isinstance(st.get("players"), list) and any(isinstance(p, dict) and p.get("id") == str(pid) for p in st["players"]):
+                    st["players"] = [p for p in st["players"] if not (isinstance(p, dict) and p.get("id") == str(pid))]
+                    self.db.x("UPDATE card_game SET state=? WHERE id=?", json.dumps(st), row["id"])
+        self._delete([pid])
+
     def cleanup(self) -> int:
         """Delete guests older than GUEST_HOURS with everything they left behind."""
         old = [r["id"] for r in self.db.q("SELECT id FROM profile WHERE archived=? AND created_at < datetime('now', ?)",
                                           GUEST, f"-{GUEST_HOURS} hours")]
         if not old:
             return 0
+        self._delete(old)
+        return len(old)
+
+    def _delete(self, old: list[int]) -> None:
         marks = ",".join("?" * len(old))
         for t in self.db.q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):
             cols = {c["name"] for c in self.db.q(f"PRAGMA table_info({t['name']})")}
             if "profile_id" in cols and t["name"] != "profile":
                 self.db.x(f"DELETE FROM {t['name']} WHERE profile_id IN ({marks})", *old)
         self.db.x(f"DELETE FROM profile WHERE id IN ({marks})", *old)
-        return len(old)

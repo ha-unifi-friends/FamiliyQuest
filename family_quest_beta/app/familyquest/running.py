@@ -125,12 +125,46 @@ def join_path(game: str) -> str:
     return f"community/cards/{game}/join" if game in ("tschau", "karussell") else f"community/{game}/join"
 
 
+# the games of the `card_game` table with their own number of seats (their join) – the others take 8 (cardgames.py)
+_OWN_SEATS = ("dorfmarkt", "escape", "heimwaerts", "jump", "klatsch", "langstrecke", "snack", "sternlauf", "verkehr", "werwolf", "wuerfel")
+
+
+def seats(kind: str, rules: dict | None = None) -> int:
+    """How many people may sit at a table of the `card_game` table – as the game's own join counts them."""
+    import importlib
+    if kind == "kartenlauf":
+        return 4
+    if kind == "jass":
+        from .jass import SEATS
+        return SEATS
+    if kind == "stempeljagd":
+        from .stempeljagd import MAX_PLAYERS
+        return MAX_PLAYERS + (1 if (rules or {}).get("mode") == "admin" else 0)
+    if kind in _OWN_SEATS:
+        return int(importlib.import_module(f".{kind}", __package__).MAX_PLAYERS)
+    return 8
+
+
 def _joinable(fq, t: dict) -> bool:
     """Whether somebody new can still sit down – as the game's own join allows it: the tables of the `card_game`
-    table only in their lobby; poker also during the game (from the next hand) while a seat is free; bingo (a card
-    any time before the end), the family quiz and guess the song take players any time."""
+    table only in their lobby while a seat is free; poker also during the game (from the next hand) while a seat is
+    free; bingo (a card any time before the end), the family quiz and guess the song take players any time."""
     if t["key"].startswith("card:"):
-        return t["status"] == "lobby"
+        if t["status"] != "lobby":
+            return False
+        r = fq.db.q1("SELECT kind, state FROM card_game WHERE id=?", int(t["key"][5:]))
+        if not r:
+            return False
+        try:
+            st = json.loads(r["state"] or "{}")
+        except ValueError:
+            return False
+        players = st.get("players") or []
+        if not isinstance(players, list):
+            return True
+        if r["kind"] == "langstrecke":              # 24h Endurance counts the people only
+            players = [p for p in players if not (isinstance(p, dict) and p.get("bot"))]
+        return len(players) < seats(r["kind"], st.get("rules"))
     if t["game"] == "poker":
         r = fq.db.q1("SELECT state FROM poker_game WHERE id=?", int(t["key"][6:]))
         st = json.loads((r or {}).get("state") or "{}")
