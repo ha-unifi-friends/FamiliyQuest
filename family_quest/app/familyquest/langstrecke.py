@@ -8,16 +8,25 @@ live in the `card_game` table with kind "langstrecke" (lobby, join, summary, may
 and runs through the night into the next afternoon. Winner: the most laps (then the longer distance). In the lobby each
 team chooses its colour (from the palette, unique), its country (a flag on the car) and its car number (1–99, unique).
 
-Weather (rule `weather`, on by default): sudden showers (30–55 s, every 1–2 minutes, planned at the start, everybody
-sees the forecast). Slicks in the rain and rain tyres in the dry are slower (grip WET_SLICK / DRY_RAIN); the crew picks
-the tyres for the next lap. The lap has two chicanes: at each gate a kerb covers a lane (in the rain or at night also
-the middle lane) – touching it slows the car down for a moment. Other cars are not obstacles (no collisions between
-cars); the app draws a car close to mine in my lane moving over to a free lane while it overtakes.
+The driving – real racing on a circuit (the general mechanics of the classic racing simulations, own track and look):
+- the car has a position along the lap (d) and ACROSS the track (x, metres from the middle, + = right). The driver
+  steers smoothly (an analog steering value −100…100: drag, the ◀ ▶ buttons, the arrow keys; the wheel follows it at
+  WHEEL per second) and uses gas / lifted / brake (two pedals: 🛑 brake left, 🚀 gas right).
+- the lap has CORNERS (start, end, angle, safe speed). In a corner the car is pushed outward, growing with the square
+  of the speed: at the corner's safe speed it takes PUSH of full lock to hold the line – a bit faster and the steering
+  is not enough: the car runs wide onto the kerb (a little slower) and then the grass (heavy slowdown, VGRASS), never a
+  crash (a tyre wall at XMAX). Braking boards (150 / 100 / 50 m) and a corner sign with the suggested speed come first.
+- rain: less grip – the safe speeds drop (RAIN_C), slicks in the rain / rain tyres in the dry even more (and are
+  slower on the straights, WET_SLICK / DRY_RAIN); the crew picks the tyres for the next lap. Night: a shorter view and
+  headlights (the app only).
+- other cars: following closely on a straight gives a SLIPSTREAM (a higher top speed); running into one from behind
+  is a gentle bump: the car behind slows to the speed of the one ahead and slides aside – no crashes.
+- the driving ASSIST (junior: on for everybody by default; every driver can switch it for themselves): the car brakes
+  by itself before a corner and the steering helps towards the racing line (the driver's own steering wins). Bots and
+  the autopilot drive with the same assist – their skill is how close to the safe speed they dare (BOT_SKILL).
 
-The loop – one short lap (about 20–30 s), then the car drives into the pits by itself, every time:
-- the driver (one person of the team) steers on three lanes (swipe / arrow keys) round a few things on the track and
-  holds the throttle for full speed. Full throttle heats the engine; at RED it overheats: the car limps on to the pits
-  and the engine has to be swapped there.
+The loop – one short lap (about 30 s), then the car drives into the pits by itself, every time:
+- full throttle heats the engine; at RED it overheats: the car limps on to the pits and the engine has to be swapped.
 - the car is electric: its battery (0–100 %) drains by the metre, much faster at full throttle (E_FULL) than lifted
   (E_LIFT); braking gives a little back (REGEN). Empty: the emergency drive mode – the car crawls (VEMERG) to the pits.
 - every team has exactly TWO batteries: the one in the car and ONE spare. At every stop they are swapped (BAT_SWAP
@@ -29,18 +38,20 @@ The loop – one short lap (about 20–30 s), then the car drives into the pits 
   battery in, lay out the 4 tyres (slicks or rain tyres, tap the 4 spots) and, only after an overheat, prepare the
   spare engine (hold). The server keeps the times of all of it.
 - the stop: STOP_BASE seconds + the battery swap BAT_SWAP + a penalty for tyres not ready when the car arrived
-  (PEN_PREP), the engine swap ENG_READY prepared or ENG_SWAP not. Shown as a stopwatch to the whole team.
+  (PEN_PREP), the engine swap ENG_READY prepared or ENG_SWAP not. Shown as a stopwatch to the whole team, with the
+  lap-time board of the team's laps.
 - at EVERY stop the driver changes: the next person of the team (in turn) drives, the driver joins the crew. A team of
   two takes turns; a team of one (or a team whose crew is all offline) gets the garage: a fixed GARAGE seconds (+ the
   swap), and the garage plugs the spare in only GARAGE_PLUG seconds after the stop (fair, not perfect).
 
 The server decides everything (the same step function runs in web/langstrecke.js for a smooth picture of the own
-car): the driver's app only reports its inputs (lane, throttle) with their game time; the server simulates all cars
-in fixed steps of DT seconds SETTLE seconds behind the clock – a late input is applied at the next step (never in the
-past). Pit jobs are actions on the server (plug in, a tyre on a spot, start / stop holding) timed with the server's
+car): the driver's app only reports its inputs (steering, pedals, assist) with their game time; the server simulates
+all cars in fixed steps of DT seconds SETTLE seconds behind the clock – a late input is applied at the next step (never
+in the past). Every step sees the other cars as they were at the start of the step (the order of the teams does not
+matter). Pit jobs are actions on the server (plug in, a tyre on a spot, start / stop holding) timed with the server's
 clock: a job counts only if it was finished before the car arrived. A driver whose app is silent for AUTO_AFTER seconds
-gets the autopilot until the app is back. Bots drive by the same rules (they lift off when the battery runs low), plug
-their spare in first and prepare their stops (easier bots miss more).
+gets the autopilot until the app is back. Bots drive by the same rules (they lift off when the battery runs low and
+overtake on the straights), plug their spare in first and prepare their stops (easier bots miss more).
 
 Coins (setting `game_rewards["langstrecke"]`): places 1–3, for every person of the family in that team, only at a
 family table with at least two people of the family, only for a race run to the end – paid once (flag `paid`, a
@@ -75,27 +86,36 @@ COUNTRIES = ("BE", "BG", "DK", "DE", "FI", "FR", "GR", "GB", "IE", "IT", "LV", "
              "CN", "HK", "IN", "ID", "JP", "QA", "MY", "OM", "SA", "SG", "KR", "SY", "TW", "TH", "AE",
              "AU", "MA", "NZ", "ZA")
 
-# ---------------------------------------------------------------- the car (the same numbers in web/langstrecke.js)
-L = 640.0                    # metres per lap: about 22 s at full throttle, 32 s lifted
+# ---------------------------------------------------------------- the circuit and the car (the same numbers in web/langstrecke.js)
+L = 640.0                    # metres per lap: about 30 s
 DT = 0.1                     # one step of the simulation (seconds)
 VLIFT, VFULL = 20.0, 30.0    # m/s lifted / full throttle (shown as km/h × 7)
-ACC, BRAKE, COAST = 7.0, 14.0, 5.0   # m/s²: speeding up, braking (the brake), slowing down by lifting off
+ACC, BRAKE, COAST = 8.5, 14.0, 5.0   # m/s²: speeding up, braking (the brake), slowing down by lifting off
 VBRAKE = 8.0                 # holding the brake slows down towards this
-VLIMP, VSLOW = 13.0, 10.0    # with an overheated engine / after a hit
-SLOW_T = 1.2                 # seconds slow after a hit
+VLIMP = 13.0                 # with an overheated engine
 HEAT, HEAT_JR = 2.6, 1.7     # °/s at full throttle
 COOL = 4.0                   # °/s lifted
 TMIN, YELLOW, RED = 60.0, 85.0, 100.0
-OIL, CONES, SLOWCAR = 0, 1, 2
-# grip: slicks in the rain / rain tyres in the dry are slower (the right tyres: 1.0)
+# grip: slicks in the rain / rain tyres in the dry are slower (the right tyres: 1.0); rain lowers every corner's safe speed
 WET_SLICK, DRY_RAIN = 0.8, 0.9
-# two chicanes (S-bends): at each gate a kerb covers a lane (in the rain or at night two) – touching it slows the car
-CHICANES = ((210.0, 245.0, 2, 0), (450.0, 485.0, 0, 2))      # gate a, gate b, kerb lane at a, at b
-KERB_T, KERB_T_WET = 0.6, 1.0                               # seconds slow after touching a kerb
-SAFE, SAFE_TRICKY = 23.0, 18.0                              # m/s at most into a chicane (by day and dry / in the rain or at night)
-VOFF, OFF_T = 6.0, 3.0                                      # too fast: off into the gravel – this slow for this long
-# the battery (an electric car): % per metre at full throttle / lifted (also limping), % back per m/s braked off
-E_FULL, E_LIFT, REGEN = 0.16, 0.07, 0.3
+RAIN_C = 0.85
+# the corners: start, end (metres in the lap), angle (degrees, + = right), safe speed (m/s, dry, the right tyres)
+CORNERS = ((90.0, 130.0, 90.0, 20.0), (210.0, 240.0, -45.0, 25.0), (300.0, 350.0, 150.0, 13.0),
+           (420.0, 450.0, 75.0, 21.0), (500.0, 550.0, 90.0, 17.0))
+HW, KERB, XMAX = 5.5, 1.5, 11.0   # half the track's width, the kerb beyond its edge, the tyre wall (metres from the middle)
+STEER_V = 7.0                # m/s sideways at full lock (at speed)
+VSTEER = 10.0                # below this speed the steering bites less
+WHEEL = 6.0                  # the wheel follows the steering this much per second (smooth steering)
+PUSH = 0.75                  # a corner at its safe speed pushes outward with this much of full lock (∝ speed²)
+VGRASS, GRASS_DEC = 9.0, 16.0    # on the grass: this slow, braked this hard
+KERB_F = 0.9                 # on the kerb: the top speed × this
+SLIP_D, SLIP_W, SLIP_V = 30.0, 2.2, 3.5   # the slipstream: behind a car within this far, this much to the side → up to +this m/s
+BUMP_D, CAR_W, NUDGE = 4.5, 1.9, 1.5      # a car this close ahead and overlapping: bump (slow to its speed, slide aside m/s)
+PIT_Z = 25.0                 # the pit lane: no contact this close to the line (in or out)
+LINE_D, LINE_OUT, LINE_APEX, LMAX = 40.0, 3.5, 3.5, 4.0  # the racing line: outside before the corner, the apex inside
+ASSIST_K = 0.5               # the steering assist: full lock per 2 m off the line
+AK_ASSIST = 0.92             # the assist brakes down to this share of the safe speed
+E_FULL, E_LIFT, REGEN = 0.16, 0.07, 0.3   # the battery: % per metre at full throttle / lifted, % back per m/s braked off
 VEMERG = 7.0                 # m/s with an empty battery: the emergency drive mode
 COUNTDOWN = 6.0              # seconds from the start to game time 0 (the intro: run to the cars, engines, lights)
 SETTLE = 0.8                 # the server simulates this far behind the clock
@@ -118,70 +138,77 @@ TEAM_STYLES = (("Comet Racing", "#e03131"), ("Blue Falcon Works", "#1c7ed6"), ("
                ("Sunrise Speedsters", "#f08c00"), ("Silver Owl Garage", "#7048e8"), ("Night Fox Racing", "#0c8599"),
                ("Thunder Bee Team", "#e8590c"), ("Snow Hare Racing", "#495057"))
 NUMBERS = (3, 7, 8, 11, 12, 17, 21, 24, 27, 33, 36, 42, 44, 51, 58, 63, 77, 88, 91, 99)
-# missed things, temperature to lift off / to push again, the chance that a job of the crew is not ready
-BOT_SKILL = {"easy": (0.25, 92.0, 78.0, 0.35), "normal": (0.12, 93.0, 84.0, 0.15), "hard": (0.04, 96.0, 90.0, 0.05)}
+# a corner too fast now and then, temperature to lift off / to push again, the chance that a job of the crew is not
+# ready, how close to the safe speed they dare (the assist's share)
+BOT_SKILL = {"easy": (0.2, 92.0, 78.0, 0.35, 0.84), "normal": (0.1, 93.0, 84.0, 0.15, 0.93), "hard": (0.03, 96.0, 90.0, 0.05, 0.99)}
+BOT_GREEDY = 1.3             # a missed corner: the bot dares this share of the safe speed
 
 
 def rewards_of(db) -> list[int]:
     return _rewards_of(db, KIND)
 
 
-def mulberry32(seed: int):
-    """A small random generator that gives the same numbers in Python and JavaScript."""
-    a = seed & 0xFFFFFFFF
-
-    def nxt() -> float:
-        nonlocal a
-        a = (a + 0x6D2B79F5) & 0xFFFFFFFF
-        t = ((a ^ (a >> 15)) * (a | 1)) & 0xFFFFFFFF
-        t = (((t + (((t ^ (t >> 7)) * (t | 61)) & 0xFFFFFFFF)) & 0xFFFFFFFF) ^ t) & 0xFFFFFFFF
-        return ((t ^ (t >> 14)) & 0xFFFFFFFF) / 4294967296
-    return nxt
+def clamp(v: float, lo: float, hi: float) -> float:
+    return lo if v < lo else hi if v > hi else v
 
 
-_THINGS: dict = {}
+def lap_pos(d: float) -> float:
+    """The position in the lap (0 … L) – the same arithmetic as in the app."""
+    return d - L * math.floor(d / L)
 
 
-def lap_things(seed: int, lap: int, junior: bool) -> list[list]:
-    """What lies on the track in this lap (the same for every car on its own lap): [[x in the lap, lane, kind], …]."""
-    key = (seed, lap, junior)
-    got = _THINGS.get(key)
-    if got is None:
-        rnd = mulberry32((seed + lap * 7919) & 0xFFFFFFFF)
-        n = 2 if junior else (3 + int(rnd() * 2))
-        got = []
-        for i in range(n):
-            x = free_x((i + 0.15 + 0.7 * rnd()) / n)
-            lane = int(rnd() * 3)
-            r = rnd()
-            kind = OIL if r < 0.35 else CONES if r < 0.7 else SLOWCAR
-            got.append([math.floor(x * 10 + 0.5) / 10, lane, kind])
-        if len(_THINGS) > 4000:
-            _THINGS.clear()
-        _THINGS[key] = got
-    return got
+def corner_at(xl: float):
+    for c in CORNERS:
+        if c[0] <= xl < c[1]:
+            return c
+    return None
 
 
-FREE = ((100.0, 180.0), (285.0, 420.0), (525.0, 600.0))   # the parts of the lap without a chicane: things lie only there
+def next_corner(xl: float):
+    """The corner the car is in or the next one ahead: (corner, metres to its start – 0 inside it)."""
+    best, dz = None, 0.0
+    for c in CORNERS:
+        if c[0] <= xl < c[1]:
+            return c, 0.0
+        z = c[0] - xl if c[0] > xl else c[0] + L - xl
+        if best is None or z < dz:
+            best, dz = c, z
+    return best, dz
 
 
-def free_x(u: float) -> float:
-    """u in 0…1 along the free parts of the lap → the position in the lap."""
-    x = u * sum(b - a for a, b in FREE)
-    for a, b in FREE:
-        if x <= b - a:
-            return a + x
-        x -= b - a
-    return FREE[-1][1]
+def grip(tyre: str, rain: bool) -> float:
+    return (WET_SLICK if tyre != "r" else 1.0) if rain else (DRY_RAIN if tyre == "r" else 1.0)
 
 
-def kerbs(tricky: bool) -> list[list]:
-    """The chicane gates: [[x in the lap, [kerb lanes]], …] – in the rain or at night the kerb reaches the middle lane."""
-    out = []
-    for xa, xb, la, lb in CHICANES:
-        out.append([xa, [la, 1] if tricky else [la]])
-        out.append([xb, [lb, 1] if tricky else [lb]])
-    return out
+def safe_speed(c, tyre: str, rain: bool) -> float:
+    """The corner's safe speed with these tyres in this weather."""
+    return c[3] * grip(tyre, rain) * (RAIN_C if rain else 1.0)
+
+
+def _r2(x: float) -> float:
+    """Rounded to 1/100 – exactly the same arithmetic in the app."""
+    return math.floor(x * 100 + 0.5) / 100
+
+
+def _ease(u: float) -> float:
+    u = clamp(u, 0.0, 1.0)
+    return u * u * (3.0 - 2.0 * u)
+
+
+def race_line(xl: float) -> float:
+    """The ideal line across the track at this point of the lap: outside before a corner, the apex inside in its
+    middle, outside again at the exit (only + − × ÷ – exactly the same numbers in the app)."""
+    y = 0.0
+    for a, b, ang, _ in CORNERS:
+        dr = 1.0 if ang > 0 else -1.0
+        if a - LINE_D <= xl < a:
+            y -= dr * LINE_OUT * _ease((xl - (a - LINE_D)) / LINE_D)
+        elif a <= xl < b:
+            u = (xl - a) / (b - a)
+            y += -dr * LINE_OUT + dr * (LINE_OUT + LINE_APEX) * 4.0 * u * (1.0 - u)
+        elif b <= xl < b + LINE_D:
+            y -= dr * LINE_OUT * (1.0 - _ease((xl - b) / LINE_D))
+    return clamp(y, -LMAX, LMAX)
 
 
 def default_looks(country: str | None = None) -> list[dict]:
@@ -191,10 +218,10 @@ def default_looks(country: str | None = None) -> list[dict]:
     return [{"color": TEAM_STYLES[i][1], "country": c, "num": (7, 24, 44, 88)[i]} for i in range(4)]
 
 
-def new_car(lane: int, d: float) -> dict:
-    return {"d": d, "v": 0.0, "lane": lane, "thr": 0, "temp": TMIN, "eng": 0, "slow": 0.0, "olap": 0, "ob": 0,
-            "ls": 0.0, "best": 0.0, "pit": 0, "hits": 0, "blows": 0, "tyre": "s", "kerb": 0, "off": 0.0, "offs": 0,
-            "bat": 100.0, "flat": 0}
+def new_car(x: float, d: float) -> dict:
+    return {"d": d, "x": x, "v": 0.0, "thr": 0, "st": 0, "sw": 0.0, "ast": 0, "ak": AK_ASSIST, "lo": 0.0, "temp": TMIN,
+            "eng": 0, "ls": 0.0, "best": 0.0, "last": 0.0, "pit": 0, "bumps": 0, "bc": 0.0, "blows": 0, "tyre": "s",
+            "kerb": 0, "sf": 0, "offs": 0, "tow": 0.0, "bat": 100.0, "flat": 0}
 
 
 def new_spare(charge: float, t: float, auto: float | None = None) -> dict:
@@ -211,53 +238,107 @@ def spare_charge(sp: dict, at: float) -> float:
 
 
 def apply_input(car: dict, c: str, v) -> None:
-    """One input of the driver – the same rules as in the app."""
-    if c == "l":
-        if not car["pit"]:
-            car["lane"] = max(0, car["lane"] - 1)
-    elif c == "r":
-        if not car["pit"]:
-            car["lane"] = min(2, car["lane"] + 1)
-    elif c == "u":                                       # 1 full throttle, 0 lifted, -1 braking
+    """One input of the driver – the same rules as in the app: "s" steering −100 … 100, "u" 1 gas / 0 lifted / −1
+    brake, "a" the assist on / off."""
+    if c == "s":
+        car["st"] = max(-100, min(100, int(v)))
+    elif c == "u":
         car["thr"] = 1 if int(v) > 0 else -1 if int(v) < 0 else 0
+    elif c == "a":
+        car["ast"] = 1 if int(v) else 0
+        car["ak"] = AK_ASSIST
 
 
-def grip(tyre: str, rain: bool) -> float:
-    return (WET_SLICK if tyre != "r" else 1.0) if rain else (DRY_RAIN if tyre == "r" else 1.0)
-
-
-def step(car: dict, s: float, seed: int, jr: bool, rain: bool = False, dark: bool = False) -> list[str]:
-    """One step of DT seconds from game time s – the same in web/langstrecke.js. Answers what happened."""
+def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[str]:
+    """One step of DT seconds from game time s – the same in web/langstrecke.js. `others`: the other cars on the
+    track as they were at the start of the step, [[d, x, v], …]. Answers what happened."""
     ev: list[str] = []
     if car["pit"]:
         car["temp"] = max(TMIN, car["temp"] - COOL * DT)
         return ev
+    d0, x0, v0 = car["d"], car["x"], car["v"]
+    xl = lap_pos(d0)
+    cn = corner_at(xl)
+    th = car["thr"]
+    stc = car["st"] / 100.0
     emg = car["bat"] <= 0                              # the battery is empty: the emergency drive mode
-    full = car["thr"] > 0 and not car["eng"] and not emg
+    bite = min(1.0, 0.2 + v0 / VSTEER)                 # how much the steering bites at this speed
+    push = 0.0                                         # a corner pushes outward, ∝ speed²
+    if cn is not None:
+        q = v0 / safe_speed(cn, car["tyre"], rain)
+        push = (-1.0 if cn[2] > 0 else 1.0) * STEER_V * PUSH * q * q
+    if car["ast"]:                                     # the assist: towards the racing line, brake before a corner
+        aim = clamp(race_line(xl) + car["lo"], -LMAX, LMAX)
+        help_ = clamp((aim - x0) * ASSIST_K - push / (STEER_V * bite), -1.0, 1.0)
+        stc = clamp(stc + (1.0 - abs(stc)) * help_, -1.0, 1.0)
+        nc, dz = next_corner(xl)
+        if nc is not None:
+            tv = safe_speed(nc, car["tyre"], rain) * car["ak"]
+            if v0 > tv and dz <= (v0 * v0 - tv * tv) / (2.0 * BRAKE) + v0 * 0.3 + 2.0:
+                th = -1
+    car["sw"] += clamp(stc - car["sw"], -WHEEL * DT, WHEEL * DT)
+    full = th > 0 and not car["eng"] and not emg
     vt = VLIMP if car["eng"] else (VFULL if full else VLIFT) * grip(car["tyre"], rain)
     if emg:
         vt = min(vt, VEMERG)
     dec = COAST
-    if car["thr"] < 0:
+    if th < 0:
         vt = min(vt, VBRAKE)
         dec = BRAKE
-    if car["slow"] > 0:
-        vt = min(vt, VOFF if car.get("off", 0) > 0 else VSLOW)
-        dec = BRAKE
-        car["slow"] = max(0.0, car["slow"] - DT)
-    car["off"] = max(0.0, car.get("off", 0.0) - DT)
-    v0 = car["v"]
+    # the other cars: the slipstream behind one on a straight, a gentle bump when too close
+    tow, bump, nudge = 0.0, None, 0.0
+    if PIT_Z <= xl <= L - PIT_Z:
+        for od, ox, ov in others:
+            ol = lap_pos(od)
+            if ol < PIT_Z or ol > L - PIT_Z:
+                continue
+            rel = lap_pos(od - d0)
+            dx = ox - x0
+            if rel <= 0.0 or rel > SLIP_D:
+                continue
+            if cn is None and abs(dx) < SLIP_W:
+                tow = max(tow, 1.0 - rel / (SLIP_D * 1.5))
+            if rel < BUMP_D and abs(dx) < CAR_W and (bump is None or ov < bump):
+                bump = ov
+                nudge = -NUDGE if dx > 0 else NUDGE
+    car["tow"] = tow
+    if tow > 0 and th >= 0:
+        vt += SLIP_V * tow
+    if car["sf"] == 2:                                 # on the grass: heavy slowdown
+        vt = min(vt, VGRASS)
+        dec = max(dec, GRASS_DEC)
+    elif car["sf"] == 1:
+        vt *= KERB_F
     v = min(vt, v0 + ACC * DT) if v0 < vt else max(vt, v0 - dec * DT)
+    car["bc"] = max(0.0, car["bc"] - DT)
+    if bump is not None and v > bump:
+        v = max(0.0, bump)
+        if car["bc"] <= 0:
+            car["bc"] = 1.0
+            car["bumps"] += 1
+            ev.append("bump")
+    else:
+        nudge = 0.0
+    # across the track: the wheel, the corner's push, a nudge; then the surface under the car
+    x = clamp(x0 + (car["sw"] * STEER_V * bite + push + nudge) * DT, -XMAX, XMAX)
+    ax = abs(x)
+    sf = 0 if ax <= HW else 1 if ax <= HW + KERB else 2
+    if sf == 2 and car["sf"] != 2:
+        car["offs"] += 1
+        ev.append("off")
+    elif sf == 1 and car["sf"] == 0:
+        car["kerb"] += 1
+        ev.append("kerb")
+    car["sf"] = sf
     # the battery: by the metre – full throttle much more than lifted; braking gives a little back
     if not emg:
         use = (E_FULL if full else E_LIFT) * v * DT
-        if car["thr"] < 0 and v < v0:
+        if th < 0 and v < v0:
             use -= REGEN * (v0 - v)
         car["bat"] = max(0.0, min(100.0, car["bat"] - use))
         if car["bat"] <= 0:
             car["flat"] += 1
             ev.append("empty")
-    d0 = car["d"]
     d1 = d0 + v * DT
     # the engine: full throttle heats it, lifting cools it; at RED it overheats (limp to the pits, swap it there)
     if full:
@@ -269,57 +350,23 @@ def step(car: dict, s: float, seed: int, jr: bool, rain: bool = False, dark: boo
         car["blows"] += 1
         car["temp"] = 80.0
         ev.append("blow")
-    # what lies on the track
-    while True:
-        things = lap_things(seed, car["olap"], jr)
-        if car["ob"] >= len(things):
-            car["olap"] += 1
-            car["ob"] = 0
-            if car["olap"] * L > d1:
-                break
-            continue
-        x, lane, kind = things[car["ob"]]
-        xa = car["olap"] * L + x
-        if xa > d1:
-            break
-        car["ob"] += 1
-        if xa <= d0 or lane != car["lane"]:
-            continue
-        car["slow"] = SLOW_T
-        car["hits"] += 1
-        v = min(v, VSLOW + 4)
-        ev.append("hit")
-    # the chicanes: too fast into one – off into the gravel; a kerb at the gate in my lane
-    lap0 = math.floor(d0 / L)
-    if lap0 >= 0:
-        for xa_, _, _, _ in CHICANES:
-            xa = lap0 * L + xa_
-            if d0 < xa <= d1 and v > (SAFE_TRICKY if rain or dark else SAFE) + 1e-9:
-                car["slow"] = max(car["slow"], OFF_T)
-                car["off"] = OFF_T
-                car["offs"] = car.get("offs", 0) + 1
-                v = min(v, VOFF)
-                ev.append("off")
-        for x, lanes in kerbs(rain or dark):
-            xa = lap0 * L + x
-            if d0 < xa <= d1 and car["lane"] in lanes:
-                car["slow"] = max(car["slow"], KERB_T_WET if rain else KERB_T)
-                car["kerb"] += 1
-                v = min(v, VSLOW + 6)
-                ev.append("kerb")
     # the line: a lap – and into the pits, every time (not at the start)
     n0, n1 = math.floor(d0 / L), math.floor(d1 / L)
+    tc = s + (n1 * L - d0) / v if n1 > n0 else 0.0     # the moment the car crossed the line (within the step)
     if n1 > n0 and n0 >= 0:
-        lt = s + DT - car["ls"]
-        car["best"] = round(lt, 2) if not car["best"] or lt < car["best"] else car["best"]
-        car["ls"] = round(s + DT, 2)
+        lt = _r2(tc - car["ls"])
+        car["last"] = lt
+        car["best"] = lt if not car["best"] or lt < car["best"] else car["best"]
+        car["ls"] = _r2(tc)
         d1 = n1 * L
         v = 0.0
-        car["pit"] = 1
+        x = 0.0
+        car.update(pit=1, sw=0.0, sf=0, tow=0.0)
         ev += ["lap", "pit"]
     elif n1 > n0:
-        car["ls"] = round(s + DT, 2)                    # the start: the first lap begins
+        car["ls"] = _r2(tc)                             # the start: the first lap begins
     car["d"] = d1
+    car["x"] = x
     car["v"] = v
     return ev
 
@@ -426,21 +473,29 @@ class Table:
             raise CommunityError("Nobody is at the table")
         order = list(range(len(teams)))
         self.rng.shuffle(order)
-        for pos, ti in enumerate(order):                 # the grid: two by two, 10 m apart
+        for pos, ti in enumerate(order):                 # the grid: two by two (left, right), 8 m apart
             t = teams[ti]
-            t.update(car=new_car(pos % 3, -5.0 - 10.0 * pos), driver=t["members"][0], drives={t["members"][0]: 1},
-                     stop=None, pits=[], best_pit=None, ev=[], auto=False, bm=[], blc=-9.0, hot=0, grid=pos + 1, prep=new_prep(),
-                     spare=new_spare(100.0, 0.0))
+            t.update(car=new_car(-2.5 if pos % 2 == 0 else 2.5, -5.0 - 8.0 * pos), driver=t["members"][0], drives={t["members"][0]: 1},
+                     stop=None, pits=[], best_pit=None, ev=[], auto=False, bk="", hot=0, grid=pos + 1, prep=new_prep(),
+                     spare=new_spare(100.0, 0.0), laps=[])
         for p in players:
             p["team"] = next(i for i, t in enumerate(teams) if p["id"] in t["members"])
+        junior = self.jr()
+        assist = self.st.setdefault("assist", {})
+        for p in humans:                                 # the driving assist per person: junior → on unless switched off
+            assist.setdefault(p["id"], junior)
+        for t in teams:
+            if not t["bot"]:
+                t["car"]["ast"] = 1 if assist.get(t["driver"]) else 0
         self.st.update(phase="play", seed=seed if seed is not None else self.rng.randrange(1, 2 ** 31), t0=self.now() + COUNTDOWN,
                        k=0, teams=teams, rain=rain_plan(self.rng, self.limit()) if self.st["rules"].get("weather", 1) else [], seen={p["id"]: self.now() for p in humans}, ranking=None, places=None, complete=False,
                        end_t=None, log=[])
 
     # ---------- what the apps send
     def report(self, pid: str, inputs=()) -> int:
-        """The driver's inputs ([game time, "l"|"r"|"u", value]) – only the current driver's count; a late one is
-        applied at the next step (never in the past). Answers how many were taken."""
+        """The driver's inputs ([game time, "s"|"u"|"a", value]: steering −100 … 100, the pedals, the assist) – only
+        the current driver's count; a late one is applied at the next step (never in the past). Answers how many were
+        taken."""
         if self.st.get("phase") != "play":
             raise CommunityError("The game is not running")
         p = self.person(pid)
@@ -458,8 +513,12 @@ class Table:
                 v = int(item[2]) if len(item) > 2 and item[2] is not None else 0
             except (TypeError, ValueError, OverflowError, IndexError, KeyError):     # int(inf): OverflowError
                 continue
-            if c not in ("l", "r", "u") or not math.isfinite(te) or te > now_t + AHEAD:
+            if c not in ("s", "u", "a") or not math.isfinite(te) or te > now_t + AHEAD:
                 continue
+            v = max(-100, min(100, v)) if c == "s" else (1 if v > 0 else -1 if v < 0 else 0)
+            if c == "a":
+                v = 1 if v else 0
+                self.st.setdefault("assist", {})[pid] = bool(v)     # remembered for this person's next stints
             last = t["ev"][-1][0] if t["ev"] else -COUNTDOWN
             te = max(te, sim, last)
             t["ev"].append([round(te, 3), c, v])
@@ -625,13 +684,15 @@ class Table:
             auto = stop["end"] + GARAGE_PLUG
         t["spare"] = new_spare(stop["bat_out"], stop["end"], round(auto, 2))
         if not t["bot"]:
-            car["thr"] = 0                               # the new driver presses the pedal again
+            car.update(thr=0, st=0)                      # the new driver presses the pedal again
         t["pits"].append({"n": stop["n"], "time": stop["time"], "change": stop["change"], "garage": stop["garage"],
                           "eng": stop["eng"], "at": stop["t"], "driver": stop["prev"]})
         if not stop["garage"] and (t["best_pit"] is None or stop["time"] < t["best_pit"]):
             t["best_pit"] = stop["time"]
         t["driver"] = stop["next"]
         t["drives"][t["driver"]] = t["drives"].get(t["driver"], 0) + 1
+        if not t["bot"]:                                 # the new driver's own choice of the assist
+            car.update(ast=1 if (self.st.get("assist") or {}).get(t["driver"]) else 0, ak=AK_ASSIST, lo=0.0)
         t["ev"] = []
         t["stop"] = None
         t["prep"] = new_prep()
@@ -643,31 +704,38 @@ class Table:
         now_t = self.gt()
         lim = self.limit()
         horizon = min(now_t - SETTLE, lim)
-        seed, jr = self.st["seed"], self.jr()
+        jr = self.jr()
         for t in self.st["teams"]:                       # who drives: the app, or the autopilot when it is silent
             was = t["auto"]
             t["auto"] = not t["bot"] and not self.seen_ok(t["driver"], AUTO_AFTER) and now_t > 0
-            if was and not t["auto"]:
-                t["car"]["thr"] = 0                      # back in the app: the pedal is released until pressed again
+            if was and not t["auto"]:                    # back in the app: the pedal released, the driver's own assist
+                t["car"].update(thr=0, st=0, lo=0.0, ak=AK_ASSIST, ast=1 if (self.st.get("assist") or {}).get(t["driver"]) else 0)
         steps = 0
+        teams = self.st["teams"]
         while (self.st["k"] + 1) / 10 <= horizon + 1e-9 and steps < 30000:
             s = self.st["k"] / 10
-            rain, dark = in_window(self.st.get("rain"), s), darkness(s, lim) > 0.5
-            for t in self.st["teams"]:
+            rain = in_window(self.st.get("rain"), s)
+            # every car sees the others as they were at the start of the step (the order of the teams does not matter)
+            snap = [None if t["car"]["pit"] else [t["car"]["d"], t["car"]["x"], t["car"]["v"]] for t in teams]
+            for i, t in enumerate(teams):
                 car = t["car"]
                 if car["pit"] and t["stop"] and s + 1e-9 >= t["stop"]["end"]:
                     self._release(t)
                 sp = t["spare"]
                 if sp["plug"] is None and sp["auto"] is not None and s + 1e-9 >= sp["auto"] and not car["pit"] and not self.active_crew(t):
                     sp["plug"] = round(max(sp["auto"], s), 2)  # the garage / the bot plugs the spare in
+                others = [o for j, o in enumerate(snap) if j != i and o is not None]
                 if t["bot"] or t["auto"]:
-                    self._drive(t, s)
+                    self._drive(t, s, others)
                 else:
                     while t["ev"] and t["ev"][0][0] <= s + 1e-9:
                         _, c, v = t["ev"].pop(0)
                         apply_input(car, c, v)
-                for e in step(car, s, seed, jr, rain, dark):
-                    if e == "pit":
+                for e in step(car, s, jr, rain, others):
+                    if e == "lap":
+                        t.setdefault("laps", []).append({"n": len(t["laps"]) + 1, "driver": t["driver"], "time": car["last"],
+                                                         "offs": car["offs"] - sum(x.get("offs", 0) for x in t["laps"]), "rain": rain})
+                    elif e == "pit":
                         self._open_stop(t, s)
                     elif e == "blow":
                         self.st["log"].append([round(s + DT, 1), e, t["num"]])
@@ -679,48 +747,36 @@ class Table:
                 self._settle(t, now_t)
         self._maybe_end(horizon)
 
-    def _drive(self, t: dict, s: float) -> None:
-        """The bot driver (also the autopilot of a silent app): dodge, push, lift off when hot."""
+    def _drive(self, t: dict, s: float, others=()) -> None:
+        """The bot driver (also the autopilot of a silent app): the assist on the racing line – as close to the safe
+        speed as its skill dares (now and then a corner too fast), overtaking on the side, lifting off when hot or when
+        the battery would not last the lap flat out."""
         car = t["car"]
         if car["pit"]:
             return
         level = self.person(t["driver"]).get("level", "normal") if t["bot"] else "normal"
-        miss, hot_hi, hot_lo, _ = BOT_SKILL.get(level, BOT_SKILL["normal"])
-        jr = self.jr()
-        look = car["v"] * 1.4 + 14
-        ahead = []
-        lap, ob = car["olap"], car["ob"]
-        for k in range(2):
-            things = lap_things(self.st["seed"], lap + k, jr)
-            for i in range(ob if k == 0 else 0, len(things)):
-                x, lane, kind = things[i]
-                dz = (lap + k) * L + x - car["d"]
-                if 0 < dz <= look:
-                    key = f"{lap + k}:{i}"
-                    if key not in t["bm"]:
-                        t["bm"].append(key)
-                        del t["bm"][:-20]
-                        if self.rng.random() < miss:
-                            t["bm"].append("x" + key)
-                    if "x" + key not in t["bm"]:
-                        ahead.append((dz, lane))
-        lap0 = math.floor(car["d"] / L)
-        tricky = in_window(self.st.get("rain"), s) or in_window(self.st.get("rain"), s + 3.0) or darkness(s + 3.0, self.limit()) > 0.5 or darkness(s, self.limit()) > 0.5
-        for k in range(2):
-            for x, lanes in kerbs(tricky):
-                dz = (lap0 + k) * L + x - car["d"]
-                if 0 < dz <= look:
-                    ahead += [(dz, ln) for ln in lanes]
-        if s - t["blc"] >= 0.3 and ahead:
-            near = min(ahead)[0]
-            blocked = {lane for dz, lane in ahead if dz <= near + 20}
-            if car["lane"] in blocked:
-                free = [ln for ln in (car["lane"] - 1, car["lane"] + 1) if 0 <= ln <= 2 and ln not in blocked]
-                far = [ln for ln in range(3) if ln not in blocked]
-                goal = free[0] if free else (far[0] if far else car["lane"])
-                if goal != car["lane"]:
-                    car["lane"] += 1 if goal > car["lane"] else -1
-                    t["blc"] = s
+        miss, hot_hi, hot_lo, _, dare = BOT_SKILL.get(level, BOT_SKILL["normal"])
+        xl = lap_pos(car["d"])
+        nc, _ = next_corner(xl)
+        key = f"{math.floor(car['d'] / L)}:{CORNERS.index(nc) if nc in CORNERS else -1}"
+        if key != t.get("bk"):                           # a new corner ahead: this time carefully – or too greedy
+            t["bk"] = key
+            car["ak"] = BOT_GREEDY if self.rng.random() < miss else dare
+        car.update(ast=1, st=0)
+        # overtaking: a car close ahead – drive alongside it (the slipstream helps on the straight)
+        line = race_line(xl)
+        ahead = None
+        for od, ox, ov in others:
+            rel = lap_pos(od - car["d"])
+            if rel > L / 2:
+                rel -= L
+            if -6.0 < rel < 35.0 and abs(ox - car["x"]) < 3.0 and (ahead is None or abs(rel) < abs(ahead[0])):
+                ahead = (rel, ox)
+        if ahead is None:
+            car["lo"] = 0.0
+        elif not car["lo"]:
+            ox = ahead[1]
+            car["lo"] = clamp(ox + (3.2 if ox <= line else -3.2), -LMAX, LMAX) - line
         if car["temp"] >= hot_hi:
             t["hot"] = 1
         elif car["temp"] <= hot_lo:
@@ -730,13 +786,6 @@ class Table:
         left = (math.floor(car["d"] / L) + 1) * L - car["d"]
         if car["bat"] < left * E_FULL + 2.0:
             car["thr"] = 0
-        # brake in time before a chicane (down to a little below the safe speed)
-        safe = (SAFE_TRICKY if tricky else SAFE) - {"easy": 2.5, "normal": 1.5, "hard": 0.8}.get(level, 1.5)
-        for k in range(2):
-            for xa_, _, _, _ in CHICANES:
-                dz = (lap0 + k) * L + xa_ - car["d"]
-                if 0 < dz <= 160 and car["v"] > safe and dz <= (car["v"] ** 2 - safe ** 2) / (2 * BRAKE) + car["v"] * 0.4 + 4:
-                    car["thr"] = -1
 
     # ---------- the end
     def _maybe_end(self, horizon: float) -> None:
@@ -995,9 +1044,10 @@ class Langstrecke(CardGames):
             p["team"] = int(team)
             self._save(row, st)
 
-    def choose_look(self, pid: int, color: str | None = None, country: str | None = None, num: int | None = None) -> None:
+    def choose_look(self, pid: int, color: str | None = None, country: str | None = None, num: int | None = None,
+                    assist: bool | None = None) -> None:
         """In the lobby: the colour (from the palette, not taken by another team), the country and the car number (1–99,
-        not taken by another team) of my team."""
+        not taken by another team) of my team – and my own driving assist (on / off)."""
         with self.lock:
             row = self._row(KIND, pid)
             if not row:
@@ -1010,6 +1060,8 @@ class Langstrecke(CardGames):
                 raise CommunityError("You are not at this table")
             looks = st.setdefault("looks", default_looks())
             k = int(p.get("team", 0))
+            if assist is not None:
+                st.setdefault("assist", {})[str(pid)] = bool(assist)
             if color is not None:
                 if color not in [c for _, c in TEAM_STYLES]:
                     raise CommunityError("Unknown colour")
@@ -1147,7 +1199,8 @@ class Langstrecke(CardGames):
         base = {"game": row["id"], "kind": KIND, "title": TITLE, "circuit": CIRCUIT, "status": row["status"], "phase": ph,
                 "solo": bool(row["solo"]), "host": row["host_id"], "rules": st["rules"], "joined": joined, "players": players,
                 "rewards": rewards_of(self.db), "coins_on": not st.get("solo") and people >= 2, "max_players": MAX_PLAYERS,
-                "best": self.best(me) if joined else None, "now": self.now()}
+                "best": self.best(me) if joined else None, "now": self.now(),
+                "assist": bool((st.get("assist") or {}).get(me, st["rules"].get("difficulty") == "junior")) if joined else None}
         if st["phase"] == "lobby":
             nb = max(0, min(st["rules"]["bots"], 8))
             return {**base, "bots": nb, "nteams": 1 if st.get("solo") else st["rules"]["teams"], "looks": st.get("looks") or default_looks(),
@@ -1161,12 +1214,13 @@ class Langstrecke(CardGames):
         for i, t in enumerate(st["teams"]):
             car = t["car"]
             tv = {"i": i, "name": t["name"], "color": t["color"], "country": t.get("country"), "tyre": car["tyre"], "num": t["num"], "members": t["members"], "bot": t["bot"],
-                  "driver": t["driver"], "laps": laps_of(car["d"]), "d": round(car["d"], 2), "v": round(car["v"], 2), "lane": car["lane"],
+                  "driver": t["driver"], "laps": laps_of(car["d"]), "d": round(car["d"], 2), "v": round(car["v"], 2), "x": round(car["x"], 2),
                   "pit": car["pit"], "eng": car["eng"], "emg": car["bat"] <= 0, "stops": len(t["pits"]), "best_pit": t["best_pit"], "best_lap": car["best"],
-                  "gap": round(lead - car["d"], 1), "auto": t["auto"], "place": t.get("place"), "grid": t["grid"]}
+                  "gap": round(lead - car["d"], 1), "auto": t["auto"], "place": t.get("place"), "grid": t["grid"], "sf": car["sf"],
+                  "last_lap": car.get("last", 0.0)}
             if t is mine or ph == "done":
                 pr, sp = t["prep"], t["spare"]
-                tv.update(car=car, drives=t["drives"], pits=t["pits"], ev=t["ev"] if t is mine else [], stop=t["stop"],
+                tv.update(car=car, drives=t["drives"], pits=t["pits"], ev=t["ev"] if t is mine else [], stop=t["stop"], laptimes=(t.get("laps") or [])[-12:],
                           next=t_.next_driver(t) if ph == "play" else None,
                           spare={"c0": sp["c0"], "t": sp["t"], "plug": sp["plug"], "rate": CHARGE_RATE, "garage": not t_.active_crew(t),
                                  "charge": round(spare_charge(sp, now_t if ph == "play" else sp["t"]), 1)},

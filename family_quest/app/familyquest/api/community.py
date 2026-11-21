@@ -1753,7 +1753,7 @@ class LangstreckeStartIn(BaseModel):
 
 
 class LangstreckeSyncIn(FiniteIn):
-    inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "l"|"r"|"u", value]
+    inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "s"|"u"|"a", value]
 
 
 class LangstreckeTeamIn(BaseModel):
@@ -1769,6 +1769,7 @@ class LangstreckeLookIn(BaseModel):
     color: str | None = Field(default=None, max_length=10)     # one of the palette (langstrecke.TEAM_STYLES)
     country: str | None = Field(default=None, max_length=2)    # langstrecke.COUNTRIES, "" = no country
     num: int | None = None                                     # the car number 1–99
+    assist: bool | None = None                                 # my own driving assist (auto-brake, steering help)
 
 
 class LangstreckeRulesIn(BaseModel):
@@ -1838,7 +1839,7 @@ def langstrecke_team(body: LangstreckeTeamIn, request: Request, prof: dict = Pla
 def langstrecke_look(body: LangstreckeLookIn, request: Request, prof: dict = Playing) -> dict | None:
     """In the lobby: the colour, the country and the car number of my team."""
     fq = app_of(request)
-    _run(fq.langstrecke.choose_look, prof["id"], body.color, body.country, body.num)
+    _run(fq.langstrecke.choose_look, prof["id"], body.color, body.country, body.num, body.assist)
     return fq.langstrecke.state("langstrecke", prof["id"])
 
 

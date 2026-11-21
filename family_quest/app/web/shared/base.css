@@ -2903,9 +2903,9 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-ready { padding: 1px 6px; border-radius: 999px; background: var(--le-track); font-weight: 800; font-size: .75rem; white-space: nowrap; }
 .le-ready.ok { background: var(--le-ok); color: #fff; }
 /* on the driver's picture: what the crew has ready (top left), «Save energy!» (top right) */
-.le-wrap > .le-crewstrip { position: absolute; left: 6px; top: 6px; z-index: 1; pointer-events: none; }
+.le-wrap > .le-crewstrip { position: absolute; left: 6px; bottom: 6px; z-index: 1; pointer-events: none; }
 .le-wrap > .le-crewstrip .le-ready:not(.ok) { background: rgba(15, 23, 42, .7); color: #fff; }
-.le-save { position: absolute; right: 6px; top: 6px; z-index: 1; pointer-events: none; padding: 2px 8px; border-radius: 999px; background: #f08c00; color: #fff;
+.le-save { position: absolute; right: 6px; bottom: 6px; z-index: 1; pointer-events: none; padding: 2px 8px; border-radius: 999px; background: #f08c00; color: #fff;
   font-weight: 800; font-size: .75rem; white-space: nowrap; animation: le-pulse .45s ease-in-out infinite alternate; }
 .le-save.le-emg { background: #e8590c; }
 .le-save[hidden] { display: none; }
@@ -2920,7 +2920,37 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-wrap { position: relative; min-height: 120px; border-radius: 14px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; background: #24573a; }
 .le-wrap.le-gar { background: #5c6370; }
 .le-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
-.le-pad { display: grid; grid-template-columns: 1fr 1fr 1.5fr 1fr; gap: 6px; padding: 0 0 calc(4px + env(safe-area-inset-bottom)); }
+.le-pad { display: flex; justify-content: space-between; gap: 14px; padding: 0 0 calc(4px + env(safe-area-inset-bottom)); }
+.le-steers, .le-pedals { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1 1 0; }
+.le-pedals { grid-template-columns: 1fr 1.4fr; }
+.le-steer { touch-action: none; }
+.le-steer.on { transform: translateY(3px); box-shadow: 0 1px 0 #312a9a; background: linear-gradient(#8c89f0, #5b52e0); }
+/* the lap times and the gaps */
+.le-times { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 2px; font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; min-height: 20px; }
+.le-times > span { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.le-gapa { color: var(--bad-text); }
+.le-gapb { color: var(--good-text); }
+.le-assist { margin-left: 4px; flex: none; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(127,127,127,.4)); background: var(--card); color: var(--fg);
+  font: 800 .75rem var(--font); cursor: pointer; opacity: .75; min-height: 28px; }
+.le-assist.on { background: var(--good, #2f9e44); border-color: transparent; color: #fff; opacity: 1; }
+.le-assist-lobby { margin: 4px auto; }
+/* the lap-time board at the stop */
+.le-laptimes { display: flex; flex-direction: column; gap: 2px; padding: 4px 8px; border-radius: 12px; background: var(--card); box-shadow: var(--shadow); font-size: .8rem; }
+.le-lthead { display: flex; align-items: center; justify-content: space-between; gap: 6px; white-space: nowrap; }
+.le-lthead .small { overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.le-lt { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.le-lt .grow { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.le-ltn { color: var(--muted); min-width: 44px; }
+.le-ltbest b { color: var(--good-text); }
+/* a phone on its side: the picture gets the height, the steering and the pedals lie on its lower corners */
+@media (orientation: landscape) and (max-height: 500px) {
+  .le-live.quiz-full.le-drv > .le-board { display: none; }
+  .le-live.quiz-full.le-drv > .le-pad { position: relative; z-index: 2; margin-top: -86px; padding: 0 8px 8px; pointer-events: none; }
+  .le-live.quiz-full.le-drv > .le-pad > div { pointer-events: auto; flex: 0 1 30%; }
+  .le-live.quiz-full.le-drv .le-btn { opacity: .88; height: 72px; }
+  .le-live.quiz-full.le-drv .le-wrap > .le-crewstrip { left: 50%; transform: translateX(-50%); bottom: auto; top: 6px; }
+  .le-live.quiz-full.le-drv .le-wrap > .le-save { right: 50%; transform: translateX(50%); bottom: auto; top: 30px; }
+}
 .le-brake { background: linear-gradient(#fa5252, #c92a2a); box-shadow: 0 4px 0 #8f1d1d, var(--shadow); touch-action: none; }
 .le-brake.on { transform: translateY(3px); box-shadow: 0 1px 0 #8f1d1d; }
 .le-btn { height: clamp(56px, 9vh, 76px); height: clamp(56px, 9dvh, 76px); border: 0; border-radius: 16px; cursor: pointer; font: 800 1.4rem var(--font); color: #fff;

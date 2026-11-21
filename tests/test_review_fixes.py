@@ -146,9 +146,9 @@ def test_langstrecke_report_ignores_non_finite_inputs():
     from test_langstrecke import at, mine, table
     t, clock = table(humans=(("1", 0),), bots=1)
     at(t, clock, 5)
-    inputs = [[5.2, "u", float("inf")], [5.2, "u", float("nan")], [float("nan"), "l", 0], [5.3, "l", 0]]
+    inputs = [[5.2, "u", float("inf")], [5.2, "u", float("nan")], [float("nan"), "s", 0], [5.3, "s", -30]]
     assert t.report("1", inputs) == 1
-    assert mine(t)["ev"][-1][1:] == ["l", 0]
+    assert mine(t)["ev"][-1][1:] == ["s", -30]
 
 
 def _raw(client, url, body, h):
