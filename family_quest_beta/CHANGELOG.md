@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-beta.5
+
+- Parent area on phones: «Family Quest App» closes the menu first, so the QR code dialog is no longer hidden behind it
+
 ## 1.2.2-beta.4
 
 - License: from this version on Family Quest is published under the Business Source License 1.1 – free for families and other non-commercial use, commercial use and hosting for others only with a separate license; every version becomes open source (MPL 2.0) after four years. Versions up to 1.2.1 stay MIT.
