@@ -116,7 +116,25 @@ VGRASS, GRASS_DEC = 9.0, 16.0    # on the grass: this slow, braked this hard
 KERB_F = 0.9                 # on the kerb: the top speed × this
 SLIP_D, SLIP_W, SLIP_V = 30.0, 2.2, 3.5   # the slipstream: behind a car within this far, this much to the side → up to +this m/s
 BUMP_D, CAR_W, NUDGE = 4.5, 1.9, 1.5      # a car this close ahead and overlapping: bump (slow to its speed, slide aside m/s)
-PIT_Z = 25.0                 # the pit lane: no contact this close to the line (in or out)
+PIT_Z = 25.0                 # no contact on the track this close to the line (the pit entry / exit)
+# the pit lane – beside the main straight on its RIGHT. Its metres are the lap's metres of the straight beside it (d
+# keeps counting along the lap; the line crosses the track and the pit lane, a lap still ends at d = n·L). Phases `pl`:
+# 0 racing, 1 the entry and the lane up to the line, 2 after the line to the box, 3 out of the box to the pit exit and
+# back onto the track (the end of the merge: racing again). `pz`: metres from the line of this stop (− before it).
+PIT_IN = 590.0               # lap metres: the pit entry line – from here every car is on its way into the pits (every lap)
+PIT_ENTRY = 25.0             # the entry bends off to the right over this many metres, then the pit wall
+PIT_OUT = 70.0               # metres after the line: the pit exit (the end of the speed limit) …
+PIT_MERGE = 15.0             # … and the exit lane joins the track on its right side over this many metres
+PL_X, PL_HW = 9.5, 2.0       # the pit lane: its middle (metres right of the track's middle) and half its width
+SIDE_X = 3.5                 # where the entry leaves / the exit joins the track (its right side)
+PIT_V = 80.0 / 7.0           # the pit speed limit (80 km/h on the display): the limiter holds it by itself, no penalty
+KEEP_R, KEEP_ST = 1.5, 20    # at the entry line right of this, or steering right: the driver steers in himself …
+AP_LATE = 12.0               # … not in the lane this many metres before the pit wall: the autopilot takes over
+AP_K = 0.7                   # the autopilot's steering: full lock per 1.4 m off the lane
+FUNNEL = 0.6                 # the entry's inner white line closes in this much per metre (nobody misses the pits)
+BOX0, BOX_GAP = 10.0, 7.0    # the boxes along the pit lane: the first this far after the line, then one per team
+BOX_DEC = 6.0                # m/s²: rolling into the box
+PZ_IN = PIT_IN - L           # the entry line, from the line (−50 m)
 LINE_D, LINE_OUT, LINE_APEX, LMAX = 40.0, 3.5, 3.5, 4.0  # the racing line: outside before the corner, the apex inside
 ASSIST_K = 0.5               # the steering assist: full lock per 2 m off the line
 AK_ASSIST = 0.92             # the assist brakes down to this share of the safe speed
@@ -233,6 +251,35 @@ def race_line(xl: float) -> float:
     return clamp(y, -LMAX, LMAX)
 
 
+def pit_z(d: float, pl: int) -> float:
+    """Metres from the line of this pit stop: − on the entry before it, + after it (the boxes, the exit)."""
+    xl = lap_pos(d)
+    return xl - L if pl == 1 else xl
+
+
+def pit_x(pz: float) -> float:
+    """The middle of the pit lane at pz: the entry bends off the track's right side, the lane, the exit bends back."""
+    if pz < PZ_IN + PIT_ENTRY:
+        return SIDE_X + (PL_X - SIDE_X) * _ease((pz - PZ_IN) / PIT_ENTRY)
+    if pz < PIT_OUT:
+        return PL_X
+    return PL_X + (SIDE_X - PL_X) * _ease((pz - PIT_OUT) / PIT_MERGE)
+
+
+def pit_bounds(pz: float) -> tuple[float, float]:
+    """Where a car in the pit lane can be across: on the entry still open to the track (its white line closes in),
+    then between the pit wall and the boxes, on the exit bending back onto the track's right side."""
+    if pz < PZ_IN + PIT_ENTRY:
+        return max(-XMAX, PL_X - PL_HW - (PZ_IN + PIT_ENTRY - pz) * FUNNEL), PL_X + PL_HW
+    c = pit_x(pz)
+    return c - PL_HW, c + PL_HW
+
+
+def box_of(i: int) -> float:
+    """The box of the team with this index: metres after the line."""
+    return BOX0 + BOX_GAP * i
+
+
 def default_looks(country: str | None = None) -> list[dict]:
     """The lobby: colour, country (the family's own if the app knows it, else none) and car number of the teams of
     people – they can change them."""
@@ -243,7 +290,8 @@ def default_looks(country: str | None = None) -> list[dict]:
 def new_car(x: float, d: float) -> dict:
     return {"d": d, "x": x, "v": 0.0, "thr": 0, "st": 0, "sw": 0.0, "ast": 0, "ak": AK_ASSIST, "lo": 0.0, "temp": TMIN,
             "eng": 0, "ls": 0.0, "best": 0.0, "last": 0.0, "pit": 0, "bumps": 0, "bc": 0.0, "blows": 0, "tyre": "s",
-            "kerb": 0, "sf": 0, "offs": 0, "tow": 0.0, "bat": 100.0, "flat": 0, "man": 0, "gear": 1, "sg": 0.0}
+            "kerb": 0, "sf": 0, "offs": 0, "tow": 0.0, "bat": 100.0, "flat": 0, "man": 0, "gear": 1, "sg": 0.0,
+            "pl": 0, "ap": 0, "box": BOX0}
 
 
 def new_spare(charge: float, t: float, auto: float | None = None) -> dict:
@@ -294,17 +342,35 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         return ev
     d0, x0, v0 = car["d"], car["x"], car["v"]
     xl = lap_pos(d0)
+    # the pit lane: from the entry line on every car is on its way into the pits – the driver steers in (keeping right
+    # or steering right at the line), else the autopilot takes over; out of the pit exit it races again
+    pl = car.get("pl", 0)
+    if pl == 0 and d0 >= 0 and xl >= PIT_IN:
+        pl = car["pl"] = 1
+        car["ap"] = 0 if x0 >= KEEP_R or car["st"] >= KEEP_ST else 1
+        ev.append("pitlane")
+        if car["ap"]:
+            ev.append("autopilot")
+    elif pl == 3 and PIT_OUT + PIT_MERGE <= xl < PIT_IN:
+        pl = car["pl"] = 0
+    pz = pit_z(d0, pl) if pl else 0.0
+    if pl == 1 and not car["ap"] and pz >= PZ_IN + PIT_ENTRY - AP_LATE and x0 < pit_x(pz) - PL_HW:
+        car["ap"] = 1                                  # not steering in: the autopilot (nobody misses the pits)
+        ev.append("autopilot")
+    ap = pl > 0 and car.get("ap", 0) == 1
     cn = corner_at(xl)
-    th = car["thr"]
-    stc = car["st"] / 100.0
+    th = 0 if ap else car["thr"]                       # the autopilot: lifted off – the limiter brings it to the pit speed
+    stc = 0.0 if ap else car["st"] / 100.0
     emg = car["bat"] <= 0                              # the battery is empty: the emergency drive mode
     bite = min(1.0, 0.2 + abs(v0) / VSTEER)            # how much the steering bites at this speed
     push = 0.0                                         # a corner pushes outward, ∝ speed²
     if cn is not None:
         q = v0 / safe_speed(cn, car["tyre"], rain)
         push = (-1.0 if cn[2] > 0 else 1.0) * STEER_V * PUSH * q * q
-    if car["ast"]:                                     # the assist: towards the racing line, brake before a corner
-        aim = clamp(race_line(xl) + car["lo"], -LMAX, LMAX)
+    if ap:                                             # the autopilot steers smoothly along the pit lane
+        stc = clamp((pit_x(pz) - x0) * AP_K, -1.0, 1.0)
+    elif car["ast"]:                                   # the assist: towards the racing line (the pit lane), brake before a corner
+        aim = pit_x(pz) if pl else clamp(race_line(xl) + car["lo"], -LMAX, LMAX)
         help_ = clamp((aim - x0) * ASSIST_K - push / (STEER_V * bite), -1.0, 1.0)
         stc = clamp(stc + (1.0 - abs(stc)) * help_, -1.0, 1.0)
         nc, dz = next_corner(xl)
@@ -314,8 +380,11 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
                 th = -1
     car["sw"] += clamp(stc - car["sw"], -WHEEL * DT, WHEEL * DT)
     full = th > 0 and not car["eng"] and not emg
+    pitlim = pl > 0 and pz < PIT_OUT                   # the pit limiter: on by itself from the entry line to the exit
+    if pitlim and v0 >= PIT_V - 0.3:
+        full = False                                   # holding the limit: no full throttle (no heat, lifted drain)
     gr = grip(car["tyre"], rain)
-    man, g = car.get("man", 0), car.get("gear", 1)
+    man, g = (0 if ap else car.get("man", 0)), car.get("gear", 1)   # the autopilot: automatic gears
     acc, dec, lim, grind, rev, top = ACC, COAST, False, False, False, 0.0
     gap = False
     if not man:                                        # automatic: the plain car – with a torque gap at every shift
@@ -347,9 +416,16 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     if th < 0:
         vt = min(vt, VBRAKE)
         dec = max(dec, BRAKE)
-    # the other cars: the slipstream behind one on a straight, a gentle bump when too close
+    if pitlim:                                         # the limiter (manual gears too) – braking down to it
+        vt = min(vt, PIT_V)
+        if v0 > PIT_V:
+            dec = max(dec, BRAKE)
+    if pl == 2:                                        # rolling into the box and stopping there
+        vt = min(vt, max(2.0, math.sqrt(2.0 * BOX_DEC * max(0.0, car["box"] - pz))))
+        dec = max(dec, BOX_DEC)
+    # the other cars: the slipstream behind one on a straight, a gentle bump when too close (never with the pit lane)
     tow, bump, nudge = 0.0, None, 0.0
-    if PIT_Z <= xl <= L - PIT_Z:
+    if not pl and PIT_Z <= xl <= L - PIT_Z:
         for od, ox, ov in others:
             ol = lap_pos(od)
             if ol < PIT_Z or ol > L - PIT_Z:
@@ -385,9 +461,10 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     else:
         nudge = 0.0
     # across the track: the wheel, the corner's push, a nudge; then the surface under the car
-    x = clamp(x0 + (car["sw"] * STEER_V * bite + push + nudge) * DT, -XMAX, XMAX)
+    lo, hi = pit_bounds(pz) if pl else (-XMAX, XMAX)   # in the pit lane: its white line, the pit wall, the boxes
+    x = clamp(x0 + (car["sw"] * STEER_V * bite + push + nudge) * DT, lo, hi)
     ax = abs(x)
-    sf = 0 if ax <= HW else 1 if ax <= HW + KERB else 2
+    sf = 0 if ax <= HW or (pl and x > 0) else 1 if ax <= HW + KERB else 2
     if sf == 2 and car["sf"] != 2:
         car["offs"] += 1
         ev.append("off")
@@ -424,7 +501,7 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         car["blows"] += 1
         car["temp"] = 80.0
         ev.append("blow")
-    # the line: a lap – and into the pits, every time (not at the start)
+    # the line (across the track and the pit lane): a lap – on in the pit lane to the box (not at the start)
     n0, n1 = math.floor(d0 / L), math.floor(d1 / L)
     tc = s + (n1 * L - d0) / v if n1 > n0 else 0.0     # the moment the car crossed the line (within the step)
     if n1 > n0 and n0 >= 0:
@@ -432,13 +509,15 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         car["last"] = lt
         car["best"] = lt if not car["best"] or lt < car["best"] else car["best"]
         car["ls"] = _r2(tc)
-        d1 = n1 * L
-        v = 0.0
-        x = 0.0
-        car.update(pit=1, sw=0.0, sf=0, tow=0.0)
-        ev += ["lap", "pit"]
+        pl = car["pl"] = 2
+        ev.append("lap")
     elif n1 > n0:
         car["ls"] = _r2(tc)                             # the start: the first lap begins
+    if pl == 2 and d1 >= n1 * L + car["box"]:          # at the box: the car stops – the pit stop begins
+        d1 = n1 * L + car["box"]
+        v = 0.0
+        car.update(pit=1, sw=0.0, sf=0, tow=0.0, ap=0)
+        ev.append("pit")
     car["d"] = d1
     car["x"] = x
     car["v"] = v
