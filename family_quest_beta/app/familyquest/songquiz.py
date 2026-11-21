@@ -8,6 +8,11 @@ target points or after the most songs.
 
 Phases: lobby → playing → buzzed → reveal → result → playing … → done. Like the other family games the state is one
 JSON document; every request moves it on (no background task).
+
+«🏳️ Pass»: while a song plays and nobody has buzzed, every player may give up on it (tap again: back in). Once every
+active player (whose app asked for the game in the last STALE seconds – kept in memory, no database write) has passed,
+the song is resolved like «Nobody knows it»: the solution, no points. A pass does not block the buzzer; buzzing clears
+it, and the passes start empty with every song.
 """
 from __future__ import annotations
 
@@ -24,6 +29,7 @@ ANSWERS = ("artist", "title", "both", "either")
 
 
 log = logging.getLogger("familyquest.songquiz")
+STALE = 15.0                               # seconds without a request from a player's app: away, does not block «all passed»
 
 
 class SongQuiz:
@@ -33,6 +39,7 @@ class SongQuiz:
         self.add_history = add_history
         self.ha = ha                       # () → the Home Assistant service (or None)
         self.lock = threading.Lock()
+        self._seen: dict[str, float] = {}  # player id → time.monotonic() of the last request of their app (liveness)
 
     # ---------- storage
     def _row(self):
@@ -150,7 +157,15 @@ class SongQuiz:
         self._media(st, "next")
         self._media(st, "play")
         st.update(phase="playing", song=st.get("song", 0) + 1, buzzer=None, votes={}, solution=None, verdict=None, at=time.time(),
-                  paused=False)                       # a new song always plays – also after skipping a paused one
+                  paused=False, passes=[])            # a new song always plays – also after skipping a paused one; no passes yet
+
+    def _skip(self, st: dict) -> None:
+        """«Nobody knows it» (the leader) or «everybody passed»: show the solution without points."""
+        st["skipped"] = True
+        self._media(st, "pause")
+        st["solution"] = self._solution(st)
+        st["verdict"] = None
+        st["phase"] = "result"
 
     def next(self) -> None:
         """After the result (or to skip a song nobody knows): the next song."""
@@ -158,12 +173,7 @@ class SongQuiz:
             row = self._need()
             st = json.loads(row["state"])
             if st["phase"] == "playing":                  # skip: show the solution without points
-                st["phase"] = "reveal"
-                st["skipped"] = True
-                self._media(st, "pause")
-                st["solution"] = self._solution(st)
-                st["verdict"] = None
-                st["phase"] = "result"
+                self._skip(st)
             elif st["phase"] in ("result",):
                 if self._finished(st):
                     self._finish(st)
@@ -205,13 +215,65 @@ class SongQuiz:
             st = json.loads(row["state"])
             if st["phase"] != "playing" or st.get("paused") or not any(p["id"] == str(pid) for p in st["players"]):
                 return False
-            st.update(phase="buzzed", buzzer=str(pid), buzz_at=time.time())
+            self.mark_seen(pid)
+            st.update(phase="buzzed", buzzer=str(pid), buzz_at=time.time(),
+                      passes=[p for p in st.get("passes") or [] if p != str(pid)])     # buzzing clears the own pass
             try:
                 self._media(st, "pause")
             except CommunityError:
                 pass
             self._save(row, st)
             return True
+
+    # ---------- «🏳️ Pass»: give up on this song
+    def mark_seen(self, pid) -> None:
+        """A request of this player's app – they are at the table (memory only)."""
+        self._seen[str(pid)] = time.monotonic()
+
+    def _active(self, st: dict) -> list[str]:
+        """The players at the table: their app asked within STALE seconds."""
+        now = time.monotonic()
+        return [p["id"] for p in st["players"] if now - self._seen.get(p["id"], -1e9) <= STALE]
+
+    def _all_passed(self, st: dict) -> bool:
+        passes = set(st.get("passes") or [])
+        return st["phase"] == "playing" and bool(passes) and set(self._active(st)) <= passes
+
+    def pass_song(self, pid: int, on: bool | None = None) -> None:
+        """Give up on the song (on=None toggles). When every active player has passed: the solution, no points."""
+        with self.lock:
+            row = self._need()
+            st = json.loads(row["state"])
+            me = str(pid)
+            if not any(p["id"] == me for p in st["players"]):
+                raise CommunityError("Join the game first")
+            if st["phase"] != "playing":
+                raise CommunityError("Only while a song plays")
+            self.mark_seen(pid)
+            passes = [p for p in st.get("passes") or [] if p != me]
+            if (me not in (st.get("passes") or [])) if on is None else bool(on):
+                passes.append(me)
+            st["passes"] = passes
+            if self._all_passed(st):
+                self._skip(st)
+            self._save(row, st)
+
+    def check_passes(self) -> None:
+        """A player left the table (their app went silent) and everybody still there has passed: resolve the song.
+        Called by the polls of the game screen (in the worker thread, not the event loop)."""
+        row = self._row()
+        if not row or row["status"] != "running" or not self._all_passed(json.loads(row["state"])):
+            return
+        with self.lock:
+            row = self._need()
+            st = json.loads(row["state"])
+            if self._all_passed(st):
+                try:
+                    self._skip(st)
+                except CommunityError as e:                   # the speaker does not answer: the next poll tries again
+                    log.info("all passed, but no skip: %s", e)
+                    return
+                self._save(row, st)
 
     def reveal(self, prof: dict) -> None:
         """The one who buzzed (or the leader) has said the answer: show artist and title to everybody."""
@@ -340,16 +402,20 @@ class SongQuiz:
             return None
         st = json.loads(row["state"])
         me = str(viewer)
+        if any(p["id"] == me for p in st["players"]):
+            self.mark_seen(viewer)
         if row["status"] == "done" and not any(p["id"] == me for p in st["players"]):
             return None
         sol = st.get("solution") if st["phase"] in ("reveal", "result", "done") else None
-        players = sorted(({**p, "id": int(p["id"]), "voted": p["id"] in (st.get("votes") or {})} for p in st["players"]),
-                         key=lambda p: -p["points"])
+        passes = set(st.get("passes") or []) if st["phase"] == "playing" else set()
+        players = sorted(({**p, "id": int(p["id"]), "voted": p["id"] in (st.get("votes") or {}), "passed": p["id"] in passes}
+                          for p in st["players"]), key=lambda p: -p["points"])
         return {"game": row["id"], "status": row["status"], "phase": st["phase"], "host": row["host_id"], "rules": st["rules"],
                 "song": st.get("song", 0), "paused": bool(st.get("paused")), "players": players,
                 "joined": any(p["id"] == me for p in st["players"]),
                 "buzzer": int(st["buzzer"]) if st.get("buzzer") else None, "my_vote": (st.get("votes") or {}).get(me),
                 "solution": {k: v for k, v in (sol or {}).items() if k != "picture"} | {"cover": bool((sol or {}).get("picture"))} if sol else None,
+                "my_pass": me in passes, "passes": len(passes), "active": len(self._active(st)) if st["phase"] == "playing" else 0,
                 "skipped": bool(st.get("skipped")), "verdict": st.get("verdict"), "volume": st.get("volume"),
                 "reveal_in_ms": max(0, int(((st.get("buzz_at") or 0) + st["rules"].get("reveal_delay", 5) - time.time()) * 1000))
                 if st["phase"] == "buzzed" else 0}
