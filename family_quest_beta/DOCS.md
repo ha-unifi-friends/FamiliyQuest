@@ -1026,6 +1026,13 @@ absolute majority of everybody who may judge (all players but who buzzed): «rig
 closes it early with the votes there are (majority of those).
 **⏭ Nobody knows it** shows the solution without points: a button in the leader's game screen while a song plays
 (also while paused), and still in ☰. Guests can join with the QR code.
+**🏳️ Pass**: while a song plays and nobody has buzzed, every player – guests and a leader who plays along too – can
+give up on the song; tapping again («↩ Take the pass back») takes it back. The players' list shows 🏳️ «Passed» next
+to them, and under the button «2 of 3 have passed». Once **every active player** has passed, the song ends like
+«Nobody knows it»: the solution, no points, the leader starts the next song. Active means at the table: the
+player's app asked for the game in the last 15 seconds – a closed or disconnected device does not block it (if it
+drops out while all others have passed, the next poll resolves the song). A pass does not block the buzzer: who
+passed can still buzz, and buzzing clears the own pass. The passes start empty with every song.
 The game leader turns the speaker up or down (🔉 − / 🔊 +, 5 % each). After a buzz a **countdown** (setting, default
 5 s) runs before «Show the solution» can be tapped – first the answer, then the solution.
 
@@ -1635,19 +1642,43 @@ at least two cars (without bots: two teams of people).
   (headlights, a shorter view) and dawn** into the next afternoon. **Rain showers** (on by default): sudden showers of
   30–55 s every 1–2 minutes; everybody sees the forecast («Rain in ~20 s»). **Winner: the most laps** (then distance, then who reached the line first).
 - **Intro:** the drivers run to their cars, doors close, engines roar, five red lights → **GO!** (about 6 s).
-- **One short lap (about 20–30 s), then the car drives into the pits by itself – after every lap.** At every stop the
+- **One short lap (about 30 s), then the car drives into the pits by itself – after every lap.** At every stop the
   **driver changes**: the next person of the team drives (in turn), the driver joins the crew. Two people take turns;
   alone (or when the whole crew is offline) the **garage** prepares: every stop takes a fixed **5 s** (+4 s after an
   overheat), tyres by the forecast – and the garage plugs the spare battery in only **8 s after the stop** (fair, not
   perfect: the spare is usually 80–100 % at the next stop).
-- **Driver:** three lanes – swipe or ◀ ▶ (←/→) to dodge oil, cones and slow cars; **hold 🚀 Gas** (↑ / Space) for full
-  speed, **🛑 Brake** (↓) to brake, neither = lifted off. Full throttle heats the engine; in the **red it overheats**:
-  the car limps to the pits and the engine is swapped there (no retirement). **Two chicanes** per lap: **braking zones**
-  with boards at 150 / 100 / 50 m – too fast into a chicane (by day and dry over 23, in the rain or at night over 18
-  «m/s») and the car goes **off into the gravel** (3 s very slow); then change the lane past the **kerbs** (touching one
-  slows a little; in the rain or at night the kerbs reach the middle lane). Juniors – and everybody in the first two
-  laps – get a big «🛑 Brake!» hint. **Slicks in the rain** and **rain tyres in the dry** are slower (and slicks slide).
-  Other cars never block you: a car close to yours in your lane is drawn moving over to a free lane while overtaking.
+- **Driving – real racing on a circuit** (the general mechanics of the classic racing simulations; own circuit, own
+  look, the view from behind the car): the car moves **freely across the track** – steer smoothly with **◀ ▶** (held),
+  a **drag on the picture** (the finger's way = how far the wheel turns) or **←/→**; the wheel follows smoothly. The
+  other thumb works the pedals: **🛑 Brake** (left, ↓) and **🚀 Gas** (right, ↑ / Space); neither = lifted off.
+  *Why two pedals:* every thumb has one job – the left steers, the right rocks between brake and gas like a foot – and
+  «lifted off» keeps its meaning for the engine and the battery (one pedal with the brake on release would brake
+  every time the thumb lifts). Automatic gears; the speed is shown in km/h.
+- **Five corners per lap** (a hairpin among them), each with a **safe speed**. In a corner the car is **pushed
+  outward, growing with the square of the speed**: at the safe speed three quarters of full lock hold the line – a bit
+  faster and the steering is not enough: the car **runs wide onto the red-and-white kerb** (a little slower, the
+  picture rumbles) and **then the grass** (a heavy slowdown to about 60 km/h, dust, «Off the track!») – never a
+  crash; a tyre wall keeps the car near the track. Before every corner: **braking boards 150 / 100 / 50 m** on the
+  outside, chevrons at the turn-in and a **corner sign** (top left) with an arrow bent like the corner, the
+  **suggested speed** and the distance – red when braking is due. The **racing line**: in from the outside, the apex
+  inside in the middle of the corner, out again. Beginners without the assist get a big «🛑 Brake!» before a corner
+  (juniors always, everybody else in the first two laps).
+- **Other cars on track:** close behind another car on a straight the **slipstream** gives up to +3.5 m/s top speed
+  (wind lines, «🌬️ Slipstream!») – pull out and overtake. Running into a car from behind is a **gentle bump**: you slow
+  to its speed and slide aside a little (no crash, never through it). No contact in the pit lane (the last / first
+  25 m of the lap).
+- **Driving assist 🧒** – per driver: on for everybody when the race is «Junior» (start dialog), and every driver can
+  switch it for themselves in the lobby and while driving (the 🧒 Assist button; remembered for their next stints). The
+  car **brakes by itself before every corner** and the **steering helps towards the racing line** (a faint yellow line
+  on the road); the driver's own steering wins. A junior who only holds the gas stays on the track all lap.
+- **Display:** P x/y, the lap, the race clock, the time left; the standings chips; speed, tyres, engine temperature,
+  battery; **this lap's time, the team's best lap and the gap to the car ahead ▲ / behind ▼** (seconds, or laps); a
+  **minimap** of the circuit (top right) with every car as a dot in its colour. Full throttle heats the engine; in the
+  **red it overheats**: the car limps to the pits and the engine is swapped there (no retirement). **Slicks in the
+  rain** and **rain tyres in the dry** are slower on the straights; **rain lowers every corner's safe speed** (rain
+  tyres × 0.85, slicks even more). **Night:** a shorter view and headlights.
+- **Phones:** portrait 390 × 740 without scrolling; on its side (landscape) the picture takes the height and the
+  steering / pedal buttons lie on its lower corners. Reduced motion: no shaking, rumble, dust, wind lines or moving rain.
 - **Electric car – the battery 🔋:** the battery (0–100 %) drains by the metre, **much faster at full throttle** (0.16 %
   per metre – flat out a full battery does *not* last a lap) **than lifted** (0.07 % per metre – a lifted lap needs
   about 45 %); braking gives a little back. The driver sees 🔋 % in green / orange / red and **«Save energy!»** when the
@@ -1667,19 +1698,24 @@ at least two cars (without bots: two teams of people).
 - **The stop** – a big stopwatch, the car in its pit box, the battery swap (the used one goes to the charger), the crew
   at work and cheering stands for the whole team: **2 s** (stop and driver change) **+ 1 s battery swap, +4 s for tyres
   not ready, engine swap +6 s (+2 s if prepared)**. A job only counts if it was finished before the car arrived. A
-  super fast stop (≤ 4 s) gets a cheer. The next driver sees the charge of the battery going in («🔋 63 % – Save
+  super fast stop (≤ 4 s) gets a cheer. Below it the **lap-time board** of the stint: the team's last laps (who drove, the time, 🟫
+  off the track, 🌧️ rain), ⭐ the team's best and 🏆 the fastest lap of the race; the result shows every team's best lap. The next driver sees the charge of the battery going in («🔋 63 % – Save
   energy!»).
 - Trackside banners now and then (own, invented: Family Quest, Home Assistant with an own house icon, «Snowman Tyres»).
 - Now and then **fans camp beside the track** (tents, a camper van, a campfire at night) waving a sign «I ❤️ #7 🇨🇭» –
   mostly with the viewer's own car number and flag, sometimes for another team.
-- **Difficulty:** junior (fewer things on the track, the engine heats slower, the braking hint always) or normal.
-  **Bots** (easy / normal / hard) dodge, manage the temperature and the battery (they lift off when it would not last
-  the lap), brake for the chicanes, plug their spare in first and prepare their stops (easier bots miss more jobs, plug
+- **Difficulty:** junior (the driving assist on for everybody, the engine heats slower, the braking hint always) or
+  normal. **Bots** (easy / normal / hard) drive the racing line with the assist – as close to the safe speed as their
+  skill dares (easy about 84 %, hard 99 %; now and then a corner too greedy and they run wide), overtake on the side,
+  manage the temperature and the battery (they lift off when it would not last the lap), plug their spare in first and prepare their stops (easier bots miss more jobs, plug
   in late or pick the wrong tyres). A driver whose app is silent for 6 s gets the **autopilot**.
 
 The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for a
-smooth picture of the own car (tested to give the same numbers). The driver's app only reports its inputs (lane, gas /
-brake); the crew's jobs are actions timed by the server (plug in, a tyre on a spot, start / stop holding). Who leads may end the
+smooth picture of the own car (tested to give the same numbers on recorded inputs, other cars included; every car
+sees the others as they were at the start of the step). The driver's app only reports its inputs with their game
+time – the steering (−100 … 100, in steps of 5, at most every 60 ms), gas / lifted / brake and the assist on / off;
+the server bounds them (unknown kinds, NaN / ∞, inputs from the future and more than 40 per request are refused; the
+steering is clamped). A correction from the server glides (the picture follows the car smoothly across the track); the crew's jobs are actions timed by the server (plug in, a tyre on a spot, start / stop holding). Who leads may end the
 race early: ranked as it stands, no coins. Parents › Games › 24h Endurance: the defaults (race length, weather,
 difficulty, people per team), active / without bots / inactive, the coins.
 
