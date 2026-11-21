@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.2-beta.3
+
+- 24h Endurance: a virtual joystick in the race picture (up gas, down brake, left/right steer) instead of the four buttons – the picture is full height
+- 24h Endurance: 6-speed open-gate shifter (R far left at the top) and an «A / M» switch while driving – manual shifting is a little faster (revs into the red, no shift gap); R while moving grinds the gearbox
+
 ## 1.2.2-beta.2
 
 - Guess the song: «🏳️ Pass» for everybody who doesn't know – when all players at the table passed, the song is solved without points; buzzing stays possible

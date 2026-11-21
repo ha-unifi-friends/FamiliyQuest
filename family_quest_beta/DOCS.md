@@ -1648,12 +1648,38 @@ at least two cars (without bots: two teams of people).
   overheat), tyres by the forecast – and the garage plugs the spare battery in only **8 s after the stop** (fair, not
   perfect: the spare is usually 80–100 % at the next stop).
 - **Driving – real racing on a circuit** (the general mechanics of the classic racing simulations; own circuit, own
-  look, the view from behind the car): the car moves **freely across the track** – steer smoothly with **◀ ▶** (held),
-  a **drag on the picture** (the finger's way = how far the wheel turns) or **←/→**; the wheel follows smoothly. The
-  other thumb works the pedals: **🛑 Brake** (left, ↓) and **🚀 Gas** (right, ↑ / Space); neither = lifted off.
-  *Why two pedals:* every thumb has one job – the left steers, the right rocks between brake and gas like a foot – and
-  «lifted off» keeps its meaning for the engine and the battery (one pedal with the brake on release would brake
-  every time the thumb lifts). Automatic gears; the speed is shown in km/h.
+  look, the view from behind the car): the car moves **freely across the track**, driven with **one virtual joystick**
+  at the bottom left *inside* the picture (the picture takes the full height, no button bar): **up = gas, down =
+  brake, sideways = steering**. The see-through ring (about 120–140 px) shows a green «Gas» arc on top, a red «Brake»
+  arc below and ◀ ▶ arrows; the active zone lights up. The knob follows the thumb, stays on the ring and **springs
+  back to the middle** on release (straight ahead, lifted off). Sideways = how far the wheel turns (a small dead zone
+  in the middle, full lock a little before the edge, so up-left still steers hard); **beyond about 30 % up = gas,
+  beyond 30 % down = brake, in between = lifted off** – «lifted off» keeps its meaning for the engine and the battery.
+  It follows only its own finger (multi-touch safe), a short vibration tick on entering the gas / brake zone (not with
+  reduced motion). First drive on a device: the hint «🕹️ Joystick: up gas, down brake» until the gas was given once.
+  Keyboard on a computer: **←/→** (A/D) steer, **↑** (W / Space) gas, **↓** (S) brake. The joystick sends the same
+  inputs as the keys (steering −100 … 100, gas / lifted / brake). The speed is shown in km/h.
+- **Gears – «A / M»:** a small toggle on the picture, bottom right above the shifter area, switches between
+  **automatic** and **manual** at any time, mid-stint too (an adult and a child can take turns in the same car). No
+  setting in the start dialog or the lobby. Every stint starts with that driver's last choice (remembered per person
+  at the table; nobody chose yet → automatic); switching to manual engages the gear that fits the speed (no jolt).
+  Independent of the assist. Six gears, each with a **speed band**: its top is the **rev limiter** (× the tyres'
+  grip; the speed stops there and the engine heats 1.5× faster); a gear too high for the speed pulls weakly (35 %); a
+  downshift over the limiter **brakes with the engine**; **N** has no drive. **Automatic:** shifts up by itself at
+  90 % of a gear's top (never into the red), down below 75 % of the next lower gear's top (no hunting), and every
+  upshift has a **torque gap of 0.2 s** without drive; no shifter on the picture, the HUD shows e.g. «A3».
+  **Manual:** the **H shifter bottom right in the picture** – a polished metal plate with the open gate, a short
+  chrome shaft and a chrome ball, the gear big above it. Gate: **R | 1 2 | 3 4 | 5 6** (top / bottom of each column,
+  R top left only) over the neutral rail. The right thumb drags the ball along the gate (it never leaves it) and it
+  snaps in – its own finger, so it works together with the joystick under the left thumb; it shifts instantly and
+  may rev up to the limiter. A click and a short tick on every gear (no tick with reduced motion). Keyboard: **1–6,
+  R, N / 0**; the mouse drags too. The HUD's **rev / shift light**: green, yellow, red at the limiter. **R** drives
+  slowly backwards (gas 2.5 m/s, lifted creeps, the brake stops; never back over the line) – **only from a
+  standstill** (below about 5 km/h): R while rolling forward **grinds the gearbox** – a stop much harder than the
+  brake (22 m/s²), the engine heats 30 °/s and overheats like from the red zone (the spare engine at the stop);
+  «💥 Gearbox! R only when stopped», sparks under the car, a hard shake (not with reduced motion) and a buzz. Every
+  stint starts in 1st. Balance (a scripted test): shifted well (up at the limiter) a lap is about 2 % faster than the
+  automatic, in the rain too; the automatic is never bad. Bots and the autopilot always drive automatic (never R).
 - **Five corners per lap** (a hairpin among them), each with a **safe speed**. In a corner the car is **pushed
   outward, growing with the square of the speed**: at the safe speed three quarters of full lock hold the line – a bit
   faster and the steering is not enough: the car **runs wide onto the red-and-white kerb** (a little slower, the
@@ -1678,7 +1704,7 @@ at least two cars (without bots: two teams of people).
   rain** and **rain tyres in the dry** are slower on the straights; **rain lowers every corner's safe speed** (rain
   tyres × 0.85, slicks even more). **Night:** a shorter view and headlights.
 - **Phones:** portrait 390 × 740 without scrolling; on its side (landscape) the picture takes the height and the
-  steering / pedal buttons lie on its lower corners. Reduced motion: no shaking, rumble, dust, wind lines or moving rain.
+  joystick stays on its lower left corner (safe-area aware). Reduced motion: no shaking, rumble, dust, wind lines or moving rain.
 - **Electric car – the battery 🔋:** the battery (0–100 %) drains by the metre, **much faster at full throttle** (0.16 %
   per metre – flat out a full battery does *not* last a lap) **than lifted** (0.07 % per metre – a lifted lap needs
   about 45 %); braking gives a little back. The driver sees 🔋 % in green / orange / red and **«Save energy!»** when the
@@ -1713,9 +1739,9 @@ at least two cars (without bots: two teams of people).
 The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for a
 smooth picture of the own car (tested to give the same numbers on recorded inputs, other cars included; every car
 sees the others as they were at the start of the step). The driver's app only reports its inputs with their game
-time – the steering (−100 … 100, in steps of 5, at most every 60 ms), gas / lifted / brake and the assist on / off;
-the server bounds them (unknown kinds, NaN / ∞, inputs from the future and more than 40 per request are refused; the
-steering is clamped). A correction from the server glides (the picture follows the car smoothly across the track); the crew's jobs are actions timed by the server (plug in, a tyre on a spot, start / stop holding). Who leads may end the
+time – the steering (−100 … 100, in steps of 5, at most every 60 ms), gas / lifted / brake, the assist on / off,
+manual gears on / off and the gear (R / N / 1–6); the server bounds them (unknown kinds, a gear outside R / N / 1–6,
+NaN / ∞, inputs from the future and more than 40 per request are refused; the steering is clamped). A correction from the server glides (the picture follows the car smoothly across the track); the crew's jobs are actions timed by the server (plug in, a tyre on a spot, start / stop holding). Who leads may end the
 race early: ranked as it stands, no coins. Parents › Games › 24h Endurance: the defaults (race length, weather,
 difficulty, people per team), active / without bots / inactive, the coins.
 

@@ -1757,7 +1757,7 @@ class LangstreckeStartIn(BaseModel):
 
 
 class LangstreckeSyncIn(FiniteIn):
-    inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "s"|"u"|"a", value]
+    inputs: list[list[Any]] = Field(default_factory=list, max_length=40)    # [game time, "s"|"u"|"a"|"m"|"g", value]
 
 
 class LangstreckeTeamIn(BaseModel):
