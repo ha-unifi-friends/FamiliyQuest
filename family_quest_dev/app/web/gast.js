@@ -1,17 +1,23 @@
 // Guest page: friends and grandparents scan the QR code of a running family game, type a name and play along.
-// Only the game is open to them – the guest token is not a family login (it lives in this tab only).
+// Only the games are open to them – the guest token is not a family login. It stays on this device for the visit
+// (24 hours, familyquest/guests.py): the lobby lists the family tables open to join – one tap, no new QR code.
 "use strict";
 const app = document.getElementById("app");
 const CODE = new URLSearchParams(location.search).get("c") || "";
-// the shared game views ask Auth.kid for the token: here it is the guest token of this tab
-Object.defineProperty(Auth, "kid", {
-  get() { try { return sessionStorage.getItem("fq.guest") || ""; } catch { return ""; } },
-  set(v) { try { v ? sessionStorage.setItem("fq.guest", v) : sessionStorage.removeItem("fq.guest"); } catch {} },
-});
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
+};
+// the shared game views ask Auth.kid for the token: here it is the guest token of this device
+Object.defineProperty(Auth, "kid", { get() { return store.get("fq.guest") || ""; }, set(v) { store.set("fq.guest", v || null); } });
 Object.defineProperty(Auth, "parent", { get: () => "", set() {} });
 const screen = (...xs) => app.replaceChildren(h("main.guest-main", ...xs.flat().filter(Boolean)));
 let me = null;
-try { me = JSON.parse(sessionStorage.getItem("fq.guest.me") || "null"); } catch {}
+try { me = JSON.parse(store.get("fq.guest.me") || "null"); } catch {}
+const saveMe = p => { me = p; store.set("fq.guest.me", p ? JSON.stringify(p) : null); };
+let lobbyTimer = null;           // the lobby polls for new tables (like the table note of the app, kid.js)
+const GAME_ICONS = { quiz: "🎯", bingo: "🎱", poker: "🃏", tschau: "🂡", karussell: "🎠", song: "🎵", domino: "🁫", paarjagd: "🧠", werbinich: "🎭", kartenlauf: "🏁", stadtland: "🏙️", zeichnen: "🎨", wuerfel: "🎲", heimwaerts: "🏠", jump: "🦘", sternlauf: "🌠", snack: "🍔", verkehr: "🚦", langstrecke: "🏎️", klatsch: "👏", verboten: "🚫", jass: "♣️", werwolf: "🐺", schach: "♟️", dorfmarkt: "🏘️", escape: "🗝️", stempeljagd: "🏛️" };
+const GAME_TITLES = { bingo: "Bingo", poker: "Texas Hold'em", tschau: "Tschau Sepp", karussell: T("Card Carousel"), song: T("Guess the song"), domino: "Domino", paarjagd: T("Pair Hunt"), werbinich: T("Who am I?"), kartenlauf: T("Card Race"), stadtland: T("City, Country, River"), zeichnen: T("Draw & Guess"), wuerfel: T("Five Dice"), heimwaerts: T("Homeward"), jump: "Jump", sternlauf: T("Star Runner"), snack: T("Snack Rush"), verkehr: T("Traffic Cadet"), langstrecke: T("24h Endurance"), klatsch: T("Clap the Beat"), verboten: T("Forbidden Words"), jass: T("Jass"), werwolf: T("Werewolves"), schach: T("Chess"), dorfmarkt: T("Village Market"), escape: T("Escape Room"), stempeljagd: T("Beat the Bureaucracy") };
 let catalog = null;           // the free avatar parts and items for guests (guest/info: rewards/avatar.py guest_catalog)
 
 // quick picks for the avatar: clearly female and clearly male looks, different skin and hair – free parts only
@@ -66,49 +72,140 @@ function myAvatarDialog(game) {
     h("div.row.center", h("button.btn", { type: "button", onclick: async () => {
       try {
         const r = await api("guest/avatar", { method: "PUT", body: { avatar: pick.value() } });
-        me = { ...me, avatar: r.avatar }; sessionStorage.setItem("fq.guest.me", JSON.stringify(me));
-        m.close(); toast(T("Saved"), "good"); play(me, game);                 // draw the table anew with the new seat
+        saveMe({ ...me, avatar: r.avatar });
+        m.close(); toast(T("Saved"), "good"); game ? play(me, game) : lobby();     // draw the table anew with the new seat
       } catch (e) { toast(e.message, "bad"); }
     } }, "💾 ", T("Save")), h("button.btn.ghost", { type: "button", onclick: () => m.close() }, T("Cancel")))));
 }
 
-async function start() {
-  let info;
-  try { info = await api("community/guest/info?code=" + encodeURIComponent(CODE)); }
-  catch (e) {
-    if (me && Auth.kid) return play(me, sessionStorage.getItem("fq.guest.game") || "quiz");      // the game just ended – show the result
-    return screen(h("section.card.center", h("div.big-ic", "🎲"), h("h2", T("This invitation is not valid (any more)")),
-      h("p.muted", T("Ask the family for a new QR code."))));
+const invalid = () => screen(h("section.card.center", h("div.big-ic", "🎲"), h("h2", T("This invitation is not valid (any more)")),
+  h("p.muted", T("Ask the family for a new QR code.")), h("div.row.center", langPicker())));
+
+// the guest profile of this device: still valid? (null: expired, deleted or none)
+async function loadLobby() {
+  if (!Auth.kid) return null;
+  try {
+    const l = await api("guest/lobby" + (catalog ? "" : "?catalog=1"));      // the free avatar parts once (☰ › My avatar)
+    if (l.avatar_catalog) catalog = l.avatar_catalog;
+    return l;
   }
-  catalog = info.avatar_catalog || null;
-  if (me && Auth.kid) return play(me, info.game);
+  catch (e) {
+    if (e.status === 401 || e.status === 403) { Auth.kid = ""; saveMe(null); }
+    if (e.status === 401 || e.status === 403 || !me) return null;
+    return { on: true, tables: [], profile: me, offline: true };          // a network hiccup: keep the guest
+  }
+}
+
+async function start() {
+  let info = null;
+  if (CODE) { try { info = await api("community/guest/info?code=" + encodeURIComponent(CODE)); } catch {} }
+  if (info) catalog = info.avatar_catalog || null;
+  const l = await loadLobby();
+  if (l) {
+    saveMe({ ...me, ...l.profile });
+    if (info) {                                       // a new invitation with a guest profile: straight to that table
+      const t = l.tables.find(x => x.game === info.game);
+      if (t) return enter(t);
+    }
+    return lobby(l);
+  }
+  if (!info) return invalid();
   const look = avatarPicker();
   const name = h("input", { type: "text", maxlength: 20, autocomplete: "nickname", placeholder: I18N.tr(T("Your name")) });
   const go = async () => {
     if (!name.value.trim()) return name.focus();
     try {
       const r = await api("community/guest/join", { method: "POST", body: { code: CODE, name: name.value, avatar: look.value() } });
-      Auth.kid = r.token; me = r.profile;
-      sessionStorage.setItem("fq.guest.me", JSON.stringify(me)); sessionStorage.setItem("fq.guest.game", r.game);
+      Auth.kid = r.token; saveMe(r.profile);
+      history.replaceState(null, "", location.pathname);               // the code is used: a reload opens the lobby
       play(me, r.game);
     } catch (e) { toast(e.message, "bad"); }
   };
   name.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
   screen(h("section.card.center.guest-join",
     h("img", { src: "img/icon.svg", alt: "", width: 64, height: 64 }),
-    h("h1", { bingo: "🎱 Bingo", poker: "🃏 Texas Hold'em", tschau: "🂡 Tschau Sepp", karussell: "🎠 " + I18N.tr(T("Card Carousel")), song: "🎵 " + I18N.tr(T("Guess the song")), domino: "🁫 Domino", paarjagd: "🧠 " + I18N.tr(T("Pair Hunt")), werbinich: "🎭 " + I18N.tr(T("Who am I?")), kartenlauf: "🏁 " + I18N.tr(T("Card Race")), stadtland: "🏙️ " + I18N.tr(T("City, Country, River")), zeichnen: "🎨 " + I18N.tr(T("Draw & Guess")), wuerfel: "🎲 " + I18N.tr(T("Five Dice")), heimwaerts: "🏠 " + I18N.tr(T("Homeward")), jump: "🦘 Jump", sternlauf: "🌠 " + I18N.tr(T("Star Runner")), snack: "🍔 " + I18N.tr(T("Snack Rush")), verkehr: "🚦 " + I18N.tr(T("Traffic Cadet")), langstrecke: "🏎️ " + I18N.tr(T("24h Endurance")), klatsch: "👏 " + I18N.tr(T("Clap the Beat")), verboten: "🚫 " + I18N.tr(T("Forbidden Words")), jass: "♣️ " + I18N.tr(T("Jass")), werwolf: "🐺 " + I18N.tr(T("Werewolves")), schach: "♟️ " + I18N.tr(T("Chess")), dorfmarkt: "🏘️ " + I18N.tr(T("Village Market")), escape: "🗝️ " + I18N.tr(T("Escape Room")), stempeljagd: "🏛️ " + I18N.tr(T("Beat the Bureaucracy")) }[info.game] || "🎯 ", info.game === "quiz" ? C(info.title) : null),
+    h("h1", info.game === "quiz" ? ["🎯 ", C(info.title)] : (GAME_ICONS[info.game] || "🎯") + " " + I18N.tr(GAME_TITLES[info.game] || "")),
     h("p", T("You are invited to play along! What is your name?")),
     name, h("p.small.muted.guest-av-q", T("Pick your avatar:")), look.el, h("button.btn.big", { onclick: go }, "🙋 ", T("Join")),
     h("div.row.center", langPicker())));
   name.focus();
 }
 
+// «Join» in the lobby: sit down at that table (the guest token is the permission) and play
+async function enter(t) {
+  clearTimeout(lobbyTimer);
+  if (!t.joined) {
+    try { await api(t.join, { method: "POST" }); }
+    catch (e) { toast(e.message, "bad"); return lobby(); }
+  }
+  play(me, t.game);
+}
+
+// the lobby: the family tables open to join just now – polled, so a new table appears by itself
+async function lobby(first) {
+  clearTimeout(lobbyTimer);
+  window.FQ_GUEST_AVATAR = () => myAvatarDialog(null);
+  const list = h("div.guest-tables", { "aria-live": "polite" });
+  const note = h("p.small.muted.center");
+  let lastSig = "";
+  const draw = l => {
+    const sig = JSON.stringify([l.on, l.tables]);
+    if (sig === lastSig) return;
+    lastSig = sig;
+    note.textContent = l.on ? I18N.tr(T("New tables appear here by themselves.")) : I18N.tr(T("Guests are switched off right now."));
+    list.replaceChildren(...(l.tables.length ? l.tables.map(t => h("div.guest-table" + (t.joined ? ".mine" : ""),
+      h("span.guest-table-ic", { "aria-hidden": "true" }, t.icon || GAME_ICONS[t.game] || "🎲"),
+      h("div.grow", h("strong", t.game === "quiz" ? C(t.title) : I18N.tr(t.title)),
+        h("div.small.muted", C(t.host || "?"), " · ", I18N.tr(T("Players: {0}")).replace("{0}", t.players),
+          t.status === "lobby" ? "" : " · " + I18N.tr(T("Running")))),
+      h("button.btn" + (t.joined ? ".ghost" : ""), { onclick: () => enter(t) }, t.joined ? T("Back to the game") : ["▶ ", T("Join")])))
+      : [h("div.guest-empty.center", h("div.big-ic", "🕰️"), h("p", T("No table is open right now.")),
+        h("p.small.muted", T("As soon as somebody of the family opens a table, it appears here."))) ]));
+  };
+  const leave = async () => {
+    if (!await confirmDialog(T("Leave and delete your guest profile? To play again you need a new QR code."), { ok: T("Leave"), danger: true })) return;
+    try { await api("guest/me", { method: "DELETE" }); } catch {}
+    clearTimeout(lobbyTimer); Auth.kid = ""; saveMe(null);
+    screen(h("section.card.center", h("div.big-ic", "👋"), h("h2", T("Thanks for playing!")), h("p.muted", T("Your guest profile is deleted."))));
+  };
+  screen(h("section.card.guest-lobby",
+    h("div.row.guest-me", me ? avatarSvg(me.avatar || {}, 56) : null,
+      h("div.grow", h("div.small.muted", T("Guest")), h("h1", C(me ? me.name : ""))),
+      h("button.btn.small.ghost", { title: T("My avatar"), onclick: () => myAvatarDialog(null) }, "🧑‍🎨")),
+    h("h2", "🎲 ", T("Open tables")), list, note),
+    h("div.row.center.wrap.guest-foot", langPicker(), h("button.btn.small.ghost.bad", { onclick: leave }, "🚪 ", T("Leave"))));
+  const poll = async l => {
+    if (!document.querySelector(".guest-lobby")) return;               // a game took the screen meanwhile
+    l = l || await loadLobby();
+    if (!l) return invalid();
+    if (!l.offline) saveMe({ ...me, ...l.profile });
+    if (!document.querySelector(".guest-lobby")) return;
+    draw(l);
+    lobbyTimer = setTimeout(() => poll(), 3000);
+  };
+  poll(first);
+}
+
 function play(me, game) {
   window.FQ_GUEST_AVATAR = () => myAvatarDialog(game);                // ☰ › «My avatar» (shared/ui.js openGameMenu)
   const box = h("div" + ({ bingo: ".bingo-live", poker: ".poker-live", tschau: ".cards-live", karussell: ".cards-live", domino: ".dm-live", paarjagd: ".pj-live", werbinich: ".wb-live", kartenlauf: ".kl-live", stadtland: ".sl-live", zeichnen: ".zr-live", wuerfel: ".fw-live", heimwaerts: ".hw-live", jump: ".ju-live", sternlauf: ".sr-live", snack: ".sn-live", verkehr: ".vk-live", klatsch: ".kb-live", verboten: ".vw-live", jass: ".ja-live", werwolf: ".ww-live", schach: ".ch-live", dorfmarkt: ".mk-live", escape: ".er-live", stempeljagd: ".sj-live" }[game] || ".quiz-live"));
   screen(box);
-  const back = () => screen(h("section.card.center", h("div.big-ic", "👋"), h("h2", T("Thanks for playing!")),
-    h("button.btn", { onclick: () => location.reload() }, T("Back"))));
+  clearTimeout(lobbyTimer);
+  const back = () => lobby();                                           // after the game: back in the lobby
+  // a table closed before it started (the game view would wait for its start): back in the lobby by itself –
+  // a game that ran ends on its own result screen («Back» leads to the lobby)
+  let was = null;
+  const watch = async () => {
+    if (!box.isConnected) return;
+    const l = await loadLobby();
+    if (!box.isConnected) return;
+    if (!l) return invalid();
+    const t = l.tables.find(x => x.game === game && x.joined);
+    if (t) was = t.status;
+    else if (was === "lobby" && !l.offline) { toast(T("Game ended")); return lobby(l); }
+    lobbyTimer = setTimeout(watch, 4000);
+  };
+  lobbyTimer = setTimeout(watch, 1500);
   if (game === "tschau" || game === "karussell") return cardsLive(box, me, back, game);
   if (game === "domino") return dominoLive(box, me, back);
   if (game === "paarjagd") return paarjagdLive(box, me, back);

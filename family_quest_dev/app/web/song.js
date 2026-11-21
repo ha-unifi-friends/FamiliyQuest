@@ -14,6 +14,10 @@ function songRulesView(r) {
     h("li", I18N.tr(T("Songs at most")), ": ", String(r.max_songs))));
 }
 
+// «⏭ Nobody knows it» (skip the song, solution without points): for whoever leads while a song plays – the same
+// condition for the button in the game screen and the entry in ☰
+const songCanSkip = (st, leads) => !!(leads && st && st.status !== "done" && st.phase === "playing");
+
 async function songStartDialog(onStarted) {
   let d = { ha: false, players: [], rules: {} };
   try { d = await api("community/song/players"); } catch {}
@@ -79,7 +83,7 @@ function songLive(box, me, back) {
       invite: invite(),
       actions: [
         { ic: st.paused ? "▶" : "⏸", label: st.paused ? T("Go on") : T("Pause"), hidden: !leads || st.phase !== "playing", onclick: () => act("pause", { on: !st.paused }) },
-        { ic: "⏭", label: T("Nobody knows it"), hidden: !leads || st.phase !== "playing", onclick: () => act("next") },
+        { ic: "⏭", label: T("Nobody knows it"), hidden: !songCanSkip(st, leads), onclick: () => act("next") },
         { ic: "⏹", label: T("End the game"), danger: true, hidden: !leads, confirm: T("End the game?"), onclick: () => act("end") }],
       onLeave: () => { stop(); back(); } });
     const head = h("div.quiz-head", h("div.row.head-title", menu, h("h1", "🎵 ", T("Guess the song"))),
@@ -87,13 +91,14 @@ function songLive(box, me, back) {
     const scores = h("section.card", h("ol.scores", ...st.players.map((p, i) => h("li" + (p.id === me.id ? ".me" : ""),
       h("b", (i + 1) + "."), avatarSvg(p.avatar || {}, 28), C(p.name, "span.grow"), h("span", String(p.points))))),
       h("p.small.muted", I18N.tr(T("First to {0} points wins.")).replace("{0}", st.rules.target)));
-    // the main flow stays as buttons (start, volume, «go on» while paused, close the vote, next song) – the rest is in ☰
+    // the main flow stays as buttons (start, volume, «go on» while paused, «nobody knows it», close the vote, next song) – the rest is in ☰
     const lead = leads ? h("div.row.center.host-bar",
       st.phase === "lobby" ? h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start")) : null,
       st.phase !== "lobby" ? h("span.row.song-vol", h("button.btn.ghost.small", { title: T("Quieter"), onclick: () => act("volume", { step: -1 }) }, "🔉 −"),
         h("b.small", "🔊 ", st.volume != null ? st.volume + " %" : "–"),
         h("button.btn.ghost.small", { title: T("Louder"), onclick: () => act("volume", { step: 1 }) }, "🔊 +")) : null,
       st.phase === "playing" && st.paused ? h("button.btn.small", { onclick: () => act("pause", { on: false }) }, "▶ ", T("Go on")) : null,
+      songCanSkip(st, leads) ? h("button.btn.small.ghost.song-skip", { onclick: () => act("next") }, "⏭ ", T("Nobody knows it")) : null,
       st.phase === "reveal" ? h("button.btn.small", { onclick: () => act("decide") }, "⚖️ ", T("Close the vote")) : null,
       st.phase === "result" ? h("button.btn", { onclick: () => act("next") }, "⏭ ", T("Next song")) : null) : null;
     if (st.phase === "done") {
