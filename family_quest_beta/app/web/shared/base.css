@@ -2880,8 +2880,9 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-board::-webkit-scrollbar { display: none; }
 .le-chip { display: flex; align-items: center; gap: 3px; flex: none; padding: 1px 6px 1px 2px; border-radius: 999px; background: var(--card);
   box-shadow: var(--shadow); font-size: .75rem; white-space: nowrap; border-left: 4px solid var(--tc); font-variant-numeric: tabular-nums; }
-.le-chip.le-mine { outline: 2px solid var(--accent); }
-.le-rank { color: var(--muted); font-size: .75rem; }
+.le-chip.le-mine { outline: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--card)); font-weight: 700; }
+.le-rank { color: var(--text); font-size: .75rem; font-weight: 900; }
+.le-inpit { font-size: .7rem; }
 .le-num { font-weight: 800; background: var(--tc); color: #fff; border-radius: 6px; padding: 0 4px; }
 .le-flag { font-size: .95em; line-height: 1; }
 .le-cc { display: inline-block; padding: 0 3px; border-radius: 4px; border: 1px solid currentColor; font-size: .62rem; font-weight: 800; line-height: 1.3; letter-spacing: .02em; vertical-align: middle; opacity: .85; }
@@ -2961,7 +2962,16 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-shift { width: clamp(116px, 33vmin, 138px);
   display: flex; flex-direction: column; align-items: center; gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none;
   -webkit-touch-callout: none; cursor: grab; }
-.le-shift[hidden] { display: none; }
+.le-shift[hidden], .le-shiftrow[hidden] { display: none; }
+/* the shift paddles to the right of the shifter (manual only): ▲ + up, ▼ − down – simple F1-style paddles */
+.le-shiftrow { display: flex; align-items: flex-end; gap: 6px; }
+.le-paddles { display: flex; flex-direction: column; gap: 8px; padding-bottom: 4px; }
+.le-paddle { width: 46px; height: 50px; border: 0; padding: 0; color: #fff; font: 900 .85rem/1 var(--font); cursor: pointer; touch-action: none;
+  user-select: none; -webkit-user-select: none; background: linear-gradient(160deg, #495057, #15171c 70%); box-shadow: 0 3px 8px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .25); }
+.le-paddle.le-pup { border-radius: 18px 18px 6px 6px; }
+.le-paddle.le-pdown { border-radius: 6px 6px 18px 18px; }
+.le-paddle:active { transform: scale(.94); background: linear-gradient(160deg, #1c7ed6, #15171c 75%); }
+@media (max-width: 420px) { .le-shift { width: clamp(104px, 29vmin, 124px); } }
 .le-shift.le-son { cursor: grabbing; }
 .le-gearbig { min-width: 2.1em; padding: 0 8px; border-radius: 10px; background: rgba(15, 23, 42, .72); color: #fff; text-align: center;
   font: 900 1.7rem/1.2 var(--font); font-variant-numeric: tabular-nums; pointer-events: none; }
@@ -3007,11 +3017,15 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-ltbest b { color: var(--good-text); }
 /* a phone on its side: the picture gets the height, the joystick stays on its lower left corner */
 @media (orientation: landscape) and (max-height: 500px) {
-  .le-live.quiz-full.le-drv > .le-board { display: none; }
+  .le-live.quiz-full.le-drv > .le-board { min-height: 18px; }
+  .le-live.quiz-full.le-drv > .le-board .le-chip { font-size: .68rem; padding: 0 5px 0 2px; }
   .le-live.quiz-full.le-drv .le-wrap > .le-save { right: 50%; transform: translateX(50%); bottom: auto; top: 30px; }
   .le-live.quiz-full.le-drv > .le-times { display: none; }
   .le-live.quiz-full.le-drv .le-shift { width: auto; flex-direction: row; align-items: flex-end; gap: 6px; }
   .le-live.quiz-full.le-drv .le-plate { width: clamp(104px, 30vmin, 124px); }
+  .le-live.quiz-full.le-drv .le-gearzone { flex-direction: row; align-items: flex-end; }   /* A / M beside the shifter: clear of the minimap */
+  .le-live.quiz-full.le-drv .le-paddle { height: 44px; }
+  .le-live.quiz-full.le-drv .le-paddles { gap: 6px; padding-bottom: 0; }
 }
 /* the pit crew */
 .le-etarow { display: flex; align-items: center; gap: 6px; padding: 0 2px; }

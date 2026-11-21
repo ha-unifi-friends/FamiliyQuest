@@ -1642,11 +1642,36 @@ at least two cars (without bots: two teams of people).
   (headlights, a shorter view) and dawn** into the next afternoon. **Rain showers** (on by default): sudden showers of
   30–55 s every 1–2 minutes; everybody sees the forecast («Rain in ~20 s»). **Winner: the most laps** (then distance, then who reached the line first).
 - **Intro:** the drivers run to their cars, doors close, engines roar, five red lights → **GO!** (about 6 s).
-- **One short lap (about 30 s), then the car drives into the pits by itself – after every lap.** At every stop the
+- **One short lap (about 30 s), then the car drives into the pits – after every lap** (into the pit lane, see below). At every stop the
   **driver changes**: the next person of the team drives (in turn), the driver joins the crew. Two people take turns;
   alone (or when the whole crew is offline) the **garage** prepares: every stop takes a fixed **5 s** (+4 s after an
   overheat), tyres by the forecast – and the garage plugs the spare battery in only **8 s after the stop** (fair, not
   perfect: the spare is usually 80–100 % at the next stop).
+- **The pit lane – in on the right, every lap:** in the lap's last part (the main straight) the **pit lane branches off
+  to the right** of the track. Before it: blue **«PIT» boards with an arrow** (90 / 55 / 20 m before the entry), the HUD hint **«➡ Pit
+  lane – keep right»**, at the entry line the white **entry line** with a hatched gore and the **speed-limit sign
+  (100 km/h)**. The driver keeps right (right of 1.5 m from the middle) or steers right at the entry line and **steers
+  in by hand**; otherwise – or when still on the track 12 m before the pit wall – a **smooth autopilot** takes over
+  («🤖 Autopilot to the pits»): it steers right into the lane, lifts off and the limiter brings the car to the pit speed
+  (automatic gears meanwhile). **Nobody misses the pits** (the entry's inner white line closes in): every lap still ends
+  in the pits. From the entry line to the pit exit the **pit limiter** engages by itself – **100 km/h**, automatic and
+  manual gears alike (it brakes down to the limit and holds it; no full throttle, no heat; «🅿️ Pit limiter» on the
+  picture), **no penalty**. The joystick and the shifter keep working in the lane (between the **pit wall** and the
+  boxes). Behind the pit wall: the **boxes of all teams in their colours** (awning, number, the team's spot), **the crew
+  stands at its box** (my team: the crew's avatars, waving as the car rolls in). The car **rolls into its own box and
+  stops** – then the stop screen and the crew's jobs as before. After the stop the next driver drives out at the limit
+  to the **pit exit** (the end-of-limit sign) and the exit lane **merges back onto the track on its right side** with a
+  short solid white **pit-exit line** («Pit exit – stay to the right»). The **minimap** shows the pit lane (yellow) and
+  the cars in it. **Bots** (and the autopilot of a silent app) take the same entry: they keep right and steer in.
+  **Distance and timing (well-defined):** the pit lane runs beside the main straight, and **its metres are the lap's
+  metres of the straight beside it** – the position `d` keeps counting along the lap, never jumps. The **line crosses
+  the track and the pit lane**: a lap still ends at d = n·640 m, its time is taken at the moment of the crossing as
+  before (the lap time = line to line, so it includes the pit lane and the stop). Geometry: entry line at 580 m (60 m
+  before the line), the lane bends off over 30 m, the boxes from 10 m after the line every 6 m (team by team), the pit
+  exit at 60 m, the merge done at 75 m (before the first corner at 90 m). **No contact between the pit lane and the
+  track:** a car in the pit lane (from the entry line to the end of the merge) is not seen by the cars on the track and
+  sees none (no bump, no slipstream). The server runs the pit lane in the same step function as the app (phases: 0
+  racing, 1 entry up to the line, 2 to the box, 3 out to the exit and the merge).
 - **Driving – real racing on a circuit** (the general mechanics of the classic racing simulations; own circuit, own
   look, the view from behind the car): the car moves **freely across the track**, driven with **one virtual joystick**
   at the bottom left *inside* the picture (the picture takes the full height, no button bar): **up = gas, down =
@@ -1673,7 +1698,11 @@ at least two cars (without bots: two teams of people).
   R top left only) over the neutral rail. The right thumb drags the ball along the gate (it never leaves it) and it
   snaps in – its own finger, so it works together with the joystick under the left thumb; it shifts instantly and
   may rev up to the limiter. A click and a short tick on every gear (no tick with reduced motion). Keyboard: **1–6,
-  R, N / 0**; the mouse drags too. The HUD's **rev / shift light**: green, yellow, red at the limiter. **R** drives
+  R, N / 0**; the mouse drags too. **Shift paddles** (manual only) to the right of the shifter – simple F1-style
+  paddles, «▲ +» up and «▼ −» down (at least 44 px tall, stacked; on a narrow phone the shifter is a little smaller):
+  up N → 1 → … → 6 (6 stays), down 6 → … → 1 → N (N stays), **never R** (R stays on the shifter, with its gearbox
+  punishment at speed); the shifter's ball jumps to the matching gate, the same click and tick; keyboard **E** up,
+  **Q** down. They send the same gear input as the shifter. The HUD's **rev / shift light**: green, yellow, red at the limiter. **R** drives
   slowly backwards (gas 2.5 m/s, lifted creeps, the brake stops; never back over the line) – **only from a
   standstill** (below about 5 km/h): R while rolling forward **grinds the gearbox** – a stop much harder than the
   brake (22 m/s²), the engine heats 30 °/s and overheats like from the red zone (the spare engine at the stop);
@@ -1691,18 +1720,48 @@ at least two cars (without bots: two teams of people).
   (juniors always, everybody else in the first two laps).
 - **Other cars on track:** close behind another car on a straight the **slipstream** gives up to +3.5 m/s top speed
   (wind lines, «🌬️ Slipstream!») – pull out and overtake. Running into a car from behind is a **gentle bump**: you slow
-  to its speed and slide aside a little (no crash, never through it). No contact in the pit lane (the last / first
-  25 m of the lap).
+  to its speed and slide aside a little (no crash, never through it). No contact with the pit lane and none in
+  the last / first 25 m of the lap.
+- **The racing line on the road:** subtle yellow dashes along the line the assist and the bots follow (outside – apex –
+  outside through every corner, shrinking into the distance with the road); at the lap's end it bends over into the
+  pit lane and follows it to the exit. At night only in the headlight cone (faint), a little weaker on the wet road.
+  **〰️ Line** next to the 🧒 Assist button switches it off / on – on by default, remembered per driver on the device.
+  Purely visual.
 - **Driving assist 🧒** – per driver: on for everybody when the race is «Junior» (start dialog), and every driver can
   switch it for themselves in the lobby and while driving (the 🧒 Assist button; remembered for their next stints). The
-  car **brakes by itself before every corner** and the **steering helps towards the racing line** (a faint yellow line
+  car **brakes by itself before every corner** and the **steering helps towards the racing line** (the yellow line
   on the road); the driver's own steering wins. A junior who only holds the gas stays on the track all lap.
-- **Display:** P x/y, the lap, the race clock, the time left; the standings chips; speed, tyres, engine temperature,
+- **Display:** P x/y, the lap, the race clock, the time left; the **standings strip** at the top (always, in
+  landscape too): P1, P2 … with the flag, the car number in the team colour and the gap to the car ahead (seconds, or
+  laps; «Leader» for P1; 🅿️ in the pit lane) – mine highlighted and scrolled into view on narrow phones, updated live; speed, tyres, engine temperature,
   battery; **this lap's time, the team's best lap and the gap to the car ahead ▲ / behind ▼** (seconds, or laps); a
-  **minimap** of the circuit (top right) with every car as a dot in its colour. Full throttle heats the engine; in the
+  **minimap** of the circuit (top right) with the pit lane and every car as a dot in its colour. Full throttle heats the engine; in the
   **red it overheats**: the car limps to the pits and the engine is swapped there (no retirement). **Slicks in the
   rain** and **rain tyres in the dry** are slower on the straights; **rain lowers every corner's safe speed** (rain
   tyres × 0.85, slicks even more). **Night:** a shorter view and headlights.
+- **Notices on the picture:** one small one-line pill (about 12.5 px, semi-transparent, icon + 1–3 words) at the very
+  top of the picture, between the corner sign and the minimap (just under them when there is no room) – never over the
+  joystick or the shifter: «GO!», «🏁 Finish!», «⚠️ Emergency drive mode», «💥 Gearbox!», «💥 Engine overheated!», «🟫 Off
+  the track!», «🛑 Brake!», the pit lane hints, «🔋 Save energy!», «🔥 Let go!», «🌬️ Slipstream!». Only one at a time
+  (the most important wins); it stays while its condition lasts (off the track and the gearbox 1.5 s) and then fades.
+  The vibrations and the shaking are unchanged.
+- **Night – dark for real:** the sky nearly black (a few stars when dry), everything around the car very dark – the
+  track is visible almost only in the car's **own headlight cone** (a cone along the road fading with the distance);
+  just beyond it the edge reflectors and the kerbs glint a little, so the corner's shape stays readable; the braking
+  boards light up in the cone. The **other cars** are dark with dim red tail lights and their **own headlight cones**
+  on the road ahead of them (a car in front helps to see a little more). When a car ahead **brakes** (seen from its
+  deceleration), its brake lights flare bright red and the road reflects them (stronger when wet) – a warning close
+  behind. The **pit lane is lit by lamps**. Dusk and dawn blend smoothly. The HUD, the corner sign, the minimap, the
+  joystick, the shifter and the notices are never darkened. Drawn as one overlay layer (holes cut for the light, no
+  per-pixel work); no flicker (with reduced motion the camp fires do not flicker either).
+- **View distance and night rain:** the driver sees 150 m by day, 125 m in the rain, 70 m at night and only **40 m at
+  night in the rain** – the headlight cone short and scattered (rain haze, the spray of the cars ahead, blurred tail
+  lights, weaker glints). The **corner sign** (and the boards) come only that late (sign at 1.45 × the view, at most
+  220 m): at night in the rain about 58 m – enough to brake at about 105 km/h with a second to react, not at full
+  speed: **drive slower**. The assist still brakes in time (it knows the corners). **Bots** slow down with the view
+  (their corner speed × 0.72 + 0.28 × view/150 m; at night in the rain they also lift off on the straights), so the
+  race stays fair. Purely visual for people; the bots' caution is on the server (`view_dist`, `bot_caution`; the app's
+  `leView` gives the same numbers).
 - **Phones:** portrait 390 × 740 without scrolling; on its side (landscape) the picture takes the height and the
   joystick stays on its lower left corner (safe-area aware). Reduced motion: no shaking, rumble, dust, wind lines or moving rain.
 - **Electric car – the battery 🔋:** the battery (0–100 %) drains by the metre, **much faster at full throttle** (0.16 %
@@ -1717,6 +1776,14 @@ at least two cars (without bots: two teams of people).
   about a lap) from the moment the crew plugged it in – computed on the server from its own timestamps (plug-in time,
   swap time), never from a number the app sends. Plugged in late (other jobs first) → not full at the next stop → the
   next driver has to drive slower. The driver's screen shows «spare 🔋 63 % ⚡» rising.
+- **«Pit crew: players / bots»** (start dialog; stored with the race rules, remembered, shown in the lobby): **players**
+  (the default at a family table) works as described below; **bots** – an automatic crew does the stop for every team:
+  it plugs the used battery in 1 s after the stop (full again at the next stop), lays out the tyres and picks them by
+  the forecast, prepares the spare engine after an overheat – a normal, well-prepared stop of **3.5 s** (+2 s engine),
+  not perfect (a perfect human crew does 3 s), the same for every team, decided on the server without chance. The
+  people without the car then only drive their stints and watch («👀 Watching»); bot-crew stops are no pit records.
+  Alone (solo) the dialog suggests **bots** (otherwise the garage: 5 s and a late plug-in) – a single driver has
+  nobody to do the jobs; at a family table it suggests the last choice (first time: players).
 - **Pit crew** (everybody else of the team) – during the lap on their phones: **🔌 charge the spare battery** (tap
   «Plug in» – first!; the charge rises on every crew phone, a cable animates while it charges), **🛞 lay out 4 tyres**
   (choose ☀️ slicks or 🌧️ rain tyres, tap the 4 spots) and, only after an overheat, **🔧 prepare the spare engine**
