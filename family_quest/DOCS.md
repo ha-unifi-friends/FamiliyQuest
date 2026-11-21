@@ -1026,6 +1026,13 @@ absolute majority of everybody who may judge (all players but who buzzed): «rig
 closes it early with the votes there are (majority of those).
 **⏭ Nobody knows it** shows the solution without points: a button in the leader's game screen while a song plays
 (also while paused), and still in ☰. Guests can join with the QR code.
+**🏳️ Pass**: while a song plays and nobody has buzzed, every player – guests and a leader who plays along too – can
+give up on the song; tapping again («↩ Take the pass back») takes it back. The players' list shows 🏳️ «Passed» next
+to them, and under the button «2 of 3 have passed». Once **every active player** has passed, the song ends like
+«Nobody knows it»: the solution, no points, the leader starts the next song. Active means at the table: the
+player's app asked for the game in the last 15 seconds – a closed or disconnected device does not block it (if it
+drops out while all others have passed, the next poll resolves the song). A pass does not block the buzzer: who
+passed can still buzz, and buzzing clears the own pass. The passes start empty with every song.
 The game leader turns the speaker up or down (🔉 − / 🔊 +, 5 % each). After a buzz a **countdown** (setting, default
 5 s) runs before «Show the solution» can be tapped – first the answer, then the solution.
 

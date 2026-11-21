@@ -266,3 +266,118 @@ def test_nobody_knows_button_for_the_leader_while_a_song_plays():
     out = subprocess.run([node, "-e", src], capture_output=True, text=True, timeout=30)
     assert out.returncode == 0, out.stderr
     assert _j.loads(out.stdout) == [c[2] for c in cases]
+
+
+# ---------------------------------------------------------------- «🏳️ Pass»: give up on a song
+def _pass_game(client):
+    """Mia leads and plays, Leo plays along – the first song plays. → (headers Mia, headers Leo, mia, leo, speaker)."""
+    ph, mia, leo = setup_family(client)
+    hm = {"X-FQ-Token": client.post("/api/login", json={"profile_id": mia, "pin": "1111"}).json()["token"]}
+    hl = {"X-FQ-Token": client.post("/api/login", json={"profile_id": leo}).json()["token"]}
+    spk = FakeSpeaker()
+    client.app.state.fq.ha = spk
+    client.post("/api/community/song/start", json={"player": "media_player.x", "reveal_delay": 0, "reveal_by": "all"}, headers=hm)
+    client.post("/api/community/song/join", headers=hl)
+    assert client.post("/api/community/song/begin", headers=hm).json()["phase"] == "playing"
+    return hm, hl, mia, leo, spk
+
+
+def _passed(st):
+    return {p["id"] for p in st["players"] if p["passed"]}
+
+
+def test_pass_all_players_skip_the_song(client):
+    hm, hl, mia, leo, spk = _pass_game(client)
+    st = client.post("/api/community/song/pass", json={"on": True}, headers=hm).json()
+    assert st["phase"] == "playing" and st["my_pass"] and _passed(st) == {mia} and st["passes"] == 1 and st["active"] == 2
+    st = client.get("/api/community/song", headers=hl).json()          # Leo sees Mia's pass, not his own
+    assert not st["my_pass"] and _passed(st) == {mia}
+    st = client.post("/api/community/song/pass", json={"on": True}, headers=hl).json()
+    assert st["phase"] == "result" and st["skipped"] and st["solution"]["title"] == "Bohemian Rhapsody" and st["verdict"] is None
+    assert all(p["points"] == 0 for p in st["players"]) and spk.calls[-1] == "pause"
+    # the next song: the passes start empty
+    st = client.post("/api/community/song/next", headers=hm).json()
+    assert st["phase"] == "playing" and st["song"] == 2 and not st["skipped"] and _passed(st) == set() and not st["my_pass"]
+    client.app.state.fq.ha = None
+
+
+def test_pass_partial_toggle_and_validation(client):
+    hm, hl, mia, leo, spk = _pass_game(client)
+    client.post("/api/community/song/pass", headers=hm)                 # no body: toggles on
+    st = client.get("/api/community/song", headers=hm).json()
+    assert st["phase"] == "playing" and _passed(st) == {mia}            # Leo has not passed: the song goes on
+    st = client.post("/api/community/song/pass", headers=hm).json()      # toggles off again
+    assert not st["my_pass"] and _passed(st) == set()
+    st = client.post("/api/community/song/pass", json={"on": False}, headers=hm).json()   # off stays off
+    assert _passed(st) == set()
+    st = client.post("/api/community/song/pass", json={"on": True}, headers=hl).json()
+    assert st["phase"] == "playing" and _passed(st) == {leo}
+    assert client.post("/api/community/song/pass", json={"on": "yes"}, headers=hm).status_code == 422
+    # only players while a song plays
+    client.post("/api/community/song/buzz", headers=hm)
+    assert client.post("/api/community/song/pass", json={"on": True}, headers=hl).status_code == 400   # somebody buzzed
+    client.app.state.fq.ha = None
+
+
+def test_pass_does_not_block_the_buzzer_and_buzzing_clears_it(client):
+    hm, hl, mia, leo, spk = _pass_game(client)
+    client.post("/api/community/song/pass", json={"on": True}, headers=hl)
+    st = client.post("/api/community/song/buzz", headers=hl).json()      # Leo passed and still buzzes
+    assert st["phase"] == "buzzed" and st["buzzer"] == leo
+    fq = client.app.state.fq
+    import json as _j
+    assert _j.loads(fq.songs._row()["state"])["passes"] == []
+    client.app.state.fq.ha = None
+
+
+def test_a_player_who_left_does_not_block(client):
+    import time
+    hm, hl, mia, leo, spk = _pass_game(client)
+    fq = client.app.state.fq
+    client.post("/api/community/song/pass", json={"on": True}, headers=hm)
+    assert client.get("/api/community/song", headers=hm).json()["phase"] == "playing"
+    fq.songs._seen[str(leo)] = time.monotonic() - 60                    # Leo's app went silent
+    st = client.get("/api/community/song", headers=hm).json()            # the next poll resolves the song
+    assert st["phase"] == "result" and st["skipped"] and all(p["points"] == 0 for p in st["players"])
+    # Leo is back: he does not change the result
+    assert client.get("/api/community/song", headers=hl).json()["phase"] == "result"
+    fq.ha = None
+
+
+def test_a_guest_can_pass(client):
+    hm, hl, mia, leo, spk = _pass_game(client)
+    code = client.post("/api/community/guests", json={"game": "song"}, headers=hm).json()["invite"]["code"]
+    r = client.post("/api/community/guest/join", json={"code": code, "name": "Oma"})
+    assert r.status_code == 200, r.text
+    hg, gid = {"X-FQ-Token": r.json()["token"]}, r.json()["profile"]["id"]
+    st = client.get("/api/community/song", headers=hg).json()
+    assert st["joined"] and st["phase"] == "playing"
+    client.post("/api/community/song/pass", json={"on": True}, headers=hm)
+    client.post("/api/community/song/pass", json={"on": True}, headers=hl)
+    st = client.get("/api/community/song", headers=hg).json()
+    assert st["phase"] == "playing" and _passed(st) == {mia, leo}        # the guest is at the table and has not passed
+    st = client.post("/api/community/song/pass", json={"on": True}, headers=hg).json()
+    assert st["phase"] == "result" and st["skipped"]
+    client.app.state.fq.ha = None
+
+
+def test_pass_button_for_every_player_while_a_song_plays():
+    """«🏳️ Pass» shows for everybody who plays (not only the leader) while a song plays."""
+    import json as _j
+    import shutil
+    import subprocess
+    from pathlib import Path
+    js = (Path(__file__).resolve().parent.parent / "family_quest" / "app" / "web" / "song.js").read_text(encoding="utf-8")
+    assert 'act("pass", { on: !st.my_pass })' in js
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    start = js.index("const songCanPass")
+    fn = js[start:js.index("\n", start)]
+    cases = [({"phase": "playing", "status": "running", "joined": True}, True), ({"phase": "playing", "status": "running", "joined": False}, False),
+             ({"phase": "lobby", "status": "lobby", "joined": True}, False), ({"phase": "buzzed", "status": "running", "joined": True}, False),
+             ({"phase": "result", "status": "running", "joined": True}, False), ({"phase": "done", "status": "done", "joined": True}, False)]
+    src = fn + "\nconst cases = " + _j.dumps(cases) + ";\nconsole.log(JSON.stringify(cases.map(([st]) => songCanPass(st))));"
+    out = subprocess.run([node, "-e", src], capture_output=True, text=True, timeout=30)
+    assert out.returncode == 0, out.stderr
+    assert _j.loads(out.stdout) == [c[1] for c in cases]

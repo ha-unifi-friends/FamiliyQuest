@@ -3346,7 +3346,10 @@ def song_players(request: Request, prof: dict = Gamer) -> dict:
 
 @router.get("/song")
 def song_state(request: Request, prof: dict = Playing) -> dict | None:
-    return app_of(request).songs.state(prof["id"])
+    fq = app_of(request)
+    fq.songs.mark_seen(prof["id"])              # at the table (memory only)
+    fq.songs.check_passes()                     # a player left and all others passed: the song is resolved
+    return fq.songs.state(prof["id"])
 
 
 @router.post("/song/start")
@@ -3365,10 +3368,15 @@ def song_join(request: Request, prof: dict = Playing) -> dict | None:
 
 @router.post("/song/{action}")
 def song_lead(action: str, request: Request, body: dict = Body(default={}), prof: dict = Playing) -> dict | None:
-    """Leader: begin, next, pause, end, decide · players: buzz, reveal (who buzzed), vote."""
+    """Leader: begin, next, pause, end, decide · players: buzz, pass (give up on the song), reveal (who buzzed), vote."""
     fq = app_of(request)
     if action == "buzz":
         _run(fq.songs.buzz, prof["id"])
+    elif action == "pass":
+        on = body.get("on")
+        if on is not None and not isinstance(on, bool):
+            raise HTTPException(422, "on: true, false or nothing")
+        _run(fq.songs.pass_song, prof["id"], on)
     elif action == "reveal":
         _run(fq.songs.reveal, prof)
     elif action == "vote":

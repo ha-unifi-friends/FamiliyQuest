@@ -607,6 +607,9 @@ nav.bottom button.on { color: var(--accent); background: var(--hover); }
 .offline-opts:empty { display: none; }
 .song-vol { gap: 4px; align-items: center; }
 .song-count { font-size: 2rem; font-weight: 800; color: var(--accent); margin: 6px 0; }
+.song-pass { gap: 8px; align-items: center; margin: 2px 0 8px; }
+.scores li.song-passed > .grow { opacity: .6; }
+.song-pass-tag { font-size: .8rem; font-weight: 700; color: var(--muted); background: var(--hover); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
 .wichtel-secret { margin-top: 6px; } .wichtel-secret .row { gap: 10px; align-items: center; }
 .wichtel-name { font-size: 1.3rem; }
 .wichtel-field { display: grid; gap: 6px; margin: 4px 0; }
