@@ -209,5 +209,15 @@ Family Quest is a non-commercial hobby project, made for private use in families
 and no tracking, and is not affiliated with any of the products or brands mentioned. If it helps your family,
 you can buy us a coffee on [Ko-fi](https://ko-fi.com/haunififriends) ☕ – thank you!
 
-MIT – see [LICENSE](LICENSE). Parts by others (Family Planer, Material Design Icons, QR code generator)
-are listed with their licenses in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+From version 1.2.2 on, Family Quest is published under the **Business Source License 1.1** – see
+[LICENSE](LICENSE):
+
+- **Free for families:** use it at home, run it on your own Home Assistant or server, change it – also non-profit
+  organisations may use it internally without charging for it.
+- **Not allowed without a commercial license:** offering it to others as a hosted service or app (paid or free),
+  selling it, or using it otherwise for commercial purposes.
+- **Becomes open source:** every version turns into Mozilla Public License 2.0 four years after its release.
+- Versions up to 1.2.1 stay under the MIT License they were published with.
+
+Parts by others (Family Planer, Material Design Icons, QR code generator …) keep their own licenses – see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Contributions: see [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2 (in preparation)
+
+- **License:** from this version on Family Quest is published under the Business Source License 1.1 – free for
+  families and other non-commercial use (also on your own Home Assistant or server), commercial use and hosting for
+  others only with a separate license; every version becomes open source (MPL 2.0) four years after its release.
+  Versions up to 1.2.1 stay MIT. Nothing changes for families.
+
 ## 1.2.1
 
 Version 1.2.1 – everything that was tested in the betas 1.2.1-beta.1 … 3.
