@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-beta.8
+
+- 24h race: trackside banners show only Family Quest and Snowman Tyres
+
 ## 1.2.2-beta.7
 
 - 24h race: calmer driving screen - top-centre speedometer with battery, position card (leader, car ahead/behind), controls only appear when usable
