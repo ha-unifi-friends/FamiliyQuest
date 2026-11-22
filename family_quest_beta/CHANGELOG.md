@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2-beta.10
+
+- 24h race: headlights shine straight ahead only (no cornering light)
+- 24h race: the finish is on the track beside the pits - after the clock runs out every car takes the chequered flag on its next lap, waved by a marshal
+- 24h race: whoever leads the table sets number and country of every team, bot teams included (also in the solo start dialog)
+- 24h race: fix - the sound now plays from the start, not only after the first pit stop
+
 ## 1.2.2-beta.9
 
 - 24h race: at the pit stop tap everything at once - battery (4 s) and tyres (1 s each) run in parallel, about 4 s done well; engine after an overheat 7 s; bots stop in 4.6-5.2 s
