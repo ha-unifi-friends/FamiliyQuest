@@ -3051,7 +3051,6 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-teng { left: 50%; top: 17%; width: 58px; height: 58px; }
 .le-t0 { left: 13%; top: 19%; } .le-t1 { left: 87%; top: 19%; } .le-t2 { left: 13%; top: 81%; } .le-t3 { left: 87%; top: 81%; }
 .le-tgt[data-s="tap"] { animation: le-pulse .7s ease-in-out infinite alternate; }
-.le-tgt[data-s="lock"] { filter: grayscale(1); opacity: .45; box-shadow: 0 2px 5px rgba(0, 0, 0, .2), inset 0 0 0 3px var(--le-track); }
 .le-tgt[data-s="wait"] { box-shadow: 0 3px 8px rgba(0, 0, 0, .28), inset 0 0 0 3px #f08c00; }
 .le-tgt[data-s="run"] { box-shadow: 0 3px 8px rgba(0, 0, 0, .28); }
 .le-tgt[data-s="ok"] { box-shadow: 0 3px 8px rgba(0, 0, 0, .28), inset 0 0 0 3px var(--good, #2f9e44); --p: 100%; }
@@ -3060,10 +3059,7 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-stopview .le-tgt { animation: none; }
 .le-stopside { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 170px; }
 .le-stophint { padding: 3px 10px; border-radius: 999px; background: var(--le-track); font-weight: 800; font-size: .85rem; text-align: center; }
-.le-stophint.le-lockhint { background: #fff3bf; color: #7a4b00; }
 .le-stophint.le-ok { background: var(--good, #2f9e44); color: #fff; }
-.le-stophint.le-bad { animation: le-shake2 .35s ease-in-out 2; }
-@keyframes le-shake2 { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @media (orientation: landscape) and (max-height: 500px) {
   .le-stoppad { width: 280px; height: 210px; }
   .le-stopcar { width: 84px; height: 170px; }
@@ -3124,7 +3120,7 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-rank-list li.le-me { font-weight: 800; }
 .le-swatch { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 24px; border-radius: 6px; color: #fff; font-weight: 800; font-size: .8rem; }
 @media (prefers-reduced-motion: reduce) {
-  .le-left.le-final, .le-crowd.cheer span, .le-bottle, .le-bubbly i, .le-segcolon, .le-tgt[data-s="tap"], .le-stophint.le-bad { animation: none; }
+  .le-left.le-final, .le-crowd.cheer span, .le-bottle, .le-bubbly i, .le-segcolon, .le-tgt[data-s="tap"] { animation: none; }
 }
 
 /* «Beat the Bureaucracy» (stempeljagd.js) – one screen on a phone: the teams, the town hall as a cross-section (roof

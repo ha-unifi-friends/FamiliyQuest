@@ -1019,57 +1019,82 @@ def test_without_taps_the_stop_takes_10_s_the_new_battery_is_full(monkeypatch):
     assert tm["best_pit"] is None                                       # a stop without taps is no record
 
 
-def test_battery_then_four_tyres_at_once_is_about_8_s_double_and_early_taps_do_not_count(monkeypatch):
+def test_everything_tapped_at_once_is_about_4_s_double_taps_do_not_count(monkeypatch):
     straight(monkeypatch)
     t, clock = table(humans=(("1", 0),), bots=1)
     tm = mine(t)
     stp = stop_now(t, clock, tm, 3)
     t0 = stp["t"]
-    assert tap(t, clock, t0 + 0.05, "battery")["ok"]
-    assert tap(t, clock, t0 + 0.5, "battery")["again"]                  # a double tap does not count
-    assert tap(t, clock, t0 + 2.0, "tyre", 0) == {"ok": False, "battery_first": True}   # before the battery is done: ignored
-    assert stp["jobs"]["tyres"] == [None] * 4
+    assert tap(t, clock, t0 + 0.02, "battery")["ok"]
+    assert tap(t, clock, t0 + 0.1, "battery")["again"]                  # a double tap does not count
+    assert stp["jobs"]["bat"] == pytest.approx(t0 + 0.02, abs=0.011)
     with pytest.raises(CommunityError):
-        tap(t, clock, t0 + 4.1, "engine")                               # no overheat: no engine job
-    for k in (2, 0, 3, 1):                                              # right after the battery: queued one after the other
-        tap(t, clock, t0 + 4.1, "tyre", k)
-    assert tap(t, clock, t0 + 4.2, "tyre", 3)["again"]
-    assert stp["jobs"]["tyres"][2] == pytest.approx(t0 + 5.1) and stp["jobs"]["tyres"][1] == pytest.approx(t0 + 8.1)
-    assert stp["done"] and stp["time"] == pytest.approx(8.1) and stp["end"] == pytest.approx(t0 + 8.1)
-    clock.t = t.st["t0"] + t0 + 8.15
+        tap(t, clock, t0 + 0.1, "engine")                               # no overheat: no engine job
+    for k, dt in zip((2, 0, 3, 1), (0.1, 0.12, 0.15, 0.2)):            # the tyres right away, beside the battery
+        assert tap(t, clock, t0 + dt, "tyre", k)["done"] == pytest.approx(t0 + dt + ls.STOP_TYRE, abs=0.011)
+    assert tap(t, clock, t0 + 0.3, "tyre", 3)["again"]
+    assert stp["jobs"]["tyres"][2] == pytest.approx(t0 + 1.1, abs=0.011) and stp["jobs"]["tyres"][1] == pytest.approx(t0 + 1.2, abs=0.011)
+    assert stp["done"] and stp["time"] == pytest.approx(4.0, abs=0.011) and stp["end"] == pytest.approx(t0 + 4.02, abs=0.011)   # the battery is the last
+    clock.t = t.st["t0"] + t0 + 4.1
     assert t.tap("1", "tyre", 0) == {"ok": False, "over": True}         # the stop is over (the car not out yet)
-    at(t, clock, t0 + 8.3)
-    assert not tm["car"]["pit"] and tm["best_pit"] == pytest.approx(8.1)
+    at(t, clock, t0 + 4.3)
+    assert not tm["car"]["pit"] and tm["best_pit"] == pytest.approx(4.0, abs=0.011)
     with pytest.raises(CommunityError):
-        tap(t, clock, t0 + 9.0, "tyre", 0)                              # the car is out again: no stop to tap at
+        tap(t, clock, t0 + 5.0, "tyre", 0)                              # the car is out again: no stop to tap at
     with pytest.raises(CommunityError):
-        tap(t, clock, t0 + 9.0, "tyre", 7)
+        tap(t, clock, t0 + 5.0, "tyre", 7)
 
 
-def test_slow_taps_are_capped_at_10_s_an_overheat_adds_the_engine_and_its_time(monkeypatch):
+def test_a_tyre_before_the_battery_counts_the_last_job_ends_the_stop(monkeypatch):
+    straight(monkeypatch)
+    t, clock = table(humans=(("1", 0),), bots=1)
+    tm = mine(t)
+    stp = stop_now(t, clock, tm, 3)
+    t0 = stp["t"]
+    for k in range(4):
+        assert tap(t, clock, t0 + 0.2 + 0.1 * k, "tyre", k)["ok"]       # the tyres first: they count
+    assert not stp["done"] and stp["jobs"]["tyres"][3] == pytest.approx(t0 + 1.5, abs=0.011)
+    assert tap(t, clock, t0 + 1.0, "battery")["done"] == pytest.approx(t0 + 5.0, abs=0.011)
+    assert stp["done"] and stp["time"] == pytest.approx(5.0, abs=0.011)            # the battery is done last
+    at(t, clock, t0 + 6)
+    tm["car"]["eng"] = 0
+    stp = stop_now(t, clock, tm, t0 + 40)
+    t0 = stp["t"]
+    tap(t, clock, t0 + 0.2, "battery")
+    for k in range(3):
+        tap(t, clock, t0 + 0.3, "tyre", k)
+    tap(t, clock, t0 + 6.0, "tyre", 3)                                  # one tyre late: done at 7.0 s
+    assert stp["done"] and stp["time"] == pytest.approx(7.0, abs=0.011)
+
+
+def test_slow_taps_are_capped_at_10_s_an_overheat_adds_the_engine_in_parallel(monkeypatch):
     straight(monkeypatch)
     t, clock = table(humans=(("1", 0),), bots=1)
     tm = mine(t)
     stp = stop_now(t, clock, tm, 3)
     t0 = stp["t"]
     tap(t, clock, t0 + 2.0, "battery")
-    for k, dt in enumerate((6.5, 7.5, 8.5, 9.2)):
+    for k, dt in enumerate((6.5, 7.5, 8.5, 9.5)):
         tap(t, clock, t0 + dt, "tyre", k)
-    assert stp["time"] == 10.0 and stp["end"] == pytest.approx(t0 + 10.0)
+    assert stp["time"] == 10.0 and stp["end"] == pytest.approx(t0 + 10.0, abs=0.011)
     at(t, clock, t0 + 10.5)
-    tm["car"]["eng"] = 1                                                 # an overheat: «Engine» too, the cap + STOP_ENG
+    tm["car"]["eng"] = 1                                                 # an overheat: «Engine» too, the cap + ENG_EXTRA
     stp = stop_now(t, clock, tm, t0 + 40)
     t0 = stp["t"]
-    assert stp["eng"] and stp["time"] == ls.STOP_MAX + ls.STOP_ENG == 15.0
-    assert tap(t, clock, t0 + 1, "engine") == {"ok": False, "battery_first": True}
-    tap(t, clock, t0 + 0.1, "battery")
+    assert stp["eng"] and stp["time"] == ls.STOP_MAX + ls.ENG_EXTRA == 13.0
+    assert tap(t, clock, t0 + 0.1, "engine")["done"] == pytest.approx(t0 + 0.1 + ls.STOP_ENG, abs=0.011)   # first, no order
+    tap(t, clock, t0 + 0.15, "battery")
     for k in range(4):
-        tap(t, clock, t0 + 4.2, "tyre", k)
-    assert not stp["done"]                                               # the engine is still missing
-    tap(t, clock, t0 + 4.3, "engine")
-    assert stp["done"] and stp["time"] == pytest.approx(4.2 + 4 * ls.STOP_TYRE + ls.STOP_ENG)
+        tap(t, clock, t0 + 0.2, "tyre", k)
+    assert stp["done"] and stp["time"] == pytest.approx(7.1, abs=0.011)            # the engine is the last
     at(t, clock, stp["end"] + 0.5)
     assert tm["car"]["eng"] == 0 and not tm["car"]["pit"]
+    tm["car"]["eng"] = 1
+    stp = stop_now(t, clock, tm, stp["end"] + 40)                       # an overheat, no taps: 13 s
+    at(t, clock, stp["t"] + 12.8)
+    assert tm["car"]["pit"]
+    at(t, clock, stp["t"] + 13.5)
+    assert not tm["car"]["pit"] and tm["pits"][-1]["time"] == 13.0 and tm["car"]["eng"] == 0
 
 
 def test_the_next_driver_does_the_stop_the_one_who_came_in_watches(monkeypatch):
@@ -1084,7 +1109,8 @@ def test_the_next_driver_does_the_stop_the_one_who_came_in_watches(monkeypatch):
     assert tap(t, clock, stp["t"] + 0.2, "battery", pid="2")["ok"]
     assert tap(t, clock, stp["t"] + 1, "slicks", pid="2")["tyre"] == "s"
     for k in range(4):
-        tap(t, clock, stp["t"] + 4.3, "tyre", k, pid="2")
+        tap(t, clock, stp["t"] + 0.3, "tyre", k, pid="2")
+    assert stp["done"] and stp["time"] == 4.2                           # tapped 0.2 s in: about 4.2 s
     at(t, clock, stp["end"] + 0.5)
     assert tm["driver"] == "2" and tm["car"]["tyre"] == "s" and tm["pits"][-1]["by"] == "2" and tm["pits"][-1]["driver"] == "1"
 
@@ -1095,13 +1121,14 @@ def test_bot_teams_stop_in_a_fair_fixed_time(monkeypatch):
         t, clock = table(humans=(("1", 0),), bots=1, level=level)
         bot = next(x for x in t.st["teams"] if x["bot"])
         stp = stop_now(t, clock, bot, 3)
-        assert stp["jobs"] is None and stp["time"] == ls.BOT_STOP[level] and 8.5 <= stp["time"] <= 9.0 and stp["bat_in"] == 100.0
+        assert stp["jobs"] is None and stp["time"] == ls.BOT_STOP[level] and 4.5 <= stp["time"] <= 5.5 and stp["bat_in"] == 100.0
         with pytest.raises(CommunityError):
             t.tap("1", "battery")                                        # not my stop
         at(t, clock, stp["end"] + 1, seen=False)
         bot["car"]["eng"] = 1
         stp = stop_now(t, clock, bot, stp["end"] + 40)
-        assert stp["time"] == pytest.approx(ls.BOT_STOP[level] + ls.STOP_ENG)
+        assert stp["time"] == pytest.approx(ls.BOT_STOP[level] + ls.ENG_EXTRA)
+    assert ls.BOT_STOP == {"easy": 5.2, "normal": 4.9, "hard": 4.6}         # a little slower than a stop tapped at once (4.2 s)
 
 def test_bots_save_energy_when_low(monkeypatch):
     straight(monkeypatch)
@@ -1165,7 +1192,6 @@ def test_driver_rotation_for_one_two_and_three_people(monkeypatch):
     t.st["rain"] = [[10.0, 60.0]]
     stp = stop_now(t, clock, tm, 3)
     assert stp["next"] == "1" and stp["time"] == ls.STOP_MAX == 10.0 and not stp["change"] and stp["tyre"] == "s"
-    assert t.tap("1", "tyre", 0) == {"ok": False, "battery_first": True}
     at(t, clock, stp["end"] + 0.5)
     assert tm["driver"] == "1" and tm["best_pit"] is None                  # a stop without taps is no record
 
@@ -1251,8 +1277,8 @@ def test_family_table_teams_race_coins_once_history_and_records(client):
     client.get("/api/community/langstrecke", headers=hm)
     assert fq.rewards.balance(mia, "coins") == before
     assert fq.db.val("SELECT COUNT(*) FROM ledger WHERE ref LIKE ?", f"langstrecke:{st['game']}:%") == 2
-    hist = fq.community.history(mia)
-    assert hist[0]["kind"] == "langstrecke" and hist[0]["data"]["laps"] >= 6 and hist[0]["data"]["team"] == "Comet Racing"
+    hist = fq.community.history(mia)                                     # silent apps: every stop 10 s, the rain at random – 5 or 6 laps
+    assert hist[0]["kind"] == "langstrecke" and hist[0]["data"]["laps"] >= 5 and hist[0]["data"]["team"] == "Comet Racing"
     assert hist[0]["data"]["players"] == 3 and hist[0]["data"]["record"] and hist[0]["data"]["drives"] >= 1 and hist[0]["data"]["stops"] >= 5
     best = fq.db.get_setting("langstrecke_best")
     assert best[str(mia)] == hist[0]["data"]["laps"] and str(leo) in best
@@ -1289,21 +1315,21 @@ def test_pit_records_from_the_next_drivers_taps(client):
     clock.t = st["t0"] + stp["t"] + 0.1
     r = client.post("/api/community/langstrecke/tap", json={"action": "battery"}, headers=hl).json()
     assert r["ok"] and r["state"]["teams"][0]["stop"]["jobs"]["bat"] == pytest.approx(stp["t"] + 0.1, abs=0.01)
-    clock.t += 4.0
-    for k in range(4):
+    clock.t += 0.1
+    for k in range(4):                                                     # the tyres right away: beside the battery
         assert client.post("/api/community/langstrecke/tap", json={"action": "tyre", "spot": k}, headers=hl).json()["ok"]
     v = client.get("/api/community/langstrecke", headers=hm).json()       # Mia watches the stop live: Leo's taps
-    assert v["teams"][0]["stop"]["done"] and v["teams"][0]["stop"]["time"] == 8.1
+    assert v["teams"][0]["stop"]["done"] and v["teams"][0]["stop"]["time"] == 4.1
     clock.t += 6.0
     client.post("/api/community/langstrecke/sync", json={"inputs": []}, headers=hl)
     v = client.post("/api/community/langstrecke/sync", json={"inputs": []}, headers=hm).json()
-    assert v["teams"][0]["pits"][0]["time"] == 8.1 and v["teams"][0]["driver"] == str(leo)
+    assert v["teams"][0]["pits"][0]["time"] == 4.1 and v["teams"][0]["driver"] == str(leo)
     clock.t = st["t0"] + 320
     client.get("/api/community/langstrecke", headers=hm)
-    assert fq.db.get_setting("langstrecke_pit")[str(mia)] == 81
+    assert fq.db.get_setting("langstrecke_pit")[str(mia)] == 41
     from familyquest import facts
     gens = {c["gen"]: c for c in facts.Facts(fq).candidates()}
-    assert gens["record_pit"]["right"] == "8.1 s"
+    assert gens["record_pit"]["right"] == "4.1 s"
 
 
 def _app_js(code: str, data) -> object:
@@ -1397,19 +1423,25 @@ def test_the_position_card_lines_for_leader_last_and_lapped():
 
 
 def test_the_stop_panel_states_from_the_jobs():
-    """leStopJobs (pure, in node): tyres locked until the battery is in, then tap / wait (queued) / run / ok, the engine
-    only after an overheat, done and over, the stopwatch capped."""
-    stp = {"t": 100.0, "end": 110.0, "cap": 10.0, "eng": False, "jobs": {"bat": 100.2, "tyres": [105.2, None, 106.2, None], "eng": None}}
-    ts = [100.1, 102.0, 104.5, 105.5, 106.5, 111.0]
+    """leStopJobs (pure, in node): every job tappable from the start (no lock, no queue) – tap / run / ok for the battery
+    (its tap time + 4 s), the tyres and the engine only after an overheat, done and over, the stopwatch capped."""
+    stp = {"t": 100.0, "end": 110.0, "cap": 10.0, "eng": False, "jobs": {"bat": 100.2, "tyres": [100.5, None, 101.3, None], "eng": None}}
+    ts = [100.1, 100.4, 101.0, 102.2, 104.5, 111.0]
     out = _app_js("console.log(JSON.stringify(data.ts.map(t => leStopJobs(data.stp, t))));", {"stp": stp, "ts": ts})
-    assert [o["tyres"][0]["s"] for o in out] == ["lock", "lock", "run", "ok", "ok", "ok"]
-    assert [o["tyres"][2]["s"] for o in out] == ["lock", "lock", "wait", "run", "ok", "ok"]
-    assert [o["tyres"][1]["s"] for o in out] == ["lock", "lock", "tap", "tap", "tap", "tap"]
-    assert out[1]["bat"] == pytest.approx(0.45) and not out[1]["batOk"] and out[2]["batOk"] and out[0]["eng"] is None
+    assert [o["bat"]["s"] for o in out] == ["run", "run", "run", "run", "ok", "ok"]   # tapped at 100.2: the server's tap time
+    assert [o["tyres"][0]["s"] for o in out] == ["run", "run", "ok", "ok", "ok", "ok"]
+    assert [o["tyres"][2]["s"] for o in out] == ["run", "run", "run", "ok", "ok", "ok"]
+    assert [o["tyres"][1]["s"] for o in out] == ["tap"] * 6
+    assert all(x["s"] in ("tap", "run", "ok") for o in out for x in [o["bat"], *o["tyres"]])
+    assert out[3]["bat"]["p"] == pytest.approx(0.5) and out[2]["tyres"][2]["p"] == pytest.approx(0.7) and out[0]["eng"] is None
     assert not any(o["done"] for o in out) and out[-1]["over"] and out[-1]["el"] == 10.0 and out[-1]["cap"] == 10.0
-    stp["eng"], stp["jobs"] = True, {"bat": 100.0, "tyres": [105.0, 106.0, 107.0, 108.0], "eng": 113.0}
-    o = _app_js("console.log(JSON.stringify(leStopJobs(data, 113.5)));", stp)
-    assert o["done"] and o["eng"]["s"] == "ok"
+    stp["jobs"]["bat"] = None                                              # no battery yet: the tyres still run
+    o = _app_js("console.log(JSON.stringify(leStopJobs(data, 101.0)));", stp)
+    assert o["bat"] == {"s": "tap", "p": 0} and o["tyres"][0]["s"] == "ok" and o["tyres"][2]["s"] == "run"
+    stp["eng"], stp["end"], stp["jobs"] = True, 113.0, {"bat": 100.0, "tyres": [101.0, 101.0, 101.0, 101.0], "eng": 107.0}
+    o = _app_js("console.log(JSON.stringify(data.ts.map(t => leStopJobs(data.stp, t))));", {"stp": stp, "ts": [104.5, 107.5]})
+    assert not o[0]["done"] and o[0]["eng"]["s"] == "run" and o[0]["eng"]["p"] == pytest.approx(4.5 / 7)
+    assert o[1]["done"] and o[1]["eng"]["s"] == "ok"
 
 
 def test_two_players_of_a_team_see_the_right_screen_in_every_phase(client):
@@ -1638,7 +1670,7 @@ def test_the_app_knows_the_game():
     assert sorted(codes) == sorted(ls.COUNTRIES) and len(codes) == 66
     for lang in ("de-DE", "de-CH", "fr-FR", "it-IT", "es-ES", "nl-NL", "pl-PL", "pt-BR", "sv-SE"):
         d = json.loads((WEB / "i18n" / f"{lang}.json").read_text(encoding="utf-8"))
-        assert d.get("24h Endurance") and d.get("Battery first") and d.get("Switzerland") and d.get("Saint Kitts and Nevis"), lang
+        assert d.get("24h Endurance") and d.get("Tap everything!") and d.get("Switzerland") and d.get("Saint Kitts and Nevis"), lang
     assert json.loads((WEB / "i18n" / "de-DE.json").read_text(encoding="utf-8"))["24h Endurance"] == "24-Stunden-Rennen"
     assert json.loads((WEB / "i18n" / "de-CH.json").read_text(encoding="utf-8"))["24h Endurance"] == "24-Stunde-Rännä"
     src = js + Path(ls.__file__).read_text(encoding="utf-8")

@@ -20,7 +20,7 @@ const leLapsTxt = n => n + " " + I18N.tr(n === 1 ? T("lap") : T("laps"));
 const LE = { L: 640, DT: 0.1, VLIFT: 20, VFULL: 30, ACC: 8.5, BRAKE: 14, COAST: 5, VBRAKE: 8, VLIMP: 13,
   HEAT: 2.6, HEAT_JR: 1.7, COOL: 4, TMIN: 60, YELLOW: 85, RED: 100, COUNTDOWN: 6,
   E_FULL: 0.16, E_LIFT: 0.07, REGEN: 0.3, VEMERG: 7,
-  STOP_BAT: 4, STOP_TYRE: 1, STOP_MAX: 10, STOP_ENG: 5,
+  STOP_BAT: 4, STOP_TYRE: 1, STOP_MAX: 10, STOP_ENG: 7, ENG_EXTRA: 3,
   WET_SLICK: 0.8, DRY_RAIN: 0.9, RAIN_C: 0.85,
   HW: 5.5, KERB: 1.5, XMAX: 11, STEER_V: 7, VSTEER: 10, WHEEL: 6, PUSH: 0.75, VGRASS: 9, GRASS_DEC: 16, KERB_F: 0.9,
   SLIP_D: 30, SLIP_W: 2.2, SLIP_V: 3.5, BUMP_D: 4.5, CAR_W: 1.9, NUDGE: 1.5, PIT_Z: 25,
@@ -403,17 +403,18 @@ function leRaceCard(st, mine, dOf) {
     ahead: k > 0 ? car(at(k - 1), dOf(at(k - 1)) - dm) : null,
     behind: k >= 0 && k < n - 1 ? car(at(k + 1), dm - dOf(at(k + 1))) : null };
 }
-// the team's stop at game time t from the server's jobs (the taps of the next driver): the battery's progress 0 … 1,
-// per tyre (and the engine after an overheat) its state – "lock" (the battery first) | "tap" | "wait" (queued behind
-// another job) | "run" (being fitted, p 0 … 1) | "ok" – and the stopwatch (el: seconds so far, cap: the most it takes)
+// the team's stop at game time t from the server's jobs (the taps of the next driver – every job from its own tap, all
+// at the same time): per job its state – "tap" | "run" (being fitted, p 0 … 1) | "ok" – for the battery (the server
+// keeps its tap time), the 4 tyres and the engine after an overheat (their done times), and the stopwatch (el: seconds
+// so far, cap: the most it takes)
 function leStopJobs(stp, t) {
-  const j = (stp && stp.jobs) || {}, batOk = j.bat != null && t >= j.bat + LE.STOP_BAT;
-  const one = (d, len) => (!batOk ? { s: "lock", p: 0 } : d == null ? { s: "tap", p: 0 } : t >= d ? { s: "ok", p: 1 }
-    : t >= d - len ? { s: "run", p: leClamp((t - d + len) / len, 0, 1) } : { s: "wait", p: 0 });
+  const j = (stp && stp.jobs) || {};
+  const one = (d, len) => (d == null ? { s: "tap", p: 0 } : t >= d ? { s: "ok", p: 1 } : { s: "run", p: leClamp((t - d + len) / len, 0, 1) });
+  const bat = one(j.bat != null ? j.bat + LE.STOP_BAT : null, LE.STOP_BAT);
   const tyres = [0, 1, 2, 3].map(k => one((j.tyres || [])[k], LE.STOP_TYRE)), eng = stp && stp.eng ? one(j.eng, LE.STOP_ENG) : null;
   const over = !!stp && t >= stp.end;
-  return { bat: j.bat != null ? leClamp((t - j.bat) / LE.STOP_BAT, 0, 1) : 0, batTap: j.bat != null, batOk, tyres, eng,
-    done: batOk && tyres.every(x => x.s === "ok") && (!eng || eng.s === "ok"), over,
+  return { bat, tyres, eng,
+    done: bat.s === "ok" && tyres.every(x => x.s === "ok") && (!eng || eng.s === "ok"), over,
     el: stp ? Math.max(0, Math.min(t, stp.end) - stp.t) : 0, cap: stp ? (stp.cap ?? stp.time) : 0 };
 }
 
@@ -474,7 +475,7 @@ function langstreckeRulesView(r, rewards) {
     T("Driving assist (🧒, on for juniors): the car brakes before the corners and helps to steer. Everybody can switch it for themselves (☰ menu)."),
     T("Electric car: full throttle drains the battery much faster than cruising. Empty – emergency drive mode: the car crawls to the pits."),
     T("Only drivers: at every stop the next person of the team takes over – alone, you again. The one who came in has a break and watches."),
-    T("The pit stop is done by the one who drives next, on their phone: tap the battery first (4 s – always a full one), then the 4 tyres (1 s each). About 8 s done well – after 10 s it is done anyway. After an overheat also the engine (+5 s)."),
+    T("The pit stop is done by the one who drives next, on their phone: tap everything at once – the battery takes 4 s (always a full one), each tyre 1 s, all at the same time. About 4 s done well – after 10 s it is done anyway. After an overheat also the engine (7 s – then 13 s at most)."),
     r.weather ?? 1 ? T("Sudden rain showers: pick slicks or rain tyres at the stop – watch the forecast. The wrong tyres are slower.") : null,
     T("In the rain every corner needs less speed – even less with slicks. At night the headlights only reach a short way. The race starts at 16:00 and runs through the night."),
     rewards ? I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", leCoins(rewards)) : null,
@@ -1596,10 +1597,10 @@ function langstreckeLive(box, me, back) {
     if (!skip && ti > 2.1 && !ui.roared) { ui.roared = true; LeAudio.roar(); leBuzz([40, 30, 80]); }
   }
 
-  // ---------- the pit stop: done by the driver who drives next, on their phone – big targets around the car from above:
-  // the battery first (4 s, a progress ring), then the 4 tyres (1 s each, one after the other) and after an overheat
-  // the engine; the tyres for the next lap (slicks / rain) with one toggle. The one who came in watches the same panel
-  // live (no taps). Every tap goes to the server, which times and checks it.
+  // ---------- the pit stop: done by the driver who drives next, on their phone – big targets around the car from above,
+  // all tappable at once, every job runs from its own tap (progress rings): the battery (4 s), the 4 tyres (1 s each)
+  // and after an overheat the engine (7 s); the tyres for the next lap (slicks / rain) with one toggle. The one who came
+  // in watches the same panel live (no taps). Every tap goes to the server, which times and checks it.
   const sendTap = async (action, spot) => {
     try { const r = await req("/tap", { method: "POST", body: { action, spot } }); if (r && r.state) setState(r.state); return r; }
     catch (e) { toast(e.message, "bad"); return null; }
@@ -1614,19 +1615,15 @@ function langstreckeLive(box, me, back) {
     const tapJob = async (action, spot) => {
       const tm = myTeam(), stp_ = tm && tm.stop, js = leStopJobs(stp_, gameT()), key = action + (spot ?? "");
       if (!stp_ || js.over || local.pend.has(key)) return;
-      if (action !== "battery" && !js.batOk) { flashHint(); leBuzz([30, 30, 30]); return; }    // the battery first
       local.pend.add(key); LeAudio.wrench(); leBuzz(20); stopTick(gameT());
-      const r = await sendTap(action, spot);
+      await sendTap(action, spot);
       local.pend.delete(key);
-      if (r && r.battery_first) flashHint();
       stopTick(gameT());
     };
     const bat = ring(".le-tbat", "🔋", I18N.tr(T("Battery")), T("Battery"), () => tapJob("battery"));
     const tyres = [0, 1, 2, 3].map(k => ring(".le-ttyre.le-t" + k, "🛞", I18N.tr(SPOTS[k]), SPOT_ARIA[k], () => tapJob("tyre", k)));
     const eng = stp.eng ? ring(".le-teng", "🔧", I18N.tr(T("Engine")), T("Engine"), () => tapJob("engine")) : null;
-    const hint = h("div.le-stophint", "🔋 ", T("Battery first"));
-    let hintAt = 0;
-    const flashHint = () => { hintAt = nowS(); hint.classList.remove("le-bad"); void hint.offsetWidth; hint.classList.add("le-bad"); };
+    const hint = h("div.le-stophint", "👆 ", T("Tap everything!"));
     const comp = ["s", "r"].map(k => h("button.le-comp", { type: "button", "data-k": k, disabled: !mine, "aria-label": I18N.tr(k === "r" ? T("Rain tyres") : T("Slicks")),
       onclick: () => { const tm = myTeam(); if (mine && tm && tm.stop && tm.stop.tyre !== k) { LeAudio.tone([700], "triangle", 0.06, 0.06); sendTap(k === "r" ? "rain" : "slicks"); } } },
       k === "r" ? "🌧️" : "☀️", h("small", k === "r" ? T("Rain") : T("Dry"))));
@@ -1634,7 +1631,7 @@ function langstreckeLive(box, me, back) {
     const el = h("div.le-stopwrap" + (mine ? "" : ".le-stopview"), pad,
       h("div.le-stopside", hint, h("div.le-comps", h("span.small", "🛞"), ...comp), h("div.le-watchrow", ui.watchHand = h("div.le-dial", h("i")), ui.watch = h("div.le-watch", "⏱ 0.0 s")),
         ui.cap = h("div.small.muted.center")));
-    return { el, bat, tyres, eng, hint, comp, hintAt: () => hintAt };
+    return { el, bat, tyres, eng, hint, comp };
   }
   // the panel and the stopwatch – from the server's jobs (my taps on the way: «…»)
   function stopTick(t) {
@@ -1642,16 +1639,14 @@ function langstreckeLive(box, me, back) {
     if (!stp || !pn) return;
     const js = leStopJobs(stp, t);
     const paint = (b, s, p, key) => {
-      const pending = local.pend.has(key) && (s === "tap" || (key === "battery" && !js.batTap));
+      const pending = local.pend.has(key) && s === "tap";
       b.dataset.s = pending ? "wait" : s; b.style.setProperty("--p", (p * 100).toFixed(1) + "%");
     };
-    paint(pn.bat, js.batOk ? "ok" : js.batTap ? "run" : "tap", js.bat, "battery");
+    paint(pn.bat, js.bat.s, js.bat.p, "battery");
     pn.tyres.forEach((b, k) => paint(b, js.tyres[k].s, js.tyres[k].p, "tyre" + k));
     if (pn.eng && js.eng) paint(pn.eng, js.eng.s, js.eng.p, "engine");
-    const txt = js.done || js.over ? "✓ " + I18N.tr(T("Done – go!")) : !js.batOk ? "🔋 " + I18N.tr(T("Battery first")) : "🛞 " + I18N.tr(T("Now the tyres"));
-    setTxt(pn.hint, txt);
+    setTxt(pn.hint, js.done || js.over ? "✓ " + I18N.tr(T("Done – go!")) : "👆 " + I18N.tr(T("Tap everything!")));
     pn.hint.classList.toggle("le-ok", js.done || js.over);
-    pn.hint.classList.toggle("le-lockhint", !js.batOk && !js.over);
     pn.comp.forEach(b => b.classList.toggle("on", b.dataset.k === stp.tyre));
     if (ui.watch) {
       setTxt(ui.watch, (js.over ? "✓ " : "⏱ ") + js.el.toFixed(1) + " s");
@@ -1661,8 +1656,9 @@ function langstreckeLive(box, me, back) {
     }
     if (js.over && !ui.cheered) {                               // the stands cheer – loud for a fast stop
       ui.cheered = true;
-      if (ui.crowd) ui.crowd.classList.add("cheer", ...(stp.done && stp.time <= 8.5 ? ["big"] : []));
-      if (stp.done && stp.time <= 8.5) { LeAudio.tone([523, 784, 1046], "triangle", 0.18, 0.1, 0.1); toast("🎉 " + I18N.tr(T("Super fast stop!")), "good"); }
+      const fast = stp.done && stp.time <= 5 + (stp.eng ? LE.ENG_EXTRA : 0);     // tapped at once: about 4.2 s (+3 s engine)
+      if (ui.crowd) ui.crowd.classList.add("cheer", ...(fast ? ["big"] : []));
+      if (fast) { LeAudio.tone([523, 784, 1046], "triangle", 0.18, 0.1, 0.1); toast("🎉 " + I18N.tr(T("Super fast stop!")), "good"); }
       else LeAudio.ok();
     }
   }
