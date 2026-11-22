@@ -41,12 +41,13 @@ The loop – one short lap (about 30 s), then the car drives into the pits, ever
 - the car is electric: its battery (0–100 %) drains by the metre, much faster at full throttle (E_FULL) than lifted
   (E_LIFT); braking gives a little back (REGEN). Empty: the emergency drive mode – the car crawls (VEMERG) to the pits.
 - there are only drivers (no pit crew): the people of a team take turns – at EVERY stop the next person of the team (in
-  turn, who is online; alone: the same person) takes over. The stop is theirs: on their phone they tap the battery
-  first (STOP_BAT seconds – the new battery is always full), then the 4 tyres (STOP_TYRE seconds each, one after the
-  other in the order of the taps; slicks or rain tyres with one toggle, the current weather by default) and after an
-  overheat also the engine (STOP_ENG). About 8 s done well; nothing tapped: done by itself after STOP_MAX seconds
-  (+ STOP_ENG after an overheat) – never longer. The driver who came in has a break and watches the stop live. Bot
-  teams stop in a fair fixed time (BOT_STOP). The server keeps the time of every tap.
+  turn, who is online; alone: the same person) takes over. The stop is theirs: on their phone they tap everything at
+  once, in any order – the battery (STOP_BAT seconds – the new battery is always full), the 4 tyres (STOP_TYRE seconds
+  each; slicks or rain tyres with one toggle, the current weather by default) and after an overheat also the engine
+  (STOP_ENG) – every job runs from its own tap, all at the same time. About 4.2 s done well (with the engine about
+  7.2 s); nothing tapped: done by itself after STOP_MAX seconds (+ ENG_EXTRA after an overheat) – never longer. The
+  driver who came in has a break and watches the stop live. Bot teams stop in a fair fixed time (BOT_STOP, + ENG_EXTRA
+  after an overheat). The server keeps the time of every tap.
 - the handbrake: a short tap at the entry of a corner at speed starts a drift – full gas and steering into the corner
   hold it and the car comes through a little faster than the corner's safe speed (DRIFT_K); lifting or steering
   against it ends it and costs speed; held too long it brakes hard; a tap too late in the corner (or far too fast)
@@ -57,7 +58,7 @@ The server decides everything (the same step function runs in web/langstrecke.js
 car): the driver's app only reports its inputs (steering, pedals, assist) with their game time; the server simulates
 all cars in fixed steps of DT seconds SETTLE seconds behind the clock – a late input is applied at the next step (never
 in the past). Every step sees the other cars as they were at the start of the step (the order of the teams does not
-matter). The taps at a stop are actions on the server timed with the server's clock (the order enforced, a tap twice
+matter). The taps at a stop are actions on the server timed with the server's clock (in any order, a tap twice
 ignored). A driver whose app is silent for AUTO_AFTER seconds gets the autopilot until the app is back. Bots drive by
 the same rules (they lift off when the battery runs low and overtake on the straights) and pick their tyres by the
 forecast (easier bots get it wrong more often).
@@ -186,12 +187,13 @@ AHEAD = 0.5                  # inputs may be this much ahead of the server's clo
 AUTO_AFTER = 6.0             # a silent driver: the autopilot drives
 STALE = 10.0                 # a silent person is not counted as the next driver
 # ---------------------------------------------------------------- the pit stop
-# the stop – done by the driver who drives next, on their phone (a driver alone: the same person): the battery first
-# (a tap, then STOP_BAT seconds – the new battery is always full), then the 4 tyres (one tap each, STOP_TYRE seconds,
-# one after the other in the order of the taps); after an overheat also the engine (STOP_ENG). Done by itself after
-# STOP_MAX seconds (+ STOP_ENG after an overheat) at the latest – no taps: that long. Bots: a fair fixed time.
-STOP_BAT, STOP_TYRE, STOP_MAX, STOP_ENG = 4.0, 1.0, 10.0, 5.0
-BOT_STOP = {"easy": 9.0, "normal": 8.7, "hard": 8.5}
+# the stop – done by the driver who drives next, on their phone (a driver alone: the same person): every job runs from
+# its own tap, all at the same time, in any order – the battery (STOP_BAT seconds – the new battery is always full), the
+# 4 tyres (STOP_TYRE seconds each); after an overheat also the engine (STOP_ENG). Done when the last job is done –
+# STOP_MAX seconds (+ ENG_EXTRA after an overheat) at the latest; no taps: that long. Bots: a fair fixed time
+# (BOT_STOP, + ENG_EXTRA after an overheat) – a little slower than a stop tapped at once (about 4.2 s).
+STOP_BAT, STOP_TYRE, STOP_MAX, STOP_ENG, ENG_EXTRA = 4.0, 1.0, 10.0, 7.0, 3.0
+BOT_STOP = {"easy": 5.2, "normal": 4.9, "hard": 4.6}
 TEAM_STYLES = (("Comet Racing", "#e03131"), ("Blue Falcon Works", "#1c7ed6"), ("Pine Cone Motors", "#2f9e44"),
                ("Sunrise Speedsters", "#f08c00"), ("Silver Owl Garage", "#7048e8"), ("Night Fox Racing", "#0c8599"),
                ("Thunder Bee Team", "#e8590c"), ("Snow Hare Racing", "#495057"))
@@ -776,10 +778,10 @@ class Table:
         return taken
 
     def tap(self, pid: str, action: str, spot=None) -> dict:
-        """A tap of the driver who drives next at the team's stop – timed by the server's clock: the battery first, then
-        the tyres (and after an overheat the engine) in the order of the taps, each after the one before; a tap twice,
-        a tyre before the battery is done, a tap of anybody else or after the stop are ignored / refused. All done: the
-        stop ends then (STOP_MAX, + STOP_ENG after an overheat, at the latest). "slicks" / "rain": the tyres to fit."""
+        """A tap of the driver who drives next at the team's stop – timed by the server's clock: the battery, the tyres
+        (and after an overheat the engine) in any order, every job from its own tap, all at the same time; a tap twice
+        is ignored, a tap of anybody else or after the stop is refused. All done: the stop ends when the last job is
+        done (STOP_MAX, + ENG_EXTRA after an overheat, at the latest). "slicks" / "rain": the tyres to fit."""
         if self.st.get("phase") != "play":
             raise CommunityError("The game is not running")
         t = self.team_of(pid)
@@ -799,8 +801,10 @@ class Table:
         if action == "battery":
             if jobs["bat"] is not None:
                 return {"ok": True, "again": True}
-            jobs["bat"] = now_t
-            return {"ok": True, "done": round(now_t + STOP_BAT, 3)}
+            jobs["bat"] = now_t                          # the battery: the time of the tap (done STOP_BAT later)
+            done = round(now_t + STOP_BAT, 3)
+            self._stop_done(stp)
+            return {"ok": True, "done": done}
         if action == "tyre":
             try:
                 k = int(spot)
@@ -813,21 +817,25 @@ class Table:
                 raise CommunityError("The engine is fine")
         else:
             raise CommunityError("Unknown job")
-        if jobs["bat"] is None or now_t < jobs["bat"] + STOP_BAT - 1e-9:
-            return {"ok": False, "battery_first": True}
         cur = jobs["tyres"][k] if action == "tyre" else jobs["eng"]
         if cur is not None:
             return {"ok": True, "again": True}
-        last = max([jobs["bat"] + STOP_BAT] + [x for x in jobs["tyres"] + [jobs["eng"]] if x is not None])
-        done = round(max(now_t, last) + (STOP_TYRE if action == "tyre" else STOP_ENG), 3)   # queued after the job before it
+        done = round(now_t + (STOP_TYRE if action == "tyre" else STOP_ENG), 3)   # from its own tap, beside the others
         if action == "tyre":
             jobs["tyres"][k] = done
         else:
             jobs["eng"] = done
-        if all(x is not None for x in jobs["tyres"]) and (jobs["eng"] is not None or not stp["eng"]):
-            end = round(min(stp["t"] + stp["cap"], max(jobs["tyres"] + [jobs["eng"] or 0.0])), 2)
-            stp.update(end=end, time=round(end - stp["t"], 1), done=True)
+        self._stop_done(stp)
         return {"ok": True, "done": done}
+
+    @staticmethod
+    def _stop_done(stp: dict) -> None:
+        """Every job tapped: the stop ends when the last one is done (its cap at the latest)."""
+        jobs = stp["jobs"]
+        if jobs["bat"] is None or any(x is None for x in jobs["tyres"]) or (stp["eng"] and jobs["eng"] is None):
+            return
+        end = round(min(stp["t"] + stp["cap"], max([jobs["bat"] + STOP_BAT] + jobs["tyres"] + [jobs["eng"] or 0.0])), 2)
+        stp.update(end=end, time=round(end - stp["t"], 1), done=True)
 
     # ---------- the pit stop
     def next_driver(self, t: dict) -> str:
@@ -842,7 +850,7 @@ class Table:
 
     def _open_stop(self, t: dict, s: float) -> None:
         """The car stopped at its box: a bot team's stop takes its fixed time; a team of people waits for the taps of the
-        driver who drives next (STOP_MAX at the latest, + STOP_ENG after an overheat). The new battery is always full;
+        driver who drives next (STOP_MAX at the latest, + ENG_EXTRA after an overheat). The new battery is always full;
         the tyres: the current weather (bots: the forecast, now and then wrong) – the next driver can switch them."""
         car = t["car"]
         at = round(s + DT, 2)
@@ -852,12 +860,12 @@ class Table:
         if t["bot"]:
             level = self.person(t["driver"]).get("level", "normal")
             miss = BOT_SKILL.get(level, BOT_SKILL["normal"])[3]
-            took = round(BOT_STOP.get(level, BOT_STOP["normal"]) + (STOP_ENG if eng else 0.0), 1)
+            took = round(BOT_STOP.get(level, BOT_STOP["normal"]) + (ENG_EXTRA if eng else 0.0), 1)
             wet_soon = self.wet_soon(at + took)
             tyre = ("r" if wet_soon else "s") if self.rng.random() >= miss else ("s" if wet_soon else "r")
             jobs = None
         else:
-            took = STOP_MAX + (STOP_ENG if eng else 0.0)
+            took = STOP_MAX + (ENG_EXTRA if eng else 0.0)
             tyre = "r" if rain_now else "s"
             jobs = {"bat": None, "tyres": [None, None, None, None], "eng": None}
         t["stop"] = {"t": at, "end": round(at + took, 2), "time": took, "cap": took, "n": len(t["pits"]) + 1, "prev": t["driver"],
