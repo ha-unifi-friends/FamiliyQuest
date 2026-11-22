@@ -1,11 +1,11 @@
 // «24h Endurance» (24-Stunden-Rennen) – a short, fast live team race on the fictional «Circuit des Tannes»
 // (familyquest/langstrecke.py). Teams are racing stables with one car each. One short lap, then the car drives into
 // the pits by itself and the next person of the team drives. The driver steers freely across the track with the virtual
-// joystick bottom left on the picture (up gas, down brake – or the arrow keys) and gives full gas (it heats the engine and drains the battery much faster – empty: the emergency
-// drive mode); the pit crew – everybody else of the team – prepares the stop on their phones during the lap: plug the
-// spare battery in (it charges over time – the next driver gets it with whatever charge it has), lay out the 4 tyres,
-// after an overheat the spare engine. The stop takes longer when the tyres were not ready – a stopwatch for the whole team. Sudden rain showers
-// (slicks or rain tyres – the crew chooses), day and night, two chicanes with kerbs, cheering stands at the pits.
+// joystick bottom left on the picture (up gas, down brake – or the arrow keys), drifts with the handbrake and gives full
+// gas (it heats the engine and drains the battery much faster – empty: the emergency drive mode). There are only
+// drivers: at every stop the next person of the team does the stop on their phone (the battery first, then the 4 tyres,
+// after an overheat the engine – a stopwatch for the whole team) and drives on; the one who came in watches. Sudden rain
+// showers (slicks or rain tyres – chosen at the stop), day and night, cheering stands at the pits.
 // The server simulates every car (the same step function as below) – the driver's app only reports its inputs and
 // predicts its own car from the server's snapshot for a smooth picture.
 // langstreckeLive(box, me, back) runs a table, langstreckeStartDialog(solo, onStarted) sets the rules.
@@ -20,7 +20,7 @@ const leLapsTxt = n => n + " " + I18N.tr(n === 1 ? T("lap") : T("laps"));
 const LE = { L: 640, DT: 0.1, VLIFT: 20, VFULL: 30, ACC: 8.5, BRAKE: 14, COAST: 5, VBRAKE: 8, VLIMP: 13,
   HEAT: 2.6, HEAT_JR: 1.7, COOL: 4, TMIN: 60, YELLOW: 85, RED: 100, COUNTDOWN: 6,
   E_FULL: 0.16, E_LIFT: 0.07, REGEN: 0.3, VEMERG: 7,
-  STOP_BASE: 2, BAT_SWAP: 1, PEN_PREP: 4, ENG_READY: 2, ENG_SWAP: 6, GARAGE: 4, CHARGE_RATE: 4, GARAGE_PLUG: 8, ENGINE_HOLD: 2,
+  STOP_BAT: 4, STOP_TYRE: 1, STOP_MAX: 10, STOP_ENG: 5,
   WET_SLICK: 0.8, DRY_RAIN: 0.9, RAIN_C: 0.85,
   HW: 5.5, KERB: 1.5, XMAX: 11, STEER_V: 7, VSTEER: 10, WHEEL: 6, PUSH: 0.75, VGRASS: 9, GRASS_DEC: 16, KERB_F: 0.9,
   SLIP_D: 30, SLIP_W: 2.2, SLIP_V: 3.5, BUMP_D: 4.5, CAR_W: 1.9, NUDGE: 1.5, PIT_Z: 25,
@@ -29,7 +29,11 @@ const LE = { L: 640, DT: 0.1, VLIFT: 20, VFULL: 30, ACC: 8.5, BRAKE: 14, COAST: 
   // the pit lane on the right of the main straight (its metres = the lap's metres beside it; pl 0 racing, 1 entry up to
   // the line, 2 to the box, 3 out to the pit exit and back onto the track) – as in langstrecke.py
   PIT_IN: 580, PIT_ENTRY: 30, PIT_OUT: 60, PIT_MERGE: 15, PL_X: 9.5, PL_HW: 2, SIDE_X: 3.5, PIT_V: 100 / 7, KEEP_R: 1.5, KEEP_ST: 20,
-  AP_LATE: 12, AP_K: 0.7, FUNNEL: 0.45, BOX0: 10, BOX_GAP: 6, BOX_DEC: 6 };
+  AP_LATE: 12, AP_K: 0.7, FUNNEL: 0.45, BOX0: 10, BOX_GAP: 6, BOX_DEC: 6,
+  // the handbrake and the drift – as in langstrecke.py
+  HB_LONG: 0.6, HB_DEC_SOFT: 6, HB_DEC: 15, DRIFT_PRE: 12, DRIFT_PRE_RAIN: 18, DRIFT_LATE: 0.35, DRIFT_VMIN: 0.85, DRIFT_VMIN_RAIN: 0.75,
+  DRIFT_SPIN: 1.35, DRIFT_K: 1.06, DRIFT_K_RAIN: 1.03, DRIFT_ST: 25, DRIFT_ST_RAIN: 60, DRIFT_GRACE: 0.3, DRIFT_DEC: 9, DRIFT_LOSS: 3,
+  DRIFT_HEAT: 1, DRIFT_YAW: 28, YAW_RATE: 140, SPIN_RATE: 540, SPIN_X: 6, SPIN_T: 2 };
 LE.PZ_IN = LE.PIT_IN - LE.L;
 // the gearbox (manual): the limiter, the low end (below: the gear lugs) and the pull of gears 1–6 – as in langstrecke.py
 const LE_GEAR_TOP = [9, 13.5, 18, 22.5, 27, 30], LE_GEAR_LOW = [0, 5, 8.5, 12.5, 16.5, 21], LE_GEAR_ACC = [1.15, 1.1, 1.05, 1, 0.95, 0.9];
@@ -37,8 +41,6 @@ const LE_GEAR_TOP = [9, 13.5, 18, 22.5, 27, 30], LE_GEAR_LOW = [0, 5, 8.5, 12.5,
 const leAutoGear = v => { for (let i = 0; i < LE_GEAR_TOP.length; i++) if (v < LE_GEAR_TOP[i] * LE.AUTO_UP) return i + 1; return LE_GEAR_TOP.length; };
 // the corners: start, end (metres in the lap), angle (degrees, + = right), safe speed (m/s, dry, the right tyres)
 const LE_CORNERS = [[90, 130, 90, 20], [210, 240, -45, 25], [300, 350, 150, 13], [420, 450, 75, 21], [500, 550, 90, 17]];
-// the spare battery's charge at game time `at` (the server's timestamps; the server decides at the stop)
-const leSpare = (sp, at) => (!sp ? 0 : sp.plug == null || at <= sp.plug ? sp.c0 : Math.min(100, sp.c0 + LE.CHARGE_RATE * (at - sp.plug)));
 // what the rest of the lap needs: lifted off all the way / a normal mix of full throttle and lifting
 const leNeed = d => { const left = LE.L - (((d % LE.L) + LE.L) % LE.L); return { lift: left * LE.E_LIFT, mix: left * (LE.E_FULL + LE.E_LIFT) / 2 }; };
 const leGrip = (tyre, rain) => (rain ? (tyre !== "r" ? LE.WET_SLICK : 1) : (tyre === "r" ? LE.DRY_RAIN : 1));
@@ -106,7 +108,7 @@ const leLaps = d => Math.max(0, Math.floor(d / LE.L));
 // how far the driver sees (metres; as view_dist() in langstrecke.py): 150 by day, 70 at night, 125 in the rain by day,
 // 40 at night in the rain – the picture, the corner sign and the boards come that late (the bots slow down with it)
 const leView = (dk, rain) => (rain ? 125 - 85 * dk : 150 - 80 * dk);
-const leHour = (s, limit) => (15 + 24 * Math.max(0, s) / limit) % 24;
+const leHour = (s, limit) => (16 + 24 * Math.max(0, s) / limit) % 24;     // the race starts at 16:00
 function leDark(s, limit) {
   const hr = leHour(s, limit);
   if (hr >= 21.5 || hr < 5.5) return 1;
@@ -115,13 +117,15 @@ function leDark(s, limit) {
   return 0;
 }
 // one input of the driver: "s" steering −100 … 100, "u" 1 gas / 0 lifted / −1 brake, "a" the assist on / off,
-// "m" manual gears on / off (on: the gear that fits the speed), "g" the gear −1 R / 0 N / 1–6 (anything else: ignored)
+// "m" manual gears on / off (on: the gear that fits the speed), "g" the gear −1 R / 0 N / 1–6 (anything else: ignored),
+// "h" the handbrake held 1 / released 0
 function leApply(car, c, v) {
   if (c === "s") car.st = Math.max(-100, Math.min(100, Math.trunc(v)));
   else if (c === "u") car.thr = Math.trunc(v) > 0 ? 1 : Math.trunc(v) < 0 ? -1 : 0;
   else if (c === "a") { car.ast = Math.trunc(v) ? 1 : 0; car.ak = LE.AK_ASSIST; }
   else if (c === "m") { car.man = Math.trunc(v) ? 1 : 0; car.gear = leAutoGear(car.v); }
   else if (c === "g" && Math.trunc(v) >= -1 && Math.trunc(v) <= LE_GEAR_TOP.length) car.gear = Math.trunc(v);
+  else if (c === "h") car.hb = Math.trunc(v) ? 1 : 0;
 }
 // the virtual joystick: the thumb's way (dx, dy in px from the centre, y down) on a ring of radius r → the knob clamped
 // to the ring (kx, ky), the steering s −100 … 100 in steps of 5 (a small dead zone in the middle, full lock a little
@@ -178,10 +182,39 @@ function leStep(car, s, jr, rain = false, others = []) {
   let th = ap ? 0 : car.thr, stc = ap ? 0 : car.st / 100;   // the autopilot: lifted off – the limiter brings it to the pit speed
   const emg = car.bat <= 0;                          // the battery is empty: the emergency drive mode
   const bite = Math.min(1, 0.2 + Math.abs(v0) / LE.VSTEER);   // how much the steering bites at this speed
-  let push = 0;                                      // a corner pushes outward, ∝ speed²
-  if (cn !== null) { const q = v0 / leSafe(cn, car.tyre, rain); push = (cn[2] > 0 ? -1 : 1) * LE.STEER_V * LE.PUSH * q * q; }
+  // the handbrake and the drift (not in the pit lane, not by the autopilot) – as in langstrecke.py
+  const hb = car.hb && !pl && !ap ? 1 : 0, hbt0 = car.hbt || 0;
+  car.hbt = hb ? hbt0 + DT : 0;
+  let dr = car.dr || 0, lose = false, spinx = 0;
+  if (hb && hbt0 === 0 && dr === 0 && car.sf !== 2 && v0 > 0) {       // the tap: a drift, a spin – or just a small brake
+    const [nc, dz] = leNextCorner(xl);
+    if (nc !== null) {
+      const sv = leSafe(nc, car.tyre, rain), u = cn !== null ? (xl - nc[0]) / (nc[1] - nc[0]) : -1;
+      if (v0 >= sv * (rain ? LE.DRIFT_VMIN_RAIN : LE.DRIFT_VMIN)) {
+        const entry = (cn === null && dz <= (rain ? LE.DRIFT_PRE_RAIN : LE.DRIFT_PRE)) || (cn !== null && u <= LE.DRIFT_LATE);
+        const late = cn !== null && u > LE.DRIFT_LATE;
+        if (late || (entry && v0 >= sv * LE.DRIFT_SPIN)) { dr = 2; ev.push("spin"); }
+        else if (entry) { dr = 1; ev.push("drift"); }
+        if (dr) { car.dc = LE_CORNERS.indexOf(nc); car.drt = 0; }
+      }
+    }
+  }
+  const dc = dr ? LE_CORNERS[car.dc || 0] : [0, 0, 0, 0], ddir = dc[2] > 0 ? 1 : -1, dsafe = leSafe(dc, car.tyre, rain) * (rain ? LE.DRIFT_K_RAIN : LE.DRIFT_K);
+  if (dr === 1) {                                    // the drift: gas and steering into the corner hold it
+    car.drt = (car.drt || 0) + DT;
+    if (hbt0 + DT > LE.HB_LONG || car.sf === 2 || pl) dr = 0;
+    else if (cn === null && xl >= dc[1]) dr = 0;
+    else if (car.drt > LE.DRIFT_GRACE + 1e-9 && !(car.thr > 0 && car.st * ddir >= (rain ? LE.DRIFT_ST_RAIN : LE.DRIFT_ST))) { dr = 0; lose = true; }
+  } else if (dr === 2) {                             // the spin: wide off the track, then the grass slows it down
+    car.drt = (car.drt || 0) + DT;
+    if (car.sf === 2 || v0 <= LE.VGRASS || car.drt > LE.SPIN_T) dr = 0;
+    else spinx = -ddir * LE.SPIN_X;
+  }
+  car.dr = dr;
+  let push = 0;                                      // a corner pushes outward, ∝ speed² (drifting: against the drift speed)
+  if (cn !== null) { const q = v0 / (dr === 1 ? dsafe : leSafe(cn, car.tyre, rain)); push = (cn[2] > 0 ? -1 : 1) * LE.STEER_V * LE.PUSH * q * q; }
   if (ap) stc = leClamp((lePitX(pz) - x0) * LE.AP_K, -1, 1);   // the autopilot steers smoothly along the pit lane
-  else if (car.ast) {                                // the assist: towards the racing line (the pit lane), brake before a corner
+  else if (car.ast && dr === 0) {                    // the assist (never while drifting): towards the racing line (the pit lane), brake before a corner
     const aim = pl ? lePitX(pz) : leClamp(leLine(xl) + car.lo, -LE.LMAX, LE.LMAX);
     const help = leClamp((aim - x0) * LE.ASSIST_K - push / (LE.STEER_V * bite), -1, 1);
     stc = leClamp(stc + (1 - Math.abs(stc)) * help, -1, 1);
@@ -218,6 +251,9 @@ function leStep(car, s, jr, rain = false, others = []) {
   if (emg) vt = Math.min(vt, LE.VEMERG);
   if (th < 0) { vt = Math.min(vt, LE.VBRAKE); dec = Math.max(dec, LE.BRAKE); }
   if (pitlim) { vt = Math.min(vt, LE.PIT_V); if (v0 > LE.PIT_V) dec = Math.max(dec, LE.BRAKE); }   // the limiter (manual gears too)
+  if (dr === 1) { vt = Math.min(vt, dsafe); dec = Math.max(dec, LE.DRIFT_DEC); }   // drifting: the car settles at the drift speed
+  else if (dr === 2) { vt = Math.min(vt, LE.VGRASS); dec = Math.max(dec, LE.GRASS_DEC); }
+  else if (hb) { vt = Math.min(vt, LE.VBRAKE); dec = Math.max(dec, car.hbt > LE.HB_LONG + 1e-9 ? LE.HB_DEC : LE.HB_DEC_SOFT); }   // a tap brakes a little, held too long hard
   if (pl === 2) { vt = Math.min(vt, Math.max(2, Math.sqrt(2 * LE.BOX_DEC * Math.max(0, (car.box ?? LE.BOX0) - pz)))); dec = Math.max(dec, LE.BOX_DEC); }   // into the box
   let tow = 0, bump = null, nudge = 0;               // the other cars: the slipstream on a straight, a gentle bump (never with the pit lane)
   if (!pl && LE.PIT_Z <= xl && xl <= LE.L - LE.PIT_Z) {
@@ -239,13 +275,14 @@ function leStep(car, s, jr, rain = false, others = []) {
     const tg = th < 0 ? 0 : th > 0 ? -LE.VREV : -LE.VCREEP;
     v = v0 > tg ? Math.max(tg, v0 - LE.REV_ACC * DT) : Math.min(tg, v0 + (th < 0 ? LE.BRAKE : LE.REV_ACC) * DT);
   }
+  if (lose) v = Math.max(0, v - LE.DRIFT_LOSS);
   car.bc = Math.max(0, car.bc - DT);
   if (bump !== null && v > bump) {
     v = Math.max(0, bump);
     if (car.bc <= 0) { car.bc = 1; car.bumps += 1; ev.push("bump"); }
   } else nudge = 0;
   const [lo, hi] = pl ? lePitBounds(pz) : [-LE.XMAX, LE.XMAX];   // in the pit lane: its white line, the pit wall, the boxes
-  let x = leClamp(x0 + (car.sw * LE.STEER_V * bite + push + nudge) * DT, lo, hi);   // across the track
+  let x = leClamp(x0 + (car.sw * LE.STEER_V * bite + push + nudge + spinx) * DT, lo, hi);   // across the track
   const ax = Math.abs(x), sf = ax <= LE.HW || (pl && x > 0) ? 0 : ax <= LE.HW + LE.KERB ? 1 : 2;
   if (sf === 2 && car.sf !== 2) { car.offs += 1; ev.push("off"); }
   else if (sf === 1 && car.sf === 0) { car.kerb += 1; ev.push("kerb"); }
@@ -262,7 +299,13 @@ function leStep(car, s, jr, rain = false, others = []) {
   else if (lim) car.temp = Math.min(LE.RED, car.temp + (jr ? LE.HEAT_JR : LE.HEAT) * LE.LIM_HEAT * DT);
   else if (full) car.temp = Math.min(LE.RED, car.temp + (jr ? LE.HEAT_JR : LE.HEAT) * DT);
   else car.temp = Math.max(LE.TMIN, car.temp - LE.COOL * DT);
+  if (dr === 1) car.temp = Math.min(LE.RED, car.temp + LE.DRIFT_HEAT * DT);   // drifting heats the engine a little more
   if ((full || lim || grind) && car.temp >= LE.RED - 1e-9) { car.eng = 1; car.blows += 1; car.temp = 80; ev.push("blow"); }
+  let yaw = car.yaw || 0;                            // the drift angle (the picture)
+  if (dr === 1) yaw += leClamp(ddir * LE.DRIFT_YAW - yaw, -LE.YAW_RATE * DT, LE.YAW_RATE * DT);
+  else if (dr === 2) { yaw += ddir * LE.SPIN_RATE * DT; if (yaw > 180) yaw -= 360; else if (yaw < -180) yaw += 360; }
+  else yaw += leClamp(-yaw, -2 * LE.YAW_RATE * DT, 2 * LE.YAW_RATE * DT);
+  car.yaw = yaw;
   const n0 = Math.floor(d0 / LE.L), n1 = Math.floor(d1 / LE.L);
   const tc = n1 > n0 ? s + (n1 * LE.L - d0) / v : 0;  // the moment the car crossed the line (within the step)
   if (n1 > n0 && n0 >= 0) {                          // the line (across the track and the pit lane): a lap – on to the box
@@ -275,7 +318,7 @@ function leStep(car, s, jr, rain = false, others = []) {
   } else if (n1 > n0) car.ls = Math.floor(tc * 100 + 0.5) / 100;
   if (pl === 2 && d1 >= n1 * LE.L + (car.box ?? LE.BOX0)) {       // at the box: the car stops – the pit stop begins
     d1 = n1 * LE.L + (car.box ?? LE.BOX0); v = 0;
-    car.pit = 1; car.sw = 0; car.sf = 0; car.tow = 0; car.ap = 0;
+    car.pit = 1; car.sw = 0; car.sf = 0; car.tow = 0; car.ap = 0; car.dr = 0; car.yaw = 0; car.hbt = 0;
     ev.push("pit");
   }
   car.d = d1; car.x = x; car.v = v;
@@ -325,7 +368,7 @@ const leLapTime = s => (s > 0 ? Math.floor(s / 60) + ":" + (s % 60).toFixed(1).p
 // performance.now() that stood still (iOS, Android), and later samples are slower (the canvas is busy) than the best
 // one from the lobby. So a sample that PROVES the offset wrong – the server's time lies between sending (t1) and
 // receiving (t2), the offset between now − t2 and now − t1 – replaces it at once. Else the app stays that far behind:
-// the intro with the start lights for the whole race, the crew jobs below it, the driver's inputs too old.
+// the intro with the start lights for the whole race, the driver's inputs too old.
 function leClockSample(ck, now, t1, t2) {
   const rtt = Math.max(0, t2 - t1), mid = now - (t1 + t2) / 2;
   if (ck.offset == null || ck.offset < now - t2 - 0.05 || ck.offset > now - t1 + 0.05) return { offset: mid, rtt };
@@ -333,21 +376,48 @@ function leClockSample(ck, now, t1, t2) {
   return { offset: ck.offset, rtt: ck.rtt * 1.01 };                // the best round trip ages: a slower network later counts again
 }
 // Which screen this player sees – decided in ONE place, from the server's roles and the race clock (t = game time,
-// < 0 during the 6 s start countdown): lobby | done | watch | pit | drive | crew. `intro`: the start lights are on the
-// stage – for everybody at the start, never during a pit stop; the crew gets its jobs only after the start.
+// < 0 during the 6 s start countdown): lobby | done | watch | drive | rest (a break: the team's car on TV) | stop (I do
+// the team's stop – I drive next) | pit (I watch the stop live). `intro`: the start lights are on the stage – for
+// everybody at the start, never during a pit stop.
 function leScreen(st, myId, t) {
   if (!st) return { mode: "none", intro: false };
   if (st.phase === "lobby" || st.phase === "done") return { mode: st.phase, intro: false };
   const tm = st.teams && st.my_team != null ? st.teams[st.my_team] : null;
   const intro = st.phase === "play" && st.status !== "done" && t < 0;
   if (!st.joined || !tm) return { mode: "watch", intro };
-  if (tm.car && tm.car.pit && tm.stop) return { mode: "pit", intro: false };
-  return { mode: tm.driver === String(myId) ? "drive" : "crew", intro };
+  if (tm.car && tm.car.pit && tm.stop) return { mode: tm.stop.jobs && tm.stop.next === String(myId) ? "stop" : "pit", intro: false };
+  return { mode: tm.driver === String(myId) ? "drive" : "rest", intro };
+}
+// The driver's controls (joystick, shifter, paddles, A / M, handbrake) only when they can be used: driving, after the
+// green light, before the finish, not standing in the box – never on the start grid, in the lobby, at a stop or for
+// the others of the team on a break / spectators (they fade in at the green light and at the pit exit)
+const leControls = (mode, intro, car, t, limit) => mode === "drive" && !intro && t >= 0 && t < limit && !!car && !car.pit;
+// The driver's position card (top left on the picture): my place, the leader (not when I lead), the car ahead and the
+// car behind (not when there is none) with the gap in seconds – or in laps for a lapped car. `dOf(team)`: its distance.
+function leRaceCard(st, mine, dOf) {
+  const k = st.standings.indexOf(mine), n = st.standings.length, at = j => st.teams[st.standings[j]], dm = dOf(st.teams[mine]);
+  const gap = dd => (dd >= LE.L ? { laps: Math.floor(dd / LE.L) } : { s: Math.round(dd / 21 * 10) / 10 });
+  const car = (o, dd) => ({ num: o.num, name: o.name, color: o.color, ...gap(Math.max(0, dd)) });
+  return { pos: k + 1, n,
+    leader: k > 1 ? car(at(0), dOf(at(0)) - dm) : null,
+    ahead: k > 0 ? car(at(k - 1), dOf(at(k - 1)) - dm) : null,
+    behind: k >= 0 && k < n - 1 ? car(at(k + 1), dm - dOf(at(k + 1))) : null };
+}
+// the team's stop at game time t from the server's jobs (the taps of the next driver): the battery's progress 0 … 1,
+// per tyre (and the engine after an overheat) its state – "lock" (the battery first) | "tap" | "wait" (queued behind
+// another job) | "run" (being fitted, p 0 … 1) | "ok" – and the stopwatch (el: seconds so far, cap: the most it takes)
+function leStopJobs(stp, t) {
+  const j = (stp && stp.jobs) || {}, batOk = j.bat != null && t >= j.bat + LE.STOP_BAT;
+  const one = (d, len) => (!batOk ? { s: "lock", p: 0 } : d == null ? { s: "tap", p: 0 } : t >= d ? { s: "ok", p: 1 }
+    : t >= d - len ? { s: "run", p: leClamp((t - d + len) / len, 0, 1) } : { s: "wait", p: 0 });
+  const tyres = [0, 1, 2, 3].map(k => one((j.tyres || [])[k], LE.STOP_TYRE)), eng = stp && stp.eng ? one(j.eng, LE.STOP_ENG) : null;
+  const over = !!stp && t >= stp.end;
+  return { bat: j.bat != null ? leClamp((t - j.bat) / LE.STOP_BAT, 0, 1) : 0, batTap: j.bat != null, batOk, tyres, eng,
+    done: batOk && tyres.every(x => x.s === "ok") && (!eng || eng.s === "ok"), over,
+    el: stp ? Math.max(0, Math.min(t, stp.end) - stp.t) : 0, cap: stp ? (stp.cap ?? stp.time) : 0 };
 }
 
 // ---------------------------------------------------------------- the rules, the start
-const LE_PARTS = { base: ["🔄", T("Stop and driver change")], garage: ["🏠", T("The garage prepares")],
-  tyres: ["🛞", T("Tyres")], battery: ["🔋", T("Battery swap")], engine: ["🔧", T("Engine swap")] };
 // the countries a team can race for (ISO codes, the same list as langstrecke.COUNTRIES), by region
 const LE_COUNTRIES = {
   BE: T("Belgium"), BG: T("Bulgaria"), DK: T("Denmark"), DE: T("Germany"), FI: T("Finland"), FR: T("France"), GR: T("Greece"), GB: T("Great Britain"),
@@ -400,15 +470,13 @@ function langstreckeRulesView(r, rewards) {
     T("Five corners per lap: the sign shows the direction and the suggested speed, the boards 150 / 100 / 50 m. Brake before the corner and steer through it – too fast and the car runs wide onto the kerb and the grass."),
     T("Racing line: come in from the outside, touch the inside in the middle of the corner, let the car run out again."),
     T("Close behind another car on a straight you get the slipstream – more speed to overtake. Running into a car only slows you down."),
-    T("Driving assist (🧒, on for juniors): the car brakes before the corners and helps to steer. Everybody can switch it for themselves."),
+    T("Handbrake («HB» on the picture, or Space): tap it at the entry of a corner at speed to drift – full gas and steering into the corner hold it and the car comes through a little faster. Lifting ends it, too late it spins, held too long it brakes hard."),
+    T("Driving assist (🧒, on for juniors): the car brakes before the corners and helps to steer. Everybody can switch it for themselves (☰ menu)."),
     T("Electric car: full throttle drains the battery much faster than cruising. Empty – emergency drive mode: the car crawls to the pits."),
-    T("Two batteries per team: at every stop the spare goes in with whatever charge it has. Plug the used one in first – it needs about a lap to charge."),
-    r.crew === "bots" ? T("Pit crew: bots – an automatic crew prepares every stop (3.5 s, the tyres by the forecast). Everybody else only watches until it is their turn to drive.")
-      : T("Pit crew (everybody else): during the lap plug in the spare battery and lay out the 4 tyres. After an overheat also prepare the spare engine."),
-    T("The stop takes 3 s with the battery swap, +4 s if the tyres are not ready, +6 s for an engine swap (+2 s if prepared)."),
-    r.weather ?? 1 ? T("Sudden rain showers: the crew picks slicks or rain tyres – watch the forecast. The wrong tyres are slower.") : null,
-    T("In the rain every corner needs less speed – even less with slicks. At night the headlights only reach a short way."),
-    T("Alone in a team: the garage prepares, every stop takes 5 s – it plugs the spare battery in only after 8 s."),
+    T("Only drivers: at every stop the next person of the team takes over – alone, you again. The one who came in has a break and watches."),
+    T("The pit stop is done by the one who drives next, on their phone: tap the battery first (4 s – always a full one), then the 4 tyres (1 s each). About 8 s done well – after 10 s it is done anyway. After an overheat also the engine (+5 s)."),
+    r.weather ?? 1 ? T("Sudden rain showers: pick slicks or rain tyres at the stop – watch the forecast. The wrong tyres are slower.") : null,
+    T("In the rain every corner needs less speed – even less with slicks. At night the headlights only reach a short way. The race starts at 16:00 and runs through the night."),
     rewards ? I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", leCoins(rewards)) : null,
     T("Coins only for a game played to the end at a family table with at least two people of the family – not alone against bots, not for guests or bots."),
   ].filter(Boolean);
@@ -420,8 +488,6 @@ const leMinutes = v => leSel(v || 8, [5, 8, 12].map(n => [n, "⏱ " + n + " min"
 const leWeather = v => leSel(v ? 1 : 0, [[1, "🌦️ " + I18N.tr(T("Rain showers"))], [0, "☀️ " + I18N.tr(T("Always dry"))]]);
 const leDiff = v => leSel(v || "normal", [["junior", "🧒 " + I18N.tr(T("Junior – with driving assist"))], ["normal", "🏁 " + I18N.tr(T("Normal"))]]);
 const leSize = v => leSel(v || 3, [1, 2, 3, 4, 5].map(n => [n, "👥 " + n]));
-// the pit crew: the team's other people – or an automatic crew for every team (the people only drive and watch)
-const leCrew = v => leSel(v === "bots" ? "bots" : "players", [["players", "🙋 " + I18N.tr(T("Players"))], ["bots", "🤖 " + I18N.tr(T("Bots"))]]);
 
 async function langstreckeStartDialog(solo, onStarted) {
   let r = {};
@@ -430,7 +496,6 @@ async function langstreckeStartDialog(solo, onStarted) {
   const level = leSel(r.level || "normal", [["easy", T("easy")], ["normal", T("normal")], ["hard", T("hard")]]);
   const minutes = leMinutes(r.minutes), weather = leWeather(r.weather ?? 1), diff = leDiff(r.difficulty), size = leSize(r.team_size);
   const teams = leSel(r.teams || 2, [1, 2, 3, 4].map(n => [n, String(n)]));
-  const crewSel = leCrew(solo ? "bots" : r.crew);                // alone: the automatic crew by default (else the garage)
   const picker = botPicker(1400);
   const speed = picker.el.querySelector(".bot-speed");
   if (speed) speed.remove();
@@ -438,16 +503,16 @@ async function langstreckeStartDialog(solo, onStarted) {
   const coins = solo ? h("p.small.muted", "🪙 ", T("Alone against bots there are no coins."))
     : rw.some(x => x > 0) ? h("p.small.pj-coins", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", leCoins(rw))) : null;
   const m = modal(h("div.form", h("h2", LE_ICON, " ", leName(), solo ? " – " + I18N.tr(T("Alone")) : ""),
-    h("p.small.muted", T("Short laps and a pit stop after every lap: one drives, the others charge the spare battery and get the tyres ready – then the next one drives.")),
+    h("p.small.muted", T("Short laps and a pit stop after every lap: the next driver of the team does the stop – battery, tyres – and drives on.")),
     h("div.grid2", h("label.field", T("Race length"), minutes), h("label.field", T("Weather"), weather)),
-    h("div.grid2", h("label.field", T("Difficulty"), diff), h("label.field", T("Pit crew"), crewSel)),
+    h("label.field", T("Difficulty"), diff),
     solo ? null : h("div.grid2", h("label.field", T("Teams of people"), teams), h("label.field", T("People per team"), size)),
     h("div.grid2", h("label.field", T("Bot teams"), bots), h("label.field", T("Bots play"), level)),
-    solo ? h("p.small.muted", T("Alone: you drive, the garage prepares the stops.")) : h("p.small.muted", T("Everybody joins on their own device and picks a team – guests via QR code.")),
+    solo ? h("p.small.muted", T("Alone: you drive and do every pit stop yourself.")) : h("p.small.muted", T("Everybody joins on their own device and picks a team – guests via QR code.")),
     picker.el, coins,
     h("p.small.muted", T("These rules are remembered for the next game.")),
     h("div.row", h("button.btn.big", { onclick: async () => {
-      const body = { solo, bots: +bots.value, level: level.value, minutes: +minutes.value, weather: +weather.value, difficulty: diff.value, crew: crewSel.value, country: leHomeCountry(),
+      const body = { solo, bots: +bots.value, level: level.value, minutes: +minutes.value, weather: +weather.value, difficulty: diff.value, country: leHomeCountry(),
         bot_ids: picker.ids(), ...(solo ? {} : { team_size: +size.value, teams: +teams.value }) };
       try { await api("community/langstrecke/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
@@ -499,6 +564,18 @@ function leCarRear(ctx, x, y, w, col, num, o = {}) {
   ctx.save();
   ctx.globalAlpha = o.alpha ?? 1;
   ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.beginPath(); ctx.ellipse(x, y, w * 0.6, w * 0.08, 0, 0, 7); ctx.fill();
+  if (o.yaw) {                                                       // drifting: turned a little, its flank in view
+    const sn = Math.sin(o.yaw * Math.PI / 180), side = w * 0.34 * Math.abs(sn), dir = sn > 0 ? -1 : 1;
+    ctx.translate(x, y); ctx.rotate(leClamp(o.yaw, -40, 40) * Math.PI / 180 * 0.18); ctx.translate(-x, -y);
+    if (side > 1) {
+      const ex = x + dir * w * 0.42;
+      ctx.fillStyle = col; ctx.globalAlpha = (o.alpha ?? 1) * 0.9;
+      ctx.beginPath(); ctx.moveTo(ex, y - hgt * 0.15); ctx.lineTo(ex + dir * side, y - hgt * 0.22); ctx.lineTo(ex + dir * side * 0.85, y - hgt * 0.66); ctx.lineTo(x + dir * w * 0.36, y - hgt * 0.72); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.fill();
+      ctx.fillStyle = "#15171c"; ctx.fillRect(ex + dir * side * 0.55 - w * 0.07, y - hgt * 0.5, w * 0.14, hgt * 0.5);   // a front wheel
+      ctx.globalAlpha = o.alpha ?? 1;
+    }
+  }
   ctx.fillStyle = "#15171c";                                         // wheels
   ctx.fillRect(x - w * 0.52, y - hgt * 0.55, w * 0.2, hgt * 0.55); ctx.fillRect(x + w * 0.32, y - hgt * 0.55, w * 0.2, hgt * 0.55);
   ctx.fillStyle = col;                                               // body
@@ -628,12 +705,13 @@ function leCarTop(ctx, x, y, len, ang, col, num, door, o = {}) {
 }
 
 // the race picture's notice: a small one-line pill (about 12.5 px) at the very top – between the corner sign and the
-// minimap (top.l … top.r, below the driver's crew strip: top.y0), or centred just under them (top.b) when it does not fit there
+// minimap (top.l … top.r at top.y0 – the driver: just under the speedometer, squeezed into the room with top.fit), or
+// centred just under them (top.b) when it does not fit there
 function leNotice(ctx, cw, top, txt, col, alpha) {
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.font = "700 12.5px system-ui, 'Apple Color Emoji', 'Noto Color Emoji', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const w = Math.min(cw - 16, ctx.measureText(txt).width + 18), hh = 22, room = top.r - top.l;
+  const room = top.r - top.l, w = Math.min(cw - 16, ctx.measureText(txt).width + 18, top.fit ? Math.max(60, room) : 1e9), hh = 22;
   const x = w <= room ? top.l + (room - w) / 2 : (cw - w) / 2, y = w <= room ? top.y0 ?? 8 : Math.max(top.b, (top.y0 ?? 8));
   ctx.fillStyle = "rgba(15,23,42,.58)";
   ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, hh, hh / 2) : ctx.rect(x, y, w, hh); ctx.fill();
@@ -646,7 +724,7 @@ function langstreckeLive(box, me, back) {
   let pend = [], inflight = [], thrLocal = 0;
   const fired = new Set();
   let ui = {}, introSkip = false, introSound = 0, finalCue = false, lastTempWarn = 0, wasDriver = false, stopSeen = null;
-  const local = { tyres: [false, false, false, false], plug: 0, engHold: 0, compound: null };    // my own taps until the server has them
+  const local = { pend: new Set() };                            // my taps at a stop on their way to the server
   const imgs = {};
   const myId = String(me.id);
   box.classList.add("le-live");
@@ -701,12 +779,12 @@ function langstreckeLive(box, me, back) {
     const t = myTeam();
     if (!t) return;
     const drv = t.driver === myId;
-    if (drv && !wasDriver) { thrLocal = 0; held.gas = held.brake = held.jgas = held.jbrake = false; pend = []; inflight = []; steer.sent = 0; ui.xs = null; }      // my turn: the pedals start released
+    if (drv && !wasDriver) { thrLocal = 0; held.gas = held.brake = held.jgas = held.jbrake = false; held.hb = 0; pend = []; inflight = []; steer.sent = 0; ui.xs = null; ui.skids = []; }      // my turn: the pedals start released
     if (!drv) { pend = []; inflight = []; }
     wasDriver = drv;
     if (t.stop && stopSeen !== t.stop.t) {                                     // the car is in: the stopwatch starts
       stopSeen = t.stop.t;
-      local.tyres = [false, false, false, false]; local.plug = 0; local.engHold = 0;
+      local.pend.clear(); ui.cheered = false;
       if (gameT() - t.stop.t < 3) { LeAudio.tone([500, 400], "sine", 0.15, 0.1, 0.12); leBuzz([60, 40, 60]); }
     }
   }
@@ -744,13 +822,15 @@ function langstreckeLive(box, me, back) {
   }
   // the pedals: gas (held = full throttle) and the brake (wins while held); neither = lifted off – from the keys
   // (↑ / W / Space, ↓ / S) and from the joystick's upper / lower zone
-  const held = { gas: false, brake: false, jgas: false, jbrake: false };
+  const held = { gas: false, brake: false, jgas: false, jbrake: false, hb: 0 };
   const pedals = () => {
     const v = held.brake || held.jbrake ? -1 : held.gas || held.jgas ? 1 : 0;
     if (v !== thrLocal) input("u", v);
     if (ui.joy) { ui.joy.classList.toggle("le-jgas", v > 0); ui.joy.classList.toggle("le-jbrake", v < 0); }
   };
   const pedal = on => { held.gas = !!on; pedals(); };
+  // the handbrake (the «HB» button, Space): held 1 / released 0 – a short tap at a corner's entry starts a drift
+  const hbSet = on => { on = on ? 1 : 0; if (held.hb === on) return; held.hb = on; input("h", on); if (ui.hb) ui.hb.classList.toggle("le-hbon", !!on); if (on && !leReduced()) leBuzz(15); };
   const brake = on => { held.brake = !!on; pedals(); };
   // the steering: −100 … 100 – the arrow keys give full lock while held, the joystick steers by how far the knob is
   // pushed sideways (leJoy); sent in steps of 5, at most every 60 ms
@@ -767,7 +847,7 @@ function langstreckeLive(box, me, back) {
     if (ui.joy) { ui.joy.classList.toggle("le-jl", v < 0); ui.joy.classList.toggle("le-jr", v > 0); }
   }
   const KEYS = { ArrowLeft: "kl", KeyA: "kl", ArrowRight: "kr", KeyD: "kr" };
-  const GAS = ["ArrowUp", "KeyW", "Space"], BRAKE = ["ArrowDown", "KeyS"];
+  const GAS = ["ArrowUp", "KeyW"], BRAKE = ["ArrowDown", "KeyS"];       // Space: the handbrake
   // manual gears on the keyboard: 1–6, R, N / 0
   const GEARKEYS = { KeyR: -1, KeyN: 0, Digit0: 0, Numpad0: 0 };
   for (let g = 1; g <= 6; g++) { GEARKEYS["Digit" + g] = g; GEARKEYS["Numpad" + g] = g; }
@@ -789,10 +869,11 @@ function langstreckeLive(box, me, back) {
   }
   function onKey(e) {
     if (!alive || !box.isConnected || !amDriver()) return;
-    if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "")) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "") || document.querySelector(".game-menu-back")) return;   // (☰ open: its keys)
     if (KEYS[e.code]) { e.preventDefault(); if (!e.repeat) { steer[KEYS[e.code]] = true; steerNow(); } }
     else if (GAS.includes(e.code)) { e.preventDefault(); if (!e.repeat) pedal(1); }
     else if (BRAKE.includes(e.code)) { e.preventDefault(); if (!e.repeat) brake(1); }
+    else if (e.code === "Space") { e.preventDefault(); if (!e.repeat) hbSet(1); }
     else if (e.code === "KeyE" || e.code === "KeyQ") { const c = predicted(); if (c && c.man) { e.preventDefault(); if (!e.repeat) paddleShift(e.code === "KeyE" ? 1 : -1); } }   // the paddles: E up, Q down
     else if (GEARKEYS[e.code] != null) { const c = predicted(); if (c && c.man) { e.preventDefault(); if (!e.repeat) shiftTo(GEARKEYS[e.code]); } }
   }
@@ -800,10 +881,11 @@ function langstreckeLive(box, me, back) {
     if (KEYS[e.code]) { steer[KEYS[e.code]] = false; if (amDriver()) { e.preventDefault(); steerNow(); } return; }
     if (!amDriver()) return;
     if (GAS.includes(e.code)) { e.preventDefault(); pedal(0); } else if (BRAKE.includes(e.code)) { e.preventDefault(); brake(0); }
+    else if (e.code === "Space") { e.preventDefault(); hbSet(0); }
   }
   window.addEventListener("keydown", onKey);
   window.addEventListener("keyup", onKeyUp);
-  window.addEventListener("blur", () => { steer.kl = steer.kr = false; held.gas = held.brake = false; if (amDriver()) { steerNow(); pedals(); } });
+  window.addEventListener("blur", () => { steer.kl = steer.kr = false; held.gas = held.brake = false; if (amDriver()) { steerNow(); pedals(); hbSet(0); } });
   // the first-drive hint under the joystick: until the gas was given with it once (remembered on this device)
   const JOY_SEEN = "fq-le-joy";
   const LINE_KEY = () => "fq-le-line-" + myId;                     // the racing line on the road: on unless this driver switched it off
@@ -916,6 +998,19 @@ function langstreckeLive(box, me, back) {
       sync(g) { if (pid == null && g !== shown) this.set(g); } };
   }
 
+  // the handbrake: a round button bottom right above the gears – its own pointerId, so it works while the left thumb
+  // holds the joystick; held while pressed (a short tap at a corner's entry: a drift)
+  function handbrake() {
+    const b = h("button.le-hb", { type: "button", "aria-label": I18N.tr(T("Handbrake: tap it at the corner entry to drift (Space)")),
+      title: I18N.tr(T("Handbrake: tap it at the corner entry to drift (Space)")) }, h("b", "HB"), h("small", T("Drift")));
+    let pid = null;
+    b.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); if (pid != null) return; pid = e.pointerId; try { b.setPointerCapture(pid); } catch {} hbSet(1); });
+    const up = e => { if (e.pointerId !== pid) return; pid = null; hbSet(0); };
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, up);
+    b.addEventListener("contextmenu", e => e.preventDefault());
+    return b;
+  }
+
   // ---------- my car as the server will see it (the snapshot + my inputs up to now; the other cars moved on)
   let predCache = null;
   function predicted(tNow) {
@@ -953,6 +1048,8 @@ function langstreckeLive(box, me, back) {
     else if (e === "lap") { try { Sound.play("tap"); } catch {} }
     else if (e === "pitlane") { LeAudio.tone([700, 900], "triangle", 0.1, 0.06, 0.08); }
     else if (e === "autopilot") { ui.apAt = nowS(); LeAudio.tone([520, 660, 780], "sine", 0.12, 0.07, 0.09); leBuzz([30, 40, 30]); }
+    else if (e === "drift") { ui.driftAt = nowS(); LeAudio.tone([900, 760, 820], "sawtooth", 0.16, 0.035, 0.07); leBuzz(25); }
+    else if (e === "spin") { LeAudio.tone([500, 300, 180], "sawtooth", 0.22, 0.07, 0.1); leBuzz([80, 40, 80]); ui.flash = nowS(); }
     else if (e === "grind") { ui.grind = nowS(); LeAudio.tone([140, 95, 140, 90], "sawtooth", 0.09, 0.1, 0.06); leBuzz([90, 30, 90, 30, 90]); }
   }
 
@@ -1061,7 +1158,7 @@ function langstreckeLive(box, me, back) {
     const wall = (z1, z2, xm, hm, h0 = 0) => { ctx.beginPath(); ctx.moveTo(X(z1, xm), Y(z1) - h0 * unit * sc(z1)); ctx.lineTo(X(z2, xm), Y(z2) - h0 * unit * sc(z2));
       ctx.lineTo(X(z2, xm), Y(z2) - hm * unit * sc(z2)); ctx.lineTo(X(z1, xm), Y(z1) - hm * unit * sc(z1)); ctx.fill(); };
     // beside the pit lane (per lap lp): the «PIT» boards with the arrow before the entry, the speed-limit sign at the
-    // entry line and its end at the exit, the boxes in the team colours with the crews standing at them
+    // entry line and its end at the exit, the boxes in the team colours with people standing at them
     function pitItems(lp) {
       const line = (lp + 1) * LE.L, kmh = leKmh(LE.PIT_V);
       for (const m of [90, 55, 20]) at(lp * LE.L + LE.PIT_IN - m - d, LE.HW + LE.KERB + 2.4, (x, y, u) => {
@@ -1098,7 +1195,7 @@ function langstreckeLive(box, me, back) {
           if (u > 3) { ctx.fillStyle = "#fff"; ctx.font = "900 " + Math.max(6, Math.round(u * 0.7)) + "px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.fillText("#" + o.num, X(zm, xf), Y(zm) - u * 2.95); }
         } });
-        // the crew at its box: my team's people (their avatars), elsewhere two mechanics in the team colour
+        // at its box: my team's people on a break (their avatars), elsewhere two mechanics in the team colour
         const crew = mine ? o.members.filter(m => m !== o.driver).map(person).filter(Boolean) : [null, null];
         const wave = mine && car.pl >= 2;
         (crew.length ? crew : [null]).slice(0, 4).forEach((p, k) => {
@@ -1159,6 +1256,16 @@ function langstreckeLive(box, me, back) {
         for (let q = 0; q < 4; q++) { ctx.fillStyle = q % 2 ? "#111" : "#fff"; const a = LE.PL_X - LE.PL_HW + q; quad(z1, z2, a, a + 1, a, a + 1); }
       }
     }
+    // skid marks of my drift on the road (two dark lines behind the rear wheels)
+    if (ui.skids && ui.skids.length > 1) {
+      ctx.strokeStyle = dk > 0.5 ? "rgba(0,0,0,.35)" : "rgba(25,25,28,.26)"; ctx.lineCap = "round";
+      for (let i = 1; i < ui.skids.length; i++) {
+        const [d1, x1] = ui.skids[i - 1], [d2, x2] = ui.skids[i], z1 = d1 - d + CAMZ, z2 = d2 - d + CAMZ;
+        if (d2 - d1 > 3 || d2 - d1 < 0.05 || z1 < 0.3 || z2 > VIEW) continue;
+        ctx.lineWidth = Math.max(1, unit * sc(z1) * 0.12);
+        for (const o of [-0.75, 0.75]) { ctx.beginPath(); ctx.moveTo(X(z1, x1 + o), Y(z1)); ctx.lineTo(X(z2, x2 + o), Y(z2)); ctx.stroke(); }
+      }
+    }
     // beside the track: trees, banners, camping fans, the braking boards; the other cars – far first
     const items = [];
     const at = (rel, xm, f) => { const z = rel + CAMZ; if (z > 0.5 && z < VIEW) items.push({ z, f: () => f(X(z, xm), Y(z), unit * sc(z), z) }); };
@@ -1201,7 +1308,7 @@ function langstreckeLive(box, me, back) {
       if (rel < -CAMZ + 1 || rel > VIEW) continue;
       const haz = o.emg && Math.floor(t * 2.5) % 2 === 0;           // a car in the emergency drive mode: hazard lights
       const brk = !o.pit && !!brakeSeen[o.i] && nowS() < brakeSeen[o.i].until;
-      at(rel, o.x || 0, (x, y, u, z) => { leCarRear(ctx, x, y, u * 2.8, o.color, o.num, { night: dk > 0.4, alpha: 0.97, flag: leFlag(o.country), hazard: haz, emg: haz, brake: brk });
+      at(rel, o.x || 0, (x, y, u, z) => { leCarRear(ctx, x, y, u * 2.8, o.color, o.num, { night: dk > 0.4, alpha: 0.97, flag: leFlag(o.country), hazard: haz, emg: haz, brake: brk, yaw: o.yaw || 0 });
         if (dk > 0.05) lights.push({ x, y, u, z, xm: o.x || 0, rel, pit: !!o.pit, brk }); });
     }
     items.sort((a, b) => b.z - a.z).forEach(it => it.f());
@@ -1286,7 +1393,12 @@ function langstreckeLive(box, me, back) {
     const cx0 = X(CAMZ, opts.xs ?? car.x), cy0 = Y(CAMZ), cwid = unit * sc(CAMZ) * 2.8;
     const rumble = !red && (car.sf === 1 || (ui.rumble && nowS() - ui.rumble < 0.25)) ? Math.sin(t * 90) * 1.5 : 0;
     const grinding = !opts.tv && ui.grind && nowS() - ui.grind < 0.9;     // R at speed: the gearbox grinds – sparks, a hard shake
-    const shake = (car.v > 0 && !red ? Math.sin(t * 40) * 0.5 + rumble : 0) + (grinding && !red ? Math.sin(t * 110) * 4 : 0);
+    const drifting = (car.dr || 0) > 0 && !car.pit;
+    const shake = (car.v > 0 && !red ? Math.sin(t * 40) * 0.5 + rumble : 0) + (grinding && !red ? Math.sin(t * 110) * 4 : 0) + (drifting && !red ? Math.sin(t * 70) * 1.2 : 0);
+    if (drifting && !opts.tv) {                                       // my drift leaves skid marks (world metres: they stay put)
+      ui.skids = (ui.skids || []).filter(([sd]) => d - sd < 14).slice(-160);
+      ui.skids.push([d - CAMZ * 0.2, car.x]);
+    }
     if (car.sf === 2 && car.v > 2 && !red) {
       ctx.fillStyle = "rgba(160,130,90,.45)";
       for (let k = 0; k < 6; k++) { const a = leRand(Math.floor(t * 20) + k)(); ctx.beginPath(); ctx.arc(cx0 + (a - 0.5) * cwid, cy0 - cwid * 0.05 + a * 8, cwid * (0.08 + a * 0.08), 0, 7); ctx.fill(); }
@@ -1307,7 +1419,15 @@ function langstreckeLive(box, me, back) {
     }
     const emg = car.bat != null && car.bat <= 0 && !car.pit, haz = emg && Math.floor(t * 2.5) % 2 === 0;
     leCarRear(ctx, cx0, cy0 + shake, cwid, team.color, team.num, { brake: car.thr < 0 || (car.v > LE.VLIFT + 1 && !car.thr), night: dk > 0.4, smoke: !!car.eng, flag: leFlag(team.country),
-      hazard: haz, emg: haz, bat: car.bat });
+      hazard: haz, emg: haz, bat: car.bat, yaw: car.yaw || 0 });
+    if (drifting) {                                                   // tyre smoke from the rear wheels (a still cloud with reduced motion)
+      const r = leRand(red ? 9 : Math.floor(t * 16)), out = (car.yaw || 0) > 0 ? -1 : 1;
+      for (let k = 0; k < 9; k++) {
+        const a = r(), b = r(), sx = cx0 + (k % 2 ? 0.42 : -0.42) * cwid + out * a * cwid * 0.5, sy = cy0 - cwid * (0.05 + b * 0.3), rad = cwid * (0.12 + a * 0.16);
+        ctx.fillStyle = `rgba(${dk > 0.5 ? "150,155,165" : "225,228,232"},${0.22 + 0.25 * (1 - b)})`;
+        ctx.beginPath(); ctx.arc(sx, sy, rad, 0, 7); ctx.fill();
+      }
+    }
     if (rain) {
       ctx.strokeStyle = `rgba(200,215,235,${0.55 * (1 - 0.55 * dk)})`; ctx.lineWidth = 1;      // dimmer in the dark
       const r = leRand(red ? 5 : Math.floor(t * 12));
@@ -1319,12 +1439,120 @@ function langstreckeLive(box, me, back) {
     minimap(ctx, cw - ms - 6, 6, ms, t, { ...team, d, pit: car.pit, pl: car.pl || 0, x: car.x });
     const [nc, dz] = leNextCorner(leLapPos(d)), sw = Math.min(ms * 1.15, 120);
     const signOn = !!(nc && dz < Math.min(220, VIEW * 1.45) && !car.pit);   // later at night, much later at night in the rain
-    ui.top = { l: signOn ? sw + 14 : 8, r: cw - ms - 14, b: Math.max(ms, signOn ? sw * 0.62 : 0) + 12, y0: opts.tv ? 8 : 38 };   // the room for the notice (between them, under the crew strip)
+    ui.top = { l: signOn ? sw + 14 : 8, r: cw - ms - 14, b: Math.max(ms, signOn ? sw * 0.62 : 0) + 12, y0: 8 };   // the room for the notice (between them)
     if (signOn) {
       const vs = leSafe(nc, car.tyre, rain), kmh = Math.round(leKmh(vs * 0.95) / 5) * 5;
       const hot = car.v > vs * 1.02 && dz <= (car.v * car.v - vs * vs) / (2 * LE.BRAKE) + car.v * 0.6 + 8;
       cornerSign(ctx, 6, 6, sw, nc, dz, kmh, hot);
     }
+    if (!opts.tv) {                                                    // the driver: the speedometer top centre, the position card top left
+      const R = Math.floor(Math.min(leClamp(Math.min(cw, ch) * 0.13, 40, 62), (cw - ms - sw - 46) / 2)), gw = 2 * R + 22;
+      const gx = leClamp(cw / 2, sw + 12 + gw / 2, cw - ms - 12 - gw / 2);
+      const gb = speedo(ctx, gx, 6, R, car, t);
+      const card = raceCard(ctx, 6, 6 + Math.round(sw * 0.62) + 6, Math.min(cw * 0.36, 210), { ...team, d }, t, ch < 420 ? 0.92 : cw > 900 ? 1.15 : 1);
+      ui.top = { l: card.r + 6, r: cw - ms - 12, b: gb + 4, y0: gb + 4, fit: true };   // the notice: just under the speedometer
+    }
+  }
+  const rr = (ctx, x, y, w, hh, r) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, hh, r); else ctx.rect(x, y, w, hh); };
+  const OVL = "rgba(15,23,42,.66)";                                  // the overlays' own background: readable by day, at night, in the rain
+  // the speedometer (top centre on the driver's picture): an arc gauge with the needle (no easing – it shows the value),
+  // the big km/h, the gear (A4 / M3 / N / R), the rev / shift light around the arc (red: shift up; the limiter blinks –
+  // steady with reduced motion), below it the battery with %; the engine temperature and wrong tyres only as warnings
+  function speedo(ctx, cx, y0, R, car, t) {
+    const rain = leInWin(st.rain, t), rv = leRev(car, rain), red = leReduced(), v = Math.abs(car.v || 0);
+    const cy = y0 + R + 6, w = 2 * R + 22, x0 = cx - w / 2, yb = cy + R * 0.76 + 6;
+    const tw = car.eng || car.temp >= 92 ? "red" : car.temp >= LE.YELLOW ? "yellow" : null, wrong = leGrip(car.tyre, rain) < 1;
+    const hgt = yb + 10 - y0 + 7 + (tw || wrong ? 17 : 0);
+    ctx.save();
+    ctx.fillStyle = OVL; rr(ctx, x0, y0, w, hgt, 14); ctx.fill();
+    const A0 = Math.PI * 0.75, SW = Math.PI * 1.5, ang = x => A0 + SW * leClamp(x / (240 / 7), 0, 1);   // 0 … 240 km/h
+    ctx.lineCap = "round"; ctx.lineWidth = Math.max(4, R * 0.1);
+    ctx.strokeStyle = "rgba(255,255,255,.16)"; ctx.beginPath(); ctx.arc(cx, cy, R * 0.8, A0, A0 + SW); ctx.stroke();
+    ctx.strokeStyle = "#74c0fc"; ctx.beginPath(); ctx.arc(cx, cy, R * 0.8, A0, Math.max(A0 + 0.01, ang(v))); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 1.5;
+    for (let k = 0; k <= 6; k++) { const a = A0 + SW * k / 6; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * R * 0.6, cy + Math.sin(a) * R * 0.6); ctx.lineTo(cx + Math.cos(a) * R * 0.68, cy + Math.sin(a) * R * 0.68); ctx.stroke(); }
+    const N = 12, lit = rv.g < 1 ? 0 : Math.max(1, Math.min(N, Math.round((rv.r - 0.4) / 0.57 * N))), blink = rv.lim && !red && Math.floor(nowS() * 8) % 2 === 1;
+    ctx.lineCap = "butt"; ctx.lineWidth = Math.max(3, R * 0.09);
+    for (let k = 0; k < N; k++) {
+      const on = rv.lim ? !blink : k < lit;
+      ctx.strokeStyle = !on ? "rgba(255,255,255,.1)" : rv.lim || k >= 10 ? "#fa5252" : k >= 7 ? "#fab005" : "#40c057";
+      ctx.beginPath(); ctx.arc(cx, cy, R * 0.98, A0 + SW * k / N + 0.03, A0 + SW * (k + 1) / N - 0.03); ctx.stroke();
+    }
+    const a = ang(v);                                                // the needle: only its outer part (the number stays clear)
+    ctx.strokeStyle = "#ff6b6b"; ctx.lineWidth = Math.max(2, R * 0.06); ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * R * 0.5, cy + Math.sin(a) * R * 0.5); ctx.lineTo(cx + Math.cos(a) * R * 0.86, cy + Math.sin(a) * R * 0.86); ctx.stroke();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff";
+    ctx.font = "900 " + Math.round(R * 0.5) + "px system-ui, sans-serif"; ctx.fillText(String(leKmh(v)), cx, cy - R * 0.08);
+    ctx.font = "700 " + Math.round(R * 0.17) + "px system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.fillText("km/h", cx, cy + R * 0.24);
+    ctx.font = "900 " + Math.round(R * 0.3) + "px system-ui, sans-serif"; ctx.fillStyle = rv.g < 0 ? "#ffa94d" : rv.g === 0 ? "#adb5bd" : "#ffd43b";
+    ctx.fillText(rv.g < 0 ? "R" : rv.g === 0 ? "N" : (car.man ? "M" : "A") + rv.g, cx, cy + R * 0.6);
+    const b = Math.max(0, car.bat ?? 0), need = leNeed(car.d), lvl = b <= 0 || b < need.lift ? "#fa5252" : b < need.mix ? "#fd7e14" : "#40c057";
+    const bx = x0 + 22, bw = w - 22 - 40;
+    ctx.font = "11px system-ui, 'Apple Color Emoji', 'Noto Color Emoji'"; ctx.fillText("🔋", x0 + 13, yb + 5);
+    ctx.fillStyle = "rgba(255,255,255,.2)"; rr(ctx, bx, yb, bw, 10, 5); ctx.fill();
+    ctx.fillStyle = lvl; rr(ctx, bx, yb, Math.max(5, bw * Math.min(100, b) / 100), 10, 5); ctx.fill();
+    ctx.font = "800 11.5px system-ui, sans-serif"; ctx.textAlign = "right"; ctx.fillStyle = lvl === "#40c057" ? "#fff" : lvl;
+    ctx.fillText(Math.ceil(b) + "%", x0 + w - 7, yb + 5.5);
+    if (tw || wrong) {                                                // the warnings: only when they matter
+      const yw = yb + 20, pulse = !red && tw === "red" ? 0.6 + 0.4 * Math.abs(Math.sin(nowS() * 6)) : 1;
+      ctx.textAlign = "left"; ctx.font = "800 11.5px system-ui, 'Apple Color Emoji', 'Noto Color Emoji'";
+      let x = x0 + 8;
+      if (tw) {
+        ctx.globalAlpha = pulse; ctx.fillStyle = tw === "red" ? "#ff6b6b" : "#ffd43b"; ctx.fillText("🌡️", x, yw); x += 18;
+        const tb = wrong ? w - 62 : w - 34, f = leClamp((car.temp - LE.TMIN) / (LE.RED - LE.TMIN), 0.05, 1);
+        ctx.fillStyle = "rgba(255,255,255,.2)"; rr(ctx, x, yw - 4, tb, 8, 4); ctx.fill();
+        ctx.fillStyle = tw === "red" ? "#fa5252" : "#fab005"; rr(ctx, x, yw - 4, tb * (car.eng ? 1 : f), 8, 4); ctx.fill();
+        ctx.globalAlpha = 1; x += tb + 6;
+      }
+      if (wrong) { ctx.fillStyle = "#ffa94d"; ctx.fillText((car.tyre === "r" ? "🌧️" : "☀️") + "!", x, yw); }
+    }
+    ctx.restore();
+    return y0 + hgt;
+  }
+  // the position card (top left under the corner sign): «P2/5» big with my car, the leader (🏁, not when I lead), the
+  // car ahead (▲ gap) and behind (▼ gap) – a lapped car «+1 lap» – and one small line with the lap and the race clock
+  function raceCard(ctx, x, y, maxW, me, t, k) {
+    const dOf = o => (o.i === me.i ? me.d : o.pit ? o.d : o.d + o.v * Math.max(0, Math.min(1.5, t - simT())));
+    const rc = leRaceCard(st, me.i, dOf), pad = 7 * k, lh = 16 * k, emo = "'Apple Color Emoji', 'Noto Color Emoji'";
+    const fSmall = "700 " + (11.5 * k).toFixed(1) + "px system-ui, " + emo + ", sans-serif", fBig = "900 " + Math.round(20 * k) + "px system-ui, sans-serif";
+    const gapTxt = c => (c.laps ? "+" + leLapsTxt(c.laps) : c.s.toFixed(1) + " s");
+    const tt = leClamp(t, 0, limit());
+    const foot = I18N.tr(T("Lap {0}")).replace("{0}", leLaps(me.d) + 1) + " · ⏳ " + leRaceLeft(tt, limit());
+    const chipW = num => { ctx.font = "800 " + (11 * k).toFixed(1) + "px system-ui, sans-serif"; return ctx.measureText("#" + num).width + 8 * k; };
+    const rows = [];
+    if (rc.leader) rows.push({ ic: "🏁", c: rc.leader, txt: rc.leader.name, col: "#fff", name: true });
+    if (rc.ahead) rows.push({ ic: "▲", c: rc.ahead, txt: gapTxt(rc.ahead), col: "#ff8787" });
+    if (rc.behind) rows.push({ ic: "▼", c: rc.behind, txt: gapTxt(rc.behind), col: "#8ce99a" });
+    ctx.save();
+    ctx.font = fBig; const posTxt = "P" + rc.pos + "/" + rc.n, pw = ctx.measureText(posTxt).width;
+    let w = pad * 2 + pw + 6 * k + chipW(me.num);
+    ctx.font = fSmall;
+    for (const r of rows) r.w = 18 * k + chipW(r.c.num) + 5 * k + ctx.measureText(r.txt).width;
+    w = Math.min(maxW, Math.max(w, ctx.measureText(foot).width + pad * 2, ...rows.map(r => r.w + pad * 2)));
+    const hgt = pad + 22 * k + rows.length * lh + 15 * k + pad * 0.6;
+    ctx.fillStyle = OVL; rr(ctx, x, y, w, hgt, 12); ctx.fill();
+    const chip = (cx, cy, num, color, mine) => { ctx.font = "800 " + (11 * k).toFixed(1) + "px system-ui, sans-serif"; const cw_ = chipW(num), chh = 15 * k;
+      ctx.fillStyle = color; rr(ctx, cx, cy - chh / 2, cw_, chh, 5); ctx.fill();
+      if (mine) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke(); }
+      ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText("#" + num, cx + cw_ / 2, cy + 0.5); return cw_; };
+    ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    let cy = y + pad + 11 * k;
+    ctx.font = fBig; ctx.fillStyle = "#fff"; ctx.fillText(posTxt, x + pad, cy);
+    chip(x + pad + pw + 6 * k, cy, me.num, me.color, true);
+    cy += 11 * k + lh / 2 + 2 * k;
+    for (const r of rows) {
+      ctx.font = fSmall; ctx.textAlign = "left"; ctx.fillStyle = r.col; ctx.fillText(r.ic, x + pad, cy);
+      const cx = x + pad + 18 * k, cw_ = chip(cx, cy, r.c.num, r.c.color, false), tx = cx + cw_ + 5 * k, room = x + w - pad - tx;
+      ctx.font = fSmall; ctx.textAlign = "left"; ctx.fillStyle = r.col;
+      let txt = r.txt;
+      if (ctx.measureText(txt).width > room) { while (txt.length > 1 && ctx.measureText(txt + "…").width > room) txt = txt.slice(0, -1); txt += "…"; }
+      ctx.fillText(txt, tx, cy);
+      cy += lh;
+    }
+    ctx.font = "600 " + (10.5 * k).toFixed(1) + "px system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.textAlign = "left";
+    ctx.fillText(foot, x + pad, cy - 1 * k, w - pad * 2);
+    ctx.restore();
+    return { r: x + w, b: y + hgt };
   }
 
   // ---------- the intro: drivers next to the track run to their cars, doors, engines, lights (6 s)
@@ -1374,67 +1602,74 @@ function langstreckeLive(box, me, back) {
     if (!skip && ti > 2.1 && !ui.roared) { ui.roared = true; LeAudio.roar(); leBuzz([40, 30, 80]); }
   }
 
-  // ---------- the pit stop: the car in its box, the crew at work, the stopwatch
-  function garage(c, tm, stp, t) {
-    const ctx = c.ctx, w = c.w, hh = c.h, el = Math.max(0, t - stp.t), p = Math.min(1, el / stp.time), done = t >= stp.end;
-    ctx.fillStyle = "#5c6370"; ctx.fillRect(0, 0, w, hh);
-    ctx.fillStyle = "#4a5059"; for (let x = 0; x < w; x += 40) ctx.fillRect(x, 0, 20, hh);
-    ctx.strokeStyle = "#fcc419"; ctx.lineWidth = 4; ctx.setLineDash([12, 9]); ctx.strokeRect(w * 0.14, hh * 0.16, w * 0.72, hh * 0.68); ctx.setLineDash([]);
-    ctx.fillStyle = tm.color; ctx.fillRect(0, 0, w, 8);
-    const len = Math.min(w * 0.56, hh * 1.25);
-    const slideIn = leReduced() ? 0 : Math.max(0, 1 - el / 0.5), slideOut = done && !leReduced() ? Math.min(1, (t - stp.end) / 0.6) : 0;
-    const cx = w / 2 - slideIn * w * 0.7 + slideOut * w * 0.8, cy = hh / 2;
-    const working = !done && slideIn === 0;
-    const lift = working ? Math.sin(t * 24) * 1.2 : 0;
-    // the wheels come off and on again one after the other while the stop runs
-    const off = [0, 1, 2, 3].map(i => working && p > 0.1 + i * 0.15 && p < 0.25 + i * 0.15);
-    leCarTop(ctx, cx + lift, cy, len, 0, tm.color, tm.num, 0, { off, hood: working && stp.eng });
-    const S = Math.min(34, hh * 0.2);
-    const crew = tm.members.filter(m => m !== stp.next).map(person).filter(Boolean);
-    const spots = [[-0.32, -1], [0.3, -1], [-0.32, 1], [0.3, 1]];
-    if (working) {
-      spots.forEach(([dx, side], i) => {                       // a tyre beside every wheel, a mechanic at it
-        const x = cx + dx * len, y = cy + side * (len * 0.42 * 0.5 + S * 0.7);
-        ctx.font = Math.round(S * 0.7) + "px system-ui, 'Apple Color Emoji', 'Noto Color Emoji'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(off[i] ? "🔧" : "🛞", x, y + (off[i] ? Math.sin(t * 30) * 2 : 0));
-      });
-      if (stp.eng) { ctx.fillText(Math.floor(t * 3) % 2 ? "🏗️" : "⚙️", cx + len * 0.22, cy - len * 0.36); }
-      crew.slice(0, 4).forEach((pp, i) => {                     // the crew (their avatars) around the car
-        const [dx, side] = spots[i], x = cx + dx * len + (i % 2 ? 1 : -1) * S * 0.9, y = cy + side * (len * 0.42 * 0.5 + S * 0.7);
-        const img = avatarImg(pp);
-        if (img && img.complete && img.naturalWidth) ctx.drawImage(img, x - S / 2, y - S / 2 + Math.sin(t * 12 + i) * 1.5, S, S);
-      });
-    }
-    // the battery swap: the used battery slides out to the charger at the pit wall, the spare slides in
-    const chx = w * 0.9, chy = hh * 0.2, bw = Math.min(46, len * 0.34), bh = bw * 0.42;
-    ctx.fillStyle = "#343a40"; ctx.fillRect(chx - 16, chy - 22, 32, 44);                         // the charger
-    ctx.fillStyle = "#ffe066"; ctx.font = "900 18px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⚡", chx, chy - 4);
-    ctx.fillStyle = "#69db7c"; ctx.fillRect(chx - 10, chy + 12, 20, 4);
-    const sw = Math.max(0, Math.min(1, (el - 0.5) / LE.BAT_SWAP)), slot = [cx + len * 0.05, cy];
-    const outAt = [slot[0] + (chx - 40 - slot[0]) * sw, slot[1] + (hh * 0.82 - slot[1]) * sw];       // out: to the charger (below it)
-    const inAt = [chx - 40 + (slot[0] - chx + 40) * sw, hh * 0.82 - (hh * 0.82 - slot[1]) * sw - (sw > 0 && sw < 1 ? bh * 1.4 : 0)];
-    if (sw > 0) {
-      ctx.save(); ctx.strokeStyle = "#ffd43b"; ctx.lineWidth = 3; ctx.setLineDash([7, 5]); ctx.lineDashOffset = leReduced() ? 0 : -t * 40;   // the cable to the used battery
-      ctx.beginPath(); ctx.moveTo(chx, chy + 22); ctx.quadraticCurveTo(chx, outAt[1] + bh, outAt[0] + bw / 2, outAt[1]); ctx.stroke(); ctx.restore();
-      leBattery(ctx, outAt[0], outAt[1], bw, bh, stp.bat_out ?? 0, sw >= 1);
-    }
-    if (sw < 1) leBattery(ctx, inAt[0], inAt[1], bw, bh, stp.bat_in ?? 100);
-    else if (!done || slideOut < 1) leBattery(ctx, cx + len * 0.05 + slideOut * w * 0.8, cy, bw * 0.7, bh * 0.7, stp.bat_in ?? 100);
-    if (done) { ctx.fillStyle = "rgba(64,192,87,.9)"; ctx.font = "900 " + Math.round(Math.min(w * 0.1, 40)) + "px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(I18N.tr(T("GO!")), w / 2, hh / 2); }
+  // ---------- the pit stop: done by the driver who drives next, on their phone – big targets around the car from above:
+  // the battery first (4 s, a progress ring), then the 4 tyres (1 s each, one after the other) and after an overheat
+  // the engine; the tyres for the next lap (slicks / rain) with one toggle. The one who came in watches the same panel
+  // live (no taps). Every tap goes to the server, which times and checks it.
+  const sendTap = async (action, spot) => {
+    try { const r = await req("/tap", { method: "POST", body: { action, spot } }); if (r && r.state) setState(r.state); return r; }
+    catch (e) { toast(e.message, "bad"); return null; }
+  };
+  const SPOTS = [T("FL"), T("FR"), T("RL"), T("RR")], SPOT_ARIA = [T("Front left tyre"), T("Front right tyre"), T("Rear left tyre"), T("Rear right tyre")];
+  function stopPanel(stp, mine) {
+    const ring = (cls, ic, label, aria, onTap) => {
+      const b = h("button.le-tgt" + cls, { type: "button", "aria-label": I18N.tr(aria), disabled: !mine }, h("span.le-tgtic", ic), h("small", label), h("i.le-tgtok", "✓"));
+      if (mine) b.addEventListener("pointerdown", e => { e.preventDefault(); onTap(); });
+      return b;
+    };
+    const tapJob = async (action, spot) => {
+      const tm = myTeam(), stp_ = tm && tm.stop, js = leStopJobs(stp_, gameT()), key = action + (spot ?? "");
+      if (!stp_ || js.over || local.pend.has(key)) return;
+      if (action !== "battery" && !js.batOk) { flashHint(); leBuzz([30, 30, 30]); return; }    // the battery first
+      local.pend.add(key); LeAudio.wrench(); leBuzz(20); stopTick(gameT());
+      const r = await sendTap(action, spot);
+      local.pend.delete(key);
+      if (r && r.battery_first) flashHint();
+      stopTick(gameT());
+    };
+    const bat = ring(".le-tbat", "🔋", I18N.tr(T("Battery")), T("Battery"), () => tapJob("battery"));
+    const tyres = [0, 1, 2, 3].map(k => ring(".le-ttyre.le-t" + k, "🛞", I18N.tr(SPOTS[k]), SPOT_ARIA[k], () => tapJob("tyre", k)));
+    const eng = stp.eng ? ring(".le-teng", "🔧", I18N.tr(T("Engine")), T("Engine"), () => tapJob("engine")) : null;
+    const hint = h("div.le-stophint", "🔋 ", T("Battery first"));
+    let hintAt = 0;
+    const flashHint = () => { hintAt = nowS(); hint.classList.remove("le-bad"); void hint.offsetWidth; hint.classList.add("le-bad"); };
+    const comp = ["s", "r"].map(k => h("button.le-comp", { type: "button", "data-k": k, disabled: !mine, "aria-label": I18N.tr(k === "r" ? T("Rain tyres") : T("Slicks")),
+      onclick: () => { const tm = myTeam(); if (mine && tm && tm.stop && tm.stop.tyre !== k) { LeAudio.tone([700], "triangle", 0.06, 0.06); sendTap(k === "r" ? "rain" : "slicks"); } } },
+      k === "r" ? "🌧️" : "☀️", h("small", k === "r" ? T("Rain") : T("Dry"))));
+    const pad = h("div.le-stoppad", { style: { "--tc": myTeam().color } }, h("div.le-stopcar", { "aria-hidden": "true" }), bat, ...tyres, eng);
+    const el = h("div.le-stopwrap" + (mine ? "" : ".le-stopview"), pad,
+      h("div.le-stopside", hint, h("div.le-comps", h("span.small", "🛞"), ...comp), h("div.le-watchrow", ui.watchHand = h("div.le-dial", h("i")), ui.watch = h("div.le-watch", "⏱ 0.0 s")),
+        ui.cap = h("div.small.muted.center")));
+    return { el, bat, tyres, eng, hint, comp, hintAt: () => hintAt };
   }
-  function pitTick(t) {
-    const tm = myTeam(), stp = tm && tm.stop;
-    if (!stp || !ui.watch) return;
-    const el = Math.max(0, Math.min(t, stp.end) - stp.t), done = t >= stp.end;
-    ui.watch.textContent = (done ? "✓ " : "⏱ ") + el.toFixed(1) + " s";
-    ui.watch.classList.toggle("le-done", done);
-    ui.watchHand.style.setProperty("--a", (el % 10) * 36 + "deg");
-    let sum = 0;                                               // the parts appear one after the other as the time runs
-    ui.parts.forEach(([node, part]) => { const on = el >= sum - 1e-9; node.classList.toggle("le-on", on); sum += part[1]; });
-    if (done && ui.crowd && !ui.crowd.dataset.cheered) {        // the stands cheer – loud for a fast stop
-      ui.crowd.dataset.cheered = "1";
-      ui.crowd.classList.add("cheer", ...(stp.time <= 4 ? ["big"] : []));
-      if (stp.time <= 4) { LeAudio.tone([523, 784, 1046], "triangle", 0.18, 0.1, 0.1); toast("🎉 " + I18N.tr(T("Super fast stop!")), "good"); }
+  // the panel and the stopwatch – from the server's jobs (my taps on the way: «…»)
+  function stopTick(t) {
+    const tm = myTeam(), stp = tm && tm.stop, pn = ui.panel;
+    if (!stp || !pn) return;
+    const js = leStopJobs(stp, t);
+    const paint = (b, s, p, key) => {
+      const pending = local.pend.has(key) && (s === "tap" || (key === "battery" && !js.batTap));
+      b.dataset.s = pending ? "wait" : s; b.style.setProperty("--p", (p * 100).toFixed(1) + "%");
+    };
+    paint(pn.bat, js.batOk ? "ok" : js.batTap ? "run" : "tap", js.bat, "battery");
+    pn.tyres.forEach((b, k) => paint(b, js.tyres[k].s, js.tyres[k].p, "tyre" + k));
+    if (pn.eng && js.eng) paint(pn.eng, js.eng.s, js.eng.p, "engine");
+    const txt = js.done || js.over ? "✓ " + I18N.tr(T("Done – go!")) : !js.batOk ? "🔋 " + I18N.tr(T("Battery first")) : "🛞 " + I18N.tr(T("Now the tyres"));
+    setTxt(pn.hint, txt);
+    pn.hint.classList.toggle("le-ok", js.done || js.over);
+    pn.hint.classList.toggle("le-lockhint", !js.batOk && !js.over);
+    pn.comp.forEach(b => b.classList.toggle("on", b.dataset.k === stp.tyre));
+    if (ui.watch) {
+      setTxt(ui.watch, (js.over ? "✓ " : "⏱ ") + js.el.toFixed(1) + " s");
+      ui.watch.classList.toggle("le-done", js.over);
+      ui.watchHand.style.setProperty("--a", (js.el % 10) * 36 + "deg");
+      setTxt(ui.cap, I18N.tr(T("{0} s at most")).replace("{0}", String(js.cap)));
+    }
+    if (js.over && !ui.cheered) {                               // the stands cheer – loud for a fast stop
+      ui.cheered = true;
+      if (ui.crowd) ui.crowd.classList.add("cheer", ...(stp.done && stp.time <= 8.5 ? ["big"] : []));
+      if (stp.done && stp.time <= 8.5) { LeAudio.tone([523, 784, 1046], "triangle", 0.18, 0.1, 0.1); toast("🎉 " + I18N.tr(T("Super fast stop!")), "good"); }
+      else LeAudio.ok();
     }
   }
   // the stands beside the pits: people and the flags of the teams, waving when a stop is done
@@ -1457,20 +1692,20 @@ function langstreckeLive(box, me, back) {
     if (!st || st.phase !== "play") { LeAudio.engine(false); return; }
     const t = gameT(), fdt = Math.min(0.1, Math.max(0, nowS() - lastFrame));
     lastFrame = nowS();
-    if (leScreen(st, myId, t).intro !== !!ui.intro) draw();     // the green light: the intro goes, the crew gets its jobs
+    if (leScreen(st, myId, t).intro !== !!ui.intro) draw();     // the green light: the intro goes
     const team = myTeam();
     if (ui.go && t >= 0 && t < 0.2) { ui.go = false; LeAudio.light(true); leBuzz(120); }
     const c = ui.cv;
     if (c) {
       fit(c);
+      if (ui.mode === "drive") c.wrap.classList.toggle("le-ctloff", ui.intro || !leControls("drive", false, predicted(Math.min(t, limit())), t, limit()));   // the controls: only when usable
       if (ui.intro) intro(c, t);
-      else if (ui.mode === "pit") { if (team && team.stop) garage(c, team, team.stop, t); }
       else {
         let car, tm = team;
         if (ui.mode === "drive") car = predicted(Math.min(t, limit()));
         else {
           tm = team || st.teams[st.standings[0]];
-          car = { ...tm.car || {}, d: tm.d, v: tm.v, x: tm.x || 0, pit: tm.pit, thr: (tm.car || {}).thr ?? 1, eng: tm.eng, sf: tm.sf || 0, pl: tm.pl || 0, ap: tm.ap || 0, box: tm.box };
+          car = { ...tm.car || {}, d: tm.d, v: tm.v, x: tm.x || 0, pit: tm.pit, thr: (tm.car || {}).thr ?? 1, eng: tm.eng, sf: tm.sf || 0, pl: tm.pl || 0, ap: tm.ap || 0, box: tm.box, dr: tm.dr || 0, yaw: tm.yaw || 0 };
           car.d = tm.pit ? tm.d : tm.d + tm.v * Math.max(0, Math.min(1.5, t - simT()));
           car._s = t;
           if (car.bat == null && tm.emg) car.bat = 0;
@@ -1490,7 +1725,9 @@ function langstreckeLive(box, me, back) {
             : car.bat != null && car.bat <= 0 && !car.pit ? ["⚠️ " + I18N.tr(T("Emergency drive mode")), "#ffa94d"]
             : drv && ui.grind && nowS() - ui.grind < 1.6 ? ["💥 " + I18N.tr(T("Gearbox!")), "#ff922b"]
             : car.eng ? ["💥 " + I18N.tr(T("Engine overheated!")), "#ff8787"]
+            : car.dr === 2 ? ["🌀 " + I18N.tr(T("Spin!")), "#ffa94d"]
             : drv && (car.sf === 2 || (ui.offAt && nowS() - ui.offAt < 1.5)) ? ["🟫 " + I18N.tr(T("Off the track!")), "#ffd8a8"]
+            : car.dr === 1 ? ["💨 " + I18N.tr(T("Drift!")), "#e599f7"]
             : drv && brakeHint(car, t) ? ["🛑 " + I18N.tr(T("Brake!")), "#ff8787"]
             : ph === "ap" || ph === "keep" ? pitTxt
             : drv && car.thr > 0 && car.bat < leNeed(car.d).mix ? ["🔋 " + I18N.tr(T("Save energy!")), "#ffd43b"]
@@ -1511,8 +1748,9 @@ function langstreckeLive(box, me, back) {
       }
     }
     if (ui.mode !== "drive") LeAudio.engine(false);
-    if (ui.mode === "pit") pitTick(t);
-    if (ui.mode === "crew") crewTick(t);
+    if (ui.mode === "pit" || ui.mode === "stop") stopTick(t);
+    if (ui.mode === "rest") restTick(t);
+    if (ui.clock7) ui.clock7.set(leClock(leClamp(t, 0, limit()), limit()));
     if (ui.mode !== "drive" && team && t >= 0) hud(team.car || team, team, t);
     if (t >= 0 && t >= limit() * 22 / 24 && !finalCue && t < limit()) { finalCue = true; if (gameT() - limit() * 22 / 24 < 5) { LeAudio.fanfare(); toast("🏁 " + I18N.tr(T("The final 2 race hours!")), "good"); } }
   }
@@ -1526,58 +1764,36 @@ function langstreckeLive(box, me, back) {
     return car.thr >= 0 && car.v > safe + 0.5 && dz <= (car.v * car.v - safe * safe) / (2 * LE.BRAKE) + car.v * 0.8 + 10;
   }
   const setTxt = (el, txt) => { if (el && el.textContent !== txt) el.textContent = txt; };
-  // ---------- the bars: position, lap, clock, temperature, lap times and gaps, standings
+  // ---------- the bars (the break, the stop, watching): position, lap, day / night, race time left, lap times and gaps,
+  // the standings; the driver: only the gears (A / M, the shifter) – the rest is on the picture
   function hud(car, tm, t) {
     const hd = ui.hud;
     if (!hd || !tm) return;
     const pos = st.standings.indexOf(tm.i) + 1, tt = Math.max(0, Math.min(t, limit())), night = leDark(tt, limit()) > 0.5;
-    setTxt(hd.pos, "P" + pos + "/" + st.teams.length);
-    setTxt(hd.lap, I18N.tr(T("Lap {0}")).replace("{0}", leLaps(car.d) + 1));
-    setTxt(hd.clock, (night ? "🌙 " : "☀️ ") + leClock(tt, limit()) + (leInWin(st.rain, tt) ? " 🌧️" : ""));
-    setTxt(hd.left, "⏳ " + leRaceLeft(tt, limit()));
-    hd.left.classList.toggle("le-final", tt >= limit() * 22 / 24);
+    if (hd.pos) {
+      setTxt(hd.pos, "P" + pos + "/" + st.teams.length);
+      setTxt(hd.lap, I18N.tr(T("Lap {0}")).replace("{0}", leLaps(car.d) + 1));
+      setTxt(hd.clock, (night ? "🌙" : "☀️") + (leInWin(st.rain, tt) ? " 🌧️" : ""));
+      setTxt(hd.left, "⏳ " + leRaceLeft(tt, limit()));
+      hd.left.classList.toggle("le-final", tt >= limit() * 22 / 24);
+    }
     if (hd.cur) {                                              // the lap times, the gaps to the cars ahead / behind
       const c0 = tm.car || {}, ls_ = car.ls ?? c0.ls ?? 0, cur = car.pit || car.d < 0 ? 0 : Math.max(0, Math.min(t, limit()) - ls_);
       setTxt(hd.cur, "⏱ " + leLapTime(cur));
       setTxt(hd.best, "⭐ " + leLapTime(tm.best_lap || c0.best || 0));
-      const dOf = o => (o.i === tm.i ? car.d : o.pit ? o.d : o.d + o.v * Math.max(0, Math.min(1.5, t - simT())));
-      const k = st.standings.indexOf(tm.i), ahead = k > 0 ? st.teams[st.standings[k - 1]] : null, behind = st.teams[st.standings[k + 1]];
-      const gap = dd => (dd >= LE.L ? "+" + Math.floor(dd / LE.L) + " " + I18N.tr(T("lap")) : (dd / 21).toFixed(1) + " s");
-      setTxt(hd.ahead, ahead ? "▲ " + gap(Math.max(0, dOf(ahead) - car.d)) : "▲ –");
-      setTxt(hd.behind, behind ? "▼ " + gap(Math.max(0, car.d - dOf(behind))) : "▼ –");
+      const rc = leRaceCard(st, tm.i, o => (o.i === tm.i ? car.d : o.pit ? o.d : o.d + o.v * Math.max(0, Math.min(1.5, t - simT()))));
+      const gap = c => (c.laps ? "+" + leLapsTxt(c.laps) : c.s.toFixed(1) + " s");
+      setTxt(hd.ahead, rc.ahead ? "▲ " + gap(rc.ahead) : "▲ –");
+      setTxt(hd.behind, rc.behind ? "▼ " + gap(rc.behind) : "▼ –");
     }
-    if (hd.temp) {
-      const v = (car.temp - LE.TMIN) / (LE.RED - LE.TMIN) * 100;
-      hd.temp.style.setProperty("--v", Math.max(0, Math.min(100, v)).toFixed(1) + "%");
-      hd.temp.dataset.lvl = car.eng ? "red" : car.temp >= 92 ? "red" : car.temp >= LE.YELLOW ? "yellow" : "ok";
-      setTxt(hd.speed, leKmh(car.v) + " km/h");
-      setTxt(hd.tyre, car.tyre === "r" ? "🌧️" : "☀️");
-      hd.tyre.classList.toggle("le-wrong", leGrip(car.tyre, leInWin(st.rain, tt)) < 1);
-    }
-    if (hd.gears) {                                            // the gears: the toggle, the shifter, the gear and the rev light
-      const man = !!car.man, rain = leInWin(st.rain, tt), rv = leRev(car, rain);
+    if (hd.gears) {                                            // the gears: the toggle, the shifter
+      const man = !!car.man;
       if (hd.gears.dataset.on !== String(man)) {
         hd.gears.dataset.on = String(man); hd.gears.classList.toggle("on", man); hd.gears.setAttribute("aria-pressed", String(man));
         if (ui.shift) ui.shift.el.hidden = !man;
       }
       if (ui.shift && man) ui.shift.sync(car.gear ?? 1);
-      setTxt(hd.gear, rv.g < 0 ? "R" : rv.g === 0 ? "N" : man ? String(rv.g) : "A" + rv.g);
-      const n = rv.g < 1 ? 0 : Math.max(1, Math.min(6, Math.round((rv.r - 0.4) / 0.57 * 6))), lvl = rv.lim ? "lim" : String(n);
-      if (hd.rev.dataset.lvl !== lvl) { hd.rev.dataset.lvl = lvl; [...hd.rev.children].forEach((d, i) => { d.className = rv.lim ? "r" : i < n ? (i < 3 ? "g" : i < 5 ? "y" : "r") : ""; }); }
     }
-    if (hd.assist) { const on = !!car.ast; if (hd.assist.dataset.on !== String(on)) { hd.assist.dataset.on = String(on); hd.assist.classList.toggle("on", on); hd.assist.setAttribute("aria-pressed", String(on)); } }
-    if (hd.bat) {                                              // the battery: green, orange (it won't last the lap flat out), red
-      const b = Math.max(0, car.bat ?? 0), need = leNeed(car.d), lvl = b <= 0 || b < need.lift ? "red" : b < need.mix ? "yellow" : "ok";
-      hd.bat.style.setProperty("--v", Math.min(100, b).toFixed(1) + "%");
-      hd.bat.dataset.lvl = lvl;
-      setTxt(hd.batTxt, Math.ceil(b) + "%");
-      hd.batTxt.dataset.lvl = lvl;
-      hd.save.hidden = lvl === "ok" || car.pit;
-      setTxt(hd.save, b <= 0 ? "⚠️ " + I18N.tr(T("Emergency drive mode")) : "🔋 " + I18N.tr(T("Save energy!")));
-      hd.save.classList.toggle("le-emg", b <= 0);
-    }
-    if (hd.cast) setTxt(hd.cast, forecast(tt));
-    if (hd.crew) drawCrewStrip(tm);
     if (ui.board && (!ui.boardAt || nowS() - ui.boardAt > 0.5)) { ui.boardAt = nowS(); drawBoard(); }
   }
   // the forecast: rain now, rain soon (within about a lap), dry soon
@@ -1608,222 +1824,144 @@ function langstreckeLive(box, me, back) {
     }));
     if (mineEl) { const b = ui.board, x = mineEl.offsetLeft - b.offsetLeft; if (x < b.scrollLeft || x + mineEl.offsetWidth > b.scrollLeft + b.clientWidth) b.scrollLeft = Math.max(0, x - 24); }
   }
-  // the driver sees what the crew has ready – and the spare battery charging («spare 🔋 63 %»)
-  function drawCrewStrip(tm) {
-    const pr = tm.prep, el = ui.hud.crew, sp = tm.spare;
-    if (!pr) return;
-    const ch = Math.floor(leSpare(sp, gameT())), plugged = !!sp && sp.plug != null;
-    const sig = JSON.stringify([pr.ready.tyres, pr.ready.engine, pr.need_eng, tm.members.length, ch, plugged]);
-    if (el.dataset.sig === sig) return;
-    el.dataset.sig = sig;
-    const spare = h("span.le-ready.le-sparechip" + (ch >= 100 ? ".ok" : ""), I18N.tr(T("spare")), " 🔋 ", ch + " %", plugged && ch < 100 ? " ⚡" : !plugged && ch < 100 ? " 🔌?" : "");
-    if (tm.members.length < 2) { el.replaceChildren(h("span.le-ready", "🏠"), spare); return; }
-    const chip = (ic, ok) => h("span.le-ready" + (ok ? ".ok" : ""), ic, " ", ok ? "✓" : "…");
-    el.replaceChildren(...[spare, chip("🛞", pr.ready.tyres), pr.need_eng ? chip("⚙️", pr.ready.engine) : null].filter(Boolean));
-  }
-
-  // ---------- the pit crew: the jobs during the lap
-  const sendPrep = async (action, spot) => {
-    try {
-      const r = await req("/prep", { method: "POST", body: { action, spot } });
-      if (r && r.state) { setState(r.state); }
-      return r;
-    } catch (e) { toast(e.message, "bad"); return null; }
-  };
-  function jobTyres() {
-    const spots = [0, 1, 2, 3].map(i => h("button.le-spot.le-s" + i, { type: "button", "aria-label": I18N.tr(T("Tyre")) + " " + (i + 1), onpointerdown: async e => {
-      e.preventDefault();
-      const tm = myTeam();
-      if (!tm || tm.car.pit || tm.prep.tyres[i] || local.tyres[i]) return;
-      local.tyres[i] = true; LeAudio.wrench(); leBuzz(20); crewTick(gameT());
-      const r = await sendPrep("tyre", i);
-      if (!r) { local.tyres[i] = false; crewTick(gameT()); }
-      else if (r.tyres === 4) { LeAudio.ok(); leBuzz([30, 30, 60]); }
-    } }, h("span", "🛞")));
-    const comp = ["s", "r"].map(k => h("button.le-comp", { type: "button", "data-k": k, onclick: async () => {
-      const tm = myTeam(); if (!tm || tm.car.pit) return;
-      local.compound = k; crewTick(gameT()); await sendPrep(k === "r" ? "rain" : "slicks"); local.compound = null; crewTick(gameT());
-    } }, k === "r" ? "🌧️" : "☀️"));
-    ui.job.tyres = { spots, comp };
-    return h("div.le-job.le-jtyres", h("div.le-jhead", h("b", "🛞 ", T("Lay out 4 tyres")), h("span.le-jok")),
-      h("div.le-comps", ...comp), h("div.le-tyrepad", h("div.le-mini", { style: { "--tc": myTeam().color } }), ...spots));
-  }
-  function holdBtn(label, cls, onDown, onUp) {
-    const b = h("button.le-hold" + cls, { type: "button" }, label);
-    let on = false;
-    b.addEventListener("pointerdown", e => { e.preventDefault(); if (on) return; on = true; try { b.setPointerCapture(e.pointerId); } catch {} b.classList.add("on"); onDown(); });
-    const up = () => { if (!on) return; on = false; b.classList.remove("on"); onUp(); };
-    b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("lostpointercapture", up);
-    return b;
-  }
-  // the spare battery: plug it in (the server keeps the time) – then it charges by itself until the car comes in
-  function jobBattery() {
-    const lvl = h("div.le-bat-lvl"), bat = h("div.le-bat", lvl, h("span.le-bat-zap", "⚡"));
-    const val = h("b.le-batval", "0 %"), status = h("span.le-batst");
-    const cable = h("div.le-cable", { "aria-hidden": "true" });
-    const btn = h("button.le-hold.le-plugbtn", { type: "button", onclick: async () => {
-      const tm = myTeam();
-      if (!tm || tm.car.pit || !tm.spare || tm.spare.plug != null || local.plug) return;
-      local.plug = Math.max(0, gameT()); LeAudio.tone([300, 600], "square", 0.08, 0.06, 0.06); leBuzz(30); crewTick(gameT());
-      const r = await sendPrep("plug");
-      if (!r) local.plug = 0; else { LeAudio.ok(); leBuzz([30, 30, 60]); }
-      crewTick(gameT());
-    } }, "🔌 ", T("Plug in"));
-    const row = h("div.le-batrow", bat, h("div.le-batside", val, status, btn), cable);
-    ui.job.battery = { lvl, bat, val, status, btn, row };
-    return h("div.le-job.le-jbattery", h("div.le-jhead", h("b", "🔌 ", T("Charge the spare battery")), h("span.le-jok")), row,
-      h("div.small.muted.center", T("Plug in first – it needs about a lap!")));
-  }
-  function jobEngine() {
-    const bar = h("div.le-engbar", h("i"));
-    const btn = holdBtn(["⚙️ ", I18N.tr(T("Hold"))], ".le-engbtn", () => {
-      const tm = myTeam(); if (!tm || tm.prep.ready.engine) return;
-      local.engHold = nowS(); LeAudio.wrench(); sendPrep("eng_on");
-    }, async () => {
-      if (!local.engHold) return;
-      const r = await sendPrep("eng_off");
-      local.engHold = 0;
-      if (r && r.ready) { LeAudio.ok(); leBuzz([30, 30, 60]); }
-      crewTick(gameT());
-    });
-    ui.job.engine = { bar, btn };
-    return h("div.le-job.le-jeng", h("div.le-jhead", h("b", "🔧 ", T("Prepare the spare engine")), h("span.le-jok")), h("div.le-engrow", bar, btn));
-  }
-  function crewTick(t) {
-    const tm = myTeam(), j = ui.job;
-    if (!tm || !j || !tm.prep) return;
-    const pr = tm.prep, rd = pr.ready;
-    const mark = (key, ok) => { const card = box.querySelector(".le-j" + key); if (card) { card.classList.toggle("le-ok", !!ok); card.querySelector(".le-jok").textContent = ok ? "✓ " + I18N.tr(T("ready")) : ""; } };
-    if (j.tyres) {
-      const cp = local.compound || pr.compound;
-      j.tyres.spots.forEach((b, i) => { b.classList.toggle("set", !!(pr.tyres[i] || local.tyres[i])); b.classList.toggle("wet", cp === "r"); });
-      j.tyres.comp.forEach(b => b.classList.toggle("on", b.dataset.k === cp));
-      mark("tyres", rd.tyres);
-    }
-    if (ui.cast) ui.cast.textContent = forecast(Math.max(0, t));
-    if (j.battery && tm.spare) {                                // the charge rises from the server's plug-in time
-      const sp = tm.spare, plug = sp.plug != null ? sp.plug : local.plug ? Math.max(local.plug, sp.t) : null;
-      const ch = leSpare({ ...sp, plug }, t), plugged = plug != null, full = ch >= 100 - 1e-9;
-      j.battery.lvl.style.height = ch + "%";
-      j.battery.lvl.dataset.lvl = ch >= 50 ? "ok" : ch >= 20 ? "mid" : "low";
-      j.battery.val.textContent = Math.floor(ch) + " %";
-      j.battery.row.classList.toggle("chg", plugged && !full);
-      j.battery.row.classList.toggle("full", full);
-      j.battery.status.textContent = full ? I18N.tr(T("full")) : plugged ? "⚡ " + I18N.tr(T("charging")) : I18N.tr(T("not plugged in"));
-      j.battery.btn.disabled = plugged || full;
-      mark("battery", full);
-    }
-    if (j.engine) {
-      let v = pr.eng;
-      if (local.engHold) v += nowS() - local.engHold;
-      else if (pr.eng_on) v += Math.max(0, t - pr.eng_on[1]);
-      if (rd.engine) v = LE.ENGINE_HOLD;
-      j.engine.bar.style.setProperty("--v", Math.min(100, v / LE.ENGINE_HOLD * 100) + "%");
-      j.engine.btn.disabled = !!rd.engine;
-      mark("eng", rd.engine);
-    }
-    if (ui.eta) {                                               // how far the car is from the pits
+  // ---------- the break: how far the car is from the pits (my stop comes when I drive next), the forecast
+  function restTick(t) {
+    const tm = myTeam();
+    if (!tm) return;
+    if (ui.cast) setTxt(ui.cast, forecast(Math.max(0, t)));
+    if (ui.eta) {
       const left = tm.pl === 2 ? 0 : tm.d < 0 ? LE.L - tm.d : LE.L - (tm.d % LE.L) + (tm.pl === 3 ? 0 : tm.box ?? LE.BOX0), secs = Math.max(0, left / Math.max(10, tm.v || LE.VLIFT));
       ui.eta.style.setProperty("--v", Math.max(0, Math.min(100, (1 - left / LE.L) * 100)) + "%");
-      ui.etaTxt.textContent = t < 0 ? I18N.tr(T("Get ready!")) : I18N.tr(T("The car is in in about {0} s")).replace("{0}", Math.round(secs));
+      setTxt(ui.etaTxt, t < 0 ? I18N.tr(T("Get ready!")) : I18N.tr(tm.next === myId ? T("Your stop in about {0} s") : T("The car is in in about {0} s")).replace("{0}", Math.round(secs)));
     }
+  }
+  // the race clock: the race's time of day (HH:MM) as a digital 7-segment display (inline SVG, unlit segments faint,
+  // amber on dark – readable at night); the colon blinks once a second (lit with reduced motion, CSS); own look
+  const SEG7 = { a: [2, 0.6, 8, 2], b: [9.4, 2.2, 2, 7.2], c: [9.4, 10.6, 2, 7.2], d: [2, 17.4, 8, 2], e: [0.6, 10.6, 2, 7.2], f: [0.6, 2.2, 2, 7.2], g: [2, 9, 8, 2] };
+  const SEG_ON = ["abcdef", "bc", "abged", "abgcd", "fgbc", "afgcd", "afgedc", "abc", "abcdefg", "abcdfg"];
+  function segClock(txt) {
+    const NS = "http://www.w3.org/2000/svg";
+    const digit = () => {
+      const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 12 20"); svg.setAttribute("class", "le-seg"); svg.setAttribute("aria-hidden", "true");
+      const segs = {};
+      for (const [k, [x, y, w, hh]] of Object.entries(SEG7)) {
+        const r = document.createElementNS(NS, "rect");
+        for (const [a, v] of Object.entries({ x, y, width: w, height: hh, rx: 0.9 })) r.setAttribute(a, v);
+        svg.append(r); segs[k] = r;
+      }
+      return { svg, segs, v: null };
+    };
+    const ds = [digit(), digit(), digit(), digit()];
+    const el = h("span.le-segclock", { role: "timer", "aria-live": "off" }, ds[0].svg, ds[1].svg, h("i.le-segcolon", { "aria-hidden": "true" }), ds[2].svg, ds[3].svg);
+    let cur = "";
+    const set = s_ => {
+      if (s_ === cur) return;
+      [...s_.replace(":", "")].forEach((ch, i) => { const d = ds[i]; if (d.v === ch) return; d.v = ch;
+        const on = SEG_ON[+ch] || ""; for (const [k, r] of Object.entries(d.segs)) r.classList.toggle("on", on.includes(k)); });
+      cur = s_; el.setAttribute("aria-label", I18N.tr(T("Race time {0}")).replace("{0}", s_)); el.title = el.getAttribute("aria-label");
+    };
+    set(txt);
+    return { el, set };
   }
 
   // ---------- the screen
   // «Invite guests» (☰ and the button in the lobby box): the game key – null for solo tables, guests, finished games
   function invite() { return !st.solo && !me.guest && st.status !== "done" ? "langstrecke" : null; }
+  // the ☰ menu's own entries while racing: for the driver the assist and the racing line (switches – the menu stays
+  // open), for everybody the team, its car and the forecast
+  function menuExtra() {
+    const tm = myTeam();
+    if (!st || st.phase !== "play" || !tm) return null;
+    const out = [];
+    if (ui.mode === "drive") {
+      const tog = (ic, label, on, flip) => {
+        const state = h("b.le-mstate"), b = h("button.drawer-item.le-mtog", { type: "button", role: "switch" }, h("span.foot-ic", ic), h("span.grow", I18N.tr(label)), state);
+        const paint = v => { b.setAttribute("aria-checked", String(!!v)); b.classList.toggle("on", !!v); state.textContent = I18N.tr(v ? T("on") : T("off")); };
+        b.addEventListener("click", () => paint(flip()));
+        paint(on);
+        return b;
+      };
+      const c = predicted();
+      out.push(tog("🧒", T("Driving assist"), !!(c && c.ast), () => { const c2 = predicted(), v = c2 && c2.ast ? 0 : 1; input("a", v); return !!v; }));
+      out.push(tog("〰️", T("Racing line"), lineOn(), () => { const on = !lineOn(); try { localStorage.setItem(LINE_KEY(), on ? "1" : "0"); } catch {} return on; }));
+    }
+    out.push(h("div.drawer-item.le-minfo", h("span.foot-ic", LE_ICON), h("span.le-teamtag", { style: { "--tc": tm.color } }, leFlagEl(tm.country), " #" + tm.num, " ", C(tm.name)),
+      h("span.small.muted", " ", tm.members.map(id => pName(id)).join(", "))));
+    out.push(h("div.drawer-item.le-minfo", h("span.foot-ic", "📡"), h("span", forecast(Math.max(0, gameT())))));
+    return out;
+  }
   function draw(force) {
     if (!alive || !box.isConnected) return;
     const tm = myTeam();
     const { mode, intro: introOn } = leScreen(st, myId, gameT());
-    const sig = JSON.stringify(st && [st.game, st.phase, st.status, st.joined, mode, introOn, tm && tm.driver, mode === "pit" && tm.stop.t,
-      mode === "crew" && tm.prep && tm.prep.need_eng, st.phase === "lobby" ? st.players.map(p => [p.id, p.team]) : 0, st.phase === "done" ? st.players.map(p => p.place) : 0]);
+    const sig = JSON.stringify(st && [st.game, st.phase, st.status, st.joined, mode, introOn, tm && tm.driver, (mode === "pit" || mode === "stop") && tm.stop.t,
+      st.phase === "lobby" ? st.players.map(p => [p.id, p.team]) : 0, st.phase === "done" ? st.players.map(p => p.place) : 0]);
     if (sig === lastSig && !force) return;
     lastSig = sig;
     const running = st && st.status !== "done";
-    box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running); box.classList.toggle("le-scroll", mode === "lobby"); box.classList.toggle("le-drv", mode === "drive" && !introOn);
-    ui = { go: ui.go ?? true, roared: ui.roared, mode, intro: introOn, xs: mode === "drive" ? ui.xs : null, pan: ui.pan };
+    box.classList.toggle("quiz-full", !!running); document.body.classList.toggle("quiz-open", !!running);
+    box.classList.toggle("le-scroll", mode === "lobby" || mode === "pit" || mode === "stop"); box.classList.toggle("le-drv", mode === "drive" && !introOn);
+    ui = { go: ui.go ?? true, roared: ui.roared, mode, intro: introOn, xs: mode === "drive" ? ui.xs : null, pan: ui.pan, skids: mode === "drive" ? ui.skids : [], cheered: ui.cheered };
     if (!st) return show(h("section.card.center", h("div.big-ic", LE_ICON), h("h2", T("No game right now")), h("button.btn", { onclick: back }, T("Back"))));
     const menu = gameMenu({ rules: () => langstreckeRulesView(st.rules, st.coins_on ? st.rewards : null),
-      invite: invite(),
+      invite: invite(), extra: menuExtra,
       actions: [{ ic: "⏹", label: T("End the game"), danger: true, hidden: !isHost() || st.status === "done", confirm: T("End the game?"),
         onclick: () => act("end").then(() => { if (!st || st.phase !== "done") { stop(); back(); } }) }],
       onLeave: running ? () => { stop(); back(); } : null });
-    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", LE_ICON, " ", leName())));
+    // the 7-segment race clock (the race's time of day) in the header row – the lobby shows the start, 16:00
+    ui.clock7 = st.phase === "done" ? null : segClock(leClock(st.phase === "play" ? leClamp(gameT(), 0, limit()) : 0, limit()));
+    const head = h("div.quiz-head.dm-head", h("div.row.head-title", menu, h("h1", LE_ICON, " ", leName()), ui.clock7 && ui.clock7.el));
     if (st.phase === "done") { LeAudio.engine(false); return show(head, result()); }
     if (st.phase === "lobby") return show(head, lobby());
-    const cv = h("canvas.le-canvas"), wrap = h("div.le-wrap" + (mode === "drive" || introOn ? ".le-big" : mode === "pit" ? ".le-gar" : ".le-tv"), cv);
-    ui.cv = { el: cv, ctx: cv.getContext("2d"), wrap, w: 0, h: 0, dpr: 0 };
-    wrap.addEventListener("pointerdown", () => { if (gameT() < 0 && !introSkip) introSkip = true; });       // a tap skips the intro
     ui.hud = { pos: h("b.le-pos"), lap: h("span.le-lap"), clock: h("span.le-clock"), left: h("span.le-left") };
     const top = h("div.le-top", ui.hud.pos, ui.hud.lap, ui.hud.clock, ui.hud.left);
     ui.board = h("div.le-board");
     const teamTag = tm ? h("span.le-teamtag", { style: { "--tc": tm.color } }, leFlagEl(tm.country), " #" + tm.num, " ", C(tm.name)) : null;
+    if (mode === "stop" || mode === "pit") {                   // the stop: mine to do – or the partner's, live
+      const stp = tm.stop, mine = mode === "stop";
+      ui.cv = null;
+      ui.panel = stopPanel(stp, mine);
+      const who = mine ? h("div.le-change", "🔧 ", T("Your stop – then you drive!"))
+        : h("div.le-change", "👀 ", I18N.tr(stp.jobs ? T("{0} does the stop and drives next") : T("{0} drives next")).replace("{0}", pName(stp.next)));
+      const pithead = h("div.le-pithead", h("strong", "🅿️ ", I18N.tr(T("Pit stop {0}")).replace("{0}", stp.n)), teamTag);
+      if (mine) show(head, pithead, who, ui.panel.el);
+      else { ui.crowd = crowd(tm); show(head, top, pithead, who, ui.panel.el, ui.crowd, lapBoard(tm)); }
+      stopTick(gameT());
+      drawBoard();
+      return;
+    }
+    const cv = h("canvas.le-canvas"), wrap = h("div.le-wrap" + (mode === "drive" || introOn ? ".le-big" : ".le-tv"), cv);
+    ui.cv = { el: cv, ctx: cv.getContext("2d"), wrap, w: 0, h: 0, dpr: 0 };
+    wrap.addEventListener("pointerdown", () => { if (gameT() < 0 && !introSkip) introSkip = true; });       // a tap skips the intro
     // the lap times and the gaps: this lap, the team's best lap, to the car ahead / behind
     const times = () => {
       Object.assign(ui.hud, { cur: h("span.le-cur"), best: h("span.le-bestlap"), ahead: h("span.le-gapa"), behind: h("span.le-gapb") });
       return h("div.le-times", { "aria-label": I18N.tr(T("Lap times")) }, ui.hud.cur, ui.hud.best, ui.hud.ahead, ui.hud.behind);
     };
     if (mode === "drive") {
-      Object.assign(ui.hud, { speed: h("b.le-speed"), temp: h("div.le-gauge.le-temp"), crew: h("div.le-crewstrip"), tyre: h("span.le-tyre"), cast: h("span.le-cast"),
-        bat: h("div.le-gauge.le-batg"), batTxt: h("b.le-battxt"), save: h("span.le-save", { hidden: true }),
-        gear: h("b.le-gear"), rev: h("span.le-rev", { "aria-hidden": "true" }, ...Array.from({ length: 6 }, () => h("i"))) });
-      const gauges = h("div.le-gauges", ui.hud.speed, h("span.le-gearbox", ui.hud.gear, ui.hud.rev), ui.hud.tyre, h("span.le-g", "🌡️", ui.hud.temp), h("span.le-g.le-gb", "🔋", ui.hud.bat, ui.hud.batTxt));
-      wrap.append(ui.hud.crew, ui.hud.save);
-      // the driving assist (auto-brake, steering help) – my own choice, remembered for my next stints
-      ui.hud.assist = h("button.le-assist", { type: "button", "aria-pressed": "false", title: I18N.tr(T("Driving assist: the car brakes before the corners and helps to steer")),
-        onclick: () => { const c = predicted(); if (c) input("a", c.ast ? 0 : 1); } }, "🧒 ", T("Assist"));
-      // the racing line on the road (yellow dashes) – on by default, my own choice (remembered on this device per person)
-      ui.hud.line = h("button.le-assist.le-linebtn" + (lineOn() ? ".on" : ""), { type: "button", "aria-pressed": String(lineOn()), title: I18N.tr(T("Racing line on the road: on / off")),
-        onclick: e => { const on = !lineOn(); try { localStorage.setItem(LINE_KEY(), on ? "1" : "0"); } catch {} e.currentTarget.classList.toggle("on", on); e.currentTarget.setAttribute("aria-pressed", String(on)); } }, "〰️ ", T("Line"));
-      // the gears «A / M» in the picture, above the shifter: switches at any time, mid-stint too (an adult and a child
-      // can share a car) – the server remembers it per person for their next stints; manual engages the gear that fits
+      // the driver: the picture over the full height, only the header above it. On the picture the speedometer, the
+      // position card, the minimap and the corner sign; the controls (joystick, handbrake, A / M, the shifter and the
+      // paddles) only when usable – hidden on the grid, at a stop, fading in at the green light / the pit exit
+      ui.hud = {};
       ui.hud.gears = h("button.le-am", { type: "button", "aria-pressed": "false", "aria-label": I18N.tr(T("Gears: automatic or manual (H shifter)")),
         title: I18N.tr(T("Gears: automatic or manual (H shifter)")), onclick: e => { e.stopPropagation(); const c = predicted(); if (c) input("m", c.man ? 0 : 1); } },
         h("span.le-ama", "A"), h("span.le-amm", "M"));
-      // the joystick bottom left on the picture – the picture gets the full height, no button bar below it
       const [joy, hint] = joystick();
       ui.joy = joy;
-      wrap.classList.add("le-joywrap");
       ui.shift = shifter();
       ui.shift.el.hidden = !(tm && tm.car && tm.car.man);
-      wrap.append(joy, hint, h("div.le-gearzone", ui.hud.gears, ui.shift.el));
+      ui.hb = handbrake();
+      wrap.classList.add("le-joywrap", "le-ctloff");
+      wrap.append(joy, hint, h("div.le-gearzone", ui.hb, h("div.le-gearrow", ui.hud.gears, ui.shift.el)));
       joy.classList.toggle("le-jgas", thrLocal > 0); joy.classList.toggle("le-jbrake", thrLocal < 0);
-      show(head, top, ui.board, h("div.le-role", "🏎️ ", T("You drive!"), ui.hud.cast, ui.hud.assist, ui.hud.line, teamTag), gauges, times(), wrap);
-    } else if (mode === "pit") {
-      const stp = tm.stop;
-      ui.watch = h("div.le-watch", "⏱ 0.0 s");
-      ui.watchHand = h("div.le-dial", h("i"));
-      ui.parts = stp.parts.map(part => {
-        const [ic, label] = LE_PARTS[part[0]] || ["•", part[0]];
-        const fixed = part[0] === "base" || part[0] === "garage" || part[0] === "battery";
-        const val = fixed ? part[1].toFixed(1) + " s" : part[1] ? "+" + part[1].toFixed(0) + " s" : "+0 s";
-        const note = part[0] === "base" || part[0] === "garage" ? "" : part[0] === "battery" ? (part[2] ? I18N.tr(T("full")) : I18N.tr(T("{0} % charged")).replace("{0}", Math.floor(stp.bat_in ?? 0)))
-          : part[0] === "engine" ? (part[2] ? I18N.tr(T("prepared")) : I18N.tr(T("not prepared"))) : part[2] ? I18N.tr(T("ready")) : I18N.tr(T("not ready"));
-        const cls = part[0] === "base" || part[0] === "garage" ? "" : part[0] === "battery" ? (part[2] ? ".good" : ".warn") : part[2] ? ".good" : ".bad";
-        return [h("div.le-part" + cls, h("span", ic), h("span.grow", I18N.tr(label), note ? h("small", " · ", note) : null), h("b", val)), part];
-      });
-      const change = stp.change ? h("div.le-change", "🔄 ", C(pName(stp.prev)), " → ", h("b", C(pName(stp.next))), " 🏎️")
-        : h("div.le-change", "🏎️ ", I18N.tr(T("{0} drives on")).replace("{0}", pName(stp.next)));
-      const low = stp.next === myId && (stp.bat_in ?? 100) < 100 ? h("p.le-next.le-low", "🔋 " + Math.floor(stp.bat_in) + " % – ", T("Save energy!")) : null;
-      const next = low ? null : stp.next === myId && stp.change ? h("p.le-next", "🏎️ ", T("You drive next – get ready!")) : null;
-      ui.crowd = crowd(tm);
-      show(head, top, ui.board, h("div.le-pithead", h("strong", "🅿️ ", I18N.tr(T("Pit stop {0}")).replace("{0}", stp.n)), h("span.small", leTyreName(stp.tyre)), teamTag),
-        ui.crowd, wrap, h("div.le-watchrow", ui.watchHand, ui.watch), h("div.le-parts", ...ui.parts.map(x => x[0])), lapBoard(tm), change, next, low);
-    } else if (mode === "crew" && introOn) {                   // the start: the lights for everybody – the jobs come with the green light
-      const next = tm.next === myId && tm.members.length > 1 ? h("span.le-nextme", "🏎️ ", T("You drive next!")) : null;
-      show(head, top, ui.board, h("div.le-role", "🔧 ", T("Pit crew"), " · ", C(pName(tm.driver), "span.small"), " 🏎️", teamTag),
-        wrap, h("div.le-etarow.le-introrow", h("span.small", T("Get ready!")), next));
-    } else if (mode === "crew") {
-      ui.job = {};
+      show(head, wrap);
+    } else if (mode === "rest") {                              // a break: the team's car on TV, my stop comes when I drive next
       ui.eta = h("div.le-eta"); ui.etaTxt = h("span.small.le-etatxt"); ui.cast = h("span.le-cast");
       const next = tm.next === myId && tm.members.length > 1 ? h("span.le-nextme", "🏎️ ", T("You drive next!")) : null;
-      const botCrew = st.rules && st.rules.crew === "bots";     // the automatic crew prepares – the others watch
-      const jobs = botCrew ? h("p.small.muted.center.le-botcrew", "🤖 ", T("The bot crew prepares the stop – you watch until it is your turn to drive."))
-        : h("div.le-jobs2", jobBattery(), jobTyres());
-      show(head, top, ui.board, h("div.le-role", botCrew ? "👀 " : "🔧 ", botCrew ? T("Watching") : T("Pit crew"), " · ", C(pName(tm.driver), "span.small"), " 🏎️", teamTag),
-        wrap, h("div.le-etarow", ui.eta, ui.etaTxt, next), h("div.le-castrow", "📡 ", ui.cast), jobs, tm.prep && tm.prep.need_eng && !botCrew ? jobEngine() : null);
-      crewTick(gameT());
+      show(head, top, ui.board, h("div.le-role", "☕ ", T("Break"), " · ", C(pName(tm.driver), "span.small"), " 🏎️", teamTag),
+        introOn ? null : times(), wrap, h("div.le-etarow" + (introOn ? ".le-introrow" : ""), ui.eta, ui.etaTxt, next), introOn ? null : h("div.le-castrow", "📡 ", ui.cast),
+        introOn ? null : h("p.small.muted.center.le-resthint", tm.next === myId ? T("At the next stop you do the pit stop on your phone – then you drive.") : T("Watch your team's car – the next driver does the stop.")));
+      restTick(gameT());
     } else {
       show(head, top, ui.board, times(), wrap, h("p.center.muted.small", T("You are watching the leader.")));
     }
@@ -1869,12 +2007,10 @@ function langstreckeLive(box, me, back) {
     const host = isHost() && st.status !== "done" ? h("div.row.center.host-bar", n > 1 ? h("button.btn.ghost", { onclick: () => act("mix") }, "🔀 ", T("Mix teams")) : null,
       h("button.btn", { onclick: () => act("begin") }, "▶ ", T("Start"))) : null;
     const story = h("p.small.muted", I18N.tr(T("24 race hours in {0} minutes on the Circuit des Tannes. The most laps wins.")).replace("{0}", st.rules.minutes));
-    const roles = h("p.small", "🔄 ", T("After every lap the car comes into the pits and the next person of the team drives – the others charge the spare battery and prepare the tyres."));
-    const crewInfo = h("p.small.le-crewrule", st.rules.crew === "bots" ? ["🤖 ", I18N.tr(T("Pit crew")), ": ", I18N.tr(T("Bots")), " – ", I18N.tr(T("an automatic crew prepares every stop."))]
-      : ["🙋 ", I18N.tr(T("Pit crew")), ": ", I18N.tr(T("Players"))]);
+    const roles = h("p.small", "🔄 ", T("After every lap the car comes into the pits: the next person of the team does the stop on their phone and drives on – the one who came in has a break."));
     const assist = st.joined ? h("button.btn.small" + (st.assist ? "" : ".ghost") + ".le-assist-lobby", { type: "button", "aria-pressed": String(!!st.assist),
       onclick: () => act("look", { assist: !st.assist }) }, "🧒 ", I18N.tr(T("Driving assist")), ": ", I18N.tr(st.assist ? T("on") : T("off"))) : null;
-    return [h("section.card.center", st.joined ? h("h2", T("Waiting for the start …")) : h("p", T("Play along on this device?")), story, roles, crewInfo,
+    return [h("section.card.center", st.joined ? h("h2", T("Waiting for the start …")) : h("p", T("Play along on this device?")), story, roles,
       assist, st.joined ? h("p.small.muted", T("The assist brakes before the corners and helps to steer – good for younger drivers.")) : null,
       st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")), inviteBtn(invite())),
       h("div.le-teams", ...cards), st.bots ? h("p.small.muted.center", "🤖 ", I18N.tr(T("+{0} bot teams")).replace("{0}", st.bots)) : null,
@@ -1928,6 +2064,6 @@ async function langstreckeFamilyCard() {
   return h("section.card.quiz-card", h("h2", LE_ICON, " ", leName()),
     g ? [h("p", g.status === "lobby" ? T("A table is open – join in!") : T("A game is running.")),
          h("button.btn.big", { onclick: () => go("langstrecke") }, "🙋 ", g.joined ? T("Back to the game") : T("Join"))]
-      : [h("p.muted", T("Short laps and a pit stop after every lap: one drives, the others charge the spare battery and get the tyres ready – then the next one drives.")),
+      : [h("p.muted", T("Short laps and a pit stop after every lap: the next driver of the team does the stop – battery, tyres – and drives on.")),
          gameStartRow(() => langstreckeStartDialog(true, () => go("langstrecke")), () => langstreckeStartDialog(false, () => go("langstrecke")))]);
 }
