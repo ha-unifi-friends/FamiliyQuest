@@ -628,11 +628,11 @@ function leBattery(ctx, x, y, w, hh, pct, charging) {
   if (charging && hh > 8) { ctx.fillStyle = "#ffe066"; ctx.font = "900 " + Math.round(hh * 0.8) + "px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⚡", x, y + 1); }
   ctx.restore();
 }
-// trackside advertising (own, invented): «Family Quest», «Home Assistant» with an own simple house, «Snowman Tyres»
+// trackside advertising (own, invented): «Family Quest» and «Snowman Tyres»
 // with a snowman made of three tyres – a board of w × hh with its top left corner at x, y
 function leBanner(ctx, kind, x, y, w, hh) {
   ctx.save();
-  ctx.fillStyle = ["#5b5bd6", "#f8f9fa", "#0b7285"][kind]; ctx.fillRect(x, y, w, hh);
+  ctx.fillStyle = ["#5b5bd6", "#0b7285"][kind]; ctx.fillRect(x, y, w, hh);
   ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = Math.max(1, hh * 0.06); ctx.strokeRect(x, y, w, hh);
   const cy = y + hh / 2, s = hh * 0.7;
   ctx.textBaseline = "middle"; ctx.textAlign = "left";
@@ -641,12 +641,6 @@ function leBanner(ctx, kind, x, y, w, hh) {
     ctx.fillStyle = "#ffd43b"; ctx.beginPath();                        // a star
     for (let k = 0; k < 10; k++) { const r = k % 2 ? s * 0.22 : s * 0.5, a = -Math.PI / 2 + k * Math.PI / 5; ctx.lineTo(x + hh * 0.55 + Math.cos(a) * r, cy + Math.sin(a) * r); }
     ctx.fill(); ctx.fillStyle = "#fff"; ctx.fillText("Family Quest", x + hh * 1.1, cy);
-  } else if (kind === 1) {
-    ctx.strokeStyle = "#1c7ed6"; ctx.lineWidth = Math.max(1, hh * 0.09); ctx.lineJoin = "round";   // an own simple house outline
-    const hx = x + hh * 0.2, hw = s * 0.9;
-    ctx.beginPath(); ctx.moveTo(hx, cy + s * 0.4); ctx.lineTo(hx, cy - s * 0.05); ctx.lineTo(hx + hw / 2, cy - s * 0.45); ctx.lineTo(hx + hw, cy - s * 0.05); ctx.lineTo(hx + hw, cy + s * 0.4); ctx.closePath(); ctx.stroke();
-    ctx.fillStyle = "#1c7ed6"; ctx.fillRect(hx + hw * 0.4, cy + s * 0.1, hw * 0.2, s * 0.3);
-    ctx.fillStyle = "#212529"; ctx.fillText("Home Assistant", x + hh * 1.1, cy);
   } else {
     for (let k = 0; k < 3; k++) {                                         // the snowman: three stacked tyres, a face on the top one
       const r = s * (0.24 - k * 0.04), ty = cy + s * 0.32 - k * s * 0.36;
@@ -1279,7 +1273,7 @@ function langstreckeLive(box, me, back) {
         if (((lp + i) % 4 + 4) % 4 === 3) return;
         at(lp * LE.L + x0 - d, (i % 2 ? 1 : -1) * (LE.HW + LE.KERB + 3), (x, y, u) => { const bw = u * 6, bh = u * 1.05;
           ctx.fillStyle = "#495057"; ctx.fillRect(x - bw * 0.42, y - bh * 1.6, u * 0.1, bh * 1.6); ctx.fillRect(x + bw * 0.38, y - bh * 1.6, u * 0.1, bh * 1.6);
-          if (bw > 30) leBanner(ctx, (((lp + i) % 3) + 3) % 3, x - bw / 2, y - bh * 1.9, bw, bh); });
+          if (bw > 30) leBanner(ctx, (((lp + i) % 2) + 2) % 2, x - bw / 2, y - bh * 1.9, bw, bh); });
       });
       [175, 385].forEach((x0, i) => {                                // fans camping beside the track – mostly for my team
         if (((lp * 2 + i) % 3 + 3) % 3 === 2) return;
@@ -1679,7 +1673,7 @@ function langstreckeLive(box, me, back) {
     const r = leRand(tm.num * 31 + 7);
     const ad = h("canvas.le-ad", { width: 360, height: 26, "aria-hidden": "true" });     // the pit wall: a banner (another one at every stop)
     const ctx = ad.getContext("2d");
-    if (ctx) leBanner(ctx, (tm.stop ? tm.stop.n : 0) % 3, 0, 0, 360, 26);
+    if (ctx) leBanner(ctx, (tm.stop ? tm.stop.n : 0) % 2, 0, 0, 360, 26);
     return h("div.le-stands", h("div.le-crowd", { "aria-hidden": "true" }, ...Array.from({ length: 16 }, (_, k) =>
       h("span", { style: { "--k": k, "--d": (r() * 0.4).toFixed(2) + "s" } }, k % 4 === 1 && flags.length ? flags[(k >> 2) % flags.length] : people[Math.floor(r() * people.length)]))), ad);
   }
