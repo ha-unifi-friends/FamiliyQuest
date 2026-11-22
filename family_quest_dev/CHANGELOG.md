@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-dev.7
+
+- 24h race: calmer HUD, handbrake drift, drivers-only pit stops, 7-segment clock (start 16:00)
+
 ## 1.2.2-dev.6
 
 - 24h Endurance: a visible pit lane on the right before the finish – steer in yourself or the autopilot does it, 100 km/h limiter, team boxes with the crew, pit exit
