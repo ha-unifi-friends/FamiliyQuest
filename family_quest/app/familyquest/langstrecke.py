@@ -22,7 +22,7 @@ The driving – real racing on a circuit (the general mechanics of the classic r
   is not enough: the car runs wide onto the kerb (a little slower) and then the grass (heavy slowdown, VGRASS), never a
   crash (a tyre wall at XMAX). Braking boards (150 / 100 / 50 m) and a corner sign with the suggested speed come first.
 - rain: less grip – the safe speeds drop (RAIN_C), slicks in the rain / rain tyres in the dry even more (and are
-  slower on the straights, WET_SLICK / DRY_RAIN); the crew picks the tyres for the next lap. Night: a shorter view and
+  slower on the straights, WET_SLICK / DRY_RAIN); the next driver picks the tyres at the stop. Night: a shorter view and
   headlights (the app), at night in the rain only 40 m – the bots slow down with the view (view_dist, bot_caution).
 - other cars: following closely on a straight gives a SLIPSTREAM (a higher top speed); running into one from behind
   is a gentle bump: the car behind slows to the speed of the one ahead and slides aside – no crashes.
@@ -40,29 +40,27 @@ The loop – one short lap (about 30 s), then the car drives into the pits, ever
 - full throttle heats the engine; at RED it overheats: the car limps on to the pits and the engine has to be swapped.
 - the car is electric: its battery (0–100 %) drains by the metre, much faster at full throttle (E_FULL) than lifted
   (E_LIFT); braking gives a little back (REGEN). Empty: the emergency drive mode – the car crawls (VEMERG) to the pits.
-- every team has exactly TWO batteries: the one in the car and ONE spare. At every stop they are swapped (BAT_SWAP
-  seconds): the spare goes into the car with WHATEVER charge it has, the used one comes out and waits in the pits. It
-  charges only while it is plugged in: CHARGE_RATE % per second from the moment the crew plugged it in (the server's
-  time – never the app's number). Plugged in late (other jobs first): not full at the next stop, the next driver has
-  to save energy.
-- everybody else of the team is the pit crew: during the lap they prepare the stop on their phones – plug the spare
-  battery in, lay out the 4 tyres (slicks or rain tyres, tap the 4 spots) and, only after an overheat, prepare the
-  spare engine (hold). The server keeps the times of all of it.
-- the stop: STOP_BASE seconds + the battery swap BAT_SWAP + a penalty for tyres not ready when the car arrived
-  (PEN_PREP), the engine swap ENG_READY prepared or ENG_SWAP not. Shown as a stopwatch to the whole team, with the
-  lap-time board of the team's laps.
-- at EVERY stop the driver changes: the next person of the team (in turn) drives, the driver joins the crew. A team of
-  two takes turns; a team of one (or a team whose crew is all offline) gets the garage: a fixed GARAGE seconds (+ the
-  swap), and the garage plugs the spare in only GARAGE_PLUG seconds after the stop (fair, not perfect).
+- there are only drivers (no pit crew): the people of a team take turns – at EVERY stop the next person of the team (in
+  turn, who is online; alone: the same person) takes over. The stop is theirs: on their phone they tap the battery
+  first (STOP_BAT seconds – the new battery is always full), then the 4 tyres (STOP_TYRE seconds each, one after the
+  other in the order of the taps; slicks or rain tyres with one toggle, the current weather by default) and after an
+  overheat also the engine (STOP_ENG). About 8 s done well; nothing tapped: done by itself after STOP_MAX seconds
+  (+ STOP_ENG after an overheat) – never longer. The driver who came in has a break and watches the stop live. Bot
+  teams stop in a fair fixed time (BOT_STOP). The server keeps the time of every tap.
+- the handbrake: a short tap at the entry of a corner at speed starts a drift – full gas and steering into the corner
+  hold it and the car comes through a little faster than the corner's safe speed (DRIFT_K); lifting or steering
+  against it ends it and costs speed; held too long it brakes hard; a tap too late in the corner (or far too fast)
+  spins the car wide off the track; on a straight just a small brake. In the rain easier to start, harder to hold.
+  The assist and the bots never drift.
 
 The server decides everything (the same step function runs in web/langstrecke.js for a smooth picture of the own
 car): the driver's app only reports its inputs (steering, pedals, assist) with their game time; the server simulates
 all cars in fixed steps of DT seconds SETTLE seconds behind the clock – a late input is applied at the next step (never
 in the past). Every step sees the other cars as they were at the start of the step (the order of the teams does not
-matter). Pit jobs are actions on the server (plug in, a tyre on a spot, start / stop holding) timed with the server's
-clock: a job counts only if it was finished before the car arrived. A driver whose app is silent for AUTO_AFTER seconds
-gets the autopilot until the app is back. Bots drive by the same rules (they lift off when the battery runs low and
-overtake on the straights), plug their spare in first and prepare their stops (easier bots miss more).
+matter). The taps at a stop are actions on the server timed with the server's clock (the order enforced, a tap twice
+ignored). A driver whose app is silent for AUTO_AFTER seconds gets the autopilot until the app is back. Bots drive by
+the same rules (they lift off when the battery runs low and overtake on the straights) and pick their tyres by the
+forecast (easier bots get it wrong more often).
 
 Coins (setting `game_rewards["langstrecke"]`): places 1–3, for every person of the family in that team, only at a
 family table with at least two people of the family, only for a race run to the end – paid once (flag `paid`, a
@@ -89,8 +87,8 @@ MAX_PLAYERS = 12
 LEVELS = ("easy", "normal", "hard")
 DIFFS = ("junior", "normal")
 MINUTES = (5, 8, 12)
-DEFAULTS = {"bots": 2, "level": "normal", "minutes": 8, "weather": 1, "difficulty": "normal", "team_size": 3, "teams": 2, "crew": "players"}
-CREWS = ("players", "bots")   # the pit crew: the team's other people – or an automatic crew for every team (rule `crew`)
+# (an old stored `crew` rule – the pit crew of earlier versions – is ignored: clean_rules keeps only these keys)
+DEFAULTS = {"bots": 2, "level": "normal", "minutes": 8, "weather": 1, "difficulty": "normal", "team_size": 3, "teams": 2}
 # the countries a team can race for (ISO codes; names and groups in web/langstrecke.js) – or none
 COUNTRIES = ("BE", "BG", "DK", "DE", "FI", "FR", "GR", "GB", "IE", "IT", "LV", "LI", "LU", "MC", "NL", "NO", "AT", "PL", "PT", "RO",
              "RU", "SM", "SE", "CH", "SK", "SI", "ES", "CZ", "TR", "HU", "BY",
@@ -164,31 +162,42 @@ GRIND_DEC, GRIND_HEAT = 22.0, 30.0         # R while rolling: m/s² (much harder
 AUTO_UP = 0.9                # the automatic gearbox shifts up at this share of a gear's top (never into the red) …
 AUTO_DOWN = 0.75             # … down below this share of the next lower gear's top (no hunting between two gears) …
 AUTO_GAP = 0.2               # … and slower than a hand: no drive for this many seconds per upshift (the torque gap)
+# the handbrake and the drift: a short tap at the corner's entry at speed swings the car sideways – full gas and steering
+# into the corner hold it and the car comes through a little faster than the grip allows (DRIFT_K × the safe speed);
+# lifting or steering against it ends it (DRIFT_LOSS); held too long the handbrake brakes hard; a tap too late in the
+# corner or far too fast spins the car wide (off the track as usual); on a straight or too slow: just a small brake
+HB_LONG = 0.6                # s: the handbrake held longer than this brakes hard
+HB_DEC_SOFT, HB_DEC = 6.0, 15.0   # m/s²: a tap (no drift) / held too long
+DRIFT_PRE, DRIFT_PRE_RAIN = 12.0, 18.0   # m before the corner: the entry window opens (in the rain: earlier – easier)
+DRIFT_LATE = 0.35            # share of the corner: a tap later than this spins the car
+DRIFT_VMIN, DRIFT_VMIN_RAIN = 0.85, 0.75   # × the safe speed: slower – no drift (in the rain: easier)
+DRIFT_SPIN = 1.35            # × the safe speed: faster – the car spins
+DRIFT_K, DRIFT_K_RAIN = 1.06, 1.03   # a held drift takes the corner at this × the safe speed
+DRIFT_ST, DRIFT_ST_RAIN = 25, 60     # steering into the corner at least this much holds it (in the rain: harder)
+DRIFT_GRACE = 0.3            # s after the tap before gas and steering count
+DRIFT_DEC = 9.0              # m/s²: scrubbing down to the drift speed
+DRIFT_LOSS = 3.0             # m/s lost when the drift is broken (lifted, steered against it)
+DRIFT_HEAT = 1.0             # °/s extra heat while drifting
+DRIFT_YAW, YAW_RATE, SPIN_RATE = 28.0, 140.0, 540.0   # degrees: the drift angle, how fast it builds / goes, a spin
+SPIN_X, SPIN_T = 6.0, 2.0    # a spin: m/s outward, at most this long
 COUNTDOWN = 6.0              # seconds from the start to game time 0 (the intro: run to the cars, engines, lights)
 SETTLE = 0.8                 # the server simulates this far behind the clock
 AHEAD = 0.5                  # inputs may be this much ahead of the server's clock
 AUTO_AFTER = 6.0             # a silent driver: the autopilot drives
-STALE = 10.0                 # a silent person is not counted as crew / next driver
+STALE = 10.0                 # a silent person is not counted as the next driver
 # ---------------------------------------------------------------- the pit stop
-STOP_BASE = 2.0              # every stop (the driver change included)
-BAT_SWAP = 1.0               # the battery swap at every stop (a fixed time)
-PEN_PREP = 4.0               # tyres not ready
-ENG_READY, ENG_SWAP = 2.0, 6.0   # the engine swap: prepared / not prepared
-GARAGE = 4.0                 # a team without crew: the garage prepares, a fixed time (+ the swap, + GARAGE_ENG after an overheat)
-GARAGE_ENG = 4.0
-TYRE_GAP = 0.25              # seconds at least between two tyres of a team
-CHARGE_RATE = 4.0            # % per second while the spare battery is plugged in (empty → full in 25 s, about a lap)
-GARAGE_PLUG = 8.0            # no crew: the garage plugs the spare in this many seconds after the stop
-BOT_PLUG, BOT_PLUG_LATE = 0.5, 8.0   # bots plug in right away – or late (the chance of a missed job)
-ENGINE_HOLD = 2.0            # seconds of holding to prepare the spare engine
-CREW_TYRES = 0.5             # the automatic crew («Pit crew: bots»): everything prepared, the tyres take this much longer
-CREW_PLUG = 1.0              # … and it plugs the used battery in this many seconds after the stop
+# the stop – done by the driver who drives next, on their phone (a driver alone: the same person): the battery first
+# (a tap, then STOP_BAT seconds – the new battery is always full), then the 4 tyres (one tap each, STOP_TYRE seconds,
+# one after the other in the order of the taps); after an overheat also the engine (STOP_ENG). Done by itself after
+# STOP_MAX seconds (+ STOP_ENG after an overheat) at the latest – no taps: that long. Bots: a fair fixed time.
+STOP_BAT, STOP_TYRE, STOP_MAX, STOP_ENG = 4.0, 1.0, 10.0, 5.0
+BOT_STOP = {"easy": 9.0, "normal": 8.7, "hard": 8.5}
 TEAM_STYLES = (("Comet Racing", "#e03131"), ("Blue Falcon Works", "#1c7ed6"), ("Pine Cone Motors", "#2f9e44"),
                ("Sunrise Speedsters", "#f08c00"), ("Silver Owl Garage", "#7048e8"), ("Night Fox Racing", "#0c8599"),
                ("Thunder Bee Team", "#e8590c"), ("Snow Hare Racing", "#495057"))
 NUMBERS = (3, 7, 8, 11, 12, 17, 21, 24, 27, 33, 36, 42, 44, 51, 58, 63, 77, 88, 91, 99)
-# a corner too fast now and then, temperature to lift off / to push again, the chance that a job of the crew is not
-# ready, how close to the safe speed they dare (the assist's share)
+# a corner too fast now and then, temperature to lift off / to push again, the chance of the wrong tyres at a stop,
+# how close to the safe speed they dare (the assist's share)
 BOT_SKILL = {"easy": (0.2, 92.0, 78.0, 0.35, 0.84), "normal": (0.1, 93.0, 84.0, 0.15, 0.93), "hard": (0.03, 96.0, 90.0, 0.05, 0.99)}
 BOT_GREEDY = 1.3             # a missed corner: the bot dares this share of the safe speed
 
@@ -300,20 +309,8 @@ def new_car(x: float, d: float) -> dict:
     return {"d": d, "x": x, "v": 0.0, "thr": 0, "st": 0, "sw": 0.0, "ast": 0, "ak": AK_ASSIST, "lo": 0.0, "temp": TMIN,
             "eng": 0, "ls": 0.0, "best": 0.0, "last": 0.0, "pit": 0, "bumps": 0, "bc": 0.0, "blows": 0, "tyre": "s",
             "kerb": 0, "sf": 0, "offs": 0, "tow": 0.0, "bat": 100.0, "flat": 0, "man": 0, "gear": 1, "sg": 0.0,
-            "pl": 0, "ap": 0, "box": BOX0}
-
-
-def new_spare(charge: float, t: float, auto: float | None = None) -> dict:
-    """The team's ONE spare battery in the pits: its charge when it came out of the car (c0) at game time t, when it was
-    plugged in (None: not yet) and when the garage / the bot plugs it in by itself (auto)."""
-    return {"c0": charge, "t": t, "plug": None, "auto": auto}
-
-
-def spare_charge(sp: dict, at: float) -> float:
-    """The spare's charge at game time `at` – from the server's timestamps only."""
-    if sp["plug"] is None or at <= sp["plug"]:
-        return sp["c0"]
-    return min(100.0, sp["c0"] + CHARGE_RATE * (at - sp["plug"]))
+            "pl": 0, "ap": 0, "box": BOX0,
+            "hb": 0, "hbt": 0.0, "dr": 0, "drt": 0.0, "dc": 0, "yaw": 0.0}
 
 
 def auto_gear(v: float) -> int:
@@ -327,7 +324,7 @@ def auto_gear(v: float) -> int:
 def apply_input(car: dict, c: str, v) -> None:
     """One input of the driver – the same rules as in the app: "s" steering −100 … 100, "u" 1 gas / 0 lifted / −1
     brake, "a" the assist on / off, "m" manual gears on / off (on: the gear that fits the speed), "g" the gear
-    −1 R / 0 N / 1–6 (anything else is ignored)."""
+    −1 R / 0 N / 1–6 (anything else is ignored), "h" the handbrake held 1 / released 0."""
     if c == "s":
         car["st"] = max(-100, min(100, int(v)))
     elif c == "u":
@@ -340,6 +337,8 @@ def apply_input(car: dict, c: str, v) -> None:
         car["gear"] = auto_gear(car["v"])
     elif c == "g" and -1 <= int(v) <= len(GEAR_TOP):
         car["gear"] = int(v)
+    elif c == "h":
+        car["hb"] = 1 if int(v) else 0
 
 
 def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[str]:
@@ -372,13 +371,54 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     stc = 0.0 if ap else car["st"] / 100.0
     emg = car["bat"] <= 0                              # the battery is empty: the emergency drive mode
     bite = min(1.0, 0.2 + abs(v0) / VSTEER)            # how much the steering bites at this speed
-    push = 0.0                                         # a corner pushes outward, ∝ speed²
+    # the handbrake and the drift (not in the pit lane, not by the autopilot)
+    hb = 1 if car.get("hb", 0) and not pl and not ap else 0
+    hbt0 = car.get("hbt", 0.0)
+    car["hbt"] = hbt0 + DT if hb else 0.0
+    dr, lose, spinx = car.get("dr", 0), False, 0.0
+    if hb and hbt0 == 0.0 and dr == 0 and car["sf"] != 2 and v0 > 0:     # the tap: a drift, a spin – or just a small brake
+        nc, dz = next_corner(xl)
+        if nc is not None:
+            sv = safe_speed(nc, car["tyre"], rain)
+            u = (xl - nc[0]) / (nc[1] - nc[0]) if cn is not None else -1.0
+            if v0 >= sv * (DRIFT_VMIN_RAIN if rain else DRIFT_VMIN):
+                entry = (cn is None and dz <= (DRIFT_PRE_RAIN if rain else DRIFT_PRE)) or (cn is not None and u <= DRIFT_LATE)
+                late = cn is not None and u > DRIFT_LATE
+                if late or (entry and v0 >= sv * DRIFT_SPIN):
+                    dr = 2
+                    ev.append("spin")
+                elif entry:
+                    dr = 1
+                    ev.append("drift")
+                if dr:
+                    car["dc"] = CORNERS.index(nc)
+                    car["drt"] = 0.0
+    dc = CORNERS[car.get("dc", 0)] if dr else (0.0, 0.0, 0.0, 0.0)   # the drift's corner
+    ddir = 1.0 if dc[2] > 0 else -1.0
+    dsafe = safe_speed(dc, car["tyre"], rain) * (DRIFT_K_RAIN if rain else DRIFT_K)
+    if dr == 1:                                        # the drift: gas and steering into the corner hold it
+        car["drt"] = car.get("drt", 0.0) + DT
+        if hbt0 + DT > HB_LONG or car["sf"] == 2 or pl:
+            dr = 0                                     # held too long (brakes hard) / on the grass / the pit lane
+        elif cn is None and xl >= dc[1]:
+            dr = 0                                     # through the corner: a clean exit
+        elif car["drt"] > DRIFT_GRACE + 1e-9 and not (car["thr"] > 0 and car["st"] * ddir >= (DRIFT_ST_RAIN if rain else DRIFT_ST)):
+            dr = 0                                     # lifted or steered against it: the drift breaks
+            lose = True
+    elif dr == 2:                                      # the spin: wide off the track, then the grass slows it down
+        car["drt"] = car.get("drt", 0.0) + DT
+        if car["sf"] == 2 or v0 <= VGRASS or car["drt"] > SPIN_T:
+            dr = 0
+        else:
+            spinx = -ddir * SPIN_X
+    car["dr"] = dr
+    push = 0.0                                         # a corner pushes outward, ∝ speed² (drifting: against the drift speed)
     if cn is not None:
-        q = v0 / safe_speed(cn, car["tyre"], rain)
+        q = v0 / (dsafe if dr == 1 else safe_speed(cn, car["tyre"], rain))
         push = (-1.0 if cn[2] > 0 else 1.0) * STEER_V * PUSH * q * q
     if ap:                                             # the autopilot steers smoothly along the pit lane
         stc = clamp((pit_x(pz) - x0) * AP_K, -1.0, 1.0)
-    elif car["ast"]:                                   # the assist: towards the racing line (the pit lane), brake before a corner
+    elif car["ast"] and dr == 0:                       # the assist (never while drifting): towards the racing line (the pit lane), brake before a corner
         aim = pit_x(pz) if pl else clamp(race_line(xl) + car["lo"], -LMAX, LMAX)
         help_ = clamp((aim - x0) * ASSIST_K - push / (STEER_V * bite), -1.0, 1.0)
         stc = clamp(stc + (1.0 - abs(stc)) * help_, -1.0, 1.0)
@@ -429,6 +469,15 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         vt = min(vt, PIT_V)
         if v0 > PIT_V:
             dec = max(dec, BRAKE)
+    if dr == 1:                                        # drifting: the car settles at the drift speed
+        vt = min(vt, dsafe)
+        dec = max(dec, DRIFT_DEC)
+    elif dr == 2:
+        vt = min(vt, VGRASS)
+        dec = max(dec, GRASS_DEC)
+    elif hb:                                           # the handbrake: a tap brakes a little, held too long hard
+        vt = min(vt, VBRAKE)
+        dec = max(dec, HB_DEC if car["hbt"] > HB_LONG + 1e-9 else HB_DEC_SOFT)
     if pl == 2:                                        # rolling into the box and stopping there
         vt = min(vt, max(2.0, math.sqrt(2.0 * BOX_DEC * max(0.0, car.get("box", BOX0) - pz))))
         dec = max(dec, BOX_DEC)
@@ -460,6 +509,8 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     if rev:                                            # backwards, slowly: gas / lifted creeps / the brake stops
         tg = 0.0 if th < 0 else -VREV if th > 0 else -VCREEP
         v = max(tg, v0 - REV_ACC * DT) if v0 > tg else min(tg, v0 + (BRAKE if th < 0 else REV_ACC) * DT)
+    if lose:
+        v = max(0.0, v - DRIFT_LOSS)
     car["bc"] = max(0.0, car["bc"] - DT)
     if bump is not None and v > bump:
         v = max(0.0, bump)
@@ -471,7 +522,7 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         nudge = 0.0
     # across the track: the wheel, the corner's push, a nudge; then the surface under the car
     lo, hi = pit_bounds(pz) if pl else (-XMAX, XMAX)   # in the pit lane: its white line, the pit wall, the boxes
-    x = clamp(x0 + (car["sw"] * STEER_V * bite + push + nudge) * DT, lo, hi)
+    x = clamp(x0 + (car["sw"] * STEER_V * bite + push + nudge + spinx) * DT, lo, hi)
     ax = abs(x)
     sf = 0 if ax <= HW or (pl and x > 0) else 1 if ax <= HW + KERB else 2
     if sf == 2 and car["sf"] != 2:
@@ -505,12 +556,27 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         car["temp"] = min(RED, car["temp"] + (HEAT_JR if jr else HEAT) * DT)
     else:
         car["temp"] = max(TMIN, car["temp"] - COOL * DT)
+    if dr == 1:                                        # drifting heats the engine a little more
+        car["temp"] = min(RED, car["temp"] + DRIFT_HEAT * DT)
     if (full or lim or grind) and car["temp"] >= RED - 1e-9:
         car["eng"] = 1
         car["blows"] += 1
         car["temp"] = 80.0
         ev.append("blow")
     # the line (across the track and the pit lane): a lap – on in the pit lane to the box (not at the start)
+    # the drift angle (the picture): towards the drift's angle, round and round in a spin, back to straight
+    yaw = car.get("yaw", 0.0)
+    if dr == 1:
+        yaw += clamp(ddir * DRIFT_YAW - yaw, -YAW_RATE * DT, YAW_RATE * DT)
+    elif dr == 2:
+        yaw += ddir * SPIN_RATE * DT
+        if yaw > 180.0:
+            yaw -= 360.0
+        elif yaw < -180.0:
+            yaw += 360.0
+    else:
+        yaw += clamp(-yaw, -2.0 * YAW_RATE * DT, 2.0 * YAW_RATE * DT)
+    car["yaw"] = yaw
     n0, n1 = math.floor(d0 / L), math.floor(d1 / L)
     tc = s + (n1 * L - d0) / v if n1 > n0 else 0.0     # the moment the car crossed the line (within the step)
     if n1 > n0 and n0 >= 0:
@@ -525,7 +591,7 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     if pl == 2 and d1 >= n1 * L + car.get("box", BOX0):          # at the box: the car stops – the pit stop begins
         d1 = n1 * L + car.get("box", BOX0)
         v = 0.0
-        car.update(pit=1, sw=0.0, sf=0, tow=0.0, ap=0)
+        car.update(pit=1, sw=0.0, sf=0, tow=0.0, ap=0, dr=0, yaw=0.0, hbt=0.0)
         ev.append("pit")
     car["d"] = d1
     car["x"] = x
@@ -538,8 +604,8 @@ def laps_of(d: float) -> int:
 
 
 def race_hour(s: float, limit: float) -> float:
-    """The race clock (hour of the day, 0–24): 15:00 at the start."""
-    return (15 + 24 * max(0.0, s) / limit) % 24
+    """The race clock (hour of the day, 0–24): 16:00 at the start."""
+    return (16 + 24 * max(0.0, s) / limit) % 24
 
 
 def darkness(s: float, limit: float) -> float:
@@ -580,12 +646,6 @@ def rain_plan(rng, limit: float) -> list[list[float]]:
         out.append([round(t, 1), round(min(limit, t + dur), 1)])
         t += dur + rng.uniform(45, 90)
     return out
-
-
-def new_prep() -> dict:
-    """The pit crew's jobs for the next stop: tyres on the 4 spots (the server's time of each), the spare engine (held
-    seconds, who holds since when, when ready). The spare battery is the team's `spare` (it stays from stop to stop)."""
-    return {"tyres": [None, None, None, None], "tyre_t": -99.0, "compound": None, "eng": 0.0, "eng_on": None, "eng_at": None}
 
 
 # ================================================================ one table (pure logic on a dict)
@@ -651,8 +711,7 @@ class Table:
         for pos, ti in enumerate(order):                 # the grid: two by two (left, right), 8 m apart
             t = teams[ti]
             t.update(car=new_car(-2.5 if pos % 2 == 0 else 2.5, -5.0 - 8.0 * pos), driver=t["members"][0], drives={t["members"][0]: 1},
-                     stop=None, pits=[], best_pit=None, ev=[], auto=False, bk="", hot=0, grid=pos + 1, prep=new_prep(),
-                     spare=new_spare(100.0, 0.0), laps=[])
+                     stop=None, pits=[], best_pit=None, ev=[], auto=False, bk="", hot=0, grid=pos + 1, laps=[])
         for i, t in enumerate(teams):                    # the boxes along the pit lane: one per team
             t["car"]["box"] = box_of(i)
         for p in players:
@@ -672,8 +731,8 @@ class Table:
 
     # ---------- what the apps send
     def report(self, pid: str, inputs=()) -> int:
-        """The driver's inputs ([game time, "s"|"u"|"a"|"m"|"g", value]: steering −100 … 100, the pedals, the assist,
-        manual gears on / off, the gear −1 R / 0 N / 1–6 – another gear is dropped) – only
+        """The driver's inputs ([game time, "s"|"u"|"a"|"m"|"g"|"h", value]: steering −100 … 100, the pedals, the assist,
+        manual gears on / off, the gear −1 R / 0 N / 1–6 – another gear is dropped –, the handbrake 1 / 0) – only
         the current driver's count; a late one is applied at the next step (never in the past). Answers how many were
         taken."""
         if self.st.get("phase") != "play":
@@ -693,7 +752,7 @@ class Table:
                 v = int(item[2]) if len(item) > 2 and item[2] is not None else 0
             except (TypeError, ValueError, OverflowError, IndexError, KeyError):     # int(inf): OverflowError
                 continue
-            if c not in ("s", "u", "a", "m", "g") or not math.isfinite(te) or te > now_t + AHEAD:
+            if c not in ("s", "u", "a", "m", "g", "h") or not math.isfinite(te) or te > now_t + AHEAD:
                 continue
             if c == "g" and not -1 <= v <= len(GEAR_TOP):
                 continue
@@ -701,6 +760,8 @@ class Table:
                 v = max(-100, min(100, v))
             elif c != "g":
                 v = 1 if v > 0 else -1 if v < 0 else 0
+            if c == "h":
+                v = 1 if v > 0 else 0
             if c == "a":
                 v = 1 if v else 0
                 self.st.setdefault("assist", {})[pid] = bool(v)     # remembered for this person's next stints
@@ -714,35 +775,32 @@ class Table:
         del t["ev"][:-120]
         return taken
 
-    def crew(self, t: dict) -> list[str]:
-        return [m for m in t["members"] if m != t["driver"]]
-
-    def bot_crew(self) -> bool:
-        """«Pit crew: bots» – an automatic crew prepares every team's stops (the people only drive and watch)."""
-        return self.st["rules"].get("crew") == "bots"
-
-    def active_crew(self, t: dict) -> list[str]:
-        """The crew whose apps are alive (bots and the automatic crew have none: the team prepares by itself)."""
-        return [p for p in self.crew(t) if self.seen_ok(p, STALE)] if not t["bot"] and not self.bot_crew() else []
-
-    def prep(self, pid: str, action: str, spot=None) -> dict:
-        """A job of the pit crew during the lap – the server's clock decides (plug the spare battery in, a tyre on a
-        spot, start / stop holding the spare engine)."""
+    def tap(self, pid: str, action: str, spot=None) -> dict:
+        """A tap of the driver who drives next at the team's stop – timed by the server's clock: the battery first, then
+        the tyres (and after an overheat the engine) in the order of the taps, each after the one before; a tap twice,
+        a tyre before the battery is done, a tap of anybody else or after the stop are ignored / refused. All done: the
+        stop ends then (STOP_MAX, + STOP_ENG after an overheat, at the latest). "slicks" / "rain": the tyres to fit."""
         if self.st.get("phase") != "play":
             raise CommunityError("The game is not running")
         t = self.team_of(pid)
         if not t or t["bot"]:
             raise CommunityError("You are not at this table")
         self.st["seen"][pid] = self.now()
-        if t["driver"] == pid:
-            raise CommunityError("The driver keeps the hands on the wheel")
-        if self.bot_crew():
-            raise CommunityError("The bot crew prepares the stops")
-        if t["car"]["pit"]:
-            raise CommunityError("The car is in the pits")
+        stp = t["stop"]
+        if not stp or not stp.get("jobs") or stp["next"] != pid:
+            raise CommunityError("Not your stop")
         now_t = math.floor(self.gt() * 1000) / 1000       # stored to the millisecond, never later than now
-        pr = t["prep"]
-        self._settle(t, now_t)
+        jobs = stp["jobs"]
+        if now_t >= stp["end"] - 1e-9 or now_t < stp["t"]:
+            return {"ok": False, "over": True}
+        if action in ("slicks", "rain"):
+            stp["tyre"] = "r" if action == "rain" else "s"
+            return {"ok": True, "tyre": stp["tyre"]}
+        if action == "battery":
+            if jobs["bat"] is not None:
+                return {"ok": True, "again": True}
+            jobs["bat"] = now_t
+            return {"ok": True, "done": round(now_t + STOP_BAT, 3)}
         if action == "tyre":
             try:
                 k = int(spot)
@@ -750,62 +808,26 @@ class Table:
                 raise CommunityError("Unknown spot") from None
             if not 0 <= k <= 3:
                 raise CommunityError("Unknown spot")
-            if pr["tyres"][k] is not None:
-                return {"ok": True, "again": True}
-            if now_t - pr["tyre_t"] < TYRE_GAP:
-                raise CommunityError("Too fast")
-            pr["tyres"][k] = now_t
-            pr["tyre_t"] = now_t
-            return {"ok": True, "tyres": sum(1 for x in pr["tyres"] if x is not None)}
-        if action in ("slicks", "rain"):
-            pr["compound"] = "r" if action == "rain" else "s"
-            return {"ok": True, "compound": pr["compound"]}
-        if action == "plug":                             # the spare battery onto the charger – from now on it charges
-            sp = t["spare"]
-            if sp["plug"] is not None:
-                return {"ok": True, "again": True, "charge": round(spare_charge(sp, now_t), 1)}
-            sp["plug"] = max(now_t, sp["t"])
-            return {"ok": True, "charge": round(sp["c0"], 1)}
-        if action == "eng_on":
-            if not t["car"]["eng"]:
+        elif action == "engine":
+            if not stp["eng"]:
                 raise CommunityError("The engine is fine")
-            if pr["eng_at"] is not None:
-                return {"ok": True, "again": True}
-            if pr["eng_on"]:
-                if pr["eng_on"][0] != pid:
-                    raise CommunityError("Somebody else is on it")
-                return {"ok": True, "again": True}
-            pr["eng_on"] = [pid, now_t]
-            return {"ok": True}
-        if action == "eng_off":
-            on = pr["eng_on"]
-            if not on or on[0] != pid:
-                return {"ok": True, "again": True, "held": pr["eng"], "ready": pr["eng_at"] is not None}
-            pr["eng_on"] = None
-            pr["eng"] = round(min(ENGINE_HOLD, pr["eng"] + max(0.0, now_t - on[1])), 2)
-            if pr["eng"] >= ENGINE_HOLD - 1e-9:
-                pr["eng_at"] = now_t
-            return {"ok": True, "held": pr["eng"], "ready": pr["eng_at"] is not None}
-        raise CommunityError("Unknown job")
-
-    def _settle(self, t: dict, now_t: float) -> None:
-        """Holding on long enough: the spare engine is ready."""
-        pr = t["prep"]
-        on = pr["eng_on"]
-        if on and pr["eng"] + now_t - on[1] >= ENGINE_HOLD:
-            at = round(on[1] + ENGINE_HOLD - pr["eng"], 3)
-            pr.update(eng=ENGINE_HOLD, eng_on=None, eng_at=at)
-
-    def ready(self, t: dict, at: float) -> dict:
-        """Which jobs were finished by game time `at`."""
-        pr = t["prep"]
-        ty = pr["tyres"]
-        eng_at = pr["eng_at"]
-        if eng_at is None and pr["eng_on"]:
-            eng_at = pr["eng_on"][1] + ENGINE_HOLD - pr["eng"]
-        return {"tyres": all(x is not None and x <= at + 1e-9 for x in ty),
-                "battery": spare_charge(t["spare"], at) >= 100.0 - 1e-9,
-                "engine": eng_at is not None and eng_at <= at + 1e-9}
+        else:
+            raise CommunityError("Unknown job")
+        if jobs["bat"] is None or now_t < jobs["bat"] + STOP_BAT - 1e-9:
+            return {"ok": False, "battery_first": True}
+        cur = jobs["tyres"][k] if action == "tyre" else jobs["eng"]
+        if cur is not None:
+            return {"ok": True, "again": True}
+        last = max([jobs["bat"] + STOP_BAT] + [x for x in jobs["tyres"] + [jobs["eng"]] if x is not None])
+        done = round(max(now_t, last) + (STOP_TYRE if action == "tyre" else STOP_ENG), 3)   # queued after the job before it
+        if action == "tyre":
+            jobs["tyres"][k] = done
+        else:
+            jobs["eng"] = done
+        if all(x is not None for x in jobs["tyres"]) and (jobs["eng"] is not None or not stp["eng"]):
+            end = round(min(stp["t"] + stp["cap"], max(jobs["tyres"] + [jobs["eng"] or 0.0])), 2)
+            stp.update(end=end, time=round(end - stp["t"], 1), done=True)
+        return {"ok": True, "done": done}
 
     # ---------- the pit stop
     def next_driver(self, t: dict) -> str:
@@ -819,52 +841,28 @@ class Table:
         return t["driver"]
 
     def _open_stop(self, t: dict, s: float) -> None:
+        """The car stopped at its box: a bot team's stop takes its fixed time; a team of people waits for the taps of the
+        driver who drives next (STOP_MAX at the latest, + STOP_ENG after an overheat). The new battery is always full;
+        the tyres: the current weather (bots: the forecast, now and then wrong) – the next driver can switch them."""
         car = t["car"]
         at = round(s + DT, 2)
         eng = bool(car["eng"])
-        crew = self.active_crew(t)
-        parts: list[list] = []
-        garage = False
-        # the battery swap (every stop, a fixed time): the spare goes in with the charge it has right now
-        bat_in = round(spare_charge(t["spare"], at), 2)
-        swap = ["battery", BAT_SWAP, bat_in >= 100.0 - 1e-9]
-        if t["bot"]:
-            miss = BOT_SKILL.get(self.person(t["driver"]).get("level", "normal"), BOT_SKILL["normal"])[3]
-            parts += [["base", STOP_BASE, True], swap]
-            ok = self.rng.random() >= miss
-            parts.append(["tyres", 0.0 if ok else PEN_PREP, ok])
-            if eng:
-                ok = self.rng.random() >= miss
-                parts.append(["engine", ENG_READY if ok else ENG_SWAP, ok])
-        elif self.bot_crew():                            # the automatic crew: everything prepared – a normal stop, not perfect
-            parts += [["base", STOP_BASE, True], swap, ["tyres", CREW_TYRES, True]]
-            if eng:
-                parts.append(["engine", ENG_READY, True])
-        elif not crew:                                   # alone (or the crew is offline): the garage, a fixed time
-            garage = True
-            parts += [["garage", GARAGE, True], swap]
-            if eng:
-                parts.append(["engine", GARAGE_ENG, False])
-        else:
-            self._settle(t, at)
-            rd = self.ready(t, at)
-            parts += [["base", STOP_BASE, True], swap]
-            parts.append(["tyres", 0.0 if rd["tyres"] else PEN_PREP, rd["tyres"]])
-            if eng:
-                parts.append(["engine", ENG_READY if rd["engine"] else ENG_SWAP, rd["engine"]])
-        took = round(sum(p[1] for p in parts), 1)
-        # the tyres for the next lap: the crew's choice (the garage and the bots look at the forecast)
-        wet_soon = self.wet_soon(at + took)
-        if t["bot"]:
-            tyre = ("r" if wet_soon else "s") if self.rng.random() >= miss else ("s" if wet_soon else "r")
-        elif garage or self.bot_crew():
-            tyre = "r" if wet_soon else "s"
-        else:
-            tyre = t["prep"]["compound"] or car["tyre"]
         nxt = self.next_driver(t)
-        t["stop"] = {"t": at, "end": round(at + took, 2), "time": took, "n": len(t["pits"]) + 1, "parts": parts,
-                     "prev": t["driver"], "next": nxt, "change": nxt != t["driver"], "garage": garage, "eng": eng, "tyre": tyre,
-                     "bat_in": bat_in, "bat_out": round(car["bat"], 2)}
+        rain_now = in_window(self.st.get("rain"), at)
+        if t["bot"]:
+            level = self.person(t["driver"]).get("level", "normal")
+            miss = BOT_SKILL.get(level, BOT_SKILL["normal"])[3]
+            took = round(BOT_STOP.get(level, BOT_STOP["normal"]) + (STOP_ENG if eng else 0.0), 1)
+            wet_soon = self.wet_soon(at + took)
+            tyre = ("r" if wet_soon else "s") if self.rng.random() >= miss else ("s" if wet_soon else "r")
+            jobs = None
+        else:
+            took = STOP_MAX + (STOP_ENG if eng else 0.0)
+            tyre = "r" if rain_now else "s"
+            jobs = {"bat": None, "tyres": [None, None, None, None], "eng": None}
+        t["stop"] = {"t": at, "end": round(at + took, 2), "time": took, "cap": took, "n": len(t["pits"]) + 1, "prev": t["driver"],
+                     "next": nxt, "change": nxt != t["driver"], "eng": eng, "tyre": tyre, "bat_in": 100.0,
+                     "bat_out": round(car["bat"], 2), "jobs": jobs, "done": False}
 
     def wet_soon(self, s: float) -> bool:
         """The forecast for the next lap: rain at about the middle of it."""
@@ -872,22 +870,13 @@ class Table:
 
     def _release(self, t: dict) -> None:
         car, stop = t["car"], t["stop"]
-        car.update(pit=0, v=0.0, eng=0, slow=0.0, temp=min(car["temp"], 70.0), tyre=stop["tyre"], bat=stop["bat_in"], pl=3, ap=0, sw=0.0)
-        # the used battery comes out and waits in the pits for the charger: a bot plugs it in right away (or late, like
-        # a missed job), the garage after GARAGE_PLUG seconds when nobody of the crew is there
-        if t["bot"]:
-            miss = BOT_SKILL.get(self.person(t["driver"]).get("level", "normal"), BOT_SKILL["normal"])[3]
-            auto = stop["end"] + (BOT_PLUG if self.rng.random() >= miss else BOT_PLUG_LATE)
-        elif self.bot_crew():
-            auto = stop["end"] + CREW_PLUG
-        else:
-            auto = stop["end"] + GARAGE_PLUG
-        t["spare"] = new_spare(stop["bat_out"], stop["end"], round(auto, 2))
+        car.update(pit=0, v=0.0, eng=0, slow=0.0, temp=min(car["temp"], 70.0), tyre=stop["tyre"], bat=stop["bat_in"], pl=3, ap=0, sw=0.0,
+                   hb=0, hbt=0.0, dr=0, yaw=0.0)
         if not t["bot"]:
             car.update(thr=0, st=0)                      # the new driver presses the pedal again
-        t["pits"].append({"n": stop["n"], "time": stop["time"], "change": stop["change"], "garage": stop["garage"],
-                          "eng": stop["eng"], "at": stop["t"], "driver": stop["prev"]})
-        if not stop["garage"] and not self.bot_crew() and (t["best_pit"] is None or stop["time"] < t["best_pit"]):   # records: real crews only
+        t["pits"].append({"n": stop["n"], "time": stop["time"], "change": stop["change"], "eng": stop["eng"], "at": stop["t"],
+                          "driver": stop["prev"], "by": stop["next"]})
+        if not t["bot"] and stop.get("done") and (t["best_pit"] is None or stop["time"] < t["best_pit"]):   # records: stops tapped to the end
             t["best_pit"] = stop["time"]
         t["driver"] = stop["next"]
         t["drives"][t["driver"]] = t["drives"].get(t["driver"], 0) + 1
@@ -896,7 +885,6 @@ class Table:
                        man=1 if (self.st.get("manual") or {}).get(t["driver"]) else 0, gear=1)
         t["ev"] = []
         t["stop"] = None
-        t["prep"] = new_prep()
 
     # ---------- the clock: everything up to SETTLE seconds ago
     def tick(self) -> None:
@@ -910,7 +898,7 @@ class Table:
             was = t["auto"]
             t["auto"] = not t["bot"] and not self.seen_ok(t["driver"], AUTO_AFTER) and now_t > 0
             if was and not t["auto"]:                    # back in the app: the pedal released, the driver's own assist
-                t["car"].update(thr=0, st=0, lo=0.0, ak=AK_ASSIST, ast=1 if (self.st.get("assist") or {}).get(t["driver"]) else 0,
+                t["car"].update(thr=0, st=0, hb=0, lo=0.0, ak=AK_ASSIST, ast=1 if (self.st.get("assist") or {}).get(t["driver"]) else 0,
                                 man=1 if (self.st.get("manual") or {}).get(t["driver"]) else 0, gear=auto_gear(t["car"]["v"]))
         steps = 0
         teams = self.st["teams"]
@@ -924,9 +912,6 @@ class Table:
                 car = t["car"]
                 if car["pit"] and t["stop"] and s + 1e-9 >= t["stop"]["end"]:
                     self._release(t)
-                sp = t["spare"]
-                if sp["plug"] is None and sp["auto"] is not None and s + 1e-9 >= sp["auto"] and not car["pit"] and not self.active_crew(t):
-                    sp["plug"] = round(max(sp["auto"], s), 2)  # the garage / the bot plugs the spare in
                 others = [o for j, o in enumerate(snap) if j != i and o is not None]
                 if t["bot"] or t["auto"]:
                     self._drive(t, s, others)
@@ -945,9 +930,6 @@ class Table:
                         del self.st["log"][:-30]
             self.st["k"] += 1
             steps += 1
-        for t in self.st["teams"]:
-            if not t["car"]["pit"]:
-                self._settle(t, now_t)
         self._maybe_end(horizon)
 
     def _drive(self, t: dict, s: float, others=()) -> None:
@@ -966,7 +948,7 @@ class Table:
         if key != t.get("bk"):                           # a new corner ahead: this time carefully – or too greedy
             t["bk"] = key
             car["ak"] = (BOT_GREEDY if self.rng.random() < miss else dare) * caution    # (in the dark and the rain: slower)
-        car.update(ast=1, st=0, man=0)                   # bots and the autopilot: automatic gears, never R
+        car.update(ast=1, st=0, man=0, hb=0)             # bots and the autopilot: automatic gears, never R, no handbrake
         # overtaking: a car close ahead – drive alongside it (the slipstream helps on the straight)
         line = race_line(xl)
         ahead = None
@@ -1070,7 +1052,6 @@ class Langstrecke(CardGames):
         out["difficulty"] = out["difficulty"] if out["difficulty"] in DIFFS else "normal"
         out["team_size"] = max(1, min(5, out["team_size"]))
         out["teams"] = max(1, min(4, out["teams"]))
-        out["crew"] = out["crew"] if out["crew"] in CREWS else "players"
         return out
 
     def _person(self, pid: int) -> dict:
@@ -1357,9 +1338,9 @@ class Langstrecke(CardGames):
             return self.state(KIND, pid)
         return {**self._view(row, st, str(pid)), "taken": taken}
 
-    def prep(self, pid: int, action: str, spot=None) -> dict:
-        """A job of the pit crew (plug the spare battery in, tyre, spare engine) – checked and timed by the server."""
-        return self._with_play(pid, lambda t, st: t.prep(str(pid), action, spot)) or {"ok": False}
+    def tap(self, pid: int, action: str, spot=None) -> dict:
+        """A tap of the next driver at the team's stop (battery, tyre, engine, slicks / rain) – checked and timed by the server."""
+        return self._with_play(pid, lambda t, st: t.tap(str(pid), action, spot)) or {"ok": False}
 
     def end(self, kind: str, viewer: int) -> None:
         with self.lock:
@@ -1424,15 +1405,11 @@ class Langstrecke(CardGames):
                   "driver": t["driver"], "laps": laps_of(car["d"]), "d": round(car["d"], 2), "v": round(car["v"], 2), "x": round(car["x"], 2),
                   "pit": car["pit"], "eng": car["eng"], "emg": car["bat"] <= 0, "stops": len(t["pits"]), "best_pit": t["best_pit"], "best_lap": car["best"],
                   "gap": round(lead - car["d"], 1), "auto": t["auto"], "place": t.get("place"), "grid": t["grid"], "sf": car["sf"],
-                  "last_lap": car.get("last", 0.0), "pl": car.get("pl", 0), "ap": car.get("ap", 0), "box": car.get("box", BOX0)}
+                  "last_lap": car.get("last", 0.0), "pl": car.get("pl", 0), "ap": car.get("ap", 0), "box": car.get("box", BOX0),
+                  "dr": car.get("dr", 0), "yaw": round(car.get("yaw", 0.0), 1)}
             if t is mine or ph == "done":
-                pr, sp = t["prep"], t["spare"]
                 tv.update(car=car, drives=t["drives"], pits=t["pits"], ev=t["ev"] if t is mine else [], stop=t["stop"], laptimes=(t.get("laps") or [])[-12:],
-                          next=t_.next_driver(t) if ph == "play" else None,
-                          spare={"c0": sp["c0"], "t": sp["t"], "plug": sp["plug"], "rate": CHARGE_RATE, "garage": not t_.active_crew(t),
-                                 "charge": round(spare_charge(sp, now_t if ph == "play" else sp["t"]), 1)},
-                          prep={"tyres": [x is not None for x in pr["tyres"]], "compound": pr["compound"] or car["tyre"], "eng": pr["eng"],
-                                "eng_on": pr["eng_on"], "need_eng": bool(car["eng"]), "ready": t_.ready(t, now_t if ph == "play" else 1e9)})
+                          next=t_.next_driver(t) if ph == "play" else None)
             teams.append(tv)
         players_out = []
         for p in players:
