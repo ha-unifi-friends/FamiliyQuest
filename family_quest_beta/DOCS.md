@@ -1811,22 +1811,22 @@ at least two cars (without bots: two teams of people).
   no retirement, but it costs a lot of time.
 - **The stop – done by the next driver on their phone:** when the car stops in its box, the person who drives next
   (alone: the same person) sees the **stop screen** – a top view of the car in the team colour with **big tap targets**
-  (at least 56 px): the **battery 🔋** on the car and the **4 tyres FL, FR, RL, RR** at its wheels. **The battery
-  first:** a tap starts the swap – **4 s** with a progress ring (the new battery is **always full**). The tyres are
-  greyed out until then («🔋 Battery first»; a tyre tapped too early shakes the hint and does not count). Then each
-  tyre takes **1 s**, one after the other in the order of the taps (taps queue). Done right away: about **8 s**.
-  Nothing tapped: the stop is **done by itself after 10 s** – never longer (slow taps are capped at 10 s too). The
-  tyres for the next lap: one quick **☀️ Dry / 🌧️ Rain** toggle, the current weather by default. **After an overheat**
-  an extra **«🔧 Engine»** target (after the battery, **5 s**, queued like a tyre) – the cap rises to **15 s**. A
-  stopwatch («10 s at most»), ✓ on every finished target, «✓ Done – go!» – then the controls fade in and the car
-  drives out. The one who came in (and the others of the team) **watch the stop live**: «👀 Leo does the stop and drives
-  next», the same targets with their progress (no taps), the stopwatch and the cheering stands. A fast stop (≤ 8.5 s)
-  gets a cheer. Below it the **lap-time board** (who drove, the time, 🟫 off the track, 🌧️ rain, ⭐ the team's best,
-  🏆 the fastest lap of the race). **Server-authoritative:** every tap goes to the server with its time (`POST
-  /api/community/langstrecke/tap`: battery | tyre + spot | engine | slicks | rain) – only the next driver's taps count,
-  the order is enforced (a tyre before the battery is done is refused), a tap twice is ignored; stop time = the moment
-  the last job is done, at most 10 s (+5 s engine). **Bot teams** stop in a fair fixed time: hard 8.5 s, normal 8.7 s,
-  easy 9.0 s (+5 s engine), the tyres by the forecast (easier bots now and then wrong). Older race rules stored with a
+  (at least 56 px): the **battery 🔋** on the car and the **4 tyres FL, FR, RL, RR** at its wheels. **Tap everything
+  at once** («👆 Tap everything!»): every target can be tapped from the start, in any order, and every job runs from
+  its own tap with a progress ring, all at the same time – the battery takes **4 s** (the new battery is **always
+  full**), each tyre **1 s**. Battery and the 4 tyres tapped right away: about **4.2 s**. Nothing tapped: the stop is
+  **done by itself after 10 s** – never longer (slow taps are capped at 10 s too). The tyres for the next lap: one
+  quick **☀️ Dry / 🌧️ Rain** toggle, the current weather by default. **After an overheat** an extra **«🔧 Engine»**
+  target (**7 s**, in parallel like the others – about 7.2 s done well) – the cap rises to **13 s**. A stopwatch
+  («10 s at most»), ✓ on every finished target, «✓ Done – go!» – then the controls fade in and the car drives out. The
+  one who came in (and the others of the team) **watch the stop live**: «👀 Leo does the stop and drives next», the
+  same targets with their progress (no taps), the stopwatch and the cheering stands. A fast stop (≤ 5 s, ≤ 8 s with
+  the engine) gets a cheer. Below it the **lap-time board** (who drove, the time, 🟫 off the track, 🌧️ rain, ⭐ the
+  team's best, 🏆 the fastest lap of the race). **Server-authoritative:** every tap goes to the server with its time
+  (`POST /api/community/langstrecke/tap`: battery | tyre + spot | engine | slicks | rain) – only the next driver's taps
+  count, in any order, a tap twice is ignored; stop time = the moment the last job is done, at most 10 s (13 s after
+  an overheat). **Bot teams** stop in a fair fixed time: hard 4.6 s, normal 4.9 s, easy 5.2 s (+3 s after an
+  overheat), the tyres by the forecast (easier bots now and then wrong). Older race rules stored with a
   pit-crew setting (`crew`) still load – the key is ignored.
 - Trackside banners now and then (own, invented: Family Quest and «Snowman Tyres»).
 - Now and then **fans camp beside the track** (tents, a camper van, a campfire at night) waving a sign «I ❤️ #7 🇨🇭» –
