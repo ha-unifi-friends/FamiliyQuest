@@ -1743,6 +1743,11 @@ def verkehr_end(request: Request, prof: dict = Gamer) -> dict | None:
 
 
 # ---------------------------------------------------------------- «24h Endurance» (familyquest/langstrecke.py)
+class LangstreckeTeamLookIn(BaseModel):
+    country: str | None = Field(default=None, max_length=2)    # langstrecke.COUNTRIES, "" / None = no country
+    num: int | None = None                                     # the car number 1–99
+
+
 class LangstreckeStartIn(BaseModel):
     solo: bool = False                   # alone (private) against bot teams
     bots: int | None = None              # 0–5 bot cars
@@ -1754,6 +1759,7 @@ class LangstreckeStartIn(BaseModel):
     teams: int | None = None             # 1–4 teams of people at a family table
     country: str | None = Field(default=None, max_length=2)    # the family's own country (from the app's language) as the suggestion
     bot_ids: list[int | str] = []
+    looks: list[LangstreckeTeamLookIn] | None = Field(default=None, max_length=9)   # alone: my team, then every bot team
 
 
 class LangstreckeSyncIn(FiniteIn):
@@ -1774,6 +1780,8 @@ class LangstreckeLookIn(BaseModel):
     country: str | None = Field(default=None, max_length=2)    # langstrecke.COUNTRIES, "" = no country
     num: int | None = None                                     # the car number 1–99
     assist: bool | None = None                                 # my own driving assist (auto-brake, steering help)
+    team: int | None = None                                    # another team of people (who leads: country and number)
+    bot: int | None = None                                     # a bot team (who leads: country and number)
 
 
 class LangstreckeRulesIn(BaseModel):
@@ -1820,7 +1828,8 @@ def langstrecke_start(body: LangstreckeStartIn, request: Request, prof: dict = G
         from ..cardgames import BOTS
         bots = fq.bots.pick(prof["id"], body.bot_ids, 5, body.level or "normal", BOTS)
     with _bots_not_remembered(fq, "langstrecke", forced):
-        _run(fq.langstrecke.start, "langstrecke", prof["id"], body.model_dump(exclude={"solo", "bot_ids", "country"}), body.solo, bots, body.country)
+        _run(fq.langstrecke.start, "langstrecke", prof["id"], body.model_dump(exclude={"solo", "bot_ids", "country", "looks"}), body.solo, bots, body.country,
+             [lk.model_dump() for lk in body.looks] if body.looks else None)
     return fq.langstrecke.state("langstrecke", prof["id"])
 
 
@@ -1841,9 +1850,11 @@ def langstrecke_team(body: LangstreckeTeamIn, request: Request, prof: dict = Pla
 
 @router.post("/langstrecke/look")
 def langstrecke_look(body: LangstreckeLookIn, request: Request, prof: dict = Playing) -> dict | None:
-    """In the lobby: the colour, the country and the car number of my team."""
+    """In the lobby: the colour, the country and the car number of my team – who leads the table also sets the country
+    and the number of every other team (`team`) and of the bot teams (`bot`)."""
     fq = app_of(request)
-    _run(fq.langstrecke.choose_look, prof["id"], body.color, body.country, body.num, body.assist)
+    lead = (body.team is not None or body.bot is not None) and fq.langstrecke.may_lead("langstrecke", prof)
+    _run(fq.langstrecke.choose_look, prof["id"], body.color, body.country, body.num, body.assist, body.team, body.bot, lead)
     return fq.langstrecke.state("langstrecke", prof["id"])
 
 

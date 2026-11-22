@@ -30,6 +30,9 @@ const LE = { L: 640, DT: 0.1, VLIFT: 20, VFULL: 30, ACC: 8.5, BRAKE: 14, COAST: 
   // the line, 2 to the box, 3 out to the pit exit and back onto the track) – as in langstrecke.py
   PIT_IN: 580, PIT_ENTRY: 30, PIT_OUT: 60, PIT_MERGE: 15, PL_X: 9.5, PL_HW: 2, SIDE_X: 3.5, PIT_V: 100 / 7, KEEP_R: 1.5, KEEP_ST: 20,
   AP_LATE: 12, AP_K: 0.7, FUNNEL: 0.45, BOX0: 10, BOX_GAP: 6, BOX_DEC: 6,
+  // the finish: once the race clock has run out every car takes the chequered flag at its next crossing of the line –
+  // on the track (no pit entry any more), then it rolls out lifted off – as in langstrecke.py
+  FIN_DEC: 5, FIN_HOLD: 3, FIN_MAX: 60,
   // the handbrake and the drift – as in langstrecke.py
   HB_LONG: 0.6, HB_DEC_SOFT: 6, HB_DEC: 15, DRIFT_PRE: 12, DRIFT_PRE_RAIN: 18, DRIFT_LATE: 0.35, DRIFT_VMIN: 0.85, DRIFT_VMIN_RAIN: 0.75,
   DRIFT_SPIN: 1.35, DRIFT_K: 1.06, DRIFT_K_RAIN: 1.03, DRIFT_ST: 25, DRIFT_ST_RAIN: 60, DRIFT_GRACE: 0.3, DRIFT_DEC: 9, DRIFT_LOSS: 3,
@@ -61,10 +64,11 @@ function leNextCorner(xl) {
 const leSafe = (c, tyre, rain) => c[3] * leGrip(tyre, rain) * (rain ? LE.RAIN_C : 1);
 const leEase = u => { u = leClamp(u, 0, 1); return u * u * (3 - 2 * u); };
 // the racing line as shown on the road at absolute d: the line the assist and the bots follow (leLine) – at the lap's
-// end it bends over to the right into the pit lane and follows the lane to the exit (every lap ends in the pits)
-function leLineShown(d) {
+// end it bends over to the right into the pit lane and follows the lane to the exit (every lap ends in the pits) –
+// once the race clock has run out (`over`) it stays on the track to the chequered flag
+function leLineShown(d, over) {
   const xl = leLapPos(d), pz = xl >= LE.PIT_IN - 30 ? xl - LE.L : xl;
-  if (pz < LE.PZ_IN - 30 || pz > LE.PIT_OUT + LE.PIT_MERGE + 40) return leLine(xl);
+  if (pz < LE.PZ_IN - 30 || pz > LE.PIT_OUT + LE.PIT_MERGE + 40 || (over && pz < 0)) return leLine(xl);
   if (pz < LE.PZ_IN) return leLine(xl) + (LE.SIDE_X - leLine(xl)) * leEase((pz - LE.PZ_IN + 30) / 30);
   if (pz <= LE.PIT_OUT + LE.PIT_MERGE) return lePitX(pz);
   return LE.SIDE_X + (leLine(xl) - LE.SIDE_X) * leEase((pz - LE.PIT_OUT - LE.PIT_MERGE) / 40);
@@ -164,15 +168,21 @@ function leRev(car, rain) {
   return { g, r, lim: r >= 0.97 };
 }
 // one step of DT seconds from game time s – the same as step() in langstrecke.py; `others`: [[d, x, v], …] of the
-// other cars on the track at the start of the step
-function leStep(car, s, jr, rain = false, others = []) {
+// other cars on the track at the start of the step; `over`: the race clock has run out (this lap ends at the flag)
+function leStep(car, s, jr, rain = false, others = [], over = false) {
   const ev = [], DT = LE.DT;
   if (car.pit) { car.temp = Math.max(LE.TMIN, car.temp - LE.COOL * DT); return ev; }
+  if (car.fin) {                                     // past the chequered flag: rolls out lifted off, nothing else
+    const v = Math.max(0, car.v - LE.FIN_DEC * DT);
+    car.d += v * DT; car.v = v; car.temp = Math.max(LE.TMIN, car.temp - LE.COOL * DT);
+    return ev;
+  }
   const d0 = car.d, x0 = car.x, v0 = car.v, xl = leLapPos(d0);
   // the pit lane: from the entry line every car is on its way into the pits – the driver steers in (keeping right or
-  // steering right at the line), else the autopilot takes over; out of the pit exit it races again
+  // steering right at the line), else the autopilot takes over; out of the pit exit it races again. Once the race clock
+  // has run out nobody goes in: straight on to the chequered flag on the track
   let pl = car.pl || 0;
-  if (pl === 0 && d0 >= 0 && xl >= LE.PIT_IN) {
+  if (pl === 0 && d0 >= 0 && xl >= LE.PIT_IN && !over) {
     pl = car.pl = 1; car.ap = x0 >= LE.KEEP_R || car.st >= LE.KEEP_ST ? 0 : 1;
     ev.push("pitlane"); if (car.ap) ev.push("autopilot");
   } else if (pl === 3 && LE.PIT_OUT + LE.PIT_MERGE <= xl && xl < LE.PIT_IN) pl = car.pl = 0;
@@ -313,10 +323,11 @@ function leStep(car, s, jr, rain = false, others = []) {
     car.last = lt;
     car.best = !car.best || lt < car.best ? lt : car.best;
     car.ls = Math.floor(tc * 100 + 0.5) / 100;
-    pl = car.pl = 2;
+    if (pl || !over) pl = car.pl = 2;
     ev.push("lap");
+    if (over) { car.fin = 1; car.dr = 0; car.yaw = 0; car.hbt = 0; car.tow = 0; ev.push("finish"); }   // the chequered flag
   } else if (n1 > n0) car.ls = Math.floor(tc * 100 + 0.5) / 100;
-  if (pl === 2 && d1 >= n1 * LE.L + (car.box ?? LE.BOX0)) {       // at the box: the car stops – the pit stop begins
+  if (pl === 2 && !car.fin && d1 >= n1 * LE.L + (car.box ?? LE.BOX0)) {       // at the box: the car stops – the pit stop begins
     d1 = n1 * LE.L + (car.box ?? LE.BOX0); v = 0;
     car.pit = 1; car.sw = 0; car.sf = 0; car.tow = 0; car.ap = 0; car.dr = 0; car.yaw = 0; car.hbt = 0;
     ev.push("pit");
@@ -349,13 +360,15 @@ const leMapAt = (d, off = 0) => { const m = leTrackMap(), u = leLapPos(d) / 4, i
   return [a[0] + (b[0] - a[0]) * f + nr[0] * k, a[1] + (b[1] - a[1]) * f + nr[1] * k]; };
 // where the pit lane is at absolute d (for the pictures): metres from the line of its stop, or null off the pit lane
 const lePitAt = d => { const xl = leLapPos(d), pz = xl >= LE.PIT_IN - 10 ? xl - LE.L : xl; return pz >= LE.PZ_IN - 10 && pz <= LE.PIT_OUT + LE.PIT_MERGE + 12 ? pz : null; };
-// a car's offset across the minimap / its pit-lane state for the pictures
-const lePitHint = car => {
-  if (!car || car.pit) return null;
+// a car's pit-lane state for the pictures – "flag": the race clock has run out (`over`), this lap ends at the
+// chequered flag on the track (no pit stop); nothing after the flag
+const lePitHint = (car, over) => {
+  if (!car || car.pit || car.fin) return null;
   const xl = leLapPos(car.d), pl = car.pl || 0, pz = pl ? lePitZ(car.d, pl) : 0;
   if (pl && car.ap) return "ap";
   if (pl === 1 || (pl === 2)) return "lim";
   if (pl === 3) return pz < LE.PIT_OUT ? "lim" : "exit";
+  if (over) return "flag";
   return car.d >= 0 && xl >= LE.PIT_IN - 110 && xl < LE.PIT_IN ? "keep" : null;
 };
 // the curvature of the track at d (radians per metre, + = right) – the pseudo-3D picture bends with it
@@ -389,9 +402,10 @@ function leScreen(st, myId, t) {
   return { mode: tm.driver === String(myId) ? "drive" : "rest", intro };
 }
 // The driver's controls (joystick, shifter, paddles, A / M, handbrake) only when they can be used: driving, after the
-// green light, before the finish, not standing in the box – never on the start grid, in the lobby, at a stop or for
-// the others of the team on a break / spectators (they fade in at the green light and at the pit exit)
-const leControls = (mode, intro, car, t, limit) => mode === "drive" && !intro && t >= 0 && t < limit && !!car && !car.pit;
+// green light, until my car took the chequered flag (the last lap after the clock too), not standing in the box – never
+// on the start grid, in the lobby, at a stop or for the others of the team on a break / spectators (they fade in at the
+// green light and at the pit exit)
+const leControls = (mode, intro, car, t, limit) => mode === "drive" && !intro && t >= 0 && t < limit + LE.FIN_MAX && !!car && !car.pit && !car.fin;
 // The driver's position card (top left on the picture): my place, the leader (not when I lead), the car ahead and the
 // car behind (not when there is none) with the gap in seconds – or in laps for a lapped car. `dOf(team)`: its distance.
 function leRaceCard(st, mine, dOf) {
@@ -458,6 +472,37 @@ function leCountrySelect(cur, onchange) {
     ...LE_REGIONS.map(([rg, cs]) => h("optgroup", { label: I18N.tr(rg) },
       ...cs.slice().sort((a, b) => name(a).localeCompare(name(b), I18N.lang)).map(c => h("option", { value: c, selected: c === cur }, (leFlagOk() ? leFlag(c) + " " : "") + name(c))))));
 }
+// the car number (1–99) as a small number field – a wrong one is refused and reset
+const LE_NUMS = [3, 7, 8, 11, 12, 17, 21, 24, 27, 33, 36, 42, 44, 51, 58, 63, 77, 88, 91, 99];   // as langstrecke.NUMBERS
+function leNumInput(cur, onchange) {
+  return h("input.le-numin", { type: "number", min: 1, max: 99, value: cur || "", "aria-label": I18N.tr(T("Car number")),
+    onchange: e => { const v = Math.round(+e.target.value); if (v >= 1 && v <= 99) onchange(v); else { e.target.value = cur || ""; toast(I18N.tr(T("Car numbers go from 1 to 99")), "bad"); } } });
+}
+// the start dialog alone: the car number and the country of my team and of every bot team (as many rows as bot teams)
+function leTeamLooks(botsSel) {
+  const shuffled = LE_NUMS.filter(n => ![7, 24, 44, 88].includes(n)).sort(() => Math.random() - 0.5), codes = Object.keys(LE_COUNTRIES);
+  const rows = [], el = h("div.le-dlooks");
+  const row = (k, look) => {
+    const r = { look: { ...look } };
+    r.num = leNumInput(look.num, v => { r.look.num = v; });
+    r.el = h("div.le-dlook", h("span.le-dlname", k ? "🤖 " + I18N.tr(T("Bot team {0}")).replace("{0}", k) : "🏎️ " + I18N.tr(T("Your team"))),
+      h("span.le-carno", h("span.small", "#"), r.num), leCountrySelect(look.country, v => { r.look.country = v || null; }));
+    return r;
+  };
+  const fill = () => {
+    const n = 1 + Math.max(0, +botsSel.value || 0);
+    while (rows.length < n) rows.push(row(rows.length, rows.length ? { num: shuffled[rows.length - 1], country: codes[Math.floor(Math.random() * codes.length)] } : { num: 7, country: leHomeCountry() }));
+    el.replaceChildren(...rows.slice(0, n).map(r => r.el));
+  };
+  botsSel.addEventListener("change", fill);
+  fill();
+  // what goes to the server: my team, then the bot teams – null with a number twice
+  const value = () => {
+    const out = rows.slice(0, 1 + Math.max(0, +botsSel.value || 0)).map(r => ({ num: Math.round(+r.num.value) || r.look.num, country: r.look.country || null }));
+    return new Set(out.map(x => x.num)).size === out.length ? out : null;
+  };
+  return { el, value };
+}
 const leTyreName = ty => (ty === "r" ? "🌧️ " + I18N.tr(T("Rain tyres")) : "☀️ " + I18N.tr(T("Slicks")));
 
 function langstreckeRulesView(r, rewards) {
@@ -466,6 +511,7 @@ function langstreckeRulesView(r, rewards) {
     I18N.tr(T("24 race hours in {0} minutes on the Circuit des Tannes. The most laps wins.")).replace("{0}", r.minutes || 8),
     T("A short lap, then the car drives into the pits by itself – and the next person of the team drives."),
     T("At the end of the lap the pit lane branches off to the right: keep right and steer in – or the autopilot takes the car in. The limiter holds 100 km/h in the pit lane, the car stops at its box."),
+    T("When the race clock has run out: one last lap – past the pit lane, straight on to the chequered flag on the track."),
     T("Driver: the joystick bottom left on the picture – up gas, down brake, sideways steering (or the arrow keys). In the red the engine overheats – it has to be swapped at the stop."),
     T("Gears: «A / M» on the picture switches at any time – automatic, or manual with the H shifter bottom right (R | 1 2 | 3 4 | 5 6, keys 1–6, R, N). Every gear has its speed band – shift up when the light turns red, a gear too high pulls weakly. Shifted well, manual is a little faster. R only when stopped: at speed it grinds the gearbox and overheats the engine."),
     T("Five corners per lap: the sign shows the direction and the suggested speed, the boards 150 / 100 / 50 m. Brake before the corner and steer through it – too fast and the car runs wide onto the kerb and the grass."),
@@ -500,6 +546,7 @@ async function langstreckeStartDialog(solo, onStarted) {
   const picker = botPicker(1400);
   const speed = picker.el.querySelector(".bot-speed");
   if (speed) speed.remove();
+  const looks = solo ? leTeamLooks(bots) : null;          // alone: every team's number and country right here
   const rw = r.rewards || [0, 0, 0];
   const coins = solo ? h("p.small.muted", "🪙 ", T("Alone against bots there are no coins."))
     : rw.some(x => x > 0) ? h("p.small.pj-coins", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", leCoins(rw))) : null;
@@ -509,21 +556,42 @@ async function langstreckeStartDialog(solo, onStarted) {
     h("label.field", T("Difficulty"), diff),
     solo ? null : h("div.grid2", h("label.field", T("Teams of people"), teams), h("label.field", T("People per team"), size)),
     h("div.grid2", h("label.field", T("Bot teams"), bots), h("label.field", T("Bots play"), level)),
+    looks ? h("div.field", h("span", T("Car numbers and countries")), looks.el) : null,
     solo ? h("p.small.muted", T("Alone: you drive and do every pit stop yourself.")) : h("p.small.muted", T("Everybody joins on their own device and picks a team – guests via QR code.")),
     picker.el, coins,
     h("p.small.muted", T("These rules are remembered for the next game.")),
     h("div.row", h("button.btn.big", { onclick: async () => {
+      LeAudio.unlock();                                   // in the tap: the race's sound from the start (autoplay rules)
+      const lk = looks ? looks.value() : null;
+      if (looks && !lk) { toast(I18N.tr(T("Another team has this number")), "bad"); return; }
       const body = { solo, bots: +bots.value, level: level.value, minutes: +minutes.value, weather: +weather.value, difficulty: diff.value, country: leHomeCountry(),
-        bot_ids: picker.ids(), ...(solo ? {} : { team_size: +size.value, teams: +teams.value }) };
+        bot_ids: picker.ids(), ...(solo ? { looks: lk } : { team_size: +size.value, teams: +teams.value }) };
       try { await api("community/langstrecke/start", { method: "POST", body }); m.close(); onStarted(); } catch (e) { toast(e.message, "bad"); }
     } }, "▶ ", solo ? T("Play") : T("Open the table")), h("button.btn.ghost", { onclick: () => m.close() }, T("Cancel")))));
   withoutBots("langstrecke", bots, level, picker.el);
 }
 
 // ---------------------------------------------------------------- sounds: the engine, the wrench, the lights
+// The browsers' autoplay rules: an AudioContext made outside a tap (here: by the intro's lights in an animation frame)
+// starts «suspended» and stays silent until it is resumed / a sound is started DURING a tap (Safari / iOS strictly) –
+// so before, the first sound started in a tap was the wrench at the first pit stop, and the race was silent until then.
+// unlock() makes / resumes the shared context inside a tap (the start button, any tap in the game, a key) and plays a
+// silent blip; ctx() also asks to resume where the browser already allows it (the green light, every sound).
 const LeAudio = {
   eng: null,
-  ctx() { if (!Sound.on) return null; try { Sound.ctx = Sound.ctx || new (window.AudioContext || window.webkitAudioContext)(); return Sound.ctx; } catch { return null; } },
+  ctx() {
+    if (!Sound.on) return null;
+    try {
+      Sound.ctx = Sound.ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (Sound.ctx.state !== "running" && Sound.ctx.state !== "closed") { const p = Sound.ctx.resume(); if (p && p.catch) p.catch(() => {}); }
+      return Sound.ctx;
+    } catch { return null; }
+  },
+  unlock() {
+    if (Sound.ctx && Sound.ctx.state === "running") return;
+    const c = this.ctx(); if (!c) return;
+    try { const s = c.createBufferSource(); s.buffer = c.createBuffer(1, 1, 22050); s.connect(c.destination); s.start(0); } catch {}
+  },
   engine(on, rpm) {
     const c = on ? this.ctx() : null;
     if (!c) { if (this.eng) { try { this.eng.g.gain.setTargetAtTime(0.0001, Sound.ctx.currentTime, 0.05); this.eng.o.stop(Sound.ctx.currentTime + 0.3); this.eng.o2.stop(Sound.ctx.currentTime + 0.3); } catch {} this.eng = null; } return; }
@@ -680,6 +748,36 @@ function leCamp(ctx, x, y, u, t, k, sign, col, night) {
   ctx.fillText(sign, sx + sw / 2, sy + sh / 2 + 0.5);
   ctx.restore();
 }
+// the flag marshal at the finish: on a small stand beside the line, an orange suit, waving the chequered flag over the
+// track (t: the time for the waving and the ripple – 0: still, with reduced motion); x, y: the foot of the stand, u: px per metre
+const LE_MARSHAL_X = LE.HW + LE.KERB + 1.6;              // metres left of the track's middle
+function leMarshal(ctx, x, y, u, t) {
+  ctx.save();
+  const by = y - u * 0.6;
+  ctx.fillStyle = "#495057"; ctx.fillRect(x - u * 0.6, by, u * 1.2, u * 0.6);                    // the stand
+  ctx.fillStyle = "#f8f9fa"; ctx.fillRect(x - u * 0.6, by, u * 1.2, u * 0.12);
+  ctx.fillStyle = "#e8590c";                                                                   // legs and the suit
+  ctx.fillRect(x - u * 0.22, by - u * 0.8, u * 0.18, u * 0.8); ctx.fillRect(x + u * 0.04, by - u * 0.8, u * 0.18, u * 0.8);
+  ctx.fillRect(x - u * 0.26, by - u * 1.45, u * 0.52, u * 0.7);
+  ctx.fillStyle = "#f8d7b8"; ctx.beginPath(); ctx.arc(x, by - u * 1.65, u * 0.19, 0, 7); ctx.fill();   // the head, a cap
+  ctx.fillStyle = "#212529"; ctx.fillRect(x - u * 0.21, by - u * 1.86, u * 0.42, u * 0.1);
+  ctx.strokeStyle = "#e8590c"; ctx.lineWidth = Math.max(1, u * 0.13); ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x - u * 0.24, by - u * 1.35); ctx.lineTo(x - u * 0.36, by - u * 0.85); ctx.stroke();   // the other arm down
+  const a = t ? 0.55 + 0.5 * Math.sin(t * 6.5) : 0.55;                 // the flag arm up, swinging over the track (from vertical, + = right)
+  const px = Math.sin(a), py = -Math.cos(a), sx = x + u * 0.24, sy = by - u * 1.35, hx = sx + px * u * 0.55, hy = sy + py * u * 0.55;
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(hx, hy); ctx.stroke();
+  const tx = hx + px * u * 1.6, ty = hy + py * u * 1.6;                 // the pole
+  ctx.strokeStyle = "#ced4da"; ctx.lineWidth = Math.max(1, u * 0.06);
+  ctx.beginPath(); ctx.moveTo(hx - px * u * 0.2, hy - py * u * 0.2); ctx.lineTo(tx, ty); ctx.stroke();
+  const fw = u * 1.35, fh = u * 0.9, nx = -py, ny = px, cols = 4, rows = 3;   // the flag: 4 × 3 squares from the pole's top, rippling
+  const pt = (i, j) => { const f = i / cols, rip = t ? Math.sin(f * 4 - t * 11) * u * 0.1 * f : 0;
+    return [tx + nx * fw * f - px * (fh * j / rows - rip), ty + ny * fw * f - py * (fh * j / rows - rip)]; };
+  for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+    const q = [pt(i, j), pt(i + 1, j), pt(i + 1, j + 1), pt(i, j + 1)];
+    ctx.fillStyle = (i + j) % 2 ? "#111" : "#fff"; ctx.beginPath(); q.forEach(([qx, qy], k) => (k ? ctx.lineTo(qx, qy) : ctx.moveTo(qx, qy))); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
 function leCarTop(ctx, x, y, len, ang, col, num, door, o = {}) {
   // a car from above (the intro, the pits): long body, cockpit, wheels, the number on the bonnet
   ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
@@ -728,13 +826,20 @@ function langstreckeLive(box, me, back) {
   const stop = () => {
     alive = false; clearTimeout(timer); cancelAnimationFrame(raf); LeAudio.engine(false);
     box.classList.remove("quiz-full"); document.body.classList.remove("quiz-open");
-    window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp);
+    window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); window.removeEventListener("keydown", unlock, true);
   };
   window.addEventListener("hashchange", stop, { once: true });
+  // every tap / key in the game unlocks the sound (the autoplay rules: see LeAudio) – the start, the lobby, the intro,
+  // the joystick (a capture listener: it hears the taps the controls keep to themselves)
+  const unlock = () => LeAudio.unlock();
+  const TAPS = ["pointerdown", "pointerup", "touchend", "click"];
+  for (const ev of TAPS) box.addEventListener(ev, unlock, { capture: true, passive: true });
+  window.addEventListener("keydown", unlock, true);
   const nowS = () => performance.now() / 1000;
   const gameT = () => (st && ck.offset != null ? nowS() + ck.offset - st.t0 : -99);
   const playing = () => st && st.phase === "play" && st.status !== "done";
   const limit = () => (st && st.limit) || 480;
+  const simEnd = () => limit() + LE.FIN_MAX;                   // after the clock: the last lap to the chequered flag
   const jr = () => st && st.rules && st.rules.difficulty === "junior";
   const simT = () => (st ? st.k / 10 : 0);
   const myTeam = () => (st && st.teams && st.my_team != null ? st.teams[st.my_team] : null);
@@ -804,11 +909,11 @@ function langstreckeLive(box, me, back) {
   }
 
   // ---------- the driver's inputs
-  const amDriver = () => { const t = myTeam(); return !!(t && t.driver === myId && t.car && !t.car.pit && playing()); };
+  const amDriver = () => { const t = myTeam(); return !!(t && t.driver === myId && t.car && !t.car.pit && !t.car.fin && playing()); };
   function input(c, v = 0) {
     if (!amDriver()) return;
     let t = gameT();
-    if (t < 0 || t > limit()) return;
+    if (t < 0 || t > simEnd()) return;
     t = Math.round(t * 1000) / 1000;
     pend.push([t, c, v]);
     if (c === "u") thrLocal = v;
@@ -1011,18 +1116,18 @@ function langstreckeLive(box, me, back) {
   function predicted(tNow) {
     const t = myTeam();
     if (!t || !t.car) return null;
-    tNow = tNow ?? Math.min(gameT(), limit());
+    tNow = tNow ?? Math.min(gameT(), simEnd());
     if (predCache && predCache.k === st.k && predCache.n === pend.length + inflight.length && Math.abs(predCache.at - tNow) < 0.001) return predCache.car;
     const car = { ...t.car };
     if (t.driver !== myId) return car;
     const evs = (t.ev || []).concat(inflight, pend).map(e => [Math.max(e[0], simT()), e[1], e[2]]).sort((a, b) => a[0] - b[0]);
-    const oth = st.teams.filter(o => o.i !== t.i && !o.pit && !o.pl).map(o => [o.d, o.x || 0, o.v]);   // never the pit lane
+    const oth = st.teams.filter(o => o.i !== t.i && !o.pit && !o.pl && !o.fin).map(o => [o.d, o.x || 0, o.v]);   // never the pit lane, nor a finished car
     let k = st.k, i = 0, n = 0;
     const j = jr(), s0 = simT();
     while ((k + 1) / 10 <= tNow + 1e-9 && n < 80 && !car.pit) {
       const s = k / 10;
       while (i < evs.length && evs[i][0] <= s + 1e-9) { leApply(car, evs[i][1], evs[i][2]); i++; }
-      for (const e of leStep(car, s, j, leInWin(st.rain, s), oth.map(([d, x, v]) => [d + v * (s - s0), x, v]))) effect(e, car, s);
+      for (const e of leStep(car, s, j, leInWin(st.rain, s), oth.map(([d, x, v]) => [d + v * (s - s0), x, v]), s >= limit() - 1e-9)) effect(e, car, s);
       k++; n++;
     }
     car._s = k / 10;
@@ -1041,6 +1146,7 @@ function langstreckeLive(box, me, back) {
     else if (e === "blow") { LeAudio.tone([200, 120, 80], "sawtooth", 0.3, 0.12, 0.2); leBuzz([200, 80, 200]); ui.flash = nowS(); }
     else if (e === "empty") { LeAudio.tone([660, 440, 330, 220], "square", 0.18, 0.08, 0.16); leBuzz([150, 80, 150, 80, 150]); ui.flash = nowS(); }
     else if (e === "lap") { try { Sound.play("tap"); } catch {} }
+    else if (e === "finish") { ui.finAt = nowS(); LeAudio.fanfare(); leBuzz([80, 40, 80, 40, 200]); }
     else if (e === "pitlane") { LeAudio.tone([700, 900], "triangle", 0.1, 0.06, 0.08); }
     else if (e === "autopilot") { ui.apAt = nowS(); LeAudio.tone([520, 660, 780], "sine", 0.12, 0.07, 0.09); leBuzz([30, 40, 30]); }
     else if (e === "drift") { ui.driftAt = nowS(); LeAudio.tone([900, 760, 820], "sawtooth", 0.16, 0.035, 0.07); leBuzz(25); }
@@ -1116,7 +1222,7 @@ function langstreckeLive(box, me, back) {
   }
   function race(c, car, team, t, opts = {}) {
     const ctx = c.ctx, cw = c.w, ch = c.h, red = leReduced();
-    const dk = leDark(t, limit()), rain = leInWin(st.rain, t);
+    const dk = leDark(t, limit()), rain = leInWin(st.rain, t), over = t >= limit();     // over: the last lap, the chequered flag
     const VIEW = Math.round(leView(dk, rain)), CAMZ = 5, F = 6, STEP = 3, lights = [];
     const d = car.d + (car.pit ? 0 : car.v * Math.max(0, Math.min(0.1, t - (car._s ?? t))));
     const cd = d - CAMZ;                                              // the camera: CAMZ metres behind my car
@@ -1242,7 +1348,7 @@ function langstreckeLive(box, me, back) {
       ctx.fillStyle = "rgba(255,255,255,.8)"; quad(z1, z2, -LE.HW - 0.25, -LE.HW, -LE.HW - 0.25, -LE.HW); quad(z1, z2, LE.HW, LE.HW + 0.25, LE.HW, LE.HW + 0.25);
       const pzS = lePitAt(dd), inLane = pzS != null && pzS >= LE.PZ_IN && pzS <= LE.PIT_OUT + LE.PIT_MERGE;
       if (opts.line && k % 4 < 2) {                    // the racing line: yellow dashes (into the pit lane at the lap's end)
-        const l1 = leLineShown(cd + z1), l2 = leLineShown(dd), lw = 0.11;
+        const l1 = leLineShown(cd + z1, over), l2 = leLineShown(dd, over), lw = 0.11;
         ctx.fillStyle = rain ? "rgba(255,212,59,.3)" : "rgba(255,212,59,.5)"; quad(z1, z2, l1 - lw, l1 + lw, l2 - lw, l2 + lw);
       }
       if (pzS != null) pitSlice(z1, z2, pzS, k, inLane);
@@ -1296,6 +1402,8 @@ function langstreckeLive(box, me, back) {
       }
     }
     for (let lp = lap0; lp <= lap0 + 2; lp++) pitItems(lp);
+    // the race clock has run out: at the line a marshal on a small stand left of the track waves the chequered flag
+    if (over) for (let lp = lap0; lp <= lap0 + 2; lp++) at((lp + 1) * LE.L - d, -LE_MARSHAL_X, (x, y, u) => { if (u > 2) leMarshal(ctx, x, y, u * 1.3, red ? 0 : t); });   // (a little larger, like the fans)
     for (const o of st.teams) {                                      // the other cars where they are on the track (or in the pit lane, at their box)
       if (o === team) continue;
       let rel = leLapPos((o.d + (o.pit ? 0 : o.v) * Math.max(0, Math.min(1.5, t - simT()))) - d);
@@ -1304,7 +1412,7 @@ function langstreckeLive(box, me, back) {
       const haz = o.emg && Math.floor(t * 2.5) % 2 === 0;           // a car in the emergency drive mode: hazard lights
       const brk = !o.pit && !!brakeSeen[o.i] && nowS() < brakeSeen[o.i].until;
       at(rel, o.x || 0, (x, y, u, z) => { leCarRear(ctx, x, y, u * 2.8, o.color, o.num, { night: dk > 0.4, alpha: 0.97, flag: leFlag(o.country), hazard: haz, emg: haz, brake: brk, yaw: o.yaw || 0 });
-        if (dk > 0.05) lights.push({ x, y, u, z, xm: o.x || 0, rel, pit: !!o.pit, brk }); });
+        if (dk > 0.05) lights.push({ x, y, u, z, xm: o.x || 0, rel, pit: !!o.pit, brk, yaw: o.yaw || 0 }); });
     }
     items.sort((a, b) => b.z - a.z).forEach(it => it.f());
     if (dk > 0.02) nightLayer();                         // dusk, night, dawn: dark all around – the headlights light the road
@@ -1319,28 +1427,38 @@ function langstreckeLive(box, me, back) {
       g.setTransform(c.dpr, 0, 0, c.dpr, 0, 0); g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, cw, ch);
       g.fillStyle = `rgba(1,2,7,${(rain ? 0.97 : 0.94) * dk})`; g.fillRect(0, 0, cw, ch);
       g.globalCompositeOperation = "destination-out";
-      const reach = Math.min(VIEW, rain ? 28 : 60), zs = [];       // my headlights: the cone along the road
+      // my headlights: a straight cone where the car points – the road's direction at the car, turned by its drift angle
+      // – it does not bend with the corner (no cornering light): in a corner the road leaves the cone, the glints show it
+      const reach = Math.min(VIEW, rain ? 28 : 60), zs = [];
       for (let z = CAMZ; z <= reach + 1e-9; z += Math.max(2, reach / 12)) zs.push(z);
       const wAt = z => 2.0 + (z - CAMZ) * (rain ? 0.24 : 0.17);
+      // straight ahead from the point z0, xm0 with the heading hd (metres across per metre ahead), in screen terms
+      const ahead = (z0, hd) => { const o0 = offAt(z0); return (z, xm) => cw / 2 + (o0 + (z - z0) * hd + xm - camX) * unit * sc(z); };
+      const heading = (z, yaw) => offAt(z + 0.5) - offAt(Math.max(0, z - 0.5)) + Math.tan(leClamp(yaw || 0, -40, 40) * Math.PI / 360);
+      const XS = ahead(CAMZ, heading(CAMZ, car.yaw)), cx = opts.xs ?? car.x;
       const cone = g.createLinearGradient(0, Y(CAMZ), 0, Y(reach));
       cone.addColorStop(0, "rgba(0,0,0,1)"); cone.addColorStop(rain ? 0.35 : 0.55, `rgba(0,0,0,${rain ? 0.7 : 0.9})`); cone.addColorStop(1, "rgba(0,0,0,0)");
       g.fillStyle = cone; g.beginPath();
-      zs.forEach((z, i) => (i ? g.lineTo(X(z, car.x - wAt(z)), Y(z)) : g.moveTo(X(z, car.x - wAt(z)), Y(z))));
-      for (let i = zs.length - 1; i >= 0; i--) g.lineTo(X(zs[i], car.x + wAt(zs[i])), Y(zs[i]));
+      zs.forEach((z, i) => (i ? g.lineTo(XS(z, cx - wAt(z)), Y(z)) : g.moveTo(XS(z, cx - wAt(z)), Y(z))));
+      for (let i = zs.length - 1; i >= 0; i--) g.lineTo(XS(zs[i], cx + wAt(zs[i])), Y(zs[i]));
       g.fill();
       const pool = (px, py, rx, ry, a) => { g.save(); g.translate(px, py); g.scale(1, ry / rx); const rg = g.createRadialGradient(0, 0, 0, 0, 0, rx);
         rg.addColorStop(0, `rgba(0,0,0,${a})`); rg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = rg; g.beginPath(); g.arc(0, 0, rx, 0, 7); g.fill(); g.restore(); };
-      pool(X(CAMZ + 2, car.x), Y(CAMZ + 2), unit * sc(CAMZ) * 4.5, unit * sc(CAMZ) * 1.6, 0.85);   // the light around my own car
-      for (const lt of lights) if (!lt.pit) {               // the other cars' own headlight cones on the road ahead of them
-        const za = lt.z + 1, zb = Math.min(VIEW, lt.z + (rain ? 10 : 18)), w0 = 1.1, w1 = rain ? 2.6 : 3.4;
+      pool(XS(CAMZ + 2, cx), Y(CAMZ + 2), unit * sc(CAMZ) * 4.5, unit * sc(CAMZ) * 1.6, 0.85);   // the light around my own car
+      for (const lt of lights) if (!lt.pit) {               // the other cars' own headlight cones: straight ahead of them too
+        const za = lt.z + 1, zb = Math.min(VIEW, lt.z + (rain ? 10 : 18)), w0 = 1.1, w1 = rain ? 2.6 : 3.4, XO = ahead(lt.z, heading(lt.z, lt.yaw));
         if (zb <= za) continue;
         const og = g.createLinearGradient(0, Y(za), 0, Y(zb)); og.addColorStop(0, `rgba(0,0,0,${rain ? 0.55 : 0.8})`); og.addColorStop(1, "rgba(0,0,0,0)");
-        g.fillStyle = og; g.beginPath(); g.moveTo(X(za, lt.xm - w0), Y(za)); g.lineTo(X(zb, lt.xm - w1), Y(zb)); g.lineTo(X(zb, lt.xm + w1), Y(zb)); g.lineTo(X(za, lt.xm + w0), Y(za)); g.fill();
+        g.fillStyle = og; g.beginPath(); g.moveTo(XO(za, lt.xm - w0), Y(za)); g.lineTo(XO(zb, lt.xm - w1), Y(zb)); g.lineTo(XO(zb, lt.xm + w1), Y(zb)); g.lineTo(XO(za, lt.xm + w0), Y(za)); g.fill();
       }
       const lamps = [];                                      // the pit lane's lamps: pools of light on the lane and the boxes
       for (let lp = lap0; lp <= lap0 + 2; lp++) for (const pz of [-36, -12, 8, 26, 44, 62]) {
         const z = (lp + 1) * LE.L + pz - d + CAMZ;
         if (z > 0.8 && z < VIEW) { lamps.push(z); pool(X(z, LE.PL_X + 1), Y(z), unit * sc(z) * 7, unit * sc(z) * 3, rain ? 0.55 : 0.8); }
+      }
+      if (over) for (let lp = lap0; lp <= lap0 + 2; lp++) {   // a floodlight on the flag marshal at the line
+        const z = (lp + 1) * LE.L - d + CAMZ;
+        if (z > 0.8 && z < VIEW) pool(X(z, -LE_MARSHAL_X), Y(z) - unit * sc(z) * 1.6, unit * sc(z) * 3.2, unit * sc(z) * 3.2, 0.9);
       }
       g.globalCompositeOperation = "source-over";
       ctx.drawImage(dc, 0, 0, cw, ch);
@@ -1688,14 +1806,14 @@ function langstreckeLive(box, me, back) {
     const c = ui.cv;
     if (c) {
       fit(c);
-      if (ui.mode === "drive") c.wrap.classList.toggle("le-ctloff", ui.intro || !leControls("drive", false, predicted(Math.min(t, limit())), t, limit()));   // the controls: only when usable
+      if (ui.mode === "drive") c.wrap.classList.toggle("le-ctloff", ui.intro || !leControls("drive", false, predicted(Math.min(t, simEnd())), t, limit()));   // the controls: only when usable
       if (ui.intro) intro(c, t);
       else {
         let car, tm = team;
-        if (ui.mode === "drive") car = predicted(Math.min(t, limit()));
+        if (ui.mode === "drive") car = predicted(Math.min(t, simEnd()));
         else {
           tm = team || st.teams[st.standings[0]];
-          car = { ...tm.car || {}, d: tm.d, v: tm.v, x: tm.x || 0, pit: tm.pit, thr: (tm.car || {}).thr ?? 1, eng: tm.eng, sf: tm.sf || 0, pl: tm.pl || 0, ap: tm.ap || 0, box: tm.box, dr: tm.dr || 0, yaw: tm.yaw || 0 };
+          car = { ...tm.car || {}, d: tm.d, v: tm.v, x: tm.x || 0, pit: tm.pit, thr: (tm.car || {}).thr ?? 1, eng: tm.eng, sf: tm.sf || 0, pl: tm.pl || 0, ap: tm.ap || 0, box: tm.box, dr: tm.dr || 0, yaw: tm.yaw || 0, fin: tm.fin || 0 };
           car.d = tm.pit ? tm.d : tm.d + tm.v * Math.max(0, Math.min(1.5, t - simT()));
           car._s = t;
           if (car.bat == null && tm.emg) car.bat = 0;
@@ -1707,11 +1825,12 @@ function langstreckeLive(box, me, back) {
           race(c, car, tm, t, { tv: ui.mode !== "drive", xs: ui.xs, line: ui.mode === "drive" && lineOn() });
           // ONE small notice at the top of the picture (icon + a few words, between the corner sign and the minimap, else
           // just under them): the most important one wins, it stays while its condition lasts and then fades out
-          const drv = ui.mode === "drive", ph = t < limit() ? lePitHint(car) : null;
+          const drv = ui.mode === "drive", ph = lePitHint(car, t >= limit());
           const pitTxt = ph === "keep" ? ["➡ " + I18N.tr(T("Pit lane – keep right")), "#a5d8ff"] : ph === "ap" ? ["🤖 " + I18N.tr(T("Autopilot to the pits")), "#a5d8ff"]
-            : ph === "lim" ? ["🅿️ " + I18N.tr(T("Pit limiter")) + " " + leKmh(LE.PIT_V) + " km/h", "#e9ecef"] : ph === "exit" ? ["↖ " + I18N.tr(T("Pit exit")), "#e9ecef"] : null;
+            : ph === "lim" ? ["🅿️ " + I18N.tr(T("Pit limiter")) + " " + leKmh(LE.PIT_V) + " km/h", "#e9ecef"] : ph === "exit" ? ["↖ " + I18N.tr(T("Pit exit")), "#e9ecef"]
+            : ph === "flag" ? ["🏁 " + I18N.tr(T("Last lap – to the flag!")), "#fff"] : null;
           const want = t < 1 && drv ? [I18N.tr(T("GO!")), "#69db7c"]
-            : t >= limit() ? ["🏁 " + I18N.tr(T("Finish!")), "#fff"]
+            : car.fin ? ["🏁 " + I18N.tr(T("Finish!")), "#fff"]
             : car.bat != null && car.bat <= 0 && !car.pit ? ["⚠️ " + I18N.tr(T("Emergency drive mode")), "#ffa94d"]
             : drv && ui.grind && nowS() - ui.grind < 1.6 ? ["💥 " + I18N.tr(T("Gearbox!")), "#ff922b"]
             : car.eng ? ["💥 " + I18N.tr(T("Engine overheated!")), "#ff8787"]
@@ -1719,7 +1838,7 @@ function langstreckeLive(box, me, back) {
             : drv && (car.sf === 2 || (ui.offAt && nowS() - ui.offAt < 1.5)) ? ["🟫 " + I18N.tr(T("Off the track!")), "#ffd8a8"]
             : car.dr === 1 ? ["💨 " + I18N.tr(T("Drift!")), "#e599f7"]
             : drv && brakeHint(car, t) ? ["🛑 " + I18N.tr(T("Brake!")), "#ff8787"]
-            : ph === "ap" || ph === "keep" ? pitTxt
+            : ph === "ap" || ph === "keep" || ph === "flag" ? pitTxt
             : drv && car.thr > 0 && car.bat < leNeed(car.d).mix ? ["🔋 " + I18N.tr(T("Save energy!")), "#ffd43b"]
             : drv && car.temp >= 92 ? ["🔥 " + I18N.tr(T("Let go!")), "#ff6b6b"]
             : pitTxt ? pitTxt
@@ -1731,7 +1850,7 @@ function langstreckeLive(box, me, back) {
             else leNotice(c.ctx, c.w, ui.top || { l: 8, r: c.w - 8, b: 8 }, ui.note.txt, ui.note.col, a);
           }
           if (ui.mode === "drive" && car.temp >= 92 && !car.eng && t - lastTempWarn > 1) { lastTempWarn = t; leBuzz(80); LeAudio.tone([900], "square", 0.08, 0.05); }
-          if (ui.mode === "drive") LeAudio.engine(!document.hidden && !car.pit && t < limit(), Math.min(1, car.v / LE.VFULL * 0.7 + Math.max(0, car.thr) * 0.3));
+          if (ui.mode === "drive") LeAudio.engine(!document.hidden && !car.pit && !(car.fin && car.v < 0.5), Math.min(1, car.v / LE.VFULL * 0.7 + Math.max(0, car.fin ? 0 : car.thr) * 0.3));
           else LeAudio.engine(false);
           hud(car, tm, t);
         }
@@ -1768,7 +1887,7 @@ function langstreckeLive(box, me, back) {
       hd.left.classList.toggle("le-final", tt >= limit() * 22 / 24);
     }
     if (hd.cur) {                                              // the lap times, the gaps to the cars ahead / behind
-      const c0 = tm.car || {}, ls_ = car.ls ?? c0.ls ?? 0, cur = car.pit || car.d < 0 ? 0 : Math.max(0, Math.min(t, limit()) - ls_);
+      const c0 = tm.car || {}, ls_ = car.ls ?? c0.ls ?? 0, cur = car.pit || car.fin || car.d < 0 ? 0 : Math.max(0, Math.min(t, simEnd()) - ls_);
       setTxt(hd.cur, "⏱ " + leLapTime(cur));
       setTxt(hd.best, "⭐ " + leLapTime(tm.best_lap || c0.best || 0));
       const rc = leRaceCard(st, tm.i, o => (o.i === tm.i ? car.d : o.pit ? o.d : o.d + o.v * Math.max(0, Math.min(1.5, t - simT()))));
@@ -1978,18 +2097,22 @@ function langstreckeLive(box, me, back) {
     const n = st.nteams || 1, styles = [["Comet Racing", "#e03131"], ["Blue Falcon Works", "#1c7ed6"], ["Pine Cone Motors", "#2f9e44"], ["Sunrise Speedsters", "#f08c00"]];
     const mine = (st.players.find(p => p.id === myId) || {}).team;
     const looks = st.looks || [];
+    // who leads the table sets the number and the country of every team – of people and of bots; everybody their own team's
+    const lead = isHost() && st.status !== "done";
+    const carNo = (lk, edit, set) => h("div.le-carno", edit ? [h("span.small", "#"), leNumInput(lk.num, set)] : h("b", "#" + (lk.num || "?")));
+    const country = (lk, edit, set) => (edit ? leCountrySelect(lk.country, set)
+      : lk.country ? h("div.small", leFlagEl(lk.country), " ", I18N.tr(LE_COUNTRIES[lk.country] || "")) : null);
+    const botCards = (st.bot_looks || []).map((lk, j) => h("div.le-tcard.le-tbot", { style: { "--tc": "#868e96" } },
+      h("div.le-tname", leFlagEl(lk.country), " 🤖 ", I18N.tr(T("Bot team {0}")).replace("{0}", j + 1)),
+      carNo(lk, lead, v => act("look", { num: v, bot: j })), country(lk, lead, v => act("look", { country: v, bot: j }))));
     const cards = Array.from({ length: n }, (_, i) => {
       const ps = st.players.filter(p => !p.bot && p.team === i), full = ps.length >= st.rules.team_size;
-      const lk = looks[i] || { color: styles[i][1], country: "CH" }, mineT = st.joined && mine === i;
+      const lk = looks[i] || { color: styles[i][1], country: "CH" }, mineT = st.joined && mine === i, edit = mineT || lead;
       const taken = looks.filter((_, k) => k !== i && k < n).map(x => x.color);
-      const numIn = mineT ? h("input.le-numin", { type: "number", min: 1, max: 99, value: lk.num || "", "aria-label": I18N.tr(T("Car number")),
-        onchange: e => { const v = Math.round(+e.target.value); if (v >= 1 && v <= 99) act("look", { num: v }); else { e.target.value = lk.num || ""; toast(I18N.tr(T("Car numbers go from 1 to 99")), "bad"); } } }) : null;
       const colors = mineT ? h("div.le-colors", ...(st.palette || []).map(c => h("button.le-color" + (c.color === lk.color ? ".on" : ""), { type: "button",
         style: { background: c.color }, disabled: taken.includes(c.color), "aria-label": c.name, onclick: () => act("look", { color: c.color }) }))) : null;
-      const country = mineT ? leCountrySelect(lk.country, v => act("look", { country: v }))
-        : lk.country ? h("div.small", leFlagEl(lk.country), " ", I18N.tr(LE_COUNTRIES[lk.country] || "")) : null;
       return h("div.le-tcard", { style: { "--tc": lk.color } }, h("div.le-tname", leFlagEl(lk.country), " ", C(styles[i][0])),
-        h("div.le-carno", mineT ? [h("span.small", "#"), numIn] : h("b", "#" + (lk.num || "?"))), colors, country,
+        carNo(lk, edit, v => act("look", { num: v, team: i })), colors, country(lk, edit, v => act("look", { country: v, team: i })),
         h("div.le-tseats", ...ps.map(p => h("span.le-tseat" + (p.id === myId ? ".me" : ""), seatIcon(p, 28), C(p.name, "small")))),
         st.joined && mine !== i && !full ? h("button.btn.small.ghost", { onclick: () => act("team", { team: i }) }, T("Join this team")) : null,
         h("div.small.muted", ps.length + " / " + st.rules.team_size));
@@ -2003,7 +2126,8 @@ function langstreckeLive(box, me, back) {
     return [h("section.card.center", st.joined ? h("h2", T("Waiting for the start …")) : h("p", T("Play along on this device?")), story, roles,
       assist, st.joined ? h("p.small.muted", T("The assist brakes before the corners and helps to steer – good for younger drivers.")) : null,
       st.joined ? null : h("button.btn.big", { onclick: () => act("join") }, "🙋 ", T("Join")), inviteBtn(invite())),
-      h("div.le-teams", ...cards), st.bots ? h("p.small.muted.center", "🤖 ", I18N.tr(T("+{0} bot teams")).replace("{0}", st.bots)) : null,
+      h("div.le-teams", ...cards, ...botCards), st.bots && !botCards.length ? h("p.small.muted.center", "🤖 ", I18N.tr(T("+{0} bot teams")).replace("{0}", st.bots)) : null,
+      lead && n + botCards.length > 1 ? h("p.small.muted.center", T("You lead the table: you can set every team's number and country.")) : null,
       st.coins_on ? h("p.small.center", "🪙 ", I18N.tr(T("Coins for places 1 / 2 / 3: {0}")).replace("{0}", leCoins(st.rewards))) : null, host];
   }
   function result() {
@@ -2019,7 +2143,8 @@ function langstreckeLive(box, me, back) {
       h("div.le-block", h("span.le-medal", ["🥇", "🥈", "🥉"][n - 1]), h("small", leLapsTxt(t.laps)))) : h("div.le-step.le-empty");
     const top3 = [ranked[1], ranked[0], ranked[2]];
     const again = st.solo && st.host === me.id ? h("button.btn", { onclick: async () => {
-      try { await api("community/langstrecke/start", { method: "POST", body: { solo: true } }); setState(await req("")); draw(true); } catch (e) { toast(e.message, "bad"); }
+      const lk = myT ? [myT, ...ts.filter(t => t.bot)].map(t => ({ num: t.num, country: t.country || null })) : null;   // the same numbers and flags
+      try { await api("community/langstrecke/start", { method: "POST", body: { solo: true, ...(lk ? { looks: lk } : {}) } }); setState(await req("")); draw(true); } catch (e) { toast(e.message, "bad"); }
     } }, "🔄 ", T("Race again")) : null;
     const lead = ranked[0];
     return h("section.card.center.le-result",
