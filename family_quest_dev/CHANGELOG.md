@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-dev.8
+
+- 24h race: trackside banners show only Family Quest and Snowman Tyres
+
 ## 1.2.2-dev.7
 
 - 24h race: calmer HUD, handbrake drift, drivers-only pit stops, 7-segment clock (start 16:00)

@@ -1828,7 +1828,7 @@ at least two cars (without bots: two teams of people).
   the last job is done, at most 10 s (+5 s engine). **Bot teams** stop in a fair fixed time: hard 8.5 s, normal 8.7 s,
   easy 9.0 s (+5 s engine), the tyres by the forecast (easier bots now and then wrong). Older race rules stored with a
   pit-crew setting (`crew`) still load – the key is ignored.
-- Trackside banners now and then (own, invented: Family Quest, Home Assistant with an own house icon, «Snowman Tyres»).
+- Trackside banners now and then (own, invented: Family Quest and «Snowman Tyres»).
 - Now and then **fans camp beside the track** (tents, a camper van, a campfire at night) waving a sign «I ❤️ #7 🇨🇭» –
   mostly with the viewer's own car number and flag, sometimes for another team.
 - **Difficulty:** junior (the driving assist on for everybody, the engine heats slower, the braking hint always) or
