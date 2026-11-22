@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-dev.9
+
+- 24h race: pit stop - tap everything at once, jobs run in parallel
+
 ## 1.2.2-dev.8
 
 - 24h race: trackside banners show only Family Quest and Snowman Tyres
