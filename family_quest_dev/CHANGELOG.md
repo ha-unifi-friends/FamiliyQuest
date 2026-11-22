@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-dev.10
+
+- 24h race: straight headlights, finish with chequered flag on the track, every team's number and country, sound from the start
+
 ## 1.2.2-dev.9
 
 - 24h race: pit stop - tap everything at once, jobs run in parallel
