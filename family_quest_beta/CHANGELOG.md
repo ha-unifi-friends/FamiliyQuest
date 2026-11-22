@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2-beta.7
+
+- 24h race: calmer driving screen - top-centre speedometer with battery, position card (leader, car ahead/behind), controls only appear when usable
+- 24h race: handbrake drift button
+- 24h race: no more pit crew role - the next driver does the pit stop (battery 4 s, then 4 tyres), bots stop automatically
+- 24h race: 7-segment race clock, race starts at 16:00
+
 ## 1.2.2-beta.6
 
 - 24h Endurance: a visible pit lane on the right before the finish – steer in yourself or the autopilot does it, 100 km/h limiter, team boxes with the crew, pit exit

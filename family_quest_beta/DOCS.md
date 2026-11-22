@@ -1638,15 +1638,17 @@ at least two cars (without bots: two teams of people).
   language, or «no country»; the suggestion is the family's own country from the app's language, e.g. de-CH → 🇨🇭) and
   its **car number** (1–99, each number once). The flag is shown on the car, in the standings and on the podium (emoji
   flags; where the device has none, e.g. Windows, the country code as a small chip).
-- **24 race hours in 5 / 8 / 12 minutes** (default 8). The race clock starts at 15:00 and runs through **dusk, night
-  (headlights, a shorter view) and dawn** into the next afternoon. **Rain showers** (on by default): sudden showers of
+- **24 race hours in 5 / 8 / 12 minutes** (default 8). The race clock starts at **16:00** and runs through **dusk (20:30), night
+  (21:30–05:30: headlights, a shorter view) and dawn** into the next afternoon. It is shown as a **digital 7-segment clock** (HH:MM, like a
+  car's dashboard clock; inline SVG, amber segments on a dark background – readable at night –, the unlit segments
+  faintly visible) in the header row next to the title – in the lobby (16:00), while driving, on a break, at the stop
+  and when watching. The colon blinks once a second (stays lit with reduced motion). **Rain showers** (on by default): sudden showers of
   30–55 s every 1–2 minutes; everybody sees the forecast («Rain in ~20 s»). **Winner: the most laps** (then distance, then who reached the line first).
 - **Intro:** the drivers run to their cars, doors close, engines roar, five red lights → **GO!** (about 6 s).
-- **One short lap (about 30 s), then the car drives into the pits – after every lap** (into the pit lane, see below). At every stop the
-  **driver changes**: the next person of the team drives (in turn), the driver joins the crew. Two people take turns;
-  alone (or when the whole crew is offline) the **garage** prepares: every stop takes a fixed **5 s** (+4 s after an
-  overheat), tyres by the forecast – and the garage plugs the spare battery in only **8 s after the stop** (fair, not
-  perfect: the spare is usually 80–100 % at the next stop).
+- **One short lap (about 30 s), then the car drives into the pits – after every lap** (into the pit lane, see below). There is **no pit crew – only drivers**:
+  at every stop the **next person of the team** (in turn, who is online) takes over and **does the stop on their own
+  phone**, then drives the next lap; the one who came in has a **break** and watches the stop live. Two people take
+  turns; **alone** you come in, do the stop yourself and drive on (see «The stop» below).
 - **The pit lane – in on the right, every lap:** in the lap's last part (the main straight) the **pit lane branches off
   to the right** of the track. Before it: blue **«PIT» boards with an arrow** (90 / 55 / 20 m before the entry), the HUD hint **«➡ Pit
   lane – keep right»**, at the entry line the white **entry line** with a hatched gore and the **speed-limit sign
@@ -1657,9 +1659,9 @@ at least two cars (without bots: two teams of people).
   in the pits. From the entry line to the pit exit the **pit limiter** engages by itself – **100 km/h**, automatic and
   manual gears alike (it brakes down to the limit and holds it; no full throttle, no heat; «🅿️ Pit limiter» on the
   picture), **no penalty**. The joystick and the shifter keep working in the lane (between the **pit wall** and the
-  boxes). Behind the pit wall: the **boxes of all teams in their colours** (awning, number, the team's spot), **the crew
-  stands at its box** (my team: the crew's avatars, waving as the car rolls in). The car **rolls into its own box and
-  stops** – then the stop screen and the crew's jobs as before. After the stop the next driver drives out at the limit
+  boxes). Behind the pit wall: the **boxes of all teams in their colours** (awning, number, the team's spot), **people
+  stand at their box** (my team: the avatars of the ones on a break, waving as the car rolls in). The car **rolls into
+  its own box and stops** – then the stop (below). After the stop the next driver drives out at the limit
   to the **pit exit** (the end-of-limit sign) and the exit lane **merges back onto the track on its right side** with a
   short solid white **pit-exit line** («Pit exit – stay to the right»). The **minimap** shows the pit lane (yellow) and
   the cars in it. **Bots** (and the autopilot of a silent app) take the same entry: they keep right and steer in.
@@ -1682,8 +1684,27 @@ at least two cars (without bots: two teams of people).
   beyond 30 % down = brake, in between = lifted off** – «lifted off» keeps its meaning for the engine and the battery.
   It follows only its own finger (multi-touch safe), a short vibration tick on entering the gas / brake zone (not with
   reduced motion). First drive on a device: the hint «🕹️ Joystick: up gas, down brake» until the gas was given once.
-  Keyboard on a computer: **←/→** (A/D) steer, **↑** (W / Space) gas, **↓** (S) brake. The joystick sends the same
+  Keyboard on a computer: **←/→** (A/D) steer, **↑** (W) gas, **↓** (S) brake, **Space** the handbrake. The joystick sends the same
   inputs as the keys (steering −100 … 100, gas / lifted / brake). The speed is shown in km/h.
+- **Controls only when usable:** the joystick, the handbrake, «A / M», the shifter and the paddles are **hidden on the
+  start grid and during the countdown** (the lights, «Engines on!», «Tap to skip»), in the lobby, while the car stands
+  in its box, at a stop and for everybody who is not driving; they **fade in** (0.35 s, none with reduced motion) at
+  the green light and when the car leaves the box.
+- **Handbrake and drift:** a round **«HB / Drift» button** (60 px) bottom right on the picture, above the gears (above
+  A / M in automatic, above the shifter in manual); its own finger, so it works while the left thumb holds the
+  joystick; keyboard **Space**. A **short tap at the entry of a corner at speed** (from 12 m before the corner to the
+  first 35 % of it, at least 85 % of its safe speed) starts a **drift**: the car swings sideways (drawn turned, its flank
+  in view), **tyre smoke and skid marks**, «💨 Drift!» in the notice pill. **Full gas and steering into the corner hold
+  it**: the car settles at **1.06 × the corner's safe speed** and the corner's push is measured against that speed, so
+  a well-timed drift is about **3–8 % quicker through the corner** than cornering at the sign's speed (tested,
+  deterministic). **Lifting or steering against it ends it** and costs 3 m/s; the handbrake **held longer than 0.6 s
+  brakes hard** (15 m/s²) and ends a drift. **Mis-timed:** a tap on a straight or too slow is only a small brake (about
+  1 m/s); too late in the corner (or faster than 1.35 × the safe speed) the car **spins** wide off the track («🌀
+  Spin!», then «Off the track» with the usual grass slowdown). **Rain:** easier to start (from 18 m before the corner,
+  from 75 % of the safe speed) but harder to hold (steering at least 60 % into the corner, drift speed only 1.03 ×).
+  Drifting adds a little engine heat (+1 °/s; there is no tyre-wear model, so no wear). The **assist** never starts a
+  drift (it is paused while drifting, the handbrake works when pressed by hand); **bots and the autopilot never drift**.
+  Reduced motion: no shake, a still smoke cloud. Server-side like every input (`h` 1 / 0, the same step in the app).
 - **Gears – «A / M»:** a small toggle on the picture, bottom right above the shifter area, switches between
   **automatic** and **manual** at any time, mid-stint too (an adult and a child can take turns in the same car). No
   setting in the start dialog or the lobby. Every stint starts with that driver's last choice (remembered per person
@@ -1705,7 +1726,7 @@ at least two cars (without bots: two teams of people).
   **Q** down. They send the same gear input as the shifter. The HUD's **rev / shift light**: green, yellow, red at the limiter. **R** drives
   slowly backwards (gas 2.5 m/s, lifted creeps, the brake stops; never back over the line) – **only from a
   standstill** (below about 5 km/h): R while rolling forward **grinds the gearbox** – a stop much harder than the
-  brake (22 m/s²), the engine heats 30 °/s and overheats like from the red zone (the spare engine at the stop);
+  brake (22 m/s²), the engine heats 30 °/s and overheats like from the red zone (the engine is swapped at the stop);
   «💥 Gearbox! R only when stopped», sparks under the car, a hard shake (not with reduced motion) and a buzz. Every
   stint starts in 1st. Balance (a scripted test): shifted well (up at the limiter) a lap is about 2 % faster than the
   automatic, in the rain too; the automatic is never bad. Bots and the autopilot always drive automatic (never R).
@@ -1725,24 +1746,42 @@ at least two cars (without bots: two teams of people).
 - **The racing line on the road:** subtle yellow dashes along the line the assist and the bots follow (outside – apex –
   outside through every corner, shrinking into the distance with the road); at the lap's end it bends over into the
   pit lane and follows it to the exit. At night only in the headlight cone (faint), a little weaker on the wet road.
-  **〰️ Line** next to the 🧒 Assist button switches it off / on – on by default, remembered per driver on the device.
+  **〰️ Racing line** in the ☰ game menu switches it off / on – on by default, remembered per driver on the device.
   Purely visual.
 - **Driving assist 🧒** – per driver: on for everybody when the race is «Junior» (start dialog), and every driver can
-  switch it for themselves in the lobby and while driving (the 🧒 Assist button; remembered for their next stints). The
+  switch it for themselves in the lobby and while driving (a switch in the ☰ game menu that keeps the menu open;
+  remembered for their next stints). The
   car **brakes by itself before every corner** and the **steering helps towards the racing line** (the yellow line
   on the road); the driver's own steering wins. A junior who only holds the gas stays on the track all lap.
-- **Display:** P x/y, the lap, the race clock, the time left; the **standings strip** at the top (always, in
-  landscape too): P1, P2 … with the flag, the car number in the team colour and the gap to the car ahead (seconds, or
-  laps; «Leader» for P1; 🅿️ in the pit lane) – mine highlighted and scrolled into view on narrow phones, updated live; speed, tyres, engine temperature,
-  battery; **this lap's time, the team's best lap and the gap to the car ahead ▲ / behind ▼** (seconds, or laps); a
-  **minimap** of the circuit (top right) with the pit lane and every car as a dot in its colour. Full throttle heats the engine; in the
-  **red it overheats**: the car limps to the pits and the engine is swapped there (no retirement). **Slicks in the
-  rain** and **rain tyres in the dry** are slower on the straights; **rain lowers every corner's safe speed** (rain
-  tyres × 0.85, slicks even more). **Night:** a shorter view and headlights.
+- **The driver's screen – calm, the picture over the full height:** above it only the header (☰, the title, the
+  7-segment race clock). On the picture: the **corner sign** top left, the **minimap** top right (the pit lane in yellow,
+  every car a dot), and
+  - **top centre a compact speedometer:** an analog arc gauge (0–240 km/h) with the needle (no easing, it shows the
+    value), the big km/h number and the gear (**A4 / M3 / N / R**); the **rev / shift light runs around the arc**
+    (green, yellow, red – the limiter blinks, steady with reduced motion); below it the **battery bar with %** (green /
+    orange / red as before); the **engine temperature only as a warning** (a yellow / red 🌡️ bar when it gets hot)
+    and wrong tyres as «☀️!» / «🌧️!». It never touches the corner sign or the minimap; the notice pill sits just
+    under it.
+  - **top left under the corner sign a compact position card:** «**P2/5**» big with my car number highlighted, then up
+    to three short lines – 🏁 the leader (P1 #nr and team, only from P3 on: at P2 the leader is the car ahead), ▲ the
+    car ahead (#nr, gap in seconds), ▼ the car behind (#nr, gap) – a car a lap or more away shows «+1 lap»; lines
+    that do not exist are left out (P1: no leader, no ahead; last: no behind); one small line «Lap 8 · ⏳ 2:13 h»
+    (the lap and the race time left).
+  - The **assist and racing-line switches and the team / car info and the forecast** are in the **☰ game menu** (usable
+    while driving). Overlays keep their own dark semi-transparent background – readable by day, at night and in the
+    rain. 390 × 740, 740 × 390 and 1280 × 800 without overlaps.
+- **On a break / watching:** the info rows stay: P x/y, the lap, ☀️ / 🌙 / 🌧️, the time left; the **standings strip**
+  (P1, P2 … with the flag, the car number in the team colour and the gap to the car ahead – seconds or laps; «Leader»
+  for P1; 🅿️ in the pit lane – mine highlighted, updated live); this lap's time, the team's best lap and the gaps ▲ / ▼;
+  the team's car on TV, how far it is from the pits («Your stop in about 12 s» when I drive next) and the forecast.
+  Full throttle heats the engine; in the **red it overheats**: the car limps to the pits and the engine is swapped
+  there (no retirement). **Slicks in the rain** and **rain tyres in the dry** are slower on the straights; **rain
+  lowers every corner's safe speed** (rain tyres × 0.85, slicks even more). **Night:** a shorter view and headlights.
 - **Notices on the picture:** one small one-line pill (about 12.5 px, semi-transparent, icon + 1–3 words) at the very
-  top of the picture, between the corner sign and the minimap (just under them when there is no room) – never over the
-  joystick or the shifter: «GO!», «🏁 Finish!», «⚠️ Emergency drive mode», «💥 Gearbox!», «💥 Engine overheated!», «🟫 Off
-  the track!», «🛑 Brake!», the pit lane hints, «🔋 Save energy!», «🔥 Let go!», «🌬️ Slipstream!». Only one at a time
+  top of the picture, between the corner sign and the minimap (just under them when there is no room; the driver: just
+  under the speedometer, between the position card and the minimap) – never over the
+  joystick or the shifter: «GO!», «🏁 Finish!», «⚠️ Emergency drive mode», «💥 Gearbox!», «💥 Engine overheated!», «🌀 Spin!», «🟫 Off
+  the track!», «💨 Drift!», «🛑 Brake!», the pit lane hints, «🔋 Save energy!», «🔥 Let go!», «🌬️ Slipstream!». Only one at a time
   (the most important wins); it stays while its condition lasts (off the track and the gearbox 1.5 s) and then fades.
   The vibrations and the shaking are unchanged.
 - **Night – dark for real:** the sky nearly black (a few stars when dry), everything around the car very dark – the
@@ -1770,51 +1809,46 @@ at least two cars (without bots: two teams of people).
   charge won't last the rest of the lap at a normal mix of full throttle and lifting (blinking big while pressing the
   gas). **Empty → «⚠️ Emergency drive mode»:** the car crawls (about 50 km/h) to the pits with its hazard lights on –
   no retirement, but it costs a lot of time.
-- **Exactly two batteries per team:** the one in the car and **one spare**. At **every stop they are swapped** (part of
-  the stop, a fixed 1 s): the spare goes into the car **with whatever charge it has**, the used one comes out and has to
-  be charged during the next lap. It only charges while it is **plugged in**: 4 % per second (empty → full in 25 s,
-  about a lap) from the moment the crew plugged it in – computed on the server from its own timestamps (plug-in time,
-  swap time), never from a number the app sends. Plugged in late (other jobs first) → not full at the next stop → the
-  next driver has to drive slower. The driver's screen shows «spare 🔋 63 % ⚡» rising.
-- **«Pit crew: players / bots»** (start dialog; stored with the race rules, remembered, shown in the lobby): **players**
-  (the default at a family table) works as described below; **bots** – an automatic crew does the stop for every team:
-  it plugs the used battery in 1 s after the stop (full again at the next stop), lays out the tyres and picks them by
-  the forecast, prepares the spare engine after an overheat – a normal, well-prepared stop of **3.5 s** (+2 s engine),
-  not perfect (a perfect human crew does 3 s), the same for every team, decided on the server without chance. The
-  people without the car then only drive their stints and watch («👀 Watching»); bot-crew stops are no pit records.
-  Alone (solo) the dialog suggests **bots** (otherwise the garage: 5 s and a late plug-in) – a single driver has
-  nobody to do the jobs; at a family table it suggests the last choice (first time: players).
-- **Pit crew** (everybody else of the team) – during the lap on their phones: **🔌 charge the spare battery** (tap
-  «Plug in» – first!; the charge rises on every crew phone, a cable animates while it charges), **🛞 lay out 4 tyres**
-  (choose ☀️ slicks or 🌧️ rain tyres, tap the 4 spots) and, only after an overheat, **🔧 prepare the spare engine**
-  (hold 2 s). Each finished job shows ✓ (also for the driver). A bar shows when the car comes in.
-- **The stop** – a big stopwatch, the car in its pit box, the battery swap (the used one goes to the charger), the crew
-  at work and cheering stands for the whole team: **2 s** (stop and driver change) **+ 1 s battery swap, +4 s for tyres
-  not ready, engine swap +6 s (+2 s if prepared)**. A job only counts if it was finished before the car arrived. A
-  super fast stop (≤ 4 s) gets a cheer. Below it the **lap-time board** of the stint: the team's last laps (who drove, the time, 🟫
-  off the track, 🌧️ rain), ⭐ the team's best and 🏆 the fastest lap of the race; the result shows every team's best lap. The next driver sees the charge of the battery going in («🔋 63 % – Save
-  energy!»).
+- **The stop – done by the next driver on their phone:** when the car stops in its box, the person who drives next
+  (alone: the same person) sees the **stop screen** – a top view of the car in the team colour with **big tap targets**
+  (at least 56 px): the **battery 🔋** on the car and the **4 tyres FL, FR, RL, RR** at its wheels. **The battery
+  first:** a tap starts the swap – **4 s** with a progress ring (the new battery is **always full**). The tyres are
+  greyed out until then («🔋 Battery first»; a tyre tapped too early shakes the hint and does not count). Then each
+  tyre takes **1 s**, one after the other in the order of the taps (taps queue). Done right away: about **8 s**.
+  Nothing tapped: the stop is **done by itself after 10 s** – never longer (slow taps are capped at 10 s too). The
+  tyres for the next lap: one quick **☀️ Dry / 🌧️ Rain** toggle, the current weather by default. **After an overheat**
+  an extra **«🔧 Engine»** target (after the battery, **5 s**, queued like a tyre) – the cap rises to **15 s**. A
+  stopwatch («10 s at most»), ✓ on every finished target, «✓ Done – go!» – then the controls fade in and the car
+  drives out. The one who came in (and the others of the team) **watch the stop live**: «👀 Leo does the stop and drives
+  next», the same targets with their progress (no taps), the stopwatch and the cheering stands. A fast stop (≤ 8.5 s)
+  gets a cheer. Below it the **lap-time board** (who drove, the time, 🟫 off the track, 🌧️ rain, ⭐ the team's best,
+  🏆 the fastest lap of the race). **Server-authoritative:** every tap goes to the server with its time (`POST
+  /api/community/langstrecke/tap`: battery | tyre + spot | engine | slicks | rain) – only the next driver's taps count,
+  the order is enforced (a tyre before the battery is done is refused), a tap twice is ignored; stop time = the moment
+  the last job is done, at most 10 s (+5 s engine). **Bot teams** stop in a fair fixed time: hard 8.5 s, normal 8.7 s,
+  easy 9.0 s (+5 s engine), the tyres by the forecast (easier bots now and then wrong). Older race rules stored with a
+  pit-crew setting (`crew`) still load – the key is ignored.
 - Trackside banners now and then (own, invented: Family Quest, Home Assistant with an own house icon, «Snowman Tyres»).
 - Now and then **fans camp beside the track** (tents, a camper van, a campfire at night) waving a sign «I ❤️ #7 🇨🇭» –
   mostly with the viewer's own car number and flag, sometimes for another team.
 - **Difficulty:** junior (the driving assist on for everybody, the engine heats slower, the braking hint always) or
   normal. **Bots** (easy / normal / hard) drive the racing line with the assist – as close to the safe speed as their
   skill dares (easy about 84 %, hard 99 %; now and then a corner too greedy and they run wide), overtake on the side,
-  manage the temperature and the battery (they lift off when it would not last the lap), plug their spare in first and prepare their stops (easier bots miss more jobs, plug
-  in late or pick the wrong tyres). A driver whose app is silent for 6 s gets the **autopilot**.
+  manage the temperature and the battery (they lift off when it would not last the lap) and stop in a fixed time (easier
+  bots pick the wrong tyres more often). They never drift. A driver whose app is silent for 6 s gets the **autopilot**.
 
 The server simulates every car in steps of 0.1 s, 0.8 s behind the clock – the same step function runs in the app for a
 smooth picture of the own car (tested to give the same numbers on recorded inputs, other cars included; every car
 sees the others as they were at the start of the step). The driver's app only reports its inputs with their game
 time – the steering (−100 … 100, in steps of 5, at most every 60 ms), gas / lifted / brake, the assist on / off,
-manual gears on / off and the gear (R / N / 1–6); the server bounds them (unknown kinds, a gear outside R / N / 1–6,
-NaN / ∞, inputs from the future and more than 40 per request are refused; the steering is clamped). A correction from the server glides (the picture follows the car smoothly across the track); the crew's jobs are actions timed by the server (plug in, a tyre on a spot, start / stop holding). Who leads may end the
+manual gears on / off, the gear (R / N / 1–6) and the handbrake (1 / 0); the server bounds them (unknown kinds, a gear outside R / N / 1–6,
+NaN / ∞, inputs from the future and more than 40 per request are refused; the steering is clamped). A correction from the server glides (the picture follows the car smoothly across the track); the taps at a stop are actions timed by the server. Who leads may end the
 race early: ranked as it stands, no coins. Parents › Games › 24h Endurance: the defaults (race length, weather,
 difficulty, people per team), active / without bots / inactive, the coins.
 
 **Coins for places 1–3:** default 10 / 5 / 2 for every person of the family in that team, paid once, only for a race
 run to the end at a family table with **at least two people of the family** – not alone, not for guests or bots; the
-winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (garage stops do not
+winning team gets the «No. 1» hat. Records: **most laps** and the **fastest pit stop** per person (only stops tapped to the end; bot stops do not
 count; also questions in «Family Quest Facts»). Every person of the family gets a history entry (place, laps, team,
 best pit stop, drives, stops).
 

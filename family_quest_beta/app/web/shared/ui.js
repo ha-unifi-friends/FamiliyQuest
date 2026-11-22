@@ -545,9 +545,10 @@ const APP_NAV = () => [["home", "🏠", T("Home")], ["courses", "🌍", T("Learn
 //   invite:  game key or [game, gid] → guestInvite (only for family members, not at solo tables)
 //   actions: [{ ic, label, onclick, confirm, danger, hidden }] – the actions of whoever leads (skip, mix, pause, end …)
 //   onLeave: leave the game screen (like ✕)
-function gameMenu({ rules = null, invite = null, actions = [], onLeave = null } = {}) {
+// `extra`: optional () => nodes – a game's own entries (toggles, info) built when the menu opens, they keep it open
+function gameMenu({ rules = null, invite = null, actions = [], onLeave = null, extra = null } = {}) {
   return h("button.icon-btn.game-menu-btn", { title: T("Menu"), "aria-label": T("Menu"),
-    onclick: () => openGameMenu({ rules, invite, actions, onLeave }) }, "☰");
+    onclick: () => openGameMenu({ rules, invite, actions, onLeave, extra }) }, "☰");
 }
 
 // «👥 Invite guests» as a visible button in the lobby box of a live game («Waiting for the start …») – next to the entry in ☰.
@@ -557,7 +558,7 @@ function inviteBtn(invite) {
   return invite ? h("button.btn.small.ghost.lobby-invite", { type: "button", onclick: () => guestInvite(...[].concat(invite)) }, "👥 ", T("Invite guests")) : null;
 }
 
-function openGameMenu({ rules, invite, actions, onLeave }) {
+function openGameMenu({ rules, invite, actions, onLeave, extra }) {
   let release = null;
   const close = () => { back.remove(); release && release(); window.removeEventListener("hashchange", close); };
   window.addEventListener("hashchange", close);              // another page: the menu of the game goes away
@@ -571,6 +572,7 @@ function openGameMenu({ rules, invite, actions, onLeave }) {
   const drawer = h("nav.drawer.game-drawer", { role: "dialog", "aria-label": T("Menu") },
     h("div.drawer-head", h("button.icon-btn", { "aria-label": T("Close"), onclick: close }, "✕"), h("strong", T("Game"))),
     rules ? item("📜", T("Rules"), showRules) : null,
+    ...(typeof extra === "function" ? [].concat(extra() || []) : []),
     invite ? item("👥", T("Invite guests"), () => guestInvite(...[].concat(invite))) : null,
     typeof window.FQ_GUEST_AVATAR === "function" ? item("🧑‍🎨", T("My avatar"), window.FQ_GUEST_AVATAR) : null,     // guest page (gast.js)
     ...acts.map(a => item(a.ic || "▶", a.label, async () => { if (a.confirm && !(await confirmDialog(I18N.tr(a.confirm)))) return; a.onclick(); }, a.danger ? ".danger" : "")),
