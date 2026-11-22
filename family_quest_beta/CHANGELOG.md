@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-beta.9
+
+- 24h race: at the pit stop tap everything at once - battery (4 s) and tyres (1 s each) run in parallel, about 4 s done well; engine after an overheat 7 s; bots stop in 4.6-5.2 s
+
 ## 1.2.2-beta.8
 
 - 24h race: trackside banners show only Family Quest and Snowman Tyres
