@@ -132,6 +132,11 @@ def _parity_cases():
         cases.append({"ev": ev, "rain": [[0, 200]] if n == 9 else [], "tyre": "s", "bat": 100.0, "jr": False, "others": None, "keep": False})
     # a tap too late in the first corner at speed: the spin (then random inputs)
     cases.append({**cases[-2], "rain": [], "ev": [[0.0, "u", 1], [0.0, "h", 1], [0.3, "h", 0]] + cases[-2]["ev"][3:], "car0": {"d": 106.0, "v": 21.0}})
+    # the race clock runs out on the way (the last lap on the track to the chequered flag, then rolling out): driving by
+    # hand, with the assist and other cars, and with the clock running out while the car is in the pit lane
+    cases.append({**cases[0], "over": 70.0})
+    cases.append({**cases[2], "over": 95.0})
+    cases.append({**cases[3], "over": 0.0, "car0": {"d": 600.0, "x": ls.PL_X, "v": 12.0, "pl": 1, "ap": 1}})
     return cases
 
 
@@ -149,7 +154,7 @@ for (const c of cases) { const car = {...c.car};
   for (let k = 0; k < 1300; k++) { const s = k / 10;
     while (i < c.ev.length && c.ev[i][0] <= s + 1e-9) { leApply(car, c.ev[i][1], c.ev[i][2]); i++; }
     if (c.keep && car.pl === 0 && car.d > 0 && leLapPos(car.d) >= 560) leApply(car, "s", 60);
-    for (const e of leStep(car, s, c.jr, leInWin(c.rain, s), c.others ? c.others[k] : [])) evs.push([k, e]);
+    for (const e of leStep(car, s, c.jr, leInWin(c.rain, s), c.others ? c.others[k] : [], c.over != null && s >= c.over)) evs.push([k, e]);
     if (car.pit) { car.pit = 0; car.eng = 0; car.bat = c.bat; car.pl = 3; car.ap = 0; }
     if (k % 10 === 0) trace.push(keys.map(x => car[x])); }
   out.push([trace, evs]); }
@@ -169,7 +174,7 @@ console.log(JSON.stringify(out));"""
                 i += 1
             if c["keep"] and cr["pl"] == 0 and cr["d"] > 0 and ls.lap_pos(cr["d"]) >= 560:
                 ls.apply_input(cr, "s", 60)
-            for e in ls.step(cr, s, c["jr"], ls.in_window(c["rain"], s), c["others"][k] if c["others"] else ()):
+            for e in ls.step(cr, s, c["jr"], ls.in_window(c["rain"], s), c["others"][k] if c["others"] else (), c.get("over") is not None and s >= c["over"]):
                 evs.append([k, e])
             if cr["pit"]:
                 cr.update(pit=0, eng=0, bat=c["bat"], pl=3, ap=0)
@@ -183,7 +188,7 @@ console.log(JSON.stringify(out));"""
                     assert abs(float(x) - float(y)) < 1e-9, (key, x, y)
                 else:
                     assert x == y, (key, x, y)
-    assert {"lap", "pit", "kerb", "off", "empty", "bump", "grind", "blow", "pitlane", "autopilot", "drift", "spin"} <= seen
+    assert {"lap", "pit", "kerb", "off", "empty", "bump", "grind", "blow", "pitlane", "autopilot", "drift", "spin", "finish"} <= seen
 
 
 def test_steering_is_smooth_and_moves_the_car_across_the_track(monkeypatch):
@@ -524,12 +529,97 @@ def test_the_app_runs_the_same_pit_lane():
             assert all(abs(p - q) < 1e-9 for p, q in zip(a, b)), (a, b)
 
 
+# ---------------------------------------------------------------- the finish: on the track, the chequered flag
+def test_after_the_clock_the_last_lap_ends_on_the_track_at_the_flag():
+    """Once the race clock has run out nobody goes into the pits: the car keeps on the track past the pit entry (no
+    «pitlane», no autopilot, no limiter), crosses the line on the track (the lap counts, timed as always) and has
+    finished – it rolls out lifted off, no stop, and it is out of the race (no events any more)."""
+    c = car(thr=1, ast=1)
+    to_entry(c)
+    evs, tr, k = [], [], 0
+    while k < 120:
+        evs += ls.step(c, 60 + k * ls.DT, False, False, (), True)
+        tr.append((ls.lap_pos(c["d"]), c["x"], c["v"], c["pl"]))
+        k += 1
+    assert "pitlane" not in evs and "autopilot" not in evs and "pit" not in evs
+    assert evs.count("lap") == 1 and evs.count("finish") == 1 and evs.index("lap") < evs.index("finish")
+    assert c["fin"] == 1 and c["pl"] == 0 and not c["pit"] and c["v"] == 0.0 and ls.laps_of(c["d"]) == 2
+    assert all(pl == 0 and abs(x) <= ls.HW for _, x, _, pl in tr)                      # on the track all the way
+    assert max(v for xl, x, v, pl in tr if xl >= ls.PIT_IN or xl < 5) > ls.PIT_V + 3    # at racing speed over the line (no limiter)
+    assert c["ls"] > 0 and c["last"] > 0
+    d, x = c["d"], c["x"]
+    assert ls.step(c, 20.0, False, False, (), True) == [] and c["d"] == d and c["x"] == x   # standing, nothing happens
+    # before the clock ran out the same car goes into the pits, as every lap
+    c2 = car(thr=1, ast=1)
+    to_entry(c2)
+    assert "pitlane" in drive(c2, 3)
+    # in the pit lane when the clock runs out: it finishes on the line there – and never stops at the box
+    c3 = car(thr=1, d=ls.L + 600.0, x=ls.PL_X, v=12.0, pl=1, ap=1)
+    evs = drive(c3, 12, others=None)
+    evs += [e for k in range(100) for e in ls.step(c3, 12 + k * ls.DT, False, False, (), True)]
+    assert "pit" in evs                                                    # (without the flag: into the box)
+    c4 = car(thr=1, d=ls.L + 600.0, x=ls.PL_X, v=12.0, pl=1, ap=1)
+    evs = [e for k in range(150) for e in ls.step(c4, k * ls.DT, False, False, (), True)]
+    assert evs.count("finish") == 1 and "pit" not in evs and c4["fin"] and not c4["pit"] and c4["v"] == 0.0
+
+
+def test_the_race_ends_when_every_car_took_the_flag_ranked_by_laps_then_the_flag():
+    t, clock = table(humans=(("1", 0),), bots=2, level="hard", minutes=5, weather=0)
+    seen, orig = [], ls.step
+
+    def spy(car_, s, jr, rain=False, others=(), over=False):
+        evs = orig(car_, s, jr, rain, others, over)
+        seen.extend((s, e, car_["box"]) for e in evs)
+        return evs
+    ls.step = spy
+    try:
+        s = 0.0
+        while t.st["phase"] == "play":
+            s += 2.0
+            at(t, clock, s, seen=False)
+    finally:
+        ls.step = orig
+    lim = 300.0
+    assert t.st["complete"] and not [x for x in seen if x[0] >= lim - 1e-9 and x[1] in ("pitlane", "autopilot")]   # nobody in after the clock
+    fins = [x for x in seen if x[1] == "finish"]
+    assert len(fins) == 3 and len({b for _, _, b in fins}) == 3 and all(x[0] >= lim - 1e-9 for x in fins)
+    assert t.st["end_t"] == pytest.approx(max(x[0] for x in fins) + ls.FIN_HOLD, abs=0.11)
+    ts = t.st["teams"]
+    assert all(x["car"]["fin"] for x in ts) and all(x["laps"][-1]["n"] == ls.laps_of(x["car"]["d"]) for x in ts)
+    order = sorted(range(len(ts)), key=lambda i: (-ls.laps_of(ts[i]["car"]["d"]), ts[i]["car"]["ls"]))
+    assert t.st["ranking"] == order and [ts[i]["place"] for i in order] == sorted(ts[i]["place"] for i in order)
+
+
+def test_the_flag_ranks_and_a_car_that_never_arrives_ends_the_race_at_the_latest():
+    """Same laps: a car past the flag ahead of one still on its way, among them who took the flag first. A car that
+    cannot arrive (here: standing) ends the race FIN_MAX seconds after the clock, ranked as it stands."""
+    t, clock = table(humans=(("1", 0),), bots=1)
+    me, bot = t.st["teams"]
+    lim = t.limit()
+    me["car"].update(d=5 * ls.L + 12.0, fin=1, ls=lim + 4.0)
+    bot["car"].update(d=5 * ls.L + 40.0, fin=1, ls=lim + 6.0)
+    assert t.standings() == [0, 1]                                          # took the flag first – though behind now
+    bot["car"].update(fin=0, d=4 * ls.L + 600.0)
+    assert t.standings() == [0, 1]
+    bot["car"].update(d=5 * ls.L + 2.0)                                     # more laps already? then it is ahead
+    me["car"].update(d=4 * ls.L + 620.0, fin=0)
+    assert t.standings() == [1, 0]
+    t2, clock2 = table(humans=(("1", 0),), bots=1, minutes=5)
+    at(t2, clock2, 299.0)
+    t2.st["teams"][0]["car"].update(pit=1, v=0.0)                          # my car stands for good (no stop to end)
+    t2.st["teams"][0]["stop"] = None
+    at(t2, clock2, 300.0 + ls.FIN_MAX - 1.0)
+    assert t2.st["phase"] == "play"
+    at(t2, clock2, 300.0 + ls.FIN_MAX + 1.0)
+    assert t2.st["phase"] == "done" and t2.st["complete"] and t2.st["end_t"] == pytest.approx(300.0 + ls.FIN_MAX)
+
+
 def test_bots_take_the_same_pit_lane_into_their_own_boxes():
     seen = []
     orig = ls.step
 
-    def spy(car_, s, jr, rain=False, others=()):
-        evs = orig(car_, s, jr, rain, others)
+    def spy(car_, s, jr, rain=False, others=(), over=False):
+        evs = orig(car_, s, jr, rain, others, over)
         if "pit" in evs:
             seen.append((car_["box"], ls.lap_pos(car_["d"]), car_["x"]))
         if "autopilot" in evs:
@@ -1216,9 +1306,12 @@ def test_bots_race_and_prepare_sensibly_and_the_most_laps_wins():
     assert all(len(b["laps"]) == ls.laps_of(b["car"]["d"]) and all(lp["time"] > 20 for lp in b["laps"]) for b in bots)
     assert all({p["time"] for p in b["pits"]} == {ls.BOT_STOP["hard"]} for b in bots)
     assert all(b["car"]["flat"] == 0 for b in bots)                        # they save energy in time
+    # after the clock every car took the chequered flag on its next lap; the race ended 3 s after the last one
+    assert all(x["car"]["fin"] for x in t.st["teams"])
+    assert t.st["end_t"] == pytest.approx(max(x["car"]["ls"] for x in t.st["teams"]) + ls.FIN_HOLD, abs=0.11) and t.st["end_t"] < 300 + ls.FIN_MAX
     places = {i: x["place"] for i, x in enumerate(t.st["teams"])}
-    best = max(ls.laps_of(x["car"]["d"]) for x in t.st["teams"])
-    assert all(places[i] == 1 for i, x in enumerate(t.st["teams"]) if ls.laps_of(x["car"]["d"]) == best and x["car"]["d"] == max(y["car"]["d"] for y in t.st["teams"]))
+    first = min(range(len(t.st["teams"])), key=lambda i: (-ls.laps_of(t.st["teams"][i]["car"]["d"]), t.st["teams"][i]["car"]["ls"]))
+    assert places[first] == 1 and t.st["ranking"][0] == first          # the most laps, then who took the flag first
 
 
 # ---------------------------------------------------------------- in the app
@@ -1266,7 +1359,10 @@ def test_family_table_teams_race_coins_once_history_and_records(client):
     # the race runs to the end (both apps silent: the autopilot drives, every stop done by itself after 10 s)
     clock.t = st["t0"] + 300 + 5
     v = client.get("/api/community/langstrecke", headers=hm).json()
-    assert v["phase"] == "done" and v["complete"]
+    assert v["phase"] == "play" and v["now_t"] > v["limit"]                # the clock has run out: the last lap to the flag
+    clock.t = st["t0"] + 300 + ls.FIN_MAX + 5
+    v = client.get("/api/community/langstrecke", headers=hm).json()
+    assert v["phase"] == "done" and v["complete"] and all(x["fin"] for x in v["teams"])
     places = {p["id"]: (p["place"], p["coins"]) for p in v["players"]}
     assert places[str(mia)][0] != places[str(leo)][0]
     amounts = {1: 10, 2: 5, 3: 2}
@@ -1324,7 +1420,7 @@ def test_pit_records_from_the_next_drivers_taps(client):
     client.post("/api/community/langstrecke/sync", json={"inputs": []}, headers=hl)
     v = client.post("/api/community/langstrecke/sync", json={"inputs": []}, headers=hm).json()
     assert v["teams"][0]["pits"][0]["time"] == 4.1 and v["teams"][0]["driver"] == str(leo)
-    clock.t = st["t0"] + 320
+    clock.t = st["t0"] + 300 + ls.FIN_MAX + 5                          # the end: after the last lap to the chequered flag
     client.get("/api/community/langstrecke", headers=hm)
     assert fq.db.get_setting("langstrecke_pit")[str(mia)] == 41
     from familyquest import facts
@@ -1398,7 +1494,9 @@ def test_the_controls_show_only_when_usable_before_green_and_in_the_box_hidden()
     cases = [["drive", True, moving, -3, False], ["drive", False, moving, -0.1, False], ["drive", False, moving, 0.0, True],
              ["drive", False, inbox, 50, False], ["drive", False, {**moving, "pl": 3}, 50, True], ["drive", False, None, 50, False],
              ["lobby", False, moving, 50, False], ["rest", False, moving, 50, False], ["watch", False, moving, 50, False],
-             ["stop", False, inbox, 50, False], ["pit", False, inbox, 50, False], ["drive", False, moving, 480, False]]
+             ["stop", False, inbox, 50, False], ["pit", False, inbox, 50, False],
+             ["drive", False, moving, 480, True], ["drive", False, moving, 520, True],                   # the last lap after the clock
+             ["drive", False, {**moving, "fin": 1}, 490, False], ["drive", False, moving, 480 + 60, False]]   # past the flag
     out = _app_js("console.log(JSON.stringify(data.map(([m, i, c, t]) => leControls(m, i, c, t, 480))));", cases)
     assert out == [c[4] for c in cases]
     src = (WEB / "langstrecke.js").read_text(encoding="utf-8")
@@ -1407,6 +1505,45 @@ def test_the_controls_show_only_when_usable_before_green_and_in_the_box_hidden()
     css = (WEB / "shared" / "base.css").read_text(encoding="utf-8")
     assert ".le-wrap.le-ctloff .le-joy, .le-wrap.le-ctloff .le-joyhint, .le-wrap.le-ctloff .le-gearzone { opacity: 0; visibility: hidden; pointer-events: none;" in css
     assert "ui.hb = handbrake()" in src and 'h("div.le-gearzone", ui.hb,' in src                          # the handbrake is in the hidden zone too
+
+
+def test_the_last_lap_line_and_hint_stay_on_the_track():
+    """leLineShown / lePitHint (pure, in node): before the clock the line bends into the pit lane and «keep right»
+    comes; after it the line stays on the track to the flag and the hint is «flag» – nothing after the flag."""
+    out = _app_js("""const d = 640 + 600, c = { d: 640 + 520, pl: 0 };
+      console.log(JSON.stringify({ lane: leLineShown(d, false), track: leLineShown(d, true), line: leLine(600),
+        after: [leLineShown(640 * 2 + 30, false), leLineShown(640 * 2 + 30, true)],
+        keep: lePitHint(c, false), flag: lePitHint(c, true), fin: lePitHint({ ...c, fin: 1 }, true), lim: lePitHint({ ...c, pl: 3, d: 640 + 30 }, true) }));""", None)
+    assert out["lane"] > ls.SIDE_X and out["track"] == pytest.approx(out["line"]) and abs(out["track"]) <= ls.LMAX
+    assert out["after"][0] == pytest.approx(out["after"][1])                 # the pit exit after a last stop: as before
+    assert (out["keep"], out["flag"], out["fin"], out["lim"]) == ("keep", "flag", None, "lim")
+
+
+def test_the_sound_is_unlocked_by_the_start_tap_not_only_at_the_first_pit_stop():
+    """The race's sounds (lights, engine) came only after the first pit stop: the shared AudioContext was made by the
+    intro in an animation frame – outside a tap the browsers start it «suspended» – and only the wrench tap at the
+    stop started a sound in a tap. Now the start button and every tap / key in the game unlock it (resume + a silent
+    blip in the tap), and every sound asks to resume where it is allowed (the green light)."""
+    src = (WEB / "langstrecke.js").read_text(encoding="utf-8")
+    audio = src[src.index("const LeAudio = {"):src.index("const leBuzz")]
+    prog = """let made = 0, resumed = 0, started = 0;
+      class Ctx { constructor() { made++; this.state = "suspended"; this.currentTime = 0; this.destination = {}; }
+        resume() { resumed++; if (globalThis.inTap) this.state = "running"; return Promise.resolve(); }
+        createBuffer() { return {}; } createBufferSource() { return { connect() {}, start() { started++; } }; }
+        createOscillator() { return { connect: x => x, start() {}, stop() {}, frequency: { value: 0 } }; }
+        createGain() { return { connect: x => x, gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} } }; } }
+      const window = { AudioContext: Ctx }, Sound = { on: true, ctx: null };
+      """ + audio + """
+      LeAudio.light(false);                                   // the intro's first light: in an animation frame
+      const before = Sound.ctx.state;
+      globalThis.inTap = true; LeAudio.unlock(); globalThis.inTap = false;   // a tap (the start button, the joystick …)
+      console.log(JSON.stringify({ made, resumed, started, before, after: Sound.ctx.state }));"""
+    out = json.loads(subprocess.run(["node", "-e", prog], capture_output=True, text=True, timeout=60, check=True).stdout)
+    assert out["made"] == 1 and out["before"] == "suspended" and out["after"] == "running" and out["started"] == 1 and out["resumed"] >= 2
+    assert src.count("LeAudio.unlock();") >= 1 and 'box.addEventListener(ev, unlock, { capture: true, passive: true })' in src
+    assert 'window.addEventListener("keydown", unlock, true)' in src and 'window.removeEventListener("keydown", unlock, true)' in src
+    dlg = src[src.index("async function langstreckeStartDialog"):src.index("// ---------------------------------------------------------------- sounds")]
+    assert dlg.index("LeAudio.unlock();") < dlg.index('await api("community/langstrecke/start"')   # in the tap, before any await
 
 
 def test_the_position_card_lines_for_leader_last_and_lapped():
@@ -1526,6 +1663,54 @@ def test_lobby_looks_colour_country_and_number_are_validated(client):
     assert (a["color"], a["country"], a["num"]) == (ls.TEAM_STYLES[6][1], "DK", 42) and (b["num"], b["country"]) == (5, None)
     assert a["car"]["man"] == 0 and a["car"]["gear"] == 1                # nobody chose yet: automatic
     assert look({"num": 9}, hm).status_code == 400                                    # started: no more changes
+
+
+def test_who_leads_sets_every_teams_number_and_country_bots_too(client):
+    """The lobby: who started the table (or a parent) sets the country and the number of every team – the other teams
+    of people and the bot teams; the others only their own team; numbers stay unique over all teams; the grid takes
+    them."""
+    from test_api import setup_family
+    phd, mia, leo = setup_family(client)
+    hm, hl = login(client, mia, "1111"), login(client, leo)
+    st = client.post("/api/community/langstrecke/start", json={"bots": 2, "teams": 2, "country": "CH"}, headers=hm).json()
+    client.post("/api/community/langstrecke/join", headers=hl)
+    look = lambda body, h: client.post("/api/community/langstrecke/look", json=body, headers=h)      # noqa: E731
+    bl = st["bot_looks"]
+    assert len(bl) == 2 and all(1 <= b["num"] <= 99 and b["country"] in ls.COUNTRIES for b in bl)
+    assert len({b["num"] for b in bl} | {lk["num"] for lk in st["looks"][:2]}) == 4                   # unique from the start
+    assert look({"num": 61, "team": 1}, hl).status_code == 200                                      # Leo's own team
+    assert look({"num": 62, "team": 0}, hl).status_code == 400                                      # not the leader
+    assert look({"country": "FR", "bot": 0}, hl).status_code == 400
+    st = look({"num": 34, "country": "JP", "team": 1}, hm).json()                                   # Mia leads: Leo's team too
+    assert st["looks"][1]["num"] == 34 and st["looks"][1]["country"] == "JP"
+    assert look({"color": ls.TEAM_STYLES[5][1], "team": 1}, hm).status_code == 400                  # the colour: every team its own
+    assert look({"num": 34, "bot": 1}, hm).status_code == 400                                       # taken by a team of people
+    st = look({"num": 13, "country": "BR", "bot": 1}, hm).json()
+    assert st["bot_looks"][1] == {"country": "BR", "num": 13}
+    assert look({"num": 13, "team": 0}, hm).status_code == 400 and look({"num": 13, "bot": 0}, hm).status_code == 400
+    assert look({"num": 100, "bot": 0}, hm).status_code == 400 and look({"country": "XX", "bot": 0}, hm).status_code == 400
+    assert look({"num": 5, "bot": 2}, hm).status_code == 400 and look({"num": 5, "team": 2}, hm).status_code == 400   # no such team
+    st = look({"country": "", "bot": 0}, hm).json()
+    assert st["bot_looks"][0]["country"] is None
+    st = client.post("/api/community/langstrecke/begin", headers=hm).json()
+    bots = [t for t in st["teams"] if t["bot"]]
+    people = {t["num"]: t["country"] for t in st["teams"] if not t["bot"]}
+    assert people[34] == "JP" and sorted((t["num"], t["country"]) for t in bots) == sorted([(st["teams"][-2]["num"], None), (13, "BR")])
+    assert {t["num"] for t in bots} == {bl[0]["num"], 13}
+
+
+def test_alone_the_start_dialog_sets_every_teams_number_and_country(client):
+    from test_api import setup_family
+    phd, mia, leo = setup_family(client)
+    hm = login(client, mia, "1111")
+    start = lambda looks: client.post("/api/community/langstrecke/start", json={"solo": True, "bots": 2, "looks": looks}, headers=hm)   # noqa: E731
+    assert start([{"num": 7, "country": "CH"}, {"num": 7, "country": "FR"}, {"num": 9}]).status_code == 400   # a number twice
+    assert start([{"num": 0}, {"num": 8}, {"num": 9}]).status_code == 400
+    assert start([{"num": 5, "country": "XX"}, {"num": 8}, {"num": 9}]).status_code == 400
+    st = start([{"num": 5, "country": "CH"}, {"num": 8, "country": "FR"}, {"num": 99, "country": None}]).json()
+    assert st["phase"] == "play"
+    looks = {t["num"]: (t["country"], t["bot"]) for t in st["teams"]}
+    assert looks == {5: ("CH", False), 8: ("FR", True), 99: (None, True)}
 
 
 def test_solo_against_bot_teams_no_coins_and_the_battery(client):
