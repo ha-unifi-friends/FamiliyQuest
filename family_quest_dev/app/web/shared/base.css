@@ -2853,9 +2853,10 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
   body.disco::before, .disco-scn .disco-ball, .disco-scn .spot { animation: none; }
 }
 
-/* «24h Endurance» (langstrecke.js) – one screen on a phone: position / lap / race clock, the standings with gaps, the
-   gauges, the track on a canvas over the full height with the virtual joystick bottom left on it; the pit wall (TV, telemetry,
-   radar, radio calls), the pit stop (stopwatch, jobs, mini-games), the podium with the grape-juice shower */
+/* «24h Endurance» (langstrecke.js) – one screen on a phone: the header with the 7-segment race clock; the driver: the
+   track on a canvas over the full height (speedometer, position card, minimap drawn on it) with the joystick, the
+   handbrake and the gears on it – only when usable; a break / watching: position, standings, lap times above the TV
+   picture; the pit stop with big tap targets around the car; the podium with the grape-juice shower */
 .le-live { --le-ok: #2f9e44; --le-mid: #f08c00; --le-hot: #e03131; --le-track: #e9ecf3; }
 :root[data-theme="dark"] .le-live { --le-track: #2b3043; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .le-live { --le-track: #2b3043; } }
@@ -2864,9 +2865,9 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-live.quiz-full.le-scroll { overflow: auto; }
 .le-live.quiz-full > .le-wrap.le-big { flex: 1 1 auto; min-height: 0; }
 .le-live.quiz-full > .le-wrap.le-tv { flex: 1 1 auto; min-height: 90px; }
-.le-live.quiz-full > .le-wrap.le-gar { flex: 1 1 auto; min-height: 110px; }
 .le-live.quiz-full > .host-bar { margin-top: 0; }
-.le-live .dm-head .head-title { min-width: 0; }
+.le-live .dm-head .head-title { min-width: 0; flex: 1 1 auto; gap: 6px; }
+.le-live .dm-head .head-title h1 { flex: 0 1 auto; }
 .le-live .dm-head h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(1.1rem, 5.6vw, 1.6rem); }
 @media (max-width: 600px), (max-height: 760px) {
   .le-live.quiz-full .dm-head h1 { font-size: 1.15rem; margin: 2px 0 2px; }
@@ -2893,40 +2894,10 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-cast { font-size: .78rem; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .le-castrow { display: flex; align-items: center; gap: 4px; padding: 0 2px; font-size: .8rem; }
 /* the driver */
-.le-gauges { display: flex; align-items: center; gap: 8px; padding: 0 2px; font-size: .8rem; min-height: 26px; }
-.le-speed { font-size: 1.05rem; min-width: 74px; font-variant-numeric: tabular-nums; }
-.le-tyre { font-size: 1.1rem; border-radius: 8px; padding: 0 2px; }
-.le-tyre.le-wrong { box-shadow: inset 0 0 0 2px var(--le-hot); animation: le-pulse .5s ease-in-out infinite alternate; }
-.le-g { display: flex; align-items: center; gap: 3px; flex: 1 1 0; min-width: 0; }
-.le-gauge { flex: 1; height: 10px; border-radius: 99px; background: var(--le-track); position: relative; overflow: hidden; min-width: 24px; }
-.le-gauge::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v, 0%); background: var(--le-ok); border-radius: 99px; transition: width .2s; }
-.le-gauge[data-lvl="yellow"]::after { background: var(--le-mid); }
-.le-gauge[data-lvl="red"]::after { background: var(--le-hot); }
-.le-temp[data-lvl="red"] { animation: le-pulse .35s ease-in-out infinite alternate; }
-.le-crewstrip { display: flex; align-items: center; gap: 3px; flex: none; }
-.le-ready { padding: 1px 6px; border-radius: 999px; background: var(--le-track); font-weight: 800; font-size: .75rem; white-space: nowrap; }
-.le-ready.ok { background: var(--le-ok); color: #fff; }
-/* on the driver's picture: what the crew has ready (top left), «Save energy!» (top right) */
-.le-wrap > .le-crewstrip { position: absolute; left: 6px; bottom: 6px; z-index: 1; pointer-events: none; }
-.le-wrap > .le-crewstrip .le-ready:not(.ok) { background: rgba(15, 23, 42, .7); color: #fff; }
-.le-save { position: absolute; right: 6px; bottom: 6px; z-index: 1; pointer-events: none; padding: 2px 8px; border-radius: 999px; background: #f08c00; color: #fff;
-  font-weight: 800; font-size: .75rem; white-space: nowrap; animation: le-pulse .45s ease-in-out infinite alternate; }
-.le-save.le-emg { background: #e8590c; }
-.le-save[hidden] { display: none; }
-.le-gb { flex: 1.3 1 0; }
-.le-battxt { font-size: .8rem; font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
-.le-battxt[data-lvl="yellow"] { color: #e67700; }
-.le-battxt[data-lvl="red"] { color: var(--bad-text); }
-.le-batg[data-lvl="red"] { animation: le-pulse .35s ease-in-out infinite alternate; }
-.le-part.warn { box-shadow: inset 0 0 0 2px #f59f00; }
-.le-part.warn b { color: #e67700; }
-.le-next.le-low { color: #e67700; }
 .le-wrap { position: relative; min-height: 120px; border-radius: 14px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; background: #24573a; }
-.le-wrap.le-gar { background: #5c6370; }
 .le-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
 /* the virtual joystick bottom left on the driver's picture: a see-through ring with the green «Gas» arc on top, the red
    «Brake» arc below and the steering arrows; the knob follows the thumb, the active zone lights up */
-.le-wrap.le-joywrap > .le-crewstrip { left: 50%; transform: translateX(-50%); bottom: auto; top: 6px; }
 .le-joy { --js: clamp(120px, 34vmin, 140px); position: absolute; z-index: 2; left: max(10px, env(safe-area-inset-left)); bottom: 10px;
   width: var(--js); height: var(--js); border-radius: 50%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   cursor: grab; display: grid; place-items: center; }
@@ -2988,25 +2959,44 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-shaft { stroke: #adb5bd; stroke-width: 5; stroke-linecap: round; }
 .le-ball { stroke: rgba(0, 0, 0, .35); stroke-width: .8; }
 .le-shine { fill: rgba(255, 255, 255, .85); }
-/* the gear and the rev / shift light in the HUD: green, yellow, red at the limiter */
-.le-gearbox { display: flex; align-items: center; gap: 4px; flex: none; }
-.le-gear { min-width: 1.6em; text-align: center; padding: 0 4px; border-radius: 6px; background: var(--le-track); font-size: .95rem; font-variant-numeric: tabular-nums; }
-.le-rev { display: flex; gap: 2px; }
-.le-rev i { width: 6px; height: 10px; border-radius: 2px; background: var(--le-track); box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .35); }
-.le-rev i.g { background: #40c057; }
-.le-rev i.y { background: #fab005; }
-.le-rev i.r { background: #fa5252; }
-.le-rev[data-lvl="lim"] i { animation: le-pulse .18s ease-in-out infinite alternate; }
-@media (prefers-reduced-motion: reduce) { .le-knob, .le-jarc, .le-jarrow { transition: none; } .le-rev[data-lvl="lim"] i { animation: none; } }
+/* the handbrake: round, above the gears bottom right («HB», «Drift») – held while pressed */
+.le-hb { width: 60px; height: 60px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .75); padding: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0; color: #fff; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; background: radial-gradient(circle at 35% 30%, #e8590c, #a61e4d 75%); box-shadow: 0 3px 10px rgba(0, 0, 0, .45); }
+.le-hb b { font: 900 1.05rem/1 var(--font); letter-spacing: .02em; }
+.le-hb small { font: 800 .6rem/1.1 var(--font); opacity: .9; }
+.le-hb.le-hbon { transform: scale(.92); background: radial-gradient(circle at 35% 30%, #ffa94d, #e8590c 75%); box-shadow: 0 0 0 4px rgba(255, 169, 77, .45), 0 2px 6px rgba(0, 0, 0, .4); }
+.le-gearrow { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+/* the controls only when usable: hidden on the start grid and at a stop, they fade in at the green light / the pit exit */
+.le-wrap .le-joy, .le-wrap .le-joyhint, .le-wrap .le-gearzone { transition: opacity .35s ease, visibility 0s linear 0s; }
+.le-wrap.le-ctloff .le-joy, .le-wrap.le-ctloff .le-joyhint, .le-wrap.le-ctloff .le-gearzone { opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .2s ease, visibility 0s linear .2s; }
+.le-wrap.le-ctloff .le-gearzone > * { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .le-knob, .le-jarc, .le-jarrow, .le-wrap .le-joy, .le-wrap .le-joyhint, .le-wrap .le-gearzone { transition: none; } }
+/* the race clock in the header: a digital 7-segment display (HH:MM) – amber segments on dark, the unlit ones faint,
+   the colon blinks once a second (lit with reduced motion) */
+.le-segclock { display: inline-flex; align-items: center; gap: 2px; flex: none; margin-left: auto; padding: 4px 7px; border-radius: 8px;
+  background: #14110c; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 1px 3px rgba(0, 0, 0, .3); }
+.le-seg { width: 13px; height: 22px; display: block; }
+.le-seg rect { fill: #ffb020; opacity: .1; }
+.le-seg rect.on { opacity: 1; filter: drop-shadow(0 0 1.5px rgba(255, 176, 32, .7)); }
+.le-segcolon { display: inline-flex; flex-direction: column; justify-content: center; gap: 5px; width: 4px; height: 22px; font-style: normal;
+  animation: le-colon 1s steps(1, end) infinite; }
+.le-segcolon::before, .le-segcolon::after { content: ""; width: 4px; height: 4px; border-radius: 1px; background: #ffb020; box-shadow: 0 0 3px rgba(255, 176, 32, .7); }
+@keyframes le-colon { 50% { opacity: .12; } }
+@media (max-width: 380px) { .le-seg { width: 11px; height: 19px; } .le-segcolon { height: 19px; gap: 4px; } }
+/* the ☰ menu while racing: the assist and the racing line as switches, the team and the forecast */
+.le-mtog .grow { flex: 1; text-align: left; }
+.le-mstate { padding: 1px 8px; border-radius: 999px; background: var(--le-track, #e9ecf3); font-size: .75rem; }
+.le-mtog.on .le-mstate { background: var(--good, #2f9e44); color: #fff; }
+.le-minfo { cursor: default; flex-wrap: wrap; }
+.le-minfo .le-teamtag { margin-left: 0; }
+.le-assist-lobby { margin: 4px auto; }
 /* the lap times and the gaps */
 .le-times { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 2px; font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; min-height: 20px; }
 .le-times > span { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .le-gapa { color: var(--bad-text); }
 .le-gapb { color: var(--good-text); }
-.le-assist { margin-left: 4px; flex: none; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(127,127,127,.4)); background: var(--card); color: var(--fg);
-  font: 800 .75rem var(--font); cursor: pointer; opacity: .75; min-height: 28px; }
-.le-assist.on { background: var(--good, #2f9e44); border-color: transparent; color: #fff; opacity: 1; }
-.le-assist-lobby { margin: 4px auto; }
 /* the lap-time board at the stop */
 .le-laptimes { display: flex; flex-direction: column; gap: 2px; padding: 4px 8px; border-radius: 12px; background: var(--card); box-shadow: var(--shadow); font-size: .8rem; }
 .le-lthead { display: flex; align-items: center; justify-content: space-between; gap: 6px; white-space: nowrap; }
@@ -3015,72 +3005,70 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-lt .grow { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .le-ltn { color: var(--muted); min-width: 44px; }
 .le-ltbest b { color: var(--good-text); }
-/* a phone on its side: the picture gets the height, the joystick stays on its lower left corner */
+/* a phone on its side: the picture gets the height, the joystick stays on its lower left corner; the handbrake above
+   the gears, A / M beside the shifter (clear of the minimap) */
 @media (orientation: landscape) and (max-height: 500px) {
-  .le-live.quiz-full.le-drv > .le-board { min-height: 18px; }
-  .le-live.quiz-full.le-drv > .le-board .le-chip { font-size: .68rem; padding: 0 5px 0 2px; }
-  .le-live.quiz-full.le-drv .le-wrap > .le-save { right: 50%; transform: translateX(50%); bottom: auto; top: 30px; }
-  .le-live.quiz-full.le-drv > .le-times { display: none; }
+  .le-live.quiz-full > .le-board { min-height: 18px; }
+  .le-live.quiz-full > .le-board .le-chip { font-size: .68rem; padding: 0 5px 0 2px; }
   .le-live.quiz-full.le-drv .le-shift { width: auto; flex-direction: row; align-items: flex-end; gap: 6px; }
-  .le-live.quiz-full.le-drv .le-plate { width: clamp(104px, 30vmin, 124px); }
-  .le-live.quiz-full.le-drv .le-gearzone { flex-direction: row; align-items: flex-end; }   /* A / M beside the shifter: clear of the minimap */
-  .le-live.quiz-full.le-drv .le-paddle { height: 44px; }
+  .le-live.quiz-full.le-drv .le-plate { width: clamp(96px, 27vmin, 116px); }
+  .le-live.quiz-full.le-drv .le-gearrow { flex-direction: row; align-items: flex-end; }
+  .le-live.quiz-full.le-drv .le-gearbig { font-size: 1.3rem; }
+  .le-live.quiz-full.le-drv .le-paddle { height: 40px; }
   .le-live.quiz-full.le-drv .le-paddles { gap: 6px; padding-bottom: 0; }
+  .le-live.quiz-full.le-drv .le-hb { width: 56px; height: 56px; }
 }
-/* the pit crew */
 .le-etarow { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
 .le-eta { flex: 1; height: 8px; border-radius: 99px; background: var(--le-track); position: relative; overflow: hidden; }
 .le-eta::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v, 0%); background: var(--accent-bg); }
 .le-etatxt { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .le-nextme { font-weight: 800; color: var(--accent); font-size: .8rem; white-space: nowrap; }
-.le-jobs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.le-job { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow); min-width: 0; }
-.le-job.le-ok { box-shadow: inset 0 0 0 3px var(--good), var(--shadow); }
-.le-jhead { display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; font-size: .85rem; }
-.le-jok { color: var(--good-text); font-weight: 800; font-size: .8rem; white-space: nowrap; }
 .le-comps { display: flex; gap: 6px; }
 .le-comp { width: 46px; height: 32px; border-radius: 10px; border: 2px solid var(--line, #ced4da); background: var(--le-track); font-size: 1.1rem; cursor: pointer; padding: 0; }
 .le-comp.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); }
-.le-tyrepad { position: relative; width: 150px; height: 128px; }
-.le-mini { position: absolute; left: 50%; top: 50%; width: 46px; height: 92px; transform: translate(-50%, -50%); border-radius: 22px 22px 14px 14px; background: var(--tc); box-shadow: inset 0 18px 0 rgba(20, 30, 50, .5); }
-.le-spot { position: absolute; width: 52px; height: 52px; border-radius: 50%; border: 3px dashed #868e96; background: transparent; cursor: pointer; padding: 0; font-size: 1.7rem; touch-action: manipulation; }
-.le-spot span { opacity: .2; }
-.le-spot.set { border: 3px solid var(--good); background: color-mix(in srgb, var(--good) 15%, transparent); }
-.le-spot.set span { opacity: 1; }
-.le-spot.wet.set { border-color: #1c7ed6; background: rgba(28, 126, 214, .18); }
-.le-s0 { left: 0; top: 0; } .le-s1 { right: 0; top: 0; } .le-s2 { left: 0; bottom: 0; } .le-s3 { right: 0; bottom: 0; }
-/* the spare battery on the charger: a battery (terminal on top), the charge rising, a cable to the plug while charging */
-.le-batrow { position: relative; display: flex; align-items: stretch; gap: 16px; margin-top: 4px; }
-.le-bat { position: relative; width: 50px; height: 120px; border-radius: 8px; border: 3px solid #868e96; background: var(--le-track); overflow: hidden; }
-.le-bat::before { content: ""; position: absolute; left: 50%; top: 0; width: 18px; height: 5px; margin-left: -9px; background: #868e96; border-radius: 0 0 3px 3px; z-index: 1; }
-.le-bat-lvl { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(to top, #2f9e44, #69db7c); transition: height .25s linear; }
-.le-bat-lvl[data-lvl="mid"] { background: linear-gradient(to top, #e8590c, #ffa94d); }
-.le-bat-lvl[data-lvl="low"] { background: linear-gradient(to top, #c92a2a, #ff8787); }
-.le-bat-zap { position: absolute; inset: 0; display: grid; place-items: center; font-size: 1.5rem; opacity: 0; }
-.le-batrow.chg .le-bat-zap { opacity: 1; animation: le-pulse .5s ease-in-out infinite alternate; }
-.le-batrow.full .le-bat { border-color: var(--good); }
-.le-batside { display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 4px; min-width: 0; }
-.le-batval { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
-.le-batst { font-size: .75rem; font-weight: 700; color: var(--muted); text-align: center; }
-.le-batrow.chg .le-batst { color: #e67700; }
-.le-batrow.full .le-batst { color: var(--good-text); }
-.le-plugbtn { background: linear-gradient(#ffd43b, #f08c00); box-shadow: 0 4px 0 #a35a00; color: #212529; width: 100%; }
-.le-plugbtn:not(:disabled) { animation: le-pulse .6s ease-in-out infinite alternate; }
-/* the charging cable: from the battery to the plug, current flowing while it charges */
-.le-cable { position: absolute; left: 46px; bottom: 24px; width: 26px; height: 5px; border-radius: 3px; pointer-events: none; opacity: 0; transition: opacity .2s; background: #343a40; }
-.le-batrow.chg .le-cable, .le-batrow.full .le-cable { opacity: 1; }
-.le-batrow.chg .le-cable { background: repeating-linear-gradient(90deg, #f59f00 0 7px, #ffe066 7px 12px); background-size: 12px 100%; animation: le-flow .4s linear infinite; }
-.le-batrow.full .le-cable { background: var(--good); }
-@keyframes le-flow { to { background-position: 12px 0; } }
-.le-batrow.chg .le-plugbtn, .le-batrow.full .le-plugbtn { opacity: 1; background: linear-gradient(#ced4da, #adb5bd); box-shadow: 0 1px 0 #868e96; transform: translateY(3px); }
-.le-hold { flex: 1; min-width: 74px; min-height: 52px; border: 0; border-radius: 16px; font: 800 .95rem var(--font); color: #fff; cursor: pointer;
-  background: linear-gradient(#f08c00, #d9480f); box-shadow: 0 4px 0 #a33a0a; touch-action: none; user-select: none; -webkit-user-select: none; }
-.le-hold.on { transform: translateY(3px); box-shadow: 0 1px 0 #a33a0a; }
-.le-hold:disabled { opacity: .45; }
-.le-engbtn { background: linear-gradient(#748ffc, #4263eb); box-shadow: 0 4px 0 #2b45a8; flex: none; width: 110px; }
-.le-engrow { display: flex; align-items: center; gap: 8px; width: 100%; }
-.le-engbar { flex: 1; height: 14px; border-radius: 99px; background: var(--le-track); position: relative; overflow: hidden; }
-.le-engbar i { position: absolute; inset: 0 auto 0 0; width: var(--v, 0%); background: linear-gradient(90deg, #4263eb, #51cf66); }
+.le-comp { display: inline-flex; align-items: center; justify-content: center; gap: 3px; width: auto; min-width: 56px; height: 40px; padding: 0 8px; cursor: pointer; }
+.le-comp small { font: 700 .72rem var(--font); }
+.le-comp:disabled { cursor: default; opacity: .75; }
+.le-comp.on:disabled { opacity: 1; }
+.le-resthint { margin: 0; }
+/* the pit stop: the car from above in the team colour, the big tap targets (≥ 56 px) – the battery on it, the tyres at
+   its wheels, the engine at its nose; a progress ring, ✓ when done, greyed out until the battery is in */
+.le-stopwrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; }
+.le-stoppad { position: relative; width: min(300px, 100%); height: 228px; flex: none; }
+.le-stopcar { position: absolute; left: 50%; top: 50%; width: 92px; height: 186px; transform: translate(-50%, -50%); border-radius: 40px 40px 22px 22px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 70%, #000), var(--tc) 30% 70%, color-mix(in srgb, var(--tc) 70%, #000));
+  box-shadow: inset 0 46px 0 -16px rgba(20, 30, 50, .55), 0 6px 14px rgba(0, 0, 0, .3); }
+.le-stopcar::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 6px; height: 14px; border-radius: 4px; background: #1d1f24; }
+.le-tgt { --p: 0%; position: absolute; width: 62px; height: 62px; border-radius: 50%; padding: 0; border: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; cursor: pointer; touch-action: manipulation; color: var(--text);
+  background: radial-gradient(closest-side, var(--card) 0 78%, transparent 80%), conic-gradient(var(--good, #2f9e44) var(--p), var(--le-track) 0);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .28), inset 0 0 0 3px var(--accent); transform: translate(-50%, -50%); }
+.le-tgtic { font-size: 1.45rem; line-height: 1; }
+.le-tgt small { font: 800 .66rem/1.1 var(--font); }
+.le-tgtok { position: absolute; right: -2px; top: -2px; width: 22px; height: 22px; border-radius: 50%; background: var(--good, #2f9e44); color: #fff;
+  font: 900 .8rem/22px var(--font); font-style: normal; text-align: center; opacity: 0; }
+.le-tbat { left: 50%; top: 56%; width: 70px; height: 70px; }
+.le-teng { left: 50%; top: 17%; width: 58px; height: 58px; }
+.le-t0 { left: 13%; top: 19%; } .le-t1 { left: 87%; top: 19%; } .le-t2 { left: 13%; top: 81%; } .le-t3 { left: 87%; top: 81%; }
+.le-tgt[data-s="tap"] { animation: le-pulse .7s ease-in-out infinite alternate; }
+.le-tgt[data-s="lock"] { filter: grayscale(1); opacity: .45; box-shadow: 0 2px 5px rgba(0, 0, 0, .2), inset 0 0 0 3px var(--le-track); }
+.le-tgt[data-s="wait"] { box-shadow: 0 3px 8px rgba(0, 0, 0, .28), inset 0 0 0 3px #f08c00; }
+.le-tgt[data-s="run"] { box-shadow: 0 3px 8px rgba(0, 0, 0, .28); }
+.le-tgt[data-s="ok"] { box-shadow: 0 3px 8px rgba(0, 0, 0, .28), inset 0 0 0 3px var(--good, #2f9e44); --p: 100%; }
+.le-tgt[data-s="ok"] .le-tgtok { opacity: 1; }
+.le-tgt:disabled { cursor: default; }
+.le-stopview .le-tgt { animation: none; }
+.le-stopside { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 170px; }
+.le-stophint { padding: 3px 10px; border-radius: 999px; background: var(--le-track); font-weight: 800; font-size: .85rem; text-align: center; }
+.le-stophint.le-lockhint { background: #fff3bf; color: #7a4b00; }
+.le-stophint.le-ok { background: var(--good, #2f9e44); color: #fff; }
+.le-stophint.le-bad { animation: le-shake2 .35s ease-in-out 2; }
+@keyframes le-shake2 { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@media (orientation: landscape) and (max-height: 500px) {
+  .le-stoppad { width: 280px; height: 210px; }
+  .le-stopcar { width: 84px; height: 170px; }
+  .le-watch { font-size: 2rem; }
+}
 /* the pit stop */
 .le-pithead { display: flex; align-items: center; gap: 8px; font-size: 1rem; min-width: 0; white-space: nowrap; }
 .le-pithead > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -3099,15 +3087,6 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-dial i { position: absolute; left: calc(50% - 2px); top: 6px; width: 4px; height: calc(50% - 6px); background: var(--bad); border-radius: 2px; transform-origin: 50% 100%; transform: rotate(var(--a, 0deg)); }
 .le-watch { font: 900 2.6rem var(--font); font-variant-numeric: tabular-nums; color: var(--accent); }
 .le-watch.le-done { color: var(--good-text); }
-.le-parts { display: flex; flex-direction: column; gap: 3px; }
-.le-part { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 10px; background: var(--card); box-shadow: var(--shadow); font-size: .85rem;
-  opacity: .25; transition: opacity .25s; }
-.le-part.le-on { opacity: 1; }
-.le-part .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.le-part b { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.le-part.good b { color: var(--good-text); }
-.le-part.bad { box-shadow: inset 0 0 0 2px var(--le-hot); }
-.le-part.bad b { color: var(--bad-text); }
 .le-change { text-align: center; font-size: .95rem; }
 .le-next { font-weight: 800; color: var(--accent); text-align: center; margin: 0; }
 /* the lobby */
@@ -3145,8 +3124,7 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-rank-list li.le-me { font-weight: 800; }
 .le-swatch { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 24px; border-radius: 6px; color: #fff; font-weight: 800; font-size: .8rem; }
 @media (prefers-reduced-motion: reduce) {
-  .le-left.le-final, .le-temp[data-lvl="red"], .le-tyre.le-wrong, .le-crowd.cheer span, .le-bottle, .le-bubbly i, .le-save, .le-batg, .le-plugbtn,
-  .le-batrow.chg .le-bat-zap, .le-batrow.chg .le-cable { animation: none; }
+  .le-left.le-final, .le-crowd.cheer span, .le-bottle, .le-bubbly i, .le-segcolon, .le-tgt[data-s="tap"], .le-stophint.le-bad { animation: none; }
 }
 
 /* «Beat the Bureaucracy» (stempeljagd.js) – one screen on a phone: the teams, the town hall as a cross-section (roof

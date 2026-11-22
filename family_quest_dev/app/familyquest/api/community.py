@@ -1752,7 +1752,6 @@ class LangstreckeStartIn(BaseModel):
     difficulty: str | None = None        # junior | normal
     team_size: int | None = None         # 1–5 people per team
     teams: int | None = None             # 1–4 teams of people at a family table
-    crew: str | None = Field(default=None, max_length=8)       # the pit crew: players | bots (an automatic crew for every team)
     country: str | None = Field(default=None, max_length=2)    # the family's own country (from the app's language) as the suggestion
     bot_ids: list[int | str] = []
 
@@ -1765,8 +1764,8 @@ class LangstreckeTeamIn(BaseModel):
     team: int
 
 
-class LangstreckePrepIn(BaseModel):
-    action: str = Field(max_length=10)   # plug | tyre | slicks | rain | eng_on | eng_off
+class LangstreckeTapIn(BaseModel):
+    action: str = Field(max_length=10)   # battery | tyre | engine | slicks | rain – the next driver at the team's stop
     spot: int | None = None              # tyre: the spot 0–3
 
 
@@ -1783,7 +1782,6 @@ class LangstreckeRulesIn(BaseModel):
     difficulty: str | None = None
     team_size: int | None = None
     teams: int | None = None
-    crew: str | None = Field(default=None, max_length=8)
 
 
 def _lead_langstrecke(fq, prof: dict) -> None:
@@ -1872,11 +1870,12 @@ def langstrecke_sync(body: LangstreckeSyncIn, request: Request, prof: dict = Pla
     return _run(fq.langstrecke.report, prof["id"], body.inputs)
 
 
-@router.post("/langstrecke/prep")
-def langstrecke_prep(body: LangstreckePrepIn, request: Request, prof: dict = Playing) -> dict:
-    """A job of the pit crew during the lap (spare battery, tyres, spare engine) – checked and timed by the server."""
+@router.post("/langstrecke/tap")
+def langstrecke_tap(body: LangstreckeTapIn, request: Request, prof: dict = Playing) -> dict:
+    """A tap of the driver who drives next at the team's stop (the battery, a tyre, the engine, slicks / rain) –
+    checked and timed by the server."""
     fq = app_of(request)
-    out = _run(fq.langstrecke.prep, prof["id"], body.action, body.spot)
+    out = _run(fq.langstrecke.tap, prof["id"], body.action, body.spot)
     return {**(out or {}), "state": fq.langstrecke.state("langstrecke", prof["id"])}
 
 
