@@ -1637,15 +1637,36 @@ at least two cars (without bots: two teams of people).
   countries in four groups – Europe, Americas, Asia & Middle East, Africa & Oceania – alphabetical in the viewer's
   language, or «no country»; the suggestion is the family's own country from the app's language, e.g. de-CH → 🇨🇭) and
   its **car number** (1–99, each number once). The flag is shown on the car, in the standings and on the podium (emoji
-  flags; where the device has none, e.g. Windows, the country code as a small chip).
+  flags; where the device has none, e.g. Windows, the country code as a small chip). **Who leads the table** (who
+  opened it, or a parent) can set the **number and the country of every team** – the other teams of people and the
+  **bot teams** too (grey «🤖 Bot team 1 …» cards in the lobby, prefilled by lot); the colour stays each team's own
+  choice, numbers stay unique over all teams (`POST /api/community/langstrecke/look` with `team` or `bot`). **Alone**
+  the start dialog shows the same: a row «🏎️ Your team» and one row per bot team (as many as chosen) with the number and
+  the country; «🔄 Race again» keeps them.
 - **24 race hours in 5 / 8 / 12 minutes** (default 8). The race clock starts at **16:00** and runs through **dusk (20:30), night
   (21:30–05:30: headlights, a shorter view) and dawn** into the next afternoon. It is shown as a **digital 7-segment clock** (HH:MM, like a
   car's dashboard clock; inline SVG, amber segments on a dark background – readable at night –, the unlit segments
   faintly visible) in the header row next to the title – in the lobby (16:00), while driving, on a break, at the stop
   and when watching. The colon blinks once a second (stays lit with reduced motion). **Rain showers** (on by default): sudden showers of
-  30–55 s every 1–2 minutes; everybody sees the forecast («Rain in ~20 s»). **Winner: the most laps** (then distance, then who reached the line first).
-- **Intro:** the drivers run to their cars, doors close, engines roar, five red lights → **GO!** (about 6 s).
-- **One short lap (about 30 s), then the car drives into the pits – after every lap** (into the pit lane, see below). There is **no pit crew – only drivers**:
+  30–55 s every 1–2 minutes; everybody sees the forecast («Rain in ~20 s»). **Winner: the most laps** (then who took the
+  chequered flag first; a car still on its way: by distance).
+- **The finish – the chequered flag on the track:** when the race clock has run out (the 24 hours are over), every car
+  drives **one last lap** and takes the flag the next time it crosses the line – the **only lap that does not end in
+  the pits**: no pit entry, no «keep right» hint, no autopilot, no limiter; the yellow racing line stays on the track,
+  the notice says «🏁 Last lap – to the flag!». At the line (level with the pits) a **marshal in an orange
+  suit on a small stand left of the track waves the black-and-white chequered flag** (a floodlight on him at night; with
+  reduced motion the flag is held still). Over the line: «🏁 Finish!», a fanfare, the controls go, the car rolls out
+  lifted off and is out of the race (no contact). A car that was already in the pit lane when the clock ran out
+  takes the flag on the line in the lane (no stop); a car at its stop finishes the stop and then the last lap. The race
+  ends **3 s after the last car took the flag** – **60 s after the clock at the latest** (a car that cannot make it is
+  ranked as it stands). The server and the app run the same step (`over`: the clock has run out; the car's `fin`).
+- **Intro:** the drivers run to their cars, doors close, engines roar, five red lights → **GO!** (about 6 s). The
+  sounds (the lights, the engines, the engine while driving) play **from the start**: the browsers keep a sound
+  context made outside a tap silent («suspended», strictly on iPhone / iPad) – it used to be made by the intro and only
+  the first tap at a pit stop woke it, so the race was silent until the first stop. Now the start button and every tap
+  or key in the game wake it (resume + a silent blip inside the tap), and every sound asks to resume (the green light).
+- **One short lap (about 30 s), then the car drives into the pits – after every lap** (into the pit lane, see below; only
+  the last lap after the clock ends on the track, at the flag). There is **no pit crew – only drivers**:
   at every stop the **next person of the team** (in turn, who is online) takes over and **does the stop on their own
   phone**, then drives the next lap; the one who came in has a **break** and watches the stop live. Two people take
   turns; **alone** you come in, do the stop yourself and drive on (see «The stop» below).
@@ -1688,7 +1709,7 @@ at least two cars (without bots: two teams of people).
   inputs as the keys (steering −100 … 100, gas / lifted / brake). The speed is shown in km/h.
 - **Controls only when usable:** the joystick, the handbrake, «A / M», the shifter and the paddles are **hidden on the
   start grid and during the countdown** (the lights, «Engines on!», «Tap to skip»), in the lobby, while the car stands
-  in its box, at a stop and for everybody who is not driving; they **fade in** (0.35 s, none with reduced motion) at
+  in its box, at a stop, after the chequered flag and for everybody who is not driving; they **fade in** (0.35 s, none with reduced motion) at
   the green light and when the car leaves the box.
 - **Handbrake and drift:** a round **«HB / Drift» button** (60 px) bottom right on the picture, above the gears (above
   A / M in automatic, above the shifter in manual); its own finger, so it works while the left thumb holds the
@@ -1780,14 +1801,16 @@ at least two cars (without bots: two teams of people).
 - **Notices on the picture:** one small one-line pill (about 12.5 px, semi-transparent, icon + 1–3 words) at the very
   top of the picture, between the corner sign and the minimap (just under them when there is no room; the driver: just
   under the speedometer, between the position card and the minimap) – never over the
-  joystick or the shifter: «GO!», «🏁 Finish!», «⚠️ Emergency drive mode», «💥 Gearbox!», «💥 Engine overheated!», «🌀 Spin!», «🟫 Off
+  joystick or the shifter: «GO!», «🏁 Finish!», «🏁 Last lap – to the flag!», «⚠️ Emergency drive mode», «💥 Gearbox!», «💥 Engine overheated!», «🌀 Spin!», «🟫 Off
   the track!», «💨 Drift!», «🛑 Brake!», the pit lane hints, «🔋 Save energy!», «🔥 Let go!», «🌬️ Slipstream!». Only one at a time
   (the most important wins); it stays while its condition lasts (off the track and the gearbox 1.5 s) and then fades.
   The vibrations and the shaking are unchanged.
 - **Night – dark for real:** the sky nearly black (a few stars when dry), everything around the car very dark – the
-  track is visible almost only in the car's **own headlight cone** (a cone along the road fading with the distance);
+  track is visible almost only in the car's **own headlight cone** (a straight cone fading with the distance);
   just beyond it the edge reflectors and the kerbs glint a little, so the corner's shape stays readable; the braking
-  boards light up in the cone. The **other cars** are dark with dim red tail lights and their **own headlight cones**
+  boards light up in the cone. The headlights shine **only straight ahead** – the cone points where the car points (the
+  road's direction at the car, turned by a drift angle) and **does not bend with the corner** (no cornering light): in
+  a corner the road leaves the cone and only the glints show where it goes. The **other cars** are dark with dim red tail lights and their **own headlight cones**
   on the road ahead of them (a car in front helps to see a little more). When a car ahead **brakes** (seen from its
   deceleration), its brake lights flare bright red and the road reflects them (stronger when wet) – a warning close
   behind. The **pit lane is lit by lamps**. Dusk and dawn blend smoothly. The HUD, the corner sign, the minimap, the

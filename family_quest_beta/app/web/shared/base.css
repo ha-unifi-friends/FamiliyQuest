@@ -3099,6 +3099,14 @@ body.disco h1, body.disco h2 { text-shadow: 0 0 12px rgba(255, 79, 184, .35); }
 .le-country { max-width: 100%; }
 .le-carno { display: flex; align-items: center; gap: 4px; }
 .le-numin { width: 64px; text-align: center; font-weight: 800; }
+.le-tbot { padding-top: 8px; }
+.le-tbot .le-tname { color: var(--muted); }
+/* the start dialog alone: every team's number and country, one row each */
+.le-dlooks { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.le-dlook { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 2px 8px; }
+.le-dlname { grid-column: 1 / -1; font-size: .85rem; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.le-dlook .le-numin { width: 64px; min-width: 0; }
+.le-dlook .le-country { width: 100%; min-width: 0; }
 /* the podium */
 .le-podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; align-items: end; gap: 6px; margin: 12px 0 4px; }
 .le-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }

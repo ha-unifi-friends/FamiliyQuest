@@ -5,8 +5,12 @@ the table (guests via QR code join a team too); bots bring extra cars – alone 
 live in the `card_game` table with kind "langstrecke" (lobby, join, summary, may_lead from cardgames.CardGames).
 
 24 race hours are compressed into 5 / 8 / 12 real minutes (rule `minutes`, default 8): the race clock starts at 15:00
-and runs through the night into the next afternoon. Winner: the most laps (then the longer distance). In the lobby each
-team chooses its colour (from the palette, unique), its country (a flag on the car) and its car number (1–99, unique).
+and runs through the night into the next afternoon. When the clock has run out every car drives one last lap – past the
+pit lane, straight on to the chequered flag on the track (a marshal waves it); the race ends when every car took the
+flag (FIN_MAX seconds after the clock at the latest). Winner: the most laps (then who took the flag first). In the
+lobby each team chooses its colour (from the palette, unique), its country (a flag on the car) and its car number (1–99,
+unique); who leads the table sets the country and the number of every team, the bot teams too (alone: in the start
+dialog).
 
 The driving – real racing on a circuit (the general mechanics of the classic racing simulations, own track and look):
 - the car has a position along the lap (d) and ACROSS the track (x, metres from the middle, + = right). The driver
@@ -30,7 +34,8 @@ The driving – real racing on a circuit (the general mechanics of the classic r
   by itself before a corner and the steering helps towards the racing line (the driver's own steering wins). Bots and
   the autopilot drive with the same assist – their skill is how close to the safe speed they dare (BOT_SKILL).
 
-The loop – one short lap (about 30 s), then the car drives into the pits, every time:
+The loop – one short lap (about 30 s), then the car drives into the pits, every time (only the last lap after the clock
+ends on the track, at the chequered flag):
 - the pit lane branches off the main straight to the RIGHT (PIT_IN): the driver keeps right and steers in, else a smooth
   autopilot takes the car in (nobody misses the pits); the pit limiter (PIT_V) holds the speed from the entry line to
   the pit exit (no penalty); the car crosses the line in the pit lane (the lap, timed at the crossing as always – the
@@ -140,6 +145,11 @@ AP_K = 0.7                   # the autopilot's steering: full lock per 1.4 m off
 FUNNEL = 0.45                # the entry's inner white line closes in this much per metre (nobody misses the pits)
 BOX0, BOX_GAP = 10.0, 6.0    # the boxes along the pit lane: the first this far after the line, then one per team
 BOX_DEC = 6.0                # m/s²: rolling into the box
+# the finish: when the race clock has run out, every car takes the chequered flag the next time it crosses the line –
+# on the track, the only lap that does not end in the pits (no pit entry once the clock has run out; a car already in
+# the pit lane finishes on the line there). A finished car rolls out lifted off (FIN_DEC) and is out of the race (no
+# contact). The race ends FIN_HOLD seconds after the last car took the flag – FIN_MAX seconds after the clock at the latest.
+FIN_DEC, FIN_HOLD, FIN_MAX = 5.0, 3.0, 60.0
 PZ_IN = PIT_IN - L           # the entry line, from the line (−60 m)
 LINE_D, LINE_OUT, LINE_APEX, LMAX = 40.0, 3.5, 3.5, 4.0  # the racing line: outside before the corner, the apex inside
 ASSIST_K = 0.5               # the steering assist: full lock per 2 m off the line
@@ -307,11 +317,19 @@ def default_looks(country: str | None = None) -> list[dict]:
     return [{"color": TEAM_STYLES[i][1], "country": c, "num": (7, 24, 44, 88)[i]} for i in range(4)]
 
 
+def default_bot_looks(rng, n: int = 8) -> list[dict]:
+    """The lobby: country and car number of the bot teams (by lot, the numbers apart from the teams of people's
+    defaults) – who leads the table can change them."""
+    taken = {lk["num"] for lk in default_looks()}
+    nums = rng.sample([k for k in NUMBERS if k not in taken], n)
+    return [{"country": rng.choice(COUNTRIES), "num": nums[j]} for j in range(n)]
+
+
 def new_car(x: float, d: float) -> dict:
     return {"d": d, "x": x, "v": 0.0, "thr": 0, "st": 0, "sw": 0.0, "ast": 0, "ak": AK_ASSIST, "lo": 0.0, "temp": TMIN,
             "eng": 0, "ls": 0.0, "best": 0.0, "last": 0.0, "pit": 0, "bumps": 0, "bc": 0.0, "blows": 0, "tyre": "s",
             "kerb": 0, "sf": 0, "offs": 0, "tow": 0.0, "bat": 100.0, "flat": 0, "man": 0, "gear": 1, "sg": 0.0,
-            "pl": 0, "ap": 0, "box": BOX0,
+            "pl": 0, "ap": 0, "box": BOX0, "fin": 0,
             "hb": 0, "hbt": 0.0, "dr": 0, "drt": 0.0, "dc": 0, "yaw": 0.0}
 
 
@@ -343,19 +361,27 @@ def apply_input(car: dict, c: str, v) -> None:
         car["hb"] = 1 if int(v) else 0
 
 
-def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[str]:
+def step(car: dict, s: float, jr: bool, rain: bool = False, others=(), over: bool = False) -> list[str]:
     """One step of DT seconds from game time s – the same in web/langstrecke.js. `others`: the other cars on the
-    track as they were at the start of the step, [[d, x, v], …]. Answers what happened."""
+    track as they were at the start of the step, [[d, x, v], …]; `over`: the race clock has run out (this lap ends at
+    the chequered flag, on the track). Answers what happened."""
     ev: list[str] = []
     if car["pit"]:
+        car["temp"] = max(TMIN, car["temp"] - COOL * DT)
+        return ev
+    if car.get("fin"):                                 # past the chequered flag: rolls out lifted off, nothing else
+        v = max(0.0, car["v"] - FIN_DEC * DT)
+        car["d"] += v * DT
+        car["v"] = v
         car["temp"] = max(TMIN, car["temp"] - COOL * DT)
         return ev
     d0, x0, v0 = car["d"], car["x"], car["v"]
     xl = lap_pos(d0)
     # the pit lane: from the entry line on every car is on its way into the pits – the driver steers in (keeping right
-    # or steering right at the line), else the autopilot takes over; out of the pit exit it races again
+    # or steering right at the line), else the autopilot takes over; out of the pit exit it races again. Once the race
+    # clock has run out nobody goes in: straight on to the chequered flag on the track
     pl = car.get("pl", 0)
-    if pl == 0 and d0 >= 0 and xl >= PIT_IN:
+    if pl == 0 and d0 >= 0 and xl >= PIT_IN and not over:
         pl = car["pl"] = 1
         car["ap"] = 0 if x0 >= KEEP_R or car["st"] >= KEEP_ST else 1
         ev.append("pitlane")
@@ -565,7 +591,6 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         car["blows"] += 1
         car["temp"] = 80.0
         ev.append("blow")
-    # the line (across the track and the pit lane): a lap – on in the pit lane to the box (not at the start)
     # the drift angle (the picture): towards the drift's angle, round and round in a spin, back to straight
     yaw = car.get("yaw", 0.0)
     if dr == 1:
@@ -579,6 +604,8 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
     else:
         yaw += clamp(-yaw, -2.0 * YAW_RATE * DT, 2.0 * YAW_RATE * DT)
     car["yaw"] = yaw
+    # the line (across the track and the pit lane): a lap – on in the pit lane to the box (not at the start); once the
+    # race clock has run out: the chequered flag – the car has finished (on the track; in the pit lane: there)
     n0, n1 = math.floor(d0 / L), math.floor(d1 / L)
     tc = s + (n1 * L - d0) / v if n1 > n0 else 0.0     # the moment the car crossed the line (within the step)
     if n1 > n0 and n0 >= 0:
@@ -586,11 +613,15 @@ def step(car: dict, s: float, jr: bool, rain: bool = False, others=()) -> list[s
         car["last"] = lt
         car["best"] = lt if not car["best"] or lt < car["best"] else car["best"]
         car["ls"] = _r2(tc)
-        pl = car["pl"] = 2
+        if pl or not over:
+            pl = car["pl"] = 2
         ev.append("lap")
+        if over:
+            car.update(fin=1, dr=0, yaw=0.0, hbt=0.0, tow=0.0)
+            ev.append("finish")
     elif n1 > n0:
         car["ls"] = _r2(tc)                             # the start: the first lap begins
-    if pl == 2 and d1 >= n1 * L + car.get("box", BOX0):          # at the box: the car stops – the pit stop begins
+    if pl == 2 and not car.get("fin") and d1 >= n1 * L + car.get("box", BOX0):   # at the box: the car stops – the pit stop begins
         d1 = n1 * L + car.get("box", BOX0)
         v = 0.0
         car.update(pit=1, sw=0.0, sf=0, tow=0.0, ap=0, dr=0, yaw=0.0, hbt=0.0)
@@ -699,12 +730,21 @@ class Table:
             taken.add(num)
             teams.append({"name": styles[k % len(styles)][0], "color": look.get("color") or styles[k % len(styles)][1],
                           "country": look.get("country"), "num": num, "members": groups[k], "bot": False})
-        nums = self.rng.sample([n for n in NUMBERS if n not in taken], len(bots))
+        blooks = self.st.get("bot_looks") or []       # the bot teams: country and number from the lobby, else by lot
+        fixed: dict[int, dict] = {}
+        for j in range(len(bots)):
+            lk = blooks[j] if j < len(blooks) and isinstance(blooks[j], dict) else None
+            num = int((lk or {}).get("num") or 0)
+            if lk and 1 <= num <= 99 and num not in taken:
+                fixed[j] = {"num": num, "country": lk.get("country") if lk.get("country") in COUNTRIES else None}
+                taken.add(num)
+        nums = self.rng.sample([n for n in NUMBERS if n not in taken], len(bots) - len(fixed))
         used = {t["color"] for t in teams}
         free = [st_ for i, st_ in enumerate(styles) if i not in groups and st_[1] not in used] or styles
         for j, b in enumerate(bots):
             name, color = free[j % len(free)]
-            teams.append({"name": name, "color": color, "country": self.rng.choice(COUNTRIES), "num": nums[j],
+            lk = fixed.get(j) or {"country": self.rng.choice(COUNTRIES), "num": nums.pop(0)}
+            teams.append({"name": name, "color": color, "country": lk["country"], "num": lk["num"],
                           "members": [b["id"]], "bot": True})
         if not teams:
             raise CommunityError("Nobody is at the table")
@@ -900,7 +940,7 @@ class Table:
             return
         now_t = self.gt()
         lim = self.limit()
-        horizon = min(now_t - SETTLE, lim)
+        horizon = min(now_t - SETTLE, lim + FIN_MAX)      # after the clock: the last lap to the chequered flag
         jr = self.jr()
         for t in self.st["teams"]:                       # who drives: the app, or the autopilot when it is silent
             was = t["auto"]
@@ -913,9 +953,10 @@ class Table:
         while (self.st["k"] + 1) / 10 <= horizon + 1e-9 and steps < 30000:
             s = self.st["k"] / 10
             rain = in_window(self.st.get("rain"), s)
+            over = s >= lim - 1e-9                       # the clock has run out: the last lap ends at the chequered flag
             # every car sees the others as they were at the start of the step (the order of the teams does not matter)
-            # (the pit lane apart: no contact between the track and the pit lane)
-            snap = [None if t["car"]["pit"] or t["car"].get("pl") else [t["car"]["d"], t["car"]["x"], t["car"]["v"]] for t in teams]
+            # (the pit lane apart: no contact between the track and the pit lane; a finished car is out of the race)
+            snap = [None if t["car"]["pit"] or t["car"].get("pl") or t["car"].get("fin") else [t["car"]["d"], t["car"]["x"], t["car"]["v"]] for t in teams]
             for i, t in enumerate(teams):
                 car = t["car"]
                 if car["pit"] and t["stop"] and s + 1e-9 >= t["stop"]["end"]:
@@ -927,7 +968,7 @@ class Table:
                     while t["ev"] and t["ev"][0][0] <= s + 1e-9:
                         _, c, v = t["ev"].pop(0)
                         apply_input(car, c, v)
-                for e in step(car, s, jr, rain, others):
+                for e in step(car, s, jr, rain, others, over):
                     if e == "lap":
                         t.setdefault("laps", []).append({"n": len(t["laps"]) + 1, "driver": t["driver"], "time": car["last"],
                                                          "offs": car["offs"] - sum(x.get("offs", 0) for x in t["laps"]), "rain": rain})
@@ -938,7 +979,9 @@ class Table:
                         del self.st["log"][:-30]
             self.st["k"] += 1
             steps += 1
-        self._maybe_end(horizon)
+            if over and self._race_over():
+                break
+        self._maybe_end()
 
     def _drive(self, t: dict, s: float, others=()) -> None:
         """The bot driver (also the autopilot of a silent app): the assist on the racing line – as close to the safe
@@ -971,8 +1014,8 @@ class Table:
         elif not car["lo"]:
             ox = ahead[1]
             car["lo"] = clamp(ox + (3.2 if ox <= line else -3.2), -LMAX, LMAX) - line
-        if not car.get("pl") and car["d"] >= 0 and PIT_IN - 40.0 <= xl < PIT_IN:
-            car["lo"] = LMAX - line                      # the pit lane ahead: keep right, steer in at the entry
+        if not car.get("pl") and car["d"] >= 0 and PIT_IN - 40.0 <= xl < PIT_IN and s < self.limit() - 1e-9:
+            car["lo"] = LMAX - line                      # the pit lane ahead: keep right, steer in at the entry (not on the last lap)
         if car["temp"] >= hot_hi:
             t["hot"] = 1
         elif car["temp"] <= hot_lo:
@@ -984,17 +1027,35 @@ class Table:
             car["thr"] = 0
 
     # ---------- the end
-    def _maybe_end(self, horizon: float) -> None:
+    def _race_over(self) -> bool:
+        """After the clock: every car has taken the chequered flag (and FIN_HOLD seconds passed for the picture of the
+        last one) – or FIN_MAX seconds after the clock at the latest."""
+        sim, lim = self.st["k"] / 10, self.limit()
+        if sim < lim - 1e-9:
+            return False
+        cars = [t["car"] for t in self.st["teams"]]
+        if sim >= lim + FIN_MAX - 1e-9:
+            return True
+        return all(c.get("fin") for c in cars) and sim >= max(c["ls"] for c in cars) + FIN_HOLD - 1e-9
+
+    def _maybe_end(self) -> None:
         if self.st.get("phase") != "play":
             return
-        if horizon >= self.limit() and self.st["k"] / 10 >= self.limit() - 1e-9:
+        if self._race_over():
             self.st["complete"] = True
             self._finish()
 
+    @staticmethod
+    def _rank_key(car: dict, grid: int) -> tuple:
+        """The most laps; with the same laps a car past the chequered flag ahead of one still on its way, among them
+        who took the flag first; the others by distance, then who crossed the line first (two cars in the pits)."""
+        fin = bool(car.get("fin"))
+        return (-laps_of(car["d"]), 0 if fin else 1, car["ls"] if fin else -car["d"], car["ls"], grid)
+
     def standings(self) -> list[int]:
-        """Team indexes by laps, then distance, then who crossed the line first (two cars in the pits)."""
+        """Team indexes by laps, then the chequered flag, then distance, then who crossed the line first."""
         ts = self.st["teams"]
-        return sorted(range(len(ts)), key=lambda i: (-laps_of(ts[i]["car"]["d"]), -ts[i]["car"]["d"], ts[i]["car"]["ls"], ts[i]["grid"]))
+        return sorted(range(len(ts)), key=lambda i: self._rank_key(ts[i]["car"], ts[i]["grid"]))
 
     def _finish(self) -> None:
         order = self.standings()
@@ -1002,7 +1063,8 @@ class Table:
         pl, n = {}, 0
         prev = None
         for k, i in enumerate(order):
-            key = (laps_of(ts[i]["car"]["d"]), round(ts[i]["car"]["d"], 1), ts[i]["car"]["ls"])
+            c = ts[i]["car"]
+            key = (laps_of(c["d"]), bool(c.get("fin")), c["ls"] if c.get("fin") else round(c["d"], 1), c["ls"])
             if key != prev:
                 n = k + 1
                 prev = key
@@ -1178,8 +1240,33 @@ class Langstrecke(CardGames):
             raise CommunityError("The table is full")
         p["team"] = min(free, key=lambda i: (counts[i], i))
 
+    @staticmethod
+    def _clean_look(lk) -> dict:
+        """A team's country (or none) and car number (1–99) as chosen – checked."""
+        if not isinstance(lk, dict):
+            raise CommunityError("Unknown team")
+        country = lk.get("country") or None
+        if country is not None and country not in COUNTRIES:
+            raise CommunityError("Unknown country")
+        try:
+            num = int(lk.get("num"))
+        except (TypeError, ValueError, OverflowError):
+            raise CommunityError("Car numbers go from 1 to 99") from None
+        if not 1 <= num <= 99:
+            raise CommunityError("Car numbers go from 1 to 99")
+        return {"country": country, "num": num}
+
+    @staticmethod
+    def _team_nums(st: dict, skip=None) -> list[int]:
+        """The car numbers of the lobby's teams (of people and bots) – apart from `skip` (("team"|"bot", index))."""
+        n = 1 if st.get("solo") else st["rules"]["teams"]
+        nb = max(0, min(st["rules"]["bots"], 8))
+        out = [lk.get("num") for i, lk in enumerate(st.get("looks") or []) if i < n and skip != ("team", i)]
+        return out + [lk.get("num") for j, lk in enumerate(st.get("bot_looks") or []) if j < nb and skip != ("bot", j)]
+
     def start(self, kind: str, host: int, rules: dict | None = None, solo: bool = False, bots: list[dict] | None = None,
-              country: str | None = None) -> int:
+              country: str | None = None, looks: list[dict] | None = None) -> int:
+        """A new table. `looks` (the start dialog when alone): country and car number of my team, then of every bot team."""
         if kind != KIND:
             raise CommunityError("Unknown game")
         with self.lock:
@@ -1191,7 +1278,15 @@ class Langstrecke(CardGames):
                     self.db.x("UPDATE card_game SET status='done', finished_at=datetime('now','localtime') WHERE id=?", old["id"])
             r = self.clean_rules(KIND, {**self.default_rules(), **{k: v for k, v in (rules or {}).items() if v is not None}})
             self.db.set_setting(f"game_rules.{KIND}", r)
-            st = {"kind": KIND, "rules": r, "players": [], "phase": "lobby", "solo": solo, "bot_pool": list(bots or []), "looks": default_looks(country)}
+            st = {"kind": KIND, "rules": r, "players": [], "phase": "lobby", "solo": solo, "bot_pool": list(bots or []), "looks": default_looks(country),
+                  "bot_looks": default_bot_looks(self.rng or random.Random())}
+            if looks:                                     # chosen in the start dialog: my team, then the bot teams
+                chosen = [self._clean_look(lk) for lk in list(looks)[:9]]
+                st["looks"][0].update(chosen[0])
+                st["bot_looks"][:len(chosen) - 1] = chosen[1:]
+                nums = self._team_nums(st)
+                if len(nums) != len(set(nums)):
+                    raise CommunityError("Another team has this number")
             me = self._person(host)
             self._seat(st, me)
             st["players"].append(me)
@@ -1241,9 +1336,10 @@ class Langstrecke(CardGames):
             self._save(row, st)
 
     def choose_look(self, pid: int, color: str | None = None, country: str | None = None, num: int | None = None,
-                    assist: bool | None = None) -> None:
+                    assist: bool | None = None, team: int | None = None, bot: int | None = None, lead: bool = False) -> None:
         """In the lobby: the colour (from the palette, not taken by another team), the country and the car number (1–99,
-        not taken by another team) of my team – and my own driving assist (on / off)."""
+        not taken by another team) of my team – and my own driving assist (on / off). Who leads the table (`lead`) also
+        sets the country and the number of every other team: `team` (a team of people) or `bot` (a bot team)."""
         with self.lock:
             row = self._row(KIND, pid)
             if not row:
@@ -1256,6 +1352,26 @@ class Langstrecke(CardGames):
                 raise CommunityError("You are not at this table")
             looks = st.setdefault("looks", default_looks())
             k = int(p.get("team", 0))
+            if bot is not None or (team is not None and int(team) != k):
+                if not lead:
+                    raise CommunityError("Only who leads the table sets the other teams")
+                if color is not None:
+                    raise CommunityError("Every team chooses its own colour")
+            if bot is not None:                           # a bot team: its country and number
+                blooks = st.setdefault("bot_looks", default_bot_looks(self.rng or random.Random()))
+                j = int(bot)
+                if not 0 <= j < min(max(0, min(st["rules"]["bots"], 8)), len(blooks)):
+                    raise CommunityError("Unknown team")
+                lk = self._clean_look({**blooks[j], **({"country": country} if country is not None else {}), **({"num": num} if num is not None else {})})
+                if num is not None and lk["num"] in self._team_nums(st, ("bot", j)):
+                    raise CommunityError("Another team has this number")
+                blooks[j] = lk
+                self._save(row, st)
+                return
+            if team is not None:
+                k = int(team)
+                if not 0 <= k < (1 if st.get("solo") else st["rules"]["teams"]):
+                    raise CommunityError("Unknown team")
             if assist is not None:
                 st.setdefault("assist", {})[str(pid)] = bool(assist)
             if color is not None:
@@ -1275,8 +1391,7 @@ class Langstrecke(CardGames):
                     raise CommunityError("Car numbers go from 1 to 99") from None
                 if not 1 <= num <= 99:
                     raise CommunityError("Car numbers go from 1 to 99")
-                n = 1 if st.get("solo") else st["rules"]["teams"]
-                if any(i != k and i < n and lk.get("num") == num for i, lk in enumerate(looks)):
+                if num in self._team_nums(st, ("team", k)):
                     raise CommunityError("Another team has this number")
                 looks[k]["num"] = num
             self._save(row, st)
@@ -1400,6 +1515,7 @@ class Langstrecke(CardGames):
         if st["phase"] == "lobby":
             nb = max(0, min(st["rules"]["bots"], 8))
             return {**base, "bots": nb, "nteams": 1 if st.get("solo") else st["rules"]["teams"], "looks": st.get("looks") or default_looks(),
+                    "bot_looks": (st.get("bot_looks") or [])[:nb],
                     "palette": [{"name": n, "color": c} for n, c in TEAM_STYLES], "countries": list(COUNTRIES)}
         t_ = self.table(st)
         mine = t_.team_of(me) if joined else None
@@ -1414,7 +1530,7 @@ class Langstrecke(CardGames):
                   "pit": car["pit"], "eng": car["eng"], "emg": car["bat"] <= 0, "stops": len(t["pits"]), "best_pit": t["best_pit"], "best_lap": car["best"],
                   "gap": round(lead - car["d"], 1), "auto": t["auto"], "place": t.get("place"), "grid": t["grid"], "sf": car["sf"],
                   "last_lap": car.get("last", 0.0), "pl": car.get("pl", 0), "ap": car.get("ap", 0), "box": car.get("box", BOX0),
-                  "dr": car.get("dr", 0), "yaw": round(car.get("yaw", 0.0), 1)}
+                  "dr": car.get("dr", 0), "yaw": round(car.get("yaw", 0.0), 1), "fin": car.get("fin", 0)}
             if t is mine or ph == "done":
                 tv.update(car=car, drives=t["drives"], pits=t["pits"], ev=t["ev"] if t is mine else [], stop=t["stop"], laptimes=(t.get("laps") or [])[-12:],
                           next=t_.next_driver(t) if ph == "play" else None)
