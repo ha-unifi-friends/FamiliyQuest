@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1.1
+
+- **Fix:** a family quiz with only one language (most quizzes, also imported ones) showed an empty page after
+  «Start».
+
 ## 1.2.1
 
 Version 1.2.1 – everything that was tested in the betas 1.2.1-beta.1 … 3.
