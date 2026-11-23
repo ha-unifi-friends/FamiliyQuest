@@ -7,6 +7,11 @@
   others only with a separate license; every version becomes open source (MPL 2.0) four years after its release.
   Versions up to 1.2.1 stay MIT. Nothing changes for families.
 
+## 1.2.1.1
+
+- **Fix:** a family quiz with only one language (most quizzes, also imported ones) showed an empty page after
+  «Start».
+
 ## 1.2.1
 
 Version 1.2.1 – everything that was tested in the betas 1.2.1-beta.1 … 3.
