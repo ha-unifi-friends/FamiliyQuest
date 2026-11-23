@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-dev.11
+
+- Fix: a family quiz with only one language showed an empty page after Start
+
 ## 1.2.2-dev.10
 
 - 24h race: straight headlights, finish with chequered flag on the track, every team's number and country, sound from the start
