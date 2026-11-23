@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2-beta.11
+
+- Fix: a family quiz with only one language (most quizzes, also imported ones) showed an empty page after Start
+
 ## 1.2.2-beta.10
 
 - 24h race: headlights shine straight ahead only (no cornering light)
