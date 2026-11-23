@@ -37,3 +37,12 @@ def test_new_strings_are_translated():
     for lang in LANGS:
         d = json.loads((WEB / "i18n" / f"{lang}.json").read_text(encoding="utf-8"))
         assert all(d.get(k) for k in keys), lang
+
+
+def test_quiz_with_one_language_draws_its_page():
+    # a quiz without further languages has no `lang`: the ☰ label must not call lang.toUpperCase() (it threw, the page
+    # stayed empty after «Start») – and the poll must not hide such an error
+    c = src("community.js")
+    assert '": " + lang.toUpperCase()' not in c
+    assert 'langs.length > 1 ? I18N.tr(T("Language of the questions")) + ": " + String(lang).toUpperCase() : ""' in c
+    assert 'try { draw(await api("community/quiz")); } catch {}' not in c

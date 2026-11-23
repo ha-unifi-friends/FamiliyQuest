@@ -306,7 +306,7 @@ function quizLive(box, me, back) {
   };
   async function poll() {
     if (!alive || !box.isConnected) return stop();
-    try { draw(await api("community/quiz")); } catch {}
+    try { draw(await api("community/quiz")); } catch (e) { console.error(e); }   // never hide a drawing error
     timer = setTimeout(poll, 800);
   }
   let raw = null;                   // the last state from the server (the language switch draws it again)
@@ -335,7 +335,7 @@ function quizLive(box, me, back) {
     };
     const invite = !me.guest && st.status !== "done" ? "quiz" : null;      // ☰ and the button in the lobby box
     const menu = gameMenu({ invite,
-      actions: [{ ic: "🌐", label: I18N.tr(T("Language of the questions")) + ": " + lang.toUpperCase(), hidden: langs.length < 2, onclick: pickQLang },
+      actions: [{ ic: "🌐", label: langs.length > 1 ? I18N.tr(T("Language of the questions")) + ": " + String(lang).toUpperCase() : "", hidden: langs.length < 2, onclick: pickQLang },
         { ic: "⏹", label: T("Stop"), danger: true, hidden: !isHost(st) || st.status === "done", confirm: T("Stop the quiz?"), onclick: () => act("abort") }],
       onLeave: () => { full(false); stop(); back(); } });
     const head = h("div.quiz-head.ql-head", h("div.row.head-title", menu, h("h1", h("span.ql-ic", "🎯 "), C(st.title))),
